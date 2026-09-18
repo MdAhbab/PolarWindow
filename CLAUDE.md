@@ -11,8 +11,9 @@ design is finished — do not redesign it.
 make install       # both halves
 make seed          # kernels, terrain, sites, horizon masks. ~10 min, once.
 make dev           # services + api on :8000 + frontend on :5173
-make test          # 148 tests
-make lint          # ruff, mypy --strict, 7 import contracts
+make test          # 211 backend tests
+make test-fe       # frontend units: the adapter, the cache keys, the exports
+make lint          # ruff, mypy --strict, 8 import contracts
 make test-fast     # unit + property + synthetic golden. No services, < 20 s.
 ```
 
@@ -20,9 +21,9 @@ make test-fast     # unit + property + synthetic golden. No services, < 20 s.
 anything. Run it before and after touching `backend/app/core/`.
 
 **The geometry moved to the backend.** The frontend no longer computes anything:
-`src/lib/geometry/` retains only interpolation helpers, the four-number
-constants, and a mean-element model used *solely* for the schematic terminator
-overlay on the map. Every number on screen comes from the API.
+`src/lib/geometry/` retains the four-number constants and a mean-element
+sub-solar point used *solely* for the schematic terminator overlay on the map.
+Every number on screen comes from the API.
 
 ---
 
@@ -76,7 +77,10 @@ frontend/src/
 **Data flow.** zustand owns what the user chose; TanStack Query owns what the
 server said. Nothing derived from the server is ever `set()` into zustand. Each
 screen's queries fetch what that screen needs; `useQueries` over a dynamic site
-array preserves the per-site streaming render.
+array preserves the per-site streaming render. Ranking is the server's too: S3
+posts to `/compare` and draws the ranks and ties it is given, because two
+implementations of "which site is best" is one more than this product can
+defend.
 
 **The expensive step is precomputed by construction.** Ray-casting a site's
 skyline is ~120 ms against real terrain and depends on nothing but the site.
@@ -88,9 +92,9 @@ lookup plus one vectorised `spkpos`. Never move the ray-cast onto a request path
 cache keys. Do not remove it.
 
 **The layering rule is enforced.** `make contracts` runs import-linter over
-seven contracts. `core/` imports no I/O; routes import no ORM; services import
-no FastAPI; `spiceypy` is reachable only through `core/spice.py`; agents reach
-the domain only through `agents/tools.py`.
+eight contracts. `core/` imports no I/O; routes import neither the ORM nor the
+data layer; services import no FastAPI; `spiceypy` is reachable only through
+`core/spice.py`; agents reach the domain only through `agents/tools.py`.
 
 ---
 
@@ -164,8 +168,9 @@ Each of these reached running code. Do not reintroduce them.
 
 - `SURVIVAL_LIMIT_H = 120` in the frontend. The backend returns durations and
   refuses to return verdicts — a verdict needs a thermal model.
-- DEM vertical error is 2 m everywhere. Wire the real per-tile product and every
-  ± follows.
+- DEM vertical error is a per-tier constant: 2 m on the 20 m product, 4 m on the
+  80 m one, and each bearing carries whichever tier set its skyline. It is still
+  not per-pixel — wire the LDEC count products and every ± follows.
 - `illumination` and `psr` tiles are approximations from a ring-based horizon
   proxy, labelled in the response headers.
 
@@ -178,7 +183,8 @@ Each of these reached running code. Do not reintroduce them.
   a pass.
 - The map's hillshade and terminator are schematic and labelled as such; the
   per-site DEM covers 20 km at 20 m, the map view ~300 km at 80 m.
-- Export buttons on S5 and S6 print the page; they do not yet emit CSV or a
-  SPICE window file.
-- The educator face changes density and pacing but does not yet have its own
-  four-step guided path.
+- The exports on S5 and S6 emit CSV and SPICE interval lists from the arcs
+  already on screen (`lib/export.ts`), but nothing validates the SPICE file by
+  loading it back through spiceypy.
+- The guided walk-through on the educator face is four steps on S2 only. The
+  other screens change density and pacing but have no path of their own.

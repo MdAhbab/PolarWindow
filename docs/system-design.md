@@ -186,7 +186,7 @@ in the adapter, once.
 ├────────────────────────────────────────────────────┤
 │ id                uuid PK                          │
 │ site_id           text FK → sites                  │
-│ engine_version    text      'hz-1'                 │
+│ engine_version    text      'hz-2'                 │
 │ azimuth_count     int       1440                   │
 │ azimuth_step_deg  float     0.25                   │
 │ max_range_m       float     50000                  │
@@ -397,7 +397,7 @@ Angles in degrees. Every response body carries `meta`.
       "Shadow edges are resolution-limited: a 20 m post cannot resolve a boulder."
     ]
   },
-  "engine_version": "hz-1/vis-1",
+  "engine_version": "hz-2/vis-2",
   "cache": "hit" | "miss" | "bypass"
 }
 ```
@@ -524,7 +524,7 @@ guard produces, and the demo shows it.
 { "status": "ok"|"degraded", "kernels": { "loaded": true, "count": 5,
   "missing": [], "furnsh_ms": 812 }, "db": "ok", "redis": "ok",
   "dem": { "present": true, "product": "…", "coverage": "partial" },
-  "engine_version": "hz-1/vis-1" }
+  "engine_version": "hz-2/vis-2" }
 ```
 Returns **200 when degraded** and 503 only when SPICE is unloaded, because a
 missing DEM still lets every ephemeris endpoint work and the UI has a state for

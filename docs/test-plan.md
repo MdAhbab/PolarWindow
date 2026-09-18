@@ -1,8 +1,9 @@
 # POLAR WINDOW — Test Plan
 
 Status: accepted for M1–M8.
-Scope: `backend/`. Frontend coverage is limited to the API adapter and the
-accessibility pass (§7), because the components themselves are unchanged design.
+Scope: `backend/`. Frontend coverage is limited to the API adapter, the cache
+keys, the exports and the accessibility pass (§7), because the components
+themselves are unchanged design.
 
 ---
 
@@ -73,9 +74,9 @@ The pole is where this breaks, so the cases live there.
 | `test_enu_basis_orthonormal` | 200 random (lat, lon) incl. lat ∈ {−90, −89.999} | E·N = N·U = U·E = 0, all unit, E×N = U | Catches a sign flip in the basis that would otherwise show up only as a 180° azimuth error. |
 | `test_zenith_is_90` | target vector = site normal | el = 90°, az undefined-but-finite | Degenerate case must not NaN. |
 | `test_horizon_is_zero` | target ⟂ normal | el = 0 ± 1e-9 | |
-| `test_azimuth_cardinals` | targets due N/E/S/W of a site at −85° | az = 0/90/180/270 ± 1e-6 | The convention test. North-clockwise, matching the frontend's `lookAngles`. |
+| `test_azimuth_cardinals` | targets due N/E/S/W of a site at −85° | az = 0/90/180/270 ± 1e-6 | The convention test. North-clockwise, as the API reports every bearing. |
 | `test_pole_azimuth_stability` | site at −89.9999°, target swept 0→360° | azimuth monotonic, no jump > step | R5 directly. The spherical-trig formula fails this; the unit-vector form passes. |
-| `test_matches_reference_impl` | 500 random (site, subpoint) | agrees with a transcription of `frontend/src/lib/geometry/ephemeris.ts::lookAngles` to 1e-9 | Two independent implementations of the same maths. Cheap, and it makes the port auditable. |
+| `test_matches_frontend_reference_implementation` | 400 random (site, subpoint) | agrees with an in-test transcription of the original TypeScript `lookAngles` to 1e-9 | Two independently written implementations of the same maths. The TypeScript one has since been deleted — geometry is the server's — so the transcription is kept in the test as the second opinion. |
 
 ### 2.2 `horizon.py` — ray-march (R2, R4)
 
@@ -239,13 +240,17 @@ subset, which are not committed. Two layers:
   alive during local development, and it is the one that catches most refactor
   drift because most refactors are not ephemeris-specific.
 
-**Cross-implementation check.** `test_python_matches_typescript`: run
-`frontend/scripts/check-geometry.ts` output (committed as JSON) against the
-Python engine fed the *same synthetic terrain and mean-element ephemeris*. They
-must agree within ±0.5 h on the four numbers. This is not about which is right —
-it is that two independently-written implementations agreeing is strong evidence
-neither has a structural error, and disagreeing is a bug in one of them worth
-finding before a judge does.
+**Cross-implementation check — retired.** This was
+`frontend/scripts/check-geometry.ts`, run against the Python engine on the same
+synthetic terrain, and it did its job: two independently-written engines agreeing
+on the four numbers is strong evidence neither has a structural error. The
+frontend engine has since been deleted rather than kept in sync — every number on
+screen now comes from the API, and a second implementation that nothing calls is
+a liability, not a check. What survives of it is
+`test_matches_frontend_reference_implementation` in §2.1, which keeps the
+TypeScript look-angle formula as an in-test transcription. The replacement
+evidence at the whole-pipeline level is the golden fixtures below, which are
+rebuilt from the DEM rather than compared against a stored mask.
 
 ---
 
@@ -356,14 +361,23 @@ rule:
 ## 7. Frontend tests
 
 Deliberately narrow — the components are finished design and re-testing them is
-not this plan's job.
+not this plan's job. `make test-fe`; 41 tests, 0.2 s, no DOM and no network.
 
-- **Adapter unit tests** (vitest): wire JSON → `SiteMetrics`. Seconds→hours, ISO→
-  `tH`, snake→camel, parallel arrays → `TrackSample[]`, `Float32Array`
-  reconstruction. Fed by the committed golden `metrics.json`, so the adapter is
-  tested against the same numbers the backend is pinned to.
-- **Query-key test**: the key includes `engine_version` and the quantised window
+- **Adapter unit tests** (`src/lib/api/adapters.test.ts`): wire JSON →
+  `SiteMetrics`. Seconds→hours, ISO→`tH`, snake→camel, `Float32Array`
+  reconstruction, the three visibility states, and the window-edge flags.
+  Fed by captured responses in `src/lib/api/__fixtures__/`, asserted against the
+  same seconds the backend pins in `golden/data/connecting-ridge.metrics.json`,
+  so a physics change that skips the frontend fails here.
+- **Query-key test** (`src/lib/api/queries.test.ts`): every key carries
+  `engine_version` and the *quantised* window, a drag inside one step collapses
+  onto one key, and a comparison of the same sites in either order is one query
   (ADR-2 consequence).
+- **Export tests** (`src/lib/export.test.ts`): the CSV and the SPICE interval
+  lists are built from the same adapted arcs the charts draw — RFC 4180
+  quoting, matched `BEGIN_WINDOW`/`END_WINDOW` blocks, increasing UTC pairs,
+  `# open` on the intervals the window cut short, an empty tolerance for a
+  graze, and no composite score in the comparison header.
 - **Accessibility**: `design:accessibility-review` at M8, plus an automated
   `axe-core` pass on the eight routes. Automated axe catches perhaps 30 % of
   issues, so it is a floor and the manual review is the actual gate — the

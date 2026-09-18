@@ -14,12 +14,13 @@ deliberately skipped here are listed in *Not doing, and why*.
 | | Check | Result |
 |---|---|---|
 | ✅ | `ruff check` | All checks passed |
-| ✅ | `ruff format --check` | 73 files already formatted |
-| ✅ | `mypy --strict` | No issues in 73 source files |
-| ✅ | Layering contracts (import-linter) | **7 kept, 0 broken** |
-| ✅ | Test suite | **148 passed** in 4.0 s |
-| ✅ | Frontend build | `tsc -b && vite build` clean, 124 KB gz |
-| ✅ | OpenAPI emitted and client regenerated from it | 15 paths, 35 schemas |
+| ✅ | `ruff format --check` | 78 files already formatted |
+| ✅ | `mypy --strict` | No issues in 78 source files |
+| ✅ | Layering contracts (import-linter) | **8 kept, 0 broken** |
+| ✅ | Test suite | **211 passed** in 5.6 s |
+| ✅ | Frontend units (`make test-fe`) | **41 passed** in 0.2 s |
+| ✅ | Frontend build | `tsc -b && vite build` clean, 131 KB gz |
+| ✅ | OpenAPI emitted and client regenerated from it | 15 paths, 37 schemas |
 | ✅ | Golden fixtures present with a provenance manifest | 3 sites, kernels + DEM recorded |
 | ✅ | No test reaches a live model API | autouse transport block |
 

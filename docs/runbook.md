@@ -124,8 +124,9 @@ cd backend && uv run python -m app.workers.precompute --force
 Fifteen minutes, in this order:
 
 ```bash
-make lint            # ruff, mypy --strict, 7 layering contracts
-make test            # 148 tests
+make lint            # ruff, mypy --strict, 8 layering contracts
+make test            # 211 backend tests
+make test-fe         # the adapter, the cache keys, the exports
 curl -s localhost:8000/healthz | jq .status          # "ok", not "degraded"
 ```
 

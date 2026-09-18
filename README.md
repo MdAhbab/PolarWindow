@@ -150,9 +150,10 @@ docs/              system design, four ADRs, test plan, API, runbook
 ```
 
 **The layering rule is enforced, not trusted.** `make contracts` runs
-import-linter over seven contracts: `core/` imports no I/O, routes import no
-ORM, services import no FastAPI, `spiceypy` is reachable only through
-`core/spice.py`, and agents reach the domain only through `agents/tools.py`.
+import-linter over eight contracts: `core/` imports no I/O, routes import
+neither the ORM nor the data layer, services import no FastAPI, `spiceypy` is
+reachable only through `core/spice.py`, and agents reach the domain only through
+`agents/tools.py`.
 
 **The expensive step is precomputed by construction.** Ray-casting a site's
 skyline is ~120 ms against real terrain and depends on nothing but the site;
@@ -190,7 +191,8 @@ including every rejection, is recorded in `agent_runs` and served at
 
 ```bash
 make test-fast   # unit + property + synthetic golden. No services, < 20 s
-make test        # everything (148 tests)
+make test        # everything (211 tests)
+make test-fe     # frontend units: the adapter, the cache keys, the exports
 make lint        # ruff, mypy --strict, import-linter
 ```
 
@@ -223,8 +225,10 @@ Named, rather than quietly left:
 - The `illumination` and `psr` tile layers are approximations from a ring-based
   horizon proxy, labelled as such in the response headers. They are right about
   which craters are dark; they are not published products.
-- DEM vertical error is carried as 2 m everywhere. Wire the real per-tile error
-  product and every uncertainty figure in the app follows automatically.
+- DEM vertical error is a per-tier constant — 2 m for the 20 m product, 4 m for
+  the 80 m one — and each bearing carries the tier that actually set it. It is
+  still not a per-pixel figure: wire the LDEC count products and every
+  uncertainty in the app follows automatically.
 - No screen-reader user has tested the arc-list announcements.
 
 ---

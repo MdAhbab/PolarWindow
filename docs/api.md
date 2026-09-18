@@ -21,25 +21,25 @@ every endpoint, not a convention.
 ```jsonc
 "meta": {
   "computed_at": "2026-09-18T12:31:04.882Z",
-  "engine_version": "hz-1/vis-1",
+  "engine_version": "hz-2/vis-2",
   "cache": "hit",              // hit | miss | bypass ("bypass" = Redis is down)
-  "compute_ms": 30.5,
+  "compute_ms": 10.1,
   "resolution": {
     "azimuth_deg": 0.25,
     "azimuth_count": 1440,
     "time_step_s": 900,
     "max_range_m": 50000.0,
-    "dem_product": "LOLA_LDEM_80S_20M",
+    "dem_product": "LOLA_LDEM_80S_20M + LDEM_80S_80M",
     "dem_resolution_m": 20.0,
     "ephemeris": "de440 + moon_pa_de440 (MOON_ME)",
     "frame": "MOON_ME"
   },
   "uncertainty": {
-    "dem_vertical_error_m": 2.0,
+    "dem_vertical_error_m": 4.0, // the worst tier that set this site's skyline
     "dem_resolution_m": 20.0,
     "coverage": 1.0,            // fraction of sampled terrain inside the DEM
-    "horizon_el_deg": 0.0177,   // that error, at the range the skyline is set
-    "edge_timing_s": 61485.8,   // null when `grazing` is true — see below
+    "horizon_el_deg": 0.0078,   // that error, at the range the skyline is set
+    "edge_timing_s": 61527.5,   // null when `grazing` is true — see below
     "grazing": false,
     "penumbra_sun_deg": 0.2665,
     "penumbra_earth_deg": 0.9705,
@@ -56,6 +56,11 @@ stand; their edges do not. Render the word, not a `±`.
 **`coverage < 1`** means terrain is missing on some bearings, which fall back to
 a smooth-sphere horizon and are likely optimistic. Say so where it appears.
 
+**`dem_vertical_error_m` is the coarsest tier that actually set this site's
+skyline**, not the finest tier available. A site whose horizon is set by ridges
+beyond the 20 m window carries the 80 m tier's error on those bearings, and
+reporting the 20 m figure would claim a precision the answer does not have.
+
 ---
 
 ## Errors
@@ -70,7 +75,7 @@ that knows what failed, and can be improved without a frontend deploy.
     "type": "https://polar-window.dev/errors/horizon-not-built",
     "title": "This site has not been surveyed yet",
     "status": 409,
-    "detail": "No horizon mask for 'nobile-rim-2' at engine hz-1/vis-1. Run `make seed`.",
+    "detail": "No horizon mask for 'nobile-rim-2' at engine hz-2/vis-2. Run `make seed`.",
     "ui": {
       "still_works": "Sites that have been surveyed are unaffected, and this site's coordinates and terrain are still shown.",
       "retryable": true,
@@ -202,25 +207,52 @@ bearing and elevation of the terrain responsible.
 ```jsonc
 "arcs": [{
   "up": false, "start": "2027-03-26T05:00:00Z", "end": "2027-03-31T07:35:00Z",
-  "duration_s": 437688.0, "tolerance_s": 61485.8, "grazing": false,
+  "duration_s": 437688.0, "tolerance_s": 61527.5, "grazing": false,
+  "start_tolerance_s": 453.5,  // null when this edge is the window, not a crossing
+  "end_tolerance_s": 61525.8,
+  "open_start": false, "open_end": false,
   "blocked_by_bearing_deg": 177.0, "blocked_by_el_deg": -0.12
 }]
 ```
 
 Naming the cause is the difference between an answer and an assertion.
 
+**`open_start` / `open_end`: the window bounds this arc, not the geometry.** The
+arc was still running when the window opened or was still running when it
+closed, so its `duration_s` is a **lower bound** — the real stretch is longer by
+an unknown amount. `tolerance_s` is the quadrature sum of the two edges that are
+real crossings; an open edge contributes nothing to it, because there is no
+crossing to time, and its per-edge tolerance is `null`. A client that renders an
+open arc with `≈` rather than `≥` is reporting a number the server did not
+claim.
+
 ### `GET /sites/{id}/metrics`
 
 The four numbers, and nothing that dilutes them.
 
 ```jsonc
-{ "sunlit_s": 2067804.0, "earth_contact_s": 1548108.0,
-  "longest_dark_s": 437688.0, "longest_blackout_s": 1002492.0,
-  "sun_fraction_up": 0.8103, "earth_fraction_up": 0.6067,
-  "worst_compound_s": 138384.0,
-  "autonomy": { "worst_compound_s": 138384.0, "required_autonomy_s": 166060.8,
-                "survival_needed_s": 437688.0, "compound_inside_dark": true } }
+{ "sunlit_s": 2067837.7, "earth_contact_s": 1549023.0,
+  "longest_dark_s": 437647.8, "longest_blackout_s": 1002477.0,
+  "sun_fraction_up": 0.81044, "earth_fraction_up": 0.607103,
+  "worst_compound_s": 138206.2,
+  "longest_dark_open": false,       // as on an arc: true means "at least this"
+  "longest_blackout_open": false,
+  "worst_compound_open": false,
+  "autonomy": { "worst_compound_s": 138206.2, "required_autonomy_s": 165847.5,
+                "margin_fraction": 0.2,
+                "survival_needed_s": 437647.8, "compound_inside_dark": true,
+                "survival_open": false, "worst_compound_open": false } }
 ```
+
+The `*_open` flags carry the same meaning here as on an arc: the window, not the
+geometry, ended the stretch, so the figure is a floor. A 30-day window across a
+site whose night runs 322 h reports 167 h with `longest_dark_open: true` — the
+number is not wrong, but reading it as the night is.
+
+`margin_fraction` is the server's own reserve on top of the worst compound
+event; `required_autonomy_s` already includes it. Clients convert units and
+nothing else — recomputing the margin client-side is how the headline figure and
+the sentence describing it drift apart.
 
 `survival_needed_s` is the whole night, not the blackout, when the blackout
 falls inside it: if the radio is silent for 40 h in the middle of a 122 h night,
@@ -326,7 +358,7 @@ Also mounted unprefixed at `/healthz` for container health checks.
 
 ```jsonc
 { "status": "ok",            // ok | degraded | down
-  "engine_version": "hz-1/vis-1",
+  "engine_version": "hz-2/vis-2",
   "kernels": { "loaded": true, "count": 6, "furnsh_ms": 27.1, "missing": [] },
   "db": "ok", "redis": "ok",
   "dem": { "regional_present": true, "fine_windows": 15, "product": "LOLA LDEM 80S …" } }
