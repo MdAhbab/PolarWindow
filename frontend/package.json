@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "check": "tsc -b --noEmit",
-    "codegen": "openapi-typescript ../docs/openapi.json -o src/lib/api/schema.ts"
+    "codegen": "openapi-typescript ../docs/openapi.json -o src/lib/api/schema.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.62.11",
@@ -28,6 +30,7 @@
     "tailwindcss": "^4.1.13",
     "tsx": "^4.23.13",
     "typescript": "^5.9.2",
-    "vite": "^7.1.5"
+    "vite": "^7.1.5",
+    "vitest": "^5.0.1"
   }
 }

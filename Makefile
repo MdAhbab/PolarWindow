@@ -85,6 +85,9 @@ test-int: ## Integration and agent tests
 test-geo: ## Golden tests against the real kernels and DEM
 	cd $(BE) && $(UV) run pytest app/tests/golden -q
 
+test-fe: ## Frontend units: the adapter, the cache keys, the exports
+	cd $(FE) && npm test --silent
+
 lint: ## ruff + mypy strict + the layering contracts
 	cd $(BE) && $(UV) run ruff check app && $(UV) run ruff format --check app
 	cd $(BE) && $(UV) run mypy app
@@ -99,7 +102,7 @@ typecheck: ## Frontend types
 contracts: ## Just the import-linter layering contracts
 	cd $(BE) && $(UV) run lint-imports
 
-check: lint test typecheck ## Everything CI runs
+check: lint test test-fe typecheck ## Everything CI runs
 
 golden-update: ## Re-pin the golden fixtures. Requires GOLDEN_UPDATE_REASON.
 	@test -n "$$GOLDEN_UPDATE_REASON" || { \
