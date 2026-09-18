@@ -1,0 +1,282 @@
+import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useSiteMetricsMap } from '../lib/useMetricsMap'
+import { useMission } from '../lib/store'
+import { SITES, siteById } from '../lib/sites'
+import { PolarMap } from '../components/PolarMap'
+import { DateSlider } from '../components/DateSlider'
+import { KeyNumberRow } from '../components/KeyNumbers'
+import { EmptyState, LoadingPanel } from '../components/States'
+import { Button, Chip, Panel, SearchField, SectionLabel } from '../components/ui'
+import { coords, percent } from '../lib/format'
+import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
+import type { SiteMetrics } from '../lib/types'
+
+/** S1 — where you start: pick a site, see the terminator sweep across the pole. */
+export function MapScreen() {
+  const { siteId, setSite, cursorH, windowStartH, face } = useMission()
+  const allIds = useMemo(() => SITES.map((s) => s.id), [])
+  const { map: metrics, done, total, isPending } = useSiteMetricsMap(allIds)
+  const compute = { status: isPending ? 'running' : 'ready', done, total } as const
+  const site = siteById(siteId)
+  const focused = metrics[siteId]
+
+  const [query, setQuery] = useState('')
+  const [minSun, setMinSun] = useState(0)
+  const [maxDark, setMaxDark] = useState(400)
+  const [nearPsr, setNearPsr] = useState(false)
+
+  const matches = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return SITES.filter((s) => {
+      if (q && !`${s.code} ${s.name}`.toLowerCase().includes(q)) return false
+      const m: SiteMetrics | undefined = metrics[s.id]
+      if (!m) return true
+      if (m.sun.fractionUp * 100 < minSun) return false
+      if (m.sun.longestDownH > maxDark) return false
+      if (nearPsr && s.terrain.features.every((f) => f.kind !== 'crater')) return false
+      return true
+    })
+  }, [query, minSun, maxDark, nearPsr, metrics])
+
+  const binding =
+    minSun > 0 && matches.length === 0
+      ? `sunlight at least ${minSun}%`
+      : `longest dark gap under ${maxDark} h`
+
+  return (
+    <div className="flex grow flex-col">
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-line px-4 py-4 lg:px-6">
+        <DateSlider />
+      </div>
+
+      <div className="flex grow flex-col gap-4 p-4 lg:flex-row lg:gap-6 lg:p-6">
+        {face === 'planner' && (
+          <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-[260px]" aria-label="Search and filters">
+            <SearchField value={query} onChange={setQuery} />
+
+            <Panel className="flex flex-col gap-5 p-4">
+              <SectionLabel>Filters</SectionLabel>
+
+              <Slider
+                id="f-sun"
+                label="Sunlight at least"
+                value={minSun}
+                display={`${minSun}%`}
+                min={0}
+                max={100}
+                onChange={setMinSun}
+                tone="bg-sun-fill"
+              />
+              <Slider
+                id="f-dark"
+                label="Dark gap under"
+                value={maxDark}
+                display={`${maxDark} h`}
+                min={20}
+                max={400}
+                step={10}
+                onChange={setMaxDark}
+                tone="bg-terrain-high"
+              />
+
+              <div className="flex flex-wrap gap-2 border-t border-line pt-4">
+                <Chip selected={nearPsr} onClick={() => setNearPsr((v) => !v)} tone="earth">
+                  Beside a shadowed floor
+                </Chip>
+              </div>
+            </Panel>
+
+            <Panel className="flex grow flex-col">
+              <div className="flex items-baseline justify-between border-b border-line px-4 py-3">
+                <SectionLabel>Matching sites</SectionLabel>
+                <span className="text-[12px] text-ink-2">
+                  {matches.length} of {SITES.length}
+                </span>
+              </div>
+              {matches.length === 0 ? (
+                <EmptyState
+                  title="No site clears every filter"
+                  detail={
+                    <>
+                      {SITES.length} sites checked. The binding one is <strong className="text-ink">{binding}</strong>.
+                    </>
+                  }
+                  primary={{ label: 'Relax the dark gap to 400 h', onClick: () => setMaxDark(400) }}
+                  secondary={{
+                    label: 'Clear all filters',
+                    onClick: () => {
+                      setMinSun(0)
+                      setMaxDark(400)
+                      setNearPsr(false)
+                      setQuery('')
+                    },
+                  }}
+                />
+              ) : (
+                matches.map((s) => {
+                  const m = metrics[s.id]
+                  const active = s.id === siteId
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setSite(s.id)}
+                      aria-current={active ? 'true' : undefined}
+                      className={`flex flex-col gap-1 border-b border-line px-4 py-3 text-left last:border-b-0 ${
+                        active ? 'bg-inset' : 'hover:bg-inset'
+                      }`}
+                    >
+                      <span className="text-[14px] font-semibold text-ink">
+                        {s.code} — {s.name}
+                      </span>
+                      <span className="font-mono text-[11px] text-ink-3">
+                        {m
+                          ? `sun ${percent(m.sun.fractionUp)} · dte ${percent(m.earth.fractionUp)} · gap `
+                          : 'computing…'}
+                        {m && (
+                          <span className={m.sun.longestDownH > SURVIVAL_LIMIT_H ? 'text-alert' : ''}>
+                            {Math.round(m.sun.longestDownH)} h
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  )
+                })
+              )}
+            </Panel>
+          </aside>
+        )}
+
+        <section className="flex grow flex-col border border-line bg-panel">
+          <div className="flex items-center gap-4 border-b border-line px-4 py-3">
+            <SectionLabel>South polar stereographic · 80°S to the pole</SectionLabel>
+            <span className="ml-auto text-[12px] text-ink-3">terminator solved, not drawn</span>
+          </div>
+
+          <div className="flex grow items-center justify-center p-3">
+            <PolarMap
+              tH={windowStartH + cursorH}
+              selectedSiteId={siteId}
+              onSelect={setSite}
+              size={640}
+              className="max-h-[70vh] w-full max-w-[640px]"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line px-4 py-3">
+            <LegendSwatch className="bg-terrain-low">Lit at this instant</LegendSwatch>
+            <LegendSwatch className="bg-psr">In shadow at this instant</LegendSwatch>
+            <LegendSwatch className="border border-terrain-mid bg-psr">Never lit — PSR</LegendSwatch>
+            <LegendSwatch className="hatch-uncertain">Terminator margin</LegendSwatch>
+            <p className="ml-auto max-w-[320px] text-right text-[12px] leading-[17px] text-ink-3">
+              Shading is the instantaneous shadow, not an average. Averages hide the gap that kills a lander.
+            </p>
+          </div>
+        </section>
+
+        <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-[320px]">
+          {compute.status === 'running' && !focused ? (
+            <LoadingPanel />
+          ) : (
+            <Panel elevated className="flex flex-col">
+              <div className="flex items-start gap-3 border-b border-line p-4">
+                <span className="inline-flex size-7 shrink-0 items-center justify-center bg-sun-fill text-[14px] font-bold text-on-sun">
+                  {site.code}
+                </span>
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <div className="text-[17px] font-semibold">{site.name}</div>
+                  <div className="font-mono text-[11px] text-ink-3">{coords(site.latDeg, site.lonDeg)}</div>
+                </div>
+              </div>
+              <div className="p-4">
+                <KeyNumberRow metrics={focused} face={face} size="sm" columns={2} />
+              </div>
+              <div className="flex flex-col gap-2.5 border-t border-line p-4">
+                <p className="text-[13px] leading-5 text-ink-2">{site.note}</p>
+                <Link
+                  to="/clocks"
+                  className="inline-flex h-12 items-center justify-center rounded-control bg-sun-fill text-[15px] font-semibold text-on-sun no-underline"
+                >
+                  Open the two clocks
+                </Link>
+                <Button onClick={() => useMission.getState().toggleCompare(site.id)}>Add to compare</Button>
+              </div>
+            </Panel>
+          )}
+
+          <Panel className="mt-auto flex flex-col gap-2 p-4">
+            <SectionLabel>Keyboard</SectionLabel>
+            <p className="font-mono text-[11px] leading-[19px] text-ink-2">
+              [ ] step the date by 6 h
+              <br />
+              ⇧[ ⇧] step by one day
+              <br />
+              1 2 3 switch audience face
+              <br />
+              T read the current chart as a table
+            </p>
+          </Panel>
+        </aside>
+      </div>
+    </div>
+  )
+}
+
+function LegendSwatch({ children, className }: { children: React.ReactNode; className: string }) {
+  return (
+    <span className="flex items-center gap-2 text-[12px] text-ink">
+      <span className={`h-3 w-5.5 ${className}`} aria-hidden="true" />
+      {children}
+    </span>
+  )
+}
+
+function Slider({
+  id,
+  label,
+  value,
+  display,
+  min,
+  max,
+  step = 1,
+  onChange,
+  tone,
+}: {
+  id: string
+  label: string
+  value: number
+  display: string
+  min: number
+  max: number
+  step?: number
+  onChange: (v: number) => void
+  tone: string
+}) {
+  const pct = ((value - min) / (max - min)) * 100
+  return (
+    <div className="flex flex-col gap-2">
+      <label htmlFor={id} className="text-[13px] font-medium text-ink">
+        {label} <span className="font-mono text-sun">{display}</span>
+      </label>
+      <div className="relative flex h-12 items-center">
+        <div className="absolute inset-x-0 h-[3px] bg-inset" />
+        <div className={`absolute left-0 h-[3px] ${tone}`} style={{ width: `${pct}%` }} />
+        <div
+          className={`pointer-events-none absolute size-4 -translate-x-1/2 rounded-pill border-2 bg-canvas ${tone.replace('bg-', 'border-')}`}
+          style={{ left: `${pct}%` }}
+        />
+        <input
+          id={id}
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="absolute inset-x-0 h-12 w-full cursor-pointer opacity-0"
+        />
+      </div>
+    </div>
+  )
+}

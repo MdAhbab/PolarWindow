@@ -1,0 +1,36 @@
+# Data: downloaded or generated, never committed.
+# `make seed` reproduces all of it in about ten minutes.
+data/kernels/
+data/dem/
+data/tiles/
+data/sites.json
+
+# Local service state
+.local/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.tsbuildinfo
+
+# Env
+.env
+.env.local
+*.local
+
+# OS
+.DS_Store
+
+# Local editor/tooling config
+.claude/

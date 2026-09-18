@@ -1,0 +1,229 @@
+[project]
+name = "polar-window-backend"
+version = "0.1.0"
+description = "Sun, Earth and terrain geometry for lunar south pole landing sites."
+requires-python = ">=3.12,<3.13"
+
+dependencies = [
+    # --- core science -------------------------------------------------------
+    "spiceypy==6.0.3",
+    "numpy==2.1.3",
+    "scipy==1.14.1",
+    "rasterio==1.4.3",
+    "pyproj==3.7.0",
+    "shapely==2.0.6",
+    "xarray==2024.11.0",
+    # --- speed --------------------------------------------------------------
+    "numba==0.61.0",
+    # --- web ----------------------------------------------------------------
+    "fastapi==0.115.6",
+    "uvicorn[standard]==0.34.0",
+    "pydantic==2.10.4",
+    "pydantic-settings==2.7.0",
+    # --- data ---------------------------------------------------------------
+    "sqlalchemy==2.0.36",
+    "alembic==1.14.0",
+    "asyncpg==0.30.0",
+    "redis==5.2.1",
+    "httpx==0.28.1",
+    "orjson==3.10.13",
+    "zstandard==0.23.0",
+    # --- ai -----------------------------------------------------------------
+    "google-genai==0.3.0",
+    # --- tiles --------------------------------------------------------------
+    "rio-tiler==7.0.1",
+    "morecantile==6.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.3.4",
+    "pytest-asyncio==0.25.0",
+    "pytest-cov==6.0.0",
+    "hypothesis==6.122.3",
+    "respx==0.22.0",
+    "ruff==0.8.4",
+    "mypy==1.14.0",
+    "import-linter==2.1",
+    "types-redis==4.6.0.20241004",
+    "greenlet==3.1.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+# ---------------------------------------------------------------------------
+# ruff
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["."]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF", "ASYNC", "S"]
+ignore = [
+    "S101",     # assert — used in tests and in internal invariants
+    "N803",     # argument name should be lowercase — physics notation (R, N, E)
+    "N806",     # same, for locals
+    "B008",     # call in a default argument — this IS FastAPI's Depends() idiom
+    "N818",     # exception names need an "Error" suffix — SiteNotFound and
+                # MaskNotBuilt read better at the call site, and the suffix adds
+                # nothing when the name is already a noun phrase about a failure
+    "ASYNC109", # async function with a `timeout` argument — deliberate on the
+                # model transport, which must honour a caller-supplied deadline
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Degradation paths: a failure while already handling a failure must not mask
+# the original one. Each of these is a deliberate, commented swallow.
+"app/services/cache.py" = ["S110", "SIM105"]
+"app/tests/conftest.py" = ["S110", "SIM105"]
+"app/tests/**" = ["S105", "S106", "S311"]
+"app/data/**" = ["S310"]          # urlopen of a pinned NAIF/PDS URL
+"app/core/kernels.py" = ["S310"]
+
+# ---------------------------------------------------------------------------
+# mypy — strict, as the brief requires
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+disallow_any_explicit = false
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+# Tests keep strict type *checking* but not strict annotation requirements.
+# A pytest fixture's signature is dictated by pytest, and annotating every
+# `client`/`fake_gemini` parameter with a protocol nobody else implements adds
+# ceremony without catching anything. Everything under app/ outside tests is
+# fully strict.
+module = "app.tests.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_decorators = false
+disallow_any_generics = false
+warn_return_any = false
+
+[[tool.mypy.overrides]]
+# These ship without type information. They are quarantined behind our own
+# typed wrappers (core/spice.py, core/projections.py, data/*), so the untyped
+# surface stays small and named.
+module = ["spiceypy.*", "numba.*", "scipy.*", "rasterio.*", "rio_tiler.*", "morecantile.*", "pyproj.*", "google.*", "zstandard.*"]
+ignore_missing_imports = true
+
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["app/tests"]
+markers = [
+    "requires_kernels: needs SPICE kernels on disk (skipped in test-fast)",
+    "requires_dem: needs the LOLA DEM subset on disk",
+    "requires_db: needs a live Postgres",
+]
+filterwarnings = ["error::DeprecationWarning:app.*"]
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["app/tests/*", "app/data/ingest_*.py"]
+
+# ---------------------------------------------------------------------------
+# import-linter — the layering rule from docs/system-design.md §2, enforced
+# ---------------------------------------------------------------------------
+[tool.importlinter]
+root_package = "app"
+# Required because several contracts forbid third-party packages by name.
+include_external_packages = true
+
+# The layering rule from docs/system-design.md section 2. Expressed as three
+# forbidden-import contracts rather than one "layers" contract, because
+# app.db.repositories is a descendant of app.db and import-linter refuses a
+# layers contract whose members are nested in one another.
+[[tool.importlinter.contracts]]
+name = "Repositories do not reach back up into services or the API"
+type = "forbidden"
+source_modules = ["app.db"]
+forbidden_modules = ["app.services", "app.api", "app.agents", "app.workers"]
+
+[[tool.importlinter.contracts]]
+name = "Services do not reach up into the API"
+type = "forbidden"
+source_modules = ["app.services"]
+forbidden_modules = ["app.api", "app.workers"]
+
+[[tool.importlinter.contracts]]
+name = "core is pure: no I/O, no db, no web"
+type = "forbidden"
+source_modules = [
+    "app.core.horizon",
+    "app.core.intervals",
+    "app.core.metrics",
+    "app.core.projections",
+    "app.core.timeline",
+    "app.core.visibility",
+]
+forbidden_modules = [
+    "app.db", "app.services", "app.api", "app.agents", "app.data",
+    "httpx", "sqlalchemy", "redis", "fastapi", "rasterio",
+]
+# Direct imports only: core.spice legitimately imports core.kernels, which
+# imports httpx to fetch kernels at seed time. kernels.py is the one documented
+# exception to core's no-I/O rule and is never called from a request path.
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "spiceypy is reachable only through core.spice"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = ["app.api", "app.services", "app.db", "app.agents", "app.workers", "app.core.horizon", "app.core.intervals", "app.core.metrics", "app.core.visibility"]
+forbidden_modules = ["spiceypy"]
+
+[[tool.importlinter.contracts]]
+name = "services never import fastapi"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = ["app.services", "app.agents"]
+forbidden_modules = ["fastapi"]
+
+[[tool.importlinter.contracts]]
+name = "routes never touch ORM models or the ORM itself"
+type = "forbidden"
+# Direct imports only. A route legitimately calls a service, and that service
+# uses SQLAlchemy -- that is the whole point of the layer. What is forbidden is
+# a route naming a model or a Session itself, which is why `deps.Session` is an
+# opaque alias rather than AsyncSession.
+allow_indirect_imports = true
+source_modules = ["app.api"]
+forbidden_modules = ["app.db.models", "sqlalchemy"]
+
+[[tool.importlinter.contracts]]
+name = "agents reach the domain only through tools.py"
+type = "forbidden"
+# Direct imports only. tools.py is the permitted gateway and does import
+# services -- that is its whole job -- so the transitive chain
+# agent -> tools -> services is correct and must not be flagged. What this
+# forbids is an agent module reaching a service without passing through the
+# declared tool surface.
+allow_indirect_imports = true
+source_modules = [
+    "app.agents.base", "app.agents.explainer", "app.agents.advisor",
+    "app.agents.writer", "app.agents.asker", "app.agents.guards",
+    "app.agents.schemas", "app.agents.schema_convert",
+]
+# `app.services.agent_log` is deliberately absent: the orchestrator must record
+# what an agent did, which is the platform auditing the agent rather than the
+# agent reading the domain. Those are different concerns and do not share a door.
+forbidden_modules = [
+    "app.db",
+    "app.services.site_service",
+    "app.services.compare_service",
+    "app.services.geometry_service",
+]

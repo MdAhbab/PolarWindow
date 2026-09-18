@@ -1,0 +1,238 @@
+@import 'tailwindcss';
+
+/* ------------------------------------------------------------------
+   POLAR WINDOW — design tokens
+   Dark is the primary theme. Every token exists in both.
+   Ratios in the comments are measured against that theme's own canvas.
+   ------------------------------------------------------------------ */
+
+@theme {
+  --font-sans: 'Archivo', 'Helvetica Neue', Helvetica, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* ground */
+  --color-canvas: #0a0c0e;
+  --color-panel: #12161a;
+  --color-raised: #171b20;
+  --color-inset: #1e242a;
+
+  /* lines */
+  --color-line: #232a31;
+  --color-line-strong: #333c45;
+
+  /* ink */
+  --color-ink: #e6ebf0; /* 16.3:1 */
+  --color-ink-2: #9aa5b1; /* 7.8:1  */
+  --color-ink-3: #7d8995; /* 5.5:1  */
+
+  /* sunlight & power */
+  --color-sun: #f2a33c; /* 9.4:1 as text */
+  --color-sun-fill: #f2a33c;
+  --color-sun-soft: #ffce86;
+  --color-sun-deep: #3a2708;
+  --color-on-sun: #0a0c0e; /* 9.4:1 on the fill */
+
+  /* Earth contact */
+  --color-earth: #4fc6e0; /* 9.8:1 as text */
+  --color-earth-fill: #4fc6e0;
+  --color-earth-soft: #a6e4f1;
+  --color-earth-deep: #0b2e38;
+  --color-on-earth: #0a0c0e; /* 9.8:1 on the fill */
+
+  /* darkness & blackout — never an empty gap, always a hatch */
+  --color-dark-fill: #14181d;
+  --color-hatch: #2c343c;
+
+  /* over the survival limit — magenta, never red, never paired with green */
+  --color-alert: #ff5e93; /* 6.8:1 */
+  --color-alert-deep: #3d0a20;
+  --color-alert-wash: #2a0a17;
+
+  /* terrain — low chroma only */
+  --color-terrain-high: #8a949e;
+  --color-terrain-mid: #49535c;
+  --color-terrain-low: #262d34;
+  --color-psr: #0e1114;
+
+  /* the margin we admit to */
+  --color-uncertain: #78838f;
+
+  --color-focus: #a6e4f1; /* 13.4:1 */
+
+  --radius-*: initial;
+  --radius-none: 0px;
+  --radius-control: 2px;
+  --radius-pill: 999px;
+}
+
+/* Light theme — for print, projection and bright rooms.
+   The two hues are darkened here: amber and cyan at their dark-theme
+   values sit at 1.8:1 on light stock, which fails the 3:1 a
+   non-text graphical object needs. These pass. */
+:root[data-theme='light'] {
+  --color-canvas: #f2f1ed;
+  --color-panel: #ffffff;
+  --color-raised: #ffffff;
+  --color-inset: #e9e8e3;
+
+  --color-line: #dad9d3;
+  --color-line-strong: #b9b8b1;
+
+  --color-ink: #14171a; /* 15.9:1 */
+  --color-ink-2: #3c434b; /* 8.9:1  */
+  --color-ink-3: #5e6670; /* 5.2:1  */
+
+  --color-sun: #8a5605; /* 5.4:1 as text */
+  --color-sun-fill: #b4761f; /* 3.4:1 as a mark */
+  --color-sun-soft: #e8c489;
+  --color-sun-deep: #f3e3c9;
+  --color-on-sun: #14171a; /* 4.7:1 on the fill */
+
+  --color-earth: #0f5f74; /* 6.4:1 as text */
+  --color-earth-fill: #1b8aa6; /* 3.6:1 as a mark */
+  --color-earth-soft: #bfe3ed;
+  --color-earth-deep: #d7edf3;
+  --color-on-earth: #ffffff;
+
+  --color-dark-fill: #dcdad3;
+  --color-hatch: #7b8087;
+
+  --color-alert: #b3134f; /* 6.0:1 */
+  --color-alert-deep: #f7dbe5;
+  --color-alert-wash: #fbeaf0;
+
+  --color-terrain-high: #4a5158;
+  --color-terrain-mid: #9aa0a6;
+  --color-terrain-low: #cfd2d5;
+  --color-psr: #22282d;
+
+  --color-uncertain: #5e6670;
+
+  --color-focus: #0f5f74;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  :root[data-theme='light'] {
+    color-scheme: light;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    /* Numbers animate. Without tabular figures a counting number breathes
+       and the column beside it twitches. Non-negotiable. */
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: 'tnum' 1, 'lnum' 1;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* One focus ring, everywhere, including SVG marks. Never removed. */
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  button,
+  input,
+  select {
+    font: inherit;
+    color: inherit;
+  }
+
+  /* Radius 0 on every data surface; 2px on controls; pill on the faces only. */
+  button {
+    border-radius: var(--radius-control);
+  }
+}
+
+@layer utilities {
+  /* "Blocked" and "uncertain" are different claims, so their hatches run in
+     opposite directions and stay distinguishable in greyscale. */
+  .hatch-blocked {
+    background-image: repeating-linear-gradient(
+      45deg,
+      var(--color-dark-fill) 0 3px,
+      var(--color-hatch) 3px 5px
+    );
+  }
+  .hatch-alert {
+    background-image: repeating-linear-gradient(
+      45deg,
+      var(--color-alert-deep) 0 3px,
+      var(--color-alert) 3px 5px
+    );
+  }
+  .hatch-uncertain {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent 0 3px,
+      var(--color-uncertain) 3px 5px
+    );
+  }
+
+  .tnum {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* M6 — uncertainty band. Barely visible by design.
+     If you notice it, it is wrong. */
+  .breathe {
+    animation: pw-breathe 8s linear infinite alternate;
+  }
+}
+
+@keyframes pw-breathe {
+  from {
+    opacity: 0.3;
+  }
+  to {
+    opacity: 0.38;
+  }
+}
+
+/* The blanket rule is the floor, not the answer — each animation also
+   branches in code, because M1 must lose its play affordance and M3 must
+   gain a spoken one, and neither of those is a duration change. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .breathe {
+    opacity: 0.34;
+  }
+}
+
+:root[data-motion='reduced'] *,
+:root[data-motion='reduced'] *::before,
+:root[data-motion='reduced'] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}

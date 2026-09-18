@@ -1,0 +1,76 @@
+# POLAR WINDOW — api, worker, postgres, redis.
+#
+# `data/` is a bind mount rather than a named volume on purpose: the SPICE
+# kernels and the LOLA subset are ~250 MB that take ten minutes to fetch, and
+# a bind mount means `docker compose down -v` cannot silently destroy them.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: polar_window
+    ports: ['5432:5432']
+    volumes: ['pgdata:/var/lib/postgresql/data']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d polar_window']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    # Cache only; nothing here is the source of truth, so no persistence.
+    command: redis-server --save '' --appendonly no
+    ports: ['6379:6379']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: ./backend
+    environment:
+      PW_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/polar_window
+      PW_REDIS_URL: redis://redis:6379/0
+      PW_DATA_DIR: /data
+      PW_CORS_ORIGINS: http://localhost:5173,http://localhost:5174,http://localhost:4173
+      PW_GEMINI_API_KEY: ${PW_GEMINI_API_KEY:-}
+    volumes: ['./data:/data']
+    ports: ['8000:8000']
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    # The API never downloads kernels at boot. It checks, and reports a missing
+    # one through /healthz with the exact filename and the command that fixes
+    # it — a visible failure rather than a slow mystery.
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    healthcheck:
+      test: ['CMD', 'python', '-c', "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/healthz').status==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  worker:
+    build:
+      context: ./backend
+    environment:
+      PW_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/polar_window
+      PW_REDIS_URL: redis://redis:6379/0
+      PW_DATA_DIR: /data
+    volumes: ['./data:/data']
+    depends_on:
+      postgres: {condition: service_healthy}
+    # Runs to completion and exits. Precompute is a seeding step, not a daemon:
+    # a mask depends only on the site, so there is nothing to poll for.
+    command: python -m app.workers.precompute
+    restart: 'no'
+
+volumes:
+  pgdata:

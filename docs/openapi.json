@@ -1,0 +1,2715 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "POLAR WINDOW",
+    "description": "\nSun, Earth and terrain geometry for candidate landing sites at the Moon's south pole.\n\nFour numbers decide a mission and this API exists to serve them:\n\n1. **Sunlit seconds** in the window \u2014 power\n2. **Earth-contact seconds** in the window \u2014 direct-to-Earth comms\n3. **Longest unbroken dark gap** \u2014 survival\n4. **Longest unbroken comms blackout** \u2014 autonomy\n\nThere is deliberately **no composite score**. A score ranks sites on one axis and\nhides which corner was given up, and the trade is the product.\n\nEvery response carries a `meta` object with `computed_at`, `resolution` and\n`uncertainty`. `uncertainty` is never absent and never null: where a value cannot\nbe known, the field says so (`grazing: true`, `edge_timing_s: null`) rather than\nreporting a plausible number.\n\n**Not an official product of any space agency.** Data product names are the public\nidentifiers of the inputs, nothing more.\n",
+    "version": "hz-1/vis-1"
+  },
+  "paths": {
+    "/api/v1/healthz": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Liveness plus kernel-loaded check",
+        "operationId": "healthz_api_v1_healthz_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sites": {
+      "get": {
+        "tags": [
+          "sites"
+        ],
+        "summary": "List candidate sites",
+        "operationId": "list_sites_api_v1_sites_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Substring of the name or region.",
+              "title": "Q"
+            },
+            "description": "Substring of the name or region."
+          },
+          {
+            "name": "region",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Region"
+            }
+          },
+          {
+            "name": "lat_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 0.0,
+                  "minimum": -90.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lat Min"
+            }
+          },
+          {
+            "name": "lat_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 0.0,
+                  "minimum": -90.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lat Max"
+            }
+          },
+          {
+            "name": "min_sun_fraction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 1.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Coarse filter against the reference window, not the window on screen. Sites without a precompute are excluded when this is set, because they cannot be judged against it.",
+              "title": "Min Sun Fraction"
+            },
+            "description": "Coarse filter against the reference window, not the window on screen. Sites without a precompute are excluded when this is set, because they cannot be judged against it."
+          },
+          {
+            "name": "max_longest_dark_s",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Max Longest Dark S"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sites/{site_id}": {
+      "get": {
+        "tags": [
+          "sites"
+        ],
+        "summary": "Site detail with provenance",
+        "operationId": "get_site_api_v1_sites__site_id__get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Site slug, e.g. `connecting-ridge`.",
+              "title": "Site Id"
+            },
+            "description": "Site slug, e.g. `connecting-ridge`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sites/{site_id}/horizon": {
+      "get": {
+        "tags": [
+          "sites"
+        ],
+        "summary": "Azimuth to skyline elevation",
+        "operationId": "get_horizon_api_v1_sites__site_id__horizon_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Site slug, e.g. `connecting-ridge`.",
+              "title": "Site Id"
+            },
+            "description": "Site slug, e.g. `connecting-ridge`."
+          },
+          {
+            "name": "step_deg",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "description": "Output angular step. Must divide 360 and be a multiple of the stored 0.25 deg resolution.",
+              "default": 1.0,
+              "title": "Step Deg"
+            },
+            "description": "Output angular step. Must divide 360 and be a multiple of the stored 0.25 deg resolution."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HorizonResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sites/{site_id}/timeline": {
+      "get": {
+        "tags": [
+          "sites"
+        ],
+        "summary": "Sun and Earth track",
+        "operationId": "get_timeline_api_v1_sites__site_id__timeline_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Site slug, e.g. `connecting-ridge`.",
+              "title": "Site Id"
+            },
+            "description": "Site slug, e.g. `connecting-ridge`."
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Window start, ISO 8601 UTC. Defaults to the reference window.",
+              "title": "Start"
+            },
+            "description": "Window start, ISO 8601 UTC. Defaults to the reference window."
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Window end, ISO 8601 UTC.",
+              "title": "End"
+            },
+            "description": "Window end, ISO 8601 UTC."
+          },
+          {
+            "name": "step_s",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 86400,
+                  "minimum": 60
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sampling step in seconds. Bounds are enforced by the service, which returns a 422 explaining the limit rather than silently clamping.",
+              "title": "Step S"
+            },
+            "description": "Sampling step in seconds. Bounds are enforced by the service, which returns a 422 explaining the limit rather than silently clamping."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimelineResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sites/{site_id}/windows": {
+      "get": {
+        "tags": [
+          "sites"
+        ],
+        "summary": "Lit/dark and link/blackout intervals",
+        "operationId": "get_windows_api_v1_sites__site_id__windows_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Site slug, e.g. `connecting-ridge`.",
+              "title": "Site Id"
+            },
+            "description": "Site slug, e.g. `connecting-ridge`."
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Window start, ISO 8601 UTC. Defaults to the reference window.",
+              "title": "Start"
+            },
+            "description": "Window start, ISO 8601 UTC. Defaults to the reference window."
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Window end, ISO 8601 UTC.",
+              "title": "End"
+            },
+            "description": "Window end, ISO 8601 UTC."
+          },
+          {
+            "name": "step_s",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 86400,
+                  "minimum": 60
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sampling step in seconds. Bounds are enforced by the service, which returns a 422 explaining the limit rather than silently clamping.",
+              "title": "Step S"
+            },
+            "description": "Sampling step in seconds. Bounds are enforced by the service, which returns a 422 explaining the limit rather than silently clamping."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WindowsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sites/{site_id}/metrics": {
+      "get": {
+        "tags": [
+          "sites"
+        ],
+        "summary": "The four key numbers",
+        "operationId": "get_metrics_api_v1_sites__site_id__metrics_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Site slug, e.g. `connecting-ridge`.",
+              "title": "Site Id"
+            },
+            "description": "Site slug, e.g. `connecting-ridge`."
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Window start, ISO 8601 UTC. Defaults to the reference window.",
+              "title": "Start"
+            },
+            "description": "Window start, ISO 8601 UTC. Defaults to the reference window."
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Window end, ISO 8601 UTC.",
+              "title": "End"
+            },
+            "description": "Window end, ISO 8601 UTC."
+          },
+          {
+            "name": "step_s",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 86400,
+                  "minimum": 60
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sampling step in seconds. Bounds are enforced by the service, which returns a 422 explaining the limit rather than silently clamping.",
+              "title": "Step S"
+            },
+            "description": "Sampling step in seconds. Bounds are enforced by the service, which returns a 422 explaining the limit rather than silently clamping."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/compare": {
+      "post": {
+        "tags": [
+          "compare"
+        ],
+        "summary": "Rank sites over one window",
+        "operationId": "post_compare_api_v1_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompareResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tiles/{layer}/{z}/{x}/{y}.png": {
+      "get": {
+        "tags": [
+          "tiles"
+        ],
+        "summary": "Terrain hillshade, approximate illumination and approximate PSR",
+        "operationId": "get_tile_api_v1_tiles__layer___z___x___y__png_get",
+        "parameters": [
+          {
+            "name": "layer",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "One of hillshade, illumination, psr.",
+              "title": "Layer"
+            },
+            "description": "One of hillshade, illumination, psr."
+          },
+          {
+            "name": "z",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 7,
+              "minimum": 0,
+              "title": "Z"
+            }
+          },
+          {
+            "name": "x",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "title": "X"
+            }
+          },
+          {
+            "name": "y",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "title": "Y"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tile image.",
+            "content": {
+              "image/png": {}
+            }
+          },
+          "204": {
+            "description": "Inside the grid, but no data there."
+          },
+          "404": {
+            "description": "Unknown layer, or z/x/y outside the tile scheme."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/explain": {
+      "post": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "A1 Site Explainer",
+        "operationId": "explain_api_v1_agents_explain_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExplainRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/advise": {
+      "post": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "A2 Trade-off Advisor",
+        "operationId": "advise_api_v1_agents_advise_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdviseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/brief": {
+      "post": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "A3 Audience Writer",
+        "operationId": "write_brief_api_v1_agents_brief_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BriefRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/ask": {
+      "post": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "A4 Question Answerer",
+        "operationId": "ask_api_v1_agents_ask_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/runs": {
+      "get": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Recent agent runs (the demo log)",
+        "description": "Every agent invocation, whatever its outcome.\n\nShown in the demo. It is the proof that the AI layer is real, bounded and\nchecked -- including the runs where the guard rejected an answer, which are\nthe interesting ones.",
+        "operationId": "runs_api_v1_agents_runs_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "agent",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Agent"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRunList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Liveness plus kernel-loaded check",
+        "operationId": "healthz_healthz_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AdviseRequest": {
+        "properties": {
+          "requirement": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 3,
+            "title": "Requirement",
+            "description": "A mission requirement in plain language, e.g. 'at least 4 hours of Earth contact per day and no night longer than 100 hours'."
+          },
+          "start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "requirement"
+        ],
+        "title": "AdviseRequest"
+      },
+      "AgentResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "insufficient_data",
+              "degraded"
+            ],
+            "title": "Status"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "provenance": {
+            "items": {
+              "$ref": "#/components/schemas/ProvenanceItem"
+            },
+            "type": "array",
+            "title": "Provenance"
+          },
+          "tool_calls": {
+            "items": {
+              "$ref": "#/components/schemas/ToolCallView"
+            },
+            "type": "array",
+            "title": "Tool Calls"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts",
+            "default": 1
+          },
+          "latency_ms": {
+            "type": "number",
+            "title": "Latency Ms",
+            "default": 0.0
+          },
+          "guard_failures": {
+            "items": {
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Guard Failures",
+            "description": "Guards that fired, including ones a retry then fixed. Kept so the guard can be shown working rather than asserted to exist."
+          },
+          "meta": {
+            "type": "object",
+            "title": "Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "AgentResponse",
+        "description": "Shared envelope for all four agents.\n\n`provenance` is produced by the grounding guard, not by the model, and is\nnot optional. It is the artifact that makes the guard demonstrable rather\nthan merely claimed."
+      },
+      "AgentRunList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AgentRunView"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "AgentRunList"
+      },
+      "AgentRunView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "agent": {
+            "type": "string",
+            "title": "Agent"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts"
+          },
+          "latency_ms": {
+            "type": "number",
+            "title": "Latency Ms"
+          },
+          "prompt_tokens": {
+            "type": "integer",
+            "title": "Prompt Tokens"
+          },
+          "completion_tokens": {
+            "type": "integer",
+            "title": "Completion Tokens"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "tool_calls": {
+            "items": {
+              "$ref": "#/components/schemas/ToolCallView"
+            },
+            "type": "array",
+            "title": "Tool Calls"
+          },
+          "guard_failures": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guard Failures"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "agent",
+          "model",
+          "status",
+          "attempts",
+          "latency_ms",
+          "prompt_tokens",
+          "completion_tokens",
+          "created_at",
+          "tool_calls"
+        ],
+        "title": "AgentRunView"
+      },
+      "Arc": {
+        "properties": {
+          "up": {
+            "type": "boolean",
+            "title": "Up"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End"
+          },
+          "duration_s": {
+            "type": "number",
+            "title": "Duration S"
+          },
+          "tolerance_s": {
+            "type": "number",
+            "title": "Tolerance S",
+            "description": "Half-width of the timing uncertainty on this arc's edges."
+          },
+          "grazing": {
+            "type": "boolean",
+            "title": "Grazing",
+            "description": "True when a crossing is too shallow to time. The duration stands; its edges do not."
+          },
+          "blocked_by_bearing_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocked By Bearing Deg",
+            "description": "For a blocked arc, the bearing of the terrain doing the blocking. Naming the cause is the difference between an answer and an assertion."
+          },
+          "blocked_by_el_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocked By El Deg"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "up",
+          "start",
+          "end",
+          "duration_s",
+          "tolerance_s",
+          "grazing"
+        ],
+        "title": "Arc",
+        "description": "One unbroken stretch above or below the skyline."
+      },
+      "AskRequest": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 3,
+            "title": "Question"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "AskRequest"
+      },
+      "Autonomy": {
+        "properties": {
+          "worst_compound_s": {
+            "type": "number",
+            "title": "Worst Compound S"
+          },
+          "required_autonomy_s": {
+            "type": "number",
+            "title": "Required Autonomy S"
+          },
+          "survival_needed_s": {
+            "type": "number",
+            "title": "Survival Needed S",
+            "description": "If the worst blackout falls inside a night, the battery must carry the whole night, not just the silence."
+          },
+          "compound_inside_dark": {
+            "type": "boolean",
+            "title": "Compound Inside Dark"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "worst_compound_s",
+          "required_autonomy_s",
+          "survival_needed_s",
+          "compound_inside_dark"
+        ],
+        "title": "Autonomy"
+      },
+      "BodyTimeline": {
+        "properties": {
+          "az_deg": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Az Deg"
+          },
+          "el_deg": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "El Deg"
+          },
+          "mask_el_deg": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Mask El Deg"
+          },
+          "margin_deg": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Margin Deg"
+          },
+          "state": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "State",
+            "description": "2 = lit/in contact, 1 = penumbral, 0 = dark/blocked."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "az_deg",
+          "el_deg",
+          "mask_el_deg",
+          "margin_deg",
+          "state"
+        ],
+        "title": "BodyTimeline"
+      },
+      "BodyWindows": {
+        "properties": {
+          "body": {
+            "type": "string",
+            "enum": [
+              "sun",
+              "earth"
+            ],
+            "title": "Body"
+          },
+          "arcs": {
+            "items": {
+              "$ref": "#/components/schemas/Arc"
+            },
+            "type": "array",
+            "title": "Arcs"
+          },
+          "up_s": {
+            "type": "number",
+            "title": "Up S"
+          },
+          "down_s": {
+            "type": "number",
+            "title": "Down S"
+          },
+          "fraction_up": {
+            "type": "number",
+            "title": "Fraction Up"
+          },
+          "longest_down_s": {
+            "type": "number",
+            "title": "Longest Down S"
+          },
+          "longest_down_tolerance_s": {
+            "type": "number",
+            "title": "Longest Down Tolerance S"
+          },
+          "longest_down_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longest Down Start"
+          },
+          "longest_down_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longest Down End"
+          },
+          "grazing": {
+            "type": "boolean",
+            "title": "Grazing"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "body",
+          "arcs",
+          "up_s",
+          "down_s",
+          "fraction_up",
+          "longest_down_s",
+          "longest_down_tolerance_s",
+          "grazing"
+        ],
+        "title": "BodyWindows"
+      },
+      "BriefRequest": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id"
+        ],
+        "title": "BriefRequest"
+      },
+      "CompareItem": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "rank": {
+            "type": "integer",
+            "title": "Rank"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/MetricsResponse"
+          },
+          "delta_vs_best": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Delta Vs Best"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "rank",
+          "metrics",
+          "delta_vs_best"
+        ],
+        "title": "CompareItem"
+      },
+      "CompareRequest": {
+        "properties": {
+          "site_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Site Ids"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "step_s": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 86400.0,
+                "minimum": 60.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step S"
+          },
+          "rank_by": {
+            "type": "string",
+            "title": "Rank By",
+            "description": "One of sunlit_s, earth_contact_s, longest_dark_s, longest_blackout_s. There is no composite option by design.",
+            "default": "longest_dark_s"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_ids"
+        ],
+        "title": "CompareRequest"
+      },
+      "CompareResponse": {
+        "properties": {
+          "window": {
+            "$ref": "#/components/schemas/CompareWindow"
+          },
+          "rank_by": {
+            "type": "string",
+            "title": "Rank By"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CompareItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "ties": {
+            "items": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Ties",
+            "description": "Groups whose metric differs by less than the tie tolerance. Reported rather than ordered: ranking sites the data cannot distinguish asserts a difference that is not there."
+          },
+          "unavailable": {
+            "items": {
+              "$ref": "#/components/schemas/Unavailable"
+            },
+            "type": "array",
+            "title": "Unavailable",
+            "description": "Sites that could not be computed. One unsurveyed site does not blank the comparison."
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "window",
+          "rank_by",
+          "items",
+          "ties",
+          "unavailable",
+          "meta"
+        ],
+        "title": "CompareResponse"
+      },
+      "CompareWindow": {
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End"
+          },
+          "step_s": {
+            "type": "integer",
+            "title": "Step S"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "step_s"
+        ],
+        "title": "CompareWindow"
+      },
+      "CompoundEvent": {
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End"
+          },
+          "duration_s": {
+            "type": "number",
+            "title": "Duration S"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "duration_s"
+        ],
+        "title": "CompoundEvent"
+      },
+      "DemHealth": {
+        "properties": {
+          "regional_present": {
+            "type": "boolean",
+            "title": "Regional Present"
+          },
+          "fine_windows": {
+            "type": "integer",
+            "title": "Fine Windows",
+            "description": "Per-site high-resolution windows on disk."
+          },
+          "product": {
+            "type": "string",
+            "title": "Product"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "regional_present",
+          "fine_windows",
+          "product"
+        ],
+        "title": "DemHealth"
+      },
+      "ExplainRequest": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id"
+        ],
+        "title": "ExplainRequest"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded",
+              "down"
+            ],
+            "title": "Status",
+            "description": "`degraded` still returns 200: a missing elevation model leaves every ephemeris endpoint working and the UI has a state for partial data. Only a missing ephemeris or database is `down`."
+          },
+          "engine_version": {
+            "type": "string",
+            "title": "Engine Version"
+          },
+          "kernels": {
+            "$ref": "#/components/schemas/KernelHealth"
+          },
+          "db": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "down"
+            ],
+            "title": "Db"
+          },
+          "redis": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "bypass"
+            ],
+            "title": "Redis"
+          },
+          "dem": {
+            "$ref": "#/components/schemas/DemHealth"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "engine_version",
+          "kernels",
+          "db",
+          "redis",
+          "dem"
+        ],
+        "title": "HealthResponse"
+      },
+      "HorizonResponse": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "azimuth_step_deg": {
+            "type": "number",
+            "title": "Azimuth Step Deg"
+          },
+          "azimuth_count": {
+            "type": "integer",
+            "title": "Azimuth Count"
+          },
+          "el_deg": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "El Deg"
+          },
+          "range_m": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Range M"
+          },
+          "tol_deg": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Tol Deg"
+          },
+          "max_el_deg": {
+            "type": "number",
+            "title": "Max El Deg"
+          },
+          "max_el_bearing_deg": {
+            "type": "number",
+            "title": "Max El Bearing Deg"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "azimuth_step_deg",
+          "azimuth_count",
+          "el_deg",
+          "range_m",
+          "tol_deg",
+          "max_el_deg",
+          "max_el_bearing_deg",
+          "meta"
+        ],
+        "title": "HorizonResponse",
+        "description": "Azimuth -> skyline elevation.\n\nParallel arrays rather than objects: 1440 entries x 3 fields is ~60 KB as\narrays and ~250 KB as a list of objects, and the frontend indexes them by\nbin anyway."
+      },
+      "HorizonSummary": {
+        "properties": {
+          "max_el_deg": {
+            "type": "number",
+            "title": "Max El Deg"
+          },
+          "max_el_bearing_deg": {
+            "type": "number",
+            "title": "Max El Bearing Deg"
+          },
+          "mean_el_deg": {
+            "type": "number",
+            "title": "Mean El Deg"
+          },
+          "coverage": {
+            "type": "number",
+            "title": "Coverage"
+          },
+          "dem_product": {
+            "type": "string",
+            "title": "Dem Product"
+          },
+          "computed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Computed At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "max_el_deg",
+          "max_el_bearing_deg",
+          "mean_el_deg",
+          "coverage",
+          "dem_product",
+          "computed_at"
+        ],
+        "title": "HorizonSummary"
+      },
+      "KernelHealth": {
+        "properties": {
+          "loaded": {
+            "type": "boolean",
+            "title": "Loaded"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "furnsh_ms": {
+            "type": "number",
+            "title": "Furnsh Ms"
+          },
+          "missing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "loaded",
+          "count",
+          "furnsh_ms",
+          "missing"
+        ],
+        "title": "KernelHealth"
+      },
+      "Meta": {
+        "properties": {
+          "computed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Computed At"
+          },
+          "resolution": {
+            "$ref": "#/components/schemas/Resolution"
+          },
+          "uncertainty": {
+            "$ref": "#/components/schemas/Uncertainty"
+          },
+          "engine_version": {
+            "type": "string",
+            "title": "Engine Version"
+          },
+          "cache": {
+            "type": "string",
+            "enum": [
+              "hit",
+              "miss",
+              "bypass"
+            ],
+            "title": "Cache",
+            "default": "miss"
+          },
+          "compute_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compute Ms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "computed_at",
+          "resolution",
+          "uncertainty",
+          "engine_version"
+        ],
+        "title": "Meta"
+      },
+      "MetricsResponse": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End"
+          },
+          "sunlit_s": {
+            "type": "number",
+            "title": "Sunlit S"
+          },
+          "earth_contact_s": {
+            "type": "number",
+            "title": "Earth Contact S"
+          },
+          "longest_dark_s": {
+            "type": "number",
+            "title": "Longest Dark S"
+          },
+          "longest_blackout_s": {
+            "type": "number",
+            "title": "Longest Blackout S"
+          },
+          "sun_fraction_up": {
+            "type": "number",
+            "title": "Sun Fraction Up"
+          },
+          "earth_fraction_up": {
+            "type": "number",
+            "title": "Earth Fraction Up"
+          },
+          "worst_compound_s": {
+            "type": "number",
+            "title": "Worst Compound S"
+          },
+          "autonomy": {
+            "$ref": "#/components/schemas/Autonomy"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "start",
+          "end",
+          "sunlit_s",
+          "earth_contact_s",
+          "longest_dark_s",
+          "longest_blackout_s",
+          "sun_fraction_up",
+          "earth_fraction_up",
+          "worst_compound_s",
+          "autonomy",
+          "meta"
+        ],
+        "title": "MetricsResponse",
+        "description": "The four numbers. There is deliberately no composite score.\n\nA score ranks sites on one axis, which destroys exactly the information this\nproduct exists to show: which corner a site gives up. The absence of a\n`score` field here is asserted by a test."
+      },
+      "Provenance": {
+        "properties": {
+          "anchor_lat_deg": {
+            "type": "number",
+            "title": "Anchor Lat Deg"
+          },
+          "anchor_lon_deg": {
+            "type": "number",
+            "title": "Anchor Lon Deg"
+          },
+          "search_kind": {
+            "type": "string",
+            "title": "Search Kind"
+          },
+          "search_inner_km": {
+            "type": "number",
+            "title": "Search Inner Km"
+          },
+          "search_outer_km": {
+            "type": "number",
+            "title": "Search Outer Km"
+          },
+          "offset_from_anchor_km": {
+            "type": "number",
+            "title": "Offset From Anchor Km"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "source_note": {
+            "type": "string",
+            "title": "Source Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "anchor_lat_deg",
+          "anchor_lon_deg",
+          "search_kind",
+          "search_inner_km",
+          "search_outer_km",
+          "offset_from_anchor_km",
+          "source",
+          "source_url",
+          "source_note"
+        ],
+        "title": "Provenance",
+        "description": "How a site's coordinate came to exist.\n\nCarried on every site because these coordinates are *derived* -- the IAU\ncoordinate for a named crater is its centre, which is the permanently\nshadowed floor and the worst place to land. A site that did not say how it\nwas chosen would be asking to be trusted for no reason."
+      },
+      "ProvenanceItem": {
+        "properties": {
+          "claim": {
+            "type": "string",
+            "title": "Claim"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "tool": {
+            "type": "string",
+            "title": "Tool"
+          },
+          "call_seq": {
+            "type": "integer",
+            "title": "Call Seq"
+          },
+          "field": {
+            "type": "string",
+            "title": "Field"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "claim",
+          "value",
+          "tool",
+          "call_seq",
+          "field"
+        ],
+        "title": "ProvenanceItem"
+      },
+      "Resolution": {
+        "properties": {
+          "azimuth_deg": {
+            "type": "number",
+            "title": "Azimuth Deg",
+            "description": "Angular step of the horizon mask, degrees."
+          },
+          "azimuth_count": {
+            "type": "integer",
+            "title": "Azimuth Count"
+          },
+          "time_step_s": {
+            "type": "integer",
+            "title": "Time Step S",
+            "description": "Sampling step of the timeline, seconds."
+          },
+          "max_range_m": {
+            "type": "number",
+            "title": "Max Range M",
+            "description": "How far terrain was modelled around the site."
+          },
+          "dem_product": {
+            "type": "string",
+            "title": "Dem Product"
+          },
+          "dem_resolution_m": {
+            "type": "number",
+            "title": "Dem Resolution M"
+          },
+          "ephemeris": {
+            "type": "string",
+            "title": "Ephemeris"
+          },
+          "frame": {
+            "type": "string",
+            "title": "Frame"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "azimuth_deg",
+          "azimuth_count",
+          "time_step_s",
+          "max_range_m",
+          "dem_product",
+          "dem_resolution_m",
+          "ephemeris",
+          "frame"
+        ],
+        "title": "Resolution",
+        "description": "What this answer was computed at."
+      },
+      "SiteBrief": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "region": {
+            "type": "string",
+            "title": "Region"
+          },
+          "lat_deg": {
+            "type": "number",
+            "title": "Lat Deg"
+          },
+          "lon_deg": {
+            "type": "number",
+            "title": "Lon Deg"
+          },
+          "elev_m": {
+            "type": "number",
+            "title": "Elev M"
+          },
+          "slope_deg": {
+            "type": "number",
+            "title": "Slope Deg"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SiteSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "region",
+          "lat_deg",
+          "lon_deg",
+          "elev_m",
+          "slope_deg",
+          "note"
+        ],
+        "title": "SiteBrief"
+      },
+      "SiteDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "region": {
+            "type": "string",
+            "title": "Region"
+          },
+          "lat_deg": {
+            "type": "number",
+            "title": "Lat Deg"
+          },
+          "lon_deg": {
+            "type": "number",
+            "title": "Lon Deg"
+          },
+          "elev_m": {
+            "type": "number",
+            "title": "Elev M"
+          },
+          "slope_deg": {
+            "type": "number",
+            "title": "Slope Deg"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SiteSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/Provenance"
+          },
+          "horizon": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HorizonSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "region",
+          "lat_deg",
+          "lon_deg",
+          "elev_m",
+          "slope_deg",
+          "note",
+          "provenance",
+          "meta"
+        ],
+        "title": "SiteDetail"
+      },
+      "SiteList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SiteBrief"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "meta"
+        ],
+        "title": "SiteList"
+      },
+      "SiteSummary": {
+        "properties": {
+          "sunlit_s": {
+            "type": "number",
+            "title": "Sunlit S"
+          },
+          "earth_contact_s": {
+            "type": "number",
+            "title": "Earth Contact S"
+          },
+          "longest_dark_s": {
+            "type": "number",
+            "title": "Longest Dark S"
+          },
+          "longest_blackout_s": {
+            "type": "number",
+            "title": "Longest Blackout S"
+          },
+          "sun_fraction_up": {
+            "type": "number",
+            "title": "Sun Fraction Up"
+          },
+          "earth_fraction_up": {
+            "type": "number",
+            "title": "Earth Fraction Up"
+          },
+          "worst_compound_s": {
+            "type": "number",
+            "title": "Worst Compound S"
+          },
+          "grazing": {
+            "type": "boolean",
+            "title": "Grazing"
+          },
+          "reference_window_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Reference Window Start"
+          },
+          "reference_window_end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Reference Window End"
+          },
+          "reference_step_s": {
+            "type": "integer",
+            "title": "Reference Step S"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sunlit_s",
+          "earth_contact_s",
+          "longest_dark_s",
+          "longest_blackout_s",
+          "sun_fraction_up",
+          "earth_fraction_up",
+          "worst_compound_s",
+          "grazing",
+          "reference_window_start",
+          "reference_window_end",
+          "reference_step_s"
+        ],
+        "title": "SiteSummary",
+        "description": "Coarse four-numbers over the reference window.\n\n`null` on a site whose precompute has not run -- never zeros. A zero is a\nmeasurement; absence is absence, and the UI has a state for it."
+      },
+      "TimelineResponse": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End"
+          },
+          "step_s": {
+            "type": "integer",
+            "title": "Step S"
+          },
+          "t_s": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "T S",
+            "description": "Seconds from `start`, one per sample."
+          },
+          "sun": {
+            "$ref": "#/components/schemas/BodyTimeline"
+          },
+          "earth": {
+            "$ref": "#/components/schemas/BodyTimeline"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "start",
+          "end",
+          "step_s",
+          "t_s",
+          "sun",
+          "earth",
+          "meta"
+        ],
+        "title": "TimelineResponse"
+      },
+      "ToolCallView": {
+        "properties": {
+          "seq": {
+            "type": "integer",
+            "title": "Seq"
+          },
+          "tool": {
+            "type": "string",
+            "title": "Tool"
+          },
+          "args": {
+            "type": "object",
+            "title": "Args"
+          },
+          "latency_ms": {
+            "type": "number",
+            "title": "Latency Ms"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "number_count": {
+            "type": "integer",
+            "title": "Number Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "seq",
+          "tool",
+          "args",
+          "latency_ms",
+          "number_count"
+        ],
+        "title": "ToolCallView",
+        "description": "One tool call, as shown in the demo's run log."
+      },
+      "Unavailable": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "reason"
+        ],
+        "title": "Unavailable"
+      },
+      "Uncertainty": {
+        "properties": {
+          "dem_vertical_error_m": {
+            "type": "number",
+            "title": "Dem Vertical Error M"
+          },
+          "dem_resolution_m": {
+            "type": "number",
+            "title": "Dem Resolution M"
+          },
+          "coverage": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Coverage",
+            "description": "Fraction of sampled terrain that fell inside the elevation model. Below 1.0 the mask is partial and the numbers are likely optimistic."
+          },
+          "horizon_el_deg": {
+            "type": "number",
+            "title": "Horizon El Deg",
+            "description": "Angular uncertainty of the skyline, from the DEM's vertical error at the range where the skyline is actually set."
+          },
+          "edge_timing_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edge Timing S",
+            "description": "Worst arc-edge timing uncertainty in this response, seconds. null when at least one crossing is a graze -- see `grazing`. A null here is a stronger statement than a large number: the edge is not knowable from this data."
+          },
+          "grazing": {
+            "type": "boolean",
+            "title": "Grazing"
+          },
+          "penumbra_sun_deg": {
+            "type": "number",
+            "title": "Penumbra Sun Deg",
+            "description": "Apparent angular radius of the Sun from the Moon. The lit/dark boundary is soft by this much."
+          },
+          "penumbra_earth_deg": {
+            "type": "number",
+            "title": "Penumbra Earth Deg"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dem_vertical_error_m",
+          "dem_resolution_m",
+          "coverage",
+          "horizon_el_deg",
+          "edge_timing_s",
+          "grazing",
+          "penumbra_sun_deg",
+          "penumbra_earth_deg",
+          "notes"
+        ],
+        "title": "Uncertainty",
+        "description": "How wrong this could be, in the units the caller is reading."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "WindowsResponse": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End"
+          },
+          "sun": {
+            "$ref": "#/components/schemas/BodyWindows"
+          },
+          "earth": {
+            "$ref": "#/components/schemas/BodyWindows"
+          },
+          "compound": {
+            "items": {
+              "$ref": "#/components/schemas/CompoundEvent"
+            },
+            "type": "array",
+            "title": "Compound"
+          },
+          "worst_compound_s": {
+            "type": "number",
+            "title": "Worst Compound S"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "start",
+          "end",
+          "sun",
+          "earth",
+          "compound",
+          "worst_compound_s",
+          "meta"
+        ],
+        "title": "WindowsResponse"
+      }
+    }
+  }
+}

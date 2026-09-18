@@ -1,0 +1,66 @@
+{
+  "engine_version": "hz-1/vis-1",
+  "generated_at": "2026-09-18T06:24:56.556999+00:00",
+  "reason": "initial fixtures from LOLA LDEM 80S + de440, engine hz-1/vis-1",
+  "window": {
+    "start": "2027-03-14T00:00:00+00:00",
+    "hours": 708.734,
+    "step_s": 900
+  },
+  "kernels": [
+    {
+      "name": "de440.bsp",
+      "bytes": 119799808
+    },
+    {
+      "name": "moon_de440_250416.tf",
+      "bytes": 19478
+    },
+    {
+      "name": "moon_pa_de440_200625.bpc",
+      "bytes": 12863488
+    },
+    {
+      "name": "naif0012.tls",
+      "bytes": 5257
+    },
+    {
+      "name": "pck00011.tpc",
+      "bytes": 131226
+    }
+  ],
+  "tolerances": {
+    "horizon_el_deg": 0.05,
+    "az_el_deg": 0.01,
+    "arc_edge_s": 72.0,
+    "metric_abs_s": 360.0,
+    "metric_rel": 0.001,
+    "compound_abs_s": 180.0
+  },
+  "sites": {
+    "connecting-ridge": {
+      "why": "near-polar, high and open: terrain decides, not season",
+      "lat_deg": -89.43804,
+      "lon_deg": 222.71699,
+      "elev_m": 1957.5,
+      "dem_product": "LOLA_LDEM_80S_20M",
+      "coverage": 1.0
+    },
+    "malapert-massif": {
+      "why": "far enough out that the Sun genuinely sets; seasonal",
+      "lat_deg": -85.98763,
+      "lon_deg": 2.0528,
+      "elev_m": 5172.0,
+      "dem_product": "LOLA_LDEM_80S_20M",
+      "coverage": 1.0
+    },
+    "faustini-rim": {
+      "why": "sheltered and low: a long night no ridge is responsible for",
+      "lat_deg": -86.64464,
+      "lon_deg": 71.6505,
+      "elev_m": 575.0,
+      "dem_product": "LOLA_LDEM_80S_20M",
+      "coverage": 1.0
+    }
+  }
+}

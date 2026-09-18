@@ -1,0 +1,21 @@
+{
+  "sunlit_s": 370540.8101444209,
+  "earth_contact_s": 1002173.3546312058,
+  "longest_dark_s": 2180059.1899507083,
+  "longest_blackout_s": 1548426.6454639232,
+  "worst_compound_s": 1548426.6454639232,
+  "sun_fraction_up": 0.14527593904595035,
+  "earth_fraction_up": 0.3929167076742053,
+  "sun_arc_count": 3,
+  "earth_arc_count": 3,
+  "sun_arc_edges_s": [
+    0.0,
+    306148.45754490857,
+    2486207.6474956167
+  ],
+  "earth_arc_edges_s": [
+    0.0,
+    319015.92012576555,
+    1867442.5655896887
+  ]
+}
