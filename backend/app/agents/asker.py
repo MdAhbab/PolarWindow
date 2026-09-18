@@ -13,10 +13,9 @@ misinterpretation instead of silently acting on it.
 
 from __future__ import annotations
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.agents.base import AgentOutcome, AgentSpec, run_agent
 from app.agents.schemas import QuestionAnswer
+from app.agents.tools import Session
 
 SYSTEM = """\
 You answer questions about candidate lunar south pole landing sites using the
@@ -49,5 +48,5 @@ SPEC = AgentSpec(
 )
 
 
-async def ask(session: AsyncSession, question: str) -> AgentOutcome:
+async def ask(session: Session, question: str) -> AgentOutcome:
     return await run_agent(session, SPEC, f"Question: {question}", {"question": question})

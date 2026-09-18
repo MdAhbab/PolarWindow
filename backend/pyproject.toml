@@ -183,15 +183,19 @@ allow_indirect_imports = true
 name = "spiceypy is reachable only through core.spice"
 type = "forbidden"
 allow_indirect_imports = true
-source_modules = ["app.api", "app.services", "app.db", "app.agents", "app.workers", "app.core.horizon", "app.core.intervals", "app.core.metrics", "app.core.visibility"]
+source_modules = [
+    "app.api", "app.services", "app.db", "app.agents", "app.workers", "app.data",
+    "app.core.horizon", "app.core.intervals", "app.core.metrics", "app.core.visibility",
+    "app.core.timeline", "app.core.projections", "app.core.kernels",
+]
 forbidden_modules = ["spiceypy"]
 
 [[tool.importlinter.contracts]]
-name = "services never import fastapi"
+name = "only the API layer imports fastapi"
 type = "forbidden"
 allow_indirect_imports = true
-source_modules = ["app.services", "app.agents"]
-forbidden_modules = ["fastapi"]
+source_modules = ["app.services", "app.agents", "app.workers", "app.db", "app.data", "app.core"]
+forbidden_modules = ["fastapi", "starlette"]
 
 [[tool.importlinter.contracts]]
 name = "routes never touch ORM models or the ORM itself"
@@ -203,6 +207,16 @@ type = "forbidden"
 allow_indirect_imports = true
 source_modules = ["app.api"]
 forbidden_modules = ["app.db.models", "sqlalchemy"]
+
+[[tool.importlinter.contracts]]
+name = "routes reach the domain only through services"
+type = "forbidden"
+# Direct imports only, as above. A route may name a service and the opaque
+# session dependency; it may not open a raster, a repository or the SPICE
+# library itself. The tile and health routes used to do all three.
+allow_indirect_imports = true
+source_modules = ["app.api"]
+forbidden_modules = ["app.data", "app.db.repositories", "app.core.spice", "rasterio", "spiceypy"]
 
 [[tool.importlinter.contracts]]
 name = "agents reach the domain only through tools.py"
@@ -223,7 +237,11 @@ source_modules = [
 # agent reading the domain. Those are different concerns and do not share a door.
 forbidden_modules = [
     "app.db",
+    "sqlalchemy",
     "app.services.site_service",
     "app.services.compare_service",
     "app.services.geometry_service",
+    "app.services.cache",
+    "app.services.tile_service",
+    "app.services.health_service",
 ]

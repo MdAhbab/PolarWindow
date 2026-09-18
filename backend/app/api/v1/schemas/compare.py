@@ -36,7 +36,12 @@ class CompareItem(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     site_id: str
-    rank: int
+    position: int = Field(description="1-based place in `items`; strictly increasing.")
+    rank: int = Field(
+        description="Competition rank: sites the data cannot distinguish share their "
+        "group leader's rank (1, 1, 3), so a tie is never printed as an order."
+    )
+    tied: bool = Field(description="This site is in one of the `ties` groups.")
     metrics: MetricsResponse
     delta_vs_best: dict[str, float]
 

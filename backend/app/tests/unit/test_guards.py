@@ -178,3 +178,82 @@ def test_percent_and_fraction_are_the_same_claim() -> None:
 def test_comma_separated_numbers_are_parsed() -> None:
     out = {"status": "ok", "paragraph": "Sunlit for 2,067,804 seconds."}
     assert guards.check(out, [METRICS]).ok
+
+
+# ---------------------------------------------------------------------------
+# Adversarial: each of these passed the guard unchecked before it was hardened
+# ---------------------------------------------------------------------------
+
+POOL = [
+    {
+        "seq": 1,
+        "tool": "get_metrics",
+        "result": {
+            "sunlit_s": 2067804.0,
+            "longest_dark_s": 437688.0,
+            "sun_fraction_up": 0.8103,
+            "earth_fraction_up": 0.09,
+        },
+    }
+]
+
+
+@pytest.mark.parametrize(
+    "prose,bad",
+    [
+        ("The night lasts 999h here.", 999.0),
+        ("The ridge is 873km away.", 873.0),
+        ("It gets 7e5 seconds of sun.", 700000.0),
+        ("Earth is visible only 7 % of the time.", 7.0),
+        ("A 10 h blackout follows.", 10.0),
+        ("The night lasts three hundred hours.", 300.0),
+        ("A fraction of .95 of the window is lit.", 0.95),
+        ("The skyline sits at \N{MINUS SIGN}2.4 degrees.", -2.4),
+    ],
+)
+def test_ungrounded_numbers_in_every_written_form_are_rejected(prose: str, bad: float) -> None:
+    """Unit suffixes, exponents, words, leading dots and Unicode minus signs.
+
+    The old number pattern required a non-word character after the digits and
+    exempted every integer up to twelve, so all of these passed unchecked.
+    """
+    verdict = guards.check_grounding({"paragraph": prose}, POOL)
+    assert not verdict.ok, f"{prose!r} passed the guard"
+    assert bad in [v.value for v in verdict.violations]
+
+
+@pytest.mark.parametrize(
+    "prose",
+    [
+        "Earth is visible only 9 % of the time.",
+        "The longest night is 122 h and it is sunlit 81 % of the window.",
+        "The night lasts one hundred and twenty-two hours.",
+        "From 14 March 2027 the site is lit 81 % of the time.",
+        "The window runs 2027-03-14T00:00:00Z to 2027-04-12T12:30:00Z.",
+        "Three documents cover the first site and one ridge.",
+    ],
+)
+def test_grounded_counted_and_dated_numbers_still_pass(prose: str) -> None:
+    """Hardening must not make the guard uselessly strict."""
+    verdict = guards.check_grounding({"paragraph": prose}, POOL)
+    assert verdict.ok, [v.detail for v in verdict.violations]
+
+
+def test_the_users_threshold_cannot_ground_a_measured_value() -> None:
+    """An observed value equal to the requirement is the classic hallucination.
+
+    With one shared pool the user's "600 hours" grounded a structured
+    `observed_value` of 600 -- measuring the site against itself.
+    """
+    pool = [
+        *POOL,
+        {
+            "seq": 0,
+            "tool": guards.USER_REQUEST_TOOL,
+            "result": {"requirement": "at least 600 hours of sunlight"},
+        },
+    ]
+    structured = {"ranked": [{"checks": [{"observed_value": 600.0}]}]}
+    assert not guards.check_grounding(structured, pool).ok
+    quoted = {"nothing_satisfies_message": "No site offers the 600 hours you asked for."}
+    assert guards.check_grounding(quoted, pool).ok

@@ -12,10 +12,9 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.agents.base import AgentOutcome, AgentSpec, run_agent
 from app.agents.schemas import SiteExplanation
+from app.agents.tools import Session
 from app.config import get_settings
 
 SYSTEM = """\
@@ -51,7 +50,7 @@ SPEC = AgentSpec(
 
 
 async def explain(
-    session: AsyncSession, site_id: str, start: str | None, end: str | None
+    session: Session, site_id: str, start: str | None, end: str | None
 ) -> AgentOutcome:
     from app.agents.base import prefetch
 

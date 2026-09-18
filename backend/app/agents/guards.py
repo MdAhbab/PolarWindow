@@ -43,20 +43,119 @@ from typing import Any
 #: Without this the guard is uselessly strict: "the first site", "one ridge",
 #: "2027" and "three documents" would all be violations, and the model would be
 #: forced into stilted prose to avoid them. Each entry is a specific, bounded
-#: exemption rather than a general tolerance.
+#: exemption rather than a general tolerance -- and a small number stops being
+#: exempt the moment it carries a unit (see ``_QUANTITY_AFTER``), because
+#: "9 %" and "10 h" are measurements, not counts.
 SMALL_COUNTING_MAX = 12
 YEAR_RANGE = (1900, 2200)
 
+#: A number as written. Deliberately permissive about what *follows* it: an
+#: earlier version required a non-word character after the digits, so "999h",
+#: "873km" and "7e5" were not seen as numbers at all and passed the guard
+#: unchecked. The lookbehind still refuses digits glued to a word on their left
+#: ("de440", "LDEM_80S"), which are identifiers, not claims.
 _NUMBER_RE = re.compile(
     r"""
-    (?<![\w.])            # not mid-identifier
-    (-?\d{1,3}(?:,\d{3})+(?:\.\d+)?   # 1,234.5
-    |-?\d+\.\d+                        # 1.5
-    |-?\d+)                            # 42
-    (?![\w])
+    (?<![\w.])                                   # not mid-identifier
+    (?P<num>
+        [-\u2212]?\d{1,3}(?:,\d{3})+(?:\.\d+)?     # 1,234.5
+      | [-\u2212]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?    # 42, 1.5, 7e5
+      | [-\u2212]?\.\d+                           # .95
+    )
     """,
     re.VERBOSE,
 )
+
+#: Units and quantity words that make a small integer a measurement.
+_QUANTITY_AFTER = re.compile(
+    r"""^\s*(?:
+        %|per\s?cent|percent
+      | h\b|hrs?\b|hours?\b|-hours?\b|-h\b
+      | d\b|days?\b|-days?\b
+      | min\b|minutes?\b|s\b|secs?\b|seconds?\b
+      | km\b|m\b|metres?\b|meters?\b|-metre\b|-meter\b
+      | °|deg\b|degrees?\b|-degree\b
+      | w\b|watts?\b|k\b|kelvin\b
+    )""",
+    re.VERBOSE | re.IGNORECASE,
+)
+
+#: Calendar dates are positions in time, not claims about a site. ISO stamps
+#: are removed before scanning; a day-of-month beside a month name is exempt.
+_ISO_DATETIME = re.compile(r"\b\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?Z?)?\b")
+_MONTHS = (
+    "january|february|march|april|may|june|july|august|september|october|november|december"
+    "|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec"
+)
+_DAY_MONTH = re.compile(rf"^\s*(?:st|nd|rd|th)?\s+(?:of\s+)?(?:{_MONTHS})\b", re.IGNORECASE)
+_MONTH_DAY = re.compile(rf"\b(?:{_MONTHS})\.?\s+$", re.IGNORECASE)
+
+#: Cardinal number words. Values up to twelve are counts in prose ("three
+#: documents") and are exempt exactly as the digits would be; anything larger
+#: written out in words -- "three hundred hours" -- is a claim and is checked.
+_UNITS_WORDS = {
+    "zero": 0,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10,
+    "eleven": 11,
+    "twelve": 12,
+    "thirteen": 13,
+    "fourteen": 14,
+    "fifteen": 15,
+    "sixteen": 16,
+    "seventeen": 17,
+    "eighteen": 18,
+    "nineteen": 19,
+}
+_TENS_WORDS = {
+    "twenty": 20,
+    "thirty": 30,
+    "forty": 40,
+    "fifty": 50,
+    "sixty": 60,
+    "seventy": 70,
+    "eighty": 80,
+    "ninety": 90,
+}
+_SCALE_WORDS = {"hundred": 100, "thousand": 1_000, "million": 1_000_000}
+_WORD_NUMBER_RE = re.compile(
+    r"\b(?:" + "|".join([*_UNITS_WORDS, *_TENS_WORDS, *_SCALE_WORDS]) + r")"
+    r"(?:(?:[\s-]+|\s+and\s+)(?:"
+    + "|".join([*_UNITS_WORDS, *_TENS_WORDS, *_SCALE_WORDS])
+    + r"))*\b",
+    re.IGNORECASE,
+)
+
+
+def _parse_number_words(phrase: str) -> float | None:
+    """'three hundred and twenty-two' -> 322. None when it is not one number."""
+    total = current = 0
+    seen = False
+    for word in re.split(r"[\s-]+", phrase.lower()):
+        if word == "and" or not word:
+            continue
+        if word in _UNITS_WORDS:
+            current += _UNITS_WORDS[word]
+        elif word in _TENS_WORDS:
+            current += _TENS_WORDS[word]
+        elif word == "hundred":
+            current = (current or 1) * 100
+        elif word in ("thousand", "million"):
+            total += (current or 1) * _SCALE_WORDS[word]
+            current = 0
+        else:
+            return None
+        seen = True
+    return float(total + current) if seen else None
+
 
 #: Per-cent and hour conversions the guard performs on tool values before
 #: comparing. Order matters only for reporting.
@@ -160,7 +259,67 @@ def _string_leaves(obj: Any, prefix: str = "") -> list[tuple[str, str]]:
     return out
 
 
-def extract_claim_numbers(obj: Any) -> list[tuple[str, float, str]]:
+@dataclass(frozen=True, slots=True)
+class Claim:
+    """One number the output asserts, and where."""
+
+    path: str
+    value: float
+    context: str
+    #: True for a number written in prose (a string leaf), False for a value
+    #: in a structured field. Only prose may quote the user's own request.
+    in_prose: bool
+    #: The number is a bare count: a small integer carrying no unit.
+    bare_count: bool = False
+    #: The number is a calendar position (a day of the month, a year).
+    is_date: bool = False
+
+
+def _scan_text(text: str, path: str) -> list[Claim]:
+    out: list[Claim] = []
+    cleaned = _ISO_DATETIME.sub(lambda m: " " * len(m.group(0)), text)
+    for m in _NUMBER_RE.finditer(cleaned):
+        raw = m.group("num").replace(",", "").replace("\u2212", "-")
+        try:
+            val = float(raw)
+        except ValueError:
+            continue
+        after = cleaned[m.end() : m.end() + 16]
+        before = cleaned[max(0, m.start() - 12) : m.start()]
+        is_int = val == int(val) and "." not in raw and "e" not in raw.lower()
+        is_date = (
+            is_int and 1 <= val <= 31 and bool(_DAY_MONTH.match(after) or _MONTH_DAY.search(before))
+        )
+        lo, hi = max(0, m.start() - 45), min(len(text), m.end() + 45)
+        out.append(
+            Claim(
+                path=path,
+                value=val,
+                context=text[lo:hi].strip(),
+                in_prose=True,
+                bare_count=is_int and not _QUANTITY_AFTER.match(after),
+                is_date=is_date,
+            )
+        )
+    for m in _WORD_NUMBER_RE.finditer(cleaned):
+        worded = _parse_number_words(m.group(0))
+        if worded is None:
+            continue
+        after = cleaned[m.end() : m.end() + 16]
+        lo, hi = max(0, m.start() - 45), min(len(text), m.end() + 45)
+        out.append(
+            Claim(
+                path=path,
+                value=worded,
+                context=text[lo:hi].strip(),
+                in_prose=True,
+                bare_count=not _QUANTITY_AFTER.match(after),
+            )
+        )
+    return out
+
+
+def extract_claims(obj: Any) -> list[Claim]:
     """Numbers asserted by an agent's output, from prose *and* structured fields.
 
     Walking the whole validated object, not just the free-text fields, is
@@ -168,24 +327,18 @@ def extract_claim_numbers(obj: Any) -> list[tuple[str, float, str]]:
     exactly as damaging as one in a sentence, and is less likely to be noticed
     by a reader.
     """
-    out: list[tuple[str, float, str]] = []
+    out: list[Claim] = []
 
     def walk(node: Any, path: str) -> None:
         if isinstance(node, bool):
             return
         if isinstance(node, int | float):
-            out.append((path, float(node), f"{path} = {node}"))
+            out.append(
+                Claim(path=path, value=float(node), context=f"{path} = {node}", in_prose=False)
+            )
             return
         if isinstance(node, str):
-            for m in _NUMBER_RE.finditer(node):
-                raw = m.group(1).replace(",", "")
-                try:
-                    val = float(raw)
-                except ValueError:
-                    continue
-                lo = max(0, m.start() - 45)
-                hi = min(len(node), m.end() + 45)
-                out.append((path, val, node[lo:hi].strip()))
+            out.extend(_scan_text(node, path))
             return
         if isinstance(node, dict):
             for k, v in node.items():
@@ -199,22 +352,46 @@ def extract_claim_numbers(obj: Any) -> list[tuple[str, float, str]]:
     return out
 
 
+def extract_claim_numbers(obj: Any) -> list[tuple[str, float, str]]:
+    """``(path, value, context)`` for every claim; see ``extract_claims``."""
+    return [(c.path, c.value, c.context) for c in extract_claims(obj)]
+
+
 # ---------------------------------------------------------------------------
 # The rules
 # ---------------------------------------------------------------------------
 
 
-def _is_exempt(value: float, claim: str) -> bool:
-    """Numbers that are not claims about the data."""
+def _is_exempt(claim: Claim) -> bool:
+    """Numbers that are not claims about the data.
+
+    A small integer is a count ("three documents", "the first site") only when
+    it carries no unit: the old rule exempted every integer up to twelve, so
+    "Earth is visible 9 % of the time" and "a 10 h blackout" were never checked.
+    Structured numeric fields are never exempt as counts -- a value in
+    ``observed_value`` is a measurement whatever its size.
+    """
+    value = claim.value
+    if claim.is_date:
+        return True
     if value != int(value):
         return False
     iv = int(value)
-    if YEAR_RANGE[0] <= iv <= YEAR_RANGE[1] and re.search(r"\b(19|20|21)\d{2}\b", claim):
+    if (
+        claim.in_prose
+        and YEAR_RANGE[0] <= iv <= YEAR_RANGE[1]
+        and re.search(r"\b(19|20|21)\d{2}\b", claim.context)
+    ):
         return True
-    # Small integers are counts and ordinals ("one ridge", "three documents",
-    # "the first site"). Anything the product actually reports is far larger:
-    # hours are tens to hundreds, per cents are tens, seconds are thousands.
-    return 0 <= iv <= SMALL_COUNTING_MAX
+    if claim.in_prose:
+        return claim.bare_count and 0 <= iv <= SMALL_COUNTING_MAX
+    # Ranks and counts in structured fields ("rank": 1) are small by nature and
+    # sit in fields whose meaning is a position, not a measurement.
+    return claim.path.rsplit(".", 1)[-1] in _STRUCTURED_COUNT_FIELDS and 0 <= iv <= 50
+
+
+#: Structured fields whose integers are positions or counts, not measurements.
+_STRUCTURED_COUNT_FIELDS = frozenset({"rank", "position", "count", "call_seq", "seq"})
 
 
 def _match(value: float, pool: list[tuple[str, float, str, int]]) -> tuple[str, str, int] | None:
@@ -248,34 +425,43 @@ def _match(value: float, pool: list[tuple[str, float, str, int]]) -> tuple[str, 
 
 
 def check_grounding(output: dict[str, Any], tool_results: list[dict[str, Any]]) -> Verdict:
-    """Every number in ``output`` must trace to ``tool_results``."""
-    pool: list[tuple[str, float, str, int]] = []
+    """Every number in ``output`` must trace to ``tool_results``.
+
+    Two pools, not one. Tool results ground anything. The user's own request
+    grounds only *prose* -- "no site gives you the 600 hours you asked for" is
+    quoting -- and never a structured field: an ``observed_value`` equal to the
+    user's threshold is exactly the hallucination the guard exists to stop, and
+    with a single pool it was grounded against the requirement it was supposed
+    to be measured against.
+    """
+    measured: list[tuple[str, float, str, int]] = []
+    quoted: list[tuple[str, float, str, int]] = []
     for call in tool_results:
         seq = int(call.get("seq", 0))
         tool = str(call.get("tool", "?"))
         result = call.get("result")
-        for path, val in flatten_numbers(result):
-            pool.append((tool, val, path, seq))
         if tool == USER_REQUEST_TOOL:
             # The user's request arrives as prose -- "600 hours of continuous
-            # sunlight" -- so its numbers are inside strings and the numeric-leaf
-            # walk above finds none. They are parsed out here and nowhere else:
-            # doing the same for tool results would ground a claim against a
-            # digit that happened to appear in a site name.
+            # sunlight" -- so its numbers are inside strings. They are parsed out
+            # here and nowhere else: doing the same for tool results would ground
+            # a claim against a digit that happened to appear in a site name.
+            for path, val in flatten_numbers(result):
+                quoted.append((tool, val, path, seq))
             for path, text in _string_leaves(result):
-                for m in _NUMBER_RE.finditer(text):
-                    try:
-                        pool.append((tool, float(m.group(1).replace(",", "")), path, seq))
-                    except ValueError:
-                        continue
+                for c in _scan_text(text, path):
+                    quoted.append((tool, c.value, path, seq))
+            continue
+        for path, val in flatten_numbers(result):
+            measured.append((tool, val, path, seq))
 
-    claims = extract_claim_numbers(output)
     violations: list[Violation] = []
     citations: list[Citation] = []
 
-    for _path, value, claim in claims:
-        if _is_exempt(value, claim):
+    for claim in extract_claims(output):
+        if _is_exempt(claim):
             continue
+        pool = measured + quoted if claim.in_prose else measured
+        value = claim.value
         if not pool:
             violations.append(
                 Violation(
@@ -290,16 +476,17 @@ def check_grounding(output: dict[str, Any], tool_results: list[dict[str, Any]]) 
             continue
         hit = _match(value, pool)
         if hit is None:
-            nearby = sorted({round(v, 2) for _n, v, _f, _s in pool}, key=lambda x: abs(x - value))[
-                :4
-            ]
+            nearby = sorted(
+                {round(v, 2) for _n, v, _f, _s in measured}, key=lambda x: abs(x - value)
+            )[:4]
+            where = "" if claim.in_prose else f" (structured field `{claim.path}`)"
             violations.append(
                 Violation(
                     kind="ungrounded_number",
                     detail=(
-                        f"{value:g} does not appear in any tool result "
-                        f"(in '{claim}'). Nearest available values: "
-                        f"{', '.join(f'{n:g}' for n in nearby)}."
+                        f"{value:g} does not appear in any tool result{where} "
+                        f"(in '{claim.context}'). Nearest measured values: "
+                        f"{', '.join(f'{n:g}' for n in nearby) or 'none'}."
                     ),
                     value=value,
                 )
@@ -307,7 +494,9 @@ def check_grounding(output: dict[str, Any], tool_results: list[dict[str, Any]]) 
         else:
             tool, field_path, seq = hit
             citations.append(
-                Citation(claim=claim, value=value, tool=tool, call_seq=seq, field=field_path)
+                Citation(
+                    claim=claim.context, value=value, tool=tool, call_seq=seq, field=field_path
+                )
             )
 
     return Verdict(ok=not violations, violations=violations, citations=citations)

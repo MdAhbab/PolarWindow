@@ -18,13 +18,71 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, ORJSONResponse
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.config import ENGINE_VERSION, get_settings
 from app.core import spice
 from app.core.kernels import KernelError
 
 log = logging.getLogger("polar_window")
+
+#: The body of an unhandled failure. Same shape as every other error -- the
+#: problem detail inside `detail` -- because the frontend's ErrorPanel reads
+#: `detail.ui.still_works`, and a 500 that put it anywhere else rendered as a
+#: shrug at exactly the moment the user most needed to know what still works.
+INTERNAL_ERROR: dict[str, Any] = {
+    "detail": {
+        "type": "https://polar-window.dev/errors/internal",
+        "title": "Something failed on our side",
+        "status": 500,
+        "detail": "The request could not be completed.",
+        "ui": {
+            "still_works": "Other sites and windows are unaffected. "
+            "The site list and terrain are unchanged.",
+            "retryable": True,
+            "action": None,
+        },
+    }
+}
+
+
+class ProblemOn500:
+    """Turn an unhandled exception into a problem detail *inside* CORS.
+
+    Starlette runs its own 500 handler in the outermost middleware, outside
+    CORS, so the response it sends carries no ``Access-Control-Allow-Origin``.
+    The browser then reports a network failure instead of the 500, the
+    frontend shows "cannot reach the service", and the server's own words
+    about what still works are thrown away. Catching here, below CORS, gives
+    the browser a readable response with the right headers.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        started = False
+
+        async def tracked(message: Message) -> None:
+            nonlocal started
+            if message["type"] == "http.response.start":
+                started = True
+            await send(message)
+
+        try:
+            await self.app(scope, receive, tracked)
+        except Exception:
+            log.exception("unhandled error on %s", scope.get("path"))
+            if started:
+                raise
+            response = JSONResponse(status_code=500, content=INTERNAL_ERROR)
+            await response(scope, receive, send)
+
 
 DESCRIPTION = """
 Sun, Earth and terrain geometry for candidate landing sites at the Moon's south pole.
@@ -82,13 +140,22 @@ def create_app() -> FastAPI:
         redoc_url=None,
     )
 
+    # Order matters: Starlette wraps the last-added middleware outermost. The
+    # 500 handler must sit inside CORS (see ProblemOn500), and compression
+    # between them so error bodies are compressed like any other.
+    app.add_middleware(ProblemOn500)
+    # A 2,835-sample timeline is ~210 KB of JSON. Measured on it: level 1 gives
+    # 82 KB in 1.1 ms, level 5 gives 74 KB in 4.9 ms, level 9 the same 74 KB in
+    # 18 ms. Level 1 keeps ~90 % of the saving at a quarter of the CPU, which is
+    # the right trade on an endpoint whose whole budget is latency.
+    app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=1)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=list(s.cors_origins),
         allow_credentials=False,
         allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["*"],
-        expose_headers=["X-Tile-Source", "ETag"],
+        expose_headers=["X-Tile-Source", "X-Tile-Note", "ETag"],
     )
 
     from app.api.v1.routes import agents, compare, health, sites, tiles
@@ -131,25 +198,6 @@ def create_app() -> FastAPI:
                         "action": "Adjust the request",
                     },
                 }
-            },
-        )
-
-    @app.exception_handler(500)
-    async def unhandled(request: Request, exc: Exception) -> JSONResponse:
-        log.exception("unhandled error on %s", request.url.path)
-        return JSONResponse(
-            status_code=500,
-            content={
-                "type": "https://polar-window.dev/errors/internal",
-                "title": "Something failed on our side",
-                "status": 500,
-                "detail": "The request could not be completed.",
-                "ui": {
-                    "still_works": "Other sites and windows are unaffected. "
-                    "The site list and terrain are unchanged.",
-                    "retryable": True,
-                    "action": None,
-                },
             },
         )
 

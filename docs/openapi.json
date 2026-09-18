@@ -3,7 +3,7 @@
   "info": {
     "title": "POLAR WINDOW",
     "description": "\nSun, Earth and terrain geometry for candidate landing sites at the Moon's south pole.\n\nFour numbers decide a mission and this API exists to serve them:\n\n1. **Sunlit seconds** in the window \u2014 power\n2. **Earth-contact seconds** in the window \u2014 direct-to-Earth comms\n3. **Longest unbroken dark gap** \u2014 survival\n4. **Longest unbroken comms blackout** \u2014 autonomy\n\nThere is deliberately **no composite score**. A score ranks sites on one axis and\nhides which corner was given up, and the trade is the product.\n\nEvery response carries a `meta` object with `computed_at`, `resolution` and\n`uncertainty`. `uncertainty` is never absent and never null: where a value cannot\nbe known, the field says so (`grazing: true`, `edge_timing_s: null`) rather than\nreporting a plausible number.\n\n**Not an official product of any space agency.** Data product names are the public\nidentifiers of the inputs, nothing more.\n",
-    "version": "hz-1/vis-1"
+    "version": "hz-2/vis-2"
   },
   "paths": {
     "/api/v1/healthz": {
@@ -259,6 +259,8 @@
             "required": false,
             "schema": {
               "type": "number",
+              "maximum": 360.0,
+              "exclusiveMinimum": 0.0,
               "description": "Output angular step. Must divide 360 and be a multiple of the stored 0.25 deg resolution.",
               "default": 1.0,
               "title": "Step Deg"
@@ -1016,6 +1018,19 @@
             ],
             "title": "Status"
           },
+          "run_status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "insufficient_data",
+              "guard_rejected",
+              "timeout",
+              "degraded",
+              "error"
+            ],
+            "title": "Run Status",
+            "description": "Why this answer is what it is, exactly as recorded in the run log. `status` folds the last four into `degraded`; this keeps them apart."
+          },
           "reason": {
             "anyOf": [
               {
@@ -1089,7 +1104,8 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "status"
+          "status",
+          "run_status"
         ],
         "title": "AgentResponse",
         "description": "Shared envelope for all four agents.\n\n`provenance` is produced by the grounding guard, not by the model, and is\nnot optional. It is the artifact that makes the guard demonstrable rather\nthan merely claimed."
@@ -1240,6 +1256,16 @@
               }
             ],
             "title": "Blocked By El Deg"
+          },
+          "open_start": {
+            "type": "boolean",
+            "title": "Open Start",
+            "description": "The arc begins at the window start: it was already in progress, so its true start -- and duration -- lie beyond the window."
+          },
+          "open_end": {
+            "type": "boolean",
+            "title": "Open End",
+            "description": "The arc is still in progress at the window end."
           }
         },
         "additionalProperties": false,
@@ -1250,7 +1276,9 @@
           "end",
           "duration_s",
           "tolerance_s",
-          "grazing"
+          "grazing",
+          "open_start",
+          "open_end"
         ],
         "title": "Arc",
         "description": "One unbroken stretch above or below the skyline."
@@ -1279,16 +1307,31 @@
           },
           "required_autonomy_s": {
             "type": "number",
-            "title": "Required Autonomy S"
+            "title": "Required Autonomy S",
+            "description": "The worst compound event (no Sun and no link) plus `margin_fraction`."
+          },
+          "margin_fraction": {
+            "type": "number",
+            "title": "Margin Fraction",
+            "description": "The margin applied on top of the worst compound event, as a fraction."
           },
           "survival_needed_s": {
             "type": "number",
             "title": "Survival Needed S",
-            "description": "If the worst blackout falls inside a night, the battery must carry the whole night, not just the silence."
+            "description": "The battery must carry the longest night whatever the radio is doing; a blackout inside a night never shortens it."
           },
           "compound_inside_dark": {
             "type": "boolean",
             "title": "Compound Inside Dark"
+          },
+          "survival_open": {
+            "type": "boolean",
+            "title": "Survival Open",
+            "description": "The night that sets `survival_needed_s` is cut by a window edge: a lower bound."
+          },
+          "worst_compound_open": {
+            "type": "boolean",
+            "title": "Worst Compound Open"
           }
         },
         "additionalProperties": false,
@@ -1296,8 +1339,11 @@
         "required": [
           "worst_compound_s",
           "required_autonomy_s",
+          "margin_fraction",
           "survival_needed_s",
-          "compound_inside_dark"
+          "compound_inside_dark",
+          "survival_open",
+          "worst_compound_open"
         ],
         "title": "Autonomy"
       },
@@ -1412,6 +1458,11 @@
             ],
             "title": "Longest Down End"
           },
+          "longest_down_open": {
+            "type": "boolean",
+            "title": "Longest Down Open",
+            "description": "The longest down arc touches a window edge; `longest_down_s` is a lower bound on the stretch it belongs to."
+          },
           "grazing": {
             "type": "boolean",
             "title": "Grazing"
@@ -1427,6 +1478,7 @@
           "fraction_up",
           "longest_down_s",
           "longest_down_tolerance_s",
+          "longest_down_open",
           "grazing"
         ],
         "title": "BodyWindows"
@@ -1475,9 +1527,20 @@
             "type": "string",
             "title": "Site Id"
           },
+          "position": {
+            "type": "integer",
+            "title": "Position",
+            "description": "1-based place in `items`; strictly increasing."
+          },
           "rank": {
             "type": "integer",
-            "title": "Rank"
+            "title": "Rank",
+            "description": "Competition rank: sites the data cannot distinguish share their group leader's rank (1, 1, 3), so a tie is never printed as an order."
+          },
+          "tied": {
+            "type": "boolean",
+            "title": "Tied",
+            "description": "This site is in one of the `ties` groups."
           },
           "metrics": {
             "$ref": "#/components/schemas/MetricsResponse"
@@ -1494,7 +1557,9 @@
         "type": "object",
         "required": [
           "site_id",
+          "position",
           "rank",
+          "tied",
           "metrics",
           "delta_vs_best"
         ],
@@ -1654,6 +1719,14 @@
           "duration_s": {
             "type": "number",
             "title": "Duration S"
+          },
+          "open_start": {
+            "type": "boolean",
+            "title": "Open Start"
+          },
+          "open_end": {
+            "type": "boolean",
+            "title": "Open End"
           }
         },
         "additionalProperties": false,
@@ -1661,7 +1734,9 @@
         "required": [
           "start",
           "end",
-          "duration_s"
+          "duration_s",
+          "open_start",
+          "open_end"
         ],
         "title": "CompoundEvent"
       },
@@ -2031,6 +2106,20 @@
             "type": "number",
             "title": "Worst Compound S"
           },
+          "longest_dark_open": {
+            "type": "boolean",
+            "title": "Longest Dark Open",
+            "description": "The longest night touches a window edge, so `longest_dark_s` is a lower bound: the window ended it, not the terrain."
+          },
+          "longest_blackout_open": {
+            "type": "boolean",
+            "title": "Longest Blackout Open",
+            "description": "As `longest_dark_open`, for `longest_blackout_s`."
+          },
+          "worst_compound_open": {
+            "type": "boolean",
+            "title": "Worst Compound Open"
+          },
           "autonomy": {
             "$ref": "#/components/schemas/Autonomy"
           },
@@ -2051,6 +2140,9 @@
           "sun_fraction_up",
           "earth_fraction_up",
           "worst_compound_s",
+          "longest_dark_open",
+          "longest_blackout_open",
+          "worst_compound_open",
           "autonomy",
           "meta"
         ],
@@ -2237,6 +2329,15 @@
             "type": "string",
             "title": "Note"
           },
+          "search_kind": {
+            "type": "string",
+            "enum": [
+              "rim",
+              "massif"
+            ],
+            "title": "Search Kind",
+            "description": "How the landing point was found: on the rim of a named crater (so it borders that crater's shadowed floor) or on a massif or plateau."
+          },
           "summary": {
             "anyOf": [
               {
@@ -2259,7 +2360,8 @@
           "lon_deg",
           "elev_m",
           "slope_deg",
-          "note"
+          "note",
+          "search_kind"
         ],
         "title": "SiteBrief"
       },
@@ -2301,6 +2403,15 @@
             "type": "string",
             "title": "Note"
           },
+          "search_kind": {
+            "type": "string",
+            "enum": [
+              "rim",
+              "massif"
+            ],
+            "title": "Search Kind",
+            "description": "How the landing point was found: on the rim of a named crater (so it borders that crater's shadowed floor) or on a massif or plateau."
+          },
           "summary": {
             "anyOf": [
               {
@@ -2340,6 +2451,7 @@
           "elev_m",
           "slope_deg",
           "note",
+          "search_kind",
           "provenance",
           "meta"
         ],
@@ -2405,6 +2517,16 @@
             "type": "boolean",
             "title": "Grazing"
           },
+          "longest_dark_open": {
+            "type": "boolean",
+            "title": "Longest Dark Open",
+            "description": "The longest night touches an edge of the reference window, so the window ended it and `longest_dark_s` is a lower bound."
+          },
+          "longest_blackout_open": {
+            "type": "boolean",
+            "title": "Longest Blackout Open",
+            "description": "As `longest_dark_open`, for the longest loss of Earth contact."
+          },
           "reference_window_start": {
             "type": "string",
             "format": "date-time",
@@ -2418,6 +2540,12 @@
           "reference_step_s": {
             "type": "integer",
             "title": "Reference Step S"
+          },
+          "computed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Computed At",
+            "description": "When this summary was computed."
           }
         },
         "additionalProperties": false,
@@ -2431,9 +2559,12 @@
           "earth_fraction_up",
           "worst_compound_s",
           "grazing",
+          "longest_dark_open",
+          "longest_blackout_open",
           "reference_window_start",
           "reference_window_end",
-          "reference_step_s"
+          "reference_step_s",
+          "computed_at"
         ],
         "title": "SiteSummary",
         "description": "Coarse four-numbers over the reference window.\n\n`null` on a site whose precompute has not run -- never zeros. A zero is a\nmeasurement; absence is absence, and the UI has a state for it."

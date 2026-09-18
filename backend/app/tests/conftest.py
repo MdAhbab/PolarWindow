@@ -46,6 +46,12 @@ def no_live_gemini(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     boundary -- where it holds regardless of what the SDK does underneath. A
     test that wants to exercise the loop overrides it explicitly with
     `fake_gemini`, which is visible in the test body.
+
+    With no key the stand-in behaves exactly as the real transport does and
+    raises `GeminiUnavailable`, so the "not configured" path is the one under
+    test. It used to raise an AssertionError unconditionally, which the loop
+    caught as a generic failure: the no-key tests passed without ever reaching
+    the branch they were named after.
     """
     monkeypatch.setenv("PW_GEMINI_API_KEY", "")
 
@@ -53,6 +59,8 @@ def no_live_gemini(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     from app.config import get_settings
 
     async def blocked(*_args: object, **_kwargs: object) -> dict:
+        if not get_settings().gemini_api_key:
+            raise base.GeminiUnavailable("PW_GEMINI_API_KEY is not set")
         raise AssertionError(
             "A test tried to call the real model API. Use the `fake_gemini` "
             "fixture to script responses instead."
@@ -226,8 +234,11 @@ async def fresh_engine() -> AsyncIterator[None]:
     get_sessionmaker.cache_clear()
 
     # The Redis client is process-global for the same reason the engine is, and
-    # needs the same treatment for the same reason.
-    from app.services import cache
+    # needs the same treatment for the same reason. So is the geometry memo: a
+    # test that changes what is seeded must not be answered from the last one.
+    from app.services import cache, site_service
+
+    site_service.clear_memo()
 
     try:
         await cache.reset()

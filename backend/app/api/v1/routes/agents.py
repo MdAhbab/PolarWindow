@@ -36,6 +36,7 @@ def _envelope(outcome: AgentOutcome, s: Settings) -> dict[str, Any]:
         "status": outcome.status
         if outcome.status in ("ok", "insufficient_data", "degraded")
         else "degraded",
+        "run_status": outcome.status,
         "reason": outcome.reason,
         "result": outcome.result,
         "provenance": outcome.provenance,

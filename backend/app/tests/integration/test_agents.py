@@ -220,13 +220,22 @@ async def test_tool_calls_are_executed_and_fed_back(client, fake_gemini) -> None
 
 async def test_every_exit_path_persists_a_run(client) -> None:
     """The demo shows this table; a missing row for a failure would make it
-    evidence of something other than what it claims."""
-    before = len((await client.get(f"{API}/agents/runs?limit=200")).json()["items"])
-    await client.post(f"{API}/agents/explain", json={"site_id": SITE})
-    await client.post(f"{API}/agents/ask", json={"question": "which site is sunniest?"})
-    after = (await client.get(f"{API}/agents/runs?limit=200")).json()["items"]
-    assert len(after) >= before + 2
-    for run in after[:2]:
+    evidence of something other than what it claims.
+
+    Asserted on the run ids the calls return, not on a row count: the log only
+    grows, and a count read through a capped listing stopped moving once the
+    table passed the cap -- the test then failed for a reason unrelated to
+    whether runs were recorded.
+    """
+    a = (await client.post(f"{API}/agents/explain", json={"site_id": SITE})).json()
+    b = (
+        await client.post(f"{API}/agents/ask", json={"question": "which site is sunniest?"})
+    ).json()
+    runs = (await client.get(f"{API}/agents/runs?limit=20")).json()["items"]
+    by_id = {r["id"]: r for r in runs}
+    for body in (a, b):
+        assert body["run_id"] in by_id, "a run was answered but not recorded"
+        run = by_id[body["run_id"]]
         assert run["status"] in (
             "ok",
             "insufficient_data",
@@ -321,3 +330,74 @@ async def test_user_supplied_numbers_are_grounded_but_attributed(client, fake_ge
     assert body["status"] == "ok", body.get("reason")
     assert body["attempts"] == 1, "restating the requirement should not need a retry"
     assert any(p["tool"] == "user_request" for p in body["provenance"])
+
+
+# --- degraded answers keep their agent's shape and their provenance ----------
+
+
+async def _run_status(client, run_id: str) -> str:
+    runs = (await client.get(f"{API}/agents/runs?limit=50")).json()["items"]
+    return next(r["status"] for r in runs if r["id"] == run_id)
+
+
+async def test_a_degraded_answer_carries_provenance(client) -> None:
+    """The fallback is built from tool values, so the guard can cite each one.
+
+    It used to return `provenance: []`, which left the one path guaranteed to
+    be grounded as the one path that could not show it.
+    """
+    body = (await client.post(f"{API}/agents/explain", json={"site_id": SITE})).json()
+    assert body["status"] == "degraded"
+    assert body["provenance"], "a measurement-only answer cited nothing"
+    assert all(p["tool"] != "user_request" for p in body["provenance"])
+    assert await _run_status(client, body["run_id"]) == "degraded"
+
+
+async def test_each_agent_degrades_into_its_own_contract(client) -> None:
+    """A client reading an advisor response must never receive explainer fields."""
+    from app.agents.schemas import AudienceBrief, QuestionAnswer, TradeOffAdvice
+
+    advise = (
+        await client.post(f"{API}/agents/advise", json={"requirement": "no night over 150 hours"})
+    ).json()
+    TradeOffAdvice.model_validate(advise["result"])
+    assert advise["result"]["any_satisfies"] is False, "a fallback must not claim a pass"
+
+    brief = (await client.post(f"{API}/agents/brief", json={"site_id": SITE})).json()
+    doc = AudienceBrief.model_validate(brief["result"])
+    assert doc.planner_memo and doc.lesson_plan and doc.public_explainer
+    assert doc.planner_memo.body == doc.public_explainer.body, "the facts must not differ"
+
+    ask = (
+        await client.post(f"{API}/agents/ask", json={"question": "which site is darkest?"})
+    ).json()
+    QuestionAnswer.model_validate(ask["result"])
+
+
+async def test_run_log_records_why_an_answer_degraded(client, fake_gemini) -> None:
+    """The envelope says `degraded`; the log says which kind."""
+    fake_gemini(HALLUCINATED)
+    rejected = (await client.post(f"{API}/agents/explain", json={"site_id": SITE})).json()
+    assert rejected["status"] == "degraded"
+    assert await _run_status(client, rejected["run_id"]) == "guard_rejected"
+
+    fake_gemini(TimeoutError("model did not respond"))
+    slow = (await client.post(f"{API}/agents/explain", json={"site_id": SITE})).json()
+    assert await _run_status(client, slow["run_id"]) == "timeout"
+
+
+async def test_fallback_never_prints_a_missing_value_as_zero() -> None:
+    """Absent is not zero: a field the tool did not return is left out."""
+    from app.agents import tools
+    from app.agents.base import deterministic_summary
+    from app.agents.explainer import SPEC
+
+    partial = tools.ToolCallLog(
+        seq=1,
+        tool="get_metrics",
+        args={},
+        result={"site_id": SITE, "sunlit_s": 2_067_804.0, "sun_fraction_up": 0.81},
+    )
+    out = deterministic_summary(SPEC, [partial], "test")
+    assert "0 hours" not in out["paragraph"]
+    assert "574 hours" in out["paragraph"]

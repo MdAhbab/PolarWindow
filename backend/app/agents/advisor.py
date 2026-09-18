@@ -9,10 +9,9 @@ false without also saying so in words.
 
 from __future__ import annotations
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.agents.base import AgentOutcome, AgentSpec, run_agent
 from app.agents.schemas import TradeOffAdvice
+from app.agents.tools import Session
 
 SYSTEM = """\
 You help a mission planner decide between candidate lunar south pole landing
@@ -51,7 +50,7 @@ SPEC = AgentSpec(
 
 
 async def advise(
-    session: AsyncSession, requirement: str, start: str | None, end: str | None
+    session: Session, requirement: str, start: str | None, end: str | None
 ) -> AgentOutcome:
     prompt = (
         f"Requirement: {requirement}\n"

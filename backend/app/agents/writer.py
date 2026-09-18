@@ -10,10 +10,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.agents.base import AgentOutcome, AgentSpec, prefetch, run_agent
 from app.agents.schemas import AudienceBrief
+from app.agents.tools import Session
 
 SYSTEM = """\
 You write three short documents about one lunar landing site, from one set of
@@ -49,9 +48,7 @@ SPEC = AgentSpec(
 )
 
 
-async def brief(
-    session: AsyncSession, site_id: str, start: str | None, end: str | None
-) -> AgentOutcome:
+async def brief(session: Session, site_id: str, start: str | None, end: str | None) -> AgentOutcome:
     window: dict[str, Any] = {"site_id": site_id}
     if start:
         window["start"] = start

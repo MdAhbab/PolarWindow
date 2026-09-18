@@ -51,9 +51,17 @@ class SiteSummary(BaseModel):
     earth_fraction_up: float
     worst_compound_s: float
     grazing: bool
+    longest_dark_open: bool = Field(
+        description="The longest night touches an edge of the reference window, so the "
+        "window ended it and `longest_dark_s` is a lower bound."
+    )
+    longest_blackout_open: bool = Field(
+        description="As `longest_dark_open`, for the longest loss of Earth contact."
+    )
     reference_window_start: datetime
     reference_window_end: datetime
     reference_step_s: int
+    computed_at: datetime = Field(description="When this summary was computed.")
 
 
 class SiteBrief(BaseModel):
@@ -68,6 +76,10 @@ class SiteBrief(BaseModel):
     elev_m: float
     slope_deg: float
     note: str
+    search_kind: Literal["rim", "massif"] = Field(
+        description="How the landing point was found: on the rim of a named crater "
+        "(so it borders that crater's shadowed floor) or on a massif or plateau."
+    )
     summary: SiteSummary | None = None
 
 
@@ -164,6 +176,11 @@ class Arc(BaseModel):
         "Naming the cause is the difference between an answer and an assertion.",
     )
     blocked_by_el_deg: float | None = None
+    open_start: bool = Field(
+        description="The arc begins at the window start: it was already in progress, so "
+        "its true start -- and duration -- lie beyond the window."
+    )
+    open_end: bool = Field(description="The arc is still in progress at the window end.")
 
 
 class BodyWindows(BaseModel):
@@ -178,6 +195,10 @@ class BodyWindows(BaseModel):
     longest_down_tolerance_s: float
     longest_down_start: datetime | None = None
     longest_down_end: datetime | None = None
+    longest_down_open: bool = Field(
+        description="The longest down arc touches a window edge; `longest_down_s` is a "
+        "lower bound on the stretch it belongs to."
+    )
     grazing: bool
 
 
@@ -187,6 +208,8 @@ class CompoundEvent(BaseModel):
     start: datetime
     end: datetime
     duration_s: float
+    open_start: bool
+    open_end: bool
 
 
 class WindowsResponse(BaseModel):
@@ -206,12 +229,22 @@ class Autonomy(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     worst_compound_s: float
-    required_autonomy_s: float
+    required_autonomy_s: float = Field(
+        description="The worst compound event (no Sun and no link) plus `margin_fraction`."
+    )
+    margin_fraction: float = Field(
+        description="The margin applied on top of the worst compound event, as a fraction."
+    )
     survival_needed_s: float = Field(
-        description="If the worst blackout falls inside a night, the battery must carry "
-        "the whole night, not just the silence."
+        description="The battery must carry the longest night whatever the radio is doing; "
+        "a blackout inside a night never shortens it."
     )
     compound_inside_dark: bool
+    survival_open: bool = Field(
+        description="The night that sets `survival_needed_s` is cut by a window edge: a "
+        "lower bound."
+    )
+    worst_compound_open: bool
 
 
 class MetricsResponse(BaseModel):
@@ -234,5 +267,13 @@ class MetricsResponse(BaseModel):
     sun_fraction_up: float
     earth_fraction_up: float
     worst_compound_s: float
+    longest_dark_open: bool = Field(
+        description="The longest night touches a window edge, so `longest_dark_s` is a "
+        "lower bound: the window ended it, not the terrain."
+    )
+    longest_blackout_open: bool = Field(
+        description="As `longest_dark_open`, for `longest_blackout_s`."
+    )
+    worst_compound_open: bool
     autonomy: Autonomy
     meta: Meta

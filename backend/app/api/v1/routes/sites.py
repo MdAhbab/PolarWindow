@@ -20,7 +20,6 @@ from app.api.v1.schemas.sites import (
     TimelineResponse,
     WindowsResponse,
 )
-from app.config import ENGINE_VERSION, Settings
 from app.services import site_service
 
 router = APIRouter(prefix="/sites", tags=["sites"])
@@ -47,96 +46,43 @@ async def list_sites(
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
     session: Any = Depends(deps.db),
-    s: Settings = Depends(deps.settings),
 ) -> dict[str, Any]:
     try:
-        sites, total, summaries = await site_service.list_with_summaries(
+        listing = await site_service.list_with_summaries(
             session,
             q=q,
             region=region,
             lat_min=lat_min,
             lat_max=lat_max,
+            min_sun_fraction=min_sun_fraction,
+            max_longest_dark_s=max_longest_dark_s,
             limit=limit,
             offset=offset,
         )
     except Exception as exc:
         raise deps.to_http(exc) from exc
 
-    items: list[dict[str, Any]] = []
-    for site in sites:
-        summary = summaries.get(site.id)
-        # A site with no precompute cannot be judged against a metric filter, so
-        # it is excluded rather than assumed to pass.
-        if min_sun_fraction is not None and (
-            summary is None or summary["sun_fraction_up"] < min_sun_fraction
-        ):
-            continue
-        if max_longest_dark_s is not None and (
-            summary is None or summary["longest_dark_s"] > max_longest_dark_s
-        ):
-            continue
-        items.append(
-            {
-                "id": site.id,
-                "code": site.code,
-                "name": site.name,
-                "region": site.region,
-                "lat_deg": site.lat_deg,
-                "lon_deg": site.lon_deg,
-                "elev_m": site.elev_m,
-                "slope_deg": site.slope_deg,
-                "note": site.note,
-                # null, never zeros: absence is not a measurement.
-                "summary": summary,
-            }
-        )
-
     return {
-        "items": items,
-        "total": total if (min_sun_fraction is None and max_longest_dark_s is None) else len(items),
-        "meta": _list_meta(
-            s, filtered=min_sun_fraction is not None or max_longest_dark_s is not None
-        ),
+        # null, never zeros: absence is not a measurement.
+        "items": [_brief(site, listing.summaries.get(site.id)) for site in listing.sites],
+        "total": listing.total,
+        "meta": listing.meta,
     }
 
 
-def _list_meta(s: Settings, *, filtered: bool) -> dict[str, Any]:
-    notes = [
-        "Summaries are computed over the reference window at a "
-        f"{s.default_step_s} s step, not over any window you have selected.",
-        "A site with no summary has not been surveyed yet; it is shown without "
-        "numbers rather than with zeros.",
-    ]
-    if filtered:
-        notes.append(
-            "Metric filters were applied against the reference window. A site that "
-            "passes here may fail for the window you are actually planning."
-        )
+def _brief(site: Any, summary: dict[str, Any] | None) -> dict[str, Any]:
     return {
-        "computed_at": s.reference_window_start.isoformat().replace("+00:00", "Z"),
-        "resolution": {
-            "azimuth_deg": s.azimuth_step_deg,
-            "azimuth_count": int(round(360 / s.azimuth_step_deg)),
-            "time_step_s": s.default_step_s,
-            "max_range_m": s.max_range_m,
-            "dem_product": "LOLA LDEM 80S",
-            "dem_resolution_m": 20.0,
-            "ephemeris": "de440 + moon_pa_de440 (MOON_ME)",
-            "frame": "MOON_ME",
-        },
-        "uncertainty": {
-            "dem_vertical_error_m": 2.0,
-            "dem_resolution_m": 20.0,
-            "coverage": 1.0,
-            "horizon_el_deg": 0.0,
-            "edge_timing_s": None,
-            "grazing": False,
-            "penumbra_sun_deg": 0.266,
-            "penumbra_earth_deg": 0.95,
-            "notes": notes,
-        },
-        "engine_version": ENGINE_VERSION,
-        "cache": "miss",
+        "id": site.id,
+        "code": site.code,
+        "name": site.name,
+        "region": site.region,
+        "lat_deg": site.lat_deg,
+        "lon_deg": site.lon_deg,
+        "elev_m": site.elev_m,
+        "slope_deg": site.slope_deg,
+        "note": site.note,
+        "search_kind": site.search_kind,
+        "summary": summary,
     }
 
 
@@ -144,12 +90,9 @@ def _list_meta(s: Settings, *, filtered: bool) -> dict[str, Any]:
 async def get_site(
     site_id: SiteId,
     session: Any = Depends(deps.db),
-    s: Settings = Depends(deps.settings),
 ) -> dict[str, Any]:
     try:
-        site = await site_service.require_site(session, site_id)
-        mask_rec = await site_service.get_mask_record(session, site_id)
-        summaries = await site_service.reference_summaries(session, [site_id])
+        site, mask_rec, summary, meta = await site_service.site_detail(session, site_id)
     except Exception as exc:
         raise deps.to_http(exc) from exc
 
@@ -165,16 +108,7 @@ async def get_site(
         }
 
     return {
-        "id": site.id,
-        "code": site.code,
-        "name": site.name,
-        "region": site.region,
-        "lat_deg": site.lat_deg,
-        "lon_deg": site.lon_deg,
-        "elev_m": site.elev_m,
-        "slope_deg": site.slope_deg,
-        "note": site.note,
-        "summary": summaries.get(site_id),
+        **_brief(site, summary),
         "provenance": {
             "anchor_lat_deg": site.anchor_lat_deg,
             "anchor_lon_deg": site.anchor_lon_deg,
@@ -187,7 +121,7 @@ async def get_site(
             "source_note": site.source_note,
         },
         "horizon": horizon,
-        "meta": _list_meta(s, filtered=False),
+        "meta": meta,
     }
 
 
@@ -198,6 +132,8 @@ async def get_horizon(
     site_id: SiteId,
     step_deg: float = Query(
         1.0,
+        gt=0,
+        le=360,
         description="Output angular step. Must divide 360 and be a multiple of "
         "the stored 0.25 deg resolution.",
     ),

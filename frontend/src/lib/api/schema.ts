@@ -296,6 +296,12 @@ export interface components {
              * @enum {string}
              */
             status: "ok" | "insufficient_data" | "degraded";
+            /**
+             * Run Status
+             * @description Why this answer is what it is, exactly as recorded in the run log. `status` folds the last four into `degraded`; this keeps them apart.
+             * @enum {string}
+             */
+            run_status: "ok" | "insufficient_data" | "guard_rejected" | "timeout" | "degraded" | "error";
             /** Reason */
             reason?: string | null;
             /** Result */
@@ -393,6 +399,16 @@ export interface components {
             blocked_by_bearing_deg?: number | null;
             /** Blocked By El Deg */
             blocked_by_el_deg?: number | null;
+            /**
+             * Open Start
+             * @description The arc begins at the window start: it was already in progress, so its true start -- and duration -- lie beyond the window.
+             */
+            open_start: boolean;
+            /**
+             * Open End
+             * @description The arc is still in progress at the window end.
+             */
+            open_end: boolean;
         };
         /** AskRequest */
         AskRequest: {
@@ -403,15 +419,30 @@ export interface components {
         Autonomy: {
             /** Worst Compound S */
             worst_compound_s: number;
-            /** Required Autonomy S */
+            /**
+             * Required Autonomy S
+             * @description The worst compound event (no Sun and no link) plus `margin_fraction`.
+             */
             required_autonomy_s: number;
             /**
+             * Margin Fraction
+             * @description The margin applied on top of the worst compound event, as a fraction.
+             */
+            margin_fraction: number;
+            /**
              * Survival Needed S
-             * @description If the worst blackout falls inside a night, the battery must carry the whole night, not just the silence.
+             * @description The battery must carry the longest night whatever the radio is doing; a blackout inside a night never shortens it.
              */
             survival_needed_s: number;
             /** Compound Inside Dark */
             compound_inside_dark: boolean;
+            /**
+             * Survival Open
+             * @description The night that sets `survival_needed_s` is cut by a window edge: a lower bound.
+             */
+            survival_open: boolean;
+            /** Worst Compound Open */
+            worst_compound_open: boolean;
         };
         /** BodyTimeline */
         BodyTimeline: {
@@ -452,6 +483,11 @@ export interface components {
             longest_down_start?: string | null;
             /** Longest Down End */
             longest_down_end?: string | null;
+            /**
+             * Longest Down Open
+             * @description The longest down arc touches a window edge; `longest_down_s` is a lower bound on the stretch it belongs to.
+             */
+            longest_down_open: boolean;
             /** Grazing */
             grazing: boolean;
         };
@@ -468,8 +504,21 @@ export interface components {
         CompareItem: {
             /** Site Id */
             site_id: string;
-            /** Rank */
+            /**
+             * Position
+             * @description 1-based place in `items`; strictly increasing.
+             */
+            position: number;
+            /**
+             * Rank
+             * @description Competition rank: sites the data cannot distinguish share their group leader's rank (1, 1, 3), so a tie is never printed as an order.
+             */
             rank: number;
+            /**
+             * Tied
+             * @description This site is in one of the `ties` groups.
+             */
+            tied: boolean;
             metrics: components["schemas"]["MetricsResponse"];
             /** Delta Vs Best */
             delta_vs_best: {
@@ -541,6 +590,10 @@ export interface components {
             end: string;
             /** Duration S */
             duration_s: number;
+            /** Open Start */
+            open_start: boolean;
+            /** Open End */
+            open_end: boolean;
         };
         /** DemHealth */
         DemHealth: {
@@ -704,6 +757,18 @@ export interface components {
             earth_fraction_up: number;
             /** Worst Compound S */
             worst_compound_s: number;
+            /**
+             * Longest Dark Open
+             * @description The longest night touches a window edge, so `longest_dark_s` is a lower bound: the window ended it, not the terrain.
+             */
+            longest_dark_open: boolean;
+            /**
+             * Longest Blackout Open
+             * @description As `longest_dark_open`, for `longest_blackout_s`.
+             */
+            longest_blackout_open: boolean;
+            /** Worst Compound Open */
+            worst_compound_open: boolean;
             autonomy: components["schemas"]["Autonomy"];
             meta: components["schemas"]["Meta"];
         };
@@ -800,6 +865,12 @@ export interface components {
             slope_deg: number;
             /** Note */
             note: string;
+            /**
+             * Search Kind
+             * @description How the landing point was found: on the rim of a named crater (so it borders that crater's shadowed floor) or on a massif or plateau.
+             * @enum {string}
+             */
+            search_kind: "rim" | "massif";
             summary?: components["schemas"]["SiteSummary"] | null;
         };
         /** SiteDetail */
@@ -822,6 +893,12 @@ export interface components {
             slope_deg: number;
             /** Note */
             note: string;
+            /**
+             * Search Kind
+             * @description How the landing point was found: on the rim of a named crater (so it borders that crater's shadowed floor) or on a massif or plateau.
+             * @enum {string}
+             */
+            search_kind: "rim" | "massif";
             summary?: components["schemas"]["SiteSummary"] | null;
             provenance: components["schemas"]["Provenance"];
             horizon?: components["schemas"]["HorizonSummary"] | null;
@@ -860,6 +937,16 @@ export interface components {
             /** Grazing */
             grazing: boolean;
             /**
+             * Longest Dark Open
+             * @description The longest night touches an edge of the reference window, so the window ended it and `longest_dark_s` is a lower bound.
+             */
+            longest_dark_open: boolean;
+            /**
+             * Longest Blackout Open
+             * @description As `longest_dark_open`, for the longest loss of Earth contact.
+             */
+            longest_blackout_open: boolean;
+            /**
              * Reference Window Start
              * Format: date-time
              */
@@ -871,6 +958,12 @@ export interface components {
             reference_window_end: string;
             /** Reference Step S */
             reference_step_s: number;
+            /**
+             * Computed At
+             * Format: date-time
+             * @description When this summary was computed.
+             */
+            computed_at: string;
         };
         /** TimelineResponse */
         TimelineResponse: {

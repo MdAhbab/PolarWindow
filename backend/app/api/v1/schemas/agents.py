@@ -77,6 +77,12 @@ class AgentResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     status: Literal["ok", "insufficient_data", "degraded"]
+    run_status: Literal[
+        "ok", "insufficient_data", "guard_rejected", "timeout", "degraded", "error"
+    ] = Field(
+        description="Why this answer is what it is, exactly as recorded in the run log. "
+        "`status` folds the last four into `degraded`; this keeps them apart."
+    )
     reason: str | None = None
     result: dict[str, Any] | None = None
     provenance: list[ProvenanceItem] = Field(default_factory=list)

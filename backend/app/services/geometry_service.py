@@ -13,8 +13,10 @@ hit rate on the product's primary interaction is zero.
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from typing import Final
 
 import numpy as np
 
@@ -23,6 +25,25 @@ from app.core import metrics as core_metrics
 from app.core import spice, timeline, visibility
 from app.core.horizon import HorizonMask
 from app.core.spice import R_EARTH_M, R_MOON_M, R_SUN_M
+
+#: Mean Sun and Earth distances from the Moon, metres. Used only to state the
+#: nominal disc radius in responses that describe a *set* of sites or a stored
+#: mask, where no window -- and so no actual distance -- is involved.
+MEAN_SUN_DISTANCE_M: Final[float] = 1.495_978_707e11
+MEAN_EARTH_DISTANCE_M: Final[float] = 3.844e8
+
+
+def nominal_penumbra_deg() -> tuple[float, float]:
+    """Apparent angular radius of the Sun and Earth at their mean distances.
+
+    Derived, not typed in: the `/sites` envelope used to carry 0.266 and 0.95
+    as literals, which is exactly the "number nobody computed" the API promises
+    never to return.
+    """
+    sun = float(np.degrees(np.arcsin(R_SUN_M / MEAN_SUN_DISTANCE_M)))
+    earth = float(np.degrees(np.arcsin(R_EARTH_M / MEAN_EARTH_DISTANCE_M)))
+    return sun, earth
+
 
 log = logging.getLogger(__name__)
 
@@ -67,21 +88,35 @@ def quantise(dt: datetime, step_s: int) -> datetime:
 
 
 def validate_window(start: datetime, end: datetime, step_s: int) -> tuple[datetime, datetime, int]:
-    """Bound-check and quantise. Raises rather than clamping silently."""
+    """Bound-check and quantise. Raises rather than clamping silently.
+
+    The start snaps *down* to the step grid and the **length** snaps to the
+    nearest whole number of steps; the end follows from both. Flooring start
+    and end independently -- the previous rule -- made a fixed-length window
+    that slides in time alternate between two lengths (2,834 and 2,835 steps
+    for a lunar day) depending on its phase against the grid. Every drag then
+    produced two cache keys instead of one, and the totals wobbled by a step
+    for a reason nobody could see on screen.
+    """
     s = get_settings()
     if not (s.min_step_s <= step_s <= s.max_step_s):
         raise StepOutOfRange(
             f"step_s must be between {s.min_step_s} and {s.max_step_s} seconds; got {step_s}"
         )
+    start = start if start.tzinfo is not None else start.replace(tzinfo=UTC)
+    end = end if end.tzinfo is not None else end.replace(tzinfo=UTC)
+    if end <= start:
+        raise WindowTooLong(
+            f"end must be after start; got {start.isoformat()} .. {end.isoformat()}"
+        )
     qs = quantise(start, step_s)
-    qe = quantise(end, step_s)
-    if qe <= qs:
-        raise WindowTooLong(f"end must be after start; got {qs.isoformat()} .. {qe.isoformat()}")
+    steps = max(1, round((end - start).total_seconds() / step_s))
+    qe = qs + timedelta(seconds=steps * step_s)
     span_days = (qe - qs).total_seconds() / 86400.0
     if span_days > s.max_window_days:
         raise WindowTooLong(
             f"window is {span_days:.0f} days; the maximum is {s.max_window_days}. "
-            f"Narrow the window or increase step_s."
+            f"Narrow the window."
         )
     return qs, qe, step_s
 
@@ -104,24 +139,24 @@ async def compute_window_metrics(
     is the difference between ~15 ms and ~200 ms and is the main reason the
     slider budget in N1 is achievable at all.
     """
-    import time
-
     t0 = time.perf_counter()
     start, end, step_s = validate_window(start, end, step_s)
 
-    start_et = await spice.utc_to_et_async(start.isoformat().replace("+00:00", "Z"))
-    end_et = await spice.utc_to_et_async(end.isoformat().replace("+00:00", "Z"))
-    ets = spice.et_range(start_et, end_et, float(step_s))
-    t_s = (ets - ets[0]).astype(np.float64)
+    # One hop to the SPICE thread for the whole window: both UTC conversions,
+    # the time grid and both bodies. Four hops cost four queue waits behind
+    # whatever else is on that thread.
+    eph = await spice.ephemeris_async(
+        start.isoformat().replace("+00:00", "Z"),
+        end.isoformat().replace("+00:00", "Z"),
+        float(step_s),
+    )
+    t_s = (eph.ets - eph.ets[0]).astype(np.float64)
 
     basis = visibility.enu_basis(lat_deg, lon_deg)
     site_pos = visibility.site_position(lat_deg, lon_deg, R_MOON_M + elev_m)
 
-    sun_vec = await spice.body_vectors_async("sun", ets)
-    earth_vec = await spice.body_vectors_async("earth", ets)
-
-    sun = timeline.build_track("sun", t_s, sun_vec, mask, basis, site_pos, R_SUN_M)
-    earth = timeline.build_track("earth", t_s, earth_vec, mask, basis, site_pos, R_EARTH_M)
+    sun = timeline.build_track("sun", t_s, eph.sun, mask, basis, site_pos, R_SUN_M)
+    earth = timeline.build_track("earth", t_s, eph.earth, mask, basis, site_pos, R_EARTH_M)
 
     m = timeline.site_metrics_from_tracks(site_id, sun, earth)
     packet = core_metrics.autonomy(m)
@@ -177,6 +212,22 @@ def uncertainty_block(
             "At least one crossing is too shallow to time: the body approaches the "
             "skyline almost tangentially, so the hour it crosses is not knowable from "
             "this data. The totals stand; their edges do not."
+        )
+    m = result.metrics
+    cut = [
+        label
+        for label, is_open in (
+            ("longest night", m.longest_dark_open),
+            ("longest blackout", m.longest_blackout_open),
+        )
+        if is_open
+    ]
+    if cut:
+        notes.append(
+            f"The {' and the '.join(cut)} touch{'es' if len(cut) == 1 else ''} an edge of "
+            "the window, so the window -- not the terrain -- ended "
+            f"{'it' if len(cut) == 1 else 'them'}. The stretch continues beyond the window "
+            "and the figure is a lower bound."
         )
 
     return {

@@ -140,9 +140,11 @@ async def test_horizon_downsamples_by_maximum(client) -> None:
     assert fine["azimuth_count"] == 1440
     assert coarse["azimuth_count"] == 360
     assert max(coarse["el_deg"]) == pytest.approx(max(fine["el_deg"]), abs=1e-4)
-    # Every coarse bin is the max of its four fine bins, so never below their mean.
+    # Every coarse bin is the max of the fine bins *around* its bearing
+    # (+-0.5 deg, wrapping at north), so never below their mean and never a
+    # quarter-bin late.
     for i in range(0, 360, 37):
-        group = fine["el_deg"][i * 4 : i * 4 + 4]
+        group = [fine["el_deg"][(i * 4 + k) % 1440] for k in range(-2, 3)]
         assert coarse["el_deg"][i] == pytest.approx(max(group), abs=1e-4)
 
 
@@ -251,3 +253,154 @@ async def test_cors_allows_the_vite_dev_server(client) -> None:
     """The single most common 'works in curl, fails in the browser' failure."""
     r = await client.get(f"{API}/sites", headers={"Origin": "http://localhost:5173"})
     assert r.headers.get("access-control-allow-origin") == "http://localhost:5173"
+
+
+# --- window edges, survival, and the envelope for a set ---------------------
+
+
+async def test_a_night_cut_by_the_window_says_so(client) -> None:
+    """Malapert's reference window opens mid-night; the night continues past it.
+
+    Measured on real data, a window phase can report 167 h for a 322 h night.
+    The number is kept -- it is true for the window -- and flagged as a lower
+    bound, rather than presented as the night itself.
+    """
+    m = (await client.get(f"{API}/sites/malapert-massif/metrics")).json()
+    w = (await client.get(f"{API}/sites/malapert-massif/windows")).json()
+    assert m["longest_dark_open"] is True
+    assert w["sun"]["longest_down_open"] is True
+    arcs = w["sun"]["arcs"]
+    assert arcs[0]["open_start"] and arcs[-1]["open_end"]
+    assert not any(a["open_start"] for a in arcs[1:]), "only the first arc can open early"
+    assert not any(a["open_end"] for a in arcs[:-1]), "only the last arc can run on"
+    assert any("lower bound" in n for n in m["meta"]["uncertainty"]["notes"])
+
+
+async def test_survival_is_the_longest_night(client) -> None:
+    """Malapert has no compound event; its battery still carries the night."""
+    m = (await client.get(f"{API}/sites/malapert-massif/metrics")).json()
+    assert m["autonomy"]["survival_needed_s"] == pytest.approx(m["longest_dark_s"])
+    assert m["autonomy"]["survival_needed_s"] > 200 * 3600
+    assert m["autonomy"]["survival_open"] is m["longest_dark_open"]
+    assert 0.0 < m["autonomy"]["margin_fraction"] < 1.0
+
+
+async def test_site_list_meta_is_derived_not_typed_in(client) -> None:
+    """The /sites envelope used to be a block of literals dated 2027."""
+    from datetime import UTC, datetime, timedelta
+
+    body = (await client.get(f"{API}/sites")).json()
+    meta = body["meta"]
+    stamp = datetime.fromisoformat(meta["computed_at"].replace("Z", "+00:00"))
+    assert stamp <= datetime.now(UTC) + timedelta(minutes=1), "computed_at is in the future"
+    assert meta["uncertainty"]["dem_vertical_error_m"] >= 2.0
+    assert "LOLA" in meta["resolution"]["dem_product"]
+    summaries = [i["summary"] for i in body["items"] if i["summary"]]
+    assert meta["uncertainty"]["grazing"] == any(s["grazing"] for s in summaries)
+
+
+async def test_metric_filters_run_before_pagination(client) -> None:
+    """Filtering a page after the database paginated it lost matching sites."""
+    everything = (await client.get(f"{API}/sites?limit=500")).json()["items"]
+    want = sorted(
+        i["id"] for i in everything if i["summary"] and i["summary"]["sun_fraction_up"] >= 0.5
+    )
+    assert len(want) > 2, "sanity: the filter must select more than one page"
+    page1 = (await client.get(f"{API}/sites?min_sun_fraction=0.5&limit=2")).json()
+    page2 = (await client.get(f"{API}/sites?min_sun_fraction=0.5&limit=2&offset=2")).json()
+    assert page1["total"] == len(want), "total counted one page, not the selection"
+    assert len(page1["items"]) == 2
+    got = {i["id"] for i in page1["items"] + page2["items"]}
+    assert got <= set(want) and len(got) == min(4, len(want))
+
+
+async def test_compare_ranks_are_competition_ranks(client) -> None:
+    body = (
+        await client.post(
+            f"{API}/compare",
+            json={
+                "site_ids": ["connecting-ridge", "malapert-massif", "faustini-rim", "nobile-rim-1"],
+                "rank_by": "earth_contact_s",
+            },
+        )
+    ).json()
+    items = body["items"]
+    assert [i["position"] for i in items] == list(range(1, len(items) + 1))
+    tied = {sid for g in body["ties"] for sid in g}
+    for item in items:
+        assert item["tied"] is (item["site_id"] in tied)
+        assert item["rank"] <= item["position"]
+    for group in body["ties"]:
+        ranks = {i["rank"] for i in items if i["site_id"] in group}
+        assert len(ranks) == 1, "tied sites were given different ranks"
+
+
+async def test_compare_envelope_describes_every_site(client) -> None:
+    """Least favourable value across the set, not the leader's own margin."""
+    ids = ["connecting-ridge", "malapert-massif", "faustini-rim"]
+    body = (await client.post(f"{API}/compare", json={"site_ids": ids})).json()
+    per_site = [i["metrics"]["meta"]["uncertainty"] for i in body["items"]]
+    u = body["meta"]["uncertainty"]
+    assert u["coverage"] == min(p["coverage"] for p in per_site)
+    assert u["grazing"] == any(p["grazing"] for p in per_site)
+    if not u["grazing"]:
+        assert u["edge_timing_s"] == max(p["edge_timing_s"] for p in per_site)
+
+
+async def test_compare_does_not_hide_an_outage_behind_unavailable(client, monkeypatch) -> None:
+    """A missing ephemeris is not a property of one site; it is a 503."""
+    from app.core.kernels import KernelError
+    from app.services import site_service
+
+    async def no_kernels(*_a, **_k):
+        raise KernelError("de440.bsp is not loaded")
+
+    monkeypatch.setattr(site_service, "cached_payload", no_kernels)
+    r = await client.post(f"{API}/compare", json={"site_ids": ["connecting-ridge", SITE]})
+    assert r.status_code == 503
+    assert r.json()["detail"]["ui"]["still_works"]
+
+
+async def test_an_unhandled_failure_is_a_problem_detail_the_browser_can_read(
+    client, monkeypatch
+) -> None:
+    """Inside CORS, and shaped like every other error.
+
+    Starlette's own 500 handler runs outside CORS: the browser saw a network
+    failure and the UI said "cannot reach the service" about a service that was
+    up. And its body lacked the `detail` wrapper the error panel reads.
+    """
+    from app.services import site_service
+
+    async def boom(*_a, **_k):
+        raise RuntimeError("synthetic failure")
+
+    monkeypatch.setattr(site_service, "cached_payload", boom)
+    r = await client.get(f"{API}/sites/{SITE}/metrics", headers={"Origin": "http://localhost:5173"})
+    assert r.status_code == 500
+    assert r.headers.get("access-control-allow-origin") == "http://localhost:5173"
+    detail = r.json()["detail"]
+    assert detail["ui"]["still_works"]
+    assert "synthetic" not in r.text, "internal exception text leaked to the client"
+
+
+async def test_large_bodies_are_compressed(client) -> None:
+    """~210 KB of timeline JSON is ~40 KB on the wire; the hand-off budgets on it."""
+    r = await client.get(f"{API}/sites/{SITE}/timeline", headers={"accept-encoding": "gzip"})
+    assert r.status_code == 200
+    assert r.headers.get("content-encoding") == "gzip"
+
+
+async def test_openapi_document_in_docs_matches_the_app(client) -> None:
+    """The frontend client is generated from docs/openapi.json.
+
+    If the app's schema moves and the document does not, the generated types
+    describe an API that no longer exists and nothing fails until runtime.
+    Regenerate with `make codegen`.
+    """
+    import json
+    from pathlib import Path
+
+    live = (await client.get(f"{API}/openapi.json")).json()
+    committed = json.loads((Path(__file__).parents[4] / "docs" / "openapi.json").read_text())
+    assert live == committed, "docs/openapi.json is stale: run `make codegen`"

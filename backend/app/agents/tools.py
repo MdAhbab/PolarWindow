@@ -34,6 +34,13 @@ from app.services import compare_service, site_service
 
 log = logging.getLogger(__name__)
 
+#: The database handle agents carry through to their tools.
+#:
+#: The agent modules name this alias rather than SQLAlchemy's type, so the only
+#: agent module that knows a database exists is this one -- which an import
+#: contract enforces. An agent never calls a method on it; it hands it here.
+Session = AsyncSession
+
 
 # ---------------------------------------------------------------------------
 # Argument models
@@ -202,9 +209,7 @@ def _trim(payload: dict[str, Any], keep: tuple[str, ...]) -> dict[str, Any]:
     return {k: payload[k] for k in keep if k in payload}
 
 
-async def execute(
-    session: AsyncSession, name: str, raw_args: dict[str, Any], seq: int
-) -> ToolCallLog:
+async def execute(session: Session, name: str, raw_args: dict[str, Any], seq: int) -> ToolCallLog:
     """Run one tool. Never raises: a failure is a logged result the model can see."""
     t0 = time.perf_counter()
     log_entry = ToolCallLog(seq=seq, tool=name, args=raw_args)
@@ -254,9 +259,20 @@ async def execute(
                     "sun_fraction_up",
                     "earth_fraction_up",
                     "worst_compound_s",
+                    "longest_dark_open",
+                    "longest_blackout_open",
                     "autonomy",
                 ),
             )
+            # The margin travels with the numbers. Without it an agent had the
+            # four figures and no way to say how far to trust them -- and the
+            # product's rule is that every number carries its +- or says why not.
+            u = payload["meta"]["uncertainty"]
+            result["uncertainty"] = {
+                "edge_timing_s": u["edge_timing_s"],
+                "grazing": u["grazing"],
+                "coverage": u["coverage"],
+            }
 
         elif name == "get_windows":
             windows_args = WindowArgs(**raw_args)
@@ -312,38 +328,30 @@ async def execute(
 
         elif name == "search_sites":
             search_args = SearchArgs(**raw_args)
-            from app.db.repositories.sites import SiteRepository
-
-            sites, _total = await SiteRepository(session).list_sites(
+            # The same service `/sites` uses, so the metric filters run before
+            # pagination here too and an agent sees exactly what the list shows.
+            listing = await site_service.list_with_summaries(
+                session,
                 q=search_args.q,
                 region=search_args.region,
                 lat_min=search_args.lat_min,
                 lat_max=search_args.lat_max,
+                min_sun_fraction=search_args.min_sun_fraction,
+                max_longest_dark_s=search_args.max_longest_dark_s,
                 limit=search_args.limit,
             )
-            summaries = await site_service.reference_summaries(session, [x.id for x in sites])
-            rows = []
-            for site in sites:
-                summary = summaries.get(site.id)
-                if search_args.min_sun_fraction is not None and (
-                    summary is None or summary["sun_fraction_up"] < search_args.min_sun_fraction
-                ):
-                    continue
-                if search_args.max_longest_dark_s is not None and (
-                    summary is None or summary["longest_dark_s"] > search_args.max_longest_dark_s
-                ):
-                    continue
-                rows.append(
-                    {
-                        "site_id": site.id,
-                        "name": site.name,
-                        "region": site.region,
-                        "lat_deg": site.lat_deg,
-                        "elev_m": site.elev_m,
-                        "summary": summary,
-                    }
-                )
-            result = {"count": len(rows), "sites": rows}
+            rows = [
+                {
+                    "site_id": site.id,
+                    "name": site.name,
+                    "region": site.region,
+                    "lat_deg": site.lat_deg,
+                    "elev_m": site.elev_m,
+                    "summary": listing.summaries.get(site.id),
+                }
+                for site in listing.sites
+            ]
+            result = {"count": listing.total, "sites": rows}
 
         elif name == "compare_sites":
             a = CompareArgs(**raw_args)
