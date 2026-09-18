@@ -1,21 +1,24 @@
 {
-  "sunlit_s": 1418761.4974379844,
-  "earth_contact_s": 2053041.7353895255,
-  "longest_dark_s": 1035359.7792688012,
-  "longest_blackout_s": 497558.2647056035,
+  "sunlit_s": 1418985.160368683,
+  "earth_contact_s": 2054188.845872183,
+  "longest_dark_s": 1035925.6914150896,
+  "longest_blackout_s": 497311.1542228267,
   "worst_compound_s": 0.0,
-  "sun_fraction_up": 0.5562461763448088,
-  "earth_fraction_up": 0.8049250118846365,
+  "sun_fraction_up": 0.5561376289695648,
+  "earth_fraction_up": 0.805090670505856,
+  "longest_dark_open": true,
+  "longest_blackout_open": false,
+  "survival_needed_s": 1035925.6914150896,
   "sun_arc_count": 3,
   "earth_arc_count": 3,
   "sun_arc_edges_s": [
     0.0,
-    96478.72338834341,
-    1515240.2208263278
+    96589.14831123714,
+    1515574.3086799202
   ],
   "earth_arc_edges_s": [
     0.0,
-    792694.2690215535,
-    1290252.533727157
+    792631.5242706288,
+    1289942.6784934555
   ]
 }

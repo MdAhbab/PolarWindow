@@ -467,13 +467,16 @@ class DemTile:
         return np.where(inside, z, np.nan)
 
 
-def make_sampler(
+def make_samplers(
     lat_deg: float,
     lon_deg: float,
     fine: DemTile | None,
     coarse: DemTile | None = None,
-) -> Callable[[FloatArray, FloatArray], FloatArray]:
-    """Build a local-ENU terrain sampler for a site.
+) -> tuple[
+    Callable[[FloatArray, FloatArray], FloatArray],
+    Callable[[FloatArray, FloatArray], FloatArray],
+]:
+    """Local-ENU height and vertical-error samplers for a site.
 
     Handles the part that is easy to get catastrophically wrong: near the south
     pole, **grid north in a polar stereographic projection is not true north**.
@@ -481,22 +484,50 @@ def make_sampler(
     bearing 0 would put every blocker at the wrong azimuth by an amount equal to
     the site's longitude -- 166 deg at Shackleton, which would not look like a
     bug, it would look like different terrain. ``local_frame`` measures the
-    convergence and ``local_to_grid`` applies it.
+    convergence (and the projection's scale factor) and ``local_to_grid``
+    applies both.
 
     Fine and coarse tiers are combined by preferring fine wherever it has data.
+    The error sampler follows the same choice, so a blocker found on the 80 m
+    regional model carries the regional model's error, not the 20 m one's.
     """
     frame = local_frame(lon_deg, lat_deg)
+    Tiers = tuple[FloatArray, FloatArray, npt.NDArray[np.bool_]]
+    last: list[tuple[object, object, Tiers]] = []
 
-    def sample(x_east_m: FloatArray, y_north_m: FloatArray) -> FloatArray:
+    def _tiers(x_east_m: FloatArray, y_north_m: FloatArray) -> Tiers:
+        # The ray-march asks for heights and then errors along the *same* ray
+        # arrays. Remembering the last lookup by identity halves the bilinear
+        # work -- without it the per-tier error doubled the mask build time.
+        if last and last[0][0] is x_east_m and last[0][1] is y_north_m:
+            return last[0][2]
         gx, gy = frame.local_to_grid(
             np.asarray(x_east_m, dtype=np.float64), np.asarray(y_north_m, dtype=np.float64)
         )
-        z = np.full(gx.shape, np.nan, dtype=np.float64)
-        if coarse is not None:
-            z = coarse.sample_grid(gx, gy)
-        if fine is not None:
-            zf = fine.sample_grid(gx, gy)
-            z = np.where(np.isfinite(zf), zf, z)
-        return z
+        zc = coarse.sample_grid(gx, gy) if coarse is not None else np.full(gx.shape, np.nan)
+        zf = fine.sample_grid(gx, gy) if fine is not None else np.full(gx.shape, np.nan)
+        out = (zf, zc, np.isfinite(zf))
+        last[:] = [(x_east_m, y_north_m, out)]
+        return out
 
-    return sample
+    def sample(x_east_m: FloatArray, y_north_m: FloatArray) -> FloatArray:
+        zf, zc, use_fine = _tiers(x_east_m, y_north_m)
+        return np.where(use_fine, zf, zc)
+
+    def sigma(x_east_m: FloatArray, y_north_m: FloatArray) -> FloatArray:
+        _zf, zc, use_fine = _tiers(x_east_m, y_north_m)
+        fine_err = fine.vertical_error_m if fine is not None else np.nan
+        coarse_err = coarse.vertical_error_m if coarse is not None else np.nan
+        return np.where(use_fine, fine_err, np.where(np.isfinite(zc), coarse_err, np.nan))
+
+    return sample, sigma
+
+
+def make_sampler(
+    lat_deg: float,
+    lon_deg: float,
+    fine: DemTile | None,
+    coarse: DemTile | None = None,
+) -> Callable[[FloatArray, FloatArray], FloatArray]:
+    """The height sampler alone; see ``make_samplers``."""
+    return make_samplers(lat_deg, lon_deg, fine, coarse)[0]

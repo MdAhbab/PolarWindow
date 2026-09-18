@@ -37,6 +37,7 @@ from typing import Any, Final, Literal
 import numpy as np
 import numpy.typing as npt
 import spiceypy as spice
+from scipy.interpolate import CubicSpline
 
 from app.core.kernels import METAKERNEL_NAME, KernelError, ensure, write_metakernel
 
@@ -58,6 +59,22 @@ _NAIF_TARGET: Final[dict[str, str]] = {"sun": "SUN", "earth": "EARTH"}
 
 #: The frame every position is expressed in. Not a parameter, by design.
 MOON_ME: Final[str] = "MOON_ME"
+
+#: Spacing of the grid CSPICE is actually evaluated on; positions between knots
+#: come from a cubic spline through them.
+#:
+#: Why at all: ``spkpos`` with light-time and aberration costs ~4 us per epoch,
+#: and a 708 h window at 900 s is 5,670 epochs -- 24 ms of the 27 ms a cold
+#: timeline took, with everything else (mask lookup, bisection, the four
+#: numbers) sharing the remaining 3 ms.
+#:
+#: Why this spacing: in MOON_ME the Sun turns about 0.5 deg/h and Earth
+#: librates a few degrees over weeks, so both vectors are extremely smooth.
+#: Measured against a direct evaluation over a full lunar day, hourly knots
+#: reproduce the vectors to a relative error of 6e-11 (Sun) and 1e-11 (Earth)
+#: -- about 1e-8 deg of direction, six orders of magnitude inside the 0.01 deg
+#: az/el tolerance of the golden fixtures. ``test_spice.py`` pins that bound.
+EPHEMERIS_KNOT_S: Final[float] = 3600.0
 
 # ---------------------------------------------------------------------------
 # Process-global kernel state
@@ -200,7 +217,20 @@ def et_range(start_et: float, end_et: float, step_s: float) -> npt.NDArray[np.fl
 # ---------------------------------------------------------------------------
 
 
-def body_vectors(body: Body, ets: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+def _spkpos_m(target: str, ets: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+    """One vectorised ``spkpos``, in metres. Caller holds nothing; this locks."""
+    with _lock:
+        pos, _lt = spice.spkpos(target, ets, MOON_ME, "LT+S", "MOON")
+    # SPICE works in km; the rest of this codebase in metres.
+    return np.asarray(np.asarray(pos, dtype=np.float64).reshape(-1, 3) * 1000.0, dtype=np.float64)
+
+
+def body_vectors(
+    body: Body,
+    ets: npt.NDArray[np.float64],
+    *,
+    knot_s: float | None = EPHEMERIS_KNOT_S,
+) -> npt.NDArray[np.float64]:
     """Position of ``body`` relative to the Moon's centre, in MOON_ME.
 
     Returns an ``(n, 3)`` array in **metres**.
@@ -211,17 +241,48 @@ def body_vectors(body: Body, ets: npt.NDArray[np.float64]) -> npt.NDArray[np.flo
     choice: what matters is where the Sun appears in the sky, not where it
     geometrically is 1.3 seconds ago.
 
-    One call handles the whole array. spiceypy loops inside CSPICE, so this is
-    a single boundary crossing rather than n of them -- the difference between
-    ~15 ms and ~200 ms for a 2,835-sample window.
+    When the requested grid is finer than ``knot_s``, CSPICE is evaluated on a
+    knot grid that brackets the request by one knot at each end and the
+    positions are interpolated with a cubic spline (see ``EPHEMERIS_KNOT_S``
+    for the measured error). ``knot_s=None`` forces direct evaluation at every
+    epoch, which is what the accuracy test compares against.
     """
     _require_loaded()
     target = _NAIF_TARGET[body]
-    with _lock:
-        pos, _lt = spice.spkpos(target, ets, MOON_ME, "LT+S", "MOON")
-    arr = np.asarray(pos, dtype=np.float64).reshape(-1, 3)
-    # SPICE works in km; the rest of this codebase in metres.
-    return np.asarray(arr * 1000.0, dtype=np.float64)
+    ets = np.asarray(ets, dtype=np.float64)
+    if knot_s is None or ets.size < 4:
+        return _spkpos_m(target, ets)
+    span = float(ets[-1] - ets[0])
+    step = span / (ets.size - 1)
+    if step >= knot_s or span < 4.0 * knot_s:
+        return _spkpos_m(target, ets)
+    n = int(np.ceil(span / knot_s))
+    knots = ets[0] - knot_s + knot_s * np.arange(n + 3, dtype=np.float64)
+    spline = CubicSpline(knots, _spkpos_m(target, knots), axis=0)
+    return np.asarray(spline(ets), dtype=np.float64)
+
+
+@dataclass(frozen=True, slots=True)
+class Ephemeris:
+    """Everything one window needs from SPICE, fetched in a single hop."""
+
+    ets: npt.NDArray[np.float64]
+    sun: npt.NDArray[np.float64]
+    earth: npt.NDArray[np.float64]
+
+
+def ephemeris(start_utc: str, end_utc: str, step_s: float) -> Ephemeris:
+    """Time grid plus both bodies' positions for one window."""
+    start_et = utc_to_et(start_utc)
+    end_et = utc_to_et(end_utc)
+    ets = et_range(start_et, end_et, step_s)
+    return Ephemeris(ets=ets, sun=body_vectors("sun", ets), earth=body_vectors("earth", ets))
+
+
+async def ephemeris_async(start_utc: str, end_utc: str, step_s: float) -> Ephemeris:
+    """``ephemeris`` on the dedicated SPICE thread: one hop per window, not four."""
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(_get_executor(), ephemeris, start_utc, end_utc, step_s)
 
 
 async def body_vectors_async(body: Body, ets: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:

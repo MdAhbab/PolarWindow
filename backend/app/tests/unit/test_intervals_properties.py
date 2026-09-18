@@ -241,3 +241,62 @@ def test_bisect_on_a_graze_returns_the_midpoint() -> None:
     graze; this function does not."""
     got = intervals.bisect_crossing(lambda x: 1e-12, 0.0, 10.0)
     assert 0.0 <= got <= 10.0
+
+
+# ---------------------------------------------------------------------------
+# Margins with exact zeros, and refiners that snap to a bracket edge
+# ---------------------------------------------------------------------------
+#
+# The boolean strategy above only ever produces margins of +-1, so it never
+# exercises the one shape that broke the extractor: a body touching the skyline
+# exactly at a sample. Bisection then returns the shared bracket endpoint on
+# both sides, the sub-EPS run between the two crossings is dropped, and its
+# same-valued neighbours were left side by side -- one night reported as two,
+# and the longest dark gap as the larger half.
+
+margins = st.lists(st.sampled_from([-2.0, -1.0, 0.0, 1.0, 2.0]), min_size=2, max_size=200)
+
+
+def _snap_refiner(t: np.ndarray, m: np.ndarray):
+    """Bisection's behaviour at an exact zero: return that endpoint."""
+
+    def refine(lo: float, hi: float) -> float:
+        i = int(np.searchsorted(t, lo))
+        if m[i] == 0.0:
+            return lo
+        if i + 1 < len(m) and m[i + 1] == 0.0:
+            return hi
+        return 0.5 * (lo + hi)
+
+    return refine
+
+
+@given(margins, st.booleans())
+@example([-1.0, -2.0, 0.0, -1.0, -3.0, 1.0], True)
+@example([-1.0, 0.0, -1.0], True)
+@example([1.0, 0.0, 1.0, 0.0, 1.0], True)
+@settings(max_examples=400)
+def test_runs_alternate_even_through_exact_zeros(values: list[float], snap: bool) -> None:
+    t = np.arange(len(values), dtype=np.float64) * 900.0
+    m = np.asarray(values, dtype=np.float64)
+    runs = intervals.runs_from_margin(t, m, refine=_snap_refiner(t, m) if snap else None)
+    assert runs, "a non-empty series produced no runs"
+    for a, b in itertools.pairwise(runs):
+        assert a.value != b.value, f"adjacent runs share a value: {a} {b}"
+        assert a.end == pytest.approx(b.start, abs=TOL)
+    assert sum(r.duration for r in runs) == pytest.approx(float(t[-1] - t[0]), abs=TOL)
+
+
+def test_a_touch_inside_a_night_does_not_split_it() -> None:
+    """The concrete failure: a zero-length glint inside one long night."""
+    t = np.arange(6, dtype=np.float64) * 900.0
+    m = np.array([-1.0, -1.0, 1.0, -1.0, -1.0, -1.0])
+
+    def collapse(lo: float, hi: float) -> float:
+        # Both crossings refine onto t = 1800: the sunlit stretch has no length.
+        return 1800.0
+
+    runs = intervals.runs_from_margin(t, m, refine=collapse)
+    assert [r.value for r in runs] == [False]
+    longest = intervals.longest(runs, False)
+    assert longest is not None and longest.duration == pytest.approx(4500.0)

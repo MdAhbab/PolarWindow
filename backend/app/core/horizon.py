@@ -119,10 +119,16 @@ class HorizonMask:
         DEM's vertical error into an angular one, and to tell the user *what*
         is blocking them rather than only *that* something is.
     tol_deg:
-        Angular uncertainty per bearing, ``atan(dem_error / range)``.
+        Angular uncertainty per bearing, ``atan(dem_error / range)``, where the
+        error is that of the elevation model that actually supplied the
+        blocking sample -- not one figure for the whole mask.
     coverage:
         Fraction of samples that fell inside the DEM, 0..1. Below 1.0 the mask
         is partial and every response built on it says so.
+    blocker_sigma_m:
+        Vertical error of the sample that set each bearing's skyline. Present
+        only on a freshly built mask; it is summarised into the stored record
+        rather than persisted, because ``tol_deg`` already carries its effect.
     """
 
     el_deg: F32Array
@@ -134,6 +140,7 @@ class HorizonMask:
     max_range_m: float
     coverage: float
     compute_ms: float
+    blocker_sigma_m: F32Array | None = None
 
     @property
     def azimuth_count(self) -> int:
@@ -190,6 +197,7 @@ def build_mask(
     min_step_m: float = DEFAULT_MIN_STEP_M,
     dem_post_spacing_m: float = 20.0,
     dem_vertical_error_m: float = DEM_VERTICAL_ERROR_M,
+    sample_sigma: TerrainSampler | None = None,
     r_body_m: float = R_MOON_M,
 ) -> HorizonMask:
     """Ray-march a full horizon mask.
@@ -201,6 +209,12 @@ def build_mask(
 
     ``site_height_m`` defaults to the sampled height at the origin. Passing it
     explicitly is how the synthetic tests pin a site onto a known surface.
+
+    ``sample_sigma`` returns the vertical error of the elevation model at each
+    sample, for terrain assembled from more than one product. Without it every
+    sample is taken to be as good as ``dem_vertical_error_m`` -- which, for a
+    site whose far skyline comes from the 80 m regional model, understated the
+    blocker's error by half on more than half of the bearings.
     """
     import time
 
@@ -217,8 +231,9 @@ def build_mask(
     )
     drop = curvature_drop_m(distances, r_body_m)
     # The angular noise floor at each range: the apparent elevation a pure
-    # vertical DEM error would produce there.
-    noise_floor_deg = np.degrees(np.arctan2(dem_vertical_error_m, distances))
+    # vertical DEM error would produce there. Per ray when the error varies by
+    # product, otherwise the same for every ray.
+    constant_floor_deg = np.degrees(np.arctan2(dem_vertical_error_m, distances))
 
     if site_height_m is None:
         h0_arr = sample_h(np.zeros(1), np.zeros(1))
@@ -234,6 +249,7 @@ def build_mask(
 
     el_deg = np.empty(n_az, dtype=np.float32)
     range_m = np.empty(n_az, dtype=np.float32)
+    sigma_m = np.full(n_az, dem_vertical_error_m, dtype=np.float32)
     inside_total = 0
     sample_total = 0
 
@@ -251,11 +267,19 @@ def build_mask(
         inside_total += int(valid.sum())
         sample_total += valid.size
 
+        if sample_sigma is not None:
+            sig = np.asarray(sample_sigma(xs, ys), dtype=np.float64)
+            sig = np.where(np.isfinite(sig), sig, dem_vertical_error_m)
+            noise_floor_deg = np.degrees(np.arctan2(sig, distances))
+        else:
+            sig = None
+            noise_floor_deg = constant_floor_deg
+
         if not valid.any():
             # No DEM anywhere along this ray. The honest horizon is the
             # spherical one -- the curvature-limited skyline of a smooth body --
             # and coverage will report that this bearing is unmodelled.
-            el_deg[i] = np.float32(np.degrees(-np.arctan(np.sqrt(2.0 * max(h0, 0.0) / r_body_m))))
+            el_deg[i] = np.float32(spherical_horizon_deg(h0, r_body_m))
             range_m[i] = np.float32(max_range_m)
             continue
 
@@ -288,9 +312,11 @@ def build_mask(
         k = int(np.argmax(candidates))
         el_deg[i] = np.float32(theta[k])
         range_m[i] = np.float32(distances[k])
+        if sig is not None:
+            sigma_m[i] = np.float32(sig[k])
 
     tol_deg = np.degrees(
-        np.arctan2(dem_vertical_error_m, np.maximum(range_m.astype(np.float64), 1.0))
+        np.arctan2(sigma_m.astype(np.float64), np.maximum(range_m.astype(np.float64), 1.0))
     ).astype(np.float32)
 
     k_max = int(np.argmax(el_deg))
@@ -306,23 +332,66 @@ def build_mask(
         max_range_m=max_range_m,
         coverage=float(coverage),
         compute_ms=(time.perf_counter() - t0) * 1000.0,
+        blocker_sigma_m=sigma_m,
     )
 
 
+def _centred_windows(n: int, target_count: int) -> npt.NDArray[np.intp]:
+    """Input-bin indices for each output bin, centred on the output azimuth.
+
+    Output bin ``j`` sits at azimuth ``j * 360 / target_count`` -- the same
+    convention every consumer interpolates with -- so it must summarise the
+    input bins *around* that azimuth, not the ones after it. Grouping
+    ``[4j, 4j + 3]`` instead describes ``[j, j + 0.75]`` deg and shifts the
+    whole skyline 0.375 deg clockwise, which is a real bearing error at a
+    resolution where 0.25 deg is half an hour of Sun motion.
+
+    The window is ``+-half`` a factor wide and inclusive, so for an even factor
+    the boundary bins belong to both neighbours. For an upper envelope that is
+    the conservative choice: a ridge on the boundary shows up in both.
+    """
+    if target_count <= 0 or n % target_count != 0:
+        raise ValueError(f"cannot downsample {n} bins to {target_count}")
+    factor = n // target_count
+    half = factor // 2
+    offsets = np.arange(-half, half + 1, dtype=np.intp)
+    centres = np.arange(target_count, dtype=np.intp) * factor
+    return (centres[:, None] + offsets[None, :]) % n
+
+
 def downsample(mask_el_deg: F32Array, target_count: int) -> F32Array:
-    """Reduce a mask to fewer bins by taking the **maximum** of each group.
+    """Reduce a mask to fewer bins by taking the **maximum** around each one.
 
     Never the mean. A skyline is an upper envelope: averaging it invents sky
     where a ridge is, and the ridge is the whole answer at these sites. This is
     the kind of one-word choice that silently adds hours of fictional sunlight.
     """
     n = mask_el_deg.shape[0]
-    if target_count <= 0 or n % target_count != 0:
-        raise ValueError(f"cannot downsample {n} bins to {target_count}")
-    factor = n // target_count
-    if factor == 1:
+    idx = _centred_windows(n, target_count)
+    if idx.shape[1] == 1:
         return mask_el_deg.copy()
-    return np.asarray(mask_el_deg.reshape(target_count, factor).max(axis=1), dtype=np.float32)
+    return np.asarray(mask_el_deg[idx].max(axis=1), dtype=np.float32)
+
+
+def downsample_mask(mask: HorizonMask, target_count: int) -> tuple[F32Array, F32Array, F32Array]:
+    """Downsample elevation, range and tolerance together.
+
+    Range and tolerance are taken from the bin that *set* each output
+    elevation, so all three describe the same blocker. Reducing them
+    independently (nearest range, loosest tolerance) produced a triple that no
+    single piece of terrain satisfies.
+    """
+    n = mask.azimuth_count
+    idx = _centred_windows(n, target_count)
+    if idx.shape[1] == 1:
+        return mask.el_deg.copy(), mask.range_m.copy(), mask.tol_deg.copy()
+    windows = mask.el_deg[idx]
+    pick = idx[np.arange(target_count), np.argmax(windows, axis=1)]
+    return (
+        np.asarray(mask.el_deg[pick], dtype=np.float32),
+        np.asarray(mask.range_m[pick], dtype=np.float32),
+        np.asarray(mask.tol_deg[pick], dtype=np.float32),
+    )
 
 
 def spherical_horizon_deg(site_height_m: float, r_body_m: float = R_MOON_M) -> float:

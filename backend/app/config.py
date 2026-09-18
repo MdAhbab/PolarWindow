@@ -20,7 +20,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 #: precomputed row and every cache key, and reported in `meta`, so stale
 #: geometry can never be served as current -- it becomes a visible mismatch
 #: rather than a silent wrong answer.
-ENGINE_VERSION = "hz-1/vis-1"
+#:
+#: hz-2: projection scale factor in the site frame; per-tier DEM error.
+#: vis-2: hourly-knot ephemeris interpolation; window-edge (open) flags;
+#:        survival sized on the longest night; adjacent-run coalescing.
+ENGINE_VERSION = "hz-2/vis-2"
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -113,6 +117,9 @@ class Settings(BaseSettings):
     reference_window_days: float = 29.53
 
     # --- cache -------------------------------------------------------------
+    #: Computed windows kept in-process, so the three payloads for one window
+    #: share one geometry run. ~0.3 MB each; see site_service._Memo.
+    geometry_memo_entries: int = 32
     cache_ttl_timeline_s: int = 3600
     cache_ttl_windows_s: int = 86_400
     cache_ttl_metrics_s: int = 86_400

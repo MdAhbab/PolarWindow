@@ -184,29 +184,42 @@ class MaskRepository:
             HorizonMaskRow.engine_version == engine_version,
         )
         row = (await self._s.execute(stmt)).scalars().first()
-        if row is None:
-            return None
-        return MaskRecord(
-            site_id=row.site_id,
-            engine_version=row.engine_version,
-            mask=HorizonMask(
-                el_deg=decode_f32(row.el_deg),
-                range_m=decode_f32(row.range_m),
-                tol_deg=decode_f32(row.tol_deg),
-                max_el_deg=row.max_el_deg,
-                max_el_bearing_deg=row.max_el_bearing_deg,
-                azimuth_step_deg=row.azimuth_step_deg,
-                max_range_m=row.max_range_m,
-                coverage=row.coverage,
-                compute_ms=row.compute_ms,
-            ),
-            dem_product=row.dem_product,
-            dem_resolution_m=row.dem_resolution_m,
-            dem_vertical_error_m=row.dem_vertical_error_m,
-            mean_el_deg=row.mean_el_deg,
-            computed_at=row.computed_at,
+        return None if row is None else _mask_record(row)
+
+    async def get_many(self, site_ids: list[str], engine_version: str) -> dict[str, MaskRecord]:
+        """Several masks in one round trip, for responses that describe a set."""
+        if not site_ids:
+            return {}
+        stmt = select(HorizonMaskRow).where(
+            HorizonMaskRow.site_id.in_(site_ids),
+            HorizonMaskRow.engine_version == engine_version,
         )
+        rows = (await self._s.execute(stmt)).scalars().all()
+        return {r.site_id: _mask_record(r) for r in rows}
 
     async def existing_site_ids(self, engine_version: str) -> set[str]:
         stmt = select(HorizonMaskRow.site_id).where(HorizonMaskRow.engine_version == engine_version)
         return set((await self._s.execute(stmt)).scalars().all())
+
+
+def _mask_record(row: HorizonMaskRow) -> MaskRecord:
+    return MaskRecord(
+        site_id=row.site_id,
+        engine_version=row.engine_version,
+        mask=HorizonMask(
+            el_deg=decode_f32(row.el_deg),
+            range_m=decode_f32(row.range_m),
+            tol_deg=decode_f32(row.tol_deg),
+            max_el_deg=row.max_el_deg,
+            max_el_bearing_deg=row.max_el_bearing_deg,
+            azimuth_step_deg=row.azimuth_step_deg,
+            max_range_m=row.max_range_m,
+            coverage=row.coverage,
+            compute_ms=row.compute_ms,
+        ),
+        dem_product=row.dem_product,
+        dem_resolution_m=row.dem_resolution_m,
+        dem_vertical_error_m=row.dem_vertical_error_m,
+        mean_el_deg=row.mean_el_deg,
+        computed_at=row.computed_at,
+    )

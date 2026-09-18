@@ -135,3 +135,56 @@ def test_invariants_hold_for_any_pair_of_series(sun_v: list[bool], earth_v: list
     assert m.worst_compound_s <= m.longest_dark_s + 1e-6
     assert m.worst_compound_s <= m.longest_blackout_s + 1e-6
     assert 0.0 <= m.sun.fraction_up <= 1.0
+
+
+def test_survival_is_the_longest_night_even_with_no_blackout() -> None:
+    """The battery carries the night whatever the radio is doing.
+
+    Found on real data: Malapert keeps Earth in view through its nights, so no
+    compound event exists -- and the old packet reported 0 h of survival for a
+    site with a 288 h night.
+    """
+    sun = arcs([(True, 0, 100), (False, 100, 388), (True, 388, 700)])
+    earth = arcs([(True, 0, 700)])
+    m = metrics.assemble("s", 0.0, 700 * H, sun, earth)
+    packet = metrics.autonomy(m)
+    assert m.compound == []
+    assert packet.worst_compound_s == 0.0
+    assert packet.survival_needed_s == pytest.approx(288 * H)
+
+
+def test_a_night_cut_by_the_window_is_flagged_as_a_lower_bound() -> None:
+    """The window ended it, not the terrain: report it, and say so."""
+    sun = arcs([(False, 0, 40), (True, 40, 600), (False, 600, 700)])
+    earth = arcs([(True, 0, 650), (False, 650, 700)])
+    m = metrics.assemble("s", 0.0, 700 * H, sun, earth)
+    assert m.longest_dark_s == pytest.approx(100 * H)
+    assert m.longest_dark_open is True
+    assert m.longest_blackout_open is True
+    assert m.worst_compound_open is True
+    assert metrics.autonomy(m).survival_open is True
+
+
+def test_an_interior_night_is_not_flagged() -> None:
+    sun = arcs([(True, 0, 100), (False, 100, 300), (True, 300, 700)])
+    earth = arcs([(True, 0, 700)])
+    m = metrics.assemble("s", 0.0, 700 * H, sun, earth)
+    assert m.longest_dark_open is False
+    assert metrics.autonomy(m).survival_open is False
+
+
+def test_competition_ranks_give_tied_sites_the_same_rank() -> None:
+    """1, 1, 3 -- never 1, 2, 3 for sites the data cannot tell apart."""
+    r = metrics.rank_values(
+        [("a", 100 * H), ("b", 100.4 * H), ("c", 150 * H)], higher_is_better=False
+    )
+    assert r.order == ["a", "b", "c"]
+    assert r.ranks == {"a": 1, "b": 1, "c": 3}
+    assert r.ties == [["a", "b"]]
+
+
+def test_ties_are_anchored_on_the_leader_not_chained() -> None:
+    """A ~ B and B ~ C does not make A ~ C when A and C are 1.8 h apart."""
+    r = metrics.rank_values([("a", 0.0), ("b", 0.9 * H), ("c", 1.8 * H)], higher_is_better=False)
+    assert r.ties == [["a", "b"]]
+    assert r.ranks == {"a": 1, "b": 1, "c": 3}

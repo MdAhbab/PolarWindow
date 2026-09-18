@@ -134,6 +134,29 @@ def runs_from_margin(
         # property holds exactly.
         last = out[-1]
         out[-1] = Run(value=last.value, start=last.start, end=end)
+    return _coalesce(out)
+
+
+def _coalesce(runs: list[Run]) -> list[Run]:
+    """Merge adjacent runs that share a value.
+
+    Dropping a sub-EPS run is not enough on its own. When two refined crossings
+    land on the same instant -- a body touching the skyline at exactly one
+    sample, where bisection returns the bracket endpoint on both sides -- the
+    dust run between them is discarded and its neighbours, which have the *same*
+    value, are left side by side. One night then reads as two, and the longest
+    dark gap comes out as the larger half. That is a plausible number rather
+    than an error, which is the worst way for this module to be wrong.
+    """
+    if len(runs) < 2:
+        return runs
+    out: list[Run] = [runs[0]]
+    for r in runs[1:]:
+        prev = out[-1]
+        if r.value == prev.value:
+            out[-1] = Run(value=prev.value, start=prev.start, end=r.end)
+        else:
+            out.append(r)
     return out
 
 
@@ -207,13 +230,7 @@ def merge_short_gaps(runs: list[Run], value: bool, min_gap_s: float) -> list[Run
         else:
             merged.append(r)
     # A merge can leave two same-valued runs adjacent; coalesce once more.
-    out: list[Run] = [merged[0]]
-    for r in merged[1:]:
-        if r.value == out[-1].value:
-            out[-1] = Run(value=r.value, start=out[-1].start, end=r.end)
-        else:
-            out.append(r)
-    return out
+    return _coalesce(merged)
 
 
 def intersect(a: list[Run], b: list[Run], *, value: bool = False) -> list[Run]:

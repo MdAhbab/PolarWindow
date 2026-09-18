@@ -51,18 +51,32 @@ def _transformer(src: str, dst: str) -> Transformer:
     return Transformer.from_crs(CRS.from_proj4(src), CRS.from_proj4(dst), always_xy=True)
 
 
+def _apply(t: Transformer, a: FloatArray, b: FloatArray) -> tuple[FloatArray, FloatArray]:
+    """Transform arrays of any size, including one element.
+
+    pyproj tries a scalar fast path first, and for a one-element array that
+    path converts the array to a float -- which NumPy has deprecated and will
+    turn into an error. ``local_frame`` transforms single points for every
+    site, so this is not a test-only concern: a NumPy upgrade would have broken
+    every mask build. Single points go through as genuine scalars.
+    """
+    a = np.asarray(a, dtype=np.float64)
+    b = np.asarray(b, dtype=np.float64)
+    if a.size == 1 and b.size == 1:
+        u, v = t.transform(float(a.reshape(-1)[0]), float(b.reshape(-1)[0]))
+        return np.full(a.shape, u, dtype=np.float64), np.full(b.shape, v, dtype=np.float64)
+    u, v = t.transform(a, b)
+    return np.asarray(u, dtype=np.float64), np.asarray(v, dtype=np.float64)
+
+
 def geographic_to_polar(lon_deg: FloatArray, lat_deg: FloatArray) -> tuple[FloatArray, FloatArray]:
     """Selenographic (lon, lat) -> south polar stereographic (x, y) in metres."""
-    t = _transformer(MOON_GEOGRAPHIC, MOON_SOUTH_POLAR)
-    x, y = t.transform(np.asarray(lon_deg, dtype=np.float64), np.asarray(lat_deg, dtype=np.float64))
-    return np.asarray(x, dtype=np.float64), np.asarray(y, dtype=np.float64)
+    return _apply(_transformer(MOON_GEOGRAPHIC, MOON_SOUTH_POLAR), lon_deg, lat_deg)
 
 
 def polar_to_geographic(x_m: FloatArray, y_m: FloatArray) -> tuple[FloatArray, FloatArray]:
     """South polar stereographic (x, y) -> selenographic (lon, lat) in degrees."""
-    t = _transformer(MOON_SOUTH_POLAR, MOON_GEOGRAPHIC)
-    lon, lat = t.transform(np.asarray(x_m, dtype=np.float64), np.asarray(y_m, dtype=np.float64))
-    return np.asarray(lon, dtype=np.float64), np.asarray(lat, dtype=np.float64)
+    return _apply(_transformer(MOON_SOUTH_POLAR, MOON_GEOGRAPHIC), x_m, y_m)
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,30 +98,42 @@ class LocalFrame:
     y0_m: float
     #: Angle from grid +y (grid north) to true north, radians, at this site.
     grid_convergence_rad: float
+    #: Point scale factor of the projection at this site: grid metres per
+    #: ground metre. Exactly 1 at the pole and ``1 / cos^2(colatitude / 2)``
+    #: away from it -- 1.0024 at Nobile (84.4 deg S).
+    #:
+    #: Ignoring it is the same class of error as the ``lat_ts`` one recorded in
+    #: ``MOON_SOUTH_POLAR`` above: every ray samples terrain at the wrong ground
+    #: range, and the resulting skyline bias reached 0.063 deg at Malapert --
+    #: larger than the 0.05 deg the golden fixtures tolerate. The projection is
+    #: conformal, so one factor serves every bearing.
+    scale_factor: float = 1.0
 
     def local_to_grid(
         self, east_m: FloatArray, north_m: FloatArray
     ) -> tuple[FloatArray, FloatArray]:
-        """Local ENU metres (true-north referenced) -> polar stereographic metres."""
-        c = np.cos(self.grid_convergence_rad)
-        s = np.sin(self.grid_convergence_rad)
+        """Local ENU metres (true-north referenced, ground distance) -> polar
+        stereographic metres."""
+        c = np.cos(self.grid_convergence_rad) * self.scale_factor
+        s = np.sin(self.grid_convergence_rad) * self.scale_factor
         gx = self.x0_m + east_m * c + north_m * s
         gy = self.y0_m - east_m * s + north_m * c
         return gx, gy
 
 
 def local_frame(lon_deg: float, lat_deg: float) -> LocalFrame:
-    """Build a site's local frame, measuring grid convergence numerically.
+    """Build a site's local frame, measuring convergence and scale numerically.
 
     Measured rather than derived from the closed form, because the closed form
     depends on the projection's ``lon_0`` and sign conventions and getting it
     subtly wrong is easy and silent. Stepping a small distance due north and
     seeing where it lands in the grid is self-evidently correct and costs two
-    transforms, once per site.
+    transforms, once per site: the direction of that step is the convergence,
+    and its length over the ground distance is the scale factor.
     """
     x0, y0 = geographic_to_polar(np.array([lon_deg]), np.array([lat_deg]))
-    # 100 m due north in latitude.
-    dlat = np.degrees(100.0 / R_MOON_M)
+    step_m = 100.0
+    dlat = np.degrees(step_m / R_MOON_M)
     x1, y1 = geographic_to_polar(np.array([lon_deg]), np.array([lat_deg + dlat]))
     dx = float(x1[0] - x0[0])
     dy = float(y1[0] - y0[0])
@@ -118,4 +144,5 @@ def local_frame(lon_deg: float, lat_deg: float) -> LocalFrame:
         x0_m=float(x0[0]),
         y0_m=float(y0[0]),
         grid_convergence_rad=convergence,
+        scale_factor=float(np.hypot(dx, dy) / step_m),
     )

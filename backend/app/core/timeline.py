@@ -74,18 +74,6 @@ def _interp_track(t_s: FloatArray, values: FloatArray, at: float) -> float:
     return float(np.interp(at, t_s, values))
 
 
-def _interp_azimuth(t_s: FloatArray, az_deg: FloatArray, at: float) -> float:
-    """Interpolate azimuth through the 360/0 wrap.
-
-    Interpolating 359.9 and 0.1 linearly gives 180, which would look up the
-    horizon on the opposite side of the sky. Unwrapping first is not optional
-    here: near the pole the Sun's azimuth sweeps a full turn every lunar day, so
-    this wrap is crossed every month at every site.
-    """
-    unwrapped = np.degrees(np.unwrap(np.radians(az_deg)))
-    return float(np.mod(np.interp(at, t_s, unwrapped), 360.0))
-
-
 def build_track(
     body: str,
     t_s: FloatArray,
@@ -97,22 +85,29 @@ def build_track(
 ) -> BodyTrack:
     """Sample one body against the skyline and extract its arcs."""
     az, el = visibility.look_angles(basis, vectors, site_pos=site_pos)
-    mask_el = visibility.interp_horizon(mask.el_deg.astype(np.float64), az)
+    # Converted once. The bisection below evaluates the skyline forty times per
+    # crossing, and re-casting 1440 float32s on every evaluation was the single
+    # largest allocation on the request path.
+    mask_el64 = mask.el_deg.astype(np.float64)
+    mask_tol64 = mask.tol_deg.astype(np.float64)
+    mask_el = visibility.interp_horizon(mask_el64, az)
     margin = el - mask_el
 
     dist = np.linalg.norm(vectors - site_pos[None, :], axis=1)
     ang_r = visibility.sun_earth_angular_radius_deg(dist, body_radius_m)
     state = visibility.visibility_state(margin, ang_r)
 
+    # Interpolating 359.9 and 0.1 linearly gives 180, which would look up the
+    # horizon on the opposite side of the sky. Unwrapping first is not optional:
+    # near the pole the Sun's azimuth sweeps a full turn every lunar day, so the
+    # wrap is crossed every month at every site.
     unwrapped_az = np.degrees(np.unwrap(np.radians(az)))
 
     def margin_at(at: float) -> float:
         """Continuous margin, for bisection."""
         a = float(np.mod(np.interp(at, t_s, unwrapped_az), 360.0))
         e = _interp_track(t_s, el, at)
-        m = visibility.interp_horizon(
-            mask.el_deg.astype(np.float64), np.array([a], dtype=np.float64)
-        )
+        m = visibility.interp_horizon(mask_el64, np.array([a], dtype=np.float64))
         return e - float(m[0])
 
     def refine(lo: float, hi: float) -> float:
@@ -125,8 +120,6 @@ def build_track(
     bearings: list[float | None] = []
     block_els: list[float | None] = []
     any_grazing = False
-
-    mask_tol = mask.tol_deg.astype(np.float64)
 
     for arc in arcs:
         # Tolerance of an arc is the quadrature sum of its two edges' timing
@@ -147,7 +140,9 @@ def build_track(
                 continue
             rate = abs((margin_at(hi) - margin_at(lo)) / (hi - lo))
             a = float(np.mod(np.interp(edge, t_s, unwrapped_az), 360.0))
-            tol_deg = float(visibility.interp_horizon(mask_tol, np.array([a], dtype=np.float64))[0])
+            tol_deg = float(
+                visibility.interp_horizon(mask_tol64, np.array([a], dtype=np.float64))[0]
+            )
             if rate < GRAZING_DEG_PER_S:
                 edge_graze = True
                 edge_tols.append(MAX_REPORTED_TOLERANCE_S)
@@ -175,7 +170,7 @@ def build_track(
             # to trust.
             probe = np.linspace(arc.start, arc.end, 13)
             az_probe = np.mod(np.interp(probe, t_s, unwrapped_az), 360.0)
-            el_probe = visibility.interp_horizon(mask.el_deg.astype(np.float64), az_probe)
+            el_probe = visibility.interp_horizon(mask_el64, az_probe)
             k = int(np.argmax(el_probe))
             bearings.append(float(az_probe[k]))
             block_els.append(float(el_probe[k]))

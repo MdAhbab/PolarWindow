@@ -1,7 +1,7 @@
 {
-  "engine_version": "hz-1/vis-1",
-  "generated_at": "2026-09-18T06:24:56.556999+00:00",
-  "reason": "initial fixtures from LOLA LDEM 80S + de440, engine hz-1/vis-1",
+  "engine_version": "hz-2/vis-2",
+  "generated_at": "2026-09-18T07:38:28.360877+00:00",
+  "reason": "engine hz-2/vis-2: polar-stereographic scale factor in the site frame (skyline bias up to 0.063 deg removed); per-tier DEM vertical error (80 m tier 4 m) in mask tolerances; hourly-knot ephemeris interpolation (<1e-6 deg); window length quantised to whole steps instead of flooring both ends (708.734 h now 2835 steps, previously 2834); window-edge open flags; survival sized on the longest night; adjacent-run coalescing",
   "window": {
     "start": "2027-03-14T00:00:00+00:00",
     "hours": 708.734,
@@ -43,7 +43,7 @@
       "lat_deg": -89.43804,
       "lon_deg": 222.71699,
       "elev_m": 1957.5,
-      "dem_product": "LOLA_LDEM_80S_20M",
+      "dem_product": "LOLA_LDEM_80S_20M + LDEM_80S_80M",
       "coverage": 1.0
     },
     "malapert-massif": {
@@ -59,7 +59,7 @@
       "lat_deg": -86.64464,
       "lon_deg": 71.6505,
       "elev_m": 575.0,
-      "dem_product": "LOLA_LDEM_80S_20M",
+      "dem_product": "LOLA_LDEM_80S_20M + LDEM_80S_80M",
       "coverage": 1.0
     }
   }

@@ -11,7 +11,15 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from app.core.horizon import R_MOON_M, build_mask, curvature_drop_m, downsample, ray_distances
+from app.core.horizon import (
+    R_MOON_M,
+    HorizonMask,
+    build_mask,
+    curvature_drop_m,
+    downsample,
+    downsample_mask,
+    ray_distances,
+)
 
 
 def flat(height: float = 0.0):
@@ -158,11 +166,71 @@ def test_coverage_reports_missing_dem() -> None:
 def test_downsample_takes_the_maximum_never_the_mean() -> None:
     """Averaging a skyline invents sky where a ridge is."""
     el = np.zeros(1440, dtype=np.float32)
-    el[7] = 12.0  # one narrow ridge inside the first 1-degree group
+    el[5] = 12.0  # one narrow ridge at 1.25 deg, nearest the 1-degree output bin
     out = downsample(el, 360)
     assert out.shape == (360,)
     assert float(out[1]) == pytest.approx(12.0), "the ridge was averaged away"
-    assert float(np.mean(el[4:8])) < 12.0, "sanity: a mean would have lost it"
+    assert float(np.mean(el[2:7])) < 12.0, "sanity: a mean would have lost it"
+
+
+def test_downsample_is_centred_on_each_output_bearing() -> None:
+    """Output bin j describes the sky around j deg, not the 0.75 deg after it.
+
+    The old grouping [4j, 4j + 3] put a ridge at 1.75 deg under the 1 deg bin
+    and shifted every skyline 0.375 deg clockwise -- about 45 minutes of Sun
+    motion near the pole, drawn at the wrong bearing.
+    """
+    el = np.zeros(1440, dtype=np.float32)
+    el[7] = 9.0  # 1.75 deg: nearest output bearing is 2 deg
+    out = downsample(el, 360)
+    assert float(out[2]) == pytest.approx(9.0)
+    assert float(out[1]) == pytest.approx(0.0), "ridge reported a quarter-bin early"
+
+    wrap = np.zeros(1440, dtype=np.float32)
+    wrap[1439] = 5.0  # 359.75 deg belongs to due north, across the wrap
+    assert float(downsample(wrap, 360)[0]) == pytest.approx(5.0)
+
+
+def test_downsample_mask_keeps_elevation_range_and_tolerance_together() -> None:
+    """Range and tolerance must describe the blocker that set the elevation."""
+    el = np.zeros(1440, dtype=np.float32)
+    rng = np.full(1440, 40_000.0, dtype=np.float32)
+    tol = np.full(1440, 0.003, dtype=np.float32)
+    el[4], rng[4], tol[4] = 3.0, 1_400.0, 0.08  # the ridge at 1 deg
+    el[5], rng[5], tol[5] = 1.0, 200.0, 0.5  # a nearer, lower bump beside it
+    mask = HorizonMask(
+        el_deg=el,
+        range_m=rng,
+        tol_deg=tol,
+        max_el_deg=3.0,
+        max_el_bearing_deg=1.0,
+        azimuth_step_deg=0.25,
+        max_range_m=50_000.0,
+        coverage=1.0,
+        compute_ms=0.0,
+    )
+    e, r, t = downsample_mask(mask, 360)
+    assert (float(e[1]), float(r[1]), float(t[1])) == pytest.approx((3.0, 1_400.0, 0.08))
+
+
+def test_per_sample_error_sets_each_bearings_tolerance() -> None:
+    """A blocker found on a coarser product carries that product's error.
+
+    A far ridge at 30 km sits on the 80 m regional model (4 m) and must not be
+    reported with the 20 m fine window's 2 m.
+    """
+    sampler = cone(bearing_deg=90.0, range_m=30_000.0, height_m=900.0, sigma_m=400.0)
+
+    def sigma(x, y):
+        r = np.hypot(np.asarray(x), np.asarray(y))
+        return np.where(r <= 20_000.0, 2.0, 4.0)
+
+    m = build_mask(sampler, site_height_m=0.0, sample_sigma=sigma, dem_vertical_error_m=2.0)
+    k = int(round(90.0 / m.azimuth_step_deg))
+    assert float(m.range_m[k]) > 20_000.0, "sanity: the skyline is set by the far cone"
+    want = np.degrees(np.arctan2(4.0, float(m.range_m[k])))
+    assert float(m.tol_deg[k]) == pytest.approx(want, rel=1e-4)
+    assert m.blocker_sigma_m is not None and float(m.blocker_sigma_m[k]) == 4.0
 
 
 def test_downsample_rejects_a_non_divisor() -> None:

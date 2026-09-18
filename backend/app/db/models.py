@@ -27,6 +27,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    false,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -161,6 +162,15 @@ class SiteWindowMetrics(Base):
     #: At least one crossing was too shallow to time. The numbers stand; their
     #: edges do not.
     grazing: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    #: The longest night / blackout touches a window edge, so the stored value
+    #: is a lower bound on the stretch it belongs to. See
+    #: ``core.metrics.BodyMetrics.longest_down_open``.
+    longest_dark_open: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=false()
+    )
+    longest_blackout_open: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=false()
+    )
 
     computed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

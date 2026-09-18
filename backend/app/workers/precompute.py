@@ -33,11 +33,10 @@ from app.data.lola import (
     DemUnavailable,
     fetch_full,
     fetch_window_async,
-    make_sampler,
+    make_samplers,
 )
-from app.db.repositories.agent_runs import AgentRunRepository  # noqa: F401  (schema import)
 from app.db.repositories.metrics import WindowMetricsRecord, WindowMetricsRepository
-from app.db.repositories.sites import MaskRepository, SiteRepository
+from app.db.repositories.sites import MaskRepository, SiteRecord, SiteRepository
 from app.db.session import dispose_engine, session_scope
 
 log = logging.getLogger("precompute")
@@ -87,8 +86,15 @@ async def ensure_fine_dem(site_id: str, lat_deg: float, lon_deg: float) -> DemTi
 def build_site_mask(
     lat_deg: float, lon_deg: float, fine: DemTile | None, coarse: DemTile
 ) -> tuple[HorizonMask, str, float, float]:
+    """Ray-march one site and summarise which terrain products set its skyline.
+
+    Returns ``(mask, dem_product, dem_resolution_m, dem_vertical_error_m)``.
+    The product names every tier that set at least one bearing's skyline, and
+    the vertical error is the *largest* among those blockers -- the figure that
+    is true for every bearing -- rather than the near-field tier's by default.
+    """
     s = get_settings()
-    sampler = make_sampler(lat_deg, lon_deg, fine, coarse)
+    sampler, sigma = make_samplers(lat_deg, lon_deg, fine, coarse)
     source = fine if fine is not None else coarse
     mask = build_mask(
         sampler,
@@ -96,8 +102,31 @@ def build_site_mask(
         max_range_m=s.max_range_m,
         dem_post_spacing_m=source.scale_m,
         dem_vertical_error_m=source.vertical_error_m,
+        sample_sigma=sigma,
     )
-    return mask, source.product, source.scale_m, source.vertical_error_m
+    return (mask, *describe_sources(mask, fine, coarse))
+
+
+def describe_sources(
+    mask: HorizonMask, fine: DemTile | None, coarse: DemTile
+) -> tuple[str, float, float]:
+    """``(product, resolution_m, vertical_error_m)`` for the tiers that set the skyline."""
+    source = fine if fine is not None else coarse
+    sig = mask.blocker_sigma_m
+    if fine is None or sig is None:
+        return source.product, source.scale_m, source.vertical_error_m
+    from_coarse = int(np.count_nonzero(sig > fine.vertical_error_m + 1e-6))
+    if from_coarse == 0:
+        return fine.product, fine.scale_m, fine.vertical_error_m
+    log.info(
+        "         terrain: %d of %d bearings set beyond the fine window, on %s",
+        from_coarse,
+        mask.azimuth_count,
+        coarse.product,
+    )
+    # Short enough for the column; the per-bearing count is in the log above.
+    coarse_name = coarse.product.removeprefix("LOLA_")
+    return f"{fine.product} + {coarse_name}", fine.scale_m, float(np.max(sig))
 
 
 # ---------------------------------------------------------------------------
@@ -150,6 +179,8 @@ async def compute_reference_metrics(
         earth_fraction_up=m.earth.fraction_up,
         grazing=m.sun.grazing or m.earth.grazing,
         computed_at=result.computed_at,
+        longest_dark_open=m.longest_dark_open,
+        longest_blackout_open=m.longest_blackout_open,
     )
 
 
@@ -200,6 +231,7 @@ async def precompute(
         kernels_ok = False
         log.warning("SPICE kernels unavailable; masks will build, metrics will not.\n%s", exc)
 
+    failures: list[tuple[str, str]] = []
     for i, site in enumerate(targets, 1):
         t0 = time.perf_counter()
         log.info(
@@ -210,58 +242,88 @@ async def precompute(
             site.lat_deg,
             site.lon_deg,
         )
-
-        # An existing mask skips the *mask build*, not the whole site. These are
-        # separate pieces of work with separate costs, and conflating them meant
-        # a re-run could never repair missing metrics -- which is exactly the
-        # state a partial first run leaves behind.
-        if site.id in existing:
-            async with session_scope() as session:
-                rec = await MaskRepository(session).get(site.id, ENGINE_VERSION)
-            if rec is None:
-                existing.discard(site.id)
-            else:
-                mask = rec.mask
-                log.info("         mask: reused (%d bearings)", mask.azimuth_count)
-
-        if site.id not in existing:
-            fine = await ensure_fine_dem(site.id, site.lat_deg, site.lon_deg)
-            mask, product, res_m, err_m = build_site_mask(site.lat_deg, site.lon_deg, fine, coarse)
-            log.info(
-                "         mask: max %+.3f deg @ %.2f deg, mean %+.3f, coverage %.0f%%, %.0f ms",
-                mask.max_el_deg,
-                mask.max_el_bearing_deg,
-                float(np.mean(mask.el_deg)),
-                mask.coverage * 100,
-                mask.compute_ms,
+        # One site failing -- a DEM window that will not download, terrain
+        # outside the model -- must not cost the other fourteen. The failure is
+        # collected, reported at the end, and turned into a non-zero exit, so a
+        # partial seed is visible rather than silent.
+        try:
+            await _one_site(
+                site, existing, coarse, kernels_ok=kernels_ok, skip_metrics=skip_metrics
             )
-            async with session_scope() as session:
-                await MaskRepository(session).upsert(
-                    site.id,
-                    ENGINE_VERSION,
-                    mask,
-                    dem_product=product,
-                    dem_resolution_m=res_m,
-                    dem_vertical_error_m=err_m,
-                )
-
-        if kernels_ok and not skip_metrics:
-            rec_metrics = await compute_reference_metrics(
-                site.id, site.lat_deg, site.lon_deg, site.elev_m, mask
-            )
-            async with session_scope() as session:
-                await WindowMetricsRepository(session).upsert(ENGINE_VERSION, rec_metrics)
-            log.info(
-                "         metrics: sun %.0f h (%.0f%%)  dte %.0f h (%.0f%%)  "
-                "night %.0f h  blackout %.0f h",
-                rec_metrics.sunlit_s / 3600,
-                rec_metrics.sun_fraction_up * 100,
-                rec_metrics.earth_contact_s / 3600,
-                rec_metrics.earth_fraction_up * 100,
-                rec_metrics.longest_dark_s / 3600,
-                rec_metrics.longest_blackout_s / 3600,
-            )
+        except Exception as exc:
+            log.exception("         FAILED: %s", exc)
+            failures.append((site.id, f"{type(exc).__name__}: {exc}"))
+            continue
         log.info("         done in %.1f s", time.perf_counter() - t0)
+
+    if failures:
+        lines = "\n".join(f"  {sid}: {why}" for sid, why in failures)
+        raise SystemExit(
+            f"{len(failures)} of {len(targets)} sites failed; the others are seeded.\n{lines}\n"
+            "  fix: re-run `make worker` (it resumes), or --sites <id> for one site."
+        )
+
+
+async def _one_site(
+    site: SiteRecord,
+    existing: set[str],
+    coarse: DemTile,
+    *,
+    kernels_ok: bool,
+    skip_metrics: bool,
+) -> None:
+    mask: HorizonMask | None = None
+    # An existing mask skips the *mask build*, not the whole site. These are
+    # separate pieces of work with separate costs, and conflating them meant
+    # a re-run could never repair missing metrics -- which is exactly the
+    # state a partial first run leaves behind.
+    if site.id in existing:
+        async with session_scope() as session:
+            rec = await MaskRepository(session).get(site.id, ENGINE_VERSION)
+        if rec is not None:
+            mask = rec.mask
+            log.info("         mask: reused (%d bearings)", mask.azimuth_count)
+
+    if mask is None:
+        fine = await ensure_fine_dem(site.id, site.lat_deg, site.lon_deg)
+        mask, product, res_m, err_m = build_site_mask(site.lat_deg, site.lon_deg, fine, coarse)
+        log.info(
+            "         mask: max %+.3f deg @ %.2f deg, mean %+.3f, coverage %.0f%%, %.0f ms",
+            mask.max_el_deg,
+            mask.max_el_bearing_deg,
+            float(np.mean(mask.el_deg)),
+            mask.coverage * 100,
+            mask.compute_ms,
+        )
+        log.info("         terrain: %s, blocker error up to %.1f m", product, err_m)
+        async with session_scope() as session:
+            await MaskRepository(session).upsert(
+                site.id,
+                ENGINE_VERSION,
+                mask,
+                dem_product=product,
+                dem_resolution_m=res_m,
+                dem_vertical_error_m=err_m,
+            )
+
+    if kernels_ok and not skip_metrics:
+        rec_metrics = await compute_reference_metrics(
+            site.id, site.lat_deg, site.lon_deg, site.elev_m, mask
+        )
+        async with session_scope() as session:
+            await WindowMetricsRepository(session).upsert(ENGINE_VERSION, rec_metrics)
+        log.info(
+            "         metrics: sun %.0f h (%.0f%%)  dte %.0f h (%.0f%%)  "
+            "night %s%.0f h  blackout %s%.0f h",
+            rec_metrics.sunlit_s / 3600,
+            rec_metrics.sun_fraction_up * 100,
+            rec_metrics.earth_contact_s / 3600,
+            rec_metrics.earth_fraction_up * 100,
+            ">=" if rec_metrics.longest_dark_open else "",
+            rec_metrics.longest_dark_s / 3600,
+            ">=" if rec_metrics.longest_blackout_open else "",
+            rec_metrics.longest_blackout_s / 3600,
+        )
 
 
 async def main_async(argv: list[str] | None = None) -> None:

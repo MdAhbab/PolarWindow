@@ -27,6 +27,8 @@ class WindowMetricsRecord:
     earth_fraction_up: float
     grazing: bool
     computed_at: datetime
+    longest_dark_open: bool = False
+    longest_blackout_open: bool = False
 
 
 class WindowMetricsRepository:
@@ -48,6 +50,8 @@ class WindowMetricsRepository:
             "sun_fraction_up": rec.sun_fraction_up,
             "earth_fraction_up": rec.earth_fraction_up,
             "grazing": rec.grazing,
+            "longest_dark_open": rec.longest_dark_open,
+            "longest_blackout_open": rec.longest_blackout_open,
         }
         stmt = pg_insert(SiteWindowMetrics).values(**values)
         stmt = stmt.on_conflict_do_update(
@@ -93,6 +97,8 @@ class WindowMetricsRepository:
                 earth_fraction_up=r.earth_fraction_up,
                 grazing=r.grazing,
                 computed_at=r.computed_at,
+                longest_dark_open=r.longest_dark_open,
+                longest_blackout_open=r.longest_blackout_open,
             )
             for r in rows
         }

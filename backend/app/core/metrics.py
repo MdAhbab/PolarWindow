@@ -52,23 +52,41 @@ class BodyMetrics:
     #: True when at least one crossing was too shallow to time. The number is
     #: still reported; the flag says not to trust its edges.
     grazing: bool = False
+    #: True when the longest down arc touches an edge of the window, so the
+    #: window -- not the terrain or the orbit -- ended it. The stretch it belongs
+    #: to is longer than ``longest_down_s`` by an unknown amount, and the value
+    #: is a lower bound. Measured on real data this is not a corner case: a
+    #: window that opens mid-night at Malapert reports 167 h for a 322 h night.
+    longest_down_open: bool = False
 
 
 @dataclass(frozen=True, slots=True)
 class AutonomyPacket:
     """What the lander has to survive on its own resources.
 
-    ``survival_needed_s`` is deliberately *not* the worst compound event when
-    that event falls inside a longer night: if the radio is silent for 40 hours
-    in the middle of a 230-hour night, the battery still has to carry the whole
-    230 hours. Conflating the two under-sizes the battery, which is the
-    dangerous direction to be wrong in.
+    Two different budgets, kept apart on purpose:
+
+    * ``required_autonomy_s`` sizes *autonomy*: the longest stretch with no Sun
+      and no link at once, plus a margin. Nobody on Earth can help during it.
+    * ``survival_needed_s`` sizes the *battery*: the longest night in the
+      window, whatever the radio is doing. If the radio is silent for 40 hours
+      in the middle of a 230-hour night, the battery still carries 230 hours --
+      and if the radio is never silent at all, it still carries 230 hours.
+
+    An earlier version returned the compound event as the survival figure when
+    no blackout overlapped a night, which reported 0 h of survival for a site
+    with a 288-hour night. Under-sizing the battery is the dangerous direction
+    to be wrong in, so survival is now the night itself, always.
     """
 
     worst_compound_s: float
     required_autonomy_s: float
     survival_needed_s: float
     compound_inside_dark: bool
+    #: The night that sizes the battery is cut by a window edge: a lower bound.
+    survival_open: bool = False
+    #: The worst compound event is cut by a window edge: a lower bound.
+    worst_compound_open: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,6 +118,40 @@ class SiteMetrics:
     def longest_blackout_s(self) -> float:
         return self.earth.longest_down_s
 
+    @property
+    def longest_dark_open(self) -> bool:
+        return self.sun.longest_down_open
+
+    @property
+    def longest_blackout_open(self) -> bool:
+        return self.earth.longest_down_open
+
+    @property
+    def worst_compound_open(self) -> bool:
+        worst = max(self.compound, key=lambda r: r.duration, default=None)
+        return worst is not None and touches_edge(worst, self.window_start_s, self.window_end_s)
+
+    @property
+    def window_end_s(self) -> float:
+        return self.window_start_s + self.window_s
+
+
+def touches_edge(run: Run, window_start_s: float, window_end_s: float) -> bool:
+    """Did the window, rather than the geometry, end this run?
+
+    A run that begins at the first sample or ends at the last one was cut by
+    the window: the body was already down (or still is) beyond it, so the
+    duration is a lower bound. Half a step of slack absorbs float noise in the
+    time axis without ever mistaking a real crossing for the window edge.
+    """
+    return run.start <= window_start_s + EDGE_SLACK_S or run.end >= window_end_s - EDGE_SLACK_S
+
+
+#: How close to a window edge a run must be to count as cut by it. Crossings
+#: are bisected to far better than a second, so a genuine one never lands this
+#: close to the edge unless it really is the edge.
+EDGE_SLACK_S: Final[float] = 1e-3
+
 
 def body_metrics(body: str, arcs: list[Run], *, grazing: bool = False) -> BodyMetrics:
     """Reduce an arc list to one body's metrics."""
@@ -107,6 +159,7 @@ def body_metrics(body: str, arcs: list[Run], *, grazing: bool = False) -> BodyMe
     down_s = total(arcs, False)
     span = up_s + down_s
     worst = longest(arcs, False)
+    is_open = worst is not None and bool(arcs) and touches_edge(worst, arcs[0].start, arcs[-1].end)
     return BodyMetrics(
         body=body,
         arcs=arcs,
@@ -117,6 +170,7 @@ def body_metrics(body: str, arcs: list[Run], *, grazing: bool = False) -> BodyMe
         longest_down_start=worst.start if worst is not None else None,
         longest_down_end=worst.end if worst is not None else None,
         grazing=grazing,
+        longest_down_open=is_open,
     )
 
 
@@ -133,8 +187,10 @@ def autonomy(metrics: SiteMetrics) -> AutonomyPacket:
     return AutonomyPacket(
         worst_compound_s=worst,
         required_autonomy_s=worst * (1.0 + AUTONOMY_MARGIN),
-        survival_needed_s=metrics.longest_dark_s if inside else worst,
+        survival_needed_s=metrics.longest_dark_s,
         compound_inside_dark=bool(inside),
+        survival_open=metrics.longest_dark_open,
+        worst_compound_open=metrics.worst_compound_open,
     )
 
 
@@ -184,6 +240,59 @@ def metric_value(m: SiteMetrics, key: str) -> float:
     return float(getattr(m, key))
 
 
+@dataclass(frozen=True, slots=True)
+class Ranking:
+    """An ordering that admits what it cannot distinguish.
+
+    ``order`` is a strict order, because a list has to be drawn in *some*
+    sequence. ``ranks`` is competition ranking over that order -- tied sites
+    share the rank of the group's leader, and the next rank skips accordingly
+    (1, 1, 3) -- because printing "1" and "2" for two sites the data cannot tell
+    apart asserts a difference that is not there.
+    """
+
+    order: list[str]
+    ranks: dict[str, int]
+    ties: list[list[str]]
+
+
+def rank_values(
+    values: list[tuple[str, float]],
+    *,
+    higher_is_better: bool,
+    tie_tolerance_s: float = TIE_TOLERANCE_S,
+) -> Ranking:
+    """Rank ``(id, value)`` pairs on one metric, reporting ties.
+
+    A tie group is anchored on its leader: every member lies within
+    ``tie_tolerance_s`` of the best value in the group. Chaining neighbours
+    instead (A~B, B~C, therefore A~C) would call two sites 1.8 h apart "tied"
+    under a one-hour tolerance, which is not what the word promises.
+
+    The sort is stable, so equal inputs keep their request order and the
+    result is deterministic.
+    """
+    ordered = sorted(values, key=lambda p: p[1], reverse=higher_is_better)
+    ranks: dict[str, int] = {}
+    ties: list[list[str]] = []
+    group: list[str] = []
+    leader_value = 0.0
+    leader_rank = 0
+    for position, (sid, v) in enumerate(ordered, start=1):
+        if group and abs(v - leader_value) <= tie_tolerance_s:
+            group.append(sid)
+        else:
+            if len(group) > 1:
+                ties.append(group)
+            group = [sid]
+            leader_value = v
+            leader_rank = position
+        ranks[sid] = leader_rank
+    if len(group) > 1:
+        ties.append(group)
+    return Ranking(order=[sid for sid, _ in ordered], ranks=ranks, ties=ties)
+
+
 def rank(
     entries: list[SiteMetrics], key: str, *, tie_tolerance_s: float = TIE_TOLERANCE_S
 ) -> tuple[list[SiteMetrics], list[list[str]]]:
@@ -194,20 +303,10 @@ def rank(
     that differ by twenty minutes over a month is inventing a distinction the
     data does not support.
     """
-    higher_is_better = METRIC_KEYS[key]
-    ordered = sorted(entries, key=lambda m: metric_value(m, key), reverse=higher_is_better)
-    ties: list[list[str]] = []
-    current: list[SiteMetrics] = []
-    for m in ordered:
-        if (
-            current
-            and abs(metric_value(m, key) - metric_value(current[-1], key)) <= tie_tolerance_s
-        ):
-            current.append(m)
-        else:
-            if len(current) > 1:
-                ties.append([x.site_id for x in current])
-            current = [m]
-    if len(current) > 1:
-        ties.append([x.site_id for x in current])
-    return ordered, ties
+    by_id = {m.site_id: m for m in entries}
+    r = rank_values(
+        [(m.site_id, metric_value(m, key)) for m in entries],
+        higher_is_better=METRIC_KEYS[key],
+        tie_tolerance_s=tie_tolerance_s,
+    )
+    return [by_id[sid] for sid in r.order], r.ties

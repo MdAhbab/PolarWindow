@@ -33,6 +33,27 @@ WINDOW_HOURS = 708.734
 STEP_S = 900
 
 
+def _previous(site_id: str) -> tuple[np.ndarray, dict[str, Any]] | None:
+    horizon, metrics = DATA / f"{site_id}.horizon.npz", DATA / f"{site_id}.metrics.json"
+    if not (horizon.exists() and metrics.exists()):
+        return None
+    return np.load(horizon)["el_deg"].astype(float), json.loads(metrics.read_text())
+
+
+def _print_drift(
+    site_id: str, before: tuple[np.ndarray, dict[str, Any]] | None, el: np.ndarray, m: Any
+) -> None:
+    """One line per quantity: how far the regenerated fixture moved."""
+    if before is None:
+        print(f"  {site_id}: no previous fixture")
+        return
+    old_el, old = before
+    d_el = np.abs(el.astype(float) - old_el)
+    print(f"  {site_id}: horizon max |d| {d_el.max():.4f} deg, mean {d_el.mean():.4f} deg")
+    for key in ("sunlit_s", "earth_contact_s", "longest_dark_s", "longest_blackout_s"):
+        print(f"    {key:20s} {(getattr(m, key) - old[key]) / 3600.0:+8.3f} h")
+
+
 async def main() -> None:
     reason = os.environ.get("GOLDEN_UPDATE_REASON")
     if not reason:
@@ -86,6 +107,10 @@ async def main() -> None:
                 print(f"  skipping {site_id}: not seeded")
                 continue
 
+            # A regeneration should say how far the physics moved, not merely
+            # that it did: read the fixture being replaced before overwriting it.
+            before = _previous(site_id)
+
             np.savez_compressed(
                 DATA / f"{site_id}.horizon.npz",
                 el_deg=rec.mask.el_deg,
@@ -123,6 +148,9 @@ async def main() -> None:
                         "worst_compound_s": m.worst_compound_s,
                         "sun_fraction_up": m.sun.fraction_up,
                         "earth_fraction_up": m.earth.fraction_up,
+                        "longest_dark_open": m.longest_dark_open,
+                        "longest_blackout_open": m.longest_blackout_open,
+                        "survival_needed_s": result.autonomy.survival_needed_s,
                         "sun_arc_count": len(m.sun.arcs),
                         "earth_arc_count": len(m.earth.arcs),
                         "sun_arc_edges_s": [r.start for r in m.sun.arcs],
@@ -132,6 +160,7 @@ async def main() -> None:
                 )
                 + "\n"
             )
+            _print_drift(site_id, before, rec.mask.el_deg, m)
             manifest["sites"][site_id] = {
                 "why": why,
                 "lat_deg": site.lat_deg,

@@ -72,9 +72,66 @@ def loaded():
     return True
 
 
+@pytest.fixture(scope="module")
+def regional_dem():
+    from app.config import get_settings
+    from app.data.lola import DemTile
+
+    return DemTile.load(get_settings().regional_dem_path)
+
+
+def _labels(n: int, step: float) -> np.ndarray:
+    return np.array([f"bearing {b:.2f} deg" for b in np.arange(n) * step])
+
+
 @pytest.mark.parametrize("site_id", SITE_IDS)
 @pytest.mark.asyncio
-async def test_horizon_matches_golden(site_id: str, loaded: bool) -> None:
+async def test_horizon_rebuilt_from_the_dem_matches_golden(
+    site_id: str, loaded: bool, regional_dem
+) -> None:
+    """Re-run the ray-march on the terrain on disk and compare to the golden.
+
+    This is the check that actually guards ``core/horizon.py`` and
+    ``data/lola.py``. The comparison below against the *stored* mask only proves
+    the database agrees with the fixture; a change to the ray-march would pass
+    it until someone re-seeded, which is exactly the silent drift goldens exist
+    to stop.
+    """
+    from app.config import get_settings
+    from app.data.lola import DemTile
+    from app.db.repositories.sites import SiteRepository
+    from app.db.session import session_scope
+    from app.workers.precompute import build_site_mask
+
+    async with session_scope() as session:
+        site = await SiteRepository(session).get(site_id)
+    fine_path = get_settings().fine_dem_path(site_id)
+    if site is None or not fine_path.exists():
+        pytest.skip(f"{site_id} not seeded or its fine DEM window is absent")
+
+    mask, *_ = build_site_mask(site.lat_deg, site.lon_deg, DemTile.load(fine_path), regional_dem)
+    golden = np.load(DATA / f"{site_id}.horizon.npz")
+    labels = _labels(mask.azimuth_count, mask.azimuth_step_deg)
+    report(
+        f"{site_id} rebuilt horizon elevation",
+        mask.el_deg.astype(float),
+        golden["el_deg"].astype(float),
+        TOL["horizon_el_deg"],
+        labels,
+    )
+    report(
+        f"{site_id} rebuilt horizon tolerance",
+        mask.tol_deg.astype(float),
+        golden["tol_deg"].astype(float),
+        TOL["horizon_el_deg"],
+        labels,
+    )
+
+
+@pytest.mark.parametrize("site_id", SITE_IDS)
+@pytest.mark.asyncio
+async def test_stored_horizon_matches_golden(site_id: str, loaded: bool) -> None:
+    """The seeded database is not stale relative to the fixtures."""
     from app.config import ENGINE_VERSION
     from app.db.repositories.sites import MaskRepository
     from app.db.session import session_scope
@@ -85,14 +142,12 @@ async def test_horizon_matches_golden(site_id: str, loaded: bool) -> None:
     if rec is None:
         pytest.skip(f"{site_id} not seeded")
 
-    bearings = np.arange(rec.mask.azimuth_count) * rec.mask.azimuth_step_deg
-    labels = np.array([f"bearing {b:.2f} deg" for b in bearings])
     report(
-        f"{site_id} horizon elevation",
+        f"{site_id} stored horizon elevation",
         rec.mask.el_deg.astype(float),
         golden["el_deg"].astype(float),
         TOL["horizon_el_deg"],
-        labels,
+        _labels(rec.mask.azimuth_count, rec.mask.azimuth_step_deg),
     )
 
 
@@ -161,6 +216,11 @@ async def test_timeline_and_metrics_match_golden(site_id: str, loaded: bool) -> 
         )
 
     assert m.worst_compound_s == pytest.approx(want["worst_compound_s"], abs=TOL["compound_abs_s"])
+    for flag in ("longest_dark_open", "longest_blackout_open"):
+        assert getattr(m, flag) == want[flag], f"{site_id}.{flag} changed"
+    assert result.autonomy.survival_needed_s == pytest.approx(
+        want["survival_needed_s"], abs=TOL["metric_abs_s"]
+    )
     assert len(m.sun.arcs) == want["sun_arc_count"], "the number of sun arcs changed"
     assert len(m.earth.arcs) == want["earth_arc_count"], "the number of earth arcs changed"
 
