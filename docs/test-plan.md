@@ -110,7 +110,7 @@ the interesting coverage is property-based.
 - `test_compound_is_intersection`: sun-down ∩ earth-down, including the
   touching-but-not-overlapping case (`end == start` ⇒ no event).
 - `test_no_composite_score_field`: asserts the response model has no `score`
-  attribute. A guard-rail test for a `CLAUDE.md` invariant — cheap, and it makes
+  attribute. A guard-rail test for a `conventions.md` invariant — cheap, and it makes
   the rule executable rather than aspirational.
 - `test_autonomy_inside_dark`: compound fully inside a dark arc ⇒
   `survival_needed_s` is the whole night, not the blackout.
@@ -381,7 +381,7 @@ not this plan's job. `make test-fe`; 41 tests, 0.2 s, no DOM and no network.
 - **Accessibility**: `design:accessibility-review` at M8, plus an automated
   `axe-core` pass on the eight routes. Automated axe catches perhaps 30 % of
   issues, so it is a floor and the manual review is the actual gate — the
-  existing `CLAUDE.md` is honest that no screen-reader user has tested the arc
+  existing `conventions.md` is honest that no screen-reader user has tested the arc
   announcements, and the plan does not paper over that.
 - **No visual regression suite.** Screenshot diffing a canvas-heavy, animated UI
   in a hackathon produces flakes, not signal.

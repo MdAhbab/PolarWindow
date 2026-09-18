@@ -11,7 +11,7 @@ is actually decided on:
 There is deliberately **no composite score**. A score would rank sites on one
 axis, which is precisely the information-destroying move this product exists to
 avoid: averaging 80 % sunlight with a 300-hour night produces a number that
-looks decisive and hides which corner was given up. The frontend's CLAUDE.md
+looks decisive and hides which corner was given up. The project's conventions
 states this as an invariant; ``tests/unit/test_metrics.py`` asserts the response
 model has no score field, so the rule is executable rather than aspirational.
 

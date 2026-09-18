@@ -41,7 +41,7 @@ contract**, and it tells us three things that shape this design:
 
 ### The invariant that outranks the others
 
-`CLAUDE.md` invariant 1: *no hardcoded metric; every number on screen is derived*.
+`conventions.md` invariant 1: *no hardcoded metric; every number on screen is derived*.
 The backend inherits it as: **no endpoint returns a number it did not compute
 from an ephemeris and a height field, and every response states which ones those
 were.** That is why `meta.uncertainty` is mandatory rather than decorative, and
@@ -483,7 +483,7 @@ The four numbers, and nothing that dilutes them.
                 "compound_inside_dark": true },
   "meta": {...} }
 ```
-Deliberately **no composite score.** `CLAUDE.md` forbids it and the reason is
+Deliberately **no composite score.** `conventions.md` forbids it and the reason is
 sound: a score hides which corner was given up, and the trade is the product.
 
 #### `POST /api/v1/compare`

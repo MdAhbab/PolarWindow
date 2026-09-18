@@ -32,7 +32,7 @@ The workload is unusual in three ways:
    regresses the existing UX.
 
 Constraints: React 19, no existing query library, hackathon budget, and a
-`CLAUDE.md` invariant that every data-bound component has loading / empty /
+`conventions.md` invariant that every data-bound component has loading / empty /
 error / **uncertain** states — so whatever we pick must expose enough state to
 distinguish "loading" from "loaded but coarse" from "loaded but the mask is
 missing". That fourth state is the one most fetching wrappers flatten away.

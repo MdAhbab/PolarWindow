@@ -1,4 +1,4 @@
-# POLAR WINDOW — working notes for Claude Code
+# POLAR WINDOW — conventions and invariants
 
 Landing site planning for the Moon's south pole. NASA Space Apps 2026, challenge
 "CLPS Lunar Mission Browser".

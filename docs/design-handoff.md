@@ -2,7 +2,7 @@
 
 Scope: what an engineer needs to wire `frontend/` to the API **without changing
 a single visual decision**. The design is finished. Colours, spacing, type,
-motion and layout are fixed and documented in `CLAUDE.md`; this spec does not
+motion and layout are fixed and documented in `conventions.md`; this spec does not
 revisit them.
 
 What *is* changing is the data source: a Web Worker running a synthetic DEM and
@@ -108,7 +108,7 @@ penumbral uses the uncertain hatch. No new colour, no new legend.
 
 ## 5. The four states, on every data-bound component
 
-This is the part that must not be skipped. `CLAUDE.md` invariant 2 and the API's
+This is the part that must not be skipped. `conventions.md` invariant 2 and the API's
 mandatory `meta.uncertainty` exist to make all four expressible.
 
 | State | Trigger | What the component shows |

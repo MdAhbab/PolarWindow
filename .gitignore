@@ -32,6 +32,5 @@ dist-ssr/
 # OS
 .DS_Store
 
-# Local editor/tooling config
-.claude/
+# Tooling caches
 .import_linter_cache/

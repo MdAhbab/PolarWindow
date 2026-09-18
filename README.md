@@ -146,7 +146,7 @@ backend/
   app/api/v1/      routes + pydantic schemas only
   app/agents/      four agents, six tools, the grounding guard
   app/workers/     precompute: masks and reference metrics
-docs/              system design, four ADRs, test plan, API, runbook
+docs/              conventions, system design, four ADRs, test plan, API, runbook
 ```
 
 **The layering rule is enforced, not trusted.** `make contracts` runs
