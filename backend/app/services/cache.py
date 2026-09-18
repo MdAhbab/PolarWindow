@@ -23,6 +23,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import logging
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 import orjson
@@ -37,6 +38,14 @@ _decompressor = zstd.ZstdDecompressor()
 
 _client: Any = None
 _unavailable = False
+
+#: Version of the cached *payload shape*, independent of the physics.
+#:
+#: ``ENGINE_VERSION`` covers a change to the numbers. It does not cover a
+#: change to the response contract -- a field added to an arc, say -- and a
+#: cached body of the old shape then fails response validation and turns a
+#: cache hit into a 500. Bump this whenever a cached payload's shape changes.
+PAYLOAD_SCHEMA = "3"
 
 
 async def get_client() -> Any:
@@ -73,7 +82,7 @@ def make_key(kind: str, **parts: object) -> str:
     """
     blob = orjson.dumps(parts, option=orjson.OPT_SORT_KEYS)
     digest = hashlib.sha256(blob).hexdigest()[:20]
-    return f"pw:{ENGINE_VERSION}:{kind}:{digest}"
+    return f"pw:{ENGINE_VERSION}:s{PAYLOAD_SCHEMA}:{kind}:{digest}"
 
 
 async def reset() -> None:
@@ -126,7 +135,9 @@ async def put(key: str, value: dict[str, Any], ttl_s: int) -> None:
         await reset()
 
 
-async def single_flight(key: str, compute: Any, ttl_s: int) -> tuple[dict[str, Any], str]:
+async def single_flight(
+    key: str, compute: Callable[[], Awaitable[dict[str, Any]]], ttl_s: int
+) -> tuple[dict[str, Any], str]:
     """Return a cached value, or compute it once across concurrent callers.
 
     Returns ``(value, cache_state)`` where ``cache_state`` is "hit", "miss" or

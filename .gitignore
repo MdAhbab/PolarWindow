@@ -34,3 +34,4 @@ dist-ssr/
 
 # Local editor/tooling config
 .claude/
+.import_linter_cache/

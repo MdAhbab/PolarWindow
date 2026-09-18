@@ -164,7 +164,15 @@ class Arc(BaseModel):
     end: datetime
     duration_s: float
     tolerance_s: float = Field(
-        description="Half-width of the timing uncertainty on this arc's edges."
+        description="Timing uncertainty of this arc's duration: the quadrature sum of its "
+        "two edges' tolerances."
+    )
+    start_tolerance_s: float | None = Field(
+        description="Timing uncertainty of the crossing that starts this arc; null when the "
+        "arc starts at the window edge rather than at a crossing."
+    )
+    end_tolerance_s: float | None = Field(
+        description="As `start_tolerance_s`, for the crossing that ends it."
     )
     grazing: bool = Field(
         description="True when a crossing is too shallow to time. The duration "

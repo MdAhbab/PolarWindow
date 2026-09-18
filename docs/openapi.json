@@ -1227,7 +1227,31 @@
           "tolerance_s": {
             "type": "number",
             "title": "Tolerance S",
-            "description": "Half-width of the timing uncertainty on this arc's edges."
+            "description": "Timing uncertainty of this arc's duration: the quadrature sum of its two edges' tolerances."
+          },
+          "start_tolerance_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Tolerance S",
+            "description": "Timing uncertainty of the crossing that starts this arc; null when the arc starts at the window edge rather than at a crossing."
+          },
+          "end_tolerance_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Tolerance S",
+            "description": "As `start_tolerance_s`, for the crossing that ends it."
           },
           "grazing": {
             "type": "boolean",
@@ -1276,6 +1300,8 @@
           "end",
           "duration_s",
           "tolerance_s",
+          "start_tolerance_s",
+          "end_tolerance_s",
           "grazing",
           "open_start",
           "open_end"

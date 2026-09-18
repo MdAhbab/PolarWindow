@@ -45,9 +45,6 @@ class Settings(BaseSettings):
     #: Origins allowed to call the API. The Vite dev server's two spellings are
     #: both here because "works in curl, fails in the browser" is the single
     #: most common wasted hour in a hackathon.
-    #: Vite picks the next free port when 5173 is taken, so both are listed --
-    #: "works in curl, fails in the browser" is the single most common wasted
-    #: hour in a hackathon, and it is always this.
     cors_origins: tuple[str, ...] = (
         "http://localhost:5173",
         "http://127.0.0.1:5173",
@@ -89,8 +86,10 @@ class Settings(BaseSettings):
     download_kernels_on_start: bool = False
 
     # --- stores ------------------------------------------------------------
-    database_url: str = "postgresql+asyncpg://postgres@/polar_window?host=/tmp&port=5433"
-    redis_url: str = "redis://localhost:6380/0"
+    #: Defaults match docker-compose and `.env.example`. A machine with its own
+    #: Postgres or Redis overrides them in `.env`, never by editing this file.
+    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/polar_window"
+    redis_url: str = "redis://localhost:6379/0"
     redis_enabled: bool = True
 
     # --- compute -----------------------------------------------------------

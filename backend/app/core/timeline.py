@@ -58,6 +58,11 @@ class BodyTrack:
     angular_radius_deg: FloatArray
     arcs: list[Run]
     arc_tolerance_s: list[float]
+    #: Per-edge timing tolerance, ``(start, end)``; ``None`` where the edge is
+    #: the window boundary rather than a crossing. The arc tolerance above is
+    #: their quadrature sum; the edges are kept so a chart can draw the margin
+    #: at each crossing rather than a blend of two.
+    arc_edge_tolerance_s: list[tuple[float | None, float | None]]
     arc_grazing: list[bool]
     blocked_by_bearing_deg: list[float | None]
     blocked_by_el_deg: list[float | None]
@@ -116,6 +121,7 @@ def build_track(
     arcs = intervals.runs_from_margin(t_s, margin, refine=refine)
 
     tolerances: list[float] = []
+    edge_pairs: list[tuple[float | None, float | None]] = []
     grazings: list[bool] = []
     bearings: list[float | None] = []
     block_els: list[float | None] = []
@@ -129,6 +135,7 @@ def build_track(
         # and would make every tolerance enormous. What actually times a
         # crossing here is azimuth sweeping past a steep piece of skyline.
         edge_tols: list[float] = []
+        per_edge: dict[bool, float] = {}
         edge_graze = False
         for edge, is_start in ((arc.start, True), (arc.end, False)):
             if (is_start and edge <= t_s[0] + 1e-9) or (not is_start and edge >= t_s[-1] - 1e-9):
@@ -146,18 +153,21 @@ def build_track(
             if rate < GRAZING_DEG_PER_S:
                 edge_graze = True
                 edge_tols.append(MAX_REPORTED_TOLERANCE_S)
+                per_edge[is_start] = MAX_REPORTED_TOLERANCE_S
                 continue
             dt = tol_deg / rate
             if dt > MAX_REPORTED_TOLERANCE_S:
                 edge_graze = True
                 dt = MAX_REPORTED_TOLERANCE_S
             edge_tols.append(dt)
+            per_edge[is_start] = dt
 
         if len(edge_tols) == 2:
             tol = float(np.hypot(edge_tols[0], edge_tols[1]))
         else:
             tol = edge_tols[0] if edge_tols else 0.0
         tolerances.append(tol)
+        edge_pairs.append((per_edge.get(True), per_edge.get(False)))
         grazings.append(edge_graze)
         any_grazing = any_grazing or edge_graze
 
@@ -186,6 +196,7 @@ def build_track(
         angular_radius_deg=ang_r,
         arcs=arcs,
         arc_tolerance_s=tolerances,
+        arc_edge_tolerance_s=edge_pairs,
         arc_grazing=grazings,
         blocked_by_bearing_deg=bearings,
         blocked_by_el_deg=block_els,

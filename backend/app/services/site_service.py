@@ -246,6 +246,7 @@ def _arcs(track: BodyTrack, start: datetime) -> list[dict[str, Any]]:
         open_start, open_end = _edges(arc, t0, t1)
         bearing = track.blocked_by_bearing_deg[i]
         block_el = track.blocked_by_el_deg[i]
+        tol_start, tol_end = track.arc_edge_tolerance_s[i]
         out.append(
             {
                 "up": arc.value,
@@ -253,6 +254,8 @@ def _arcs(track: BodyTrack, start: datetime) -> list[dict[str, Any]]:
                 "end": _at(start, arc.end),
                 "duration_s": round(arc.duration, 3),
                 "tolerance_s": round(track.arc_tolerance_s[i], 3),
+                "start_tolerance_s": round(tol_start, 3) if tol_start is not None else None,
+                "end_tolerance_s": round(tol_end, 3) if tol_end is not None else None,
                 "grazing": bool(track.arc_grazing[i]),
                 "open_start": open_start,
                 "open_end": open_end,

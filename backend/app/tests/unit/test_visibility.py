@@ -48,7 +48,7 @@ def test_horizon_is_zero_elevation() -> None:
 
 
 def test_azimuth_cardinals() -> None:
-    """North-clockwise, matching the frontend's lookAngles."""
+    """North-clockwise, the convention every bearing in the API uses."""
     b = vis.enu_basis(-85.0, 30.0)
     cases = [(b.north, 0.0), (b.east, 90.0), (-b.north, 180.0), (-b.east, 270.0)]
     for direction, expected in cases:
@@ -117,12 +117,18 @@ def test_matches_frontend_reference_implementation() -> None:
 
     Two independently written implementations of the same maths. Cheap to run,
     and it is what makes the Python port auditable rather than merely plausible.
+
+    The TypeScript original has since been deleted -- every number on screen now
+    comes from this engine, and a second implementation nothing calls goes stale
+    without anyone noticing. The transcription below is kept verbatim, so what
+    was once a cross-implementation check is now a frozen second opinion.
     """
 
     def reference(
         site_lat: float, site_lon: float, t_lat: float, t_lon: float
     ) -> tuple[float, float]:
-        # Transcribed from frontend/src/lib/geometry/ephemeris.ts::lookAngles
+        # Transcribed from the frontend's former lookAngles (removed when the
+        # geometry moved server-side); see the docstring.
         phi, lam = np.radians(site_lat), np.radians(site_lon)
         cphi, sphi, clam, slam = np.cos(phi), np.sin(phi), np.cos(lam), np.sin(lam)
         upx, upy, upz = cphi * clam, cphi * slam, sphi
