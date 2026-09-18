@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useShallow } from 'zustand/react/shallow'
 import { useSiteMetricsMap } from '../lib/useMetricsMap'
 import { useMission } from '../lib/store'
 import { SITES, siteById } from '../lib/sites'
@@ -8,14 +9,25 @@ import { DateSlider } from '../components/DateSlider'
 import { KeyNumberRow } from '../components/KeyNumbers'
 import { EmptyState, LoadingPanel } from '../components/States'
 import { Button, Chip, Panel, SearchField, SectionLabel } from '../components/ui'
-import { coords, percent } from '../lib/format'
+import { bound, coords, percent } from '../lib/format'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
 import type { SiteMetrics } from '../lib/types'
 
 /** S1 — where you start: pick a site, see the terminator sweep across the pole. */
 export function MapScreen() {
-  const { siteId, setSite, cursorH, windowStartH, face } = useMission()
-  const allIds = useMemo(() => SITES.map((s) => s.id), [])
+  const { siteId, setSite, cursorH, windowStartH, face } = useMission(
+    useShallow((s) => ({
+      siteId: s.siteId,
+      setSite: s.setSite,
+      cursorH: s.cursorH,
+      windowStartH: s.windowStartH,
+      face: s.face,
+    })),
+  )
+  // Keyed on the registry's contents, not frozen at first render: a refetched
+  // site list must reach the map.
+  const idKey = SITES.map((s) => s.id).join('|')
+  const allIds = useMemo(() => (idKey ? idKey.split('|') : []), [idKey])
   const { map: metrics, done, total, isPending } = useSiteMetricsMap(allIds)
   const compute = { status: isPending ? 'running' : 'ready', done, total } as const
   const site = siteById(siteId)
@@ -34,7 +46,10 @@ export function MapScreen() {
       if (!m) return true
       if (m.sun.fractionUp * 100 < minSun) return false
       if (m.sun.longestDownH > maxDark) return false
-      if (nearPsr && s.terrain.features.every((f) => f.kind !== 'crater')) return false
+      // A rim site sits on the edge of a named polar crater, whose floor is
+      // permanently shadowed. The previous test read a synthetic terrain
+      // spec that no longer exists, so the chip silently emptied the list.
+      if (nearPsr && s.searchKind !== 'rim') return false
       return true
     })
   }, [query, minSun, maxDark, nearPsr, metrics])
@@ -84,6 +99,9 @@ export function MapScreen() {
                 <Chip selected={nearPsr} onClick={() => setNearPsr((v) => !v)} tone="earth">
                   Beside a shadowed floor
                 </Chip>
+                <p className="text-[12px] leading-[17px] text-ink-3">
+                  Sites on the rim of a named polar crater, next to its permanently shadowed floor.
+                </p>
               </div>
             </Panel>
 
@@ -136,6 +154,7 @@ export function MapScreen() {
                           : 'computing…'}
                         {m && (
                           <span className={m.sun.longestDownH > SURVIVAL_LIMIT_H ? 'text-alert' : ''}>
+                            {bound(m.sun.longestDownOpen)}
                             {Math.round(m.sun.longestDownH)} h
                           </span>
                         )}
@@ -160,7 +179,6 @@ export function MapScreen() {
               selectedSiteId={siteId}
               onSelect={setSite}
               size={640}
-              className="max-h-[70vh] w-full max-w-[640px]"
             />
           </div>
 

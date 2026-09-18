@@ -1,21 +1,27 @@
+import { useShallow } from 'zustand/react/shallow'
 import { useMission } from '../lib/store'
-import { useFocusedMetrics } from '../lib/mission'
+import { useFocusedView } from '../lib/mission'
 import { siteById } from '../lib/sites'
 import { BlackoutTimeline } from '../components/BlackoutTimeline'
 import { DateSlider } from '../components/DateSlider'
 import { LoadingPanel } from '../components/States'
 import { Button, Panel, SectionLabel } from '../components/ui'
 import { Icon } from '../components/Icon'
-import { autonomyPacket, AUTONOMY_MARGIN, SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
-import { clockUTC, hoursWithUnit } from '../lib/format'
+import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
+import { arcsCsv, download, spiceWindows } from '../lib/export'
+import { bound, clockUTC, hoursWithUnit } from '../lib/format'
 
 /** S5 — the screen nobody else builds. */
 export function BlackoutScreen() {
-  const { siteId, cursorH } = useMission()
-  const metrics = useFocusedMetrics()
+  const { siteId, cursorH } = useMission(
+    useShallow((s) => ({ siteId: s.siteId, cursorH: s.cursorH })),
+  )
+  const view = useFocusedView()
+  const metrics = view.data?.metrics
+  const packet = view.data?.autonomy
   const site = siteById(siteId)
 
-  if (!metrics) {
+  if (!metrics || !packet) {
     return (
       <div className="flex grow flex-col gap-6 p-4 lg:p-6">
         <div className="max-w-2xl">
@@ -25,7 +31,9 @@ export function BlackoutScreen() {
     )
   }
 
-  const packet = autonomyPacket(metrics)
+  const marginPct = Math.round(packet.marginFraction * 100)
+  const exportSite = { id: site.id, name: site.name, metrics, meta: view.meta, autonomy: packet }
+  const stamp = (metrics.windowStartIso ?? 'window').slice(0, 10)
   const blackouts = metrics.earth.arcs.filter((a) => !a.up).sort((a, b) => b.hours - a.hours)
   const worstCompound = metrics.compound.reduce(
     (b, c) => (!b || c.hours > b.hours ? c : b),
@@ -46,7 +54,10 @@ export function BlackoutScreen() {
       </div>
 
       <div className="flex grow flex-col gap-6 p-4 lg:flex-row lg:p-6">
-        <div className="flex grow flex-col gap-6">
+        {/* min-w-0: the timeline and the ledger are wider than this column and
+            scroll inside their own panels. Without it the column takes their
+            width as its minimum and pushes the packet off the right edge. */}
+        <div className="flex min-w-0 grow flex-col gap-6">
           <Panel className="flex flex-col">
             <div className="flex items-center gap-4 border-b border-line px-4 py-3">
               <SectionLabel>The mission window, hour by hour</SectionLabel>
@@ -93,10 +104,14 @@ export function BlackoutScreen() {
                     return (
                       <tr key={i} className={`border-t border-line ${overlap > 0 ? 'bg-alert-wash' : ''}`}>
                         <td className="px-4 py-3 font-mono text-[13px] text-ink-3">B{i + 1}</td>
-                        <td className="px-4 py-3 font-mono text-[13px] text-ink">{clockUTC(a.startH)}</td>
-                        <td className="px-4 py-3 font-mono text-[13px] text-ink">{clockUTC(a.endH)}</td>
+                        <td className="px-4 py-3 font-mono text-[13px] text-ink">
+                          {a.openStart ? `before ${clockUTC(a.startH)}` : clockUTC(a.startH)}
+                        </td>
+                        <td className="px-4 py-3 font-mono text-[13px] text-ink">
+                          {a.openEnd ? `after ${clockUTC(a.endH)}` : clockUTC(a.endH)}
+                        </td>
                         <td className="px-4 py-3 text-right text-[15px] font-semibold tnum">
-                          {hoursWithUnit(a.hours)}
+                          {hoursWithUnit(a.hours, 0, a.openStart || a.openEnd)}
                         </td>
                         <td className="px-4 py-3 text-[13px]">
                           {overlap > 0.25 ? (
@@ -124,21 +139,23 @@ export function BlackoutScreen() {
             </div>
             <div className="text-[20px] font-semibold">What the lander runs alone on</div>
             <p className="text-[13px] leading-5 text-ink-2">
-              Sized for the worst compound event: <strong className="text-ink">{hoursWithUnit(packet.worstCompoundH)}</strong>{' '}
+              Sized for the worst compound event:{' '}
+              <strong className="text-ink">{hoursWithUnit(packet.worstCompoundH, 0, packet.worstCompoundOpen)}</strong>{' '}
               with neither sunlight nor an Earth link
-              {worstCompound ? `, starting h${Math.round(worstCompound.startH)}` : ''}, plus a{' '}
-              {Math.round(AUTONOMY_MARGIN * 100)}% margin.
+              {worstCompound ? `, starting h${Math.round(worstCompound.startH)}` : ''}, plus a {marginPct}%
+              margin.
             </p>
           </div>
 
           <div className="flex items-baseline gap-3 border-b border-line p-5">
             <span className="text-[64px] leading-[60px] font-semibold tracking-[-0.025em] tnum">
-              ≈{Math.round(packet.requiredAutonomyH)}
+              {bound(packet.worstCompoundOpen)}
+              {Math.round(packet.requiredAutonomyH)}
             </span>
             <div className="flex flex-col">
               <span className="text-[16px] text-ink-2">h of full autonomy</span>
               <span className="text-[12px] text-ink-3">
-                {Math.round(packet.worstCompoundH)} h event + {Math.round(AUTONOMY_MARGIN * 100)}%
+                {hoursWithUnit(packet.worstCompoundH, 0, packet.worstCompoundOpen)} event + {marginPct}%
               </span>
             </div>
           </div>
@@ -146,29 +163,29 @@ export function BlackoutScreen() {
           <PacketRow
             done
             title="Command buffer"
-            detail={`${Math.round(packet.requiredAutonomyH)} h of sequenced activity, uplinked in the preceding contact window.`}
-            value={`${Math.round(packet.requiredAutonomyH)} h`}
+            detail={`${hoursWithUnit(packet.requiredAutonomyH)} of sequenced activity, uplinked in the preceding contact window.`}
+            value={hoursWithUnit(packet.requiredAutonomyH)}
           />
           <PacketRow
             done
             title="Onboard storage"
-            detail={`${Math.round(packet.requiredAutonomyH)} h of science and housekeeping at [YOUR DATA RATE], held until the next pass.`}
+            detail={`${hoursWithUnit(packet.requiredAutonomyH)} of science and housekeeping at [YOUR DATA RATE], held until the next pass.`}
             value="[Gb]"
           />
           <PacketRow
-            alert={packet.compoundInsideDark}
+            alert={metrics.sun.longestDownH > SURVIVAL_LIMIT_H}
             title="Survival energy"
             detail={
               packet.compoundInsideDark
-                ? `This event sits inside a ${Math.round(metrics.sun.longestDownH)} h night, so the battery must carry the whole night, not just the silence.`
-                : 'The worst blackout falls in sunlight, so the battery only has to cover the ordinary night.'
+                ? `The worst silence falls inside a night, and the battery carries the longest night whatever the radio is doing: ${hoursWithUnit(packet.survivalNeededH, 0, packet.survivalOpen)}.`
+                : `No silence overlaps a night badly enough to matter, but the battery still carries the longest night: ${hoursWithUnit(packet.survivalNeededH, 0, packet.survivalOpen)}.`
             }
-            value={`${Math.round(packet.survivalNeededH)} h`}
+            value={hoursWithUnit(packet.survivalNeededH, 0, packet.survivalOpen)}
           />
           <PacketRow
             done
             title="Fault response"
-            detail={`Safing rules that hold state for ${Math.round(packet.requiredAutonomyH)} h without a ground call, and a recovery that does not need one.`}
+            detail={`Safing rules that hold state for ${hoursWithUnit(packet.requiredAutonomyH)} without a ground call, and a recovery that does not need one.`}
             value="rules"
           />
           <PacketRow
@@ -186,10 +203,20 @@ export function BlackoutScreen() {
                 survival limit.
               </p>
             )}
-            <Button variant="primary">Export packet as a one-pager</Button>
+            <Button
+              variant="primary"
+              onClick={() => download(`${site.id}-${stamp}-arcs.csv`, arcsCsv(exportSite), 'text/csv')}
+            >
+              <Icon name="table" size={16} strokeWidth={1.7} />
+              Export the arcs as CSV
+            </Button>
+            <Button onClick={() => download(`${site.id}-${stamp}-windows.txt`, spiceWindows(exportSite))}>
+              Export SPICE interval lists
+            </Button>
             <p className="text-[12px] leading-[18px] text-ink-3">
-              The packet is derived, not typed: change the site, the window or the margin and every number
-              here moves with it.
+              Both files are built from the same arcs as the timeline and the ledger, with their margins and
+              provenance. The SPICE file lists each lit, contact and dark-and-silent interval in UTC, ready for{' '}
+              <span className="font-mono">str2et</span> and <span className="font-mono">wninsd</span>.
             </p>
           </div>
         </aside>

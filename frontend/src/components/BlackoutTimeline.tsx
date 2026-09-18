@@ -1,5 +1,7 @@
 import type { SiteMetrics } from '../lib/types'
 import { hoursWithUnit } from '../lib/format'
+import { crossingBands } from '../lib/bands'
+import { useReducedMotion } from '../hooks/useMotion'
 
 const X0 = 40
 const X1 = 980
@@ -27,6 +29,12 @@ export function BlackoutTimeline({
   const win = metrics.windowHours
   const x = (h: number) => X0 + ((h - metrics.windowStartH) / win) * (X1 - X0)
   const w = (h: number) => (h / win) * (X1 - X0)
+  const reduced = useReducedMotion()
+  // M6 in code: breathe under full motion, static at 0.34 opacity otherwise.
+  const bandProps = reduced ? { opacity: 0.34 } : { className: 'breathe' }
+  const sunBands = crossingBands(metrics.sun.arcs, win)
+  const earthBands = crossingBands(metrics.earth.arcs, win)
+  const cut = (a: { openStart?: boolean; openEnd?: boolean }) => Boolean(a.openStart || a.openEnd)
 
   const worstSun = metrics.sun.longestDownArc
   const worstEarth = metrics.earth.longestDownArc
@@ -44,10 +52,12 @@ export function BlackoutTimeline({
       role="img"
       aria-label={
         `Timeline of ${Math.round(win)} hours. Sunlight has ${metrics.sun.arcs.filter((a) => !a.up).length} ` +
-        `dark periods, the longest about ${Math.round(metrics.sun.longestDownH)} hours. The Earth link has ` +
-        `${metrics.earth.arcs.filter((a) => !a.up).length} blackouts, the longest about ` +
-        `${Math.round(metrics.earth.longestDownH)} hours. There are ${metrics.compound.length} periods with ` +
-        `neither, the worst about ${Math.round(metrics.worstCompoundH)} hours.`
+        `dark periods, the longest ${metrics.sun.longestDownOpen ? 'at least' : 'about'} ` +
+        `${Math.round(metrics.sun.longestDownH)} hours. The Earth link has ` +
+        `${metrics.earth.arcs.filter((a) => !a.up).length} blackouts, the longest ` +
+        `${metrics.earth.longestDownOpen ? 'at least' : 'about'} ${Math.round(metrics.earth.longestDownH)} hours. ` +
+        `There are ${metrics.compound.length} periods with neither, the worst about ` +
+        `${Math.round(metrics.worstCompoundH)} hours. Hatched bands at each crossing show its timing margin.`
       }
     >
       <text x={X0} y="26" fill="var(--color-sun)" fontFamily="var(--font-sans)" fontSize="12" fontWeight="600" letterSpacing="1.4">
@@ -69,11 +79,15 @@ export function BlackoutTimeline({
                 fontSize="12"
                 fontWeight="600"
               >
+                {cut(a) ? '≥' : ''}
                 {Math.round(a.hours)}
               </text>
             )}
           </g>
         ))}
+      {sunBands.map((b, i) => (
+        <rect key={`sb${i}`} x={x(b.fromH)} y="36" width={w(b.toH - b.fromH)} height={TRACK_H} fill="url(#pw-uncertain)" {...bandProps} />
+      ))}
       <rect x={X0} y="36" width={X1 - X0} height={TRACK_H} fill="none" stroke="var(--color-line)" />
 
       <text x={X0} y="116" fill="var(--color-earth)" fontFamily="var(--font-sans)" fontSize="12" fontWeight="600" letterSpacing="1.4">
@@ -95,11 +109,15 @@ export function BlackoutTimeline({
                 fontSize="12"
                 fontWeight="600"
               >
+                {cut(a) ? '≥' : ''}
                 {Math.round(a.hours)}
               </text>
             )}
           </g>
         ))}
+      {earthBands.map((b, i) => (
+        <rect key={`eb${i}`} x={x(b.fromH)} y="126" width={w(b.toH - b.fromH)} height={TRACK_H} fill="url(#pw-uncertain)" {...bandProps} />
+      ))}
       <rect x={X0} y="126" width={X1 - X0} height={TRACK_H} fill="none" stroke="var(--color-line)" />
 
       <text x={X0} y="206" fill="var(--color-alert)" fontFamily="var(--font-sans)" fontSize="12" fontWeight="600" letterSpacing="1.4">
@@ -119,7 +137,7 @@ export function BlackoutTimeline({
           fontSize="13"
           fontWeight="600"
         >
-          ← {hoursWithUnit(worstCompound.hours)}, the worst compound event
+          ← {hoursWithUnit(worstCompound.hours, 0, cut(worstCompound))}, the worst compound event
         </text>
       )}
 

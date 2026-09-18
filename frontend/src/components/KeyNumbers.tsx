@@ -1,5 +1,5 @@
 import { useCountUp } from '../hooks/useCountUp'
-import { APPROX, TERM, plusMinus } from '../lib/format'
+import { TERM, bound, hoursSpoken, percent, plusMinus } from '../lib/format'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
 import type { Face, SiteMetrics } from '../lib/types'
 import { Icon } from './Icon'
@@ -36,6 +36,8 @@ export function KeyNumberTile({
   footnote,
   size = 'lg',
   icon,
+  open = false,
+  spoken,
 }: {
   label: string
   value: number
@@ -47,8 +49,23 @@ export function KeyNumberTile({
   footnote?: string
   size?: 'lg' | 'md' | 'sm'
   icon?: Parameters<typeof Icon>[0]['name']
+  /** The window cut this stretch short: show a lower bound (≥), not ≈. */
+  open?: boolean
+  /** What a screen reader hears for the value; defaults to a sentence from it. */
+  spoken?: string
 }) {
   const rolled = useCountUp(state === 'ready' || state === 'uncertain' ? value : 0)
+  const shown = state === 'ready' || state === 'uncertain'
+  // One sentence with the final value, its unit and its margin. The visible
+  // figure rolls through intermediate values (M4) and its ± sits in a separate
+  // element, so reading the visuals aloud announced "±17.1" with no unit.
+  const said =
+    spoken ??
+    (unit === 'h'
+      ? `${hoursSpoken(value, open)}${
+          toleranceH !== undefined ? `, plus or minus ${toleranceH.toFixed(1)} hours` : ''
+        }${state === 'uncertain' ? ', uncertain' : ''}`
+      : `${bound(open) === '≥' ? 'at least' : 'about'} ${Math.round(value)} ${unit}`)
 
   const numberClass =
     size === 'lg'
@@ -81,21 +98,30 @@ export function KeyNumberTile({
         <span>{label}</span>
       </div>
 
-      <div className="flex items-baseline gap-2">
+      {shown && <span className="sr-only">{said}</span>}
+      {/* Wraps rather than overflows: at `sm` in the map's two-column rail the
+          value, its margin and the unit are wider than the tile. The margin and
+          the unit wrap together, so a bare "h" never lands on its own line. */}
+      <div
+        className="flex flex-wrap items-baseline gap-x-2"
+        aria-hidden={shown ? 'true' : undefined}
+      >
         {state === 'blank' ? (
           <span className={`font-semibold tracking-[-0.025em] text-line-strong ${numberClass}`}>—</span>
         ) : state === 'computing' ? (
           <span className={`font-semibold tracking-[-0.025em] text-line-strong ${numberClass}`}>——</span>
         ) : (
           <span className={`font-semibold tracking-[-0.025em] tnum ${numberClass} ${TONE_TEXT[tone]}`}>
-            {APPROX}
+            {bound(open)}
             {Math.round(rolled)}
           </span>
         )}
-        {toleranceH !== undefined && state !== 'blank' && state !== 'computing' && (
-          <span className="text-[20px] text-uncertain tnum">{plusMinus(toleranceH)}</span>
-        )}
-        <span className="text-[19px] text-ink-2">{unit}</span>
+        <span className="flex items-baseline gap-2">
+          {toleranceH !== undefined && state !== 'blank' && state !== 'computing' && (
+            <span className="text-[20px] text-uncertain tnum">{plusMinus(toleranceH)}</span>
+          )}
+          <span className="text-[19px] text-ink-2">{unit}</span>
+        </span>
       </div>
 
       <div className="flex h-1.5 bg-dark-fill">
@@ -129,16 +155,25 @@ export function KeyNumberRow({
   size?: 'lg' | 'md' | 'sm'
   columns?: 2 | 4
 }) {
-  const earthDown = false
   const computing = !metrics
 
   const win = metrics?.windowHours ?? 1
   const sunH = metrics?.sun.upHours ?? 0
   const earthH = metrics?.earth.upHours ?? 0
+  // The server's own fractions, not upHours/windowHours recomputed here: one
+  // number, one source, and the bar and the footnote cannot disagree.
+  const sunFrac = metrics?.sun.fractionUp ?? 0
+  const earthFrac = metrics?.earth.fractionUp ?? 0
   const dark = metrics?.sun.longestDownH ?? 0
   const darkTol = metrics?.sun.longestDownToleranceH
   const darkGrazing = metrics?.sun.longestDownArc?.grazing
+  const darkOpen = Boolean(metrics?.sun.longestDownOpen)
   const rf = metrics?.earth.longestDownH ?? 0
+  const rfTol = metrics?.earth.longestDownToleranceH
+  const rfGrazing = metrics?.earth.longestDownArc?.grazing
+  const rfOpen = Boolean(metrics?.earth.longestDownOpen)
+  // A lower bound over the limit is certainly over it; a lower bound under the
+  // limit is not certainly under it -- the night continues past the window.
   const overLimit = dark > SURVIVAL_LIMIT_H
 
   const grid = columns === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-2'
@@ -159,8 +194,8 @@ export function KeyNumberRow({
         icon="sun"
         size={size}
         state={computing ? 'computing' : 'ready'}
-        fraction={sunH / win}
-        footnote={metrics ? `${Math.round((sunH / win) * 100)}% of the window` : 'ray-casting the skyline'}
+        fraction={sunFrac}
+        footnote={metrics ? `${percent(sunFrac)} of the window` : 'ray-casting the skyline'}
       />
       <KeyNumberTile
         label={L.earth}
@@ -168,15 +203,9 @@ export function KeyNumberRow({
         tone="earth"
         icon="earth"
         size={size}
-        state={earthDown ? 'blank' : computing ? 'computing' : 'ready'}
-        fraction={earthH / win}
-        footnote={
-          earthDown
-            ? 'ephemeris unavailable — blank, not zero'
-            : metrics
-              ? `${Math.round((earthH / win) * 100)}% of the window`
-              : undefined
-        }
+        state={computing ? 'computing' : 'ready'}
+        fraction={earthFrac}
+        footnote={metrics ? `${percent(earthFrac)} of the window` : undefined}
       />
       <KeyNumberTile
         label={L.dark}
@@ -184,14 +213,17 @@ export function KeyNumberRow({
         tone={overLimit ? 'alert' : 'neutral'}
         size={size}
         state={computing ? 'computing' : darkGrazing ? 'uncertain' : 'ready'}
-        toleranceH={darkTol}
+        toleranceH={darkGrazing ? undefined : darkTol}
+        open={darkOpen}
         fraction={dark / SURVIVAL_LIMIT_H}
         footnote={
           computing
             ? undefined
             : overLimit
-              ? `${Math.round(dark - SURVIVAL_LIMIT_H)} h over the ${SURVIVAL_LIMIT_H} h limit`
-              : `${Math.round(SURVIVAL_LIMIT_H - dark)} h of margin on ${SURVIVAL_LIMIT_H} h`
+              ? `${darkOpen ? 'at least ' : ''}${Math.round(dark - SURVIVAL_LIMIT_H)} h over the ${SURVIVAL_LIMIT_H} h limit`
+              : darkOpen
+                ? `at most ${Math.round(SURVIVAL_LIMIT_H - dark)} h of margin on ${SURVIVAL_LIMIT_H} h — the window cuts this night short`
+                : `${Math.round(SURVIVAL_LIMIT_H - dark)} h of margin on ${SURVIVAL_LIMIT_H} h`
         }
       />
       <KeyNumberTile
@@ -199,9 +231,17 @@ export function KeyNumberRow({
         value={rf}
         tone="neutral"
         size={size}
-        state={earthDown ? 'blank' : computing ? 'computing' : 'ready'}
+        state={computing ? 'computing' : rfGrazing ? 'uncertain' : 'ready'}
+        toleranceH={rfGrazing ? undefined : rfTol}
+        open={rfOpen}
         fraction={rf / win}
-        footnote={earthDown ? 'ephemeris unavailable' : computing ? undefined : 'autonomy must cover this'}
+        footnote={
+          computing
+            ? undefined
+            : rfOpen
+              ? 'the window cuts this blackout short; autonomy must cover at least this'
+              : 'autonomy must cover this'
+        }
       />
     </div>
   )

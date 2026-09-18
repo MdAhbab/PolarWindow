@@ -1,3 +1,4 @@
+import { useShallow } from 'zustand/react/shallow'
 import { useMission } from '../lib/store'
 import { useFocusedMetrics, useFocusedView } from '../lib/mission'
 import { siteById } from '../lib/sites'
@@ -5,13 +6,14 @@ import { HorizonProfile } from '../components/HorizonProfile'
 import { DateSlider } from '../components/DateSlider'
 import { LoadingPanel, UncertaintyNote } from '../components/States'
 import { Panel, SectionLabel } from '../components/ui'
-import { bearing, compass, coords, degrees, hoursWithUnit } from '../lib/format'
-import { DEM_VERTICAL_ERROR_M } from '../lib/geometry/mask'
+import { bearing, bound, compass, coords, degrees, hoursWithUnit } from '../lib/format'
 
 /** S4 — the screen that makes the physics click for a non-expert. */
 export function HorizonScreen() {
   const view = useFocusedView()
-  const { siteId, cursorH } = useMission()
+  const { siteId, cursorH } = useMission(
+    useShallow((s) => ({ siteId: s.siteId, cursorH: s.cursorH })),
+  )
   const metrics = useFocusedMetrics()
   const site = siteById(siteId)
 
@@ -27,7 +29,7 @@ export function HorizonScreen() {
 
   const worst = metrics.sun.longestDownArc
   const blockAz = worst?.blockedByBearingDeg ?? metrics.mask.maxElBearingDeg
-  const blockIdx = Math.round(blockAz) % 360
+  const blockIdx = Math.round((blockAz / 360) * metrics.mask.elDeg.length) % metrics.mask.elDeg.length
   const rangeM = metrics.mask.rangeM[blockIdx]
   const elDeg = metrics.mask.elDeg[blockIdx]
   const heightM = Math.tan((elDeg * Math.PI) / 180) * rangeM
@@ -98,18 +100,25 @@ export function HorizonScreen() {
             {worst && (
               <div className="flex items-baseline gap-2 border-t border-line pt-3">
                 <span className="text-[40px] leading-10 font-semibold tracking-[-0.02em] tnum">
-                  ≈{Math.round(worst.hours)}
+                  {bound(metrics.sun.longestDownOpen)}
+                  {Math.round(worst.hours)}
                 </span>
-                <span className="text-[14px] text-ink-2">h of darkness, every lunar day</span>
+                <span className="text-[14px] text-ink-2">
+                  h of darkness in this window{metrics.sun.longestDownOpen ? ', cut short by its edge' : ''}
+                </span>
               </div>
             )}
           </Panel>
 
           <UncertaintyNote>
-            The hatched band on the silhouette is the skyline’s own error, from a {DEM_VERTICAL_ERROR_M} m
-            vertical accuracy at each blocking range. Where the Sun path runs inside it the crossing time is
-            uncertain by{' '}
-            <span className="font-mono text-earth-soft">±{(worst?.toleranceH ?? 0).toFixed(2)} h</span>.
+            The hatched band on the silhouette is the skyline’s own error at each bearing: the elevation
+            model’s vertical error ({view.meta ? `up to ±${view.meta.uncertainty.demVerticalErrorM} m` : 'a few metres'})
+            seen from the range of that bearing’s blocker, so it is wide for a near ridge and thin for a far
+            one. Where the Sun path runs inside it the crossing time is uncertain by{' '}
+            <span className="font-mono text-earth-soft">
+              {worst?.grazing ? 'more than can be timed (grazing)' : `±${(worst?.toleranceH ?? 0).toFixed(2)} h`}
+            </span>
+            .
           </UncertaintyNote>
 
           <Panel className="flex flex-col gap-2 p-5">
@@ -117,7 +126,7 @@ export function HorizonScreen() {
             <p className="text-[14px] leading-6 text-ink-2">
               {worst
                 ? `The Sun clears every bearing except a stretch near ${compass(blockAz)}. It crosses into
-                   that shadow once a month and stays there ${hoursWithUnit(worst.hours)}.`
+                   that shadow once a month and stays there ${hoursWithUnit(worst.hours, 0, metrics.sun.longestDownOpen)}.`
                 : 'The Sun clears the skyline at every bearing in this window. Nothing here blocks it.'}
             </p>
           </Panel>

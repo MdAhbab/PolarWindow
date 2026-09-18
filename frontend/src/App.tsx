@@ -11,7 +11,7 @@ import { ReportScreen } from './screens/ReportScreen'
 import { StoryScreen } from './screens/StoryScreen'
 import { StatesScreen } from './screens/StatesScreen'
 import { useMission } from './lib/store'
-import { useSites } from './lib/api/queries'
+import { useEngineVersionWatch, useSites } from './lib/api/queries'
 import { setSites, hasSite, defaultCompare } from './lib/sites'
 import { ApiError } from './lib/api/client'
 
@@ -26,6 +26,7 @@ import { ApiError } from './lib/api/client'
  */
 export default function App() {
   const sites = useSites()
+  useEngineVersionWatch()
   const setSite = useMission((s) => s.setSite)
   const siteId = useMission((s) => s.siteId)
 

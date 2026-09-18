@@ -1,5 +1,6 @@
 import type { Arc, SiteMetrics } from '../lib/types'
 import { bearing, clockUTC, degrees, plusMinus } from '../lib/format'
+import { TERRAIN_BLOCKER_MIN_EL_DEG } from './TwoClockRings'
 import { SectionLabel } from './ui'
 
 /**
@@ -36,7 +37,14 @@ export function ArcTable({ metrics, body }: { metrics: SiteMetrics; body?: 'sun'
                     h === 'Hours' || h === '±' ? 'text-right' : ''
                   }`}
                 >
-                  {h}
+                  {h === '±' ? (
+                    <>
+                      <span aria-hidden="true">±</span>
+                      <span className="sr-only">Timing margin, hours</span>
+                    </>
+                  ) : (
+                    h
+                  )}
                 </th>
               ))}
             </tr>
@@ -50,16 +58,23 @@ export function ArcTable({ metrics, body }: { metrics: SiteMetrics; body?: 'sun'
                   </span>
                 </td>
                 <td className="px-4 py-2.5 font-mono text-[13px] text-ink-2">{a.up ? 'above' : 'below'}</td>
-                <td className="px-4 py-2.5 font-mono text-[13px] text-ink-2">{clockUTC(a.startH)}</td>
-                <td className="px-4 py-2.5 font-mono text-[13px] text-ink-2">{clockUTC(a.endH)}</td>
-                <td className="px-4 py-2.5 text-right font-mono text-[13px] text-ink tnum">{a.hours.toFixed(1)}</td>
+                <td className="px-4 py-2.5 font-mono text-[13px] text-ink-2">
+                  {a.openStart ? `before ${clockUTC(a.startH)}` : clockUTC(a.startH)}
+                </td>
+                <td className="px-4 py-2.5 font-mono text-[13px] text-ink-2">
+                  {a.openEnd ? `after ${clockUTC(a.endH)}` : clockUTC(a.endH)}
+                </td>
+                <td className="px-4 py-2.5 text-right font-mono text-[13px] text-ink tnum">
+                  {a.openStart || a.openEnd ? '≥' : ''}
+                  {a.hours.toFixed(1)}
+                </td>
                 <td className="px-4 py-2.5 text-right font-mono text-[13px] text-uncertain tnum">
                   {a.grazing ? 'grazing' : plusMinus(a.toleranceH, 2)}
                 </td>
                 <td className="px-4 py-2.5 text-[13px] text-ink-2">
                   {a.up
                     ? '—'
-                    : a.blockedByElDeg !== undefined && a.blockedByElDeg > 0.05
+                    : a.blockedByElDeg !== undefined && a.blockedByElDeg > TERRAIN_BLOCKER_MIN_EL_DEG
                       ? `terrain at ${bearing(a.blockedByBearingDeg ?? 0)}, ${degrees(a.blockedByElDeg, 2)}`
                       : 'below the horizon'}
                 </td>
@@ -71,7 +86,8 @@ export function ArcTable({ metrics, body }: { metrics: SiteMetrics; body?: 'sun'
       <p className="text-[12px] leading-5 text-ink-3">
         “Grazing” is not a rounding failure. It means the body crosses the skyline so shallowly that the
         crossing time is not knowable at this elevation model’s accuracy — a real finding, and one the
-        picture alone would hide.
+        picture alone would hide. “Before” and “after” mark an arc the window cut short: it was already
+        under way, or is still under way, so its length is a lower bound.
       </p>
     </div>
   )

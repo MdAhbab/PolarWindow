@@ -1,7 +1,9 @@
-import type { ReactNode } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { useEffect, useRef, type ReactNode } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
+import { useShallow } from 'zustand/react/shallow'
 import { useMission } from '../lib/store'
 import { useKeyboardMap } from '../hooks/useKeyboard'
+import { useReducedMotion } from '../hooks/useMotion'
 import { Icon, Mark, Wordmark } from './Icon'
 import { useProvenance } from '../lib/useProvenance'
 import { SampleDataBadge, Segmented, SvgDefs } from './ui'
@@ -15,6 +17,39 @@ const NAV = [
   { to: '/blackout', label: 'Blackout', icon: 'gap' as const },
 ]
 
+const TITLES: Record<string, string> = {
+  '/map': 'Map',
+  '/clocks': 'Two clocks',
+  '/compare': 'Compare',
+  '/horizon': 'Horizon',
+  '/blackout': 'Blackout',
+  '/report': 'Report',
+  '/story': 'Why the pole is hard',
+  '/states': 'States',
+}
+
+/**
+ * Move focus to the content and name the screen when the route changes.
+ *
+ * A client-side navigation otherwise leaves focus on the link that was
+ * pressed, and a screen reader announces nothing: the new screen arrives
+ * silently. Focus lands on `main` (not on the first control) so the next Tab
+ * starts at the top of the new content, and the document title carries the
+ * screen's name, which is what assistive technology reads out.
+ */
+function useRouteFocus() {
+  const { pathname } = useLocation()
+  const first = useRef(true)
+  useEffect(() => {
+    document.title = `${TITLES[pathname] ?? 'POLAR WINDOW'} — POLAR WINDOW`
+    if (first.current) {
+      first.current = false
+      return
+    }
+    document.getElementById('pw-main')?.focus()
+  }, [pathname])
+}
+
 const FACES: { value: Face; label: string }[] = [
   { value: 'planner', label: 'Planner' },
   { value: 'educator', label: 'Educator' },
@@ -23,9 +58,20 @@ const FACES: { value: Face; label: string }[] = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const provenance = useProvenance()
-  const navigate = useNavigate()
-  const { face, setFace, theme, setTheme, motion, setMotion } = useMission()
-  useKeyboardMap(undefined, () => navigate('/states'))
+  // Selectors, not the whole store: during M1 the cursor changes sixty times a
+  // second, and a whole-store subscription re-rendered the shell on each one.
+  const { face, setFace, theme, setTheme, motion, setMotion } = useMission(
+    useShallow((s) => ({
+      face: s.face,
+      setFace: s.setFace,
+      theme: s.theme,
+      setTheme: s.setTheme,
+      motion: s.motion,
+      setMotion: s.setMotion,
+    })),
+  )
+  useKeyboardMap({ reducedMotion: useReducedMotion() })
+  useRouteFocus()
 
   return (
     <div className="flex min-h-full flex-col bg-canvas text-ink">
@@ -90,7 +136,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main id="pw-main" className="flex grow flex-col">
+      <main id="pw-main" tabIndex={-1} className="flex grow flex-col outline-none">
         {children}
       </main>
 

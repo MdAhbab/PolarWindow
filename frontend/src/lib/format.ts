@@ -1,18 +1,32 @@
 import type { Face } from './types'
 
 /**
- * Every derived value carries the tilde. It is not decoration: these numbers
- * come from a synthetic elevation model and a mean-element ephemeris, and
+ * Every derived value carries the tilde. It is not decoration: the numbers are
+ * computed from a 20 m elevation model with metres of vertical error, and
  * nothing in this build should be mistaken for a flight value.
  */
 export const APPROX = '≈'
 
-export function hours(v: number, digits = 0): string {
-  return `${APPROX}${v.toFixed(digits)}`
+/**
+ * A value the window cut short. The night (or blackout) began before the window
+ * opened or runs on after it closes, so the figure is a lower bound — and "≈"
+ * would claim it is the stretch itself.
+ */
+export const AT_LEAST = '≥'
+
+export const bound = (open?: boolean): string => (open ? AT_LEAST : APPROX)
+
+export function hours(v: number, digits = 0, open?: boolean): string {
+  return `${bound(open)}${v.toFixed(digits)}`
 }
 
-export function hoursWithUnit(v: number, digits = 0): string {
-  return `${hours(v, digits)} h`
+export function hoursWithUnit(v: number, digits = 0, open?: boolean): string {
+  return `${hours(v, digits, open)} h`
+}
+
+/** The same value, spoken: "about 122 hours", "at least 288 hours". */
+export function hoursSpoken(v: number, open?: boolean): string {
+  return `${open ? 'at least' : 'about'} ${Math.round(v)} hours`
 }
 
 export function plusMinus(v: number, digits = 1): string {
@@ -20,7 +34,7 @@ export function plusMinus(v: number, digits = 1): string {
 }
 
 export function percent(fraction: number): string {
-  return `${Math.round(fraction * 100)}%`
+  return `${APPROX}${Math.round(fraction * 100)}%`
 }
 
 export function degrees(v: number, digits = 2): string {
@@ -67,11 +81,12 @@ export function dayOf(tH: number, windowStartH: number): number {
  * The public face says units in words. Same fact, different vocabulary —
  * simplifying the words never simplifies the claim.
  */
-export function humanDuration(h: number, face: Face): string {
-  if (face !== 'public') return hoursWithUnit(h)
+export function humanDuration(h: number, face: Face, open?: boolean): string {
+  if (face !== 'public') return hoursWithUnit(h, 0, open)
   const days = h / 24
-  if (days < 1.5) return `${APPROX}${Math.round(h)} hours`
-  return `${APPROX}${days.toFixed(days < 10 ? 1 : 0)} days`
+  const lead = open ? 'at least ' : APPROX
+  if (days < 1.5) return `${lead}${Math.round(h)} hours`
+  return `${lead}${days.toFixed(days < 10 ? 1 : 0)} days`
 }
 
 export const TERM: Record<string, Record<Face, string>> = {

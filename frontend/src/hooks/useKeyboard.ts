@@ -1,51 +1,60 @@
 import { useEffect } from 'react'
 import { useMission } from '../lib/store'
 
+/** Where a key press belongs to the focused element, not to the shortcut map. */
 const TYPING = new Set(['INPUT', 'TEXTAREA', 'SELECT'])
+const ACTIVATES_ON_SPACE = new Set(['BUTTON', 'A', 'SUMMARY'])
 
 /**
  * The keyboard map from the accessibility sheet. Nothing here is mouse-only,
  * and nothing fires while the caret is in a field.
+ *
+ *   [ ]        step the date by 6 h        ⇧[ ⇧]  by one day
+ *   1 2 3      switch audience face
+ *   T          read the chart on screen as its table
+ *   Space      play / pause the window (M1), unless reduced motion is on
+ *
+ * The previous version took `(onHelp, onTable)` positionally and was called as
+ * `(undefined, navigate('/states'))`: Space was dead, because it returned early
+ * whenever `onHelp` was undefined, and T left the screen instead of opening its
+ * table -- the opposite of what the on-screen help promised.
  */
-export function useKeyboardMap(onHelp?: () => void, onTable?: () => void) {
-  const nudgeCursor = useMission((s) => s.nudgeCursor)
-  const setFace = useMission((s) => s.setFace)
-  const setPlaying = useMission((s) => s.setPlaying)
-  const playing = useMission((s) => s.playing)
-
+export function useKeyboardMap({ reducedMotion }: { reducedMotion: boolean }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = document.activeElement
-      if (el && TYPING.has(el.tagName)) return
+      if (el && (TYPING.has(el.tagName) || (el as HTMLElement).isContentEditable)) return
       if (e.metaKey || e.ctrlKey || e.altKey) return
+      const s = useMission.getState()
 
       switch (e.key) {
         case '[':
-          nudgeCursor(e.shiftKey ? -24 : -6)
+        case '{':
+          s.nudgeCursor(e.shiftKey ? -24 : -6)
           break
         case ']':
-          nudgeCursor(e.shiftKey ? 24 : 6)
+        case '}':
+          s.nudgeCursor(e.shiftKey ? 24 : 6)
           break
         case '1':
-          setFace('planner')
+          s.setFace('planner')
           break
         case '2':
-          setFace('educator')
+          s.setFace('educator')
           break
         case '3':
-          setFace('public')
+          s.setFace('public')
           break
         case ' ':
-          if (onHelp === undefined) return
+          // Space already means "press" on a focused control; do not steal it.
+          if (el && ACTIVATES_ON_SPACE.has(el.tagName)) return
+          if (reducedMotion) return
           e.preventDefault()
-          setPlaying(!playing)
+          s.setPlaying(!s.playing)
           break
         case 't':
         case 'T':
-          onTable?.()
-          break
-        case '?':
-          onHelp?.()
+          s.toggleTable()
           break
         default:
           return
@@ -53,5 +62,5 @@ export function useKeyboardMap(onHelp?: () => void, onTable?: () => void) {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [nudgeCursor, setFace, setPlaying, playing, onHelp, onTable])
+  }, [reducedMotion])
 }

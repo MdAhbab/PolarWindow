@@ -162,7 +162,7 @@ export function SectionLabel({ children, className = '' }: { children: ReactNode
  */
 export type Provenance = 'measured' | 'partial' | 'unavailable'
 
-const PROVENANCE_COPY: Record<Provenance, { label: string; title: string }> = {
+export const PROVENANCE_COPY: Record<Provenance, { label: string; title: string }> = {
   measured: {
     label: 'Measured',
     title:

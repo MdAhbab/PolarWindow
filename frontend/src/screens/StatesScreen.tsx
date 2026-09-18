@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useFocusedMetrics } from '../lib/mission'
+import { useFocusedMetrics, useFocusedView } from '../lib/mission'
+import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
 import { EmptyState, ErrorPanel, LoadingPanel, UncertaintyNote } from '../components/States'
 import { KeyNumberTile } from '../components/KeyNumbers'
 import { Panel, SectionLabel, Button } from '../components/ui'
 import { ArcTable } from '../components/ArcTable'
-import { DEM_VERTICAL_ERROR_M } from '../lib/geometry/mask'
 
 /**
  * S8 — the four states that decide whether anyone trusts this, live rather
@@ -14,6 +14,7 @@ import { DEM_VERTICAL_ERROR_M } from '../lib/geometry/mask'
 export function StatesScreen() {
   const [earthEphemerisDown, setEarthEphemerisDown] = useState(false)
   const metrics = useFocusedMetrics()
+  const meta = useFocusedView().meta
   const worst = metrics?.sun.longestDownArc
 
   return (
@@ -124,16 +125,18 @@ export function StatesScreen() {
                 size="lg"
                 state={metrics ? (worst?.grazing ? 'uncertain' : 'ready') : 'computing'}
                 toleranceH={metrics?.sun.longestDownToleranceH}
-                fraction={(metrics?.sun.longestDownH ?? 0) / 120}
+                open={Boolean(metrics?.sun.longestDownOpen)}
+                fraction={(metrics?.sun.longestDownH ?? 0) / SURVIVAL_LIMIT_H}
                 footnote={
                   worst?.grazing
                     ? 'grazing crossing — the timing is not knowable at this resolution'
-                    : 'both edges of the gap move, so it carries twice an edge’s error'
+                    : 'both edges of the gap move, so it carries both edges’ errors combined'
                 }
               />
               <UncertaintyNote>
-                These are the live values for the selected site. The elevation model has a vertical accuracy
-                of {DEM_VERTICAL_ERROR_M} m; at the blocking range that becomes an angle, and the angle
+                These are the live values for the selected site. The elevation model’s vertical error is up to{' '}
+                {meta ? `±${meta.uncertainty.demVerticalErrorM} m` : 'a few metres'}; at the blocking range that
+                becomes an angle, and the angle
                 becomes a time through the rate at which the Sun crosses the skyline. Where that rate is too
                 small to time, the arc says <em className="not-italic text-ink">grazing</em> rather than
                 inventing a precision.

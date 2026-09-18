@@ -1,13 +1,16 @@
+import { useShallow } from 'zustand/react/shallow'
 import { useSiteMetricsMap } from '../lib/useMetricsMap'
 import { SourcesLine } from '../components/Sources'
-import { useFocusedView } from '../lib/mission'
+import { useCompare, useFocusedView, useWindowParams } from '../lib/mission'
 import { useMission } from '../lib/store'
 import { siteById } from '../lib/sites'
+import { useProvenance } from '../lib/useProvenance'
 import { Ribbon } from '../components/Ribbon'
 import { LoadingPanel } from '../components/States'
-import { Button, SectionLabel } from '../components/ui'
+import { Button, PROVENANCE_COPY, SectionLabel } from '../components/ui'
 import { Mark } from '../components/Icon'
-import { rankSites, SURVIVAL_LIMIT_H, autonomyPacket } from '../lib/geometry/metrics'
+import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
+import { comparisonCsv, download } from '../lib/export'
 import { hoursWithUnit, percent, shortDateUTC } from '../lib/format'
 
 /**
@@ -18,9 +21,17 @@ import { hoursWithUnit, percent, shortDateUTC } from '../lib/format'
  */
 export function ReportScreen() {
   const reportMeta = useFocusedView().meta
-  const { compareIds, windowStartH, windowHours } = useMission()
-  const { map: metrics, done, total } = useSiteMetricsMap(compareIds)
-  const ready = compareIds.every((id) => metrics[id])
+  const provenance = useProvenance()
+  const { compareIds, windowStartH, windowHours } = useMission(
+    useShallow((s) => ({
+      compareIds: s.compareIds,
+      windowStartH: s.windowStartH,
+      windowHours: s.windowHours,
+    })),
+  )
+  const { map: metrics, autonomy, done, total } = useSiteMetricsMap(compareIds)
+  const ranking = useCompare(compareIds, useWindowParams(), 'longest_dark_s')
+  const ready = compareIds.every((id) => metrics[id] && autonomy[id])
 
   if (!ready) {
     return (
@@ -32,19 +43,45 @@ export function ReportScreen() {
     )
   }
 
-  const order = rankSites(
-    compareIds.map((id) => ({ siteId: id, metrics: metrics[id] })),
-    'longestDark',
+  // The server's order and ranks (ties share a rank). Request order until the
+  // ranking arrives, so the page never waits on it.
+  const items = ranking.data?.items ?? []
+  const ranked = items.map((it) => it.site_id).filter((id) => compareIds.includes(id))
+  const order = [...ranked, ...compareIds.filter((id) => !ranked.includes(id))]
+  const rankOf = Object.fromEntries(items.map((it) => [it.site_id, it.rank])) as Record<string, number>
+  const tiedOf = Object.fromEntries(items.map((it) => [it.site_id, it.tied])) as Record<string, boolean>
+  // A night the window cuts short is a lower bound: it cannot be said to fit
+  // inside the limit, only to exceed it.
+  const survivors = order.filter(
+    (id) => metrics[id].sun.longestDownH <= SURVIVAL_LIMIT_H && !metrics[id].sun.longestDownOpen,
   )
-  const survivors = order.filter((id) => metrics[id].sun.longestDownH <= SURVIVAL_LIMIT_H)
   const best = order[0]
-  const bestPacket = autonomyPacket(metrics[best])
+  const bestPacket = autonomy[best]
+  const stamp = PROVENANCE_COPY[provenance]
+  const exportRows = order.map((id) => ({
+    site: { id, name: siteById(id).name, metrics: metrics[id], autonomy: autonomy[id] },
+    rank: rankOf[id],
+    tied: tiedOf[id],
+  }))
 
   return (
     <div className="flex grow flex-col items-center gap-4 bg-inset p-4 lg:p-8">
       <div className="flex w-full max-w-[816px] items-center justify-between">
         <SectionLabel>Export — one page, Letter, light theme</SectionLabel>
-        <Button onClick={() => window.print()}>Print or save as PDF</Button>
+        <div className="flex flex-wrap gap-3">
+          <Button
+            onClick={() =>
+              download(
+                `comparison-${new Date().toISOString().slice(0, 10)}.csv`,
+                comparisonCsv(exportRows, 'longest dark gap'),
+                'text/csv',
+              )
+            }
+          >
+            Download as CSV
+          </Button>
+          <Button onClick={() => window.print()}>Print or save as PDF</Button>
+        </div>
       </div>
 
       <article
@@ -76,9 +113,13 @@ export function ReportScreen() {
               {SURVIVAL_LIMIT_H} h of continuous darkness
             </p>
           </div>
-          <div className="shrink-0 border-2 border-alert p-2 text-center">
-            <div className="text-[14px] font-bold tracking-[0.1em] text-alert">SAMPLE DATA</div>
-            <div className="text-[12px] text-ink-3">synthetic terrain · not flight values</div>
+          {/* From /healthz, like the badge in the header -- never a typed-in
+              label. This box used to read SAMPLE DATA / synthetic terrain
+              unconditionally, which stopped being true when the terrain became
+              LOLA and the positions SPICE. */}
+          <div className="shrink-0 border-2 border-alert p-2 text-center" title={stamp.title}>
+            <div className="text-[14px] font-bold tracking-[0.1em] text-alert uppercase">{stamp.label}</div>
+            <div className="text-[12px] text-ink-3">derived values · not flight values</div>
           </div>
         </div>
 
@@ -87,22 +128,28 @@ export function ReportScreen() {
             const m = metrics[id]
             const s = siteById(id)
             const over = m.sun.longestDownH > SURVIVAL_LIMIT_H
+            const rank = rankOf[id] ?? i + 1
             return (
               <div key={id} className={`border bg-panel p-3.5 ${over ? 'border-2 border-alert' : 'border-line-strong'}`}>
                 <div className="mb-2.5 flex items-baseline gap-2 border-b border-line pb-2">
-                  <span className={`text-[20px] font-bold ${i === 0 ? 'text-earth' : 'text-ink-3'}`}>{i + 1}</span>
+                  <span className={`text-[20px] font-bold ${rank === 1 ? 'text-earth' : 'text-ink-3'}`}>{rank}</span>
                   <span className="text-[15px] font-semibold">
                     {s.code} — {s.name.split(',')[0]}
                   </span>
+                  {tiedOf[id] && <span className="ml-auto text-[12px] text-ink-3">tied</span>}
                 </div>
                 <Figure label="Sunlight" value={hoursWithUnit(m.sun.upHours)} tone="text-sun" />
                 <Figure label="Earth contact" value={hoursWithUnit(m.earth.upHours)} tone="text-earth" />
                 <Figure
                   label={over ? 'Longest dark gap ▲' : 'Longest dark gap'}
-                  value={hoursWithUnit(m.sun.longestDownH)}
+                  value={hoursWithUnit(m.sun.longestDownH, 0, m.sun.longestDownOpen)}
                   tone={over ? 'text-alert' : 'text-ink'}
                 />
-                <Figure label="Longest RF blackout" value={hoursWithUnit(m.earth.longestDownH)} tone="text-ink" />
+                <Figure
+                  label="Longest RF blackout"
+                  value={hoursWithUnit(m.earth.longestDownH, 0, m.earth.longestDownOpen)}
+                  tone="text-ink"
+                />
               </div>
             )
           })}
@@ -134,8 +181,9 @@ export function ReportScreen() {
             )
           })}
           <p className="text-[13px] leading-5 text-ink-2">
-            Totals do not decide this. The pink hatch marks each site’s single longest night, and that is
-            the number a battery has to survive.
+            Totals do not decide this. The magenta hatch marks a site’s single longest night where it runs
+            past the {SURVIVAL_LIMIT_H} h limit, and that is the number a battery has to survive. “≥” marks a
+            night the window cuts short: the real one is longer.
           </p>
         </div>
 
@@ -152,16 +200,13 @@ export function ReportScreen() {
               </>
             ) : (
               <>
-                <strong>{siteById(best).code}</strong> is the only one whose worst night (
-                {hoursWithUnit(metrics[best].sun.longestDownH)}) fits inside the {SURVIVAL_LIMIT_H} h limit
-                {survivors.length > 1
-                  ? `, together with ${survivors
-                      .slice(1)
-                      .map((id) => siteById(id).code)
-                      .join(' and ')}`
-                  : ''}
-                . It pays for that with Earth contact: {percent(metrics[best].earth.fractionUp)} of the
-                window, in stretches broken by libration rather than by terrain.
+                <strong>{survivors.map((id) => siteById(id).code).join(' and ')}</strong>{' '}
+                {survivors.length > 1 ? 'are the ones' : 'is the only one'} whose worst night fits inside
+                the {SURVIVAL_LIMIT_H} h limit ({survivors
+                  .map((id) => `${siteById(id).code} ${hoursWithUnit(metrics[id].sun.longestDownH)}`)
+                  .join(', ')}
+                ). {siteById(survivors[0]).code} pays for that with Earth contact:{' '}
+                {percent(metrics[survivors[0]].earth.fractionUp)} of the window.
               </>
             )}
           </p>
@@ -173,9 +218,11 @@ export function ReportScreen() {
               Autonomy required — site {siteById(best).code}
             </div>
             <p className="text-[16px] leading-6">
-              Worst compound event {hoursWithUnit(bestPacket.worstCompoundH)} with neither sunlight nor an
-              Earth link. With margin: <strong>{hoursWithUnit(bestPacket.requiredAutonomyH)}</strong> of
-              command buffer, storage and autonomous fault response.
+              Worst compound event {hoursWithUnit(bestPacket.worstCompoundH, 0, bestPacket.worstCompoundOpen)}{' '}
+              with neither sunlight nor an Earth link. With a {Math.round(bestPacket.marginFraction * 100)}%
+              margin: <strong>{hoursWithUnit(bestPacket.requiredAutonomyH)}</strong> of command buffer,
+              storage and autonomous fault response. The battery still carries the longest night,{' '}
+              {hoursWithUnit(bestPacket.survivalNeededH, 0, bestPacket.survivalOpen)}.
             </p>
           </div>
           <div className="w-60 shrink-0 border border-line-strong bg-panel p-4">
@@ -183,8 +230,9 @@ export function ReportScreen() {
               Uncertainty
             </div>
             <p className="text-[16px] leading-6">
-              Arc edges carry ±{metrics[best].sun.longestDownToleranceH.toFixed(2)} h from the elevation
-              model’s vertical accuracy.
+              {metrics[best].sun.longestDownArc?.grazing
+                ? 'The longest night has a crossing too shallow to time; its length stands, its edges do not.'
+                : `The longest night’s edges carry ±${metrics[best].sun.longestDownToleranceH.toFixed(2)} h from the elevation model’s vertical accuracy.`}
             </p>
           </div>
         </div>

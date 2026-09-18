@@ -4,28 +4,6 @@ export type Face = 'planner' | 'educator' | 'public'
 
 export type MetricKey = 'sunHours' | 'earthHours' | 'longestDark' | 'longestBlackout'
 
-/** A terrain feature, placed relative to the site in the local ENU frame. */
-export interface TerrainFeature {
-  kind: 'ridge' | 'massif' | 'knoll' | 'crater'
-  /** Compass bearing of the feature's centre, degrees from north, clockwise. */
-  bearingDeg: number
-  /** Ground range from the site to the feature's centre, metres. */
-  rangeM: number
-  /** Height above the site's own plane, metres. Negative for a crater floor. */
-  heightM: number
-  /** Extent across the line of sight, metres. This is what sets the angular span. */
-  widthM: number
-  /** Extent along the line of sight, metres. */
-  depthM: number
-}
-
-export interface TerrainSpec {
-  seed: number
-  /** Amplitude of the fractal roughness, metres. */
-  roughnessM: number
-  features: TerrainFeature[]
-}
-
 export interface Site {
   id: string
   code: string
@@ -37,7 +15,11 @@ export interface Site {
   /** Elevation relative to the 1737.4 km reference sphere, metres. */
   elevM: number
   note: string
-  terrain: TerrainSpec
+  /**
+   * How the landing point was found: on the rim of a named polar crater (so it
+   * borders that crater's permanently shadowed floor) or on a massif/plateau.
+   */
+  searchKind: 'rim' | 'massif'
 }
 
 export interface HorizonMask {
@@ -67,10 +49,19 @@ export interface Arc {
   startH: number
   endH: number
   hours: number
-  /** Half-width of the timing error on this arc, hours. */
+  /** Timing error of this arc's duration (both edges in quadrature), hours. */
   toleranceH: number
+  /** Timing error of the crossing that starts / ends this arc, hours; absent at a window edge. */
+  startToleranceH?: number
+  endToleranceH?: number
   /** True when the crossing is so shallow the timing is effectively unknown. */
   grazing: boolean
+  /**
+   * The arc was already under way when the window opened / is still under way
+   * when it closes. Its real length is longer than `hours`: a lower bound.
+   */
+  openStart?: boolean
+  openEnd?: boolean
   /** For a dark arc: the bearing of the terrain that is doing the blocking. */
   blockedByBearingDeg?: number
   blockedByElDeg?: number
@@ -85,6 +76,8 @@ export interface BodyResult {
   longestDownH: number
   longestDownToleranceH: number
   longestDownArc?: Arc
+  /** The longest down arc touches a window edge, so `longestDownH` is a lower bound. */
+  longestDownOpen?: boolean
   samples: TrackSample[]
 }
 
@@ -93,6 +86,8 @@ export interface CompoundEvent {
   startH: number
   endH: number
   hours: number
+  openStart?: boolean
+  openEnd?: boolean
 }
 
 export interface SiteMetrics {
@@ -104,8 +99,10 @@ export interface SiteMetrics {
   compound: CompoundEvent[]
   worstCompoundH: number
   mask: HorizonMask
-  /** Wall-clock milliseconds the ray-cast and the track sampling took. */
+  /** Wall-clock milliseconds the server spent on this window's geometry. */
   computeMs: number
+  /** The window's opening instant, ISO 8601 UTC, as the server quantised it. */
+  windowStartIso?: string
 }
 
 export interface MissionWindow {

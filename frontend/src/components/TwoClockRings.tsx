@@ -1,7 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { Arc, SiteMetrics, TrackSample } from '../lib/types'
 import { useReducedMotion, easeOut } from '../hooks/useMotion'
-import { bearing, degrees, hoursWithUnit } from '../lib/format'
+import { bearing, degrees, hoursSpoken } from '../lib/format'
+import { crossingBands, type Band } from '../lib/bands'
 
 const CX = 260
 const CY = 260
@@ -29,6 +30,24 @@ function dashFromArcs(arcs: Arc[], windowHours: number, circumference: number): 
   const parts = arcs[0].up ? lens : [0, ...lens]
   return parts.map((n) => n.toFixed(2)).join(' ')
 }
+
+/** Crossing bands as a dasharray: gap to the first band, band, gap, band... */
+function dashFromBands(bands: Band[], windowHours: number, circumference: number): string | null {
+  if (!bands.length) return null
+  const parts: number[] = []
+  let at = 0
+  for (const b of bands) {
+    parts.push(((b.fromH - at) / windowHours) * circumference)
+    parts.push(((b.toH - b.fromH) / windowHours) * circumference)
+    at = b.toH
+  }
+  parts.push(((windowHours - at) / windowHours) * circumference)
+  // A dasharray starts with a dash; the leading 0 makes it start with the gap.
+  return [0, ...parts].map((n) => Math.max(0, n).toFixed(2)).join(' ')
+}
+
+/** Terrain above the horizon blocks; a body below its geometric horizon does not need to be. */
+export const TERRAIN_BLOCKER_MIN_EL_DEG = 0.05
 
 function sampleAt(samples: TrackSample[], windowStartH: number, cursorH: number): TrackSample | undefined {
   if (!samples.length) return undefined
@@ -85,6 +104,10 @@ export function TwoClockRings({
   const win = metrics.windowHours
   const sunDash = dashFromArcs(metrics.sun.arcs, win, C_SUN)
   const earthDash = dashFromArcs(metrics.earth.arcs, win, C_EARTH)
+  const sunBands = dashFromBands(crossingBands(metrics.sun.arcs, win), win, C_SUN)
+  const earthBands = dashFromBands(crossingBands(metrics.earth.arcs, win), win, C_EARTH)
+  // M6 in code: breathe under full motion, static at 0.34 opacity otherwise.
+  const bandProps = reduced ? { strokeOpacity: 0.34 } : { className: 'breathe' }
   const nowAngle = (cursorH / win) * 360
 
   const worstDark = metrics.sun.longestDownArc
@@ -102,8 +125,9 @@ export function TwoClockRings({
       aria-label={describe(metrics)}
     >
       <desc>
-        Filled arc means above the local horizon. Hatched arc means blocked by terrain. The same arcs
-        are available as a table.
+        Filled arc means above the local horizon. Hatched arc means below it or blocked by terrain.
+        Finer hatching at each crossing shows that crossing's timing margin. The same arcs are available
+        as a table.
       </desc>
 
       {/* day marks at 0, 1/4, 1/2, 3/4 of the window */}
@@ -161,6 +185,32 @@ export function TwoClockRings({
           strokeDasharray={earthDash}
           transform={`rotate(-90 ${CX} ${CY})`}
         />
+        {sunBands && (
+          <circle
+            cx={CX}
+            cy={CY}
+            r={R_SUN}
+            fill="none"
+            stroke="url(#pw-uncertain)"
+            strokeWidth={W}
+            strokeDasharray={sunBands}
+            transform={`rotate(-90 ${CX} ${CY})`}
+            {...bandProps}
+          />
+        )}
+        {earthBands && (
+          <circle
+            cx={CX}
+            cy={CY}
+            r={R_EARTH}
+            fill="none"
+            stroke="url(#pw-uncertain)"
+            strokeWidth={W}
+            strokeDasharray={earthBands}
+            transform={`rotate(-90 ${CX} ${CY})`}
+            {...bandProps}
+          />
+        )}
       </g>
 
       <g fill="none" stroke="var(--color-line)" strokeWidth="1">
@@ -291,15 +341,19 @@ function Gauge({ x, label, sample, tone }: { x: number; label: string; sample?: 
 
 function describe(m: SiteMetrics): string {
   const dark = m.sun.longestDownArc
+  const terrain =
+    dark?.blockedByElDeg !== undefined && dark.blockedByElDeg > TERRAIN_BLOCKER_MIN_EL_DEG
   return (
     `Two clock rings over ${Math.round(m.windowHours)} hours. ` +
     `Outer amber ring: the Sun is above the local skyline for about ${Math.round(m.sun.upHours)} hours ` +
     `in ${m.sun.arcs.filter((a) => a.up).length} stretches. ` +
     `Inner cyan ring: Earth is above it for about ${Math.round(m.earth.upHours)} hours. ` +
     (dark
-      ? `The longest dark gap is about ${hoursWithUnit(dark.hours)}, caused by terrain at bearing ${bearing(
-          dark.blockedByBearingDeg ?? 0,
-        )}.`
+      ? `The longest dark gap is ${hoursSpoken(dark.hours, m.sun.longestDownOpen)}` +
+        (m.sun.longestDownOpen ? ', cut short by the edge of the window' : '') +
+        (terrain
+          ? `, caused by terrain at bearing ${bearing(dark.blockedByBearingDeg ?? 0)}.`
+          : ', with the Sun below the horizon rather than behind a ridge.')
       : 'There is no dark gap in this window.')
   )
 }

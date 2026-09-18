@@ -9,7 +9,7 @@
  */
 import { useMemo } from 'react'
 import type { SiteMetrics } from './types'
-import { isoFromHours, useMission, DEFAULT_STEP_S } from './store'
+import { MODEL_EPOCH_MS, useMission, DEFAULT_STEP_S } from './store'
 import {
   useCompare,
   useHealth,
@@ -18,21 +18,22 @@ import {
   useSiteView,
   type WindowParams,
 } from './api/queries'
-import { adaptAutonomy, toHours, type Meta } from './api/adapters'
+import { adaptAutonomy, quantiseWindow, toHours, type Meta } from './api/adapters'
 import type { MetricsDTO } from './api/client'
 
-/** The current window, in the form the API takes. */
+/**
+ * The current window, in the form the API takes, snapped exactly as the
+ * server snaps it -- so the client's cache key and the server's are the same
+ * key, and two windows the server treats as one never cost two requests.
+ */
 export function useWindowParams(): WindowParams {
   const windowStartH = useMission((s) => s.windowStartH)
   const windowHours = useMission((s) => s.windowHours)
-  return useMemo(
-    () => ({
-      start: isoFromHours(windowStartH),
-      end: isoFromHours(windowStartH + windowHours),
-      stepS: DEFAULT_STEP_S,
-    }),
-    [windowStartH, windowHours],
-  )
+  return useMemo(() => {
+    const startMs = MODEL_EPOCH_MS + windowStartH * 3_600_000
+    const { start, end } = quantiseWindow(startMs, startMs + windowHours * 3_600_000, DEFAULT_STEP_S)
+    return { start, end, stepS: DEFAULT_STEP_S }
+  }, [windowStartH, windowHours])
 }
 
 /**

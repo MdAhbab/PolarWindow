@@ -1,5 +1,7 @@
 import type { Arc } from '../lib/types'
 import { hoursWithUnit } from '../lib/format'
+import { crossingBands } from '../lib/bands'
+import { useReducedMotion } from '../hooks/useMotion'
 
 /**
  * One body's window as a bar. Solid where it is above the local skyline,
@@ -29,6 +31,8 @@ export function Ribbon({
   ariaLabel?: string
 }) {
   const fill = tone === 'sun' ? 'bg-sun-fill' : 'bg-earth-fill'
+  const reduced = useReducedMotion()
+  const bands = crossingBands(arcs, windowHours)
   const longest =
     alertOverH === undefined
       ? undefined
@@ -53,7 +57,11 @@ export function Ribbon({
             className={
               a.up ? fill : isWorst ? 'hatch-alert' : 'hatch-blocked'
             }
-            title={`${a.up ? 'above' : 'below'} the skyline · ${hoursWithUnit(a.hours)}`}
+            title={`${a.up ? 'above' : 'below'} the skyline · ${hoursWithUnit(
+              a.hours,
+              0,
+              a.openStart || a.openEnd,
+            )}${a.openStart ? ' · began before the window' : ''}${a.openEnd ? ' · continues after it' : ''}`}
           >
             {showLabels && !a.up && w > 4 && (
               <span className="flex h-full items-center justify-center text-[11px] font-semibold text-ink">
@@ -63,6 +71,21 @@ export function Ribbon({
           </div>
         )
       })}
+      {/* M6: the timing margin at every crossing, hatched at −45°. Breathes
+          under full motion; static at 0.34 opacity otherwise, decided here in
+          code rather than left to the CSS media query alone. */}
+      {bands.map((b, i) => (
+        <div
+          key={`band-${i}`}
+          aria-hidden="true"
+          className={`hatch-uncertain pointer-events-none absolute top-0 bottom-0 ${reduced ? '' : 'breathe'}`}
+          style={{
+            left: `${(b.fromH / windowHours) * 100}%`,
+            width: `${((b.toH - b.fromH) / windowHours) * 100}%`,
+            opacity: reduced ? 0.34 : undefined,
+          }}
+        />
+      ))}
       {cursorH !== undefined && (
         <div
           className="pointer-events-none absolute top-0 bottom-0 w-0.5 bg-ink"
@@ -81,6 +104,9 @@ function describeRibbon(arcs: Arc[], tone: 'sun' | 'earth'): string {
   const body = tone === 'sun' ? 'Sun' : 'Earth'
   const up = arcs.filter((a) => a.up)
   const down = arcs.filter((a) => !a.up)
-  const worst = down.reduce((m, a) => Math.max(m, a.hours), 0)
-  return `${body} above the local skyline in ${up.length} stretches, below it in ${down.length}; the longest gap is about ${Math.round(worst)} hours.`
+  const worst = down.reduce<Arc | undefined>((m, a) => (!m || a.hours > m.hours ? a : m), undefined)
+  const cut = worst && (worst.openStart || worst.openEnd)
+  return `${body} above the local skyline in ${up.length} stretches, below it in ${down.length}; the longest gap is ${
+    cut ? 'at least' : 'about'
+  } ${Math.round(worst?.hours ?? 0)} hours${cut ? ', cut short by the edge of the window' : ''}.`
 }

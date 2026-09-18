@@ -5,6 +5,7 @@ import { useFocusedMetrics } from '../lib/mission'
 import { siteById } from '../lib/sites'
 import { Button } from '../components/ui'
 import { bearing, compass, humanDuration } from '../lib/format'
+import { TERRAIN_BLOCKER_MIN_EL_DEG } from '../components/TwoClockRings'
 
 /** S7 — the public face. One idea per panel, and no caveat dropped to make a
  *  sentence shorter. */
@@ -14,8 +15,12 @@ export function StoryScreen() {
   const site = siteById(useMission((s) => s.siteId))
 
   const night = metrics?.sun.longestDownArc
-  const nightText = night ? humanDuration(night.hours, 'public') : 'days at a time'
+  const nightText = night
+    ? humanDuration(night.hours, 'public', metrics?.sun.longestDownOpen)
+    : 'days at a time'
   const blockAz = night?.blockedByBearingDeg ?? 0
+  const byTerrain =
+    night?.blockedByElDeg !== undefined && night.blockedByElDeg > TERRAIN_BLOCKER_MIN_EL_DEG
 
   const panels = [
     {
@@ -27,7 +32,9 @@ export function StoryScreen() {
     {
       kicker: 'Two',
       title: 'So a hill can switch off the Sun',
-      body: `Sunlight that low is easy to block. At ${site.name.split(',')[0]}, terrain to the ${compass(blockAz)} — bearing ${bearing(blockAz)} — puts the ground in shadow for ${nightText}, every single month.`,
+      body: byTerrain
+        ? `Sunlight that low is easy to block. At ${site.name.split(',')[0]}, terrain to the ${compass(blockAz)} — bearing ${bearing(blockAz)} — puts the ground in shadow for ${nightText}, every single month.`
+        : `Sunlight that low is easy to lose. At ${site.name.split(',')[0]} the Sun dips below the horizon itself for ${nightText}; at other spots near here a ridge does it instead.`,
       art: <RidgeArt />,
     },
     {

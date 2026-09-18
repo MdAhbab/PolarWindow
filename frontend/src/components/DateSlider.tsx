@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { useMission } from '../lib/store'
 import { useReducedMotion } from '../hooks/useMotion'
 import { clockUTC, shortDateUTC } from '../lib/format'
@@ -15,7 +16,16 @@ import { Icon } from './Icon'
 const PLAY_SECONDS = 14
 
 export function DateSlider({ compact = false }: { compact?: boolean }) {
-  const { cursorH, windowHours, windowStartH, setCursor, playing, setPlaying } = useMission()
+  const { cursorH, windowHours, windowStartH, setCursor, playing, setPlaying } = useMission(
+    useShallow((s) => ({
+      cursorH: s.cursorH,
+      windowHours: s.windowHours,
+      windowStartH: s.windowStartH,
+      setCursor: s.setCursor,
+      playing: s.playing,
+      setPlaying: s.setPlaying,
+    })),
+  )
   const reduced = useReducedMotion()
   const raf = useRef(0)
   const last = useRef(0)
@@ -56,7 +66,11 @@ export function DateSlider({ compact = false }: { compact?: boolean }) {
             aria-label={playing ? 'Pause the window' : 'Play the window'}
             onClick={() => setPlaying(!playing)}
             disabled={reduced}
-            title={reduced ? 'Play is off under reduced motion — use [ and ] to step' : undefined}
+            title={
+              reduced
+                ? 'Play is off under reduced motion — use [ and ] to step'
+                : 'Play the window (Space)'
+            }
             className="inline-flex size-12 shrink-0 items-center justify-center rounded-control border border-line-strong text-ink hover:bg-inset disabled:text-ink-3"
           >
             <Icon name={playing ? 'pause' : 'play'} size={18} strokeWidth={1.8} />

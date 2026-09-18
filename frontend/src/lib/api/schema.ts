@@ -384,9 +384,19 @@ export interface components {
             duration_s: number;
             /**
              * Tolerance S
-             * @description Half-width of the timing uncertainty on this arc's edges.
+             * @description Timing uncertainty of this arc's duration: the quadrature sum of its two edges' tolerances.
              */
             tolerance_s: number;
+            /**
+             * Start Tolerance S
+             * @description Timing uncertainty of the crossing that starts this arc; null when the arc starts at the window edge rather than at a crossing.
+             */
+            start_tolerance_s: number | null;
+            /**
+             * End Tolerance S
+             * @description As `start_tolerance_s`, for the crossing that ends it.
+             */
+            end_tolerance_s: number | null;
             /**
              * Grazing
              * @description True when a crossing is too shallow to time. The duration stands; its edges do not.

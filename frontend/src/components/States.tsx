@@ -36,26 +36,37 @@ export function EmptyState({
 }
 
 /**
- * No spinner. The bar tracks the real ray-cast, and the partial answer is on
- * screen with a note saying which way it can still move.
+ * No spinner. The bar tracks sites as their answers arrive.
+ *
+ * The copy used to say the browser was ray-casting 360 bearings. That was the
+ * old in-browser engine; skylines are now built once, offline, at a finer
+ * resolution, and what the bar tracks is each site's Sun and Earth track being
+ * worked out against its stored skyline.
  */
 export function LoadingPanel({ done = 0, total = 0 }: { done?: number; total?: number }) {
   const pct = total ? Math.round((done / total) * 100) : 0
   return (
     <Panel className="flex flex-col gap-4 p-6">
       <div className="flex items-baseline justify-between">
-        <SectionLabel>Ray-casting the skyline</SectionLabel>
+        <SectionLabel>Working out sunlight and Earth contact</SectionLabel>
         <span className="font-mono text-[12px] text-ink">
-          {done} / {total} sites · 360 bearings each
+          {done} / {total} sites
         </span>
       </div>
-      <div className="flex h-2 bg-dark-fill">
+      <div
+        className="flex h-2 bg-dark-fill"
+        role="progressbar"
+        aria-label="Sites computed"
+        aria-valuemin={0}
+        aria-valuemax={total || 1}
+        aria-valuenow={done}
+      >
         <div className="bg-terrain-high transition-[width] duration-200" style={{ width: `${pct}%` }} />
       </div>
       <p className="text-[13px] leading-5 text-ink-2">
-        Each site is ray-cast once against its elevation model, then it is 360 numbers and everything the
-        date slider touches is a lookup. Totals shown before this finishes can only fall as more terrain
-        is found, never rise.
+        Each site’s skyline was ray-cast once, ahead of time, against its elevation model. What is
+        happening now is the fast part: the Sun’s and Earth’s paths for this window, checked against that
+        skyline. Each site appears as soon as its own answer arrives.
       </p>
     </Panel>
   )

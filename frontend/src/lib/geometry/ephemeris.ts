@@ -11,10 +11,13 @@
  *
  * If the terminator ever needs to be accurate, the right fix is a sub-solar
  * point on the timeline response, not a better model here.
+ *
+ * Only the sub-solar point remains. The sub-Earth point and the site look
+ * angles that used to sit beside it were unused once every number moved to
+ * the API, and client-side astronomy that nothing calls is an invitation to
+ * start calling it.
  */
 
-const DEG = Math.PI / 180
-const RAD = 180 / Math.PI
 const TAU = Math.PI * 2
 
 /** Synodic month — one lunar day, the period of the Sun's azimuth sweep. */
@@ -25,14 +28,6 @@ const OBLIQUITY_DEG = 1.5424
 
 /** The Moon goes round the Sun with the Earth, so the seasons take a year. */
 const SOLAR_YEAR_HOURS = 8766.0
-
-/** Optical libration in latitude — draconic month. */
-const LIB_LAT_AMP_DEG = 6.69
-const LIB_LAT_PERIOD_H = 27.212 * 24
-
-/** Optical libration in longitude — anomalistic month. */
-const LIB_LON_AMP_DEG = 7.9
-const LIB_LON_PERIOD_H = 27.554 * 24
 
 /**
  * Model epoch offset, hours. Chosen so the default window sits in southern
@@ -55,82 +50,7 @@ export function subSolarPoint(tH: number): SubPoint {
   }
 }
 
-export function subEarthPoint(tH: number): SubPoint {
-  const t = tH + EPOCH_OFFSET_H
-  return {
-    latDeg: LIB_LAT_AMP_DEG * Math.sin((TAU * t) / LIB_LAT_PERIOD_H + 0.62),
-    lonDeg: LIB_LON_AMP_DEG * Math.sin((TAU * t) / LIB_LON_PERIOD_H + 1.31),
-  }
-}
-
-export interface LookAngles {
-  azDeg: number
-  elDeg: number
-}
-
-/**
- * Azimuth and elevation of a sub-point, seen from a site, both in degrees.
- *
- * Built from unit vectors rather than the usual spherical trig, because near
- * the pole cos(latitude) goes to zero and the textbook azimuth formula loses
- * all its precision exactly where this product needs it.
- */
-export function lookAngles(
-  siteLatDeg: number,
-  siteLonDeg: number,
-  target: SubPoint,
-): LookAngles {
-  const phi = siteLatDeg * DEG
-  const lam = siteLonDeg * DEG
-  const cphi = Math.cos(phi)
-  const sphi = Math.sin(phi)
-  const clam = Math.cos(lam)
-  const slam = Math.sin(lam)
-
-  // Site's outward normal, and its local east/north basis.
-  const upX = cphi * clam
-  const upY = cphi * slam
-  const upZ = sphi
-  const eastX = -slam
-  const eastY = clam
-  // north = up x east
-  const northX = -sphi * clam
-  const northY = -sphi * slam
-  const northZ = cphi
-
-  const tphi = target.latDeg * DEG
-  const tlam = target.lonDeg * DEG
-  const ctphi = Math.cos(tphi)
-  const sx = ctphi * Math.cos(tlam)
-  const sy = ctphi * Math.sin(tlam)
-  const sz = Math.sin(tphi)
-
-  const e = sx * eastX + sy * eastY
-  const n = sx * northX + sy * northY + sz * northZ
-  const u = sx * upX + sy * upY + sz * upZ
-
-  return {
-    azDeg: wrap360(Math.atan2(e, n) * RAD),
-    elDeg: Math.asin(Math.max(-1, Math.min(1, u))) * RAD,
-  }
-}
-
-export function bodyLookAngles(
-  body: 'sun' | 'earth',
-  siteLatDeg: number,
-  siteLonDeg: number,
-  tH: number,
-): LookAngles {
-  const sub = body === 'sun' ? subSolarPoint(tH) : subEarthPoint(tH)
-  return lookAngles(siteLatDeg, siteLonDeg, sub)
-}
-
-export function wrap360(d: number): number {
-  const r = d % 360
-  return r < 0 ? r + 360 : r
-}
-
 export function wrap180(d: number): number {
-  const r = wrap360(d)
+  const r = ((d % 360) + 360) % 360
   return r > 180 ? r - 360 : r
 }

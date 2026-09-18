@@ -45,6 +45,8 @@ interface MissionState {
   motion: Motion
   rankBy: MetricKey
   playing: boolean
+  /** The chart on screen is being read as its table twin (the T key). */
+  tableOpen: boolean
 
   setSite: (id: string) => void
   toggleCompare: (id: string) => void
@@ -56,6 +58,7 @@ interface MissionState {
   setMotion: (m: Motion) => void
   setRankBy: (k: MetricKey) => void
   setPlaying: (p: boolean) => void
+  toggleTable: () => void
 }
 
 export const DEFAULT_COMPARE = ['connecting-ridge', 'malapert-massif', 'faustini-rim']
@@ -71,6 +74,7 @@ export const useMission = create<MissionState>((set, get) => ({
   motion: 'full',
   rankBy: 'longestDark',
   playing: false,
+  tableOpen: false,
 
   setSite: (siteId) => set({ siteId }),
 
@@ -107,9 +111,5 @@ export const useMission = create<MissionState>((set, get) => ({
 
   setRankBy: (rankBy) => set({ rankBy }),
   setPlaying: (playing) => set({ playing }),
+  toggleTable: () => set((s) => ({ tableOpen: !s.tableOpen })),
 }))
-
-/** Hours from the model epoch, as an ISO 8601 UTC instant the API accepts. */
-export function isoFromHours(tH: number): string {
-  return new Date(MODEL_EPOCH_MS + tH * 3_600_000).toISOString().replace(/\.\d{3}Z$/, 'Z')
-}

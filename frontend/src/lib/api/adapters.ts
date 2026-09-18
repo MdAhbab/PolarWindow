@@ -12,9 +12,9 @@
  *   parallel arrays→ TrackSample[]
  *   number[]       → Float32Array   (maskElevationAt indexes a typed array)
  *
- * One place to get wrong, and one place to test — `adapters.test.ts` runs
- * against the same golden fixture the backend is pinned to, so a units bug
- * cannot pass on both sides.
+ * One place to get wrong, and one place to test — `adapters.test.ts` pins the
+ * unit conversions and the window-edge flags, so a units bug here fails a test
+ * rather than a judge.
  */
 import type {
   Arc,
@@ -31,6 +31,29 @@ import type { ArcDTO, HorizonDTO, MetaDTO, MetricsDTO, SiteBriefDTO, TimelineDTO
 const S_PER_H = 3600
 
 export const toHours = (seconds: number): number => seconds / S_PER_H
+
+/**
+ * Snap a window the way the server does, so the client's cache key is the
+ * server's cache key.
+ *
+ * The start floors to the step grid and the *length* rounds to a whole number
+ * of steps. Without this the client keys on the raw instants: two windows the
+ * server treats as one become two cache entries and two requests.
+ */
+export function quantiseWindow(
+  startMs: number,
+  endMs: number,
+  stepS: number,
+): { start: string; end: string } {
+  const stepMs = stepS * 1000
+  // The server's grid is anchored at 2000-01-01T00:00Z, not the Unix epoch;
+  // the two coincide only for steps that divide 946,684,800 s.
+  const anchor = Date.UTC(2000, 0, 1)
+  const s = anchor + Math.floor((startMs - anchor) / stepMs) * stepMs
+  const steps = Math.max(1, Math.round((endMs - startMs) / stepMs))
+  const iso = (ms: number) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z')
+  return { start: iso(s), end: iso(s + steps * stepMs) }
+}
 
 /** Hours from `start` to `iso`. The frontend's whole time axis is this unit. */
 export function hoursFrom(start: string, iso: string): number {
@@ -128,7 +151,11 @@ function adaptArc(dto: ArcDTO, body: Body, windowStart: string): Arc {
     endH: startH + toHours(dto.duration_s),
     hours: toHours(dto.duration_s),
     toleranceH: toHours(dto.tolerance_s),
+    ...(dto.start_tolerance_s != null ? { startToleranceH: toHours(dto.start_tolerance_s) } : {}),
+    ...(dto.end_tolerance_s != null ? { endToleranceH: toHours(dto.end_tolerance_s) } : {}),
     grazing: dto.grazing,
+    openStart: dto.open_start,
+    openEnd: dto.open_end,
     ...(dto.blocked_by_bearing_deg !== null && dto.blocked_by_bearing_deg !== undefined
       ? {
           blockedByBearingDeg: dto.blocked_by_bearing_deg,
@@ -197,6 +224,7 @@ function adaptBody(
     longestDownH: toHours(w.longest_down_s),
     longestDownToleranceH: toHours(w.longest_down_tolerance_s),
     longestDownArc: longest,
+    longestDownOpen: w.longest_down_open,
     samples,
   }
 }
@@ -204,6 +232,8 @@ function adaptBody(
 export interface AdaptedSite {
   metrics: SiteMetrics
   meta: Meta
+  /** The server's autonomy packet, in hours. Never recomputed on the client. */
+  autonomy: Autonomy
   /** Present only for the focused site; the others travel as arcs only. */
   sunStates?: Int8Array
   earthStates?: Int8Array
@@ -230,7 +260,13 @@ export function adaptSite(
 
   const compound: CompoundEvent[] = windows.compound.map((c) => {
     const startH = hoursFrom(windows.start, c.start)
-    return { startH, endH: startH + toHours(c.duration_s), hours: toHours(c.duration_s) }
+    return {
+      startH,
+      endH: startH + toHours(c.duration_s),
+      hours: toHours(c.duration_s),
+      openStart: c.open_start,
+      openEnd: c.open_end,
+    }
   })
 
   return {
@@ -244,20 +280,43 @@ export function adaptSite(
       worstCompoundH: toHours(windows.worst_compound_s),
       mask,
       computeMs: metrics.meta.compute_ms ?? 0,
+      windowStartIso: windows.start,
     },
     meta: adaptMeta(metrics.meta),
+    autonomy: adaptAutonomy(metrics),
     sunStates: timeline ? visibilityStates(timeline, 'sun') : undefined,
     earthStates: timeline ? visibilityStates(timeline, 'earth') : undefined,
   }
 }
 
-/** Autonomy packet, in hours. Mirrors the old `autonomyPacket()`. */
-export function adaptAutonomy(m: MetricsDTO) {
+/**
+ * The autonomy packet, in hours, exactly as the server computed it.
+ *
+ * The client used to recompute this with its own copy of the 20 % margin, so
+ * the "h of full autonomy" figure and the copy describing it could drift from
+ * the server's own number. It now only converts units.
+ */
+export interface Autonomy {
+  worstCompoundH: number
+  requiredAutonomyH: number
+  marginFraction: number
+  /** The battery carries the longest night, whatever the radio is doing. */
+  survivalNeededH: number
+  compoundInsideDark: boolean
+  /** The night that sizes the battery is cut by a window edge: a lower bound. */
+  survivalOpen: boolean
+  worstCompoundOpen: boolean
+}
+
+export function adaptAutonomy(m: MetricsDTO): Autonomy {
   return {
     worstCompoundH: toHours(m.autonomy.worst_compound_s),
     requiredAutonomyH: toHours(m.autonomy.required_autonomy_s),
+    marginFraction: m.autonomy.margin_fraction,
     survivalNeededH: toHours(m.autonomy.survival_needed_s),
     compoundInsideDark: m.autonomy.compound_inside_dark,
+    survivalOpen: m.autonomy.survival_open,
+    worstCompoundOpen: m.autonomy.worst_compound_open,
   }
 }
 
@@ -279,6 +338,8 @@ export interface AdaptedSiteBrief {
     earthFraction: number
     worstCompoundH: number
     grazing: boolean
+    longestDarkOpen: boolean
+    longestBlackoutOpen: boolean
     referenceWindowStart: string
     referenceWindowEnd: string
   } | null
@@ -294,10 +355,7 @@ export function adaptSiteBrief(dto: SiteBriefDTO): AdaptedSiteBrief {
       lonDeg: dto.lon_deg,
       elevM: dto.elev_m,
       note: dto.note,
-      // The terrain spec no longer comes from the client: the horizon is
-      // computed by the backend against real LOLA data. Kept as an empty spec
-      // so the `Site` type — which the components import — is unchanged.
-      terrain: { seed: 0, roughnessM: 0, features: [] },
+      searchKind: dto.search_kind,
     },
     summary: dto.summary
       ? {
@@ -309,6 +367,8 @@ export function adaptSiteBrief(dto: SiteBriefDTO): AdaptedSiteBrief {
           earthFraction: dto.summary.earth_fraction_up,
           worstCompoundH: toHours(dto.summary.worst_compound_s),
           grazing: dto.summary.grazing,
+          longestDarkOpen: dto.summary.longest_dark_open,
+          longestBlackoutOpen: dto.summary.longest_blackout_open,
           referenceWindowStart: dto.summary.reference_window_start,
           referenceWindowEnd: dto.summary.reference_window_end,
         }

@@ -74,16 +74,25 @@ export function HorizonProfile({
   }, [metrics.siteId, reduced])
 
   const mask = metrics.mask
+  const n = mask.elDeg.length
   const skyline: string[] = []
-  const skyTop: string[] = []
-  for (let b = 0; b <= 360; b++) {
-    const el = mask.elDeg[b % 360]
-    const x = xOf(b === 360 ? 359.999 : b)
-    const y = yOf(el)
-    skyline.push(`${b === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`)
-    skyTop.push(`${b === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`)
+  const upper: string[] = []
+  const lower: string[] = []
+  for (let b = 0; b <= n; b++) {
+    const i = b % n
+    const az = b === n ? 359.999 : (b * 360) / n
+    const x = xOf(az).toFixed(1)
+    skyline.push(`${b === 0 ? 'M' : 'L'}${x} ${yOf(mask.elDeg[i]).toFixed(1)}`)
+    upper.push(`${b === 0 ? 'M' : 'L'}${x} ${yOf(mask.elDeg[i] + mask.tolDeg[i]).toFixed(1)}`)
+    lower.push(`L${x} ${yOf(mask.elDeg[i] - mask.tolDeg[i]).toFixed(1)}`)
   }
+  const skyTop = skyline
   const fillPath = `${skyline.join(' ')} L${X1} ${Y_BOT} L${X0} ${Y_BOT} Z`
+  // The skyline's own error, bearing by bearing: +- tol_deg, which the server
+  // derives from the blocking sample's range and its elevation model's
+  // vertical error. It used to be a constant 11 px stroke, which drew the same
+  // margin for a 45 m blocker (+-2.5 deg) and a 30 km one (+-0.008 deg).
+  const bandPath = `${upper.join(' ')} ${lower.reverse().join(' ')} Z`
 
   const sunPath = pathFromSamples(metrics.sun.samples, false)
   const earthPath = pathFromSamples(metrics.earth.samples, true)
@@ -137,7 +146,12 @@ export function HorizonProfile({
 
       <path d={fillPath} fill="var(--color-terrain-low)" />
       <path d={skyTop.join(' ')} fill="none" stroke="var(--color-terrain-high)" strokeWidth="2.5" />
-      <path d={skyTop.join(' ')} fill="none" stroke="url(#pw-uncertain)" strokeWidth="11" strokeOpacity="0.45" />
+      <path
+        d={bandPath}
+        fill="url(#pw-uncertain)"
+        stroke="none"
+        {...(reduced ? { fillOpacity: 0.34 } : { className: 'breathe' })}
+      />
 
       <path
         d={earthPath}
