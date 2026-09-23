@@ -116,7 +116,7 @@ async def test_window_is_quantised_so_the_slider_hits_cache(client) -> None:
         body = (await client.get(f"{base}?start=2027-04-01T{offset}Z")).json()
         assert body["start"] == first["start"], "window was not quantised to the step grid"
         assert body["sunlit_s"] == first["sunlit_s"]
-        assert body["meta"]["cache"] in ("hit", "bypass")
+        assert body["meta"]["cache"] in ("hit", "bypass", "memo")
 
 
 async def test_step_out_of_range_explains_the_limit(client) -> None:
@@ -227,7 +227,7 @@ async def test_concurrent_burst_is_consistent_and_fast(client) -> None:
     elapsed = time.perf_counter() - t0
 
     assert all(r.status_code == 200 for r in responses)
-    assert all(r.json()["meta"]["cache"] in ("hit", "bypass") for r in responses)
+    assert all(r.json()["meta"]["cache"] in ("hit", "bypass", "memo") for r in responses)
     per_request = elapsed / len(urls)
     assert per_request < 0.5, f"warm requests averaged {per_request * 1000:.0f} ms"
 

@@ -20,8 +20,42 @@ from typing import cast
 import pytest
 
 
+def _with_suffix_db(url: str, suffix: str) -> str:
+    """``.../polar_window?x`` -> ``.../polar_window_test?x``; idempotent."""
+    from urllib.parse import urlsplit, urlunsplit
+
+    parts = urlsplit(url)
+    name = parts.path.lstrip("/")
+    if not name or name.endswith(suffix):
+        return url
+    return urlunsplit(parts._replace(path=f"/{name}{suffix}"))
+
+
+def _redis_db(url: str, db: int) -> str:
+    from urllib.parse import urlsplit, urlunsplit
+
+    parts = urlsplit(url)
+    return urlunsplit(parts._replace(path=f"/{db}"))
+
+
 def pytest_configure(config: pytest.Config) -> None:
+    """Point the whole suite at its own database and Redis index.
+
+    Integration tests write (agent runs, cached payloads). They used to write
+    into the development database, so a test run changed what the running app
+    served. Now they use ``polar_window_test`` (``make test-db`` builds it from
+    the migrations and a copy of the seeded rows) and Redis database 1.
+    ``PW_TEST_DATABASE_URL`` / ``PW_TEST_REDIS_URL`` override the derived names.
+    """
     os.environ.setdefault("PW_ENV", "test")
+    from app.config import get_settings
+
+    s = get_settings()
+    os.environ["PW_DATABASE_URL"] = os.environ.get(
+        "PW_TEST_DATABASE_URL", _with_suffix_db(s.database_url, "_test")
+    )
+    os.environ["PW_REDIS_URL"] = os.environ.get("PW_TEST_REDIS_URL", _redis_db(s.redis_url, 1))
+    get_settings.cache_clear()
 
 
 @pytest.fixture(scope="session")

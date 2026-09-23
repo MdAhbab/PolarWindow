@@ -10,7 +10,7 @@ FE    := frontend
 DATA  := data
 
 .DEFAULT_GOAL := help
-.PHONY: missions help install kernels dem sites seed tiles services db-up migrate dev api worker \
+.PHONY: missions test-db help install kernels dem sites seed tiles services db-up migrate dev api worker \
         frontend test test-fast test-int test-geo lint fmt typecheck contracts \
         golden-update openapi codegen clean nuke check
 
@@ -76,7 +76,10 @@ frontend: ## Run the Vite dev server
 
 # --- quality ---------------------------------------------------------------
 
-test: ## Everything (needs Postgres; skips what it cannot reach)
+test-db: ## Rebuild polar_window_test from the migrations and the seeded rows
+	cd $(BE) && $(UV) run python -m app.tests.fixtures.make_test_db
+
+test: test-db ## Everything, against polar_window_test (needs a seeded dev database)
 	cd $(BE) && $(UV) run pytest -q
 
 test-fast: ## Unit, property and synthetic golden tests. No services, < 20 s
