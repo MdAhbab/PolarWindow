@@ -283,5 +283,21 @@ class MetricsResponse(BaseModel):
         description="As `longest_dark_open`, for `longest_blackout_s`."
     )
     worst_compound_open: bool
+    sunlit_tolerance_s: float = Field(
+        description="Timing uncertainty of the sunlit total: every skyline crossing's edge "
+        "tolerance, added in quadrature. Seconds."
+    )
+    earth_contact_tolerance_s: float = Field(
+        description="Timing uncertainty of the Earth-contact total, as for sunlit. Seconds."
+    )
+    longest_dark_tolerance_s: float | None = Field(
+        description="Tolerance of the longest night's two edges in quadrature; null when "
+        "an edge is a graze and cannot be timed. Seconds."
+    )
+    longest_blackout_tolerance_s: float | None = Field(
+        description="Tolerance of the longest blackout's two edges; null when grazing. Seconds."
+    )
+    longest_dark_grazing: bool
+    longest_blackout_grazing: bool
     autonomy: Autonomy
     meta: Meta

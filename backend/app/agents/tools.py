@@ -142,7 +142,9 @@ TOOL_DECLARATIONS: list[dict[str, Any]] = [
         "name": "compare_sites",
         "description": (
             "Rank up to eight sites over one shared window by one of the four "
-            "metrics. Returns each site's full metrics plus any ties."
+            "metrics. Each item has a rank, or rank=null with a rank_range when a "
+            "lower-bound (censored) value or an untimeable edge makes its place "
+            "unknowable; never call such a site best. Also returns ties."
         ),
         "parameters": tool_parameters(CompareArgs.model_json_schema()),
     },
@@ -209,6 +211,26 @@ def _trim(payload: dict[str, Any], keep: tuple[str, ...]) -> dict[str, Any]:
     return {k: payload[k] for k in keep if k in payload}
 
 
+#: What an agent sees of a site's reference summary: the four numbers, their
+#: fractions, and the flags that say when a gap is only a lower bound. Nothing
+#: else -- every extra numeric leaf widens the pool the grounding guard matches
+#: claims against, and a wide pool grounds almost any two-digit integer (D23).
+SUMMARY_KEYS: tuple[str, ...] = (
+    "sunlit_s",
+    "earth_contact_s",
+    "longest_dark_s",
+    "longest_blackout_s",
+    "sun_fraction_up",
+    "earth_fraction_up",
+    "longest_dark_open",
+    "longest_blackout_open",
+)
+
+
+def _summary(summary: dict[str, Any] | None) -> dict[str, Any] | None:
+    return None if summary is None else _trim(summary, SUMMARY_KEYS)
+
+
 async def execute(session: Session, name: str, raw_args: dict[str, Any], seq: int) -> ToolCallLog:
     """Run one tool. Never raises: a failure is a logged result the model can see."""
     t0 = time.perf_counter()
@@ -232,7 +254,7 @@ async def execute(session: Session, name: str, raw_args: dict[str, Any], seq: in
                 "slope_deg": site.slope_deg,
                 "note": site.note,
                 "source_note": site.source_note,
-                "reference_summary": summaries.get(site_args.site_id),
+                "reference_summary": _summary(summaries.get(site_args.site_id)),
             }
 
         elif name == "get_metrics":
@@ -344,10 +366,8 @@ async def execute(session: Session, name: str, raw_args: dict[str, Any], seq: in
                 {
                     "site_id": site.id,
                     "name": site.name,
-                    "region": site.region,
                     "lat_deg": site.lat_deg,
-                    "elev_m": site.elev_m,
-                    "summary": listing.summaries.get(site.id),
+                    "summary": _summary(listing.summaries.get(site.id)),
                 }
                 for site in listing.sites
             ]
@@ -368,19 +388,14 @@ async def execute(session: Session, name: str, raw_args: dict[str, Any], seq: in
                 "items": [
                     {
                         "site_id": it["site_id"],
+                        # A null rank is the answer, not a gap: a lower bound or
+                        # an untimeable edge means the place cannot be stated,
+                        # and the range is all that can be said (C2).
                         "rank": it["rank"],
-                        **_trim(
-                            it["metrics"],
-                            (
-                                "sunlit_s",
-                                "earth_contact_s",
-                                "longest_dark_s",
-                                "longest_blackout_s",
-                                "sun_fraction_up",
-                                "earth_fraction_up",
-                                "worst_compound_s",
-                            ),
-                        ),
+                        "rank_range": it["rank_range"],
+                        "censored": it["censored"],
+                        "incomparable_with": it["incomparable_with"],
+                        **_trim(it["metrics"], (*SUMMARY_KEYS, "worst_compound_s")),
                     }
                     for it in payload["items"]
                 ],

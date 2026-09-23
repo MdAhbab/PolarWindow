@@ -5,9 +5,11 @@ Fans out to exactly the code path ``GET /sites/{id}/metrics`` uses, so
 is a correctness property, not an optimisation: a comparison table that
 contradicts the detail page it links to destroys trust in both.
 
-Ranking and tie detection are ``core.metrics.rank_values`` -- the same function
-the core tests pin -- rather than a second implementation here that could drift
-from it.
+Ranking is ``core.metrics.rank_with_uncertainty``: each site's value becomes an
+interval from its own edge tolerance, a window-censored longest gap becomes
+``[v, inf)``, and a site is ranked above another only when the intervals do not
+overlap. Where a censored value is involved the rank is a range, not a number
+(docs/system-design.md 10.7).
 """
 
 from __future__ import annotations
@@ -18,7 +20,7 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import ENGINE_VERSION, get_settings
-from app.core.metrics import METRIC_KEYS, rank_values
+from app.core.metrics import METRIC_KEYS, RankInput, rank_with_uncertainty, tie_groups
 from app.services import geometry_service, site_service
 from app.services.geometry_service import validate_window
 
@@ -68,36 +70,80 @@ async def compare(
             # behind eight polite per-site notes.
             unavailable.append({"site_id": sid, "reason": _reason(exc)})
 
-    ranking = rank_values(
-        [(p["site_id"], float(p[rank_by])) for p in payloads],
+    ranked = rank_with_uncertainty(
+        [_rank_input(p, rank_by) for p in payloads],
         higher_is_better=METRIC_KEYS[rank_by],
     )
     by_id = {p["site_id"]: p for p in payloads}
-    tied_ids = {sid for group in ranking.ties for sid in group}
-    best = by_id[ranking.order[0]] if ranking.order else None
+    ties = tie_groups(ranked)
+    best = by_id[ranked[0].id] if ranked else None
 
     items = [
         {
-            "site_id": sid,
+            "site_id": r.id,
             "position": i,
-            "rank": ranking.ranks[sid],
-            "tied": sid in tied_ids,
-            "metrics": by_id[sid],
+            "rank": r.rank,
+            "rank_range": [r.rank_min, r.rank_max],
+            "tied": bool(r.tied_with),
+            "tied_with": list(r.tied_with),
+            "incomparable_with": list(r.incomparable_with),
+            "censored": r.censored,
+            "grazing": _grazing(by_id[r.id], rank_by),
+            "uncertainty_s": _tolerance(by_id[r.id], rank_by),
+            "metrics": by_id[r.id],
             "delta_vs_best": (
-                {k: round(by_id[sid][k] - best[k], 3) for k in METRIC_KEYS} if best else {}
+                {k: round(by_id[r.id][k] - best[k], 3) for k in METRIC_KEYS} if best else {}
             ),
         }
-        for i, sid in enumerate(ranking.order, start=1)
+        for i, r in enumerate(ranked, start=1)
     ]
 
     return {
         "window": {"start": qs, "end": qe, "step_s": step_s},
         "rank_by": rank_by,
         "items": items,
-        "ties": ranking.ties,
+        "ties": ties,
         "unavailable": unavailable,
         "meta": _aggregate_meta(payloads, qs, step_s, unavailable),
     }
+
+
+_TOLERANCE_KEY = {
+    "sunlit_s": "sunlit_tolerance_s",
+    "earth_contact_s": "earth_contact_tolerance_s",
+    "longest_dark_s": "longest_dark_tolerance_s",
+    "longest_blackout_s": "longest_blackout_tolerance_s",
+}
+_OPEN_KEY = {"longest_dark_s": "longest_dark_open", "longest_blackout_s": "longest_blackout_open"}
+_GRAZING_KEY = {
+    "longest_dark_s": "longest_dark_grazing",
+    "longest_blackout_s": "longest_blackout_grazing",
+}
+
+
+def _tolerance(p: dict[str, Any], key: str) -> float | None:
+    v = p.get(_TOLERANCE_KEY[key])
+    return None if v is None else float(v)
+
+
+def _grazing(p: dict[str, Any], key: str) -> bool:
+    return bool(p.get(_GRAZING_KEY.get(key, ""), False))
+
+
+def _rank_input(p: dict[str, Any], key: str) -> RankInput:
+    """One payload as an interval: its own tolerance, and censoring if any.
+
+    A null tolerance means an edge of the ranked quantity is a graze: the value
+    stands, but where it sits against another site cannot be pinned, so the
+    interval is unbounded rather than silently zero.
+    """
+    tol = _tolerance(p, key)
+    return RankInput(
+        id=p["site_id"],
+        value=float(p[key]),
+        uncertainty=float("inf") if tol is None else tol,
+        censored=bool(p.get(_OPEN_KEY.get(key, ""), False)),
+    )
 
 
 def _reason(exc: Exception) -> str:
@@ -167,7 +213,11 @@ def _aggregate_meta(
             f"{len(unavailable)} requested site(s) could not be computed and are listed "
             "under `unavailable`; this envelope describes only the ranked sites."
         )
-    products = sorted({m["resolution"]["dem_product"] for m in metas})
+    # A site's product can itself be "A + B"; split before de-duplicating, or
+    # the joined line repeats a product name (C6).
+    products = sorted(
+        {part.strip() for m in metas for part in str(m["resolution"]["dem_product"]).split(" + ")}
+    )
     caches = {m["cache"] for m in metas}
     return {
         "computed_at": max(

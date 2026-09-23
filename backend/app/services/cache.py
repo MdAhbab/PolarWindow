@@ -45,7 +45,7 @@ _unavailable = False
 #: change to the response contract -- a field added to an arc, say -- and a
 #: cached body of the old shape then fails response validation and turns a
 #: cache hit into a 500. Bump this whenever a cached payload's shape changes.
-PAYLOAD_SCHEMA = "3"
+PAYLOAD_SCHEMA = "4"
 
 
 async def get_client() -> Any:

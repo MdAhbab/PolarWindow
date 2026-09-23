@@ -23,6 +23,7 @@ scheduling in this system, so the field is named ``earth_contact_s`` and never
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from typing import Final
 
@@ -310,3 +311,147 @@ def rank(
         tie_tolerance_s=tie_tolerance_s,
     )
     return [by_id[sid] for sid in r.order], r.ties
+
+
+# ---------------------------------------------------------------------------
+# Ranking that respects censoring and each site's own uncertainty (v2)
+# ---------------------------------------------------------------------------
+#
+# `rank_values` above orders raw floats with a fixed one-hour tolerance. That is
+# wrong in two ways the review measured (D20, D21):
+#
+# * A longest gap cut by the window edge is a *lower bound*. Ordering 112 h
+#   ("at least") ahead of a measured 122 h asserts something the data does not
+#   support, because the censored night may be far longer.
+# * The tolerance that matters is each site's own arc-edge uncertainty, which
+#   ranges from minutes to seventeen hours, not a constant.
+#
+# So each value becomes an interval, and one site "beats" another only when
+# their intervals do not overlap in its favour. That relation is a strict
+# partial order, which is why the result is a rank *range*, not a single rank.
+
+
+@dataclass(frozen=True, slots=True)
+class RankInput:
+    """One site's value on one metric, with what we know about its error."""
+
+    id: str
+    value: float
+    #: Half-width of the band the true value lies in, in the metric's units.
+    uncertainty: float = 0.0
+    #: The value is a lower bound: the true value is ``>= value``.
+    censored: bool = False
+
+    @property
+    def unbounded(self) -> bool:
+        """Censored, or an edge that cannot be timed: its place cannot be pinned."""
+        return self.censored or math.isinf(self.uncertainty)
+
+    def interval(self) -> tuple[float, float]:
+        if self.censored:
+            return self.value, float("inf")
+        u = max(0.0, self.uncertainty)
+        return self.value - u, self.value + u
+
+
+@dataclass(frozen=True, slots=True)
+class RankedItem:
+    """Where one site stands, stated no more precisely than the data allows."""
+
+    id: str
+    #: A definite rank, or None when a censored value makes the place unknowable.
+    rank: int | None
+    rank_min: int
+    rank_max: int
+    #: Measured sites whose intervals overlap this one: indistinguishable.
+    tied_with: tuple[str, ...]
+    #: Sites this one cannot be ordered against because a censored value is involved.
+    incomparable_with: tuple[str, ...]
+    censored: bool
+
+
+def beats(a: RankInput, b: RankInput, *, higher_is_better: bool) -> bool:
+    """True when ``a`` is better than ``b`` whatever the true values are."""
+    a_lo, a_hi = a.interval()
+    b_lo, b_hi = b.interval()
+    return a_lo > b_hi if higher_is_better else a_hi < b_lo
+
+
+def rank_with_uncertainty(items: list[RankInput], *, higher_is_better: bool) -> list[RankedItem]:
+    """Rank sites on one metric without claiming more than the data supports.
+
+    For each site: ``rank_min = 1 + |sites that beat it|`` and
+    ``rank_max = n - |sites it beats|``. If every pair it cannot order is a tie
+    between two *measured* values, it gets the definite rank ``rank_min``,
+    shared with the sites it ties (competition ranking: 1, 1, 3). If any pair
+    it cannot order involves a censored value, ``rank`` is None and the range
+    is what can be said.
+
+    The output is in display order: best value first, a stable sort, so equal
+    inputs keep their request order. A censored value sorts by its known lower
+    bound, which is the most it can be credited with.
+    """
+    n = len(items)
+    beat_by: dict[str, int] = {it.id: 0 for it in items}
+    beats_n: dict[str, int] = {it.id: 0 for it in items}
+    tied: dict[str, list[str]] = {it.id: [] for it in items}
+    incomparable: dict[str, list[str]] = {it.id: [] for it in items}
+    for i, a in enumerate(items):
+        for b in items[i + 1 :]:
+            if beats(a, b, higher_is_better=higher_is_better):
+                beats_n[a.id] += 1
+                beat_by[b.id] += 1
+            elif beats(b, a, higher_is_better=higher_is_better):
+                beats_n[b.id] += 1
+                beat_by[a.id] += 1
+            elif a.unbounded or b.unbounded:
+                incomparable[a.id].append(b.id)
+                incomparable[b.id].append(a.id)
+            else:
+                tied[a.id].append(b.id)
+                tied[b.id].append(a.id)
+
+    ordered = sorted(items, key=lambda it: it.value, reverse=higher_is_better)
+    out: list[RankedItem] = []
+    for it in ordered:
+        lo = 1 + beat_by[it.id]
+        hi = n - beats_n[it.id]
+        definite = not incomparable[it.id]
+        out.append(
+            RankedItem(
+                id=it.id,
+                rank=lo if definite else None,
+                rank_min=lo,
+                rank_max=hi,
+                tied_with=tuple(tied[it.id]),
+                incomparable_with=tuple(incomparable[it.id]),
+                censored=it.censored,
+            )
+        )
+    return out
+
+
+def tie_groups(ranked: list[RankedItem]) -> list[list[str]]:
+    """Connected groups of the tie relation, in display order.
+
+    Overlap is not transitive, so a group can hold two sites that do not
+    overlap each other directly but share a neighbour. The group says "the data
+    cannot separate this cluster", which is the claim the UI draws.
+    """
+    position = {r.id: i for i, r in enumerate(ranked)}
+    neighbours = {r.id: set(r.tied_with) for r in ranked}
+    seen: set[str] = set()
+    groups: list[list[str]] = []
+    for r in ranked:
+        if r.id in seen or not neighbours[r.id]:
+            continue
+        stack, group = [r.id], []
+        while stack:
+            x = stack.pop()
+            if x in seen:
+                continue
+            seen.add(x)
+            group.append(x)
+            stack.extend(neighbours[x] - seen)
+        groups.append(sorted(group, key=position.__getitem__))
+    return groups

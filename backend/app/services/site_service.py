@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import ENGINE_VERSION, get_settings
 from app.core import metrics as core_metrics
+from app.core import timeline
 from app.core.horizon import downsample_mask
 from app.core.intervals import Run
 from app.core.timeline import BodyTrack
@@ -313,6 +314,24 @@ def windows_payload(cw: ComputedWindow, cache_state: str = "miss") -> dict[str, 
     }
 
 
+def _tolerances(r: Any) -> dict[str, Any]:
+    """Each of the four numbers' own timing uncertainty, from its own edges."""
+    sun = timeline.metric_tolerance(r.sun)
+    earth = timeline.metric_tolerance(r.earth)
+
+    def rnd(v: float | None) -> float | None:
+        return round(v, 1) if v is not None else None
+
+    return {
+        "sunlit_tolerance_s": rnd(sun.total_s),
+        "earth_contact_tolerance_s": rnd(earth.total_s),
+        "longest_dark_tolerance_s": rnd(sun.longest_down_s),
+        "longest_blackout_tolerance_s": rnd(earth.longest_down_s),
+        "longest_dark_grazing": sun.longest_down_grazing,
+        "longest_blackout_grazing": earth.longest_down_grazing,
+    }
+
+
 def metrics_payload(cw: ComputedWindow, cache_state: str = "miss") -> dict[str, Any]:
     r = cw.result
     m = r.metrics
@@ -331,6 +350,7 @@ def metrics_payload(cw: ComputedWindow, cache_state: str = "miss") -> dict[str, 
         "longest_dark_open": m.longest_dark_open,
         "longest_blackout_open": m.longest_blackout_open,
         "worst_compound_open": m.worst_compound_open,
+        **_tolerances(r),
         "autonomy": {
             "worst_compound_s": round(a.worst_compound_s, 3),
             "required_autonomy_s": round(a.required_autonomy_s, 3),

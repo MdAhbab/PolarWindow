@@ -217,3 +217,40 @@ def site_metrics_from_tracks(site_id: str, sun: BodyTrack, earth: BodyTrack) -> 
         sun_grazing=sun.grazing,
         earth_grazing=earth.grazing,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class MetricTolerance:
+    """How far each of a body's numbers could move if its edges moved.
+
+    ``total_s`` is the timing uncertainty of the body's up-time total: every
+    real crossing moves the total by as much as that edge moves, and edges are
+    independent, so their tolerances add in quadrature. Window boundaries are
+    not crossings and contribute nothing.
+
+    ``longest_down_s`` is the tolerance of the single longest down arc (its two
+    edges in quadrature, as ``arc_tolerance_s`` already holds it), or None when
+    one of its edges is a graze and so cannot be timed at all.
+    """
+
+    total_s: float
+    longest_down_s: float | None
+    longest_down_grazing: bool
+
+
+def metric_tolerance(track: BodyTrack) -> MetricTolerance:
+    # Each interior crossing is the end of exactly one arc, so summing the end
+    # edges counts every crossing once. The last arc's end is the window edge
+    # and carries None.
+    ends = [e for _, e in track.arc_edge_tolerance_s if e is not None]
+    total = float(np.sqrt(np.sum(np.square(ends)))) if ends else 0.0
+    downs = [i for i, a in enumerate(track.arcs) if not a.value]
+    if not downs:
+        return MetricTolerance(total_s=total, longest_down_s=0.0, longest_down_grazing=False)
+    i = max(downs, key=lambda k: track.arcs[k].duration)
+    grazing = bool(track.arc_grazing[i])
+    return MetricTolerance(
+        total_s=total,
+        longest_down_s=None if grazing else float(track.arc_tolerance_s[i]),
+        longest_down_grazing=grazing,
+    )

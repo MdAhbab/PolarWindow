@@ -1559,14 +1559,69 @@
             "description": "1-based place in `items`; strictly increasing."
           },
           "rank": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Rank",
-            "description": "Competition rank: sites the data cannot distinguish share their group leader's rank (1, 1, 3), so a tie is never printed as an order."
+            "description": "Definite competition rank, shared by measured sites whose intervals overlap (1, 1, 3). Null when a window-censored value or an untimeable edge is involved, so the place cannot be stated: read `rank_range` instead."
+          },
+          "rank_range": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Rank Range",
+            "description": "[best possible, worst possible] place given every site's interval."
           },
           "tied": {
             "type": "boolean",
             "title": "Tied",
-            "description": "This site is in one of the `ties` groups."
+            "description": "Overlaps at least one other measured site."
+          },
+          "tied_with": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tied With",
+            "description": "Measured sites this one cannot be separated from."
+          },
+          "incomparable_with": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Incomparable With",
+            "description": "Sites this one cannot be ordered against because a lower bound or an untimeable edge is involved."
+          },
+          "censored": {
+            "type": "boolean",
+            "title": "Censored",
+            "description": "The ranked value is a lower bound: the window, not the terrain, ended it."
+          },
+          "grazing": {
+            "type": "boolean",
+            "title": "Grazing",
+            "description": "An edge of the ranked value cannot be timed."
+          },
+          "uncertainty_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uncertainty S",
+            "description": "This site's own timing tolerance on the ranked metric; null when grazing."
           },
           "metrics": {
             "$ref": "#/components/schemas/MetricsResponse"
@@ -1585,7 +1640,13 @@
           "site_id",
           "position",
           "rank",
+          "rank_range",
           "tied",
+          "tied_with",
+          "incomparable_with",
+          "censored",
+          "grazing",
+          "uncertainty_s",
           "metrics",
           "delta_vs_best"
         ],
@@ -1678,7 +1739,7 @@
             },
             "type": "array",
             "title": "Ties",
-            "description": "Groups whose metric differs by less than the tie tolerance. Reported rather than ordered: ranking sites the data cannot distinguish asserts a difference that is not there."
+            "description": "Connected groups of measured sites whose intervals overlap. Reported rather than ordered: ranking sites the data cannot distinguish asserts a difference that is not there."
           },
           "unavailable": {
             "items": {
@@ -2146,6 +2207,48 @@
             "type": "boolean",
             "title": "Worst Compound Open"
           },
+          "sunlit_tolerance_s": {
+            "type": "number",
+            "title": "Sunlit Tolerance S",
+            "description": "Timing uncertainty of the sunlit total: every skyline crossing's edge tolerance, added in quadrature. Seconds."
+          },
+          "earth_contact_tolerance_s": {
+            "type": "number",
+            "title": "Earth Contact Tolerance S",
+            "description": "Timing uncertainty of the Earth-contact total, as for sunlit. Seconds."
+          },
+          "longest_dark_tolerance_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longest Dark Tolerance S",
+            "description": "Tolerance of the longest night's two edges in quadrature; null when an edge is a graze and cannot be timed. Seconds."
+          },
+          "longest_blackout_tolerance_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longest Blackout Tolerance S",
+            "description": "Tolerance of the longest blackout's two edges; null when grazing. Seconds."
+          },
+          "longest_dark_grazing": {
+            "type": "boolean",
+            "title": "Longest Dark Grazing"
+          },
+          "longest_blackout_grazing": {
+            "type": "boolean",
+            "title": "Longest Blackout Grazing"
+          },
           "autonomy": {
             "$ref": "#/components/schemas/Autonomy"
           },
@@ -2169,6 +2272,12 @@
           "longest_dark_open",
           "longest_blackout_open",
           "worst_compound_open",
+          "sunlit_tolerance_s",
+          "earth_contact_tolerance_s",
+          "longest_dark_tolerance_s",
+          "longest_blackout_tolerance_s",
+          "longest_dark_grazing",
+          "longest_blackout_grazing",
           "autonomy",
           "meta"
         ],

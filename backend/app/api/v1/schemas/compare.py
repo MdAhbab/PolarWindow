@@ -37,11 +37,29 @@ class CompareItem(BaseModel):
 
     site_id: str
     position: int = Field(description="1-based place in `items`; strictly increasing.")
-    rank: int = Field(
-        description="Competition rank: sites the data cannot distinguish share their "
-        "group leader's rank (1, 1, 3), so a tie is never printed as an order."
+    rank: int | None = Field(
+        description="Definite competition rank, shared by measured sites whose intervals "
+        "overlap (1, 1, 3). Null when a window-censored value or an untimeable edge is "
+        "involved, so the place cannot be stated: read `rank_range` instead."
     )
-    tied: bool = Field(description="This site is in one of the `ties` groups.")
+    rank_range: list[int] = Field(
+        min_length=2,
+        max_length=2,
+        description="[best possible, worst possible] place given every site's interval.",
+    )
+    tied: bool = Field(description="Overlaps at least one other measured site.")
+    tied_with: list[str] = Field(description="Measured sites this one cannot be separated from.")
+    incomparable_with: list[str] = Field(
+        description="Sites this one cannot be ordered against because a lower bound or an "
+        "untimeable edge is involved."
+    )
+    censored: bool = Field(
+        description="The ranked value is a lower bound: the window, not the terrain, ended it."
+    )
+    grazing: bool = Field(description="An edge of the ranked value cannot be timed.")
+    uncertainty_s: float | None = Field(
+        description="This site's own timing tolerance on the ranked metric; null when grazing."
+    )
     metrics: MetricsResponse
     delta_vs_best: dict[str, float]
 
@@ -60,7 +78,7 @@ class CompareResponse(BaseModel):
     rank_by: str
     items: list[CompareItem]
     ties: list[list[str]] = Field(
-        description="Groups whose metric differs by less than the tie tolerance. "
+        description="Connected groups of measured sites whose intervals overlap. "
         "Reported rather than ordered: ranking sites the data cannot distinguish "
         "asserts a difference that is not there."
     )
