@@ -1,7 +1,8 @@
 """Lunar south polar stereographic <-> selenographic, via pyproj.
 
-One projection and one raster read is all this product needs, which is why
-pyproj + rasterio is the right weight here and geopandas is not.
+One projection is all this product needs, which is why pyproj is the right
+weight here and geopandas is not. The DEM itself is read by the PDS range
+reader in ``app.data.lola``, with no GDAL in the install.
 
 The CRS is built explicitly rather than by EPSG code. There is no EPSG code for
 a lunar south polar stereographic on the 1737.4 km sphere that is stable across
@@ -146,3 +147,41 @@ def local_frame(lon_deg: float, lat_deg: float) -> LocalFrame:
         grid_convergence_rad=convergence,
         scale_factor=float(np.hypot(dx, dy) / step_m),
     )
+
+
+def ellipse_ring(
+    lat_deg: float,
+    lon_deg: float,
+    semi_major_km: float,
+    semi_minor_km: float,
+    azimuth_deg: float,
+    *,
+    vertices: int = 64,
+) -> list[tuple[float, float]]:
+    """A published landing ellipse as a closed ring of ``(lat, lon)`` points.
+
+    Each vertex is a great-circle destination on the lunar sphere from the
+    centre, at the ellipse's radius for that bearing. ``azimuth_deg`` is the
+    major axis's bearing from true north. Longitudes are returned 0..360 east.
+    """
+    lat0 = np.radians(lat_deg)
+    lon0 = np.radians(lon_deg)
+    a = semi_major_km * 1000.0
+    b = semi_minor_km * 1000.0
+    out: list[tuple[float, float]] = []
+    for k in range(vertices + 1):
+        t = 2.0 * np.pi * k / vertices
+        # Radius of the ellipse along parametric angle t, rotated to azimuth.
+        e, n = a * np.sin(t), b * np.cos(t)
+        rot = np.radians(azimuth_deg)
+        east = e * np.cos(rot) + n * np.sin(rot)
+        north = -e * np.sin(rot) + n * np.cos(rot)
+        dist = float(np.hypot(east, north)) / R_MOON_M
+        brg = float(np.arctan2(east, north))
+        lat = np.arcsin(np.sin(lat0) * np.cos(dist) + np.cos(lat0) * np.sin(dist) * np.cos(brg))
+        lon = lon0 + np.arctan2(
+            np.sin(brg) * np.sin(dist) * np.cos(lat0),
+            np.cos(dist) - np.sin(lat0) * np.sin(lat),
+        )
+        out.append((round(float(np.degrees(lat)), 6), round(float(np.degrees(lon)) % 360.0, 6)))
+    return out

@@ -31,8 +31,8 @@ class SiteRecord:
     region: str
     lat_deg: float
     lon_deg: float
-    elev_m: float
-    slope_deg: float
+    elev_m: float | None
+    slope_deg: float | None
     note: str
     anchor_lat_deg: float
     anchor_lon_deg: float
@@ -43,6 +43,9 @@ class SiteRecord:
     source: str
     source_url: str
     source_note: str
+    kind: str = "candidate"
+    coordinate_rule: str = "derived_open_sky"
+    terrain_modelled: bool = True
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,6 +82,9 @@ def _to_record(row: Site) -> SiteRecord:
         source=row.source,
         source_url=row.source_url,
         source_note=row.source_note,
+        kind=row.kind,
+        coordinate_rule=row.coordinate_rule,
+        terrain_modelled=row.terrain_modelled,
     )
 
 
@@ -111,8 +117,14 @@ class SiteRepository:
         lat_max: float | None = None,
         limit: int = 100,
         offset: int = 0,
+        kind: str | None = None,
+        ids: list[str] | None = None,
     ) -> tuple[list[SiteRecord], int]:
         stmt = select(Site).where(Site.is_active.is_(True))
+        if kind:
+            stmt = stmt.where(Site.kind == kind)
+        if ids is not None:
+            stmt = stmt.where(Site.id.in_(ids))
         if q:
             like = f"%{q.lower()}%"
             stmt = stmt.where(func.lower(Site.name).like(like) | func.lower(Site.region).like(like))

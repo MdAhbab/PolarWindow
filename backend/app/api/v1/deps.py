@@ -18,6 +18,7 @@ from app.config import Settings, get_settings
 from app.core.kernels import KernelError
 from app.db.session import get_session
 from app.services.geometry_service import StepOutOfRange, WindowTooLong
+from app.services.mission_service import MissionNotFound
 from app.services.site_service import MaskNotBuilt, SiteNotFound
 
 ERROR_BASE = "https://polar-window.dev/errors"
@@ -68,6 +69,15 @@ def to_http(exc: Exception) -> HTTPException:
             f"'{exc.args[0]}' is not a site in this dataset.",
             "Every other site is unaffected. The site list shows what is available.",
             action="Browse the site list",
+        )
+    if isinstance(exc, MissionNotFound):
+        return problem(
+            404,
+            "mission-not-found",
+            "That mission isn't in the list",
+            f"'{exc.args[0]}' is not a CLPS mission in this dataset.",
+            "All other missions are available.",
+            action="Back to missions",
         )
     if isinstance(exc, MaskNotBuilt):
         return problem(

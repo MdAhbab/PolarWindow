@@ -240,6 +240,7 @@ def _aggregate_meta(
             "grazing": grazing,
             "penumbra_sun_deg": max(u["penumbra_sun_deg"] for u in us),
             "penumbra_earth_deg": max(u["penumbra_earth_deg"] for u in us),
+            "terrain_modelled": all(u.get("terrain_modelled", True) for u in us),
             "notes": notes,
         },
         "engine_version": ENGINE_VERSION,

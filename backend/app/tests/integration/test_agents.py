@@ -430,8 +430,39 @@ async def test_search_rows_are_trimmed_so_the_pool_stays_small(client) -> None:
         entry = await tools.execute(session, "search_sites", {"limit": 50}, 1)
     assert entry.error is None and entry.result is not None
     for row in entry.result["sites"]:
-        assert set(row) == {"site_id", "name", "lat_deg", "summary"}
+        assert set(row) == {"site_id", "name", "lat_deg", "kind", "summary"}
         if row["summary"] is not None:
             assert set(row["summary"]) <= set(SUMMARY_KEYS)
     # Four numbers, two fractions and a latitude per site, and nothing else.
     assert len(entry.numbers) <= 7 * len(entry.result["sites"]) + 1
+
+
+async def test_search_finds_mission_targets_by_payload_type(client) -> None:
+    """Missions reach agents through the existing tools, not new ones."""
+    from app.agents import tools
+    from app.db.session import session_scope
+
+    async with session_scope() as session:
+        entry = await tools.execute(
+            session, "search_sites", {"payload_type": ["volatiles"], "limit": 50}, 1
+        )
+    assert entry.error is None and entry.result is not None
+    rows = entry.result["sites"]
+    if not rows:
+        pytest.skip("missions are not seeded in this database")
+    assert all(r["kind"] == "mission_target" for r in rows)
+
+
+async def test_get_site_lists_its_missions_without_masses(client) -> None:
+    from app.agents import tools
+    from app.db.session import session_scope
+
+    async with session_scope() as session:
+        entry = await tools.execute(session, "get_site", {"site_id": "feature-mons-mouton"}, 1)
+    if entry.error and "not a site" in entry.error:
+        pytest.skip("missions are not seeded in this database")
+    assert entry.error is None and entry.result is not None
+    missions = entry.result["missions"]
+    assert missions, "Mons Mouton is the target of several CLPS missions"
+    for m in missions:
+        assert set(m) == {"id", "name", "provider", "status", "landing", "payload_types"}

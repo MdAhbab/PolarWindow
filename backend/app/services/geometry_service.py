@@ -23,7 +23,7 @@ import numpy as np
 from app.config import ENGINE_VERSION, get_settings
 from app.core import metrics as core_metrics
 from app.core import spice, timeline, visibility
-from app.core.horizon import HorizonMask
+from app.core.horizon import HorizonMask, is_terrain_modelled
 from app.core.spice import R_EARTH_M, R_MOON_M, R_SUN_M
 
 #: Mean Sun and Earth distances from the Moon, metres. Used only to state the
@@ -126,7 +126,7 @@ async def compute_window_metrics(
     site_id: str,
     lat_deg: float,
     lon_deg: float,
-    elev_m: float,
+    elev_m: float | None,
     mask: HorizonMask,
     start: datetime,
     end: datetime,
@@ -153,7 +153,9 @@ async def compute_window_metrics(
     t_s = (eph.ets - eph.ets[0]).astype(np.float64)
 
     basis = visibility.enu_basis(lat_deg, lon_deg)
-    site_pos = visibility.site_position(lat_deg, lon_deg, R_MOON_M + elev_m)
+    # An unknown height (a site no DEM covers) is placed on the reference
+    # sphere. It moves Sun and Earth directions by parallax far below 1e-3 deg.
+    site_pos = visibility.site_position(lat_deg, lon_deg, R_MOON_M + (elev_m or 0.0))
 
     sun = timeline.build_track("sun", t_s, eph.sun, mask, basis, site_pos, R_SUN_M)
     earth = timeline.build_track("earth", t_s, eph.earth, mask, basis, site_pos, R_EARTH_M)
@@ -182,6 +184,7 @@ def uncertainty_block(
     dem_resolution_m: float,
     coverage: float,
     mask: HorizonMask,
+    terrain_modelled: bool = True,
 ) -> dict[str, object]:
     """The `meta.uncertainty` payload.
 
@@ -201,7 +204,13 @@ def uncertainty_block(
         f"{dem_resolution_m:.0f} m elevation post cannot resolve a boulder, so the "
         "lit/dark boundary is soft at the scale of the terrain model.",
     ]
-    if coverage < 0.999:
+    if not terrain_modelled:
+        notes = [
+            "Terrain is not modelled here: no elevation model covers this site, so Sun "
+            "and Earth are computed against a smooth-sphere horizon. Real hills and "
+            "crater walls could block more, so sunlight and Earth contact are upper bounds."
+        ]
+    elif coverage < 0.999:
         notes.append(
             f"The elevation model covers {coverage * 100:.1f}% of the sampled terrain; "
             "bearings without coverage fall back to a smooth-sphere horizon and are "
@@ -241,6 +250,7 @@ def uncertainty_block(
         "grazing": grazing,
         "penumbra_sun_deg": round(float(np.mean(result.sun.angular_radius_deg)), 4),
         "penumbra_earth_deg": round(float(np.mean(result.earth.angular_radius_deg)), 4),
+        "terrain_modelled": terrain_modelled,
         "notes": notes,
     }
 
@@ -279,6 +289,7 @@ def meta(
             dem_resolution_m=dem_resolution_m,
             coverage=coverage,
             mask=mask,
+            terrain_modelled=is_terrain_modelled(dem_product),
         ),
         "engine_version": ENGINE_VERSION,
         "cache": cache,

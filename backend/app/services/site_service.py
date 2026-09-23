@@ -21,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import ENGINE_VERSION, get_settings
 from app.core import metrics as core_metrics
 from app.core import timeline
-from app.core.horizon import downsample_mask
+from app.core.horizon import downsample_mask, is_terrain_modelled
 from app.core.intervals import Run
 from app.core.timeline import BodyTrack
 from app.db.repositories.metrics import WindowMetricsRepository
@@ -435,8 +435,11 @@ def horizon_payload(
                 "grazing": False,
                 "penumbra_sun_deg": round(sun_r, 4),
                 "penumbra_earth_deg": round(earth_r, 4),
+                "terrain_modelled": is_terrain_modelled(rec.dem_product),
                 "notes": [
-                    f"Terrain modelled to {mask.max_range_m / 1000:.0f} km around the site.",
+                    f"Terrain modelled to {mask.max_range_m / 1000:.0f} km around the site."
+                    if is_terrain_modelled(rec.dem_product)
+                    else "Terrain is not modelled here: this skyline is a smooth sphere.",
                     f"Downsampled from {mask.azimuth_count} bins by taking the maximum "
                     "around each bearing, never the mean: a skyline is an upper envelope "
                     "and averaging it would invent sky where a ridge is.",
@@ -530,6 +533,7 @@ def set_meta(
             "grazing": grazing,
             "penumbra_sun_deg": round(sun_r, 4),
             "penumbra_earth_deg": round(earth_r, 4),
+            "terrain_modelled": all(is_terrain_modelled(r.dem_product) for r in recs),
             "notes": notes,
         },
         "engine_version": ENGINE_VERSION,
@@ -651,6 +655,8 @@ async def list_with_summaries(
     max_longest_dark_s: float | None = None,
     limit: int = 100,
     offset: int = 0,
+    kind: str | None = "candidate",
+    site_ids: list[str] | None = None,
 ) -> SiteListing:
     """Sites plus their reference summaries, filtered *then* paginated.
 
@@ -669,12 +675,26 @@ async def list_with_summaries(
     repo = SiteRepository(session)
     if not metric_filtered:
         sites, total = await repo.list_sites(
-            q=q, region=region, lat_min=lat_min, lat_max=lat_max, limit=limit, offset=offset
+            q=q,
+            region=region,
+            lat_min=lat_min,
+            lat_max=lat_max,
+            limit=limit,
+            offset=offset,
+            kind=kind,
+            ids=site_ids,
         )
         summaries = await reference_summaries(session, [x.id for x in sites])
     else:
         candidates, _ = await repo.list_sites(
-            q=q, region=region, lat_min=lat_min, lat_max=lat_max, limit=10_000, offset=0
+            q=q,
+            region=region,
+            lat_min=lat_min,
+            lat_max=lat_max,
+            limit=10_000,
+            offset=0,
+            kind=kind,
+            ids=site_ids,
         )
         all_summaries = await reference_summaries(session, [x.id for x in candidates])
         matching = [
@@ -732,3 +752,82 @@ async def database_is_reachable(session: AsyncSession) -> bool:
     except Exception:
         return False
     return True
+
+
+# ---------------------------------------------------------------------------
+# Calendar (contract v2, docs/system-design.md 10.6)
+# ---------------------------------------------------------------------------
+
+#: The calendar samples hourly: a year is 8,760 samples, about three times a
+#: month-long timeline, and a day or a month is the resolution it reports at.
+CALENDAR_STEP_S = 3600
+
+
+def calendar_edges(start: datetime, end: datetime, bucket: str) -> list[datetime]:
+    """UTC day or month boundaries from ``start`` to ``end``, both included."""
+    if bucket not in ("day", "month"):
+        raise ValueError(f"bucket must be 'day' or 'month'; got {bucket!r}")
+    edges = [start]
+    if bucket == "day":
+        nxt = datetime(start.year, start.month, start.day, tzinfo=UTC) + timedelta(days=1)
+    else:
+        y, m = (start.year + 1, 1) if start.month == 12 else (start.year, start.month + 1)
+        nxt = datetime(y, m, 1, tzinfo=UTC)
+    while nxt < end:
+        edges.append(nxt)
+        if bucket == "day":
+            nxt += timedelta(days=1)
+        else:
+            y, m = (nxt.year + 1, 1) if nxt.month == 12 else (nxt.year, nxt.month + 1)
+            nxt = datetime(y, m, 1, tzinfo=UTC)
+    edges.append(end)
+    return edges
+
+
+async def calendar_payload(
+    session: AsyncSession, site_id: str, start: datetime, end: datetime, bucket: str
+) -> dict[str, Any]:
+    """Per-day or per-month Sun and Earth fractions and longest gaps at a site.
+
+    One timeline over the whole span at an hourly step, then the arcs are
+    split at the bucket boundaries. A gap cut by a boundary is reported open,
+    exactly as a gap cut by the window edge is.
+    """
+    qs, qe, step_s = geometry_service.validate_window(start, end, CALENDAR_STEP_S)
+    key = cache.make_key("calendar", site=site_id, start=_iso(qs), end=_iso(qe), bucket=bucket)
+    edges_dt = calendar_edges(qs, qe, bucket)
+
+    async def build() -> dict[str, Any]:
+        cw, _hit = await compute_with_state(session, site_id, qs, qe, step_s)
+        r = cw.result
+        edges = [(e - qs).total_seconds() for e in edges_dt]
+        sun = core_metrics.bucket_stats(r.sun.arcs, edges)
+        earth = core_metrics.bucket_stats(r.earth.arcs, edges)
+        return {
+            "site_id": site_id,
+            "start": _iso(qs),
+            "end": _iso(qe),
+            "bucket": bucket,
+            "step_s": step_s,
+            "items": [
+                {
+                    "start": _iso(edges_dt[i]),
+                    "end": _iso(edges_dt[i + 1]),
+                    "sun_fraction_up": round(s.fraction_up, 6),
+                    "earth_fraction_up": round(e.fraction_up, 6),
+                    "sunlit_s": round(s.up_s, 1),
+                    "earth_contact_s": round(e.up_s, 1),
+                    "longest_dark_s": round(s.longest_down_s, 1),
+                    "longest_dark_open": s.longest_down_open,
+                    "longest_blackout_s": round(e.longest_down_s, 1),
+                    "longest_blackout_open": e.longest_down_open,
+                }
+                for i, (s, e) in enumerate(zip(sun, earth, strict=True))
+            ],
+            "meta": cw.meta("miss"),
+        }
+
+    payload, state = await cache.single_flight(key, build, get_settings().cache_ttl_windows_s)
+    if isinstance(payload.get("meta"), dict):
+        payload["meta"]["cache"] = state
+    return payload

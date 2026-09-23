@@ -6,13 +6,14 @@ model -- enforced by an import-linter contract, not by discipline alone.
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Annotated, Any
+from datetime import datetime, timedelta
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Path, Query
 
 from app.api.v1 import deps
 from app.api.v1.schemas.sites import (
+    CalendarResponse,
     HorizonResponse,
     MetricsResponse,
     SiteDetail,
@@ -43,6 +44,11 @@ async def list_sites(
         "they cannot be judged against it.",
     ),
     max_longest_dark_s: float | None = Query(None, ge=0),
+    kind: Literal["candidate", "mission_target", "all"] = Query(
+        "candidate",
+        description="Derived candidates (the default, so the v1 list is unchanged), CLPS "
+        "mission targets, or both.",
+    ),
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
     session: Any = Depends(deps.db),
@@ -58,6 +64,7 @@ async def list_sites(
             max_longest_dark_s=max_longest_dark_s,
             limit=limit,
             offset=offset,
+            kind=None if kind == "all" else kind,
         )
     except Exception as exc:
         raise deps.to_http(exc) from exc
@@ -82,6 +89,9 @@ def _brief(site: Any, summary: dict[str, Any] | None) -> dict[str, Any]:
         "slope_deg": site.slope_deg,
         "note": site.note,
         "search_kind": site.search_kind,
+        "kind": site.kind,
+        "coordinate_rule": site.coordinate_rule,
+        "terrain_modelled": site.terrain_modelled,
         "summary": summary,
     }
 
@@ -194,5 +204,28 @@ async def get_metrics(
     start, end, step_s = window
     try:
         return await site_service.cached_payload(session, "metrics", site_id, start, end, step_s)
+    except Exception as exc:
+        raise deps.to_http(exc) from exc
+
+
+@router.get(
+    "/{site_id}/calendar",
+    response_model=CalendarResponse,
+    summary="Sun and Earth by day or month, for choosing dates",
+)
+async def calendar(
+    site_id: SiteId,
+    start: datetime | None = Query(
+        None, description="ISO 8601 UTC. Defaults to the reference start."
+    ),
+    end: datetime | None = Query(None, description="ISO 8601 UTC; at most 730 days after start."),
+    bucket: Literal["day", "month"] = Query("month"),
+    session: Any = Depends(deps.db),
+) -> dict[str, Any]:
+    s = deps.settings()
+    begin = start or s.reference_window_start
+    finish = end or begin + timedelta(days=365)
+    try:
+        return await site_service.calendar_payload(session, site_id, begin, finish, bucket)
     except Exception as exc:
         raise deps.to_http(exc) from exc

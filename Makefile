@@ -10,7 +10,7 @@ FE    := frontend
 DATA  := data
 
 .DEFAULT_GOAL := help
-.PHONY: help install kernels dem sites seed tiles services db-up migrate dev api worker \
+.PHONY: missions help install kernels dem sites seed tiles services db-up migrate dev api worker \
         frontend test test-fast test-int test-geo lint fmt typecheck contracts \
         golden-update openapi codegen clean nuke check
 
@@ -41,7 +41,10 @@ sites: dem ## Resolve candidate sites against the elevation model
 	cd $(BE) && $(UV) run python -m app.data.ingest_sites \
 	  ../$(DATA)/dem/regional_80m.npz ../$(DATA)/sites.json
 
-seed: kernels sites migrate ## Everything the API needs before it can answer
+missions: migrate ## Load the cited CLPS mission list and create target sites (ADR-5, ADR-6)
+	cd $(BE) && $(UV) run python -m app.data.ingest_missions
+
+seed: kernels sites migrate missions ## Everything the API needs before it can answer
 	cd $(BE) && $(UV) run python -m app.workers.precompute
 
 tiles: ## Pre-render the map tile pyramid (ADR-4)

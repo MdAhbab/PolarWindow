@@ -30,7 +30,7 @@ from sqlalchemy import (
     false,
     func,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -59,10 +59,26 @@ class Site(Base):
 
     lat_deg: Mapped[float] = mapped_column(Float, nullable=False)
     lon_deg: Mapped[float] = mapped_column(Float, nullable=False)
-    elev_m: Mapped[float] = mapped_column(Float, nullable=False)
-    slope_deg: Mapped[float] = mapped_column(Float, nullable=False)
+    #: Null where no elevation model covers the site (a CLPS target outside
+    #: 80 deg S): an unknown height is not zero.
+    elev_m: Mapped[float | None] = mapped_column(Float, nullable=True)
+    slope_deg: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     note: Mapped[str] = mapped_column(Text, nullable=False, default="")
+
+    # --- what kind of place this is (contract v2, ADR-6) --------------------
+    #: 'candidate' (derived from the DEM) or 'mission_target' (a CLPS target).
+    kind: Mapped[str] = mapped_column(
+        String(24), nullable=False, default="candidate", server_default="candidate", index=True
+    )
+    #: 'derived_open_sky' (searched) or 'published' (used as given).
+    coordinate_rule: Mapped[str] = mapped_column(
+        String(24), nullable=False, default="derived_open_sky", server_default="derived_open_sky"
+    )
+    #: False outside the polar DEM: the skyline is a smooth sphere, not terrain.
+    terrain_modelled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
 
     # --- provenance: how this coordinate came to exist ---------------------
     anchor_lat_deg: Mapped[float] = mapped_column(Float, nullable=False)
@@ -257,3 +273,72 @@ class AgentToolCall(Base):
     run: Mapped[AgentRun] = relationship(back_populates="tool_calls")
 
     __table_args__ = (UniqueConstraint("run_id", "seq", name="uq_toolcall_seq"),)
+
+
+class Mission(Base):
+    """One CLPS delivery, as sourced in ``data/missions.json`` (ADR-5).
+
+    Dates are stored as they were published: a date, its precision and the
+    verbatim phrase. ``sort_at`` is the start of the landing (or launch) period
+    and exists only so the list can be filtered and ordered by time.
+    """
+
+    __tablename__ = "missions"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    vehicle_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    task_order: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    provider: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    lander: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    outcome_note: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    region: Mapped[str | None] = mapped_column(String(24), nullable=True, index=True)
+    target_name: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    #: {name, lat_deg, lon_deg, coordinate_kind, source_url, feature_id} or null.
+    target: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    ellipse: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    launch: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    landing: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    end_of_mission: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    planned_surface_days: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sort_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    site_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey("sites.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    sources: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False)
+    unconfirmed_fields: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    notes: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    data_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    payloads: Mapped[list[MissionPayload]] = relationship(
+        back_populates="mission",
+        cascade="all, delete-orphan",
+        order_by="MissionPayload.position",
+    )
+
+
+class MissionPayload(Base):
+    """One NASA payload on a mission, with its own source."""
+
+    __tablename__ = "mission_payloads"
+
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    mission_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("missions.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    acronym: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    organisation: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    instrument_types: Mapped[list[str]] = mapped_column(ARRAY(String(32)), nullable=False)
+    purpose: Mapped[str] = mapped_column(Text, nullable=False)
+    source_url: Mapped[str] = mapped_column(String(400), nullable=False)
+    unconfirmed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    mission: Mapped[Mission] = relationship(back_populates="payloads")
+
+    __table_args__ = (Index("ix_payload_types", "instrument_types", postgresql_using="gin"),)

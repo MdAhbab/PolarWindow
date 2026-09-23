@@ -23,6 +23,7 @@ scheduling in this system, so the field is named ``earth_contact_s`` and never
 
 from __future__ import annotations
 
+import itertools
 import math
 from dataclasses import dataclass, field
 from typing import Final
@@ -455,3 +456,62 @@ def tie_groups(ranked: list[RankedItem]) -> list[list[str]]:
             stack.extend(neighbours[x] - seen)
         groups.append(sorted(group, key=position.__getitem__))
     return groups
+
+
+# ---------------------------------------------------------------------------
+# Calendar buckets (contract v2, docs/system-design.md 10.6)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class BucketStat:
+    """One body's numbers inside one calendar bucket ``[start, end)``."""
+
+    start: float
+    end: float
+    up_s: float
+    fraction_up: float
+    longest_down_s: float
+    #: The longest down stretch in this bucket was cut by the bucket's edge or
+    #: the window's, so it is a lower bound: the same rule as a window edge.
+    longest_down_open: bool
+
+
+def bucket_stats(arcs: list[Run], edges: list[float]) -> list[BucketStat]:
+    """Split a body's arcs into consecutive buckets.
+
+    ``edges`` are the bucket boundaries in the arcs' time base, strictly
+    increasing, spanning the window. A down run that crosses a boundary is
+    clipped, and each clipped piece is reported as open: the calendar, not the
+    geometry, ended it there.
+    """
+    out: list[BucketStat] = []
+    for b0, b1 in itertools.pairwise(edges):
+        span = b1 - b0
+        up = 0.0
+        longest = 0.0
+        longest_open = False
+        for r in arcs:
+            s, e = max(r.start, b0), min(r.end, b1)
+            if e <= s:
+                continue
+            if r.value:
+                up += e - s
+                continue
+            length = e - s
+            # Touching either edge of the bucket means a boundary ended it (the
+            # first and last buckets' outer edges are the window's own).
+            clipped = s <= b0 + EDGE_SLACK_S or e >= b1 - EDGE_SLACK_S
+            if length > longest:
+                longest, longest_open = length, clipped
+        out.append(
+            BucketStat(
+                start=b0,
+                end=b1,
+                up_s=up,
+                fraction_up=up / span if span > 0 else 0.0,
+                longest_down_s=longest,
+                longest_down_open=longest_open,
+            )
+        )
+    return out

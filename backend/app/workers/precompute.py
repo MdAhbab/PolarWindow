@@ -24,7 +24,7 @@ import numpy as np
 
 from app.config import ENGINE_VERSION, get_settings
 from app.core import spice
-from app.core.horizon import HorizonMask, build_mask
+from app.core.horizon import SMOOTH_SPHERE_PRODUCT, HorizonMask, build_mask, smooth_mask
 from app.core.projections import geographic_to_polar
 from app.data.lola import (
     LDEM_80S_20M,
@@ -135,7 +135,7 @@ def describe_sources(
 
 
 async def compute_reference_metrics(
-    site_id: str, lat_deg: float, lon_deg: float, elev_m: float, mask: HorizonMask
+    site_id: str, lat_deg: float, lon_deg: float, elev_m: float | None, mask: HorizonMask
 ) -> WindowMetricsRecord:
     """The four numbers over the default reference window.
 
@@ -272,6 +272,7 @@ async def _one_site(
     kernels_ok: bool,
     skip_metrics: bool,
 ) -> None:
+    s = get_settings()
     mask: HorizonMask | None = None
     # An existing mask skips the *mask build*, not the whole site. These are
     # separate pieces of work with separate costs, and conflating them meant
@@ -283,6 +284,21 @@ async def _one_site(
         if rec is not None:
             mask = rec.mask
             log.info("         mask: reused (%d bearings)", mask.azimuth_count)
+
+    if mask is None and not site.terrain_modelled:
+        # A CLPS target outside the polar DEM (ADR-6): a smooth-sphere skyline,
+        # flagged everywhere it is used. There is no terrain to fetch.
+        mask = smooth_mask(azimuth_step_deg=s.azimuth_step_deg, max_range_m=s.max_range_m)
+        async with session_scope() as session:
+            await MaskRepository(session).upsert(
+                site.id,
+                ENGINE_VERSION,
+                mask,
+                dem_product=SMOOTH_SPHERE_PRODUCT,
+                dem_resolution_m=0.0,
+                dem_vertical_error_m=0.0,
+            )
+        log.info("         mask: smooth sphere (terrain not modelled outside 80 deg S)")
 
     if mask is None:
         fine = await ensure_fine_dem(site.id, site.lat_deg, site.lon_deg)

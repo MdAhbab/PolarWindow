@@ -459,3 +459,69 @@ async def test_a_payload_rebuilt_from_memoised_geometry_says_so(client) -> None:
         pytest.skip("payload cache already held this window")
     assert meta["cache"] == "memo"
     assert meta["compute_ms"] == 0.0
+
+
+# --- contract v2: missions --------------------------------------------------
+
+
+async def _missions_seeded(client) -> bool:
+    r = await client.get(f"{API}/missions")
+    return r.status_code == 200 and r.json()["total"] > 0
+
+
+async def test_missions_filter_by_payload_type(client) -> None:
+    if not await _missions_seeded(client):
+        pytest.skip("missions are not seeded")
+    body = (await client.get(f"{API}/missions", params={"payload_type": "volatiles"})).json()
+    assert body["total"] > 0
+    for m in body["items"]:
+        assert "volatiles" in m["payload_types"]
+        assert m["summary"] is None or m["surface_window"]["basis"] != "none"
+
+
+async def test_mission_detail_is_sourced_and_honest(client) -> None:
+    if not await _missions_seeded(client):
+        pytest.skip("missions are not seeded")
+    d = (await client.get(f"{API}/missions/im-2")).json()
+    assert d["sources"] and all(p["source_url"] for p in d["payloads"])
+    assert d["surface_window"]["basis"] == "published"
+    assert d["site"]["coordinate_rule"] == "published"
+
+
+async def test_a_target_outside_the_polar_model_says_so(client) -> None:
+    if not await _missions_seeded(client):
+        pytest.skip("missions are not seeded")
+    d = (await client.get(f"{API}/missions/blue-ghost-m1")).json()
+    assert d["terrain_modelled"] is False
+    m = (await client.get(f"{API}/sites/{d['site_id']}/metrics")).json()
+    assert m["meta"]["uncertainty"]["terrain_modelled"] is False
+
+
+async def test_unknown_mission_is_a_problem_detail(client) -> None:
+    r = await client.get(f"{API}/missions/no-such-mission")
+    assert r.status_code == 404
+    assert r.json()["detail"]["ui"]["still_works"]
+
+
+async def test_default_site_list_is_unchanged_by_mission_targets(client) -> None:
+    body = (await client.get(f"{API}/sites")).json()
+    assert all(s["kind"] == "candidate" for s in body["items"])
+
+
+async def test_calendar_buckets_by_month(client) -> None:
+    r = await client.get(
+        f"{API}/sites/{SITE}/calendar",
+        params={"start": "2027-01-01T00:00:00Z", "end": "2027-07-01T00:00:00Z", "bucket": "month"},
+    )
+    assert r.status_code == 200, r.text
+    items = r.json()["items"]
+    assert [i["start"][:7] for i in items] == [f"2027-0{m}" for m in range(1, 7)]
+    assert all(0.0 <= i["sun_fraction_up"] <= 1.0 for i in items)
+
+
+async def test_calendar_refuses_more_than_two_years(client) -> None:
+    r = await client.get(
+        f"{API}/sites/{SITE}/calendar",
+        params={"start": "2027-01-01T00:00:00Z", "end": "2030-01-01T00:00:00Z"},
+    )
+    assert r.status_code == 422

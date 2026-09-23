@@ -143,6 +143,23 @@
             }
           },
           {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "candidate",
+                "mission_target",
+                "all"
+              ],
+              "type": "string",
+              "description": "Derived candidates (the default, so the v1 list is unchanged), CLPS mission targets, or both.",
+              "default": "candidate",
+              "title": "Kind"
+            },
+            "description": "Derived candidates (the default, so the v1 list is unchanged), CLPS mission targets, or both."
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -581,6 +598,336 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MetricsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sites/{site_id}/calendar": {
+      "get": {
+        "tags": [
+          "sites"
+        ],
+        "summary": "Sun and Earth by day or month, for choosing dates",
+        "operationId": "calendar_api_v1_sites__site_id__calendar_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Site slug, e.g. `connecting-ridge`.",
+              "title": "Site Id"
+            },
+            "description": "Site slug, e.g. `connecting-ridge`."
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO 8601 UTC. Defaults to the reference start.",
+              "title": "Start"
+            },
+            "description": "ISO 8601 UTC. Defaults to the reference start."
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO 8601 UTC; at most 730 days after start.",
+              "title": "End"
+            },
+            "description": "ISO 8601 UTC; at most 730 days after start."
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "day",
+                "month"
+              ],
+              "type": "string",
+              "default": "month",
+              "title": "Bucket"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/missions": {
+      "get": {
+        "tags": [
+          "missions"
+        ],
+        "summary": "List CLPS missions",
+        "operationId": "list_missions_api_v1_missions_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "planned",
+                      "in_transit",
+                      "operating",
+                      "completed",
+                      "partial_success",
+                      "landing_failed",
+                      "lost_before_landing",
+                      "cancelled",
+                      "reassigned"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Any of these statuses.",
+              "title": "Status"
+            },
+            "description": "Any of these statuses."
+          },
+          {
+            "name": "provider",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Provider"
+            }
+          },
+          {
+            "name": "payload_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "volatiles",
+                      "geology_geophysics",
+                      "heat_flow",
+                      "radiation_space_weather",
+                      "exosphere_dust",
+                      "imaging",
+                      "landing_navigation",
+                      "communications",
+                      "laser_retroreflector",
+                      "rover_mobility",
+                      "technology_demo",
+                      "other"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Missions carrying at least one payload of any of these types.",
+              "title": "Payload Type"
+            },
+            "description": "Missions carrying at least one payload of any of these types."
+          },
+          {
+            "name": "region",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "south_polar, nearside, farside, polar_other",
+              "title": "Region"
+            },
+            "description": "south_polar, nearside, farside, polar_other"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Landing (else launch) on or after.",
+              "title": "From"
+            },
+            "description": "Landing (else launch) on or after."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Landing (else launch) on or before.",
+              "title": "To"
+            },
+            "description": "Landing (else launch) on or before."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Substring of name, provider, target or task order.",
+              "title": "Q"
+            },
+            "description": "Substring of name, provider, target or task order."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MissionList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/missions/{mission_id}": {
+      "get": {
+        "tags": [
+          "missions"
+        ],
+        "summary": "One mission, fully sourced",
+        "operationId": "get_mission_api_v1_missions__mission_id__get",
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Mission slug, e.g. `im-2`.",
+              "title": "Mission Id"
+            },
+            "description": "Mission slug, e.g. `im-2`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MissionDetail"
                 }
               }
             }
@@ -1551,6 +1898,121 @@
         ],
         "title": "BriefRequest"
       },
+      "CalendarBucket": {
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End"
+          },
+          "sun_fraction_up": {
+            "type": "number",
+            "title": "Sun Fraction Up"
+          },
+          "earth_fraction_up": {
+            "type": "number",
+            "title": "Earth Fraction Up"
+          },
+          "sunlit_s": {
+            "type": "number",
+            "title": "Sunlit S"
+          },
+          "earth_contact_s": {
+            "type": "number",
+            "title": "Earth Contact S"
+          },
+          "longest_dark_s": {
+            "type": "number",
+            "title": "Longest Dark S"
+          },
+          "longest_dark_open": {
+            "type": "boolean",
+            "title": "Longest Dark Open",
+            "description": "The longest night in this bucket was cut by the bucket's edge: a lower bound."
+          },
+          "longest_blackout_s": {
+            "type": "number",
+            "title": "Longest Blackout S"
+          },
+          "longest_blackout_open": {
+            "type": "boolean",
+            "title": "Longest Blackout Open"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "sun_fraction_up",
+          "earth_fraction_up",
+          "sunlit_s",
+          "earth_contact_s",
+          "longest_dark_s",
+          "longest_dark_open",
+          "longest_blackout_s",
+          "longest_blackout_open"
+        ],
+        "title": "CalendarBucket"
+      },
+      "CalendarResponse": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End"
+          },
+          "bucket": {
+            "type": "string",
+            "enum": [
+              "day",
+              "month"
+            ],
+            "title": "Bucket"
+          },
+          "step_s": {
+            "type": "integer",
+            "title": "Step S"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CalendarBucket"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "start",
+          "end",
+          "bucket",
+          "step_s",
+          "items",
+          "meta"
+        ],
+        "title": "CalendarResponse",
+        "description": "Sun and Earth by day or by month, for choosing dates (contract v2)."
+      },
       "CompareItem": {
         "properties": {
           "site_id": {
@@ -2289,6 +2751,780 @@
         "title": "MetricsResponse",
         "description": "The four numbers. There is deliberately no composite score.\n\nA score ranks sites on one axis, which destroys exactly the information this\nproduct exists to show: which corner a site gives up. The absence of a\n`score` field here is asserted by a test."
       },
+      "MissionBrief": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "vehicle_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vehicle Name"
+          },
+          "task_order": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Order"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "lander": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lander"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "planned",
+              "in_transit",
+              "operating",
+              "completed",
+              "partial_success",
+              "landing_failed",
+              "lost_before_landing",
+              "cancelled",
+              "reassigned"
+            ],
+            "title": "Status"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "south_polar",
+                  "nearside",
+                  "farside",
+                  "polar_other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
+          "target_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Name"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MissionTarget"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "launch": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublishedDate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "landing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublishedDate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payload_types": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "volatiles",
+                "geology_geophysics",
+                "heat_flow",
+                "radiation_space_weather",
+                "exosphere_dust",
+                "imaging",
+                "landing_navigation",
+                "communications",
+                "laser_retroreflector",
+                "rover_mobility",
+                "technology_demo",
+                "other"
+              ]
+            },
+            "type": "array",
+            "title": "Payload Types"
+          },
+          "payload_count": {
+            "type": "integer",
+            "title": "Payload Count"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id",
+            "description": "The site standing for the target; open it for the full site views."
+          },
+          "terrain_modelled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terrain Modelled",
+            "description": "False outside the 80-90 deg S elevation model; null with no target."
+          },
+          "surface_window": {
+            "$ref": "#/components/schemas/SurfaceWindow"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MissionSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null when there is no surface window or no target. Never zeros."
+          },
+          "unconfirmed_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unconfirmed Fields"
+          },
+          "data_version": {
+            "type": "string",
+            "title": "Data Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "vehicle_name",
+          "task_order",
+          "provider",
+          "lander",
+          "status",
+          "region",
+          "target_name",
+          "target",
+          "launch",
+          "landing",
+          "payload_types",
+          "payload_count",
+          "site_id",
+          "terrain_modelled",
+          "surface_window",
+          "summary",
+          "unconfirmed_fields",
+          "data_version"
+        ],
+        "title": "MissionBrief"
+      },
+      "MissionDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "vehicle_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vehicle Name"
+          },
+          "task_order": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Order"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "lander": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lander"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "planned",
+              "in_transit",
+              "operating",
+              "completed",
+              "partial_success",
+              "landing_failed",
+              "lost_before_landing",
+              "cancelled",
+              "reassigned"
+            ],
+            "title": "Status"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "south_polar",
+                  "nearside",
+                  "farside",
+                  "polar_other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
+          "target_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Name"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MissionTarget"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "launch": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublishedDate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "landing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublishedDate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payload_types": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "volatiles",
+                "geology_geophysics",
+                "heat_flow",
+                "radiation_space_weather",
+                "exosphere_dust",
+                "imaging",
+                "landing_navigation",
+                "communications",
+                "laser_retroreflector",
+                "rover_mobility",
+                "technology_demo",
+                "other"
+              ]
+            },
+            "type": "array",
+            "title": "Payload Types"
+          },
+          "payload_count": {
+            "type": "integer",
+            "title": "Payload Count"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id",
+            "description": "The site standing for the target; open it for the full site views."
+          },
+          "terrain_modelled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terrain Modelled",
+            "description": "False outside the 80-90 deg S elevation model; null with no target."
+          },
+          "surface_window": {
+            "$ref": "#/components/schemas/SurfaceWindow"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MissionSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null when there is no surface window or no target. Never zeros."
+          },
+          "unconfirmed_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unconfirmed Fields"
+          },
+          "data_version": {
+            "type": "string",
+            "title": "Data Version"
+          },
+          "outcome_note": {
+            "type": "string",
+            "title": "Outcome Note"
+          },
+          "end_of_mission": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublishedDate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "planned_surface_days": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Surface Days"
+          },
+          "payloads": {
+            "items": {
+              "$ref": "#/components/schemas/Payload"
+            },
+            "type": "array",
+            "title": "Payloads"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Sources"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          },
+          "ellipse_ring": {
+            "anyOf": [
+              {
+                "items": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ellipse Ring",
+            "description": "Published landing ellipse as [lat, lon] vertices; null when none is published."
+          },
+          "site": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TargetSite"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "vehicle_name",
+          "task_order",
+          "provider",
+          "lander",
+          "status",
+          "region",
+          "target_name",
+          "target",
+          "launch",
+          "landing",
+          "payload_types",
+          "payload_count",
+          "site_id",
+          "terrain_modelled",
+          "surface_window",
+          "summary",
+          "unconfirmed_fields",
+          "data_version",
+          "outcome_note",
+          "end_of_mission",
+          "planned_surface_days",
+          "payloads",
+          "sources",
+          "notes",
+          "ellipse_ring",
+          "site",
+          "meta"
+        ],
+        "title": "MissionDetail"
+      },
+      "MissionList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MissionBrief"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "meta"
+        ],
+        "title": "MissionList"
+      },
+      "MissionSummary": {
+        "properties": {
+          "window_start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Window Start"
+          },
+          "window_end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Window End"
+          },
+          "sunlit_s": {
+            "type": "number",
+            "title": "Sunlit S"
+          },
+          "earth_contact_s": {
+            "type": "number",
+            "title": "Earth Contact S"
+          },
+          "longest_dark_s": {
+            "type": "number",
+            "title": "Longest Dark S"
+          },
+          "longest_blackout_s": {
+            "type": "number",
+            "title": "Longest Blackout S"
+          },
+          "sun_fraction_up": {
+            "type": "number",
+            "title": "Sun Fraction Up"
+          },
+          "earth_fraction_up": {
+            "type": "number",
+            "title": "Earth Fraction Up"
+          },
+          "longest_dark_open": {
+            "type": "boolean",
+            "title": "Longest Dark Open"
+          },
+          "longest_blackout_open": {
+            "type": "boolean",
+            "title": "Longest Blackout Open"
+          },
+          "grazing": {
+            "type": "boolean",
+            "title": "Grazing"
+          },
+          "terrain_modelled": {
+            "type": "boolean",
+            "title": "Terrain Modelled"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "window_start",
+          "window_end",
+          "sunlit_s",
+          "earth_contact_s",
+          "longest_dark_s",
+          "longest_blackout_s",
+          "sun_fraction_up",
+          "earth_fraction_up",
+          "longest_dark_open",
+          "longest_blackout_open",
+          "grazing",
+          "terrain_modelled"
+        ],
+        "title": "MissionSummary",
+        "description": "The four numbers at the target over the surface window."
+      },
+      "MissionTarget": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "lat_deg": {
+            "type": "number",
+            "title": "Lat Deg"
+          },
+          "lon_deg": {
+            "type": "number",
+            "title": "Lon Deg",
+            "description": "Degrees east, 0-360."
+          },
+          "coordinate_kind": {
+            "type": "string",
+            "enum": [
+              "actual_landing",
+              "planned_target",
+              "feature_centre"
+            ],
+            "title": "Coordinate Kind",
+            "description": "`feature_centre` is the IAU centre of the named target, used because no landing point is published. It is not a landing point."
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "feature_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feature Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "lat_deg",
+          "lon_deg",
+          "coordinate_kind",
+          "source_url"
+        ],
+        "title": "MissionTarget"
+      },
+      "Payload": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "acronym": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acronym"
+          },
+          "organisation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organisation"
+          },
+          "instrument_types": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "volatiles",
+                "geology_geophysics",
+                "heat_flow",
+                "radiation_space_weather",
+                "exosphere_dust",
+                "imaging",
+                "landing_navigation",
+                "communications",
+                "laser_retroreflector",
+                "rover_mobility",
+                "technology_demo",
+                "other"
+              ]
+            },
+            "type": "array",
+            "title": "Instrument Types",
+            "description": "This project's classification from the sourced description, not NASA's."
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "unconfirmed": {
+            "type": "boolean",
+            "title": "Unconfirmed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "acronym",
+          "organisation",
+          "instrument_types",
+          "purpose",
+          "source_url",
+          "unconfirmed"
+        ],
+        "title": "Payload"
+      },
       "Provenance": {
         "properties": {
           "anchor_lat_deg": {
@@ -2378,6 +3614,39 @@
         ],
         "title": "ProvenanceItem"
       },
+      "PublishedDate": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date",
+            "description": "ISO date or datetime. A year-precision date is 1 January."
+          },
+          "precision": {
+            "type": "string",
+            "enum": [
+              "minute",
+              "day",
+              "month",
+              "quarter",
+              "year"
+            ],
+            "title": "Precision"
+          },
+          "as_published": {
+            "type": "string",
+            "title": "As Published",
+            "description": "The phrase as published, e.g. 'late 2027'. Show this."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "date",
+          "precision",
+          "as_published"
+        ],
+        "title": "PublishedDate"
+      },
       "Resolution": {
         "properties": {
           "azimuth_deg": {
@@ -2458,11 +3727,26 @@
             "title": "Lon Deg"
           },
           "elev_m": {
-            "type": "number",
-            "title": "Elev M"
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elev M",
+            "description": "Height above the 1737.4 km reference sphere, metres. Null where no elevation model covers the site: an unknown height is not zero."
           },
           "slope_deg": {
-            "type": "number",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Slope Deg"
           },
           "note": {
@@ -2473,10 +3757,37 @@
             "type": "string",
             "enum": [
               "rim",
-              "massif"
+              "massif",
+              "published"
             ],
             "title": "Search Kind",
             "description": "How the landing point was found: on the rim of a named crater (so it borders that crater's shadowed floor) or on a massif or plateau."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "candidate",
+              "mission_target"
+            ],
+            "title": "Kind",
+            "description": "A derived candidate site, or a CLPS mission target (ADR-6).",
+            "default": "candidate"
+          },
+          "coordinate_rule": {
+            "type": "string",
+            "enum": [
+              "derived_open_sky",
+              "published"
+            ],
+            "title": "Coordinate Rule",
+            "description": "Searched in the DEM for open sky, or used exactly as published.",
+            "default": "derived_open_sky"
+          },
+          "terrain_modelled": {
+            "type": "boolean",
+            "title": "Terrain Modelled",
+            "description": "False outside the 80-90 deg S elevation model: smooth-sphere skyline.",
+            "default": true
           },
           "summary": {
             "anyOf": [
@@ -2532,11 +3843,26 @@
             "title": "Lon Deg"
           },
           "elev_m": {
-            "type": "number",
-            "title": "Elev M"
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elev M",
+            "description": "Height above the 1737.4 km reference sphere, metres. Null where no elevation model covers the site: an unknown height is not zero."
           },
           "slope_deg": {
-            "type": "number",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Slope Deg"
           },
           "note": {
@@ -2547,10 +3873,37 @@
             "type": "string",
             "enum": [
               "rim",
-              "massif"
+              "massif",
+              "published"
             ],
             "title": "Search Kind",
             "description": "How the landing point was found: on the rim of a named crater (so it borders that crater's shadowed floor) or on a massif or plateau."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "candidate",
+              "mission_target"
+            ],
+            "title": "Kind",
+            "description": "A derived candidate site, or a CLPS mission target (ADR-6).",
+            "default": "candidate"
+          },
+          "coordinate_rule": {
+            "type": "string",
+            "enum": [
+              "derived_open_sky",
+              "published"
+            ],
+            "title": "Coordinate Rule",
+            "description": "Searched in the DEM for open sky, or used exactly as published.",
+            "default": "derived_open_sky"
+          },
+          "terrain_modelled": {
+            "type": "boolean",
+            "title": "Terrain Modelled",
+            "description": "False outside the 80-90 deg S elevation model: smooth-sphere skyline.",
+            "default": true
           },
           "summary": {
             "anyOf": [
@@ -2708,6 +4061,161 @@
         ],
         "title": "SiteSummary",
         "description": "Coarse four-numbers over the reference window.\n\n`null` on a site whose precompute has not run -- never zeros. A zero is a\nmeasurement; absence is absence, and the UI has a state for it."
+      },
+      "Source": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "publisher": {
+            "type": "string",
+            "title": "Publisher"
+          },
+          "accessed": {
+            "type": "string",
+            "format": "date",
+            "title": "Accessed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "url",
+          "title",
+          "publisher",
+          "accessed"
+        ],
+        "title": "Source"
+      },
+      "SurfaceWindow": {
+        "properties": {
+          "start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "basis": {
+            "type": "string",
+            "enum": [
+              "published",
+              "planned",
+              "assumed",
+              "none"
+            ],
+            "title": "Basis"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "basis",
+          "note"
+        ],
+        "title": "SurfaceWindow"
+      },
+      "TargetSite": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "lat_deg": {
+            "type": "number",
+            "title": "Lat Deg"
+          },
+          "lon_deg": {
+            "type": "number",
+            "title": "Lon Deg"
+          },
+          "elev_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elev M"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "candidate",
+              "mission_target"
+            ],
+            "title": "Kind"
+          },
+          "coordinate_rule": {
+            "type": "string",
+            "enum": [
+              "derived_open_sky",
+              "published"
+            ],
+            "title": "Coordinate Rule"
+          },
+          "terrain_modelled": {
+            "type": "boolean",
+            "title": "Terrain Modelled"
+          },
+          "source_note": {
+            "type": "string",
+            "title": "Source Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "lat_deg",
+          "lon_deg",
+          "elev_m",
+          "kind",
+          "coordinate_rule",
+          "terrain_modelled",
+          "source_note"
+        ],
+        "title": "TargetSite"
       },
       "TimelineResponse": {
         "properties": {
@@ -2873,6 +4381,12 @@
           "penumbra_earth_deg": {
             "type": "number",
             "title": "Penumbra Earth Deg"
+          },
+          "terrain_modelled": {
+            "type": "boolean",
+            "title": "Terrain Modelled",
+            "description": "False when no elevation model covers the site (a CLPS target outside 80 deg S): the skyline is a smooth sphere, so real terrain could block more.",
+            "default": true
           },
           "notes": {
             "items": {

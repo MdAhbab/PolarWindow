@@ -394,6 +394,43 @@ def downsample_mask(mask: HorizonMask, target_count: int) -> tuple[F32Array, F32
     )
 
 
+#: The product name a smooth-sphere mask carries. Everything downstream reads
+#: ``terrain_modelled`` from this, so there is one source for the flag.
+SMOOTH_SPHERE_PRODUCT: Final[str] = "none (smooth sphere)"
+
+
+def is_terrain_modelled(dem_product: str) -> bool:
+    return dem_product != SMOOTH_SPHERE_PRODUCT
+
+
+def smooth_mask(
+    *,
+    azimuth_step_deg: float = DEFAULT_AZIMUTH_STEP_DEG,
+    max_range_m: float = DEFAULT_MAX_RANGE_M,
+) -> HorizonMask:
+    """A skyline for a site no elevation model covers: a smooth sphere.
+
+    Every bearing is 0 deg: on a sphere the local horizontal is the horizon
+    (the curvature dip is below the bin size for any surface site). It carries
+    zero coverage, because no terrain was sampled, and is always reported as
+    ``terrain_modelled = false`` -- a mask this simple must never be read as a
+    measured skyline (ADR-6).
+    """
+    n = int(round(360.0 / azimuth_step_deg))
+    zeros = np.zeros(n, dtype=np.float32)
+    return HorizonMask(
+        el_deg=zeros,
+        range_m=zeros.copy(),
+        tol_deg=zeros.copy(),
+        max_el_deg=0.0,
+        max_el_bearing_deg=0.0,
+        azimuth_step_deg=azimuth_step_deg,
+        max_range_m=max_range_m,
+        coverage=0.0,
+        compute_ms=0.0,
+    )
+
+
 def spherical_horizon_deg(site_height_m: float, r_body_m: float = R_MOON_M) -> float:
     """Horizon depression for a smooth sphere, degrees (negative).
 

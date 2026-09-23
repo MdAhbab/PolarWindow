@@ -57,6 +57,11 @@ class Uncertainty(BaseModel):
         "boundary is soft by this much."
     )
     penumbra_earth_deg: float
+    terrain_modelled: bool = Field(
+        default=True,
+        description="False when no elevation model covers the site (a CLPS target outside "
+        "80 deg S): the skyline is a smooth sphere, so real terrain could block more.",
+    )
     notes: list[str]
 
 

@@ -73,12 +73,27 @@ class SiteBrief(BaseModel):
     region: str
     lat_deg: float
     lon_deg: float
-    elev_m: float
-    slope_deg: float
+    elev_m: float | None = Field(
+        description="Height above the 1737.4 km reference sphere, metres. Null where no "
+        "elevation model covers the site: an unknown height is not zero."
+    )
+    slope_deg: float | None
     note: str
-    search_kind: Literal["rim", "massif"] = Field(
+    search_kind: Literal["rim", "massif", "published"] = Field(
         description="How the landing point was found: on the rim of a named crater "
         "(so it borders that crater's shadowed floor) or on a massif or plateau."
+    )
+    kind: Literal["candidate", "mission_target"] = Field(
+        default="candidate",
+        description="A derived candidate site, or a CLPS mission target (ADR-6).",
+    )
+    coordinate_rule: Literal["derived_open_sky", "published"] = Field(
+        default="derived_open_sky",
+        description="Searched in the DEM for open sky, or used exactly as published.",
+    )
+    terrain_modelled: bool = Field(
+        default=True,
+        description="False outside the 80-90 deg S elevation model: smooth-sphere skyline.",
     )
     summary: SiteSummary | None = None
 
@@ -300,4 +315,35 @@ class MetricsResponse(BaseModel):
     longest_dark_grazing: bool
     longest_blackout_grazing: bool
     autonomy: Autonomy
+    meta: Meta
+
+
+class CalendarBucket(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    start: datetime
+    end: datetime
+    sun_fraction_up: float
+    earth_fraction_up: float
+    sunlit_s: float
+    earth_contact_s: float
+    longest_dark_s: float
+    longest_dark_open: bool = Field(
+        description="The longest night in this bucket was cut by the bucket's edge: a lower bound."
+    )
+    longest_blackout_s: float
+    longest_blackout_open: bool
+
+
+class CalendarResponse(BaseModel):
+    """Sun and Earth by day or by month, for choosing dates (contract v2)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    site_id: str
+    start: datetime
+    end: datetime
+    bucket: Literal["day", "month"]
+    step_s: int
+    items: list[CalendarBucket]
     meta: Meta

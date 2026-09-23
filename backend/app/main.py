@@ -158,10 +158,11 @@ def create_app() -> FastAPI:
         expose_headers=["X-Tile-Source", "X-Tile-Note", "ETag"],
     )
 
-    from app.api.v1.routes import agents, compare, health, sites, tiles
+    from app.api.v1.routes import agents, compare, health, missions, sites, tiles
 
     app.include_router(health.router, prefix=s.api_prefix)
     app.include_router(sites.router, prefix=s.api_prefix)
+    app.include_router(missions.router, prefix=s.api_prefix)
     app.include_router(compare.router, prefix=s.api_prefix)
     app.include_router(tiles.router, prefix=s.api_prefix)
     app.include_router(agents.router, prefix=s.api_prefix)

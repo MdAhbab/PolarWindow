@@ -82,6 +82,10 @@ class Settings(BaseSettings):
     def sites_seed_path(self) -> Path:
         return self.data_dir / "sites.json"
 
+    @property
+    def missions_path(self) -> Path:
+        return self.data_dir / "missions.json"
+
     def fine_dem_path(self, site_id: str) -> Path:
         return self.dem_dir / "fine" / f"{site_id}.npz"
 

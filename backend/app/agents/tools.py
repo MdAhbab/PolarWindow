@@ -22,7 +22,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,7 +30,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.agents.schema_convert import tool_parameters
 from app.config import get_settings
 from app.core.metrics import METRIC_KEYS
-from app.services import compare_service, site_service
+from app.services import compare_service, mission_service, site_service
 
 log = logging.getLogger(__name__)
 
@@ -78,6 +78,27 @@ class SearchArgs(BaseModel):
     lat_max: float | None = Field(default=None, ge=-90, le=0)
     min_sun_fraction: float | None = Field(default=None, ge=0, le=1)
     max_longest_dark_s: float | None = Field(default=None, ge=0)
+    kind: Literal["candidate", "mission_target", "all"] = Field(
+        default="all",
+        description="Derived candidate sites, CLPS mission targets, or both.",
+    )
+    has_mission: bool | None = Field(
+        default=None, description="Only sites that stand for a CLPS mission's target."
+    )
+    mission_status: list[str] | None = Field(
+        default=None,
+        description="Mission statuses: planned, in_transit, operating, completed, "
+        "partial_success, landing_failed, lost_before_landing, cancelled, reassigned.",
+    )
+    provider: str | None = Field(
+        default=None, description="CLPS provider, e.g. 'Firefly Aerospace'."
+    )
+    payload_type: list[str] | None = Field(
+        default=None,
+        description="Instrument types carried by the mission: volatiles, geology_geophysics, "
+        "heat_flow, radiation_space_weather, exosphere_dust, imaging, landing_navigation, "
+        "communications, laser_retroreflector, rover_mobility, technology_demo, other.",
+    )
     limit: int = Field(default=20, ge=1, le=50)
 
 
@@ -132,9 +153,9 @@ TOOL_DECLARATIONS: list[dict[str, Any]] = [
     {
         "name": "search_sites",
         "description": (
-            "Find sites by name, region, latitude band, or coarse metric thresholds. "
-            "Metric filters are evaluated against the reference window, not an "
-            "arbitrary one."
+            "Find sites by name, region, latitude band, coarse metric thresholds, or by "
+            "the CLPS missions that target them (status, provider, payload type). "
+            "Mission targets are sites too. Metric filters use the reference window."
         ),
         "parameters": tool_parameters(SearchArgs.model_json_schema()),
     },
@@ -255,6 +276,14 @@ async def execute(session: Session, name: str, raw_args: dict[str, Any], seq: in
                 "note": site.note,
                 "source_note": site.source_note,
                 "reference_summary": _summary(summaries.get(site_args.site_id)),
+                "kind": site.kind,
+                "terrain_modelled": site.terrain_modelled,
+                # Mission facts an agent may repeat: names, providers, statuses and
+                # published dates. No masses or costs: every extra numeric leaf
+                # widens what the grounding guard would accept (D23).
+                "missions": (await mission_service.missions_for_sites(session, [site.id])).get(
+                    site.id, []
+                ),
             }
 
         elif name == "get_metrics":
@@ -352,8 +381,26 @@ async def execute(session: Session, name: str, raw_args: dict[str, Any], seq: in
             search_args = SearchArgs(**raw_args)
             # The same service `/sites` uses, so the metric filters run before
             # pagination here too and an agent sees exactly what the list shows.
+            mission_filtered = bool(
+                search_args.has_mission
+                or search_args.mission_status
+                or search_args.provider
+                or search_args.payload_type
+            )
+            site_ids = (
+                await mission_service.site_ids_with_missions(
+                    session,
+                    statuses=search_args.mission_status,
+                    provider=search_args.provider,
+                    payload_types=search_args.payload_type,
+                )
+                if mission_filtered
+                else None
+            )
             listing = await site_service.list_with_summaries(
                 session,
+                kind=None if search_args.kind == "all" else search_args.kind,
+                site_ids=site_ids,
                 q=search_args.q,
                 region=search_args.region,
                 lat_min=search_args.lat_min,
@@ -367,6 +414,7 @@ async def execute(session: Session, name: str, raw_args: dict[str, Any], seq: in
                     "site_id": site.id,
                     "name": site.name,
                     "lat_deg": site.lat_deg,
+                    "kind": site.kind,
                     "summary": _summary(listing.summaries.get(site.id)),
                 }
                 for site in listing.sites
