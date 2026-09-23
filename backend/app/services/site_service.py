@@ -345,7 +345,13 @@ def _tolerances(r: Any) -> dict[str, Any]:
     def rnd(v: float | None) -> float | None:
         return round(v, 1) if v is not None else None
 
+    sun_disc = timeline.disc_bounds(r.sun)
+    earth_disc = timeline.disc_bounds(r.earth)
     return {
+        "sunlit_full_disc_s": round(sun_disc.full_disc_s, 1),
+        "sunlit_any_limb_s": round(sun_disc.any_limb_s, 1),
+        "earth_contact_full_disc_s": round(earth_disc.full_disc_s, 1),
+        "earth_contact_any_limb_s": round(earth_disc.any_limb_s, 1),
         "sunlit_tolerance_s": rnd(sun.total_s),
         "earth_contact_tolerance_s": rnd(earth.total_s),
         "longest_dark_tolerance_s": rnd(sun.longest_down_s),

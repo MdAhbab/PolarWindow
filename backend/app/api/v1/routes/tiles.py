@@ -90,3 +90,16 @@ async def get_tile(
             "X-Tile-Note": tile_service.TILE_NOTE,
         },
     )
+
+
+# The brief's contract spells the path without a suffix. Both spellings serve
+# the same tile; the suffixed one stays the canonical URL the frontend uses.
+router.add_api_route(
+    "/{layer}/{z}/{x}/{y}",
+    get_tile,
+    methods=["GET"],
+    name="get_tile_unsuffixed",
+    summary="Same tile as the .png route, for clients that omit the suffix",
+    response_class=Response,
+    responses={200: {"content": {"image/png": {}}}, 204: {"description": "No data here."}},
+)

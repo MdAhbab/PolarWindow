@@ -309,6 +309,240 @@
         }
       }
     },
+    "/api/v1/missions": {
+      "get": {
+        "tags": [
+          "missions"
+        ],
+        "summary": "List CLPS missions",
+        "operationId": "list_missions_api_v1_missions_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "planned",
+                      "in_transit",
+                      "operating",
+                      "completed",
+                      "partial_success",
+                      "landing_failed",
+                      "lost_before_landing",
+                      "cancelled",
+                      "reassigned"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Any of these statuses.",
+              "title": "Status"
+            },
+            "description": "Any of these statuses."
+          },
+          {
+            "name": "provider",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Provider"
+            }
+          },
+          {
+            "name": "payload_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "volatiles",
+                      "geology_geophysics",
+                      "heat_flow",
+                      "radiation_space_weather",
+                      "exosphere_dust",
+                      "imaging",
+                      "landing_navigation",
+                      "communications",
+                      "laser_retroreflector",
+                      "rover_mobility",
+                      "technology_demo",
+                      "other"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Missions carrying at least one payload of any of these types.",
+              "title": "Payload Type"
+            },
+            "description": "Missions carrying at least one payload of any of these types."
+          },
+          {
+            "name": "region",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "south_polar, nearside, farside, polar_other",
+              "title": "Region"
+            },
+            "description": "south_polar, nearside, farside, polar_other"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Landing (else launch) on or after.",
+              "title": "From"
+            },
+            "description": "Landing (else launch) on or after."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Landing (else launch) on or before.",
+              "title": "To"
+            },
+            "description": "Landing (else launch) on or before."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Substring of name, provider, target or task order.",
+              "title": "Q"
+            },
+            "description": "Substring of name, provider, target or task order."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MissionList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/missions/{mission_id}": {
+      "get": {
+        "tags": [
+          "missions"
+        ],
+        "summary": "One mission, fully sourced",
+        "operationId": "get_mission_api_v1_missions__mission_id__get",
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Mission slug, e.g. `im-2`.",
+              "title": "Mission Id"
+            },
+            "description": "Mission slug, e.g. `im-2`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MissionDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/sites/{site_id}/timeline": {
       "get": {
         "tags": [
@@ -711,240 +945,6 @@
         }
       }
     },
-    "/api/v1/missions": {
-      "get": {
-        "tags": [
-          "missions"
-        ],
-        "summary": "List CLPS missions",
-        "operationId": "list_missions_api_v1_missions_get",
-        "parameters": [
-          {
-            "name": "status",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "array",
-                  "items": {
-                    "enum": [
-                      "planned",
-                      "in_transit",
-                      "operating",
-                      "completed",
-                      "partial_success",
-                      "landing_failed",
-                      "lost_before_landing",
-                      "cancelled",
-                      "reassigned"
-                    ],
-                    "type": "string"
-                  }
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Any of these statuses.",
-              "title": "Status"
-            },
-            "description": "Any of these statuses."
-          },
-          {
-            "name": "provider",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Provider"
-            }
-          },
-          {
-            "name": "payload_type",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "array",
-                  "items": {
-                    "enum": [
-                      "volatiles",
-                      "geology_geophysics",
-                      "heat_flow",
-                      "radiation_space_weather",
-                      "exosphere_dust",
-                      "imaging",
-                      "landing_navigation",
-                      "communications",
-                      "laser_retroreflector",
-                      "rover_mobility",
-                      "technology_demo",
-                      "other"
-                    ],
-                    "type": "string"
-                  }
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Missions carrying at least one payload of any of these types.",
-              "title": "Payload Type"
-            },
-            "description": "Missions carrying at least one payload of any of these types."
-          },
-          {
-            "name": "region",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "south_polar, nearside, farside, polar_other",
-              "title": "Region"
-            },
-            "description": "south_polar, nearside, farside, polar_other"
-          },
-          {
-            "name": "from",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Landing (else launch) on or after.",
-              "title": "From"
-            },
-            "description": "Landing (else launch) on or after."
-          },
-          {
-            "name": "to",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Landing (else launch) on or before.",
-              "title": "To"
-            },
-            "description": "Landing (else launch) on or before."
-          },
-          {
-            "name": "q",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Substring of name, provider, target or task order.",
-              "title": "Q"
-            },
-            "description": "Substring of name, provider, target or task order."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MissionList"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/missions/{mission_id}": {
-      "get": {
-        "tags": [
-          "missions"
-        ],
-        "summary": "One mission, fully sourced",
-        "operationId": "get_mission_api_v1_missions__mission_id__get",
-        "parameters": [
-          {
-            "name": "mission_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "Mission slug, e.g. `im-2`.",
-              "title": "Mission Id"
-            },
-            "description": "Mission slug, e.g. `im-2`."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MissionDetail"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/compare": {
       "post": {
         "tags": [
@@ -1049,6 +1049,80 @@
           },
           "404": {
             "description": "Unknown layer, or z/x/y outside the tile scheme."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tiles/{layer}/{z}/{x}/{y}": {
+      "get": {
+        "tags": [
+          "tiles"
+        ],
+        "summary": "Same tile as the .png route, for clients that omit the suffix",
+        "operationId": "get_tile_unsuffixed_api_v1_tiles__layer___z___x___y__get",
+        "parameters": [
+          {
+            "name": "layer",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "One of hillshade, illumination, psr.",
+              "title": "Layer"
+            },
+            "description": "One of hillshade, illumination, psr."
+          },
+          {
+            "name": "z",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 7,
+              "minimum": 0,
+              "title": "Z"
+            }
+          },
+          {
+            "name": "x",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "title": "X"
+            }
+          },
+          {
+            "name": "y",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "title": "Y"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "image/png": {}
+            }
+          },
+          "204": {
+            "description": "No data here."
           },
           "422": {
             "description": "Validation Error",
@@ -1354,6 +1428,86 @@
         ],
         "title": "AdviseRequest"
       },
+      "AgentMeta": {
+        "properties": {
+          "computed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Computed At"
+          },
+          "resolution": {
+            "$ref": "#/components/schemas/AgentResolution"
+          },
+          "uncertainty": {
+            "$ref": "#/components/schemas/AgentUncertainty"
+          },
+          "engine_version": {
+            "type": "string",
+            "title": "Engine Version"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "agents_configured": {
+            "type": "boolean",
+            "title": "Agents Configured",
+            "description": "False without an API key or under OFFLINE=1."
+          },
+          "offline": {
+            "type": "boolean",
+            "title": "Offline"
+          },
+          "notice": {
+            "type": "string",
+            "title": "Notice"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "computed_at",
+          "resolution",
+          "uncertainty",
+          "engine_version",
+          "model",
+          "agents_configured",
+          "offline",
+          "notice"
+        ],
+        "title": "AgentMeta",
+        "description": "The shared `meta` envelope for agent answers and the run log."
+      },
+      "AgentResolution": {
+        "properties": {
+          "time_step_s": {
+            "type": "integer",
+            "title": "Time Step S"
+          },
+          "azimuth_deg": {
+            "type": "number",
+            "title": "Azimuth Deg"
+          },
+          "ephemeris": {
+            "type": "string",
+            "title": "Ephemeris"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "time_step_s",
+          "azimuth_deg",
+          "ephemeris",
+          "source"
+        ],
+        "title": "AgentResolution",
+        "description": "What the answer's numbers were computed at: those of the tools it called."
+      },
       "AgentResponse": {
         "properties": {
           "status": {
@@ -1446,16 +1600,15 @@
             "description": "Guards that fired, including ones a retry then fixed. Kept so the guard can be shown working rather than asserted to exist."
           },
           "meta": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Meta"
+            "$ref": "#/components/schemas/AgentMeta"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
           "status",
-          "run_status"
+          "run_status",
+          "meta"
         ],
         "title": "AgentResponse",
         "description": "Shared envelope for all four agents.\n\n`provenance` is produced by the grounding guard, not by the model, and is\nnot optional. It is the artifact that makes the guard demonstrable rather\nthan merely claimed."
@@ -1468,12 +1621,16 @@
             },
             "type": "array",
             "title": "Items"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/AgentMeta"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "items"
+          "items",
+          "meta"
         ],
         "title": "AgentRunList"
       },
@@ -1554,6 +1711,29 @@
           "tool_calls"
         ],
         "title": "AgentRunView"
+      },
+      "AgentUncertainty": {
+        "properties": {
+          "grounded": {
+            "type": "boolean",
+            "title": "Grounded",
+            "description": "Every number in the answer traced to a tool result (always true for an answer that is shown; a failed check replaces the text with the measurements)."
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "grounded",
+          "notes"
+        ],
+        "title": "AgentUncertainty"
       },
       "Arc": {
         "properties": {
@@ -2674,6 +2854,24 @@
             "type": "boolean",
             "title": "Worst Compound Open"
           },
+          "sunlit_full_disc_s": {
+            "type": "number",
+            "title": "Sunlit Full Disc S",
+            "description": "Time the whole solar disc was above the skyline (lower bound on sunlit_s; sampled at the timeline step). sunlit_s times the disc centre."
+          },
+          "sunlit_any_limb_s": {
+            "type": "number",
+            "title": "Sunlit Any Limb S",
+            "description": "Time any part of the solar disc was above the skyline (upper bound)."
+          },
+          "earth_contact_full_disc_s": {
+            "type": "number",
+            "title": "Earth Contact Full Disc S"
+          },
+          "earth_contact_any_limb_s": {
+            "type": "number",
+            "title": "Earth Contact Any Limb S"
+          },
           "sunlit_tolerance_s": {
             "type": "number",
             "title": "Sunlit Tolerance S",
@@ -2739,6 +2937,10 @@
           "longest_dark_open",
           "longest_blackout_open",
           "worst_compound_open",
+          "sunlit_full_disc_s",
+          "sunlit_any_limb_s",
+          "earth_contact_full_disc_s",
+          "earth_contact_any_limb_s",
           "sunlit_tolerance_s",
           "earth_contact_tolerance_s",
           "longest_dark_tolerance_s",

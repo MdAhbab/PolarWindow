@@ -298,6 +298,15 @@ class MetricsResponse(BaseModel):
         description="As `longest_dark_open`, for `longest_blackout_s`."
     )
     worst_compound_open: bool
+    sunlit_full_disc_s: float = Field(
+        description="Time the whole solar disc was above the skyline (lower bound on sunlit_s; "
+        "sampled at the timeline step). sunlit_s times the disc centre."
+    )
+    sunlit_any_limb_s: float = Field(
+        description="Time any part of the solar disc was above the skyline (upper bound)."
+    )
+    earth_contact_full_disc_s: float
+    earth_contact_any_limb_s: float
     sunlit_tolerance_s: float = Field(
         description="Timing uncertainty of the sunlit total: every skyline crossing's edge "
         "tolerance, added in quadrature. Seconds."

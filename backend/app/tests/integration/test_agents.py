@@ -463,3 +463,12 @@ async def test_get_site_lists_its_missions_without_masses(client) -> None:
     assert missions, "Mons Mouton is the target of several CLPS missions"
     for m in missions:
         assert set(m) == {"id", "name", "provider", "status", "landing", "payload_types"}
+
+
+async def test_agent_meta_is_complete(client) -> None:
+    """Every response carries computed_at, resolution and uncertainty, agents included."""
+    body = (await client.post(f"{API}/agents/explain", json={"site_id": SITE})).json()
+    runs = (await client.get(f"{API}/agents/runs?limit=1")).json()
+    for meta in (body["meta"], runs["meta"]):
+        assert meta["computed_at"] and meta["resolution"]["time_step_s"] > 0
+        assert meta["uncertainty"]["notes"]

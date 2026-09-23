@@ -95,7 +95,43 @@ class AgentResponse(BaseModel):
         description="Guards that fired, including ones a retry then fixed. Kept so the "
         "guard can be shown working rather than asserted to exist.",
     )
-    meta: dict[str, Any] = Field(default_factory=dict)
+    meta: AgentMeta
+
+
+class AgentResolution(BaseModel):
+    """What the answer's numbers were computed at: those of the tools it called."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    time_step_s: int
+    azimuth_deg: float
+    ephemeris: str
+    source: str
+
+
+class AgentUncertainty(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    grounded: bool = Field(
+        description="Every number in the answer traced to a tool result (always true for an "
+        "answer that is shown; a failed check replaces the text with the measurements)."
+    )
+    notes: list[str]
+
+
+class AgentMeta(BaseModel):
+    """The shared `meta` envelope for agent answers and the run log."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    computed_at: datetime
+    resolution: AgentResolution
+    uncertainty: AgentUncertainty
+    engine_version: str
+    model: str
+    agents_configured: bool = Field(description="False without an API key or under OFFLINE=1.")
+    offline: bool
+    notice: str
 
 
 class AgentRunView(BaseModel):
@@ -118,3 +154,4 @@ class AgentRunList(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     items: list[AgentRunView]
+    meta: AgentMeta

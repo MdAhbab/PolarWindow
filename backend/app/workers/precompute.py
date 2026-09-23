@@ -25,16 +25,8 @@ import numpy as np
 from app.config import ENGINE_VERSION, get_settings
 from app.core import spice
 from app.core.horizon import SMOOTH_SPHERE_PRODUCT, HorizonMask, build_mask, smooth_mask
-from app.core.projections import geographic_to_polar
-from app.data.lola import (
-    LDEM_80S_20M,
-    LDEM_80S_80M,
-    DemTile,
-    DemUnavailable,
-    fetch_full,
-    fetch_window_async,
-    make_samplers,
-)
+from app.data.ingest_lola import ensure_fine_dem, ensure_regional_dem
+from app.data.lola import DemTile, make_samplers
 from app.db.repositories.metrics import WindowMetricsRecord, WindowMetricsRepository
 from app.db.repositories.sites import MaskRepository, SiteRecord, SiteRepository
 from app.db.session import dispose_engine, session_scope
@@ -47,35 +39,8 @@ log = logging.getLogger("precompute")
 # ---------------------------------------------------------------------------
 
 
-def ensure_regional_dem() -> DemTile:
-    s = get_settings()
-    path = s.regional_dem_path
-    if not path.exists():
-        log.info("fetching the regional 80 m DEM (about 115 MB, once)")
-        fetch_full(LDEM_80S_80M, path)
-    return DemTile.load(path)
-
-
-async def ensure_fine_dem(site_id: str, lat_deg: float, lon_deg: float) -> DemTile | None:
-    """Fetch the 20 m window around a site if it is not already on disk.
-
-    Returns ``None`` -- rather than raising -- when the fetch fails. A site
-    without its fine window still gets a mask from the 80 m regional tile; it is
-    simply a coarser one, and the coverage figure and ``meta.uncertainty`` say
-    so. Failing the whole seed because one PDS request timed out would be the
-    wrong trade.
-    """
-    s = get_settings()
-    path = s.fine_dem_path(site_id)
-    if path.exists():
-        return DemTile.load(path)
-    x, y = geographic_to_polar(np.array([lon_deg]), np.array([lat_deg]))
-    try:
-        await fetch_window_async(LDEM_80S_20M, float(x[0]), float(y[0]), s.fine_dem_radius_m, path)
-    except DemUnavailable as exc:
-        log.warning("  %s: fine DEM unavailable (%s); falling back to 80 m", site_id, exc)
-        return None
-    return DemTile.load(path)
+# ensure_regional_dem / ensure_fine_dem live in app.data.ingest_lola, which
+# also owns the offline refusal; they are imported above.
 
 
 # ---------------------------------------------------------------------------

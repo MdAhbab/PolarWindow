@@ -8,6 +8,7 @@ make a working guard look like a broken service.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, Query
@@ -55,15 +56,38 @@ def _envelope(outcome: AgentOutcome, s: Settings) -> dict[str, Any]:
         "attempts": outcome.attempts,
         "latency_ms": round(outcome.latency_ms, 1),
         "guard_failures": outcome.guard_failures,
-        "meta": {
-            "engine_version": ENGINE_VERSION,
-            "model": s.agent_model,
-            "agents_configured": s.agents_enabled,
-            "notice": (
-                "Every number in this answer is checked against the tool results that "
-                "produced it. Numbers that do not trace to a measurement are rejected."
-            ),
+        "meta": agent_meta(s),
+    }
+
+
+def agent_meta(s: Settings) -> dict[str, Any]:
+    """The `meta` block every agent response and the run log carry."""
+    notes = [
+        "Numbers come only from the tools the agent called; the model computes none.",
+        "A number that does not trace to a tool result is rejected; after one failed "
+        "repair the answer is replaced by a summary built from the measurements.",
+    ]
+    if s.offline:
+        notes.append("OFFLINE=1: the model is not called; answers come from the measurements.")
+    elif not s.gemini_api_key:
+        notes.append("No model API key is configured; answers come from the measurements.")
+    return {
+        "computed_at": datetime.now(UTC),
+        "resolution": {
+            "time_step_s": s.default_step_s,
+            "azimuth_deg": s.azimuth_step_deg,
+            "ephemeris": "de440 + moon_pa_de440 (MOON_ME)",
+            "source": "tool results of this run",
         },
+        "uncertainty": {"grounded": True, "notes": notes},
+        "engine_version": ENGINE_VERSION,
+        "model": s.agent_model,
+        "agents_configured": s.agents_enabled,
+        "offline": s.offline,
+        "notice": (
+            "Every number in this answer is checked against the tool results that "
+            "produced it. Numbers that do not trace to a measurement are rejected."
+        ),
     }
 
 
@@ -141,4 +165,7 @@ async def runs(
     """
     from app.services.agent_log import recent_runs
 
-    return {"items": await recent_runs(session, limit=limit, agent=agent)}
+    return {
+        "items": await recent_runs(session, limit=limit, agent=agent),
+        "meta": agent_meta(deps.settings()),
+    }

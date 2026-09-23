@@ -27,11 +27,8 @@ install: ## Install backend and frontend dependencies
 kernels: ## Download and verify the SPICE kernels by sha256 (~130 MB, once; refuses under OFFLINE=1)
 	cd $(BE) && $(UV) run polar-kernels fetch
 
-dem: ## Fetch the regional LOLA elevation model (~115 MB, once)
-	cd $(BE) && $(UV) run python -c "\
-from pathlib import Path; from app.data.lola import LDEM_80S_80M, fetch_full; \
-import logging; logging.basicConfig(level=logging.INFO, format='%(message)s'); \
-print(fetch_full(LDEM_80S_80M, Path('../$(DATA)/dem/regional_80m.npz')))"
+dem: ## Fetch the regional LOLA elevation model (~115 MB, once; refuses under OFFLINE=1)
+	cd $(BE) && $(UV) run python -m app.data.ingest_lola regional
 
 sites: dem ## Resolve candidate sites against the elevation model
 	cd $(BE) && $(UV) run python -m app.data.ingest_sites \
@@ -42,9 +39,10 @@ missions: migrate ## Load the cited CLPS mission list and create target sites (A
 
 seed: kernels sites migrate missions ## Everything the API needs before it can answer
 	cd $(BE) && $(UV) run python -m app.workers.precompute
+	$(MAKE) tiles
 
-tiles: ## Pre-render the map tile pyramid (ADR-4)
-	cd $(BE) && $(UV) run python -m app.data.render_tiles 5
+tiles: ## Pre-render the map tile pyramid z0-z5 (ADR-4)
+	cd $(BE) && $(UV) run python -m app.data.ingest_lola tiles --max-zoom 5
 
 # --- services --------------------------------------------------------------
 

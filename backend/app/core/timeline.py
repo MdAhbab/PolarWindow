@@ -254,3 +254,36 @@ def metric_tolerance(track: BodyTrack) -> MetricTolerance:
         longest_down_s=None if grazing else float(track.arc_tolerance_s[i]),
         longest_down_grazing=grazing,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class DiscBounds:
+    """Time the body's disc was fully clear, and time any of it was clear.
+
+    The four numbers time the *centre* of the disc crossing the skyline, which
+    is what "the Sun is up" usually means. The Sun is 0.27 deg across and Earth
+    about 0.9 deg, so part of the disc can be above the skyline while the
+    centre is below, and the other way round. These two figures bracket the
+    headline number: full disc (lower bound) and any limb (upper bound). They
+    are sample-based at the timeline step, not bisected like the crossings.
+    """
+
+    full_disc_s: float
+    any_limb_s: float
+
+
+def disc_bounds(track: BodyTrack) -> DiscBounds:
+    """Trapezoid-weighted time in state 2 (clear) and state >= 1 (any limb)."""
+    t = track.t_s
+    if t.size < 2:
+        return DiscBounds(0.0, 0.0)
+    w = np.empty(t.size, dtype=np.float64)
+    dt = np.diff(t)
+    w[0] = dt[0] / 2.0
+    w[-1] = dt[-1] / 2.0
+    w[1:-1] = (dt[:-1] + dt[1:]) / 2.0
+    state = np.asarray(track.state)
+    return DiscBounds(
+        full_disc_s=float(np.sum(w[state == 2])),
+        any_limb_s=float(np.sum(w[state >= 1])),
+    )
