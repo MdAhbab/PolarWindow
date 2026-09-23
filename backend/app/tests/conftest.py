@@ -65,21 +65,22 @@ def settings():
     return get_settings()
 
 
+#: The unpatched model call, kept so ``gemini_http`` can put it back.
+_REAL: dict[str, object] = {}
+
+
 @pytest.fixture(autouse=True)
 def no_live_gemini(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     """No test may reach a real model provider. Enforced at the transport seam.
 
-    Blanking the API key is not sufficient, and finding that out was instructive:
-    a test that set a fake key sent a real request to
-    generativelanguage.googleapis.com and got back a 400. `respx` could not
-    intercept it because google-genai's sync client runs inside
-    `asyncio.to_thread`, so the patched transport in the main thread never saw
-    it.
-
-    So the block is placed at `app.agents.base._generate` -- our own documented
-    boundary -- where it holds regardless of what the SDK does underneath. A
-    test that wants to exercise the loop overrides it explicitly with
-    `fake_gemini`, which is visible in the test body.
+    Blanking the API key is not sufficient: a test that set a fake key once
+    sent a real request to generativelanguage.googleapis.com. So the block sits
+    at `app.agents.base._generate`, our own documented boundary, where it holds
+    whatever the SDK does underneath. Tests that exercise the loop override it
+    explicitly: `fake_gemini` scripts `_generate` itself, and `gemini_http`
+    restores the real call and scripts the HTTP responses with respx (the SDK's
+    async client speaks httpx, so respx sees it), with every other request
+    refused.
 
     With no key the stand-in behaves exactly as the real transport does and
     raises `GeminiUnavailable`, so the "not configured" path is the one under
@@ -91,6 +92,8 @@ def no_live_gemini(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
 
     from app.agents import base
     from app.config import get_settings
+
+    _REAL.setdefault("generate", base._generate)
 
     async def blocked(*_args: object, **_kwargs: object) -> dict:
         if not get_settings().gemini_api_key:
@@ -294,3 +297,42 @@ async def client() -> AsyncIterator:
         app.router.lifespan_context(app),
     ):
         yield c
+
+
+GEMINI_URL = r"https://generativelanguage\.googleapis\.com/.*:generateContent"
+
+
+@pytest.fixture
+def gemini_http(monkeypatch: pytest.MonkeyPatch) -> Iterator:
+    """Script Gemini at the HTTP layer, through the real SDK (ADR-3 amendment).
+
+    Yields ``(script, route)``: ``script(*responses)`` queues
+    ``httpx.Response`` objects or exceptions, one per model request, the last
+    repeating; ``route.calls`` holds the requests actually sent. Any request
+    that is not a generateContent call fails the test.
+    """
+    import respx
+
+    from app.agents import base
+    from app.config import get_settings
+
+    monkeypatch.setattr(base, "_generate", _REAL["generate"])
+    monkeypatch.setenv("PW_GEMINI_API_KEY", "test-key")
+    get_settings.cache_clear()
+    import httpx
+
+    queue: list[httpx.Response | BaseException] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        item = queue.pop(0) if len(queue) > 1 else queue[0]
+        if isinstance(item, BaseException):
+            raise item
+        return item
+
+    def script(*responses: httpx.Response | BaseException) -> None:
+        queue[:] = list(responses)
+
+    with respx.mock(assert_all_mocked=True, assert_all_called=False) as rx:
+        route = rx.post(url__regex=GEMINI_URL).mock(side_effect=respond)
+        yield script, route
+    get_settings.cache_clear()

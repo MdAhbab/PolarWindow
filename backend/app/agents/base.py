@@ -129,6 +129,9 @@ async def _generate(
     config: dict[str, Any] = {
         "system_instruction": system_prompt,
         "max_output_tokens": s.agent_max_output_tokens,
+        # The loop in run_agent executes tools itself, bounded and logged; the
+        # SDK must never call anything on its own.
+        "automatic_function_calling": gt.AutomaticFunctionCallingConfig(disable=True),
     }
     # Gemini 3 models are tuned for their default temperature; lowering it is
     # documented to cause looping in agentic use. Only set it when configured.

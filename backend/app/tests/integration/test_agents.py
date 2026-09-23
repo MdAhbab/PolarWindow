@@ -1,8 +1,9 @@
 """Agent orchestration: guard retries, degradation, and the run log.
 
-No test reaches the real Gemini API. `respx` intercepts the SDK's HTTP
-transport, and `conftest.no_live_gemini` blanks the key so a forgotten mock
-fails loudly rather than costing money and flaking.
+No test reaches the real Gemini API. These tests script the model at
+`app.agents.base._generate` (`fake_gemini`), which exercises the loop's logic
+quickly; `test_agents_http.py` keeps the real SDK in the path and scripts the
+HTTP responses with respx. `conftest.no_live_gemini` blocks everything else.
 
 The scripted responses below are the interesting cases, not the happy path:
 a hallucinated number, a schema violation, a timeout, a total outage. The happy
@@ -16,15 +17,11 @@ from typing import Any
 
 import httpx
 import pytest
-import respx
 
 pytestmark = [pytest.mark.requires_db, pytest.mark.requires_kernels, pytest.mark.asyncio]
 
 API = "/api/v1"
 SITE = "connecting-ridge"
-GEMINI = respx.patterns.M(
-    host__in=["generativelanguage.googleapis.com", "aiplatform.googleapis.com"]
-)
 
 
 def gemini_text(payload: dict[str, Any]) -> httpx.Response:
