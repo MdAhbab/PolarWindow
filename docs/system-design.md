@@ -1,7 +1,8 @@
 # POLAR WINDOW — System Design
 
-Status: accepted for the hackathon build (M1–M8).
-Author: backend/architecture pass, 2026-09-18.
+Status: accepted for the hackathon build (M1–M8); **extended 2026-09-23 for the
+CLPS-first scope (contract v2, §10)**.
+Author: backend/architecture pass, 2026-09-18; CLPS pass, 2026-09-23.
 Scope: everything behind `frontend/`. The frontend's visual design is fixed and
 out of scope; its *data source* is what changes.
 
@@ -65,6 +66,7 @@ system.
 | F7 | Terrain hillshade + illumination raster tiles | `GET /tiles/...` |
 | F8 | Four grounded LLM agents over the above | `POST /agents/*` |
 | F9 | Liveness + kernel-loaded readiness | `GET /healthz` |
+| F10–F14 | CLPS missions, payloads, targets, calendar — see §10.2 | `GET /missions`, `GET /missions/{id}`, `GET /sites/{id}/calendar` |
 
 ### Non-functional
 
@@ -204,6 +206,7 @@ in the adapter, once.
 └────────────────────────────────────────────────────┘
    UNIQUE (site_id, engine_version, azimuth_count)
 
+NOT BUILT — superseded by the on-demand calendar (§10.6, ADR-1 amendment 2026-09-23).
 ┌────────────────────────────────────────────────────┐
 │ visibility_tables    — the COARSE precomputed layer│
 ├────────────────────────────────────────────────────┤
@@ -428,8 +431,8 @@ answer.
 UI's uncertain state exists for exactly this.
 
 #### `GET /api/v1/sites/{id}`
-Adds `horizon_summary` (`max_el_deg`, `max_el_bearing_deg`, `mean_el_deg`,
-`dem_coverage`) and the full provenance block.
+Adds `horizon` (`max_el_deg`, `max_el_bearing_deg`, `mean_el_deg`,
+`coverage`, `dem_product`) and the full `provenance` block.
 
 #### `GET /api/v1/sites/{id}/horizon`
 Query: `step_deg` (0.25 | 0.5 | 1.0, default 1.0 — the frontend draws 360 points).
@@ -446,7 +449,7 @@ Query: `start`, `end`, `step_s` (300…7200, default 900), `bodies` (default bot
 This is the date-slider endpoint and the one N1 is about.
 ```jsonc
 { "site_id": "...", "start": "...", "end": "...", "step_s": 900,
-  "t": [ 0, 900, 1800, ... ],            // seconds from `start`, int32
+  "t_s": [ 0, 900, 1800, ... ],          // seconds from `start`, int32
   "sun":   { "az_deg": [...], "el_deg": [...], "mask_el_deg": [...],
              "margin_deg": [...], "state": [2,2,1,0,...] },   // 2 lit 1 penumbral 0 dark
   "earth": { ... },
@@ -479,7 +482,7 @@ The four numbers, and nothing that dilutes them.
   "longest_dark_s": 230400, "longest_blackout_s": 928800,
   "sun_fraction_up": 0.80, "earth_fraction_up": 0.35,
   "worst_compound_s": 41400,
-  "autonomy": { "required_s": 49680, "survival_needed_s": 230400,
+  "autonomy": { "required_autonomy_s": 49680, "survival_needed_s": 230400,
                 "compound_inside_dark": true },
   "meta": {...} }
 ```
@@ -573,10 +576,12 @@ Point 4 is the counter-intuitive one and it is deliberate. Cancellation is a
 client-side *bandwidth and render* optimisation, not a server-side *compute*
 optimisation.
 
-**Precompute tier.** The coarse `visibility_tables` (1 h step, whole demo year)
-answer `/sites` list summaries and `/compare` ranking instantly, with
-`meta.resolution.time_step_s = 3600` stated. Fine timelines (900 s or better)
-are computed on demand. ADR-1 argues the resolution choice.
+**Precompute tier.** As built, the worker precomputes masks and one reference
+window's four numbers per site (`site_window_metrics`, 900 s step), which answer
+`/sites` list summaries. The coarse `visibility_tables` tier was never built:
+measured on-demand timelines (p50 12.5 ms cold for 708 h at 900 s) made it
+unnecessary. Long spans for the date picker are served by the calendar (§10.6)
+at 3600 s on demand, Redis-cached. ADR-1 (amended) argues the resolution choice.
 
 ---
 
@@ -589,7 +594,7 @@ are computed on demand. ADR-1 argues the resolution choice.
 | Redis down | Latency only | Cache and single-flight become no-ops behind a `try/except`. `meta.cache = "bypass"`. |
 | Postgres down | Total | 503. No fallback; sites and masks live there. |
 | Gemini down / slow | Agents only | 20 s timeout → 1 retry → deterministic template summary built from the same tool outputs, `status="degraded"`. Every other endpoint is unaffected. |
-| Grounding guard rejects twice | That agent call | `status="insufficient_data"` with the offending numbers listed. **Never** falls through to rendering the ungrounded text. |
+| Grounding guard rejects twice | That agent call | `status="guard_rejected"`, the offending numbers listed in `agent_runs.guard_failures`, and the deterministic summary returned in place of the model text. **Never** falls through to rendering the ungrounded text. |
 | Worker never ran | Coarse layer | `summary: null`, UI uncertain state. Fine timelines still work — they do not depend on the precompute. |
 
 ---
@@ -623,9 +628,12 @@ point ADR-4's answer flips.
 
 1. The demo window is 2027 (the frontend's `MODEL_EPOCH` is 2027-03-14), so
    kernel coverage must include it — de440 does, comfortably.
-2. Selenographic coordinates in `sites.py` are centre-of-feature, not a surveyed
-   landing ellipse. `source_note` records this per site; nothing in the product
-   should imply metre-level siting.
+2. Candidate-site coordinates are **derived from the DEM** by
+   `data/ingest_sites.py` (IAU feature centre as anchor; the most open-skied
+   landable post in the top elevation decile of a stated ring or disc).
+   CLPS mission targets use the **published** coordinate as-is (§10.4).
+   `source_note` records the rule per site; nothing in the product should imply
+   metre-level siting.
 3. "Earth contact" means **geometric line of sight to Earth's centre above the
    local skyline**. No link budget, no antenna pattern, no DSN scheduling. The
    copy must say "direct-to-Earth geometry", never "comms availability", and the
@@ -633,3 +641,316 @@ point ADR-4's answer flips.
 4. The frontend's `SURVIVAL_LIMIT_H = 120` stays a client-side, clearly-labelled
    placeholder. The backend returns durations and refuses to return verdicts,
    because a verdict needs a thermal model this system does not have.
+
+---
+
+## 10. The CLPS scope (contract v2, 2026-09-23)
+
+The challenge is **CLPS Lunar Mission Browser**. Everything in §1–§9 answers
+"what do Sun, Earth and terrain do at a south-pole site over a window". v2 puts
+**CLPS missions** in front of that engine. A mission is the entry point, and the
+engine judges its target and its dates. The 15 derived candidate sites become the
+alternatives a mission is compared against. Nothing in §1–§9 is removed; v2 is
+additive, and every v1 response keeps its shape.
+
+### 10.1 Information architecture
+
+```
+/missions  (home)
+  ├─ lunar map: global view + south-polar inset over LOLA hillshade
+  ├─ programme timeline 2024 →, linked to the map
+  └─ filters: payload instrument type · status · provider · region
+        │
+        ▼
+/missions/:id
+  ├─ record: provider · lander · task order · dates (+precision) · status · outcome
+  ├─ payload manifest, a source on every row, "unconfirmed" where unsourced
+  └─ "Sun & Earth at this target"  (the linked site, window = surface window)
+        ├─ four numbers + two-clock ring   → /clocks   (existing, unchanged)
+        ├─ shift the date: window picker + month strip (calendar, §10.6)
+        ├─ compare with nearby candidates  → /compare  (existing, seeded)
+        └─ skyline / blackout / report     → /horizon /blackout /report
+```
+
+The existing screens do not change their design. They gain one entry path (from
+a mission) and one capability (a movable window).
+
+### 10.2 Requirements added
+
+| # | Requirement | Served by |
+|---|---|---|
+| F10 | List and filter every CLPS delivery: status, provider, payload instrument type, region, date range, text | `GET /missions` |
+| F11 | One mission with payloads, sources, unconfirmed fields, landing ellipse, surface window and linked site | `GET /missions/{id}` |
+| F12 | The four numbers at a mission's target over its surface window | `GET /sites/{target}/metrics` (existing) |
+| F13 | Sun/Earth fractions and longest gaps per day or month over a span of up to 730 days | `GET /sites/{id}/calendar` |
+| F14 | Agents answer mission questions through the same six tools | `get_site`, `search_sites` (extended) |
+
+| # | Target | Why |
+|---|---|---|
+| N7 | `GET /missions` p95 < 50 ms warm | It is the home screen; the payload filter re-queries on every change. All from Postgres, no compute. |
+| N8 | Mission data needs no network at runtime | Offline demo rule. `missions.json` is committed and ingested at seed time; nothing is scraped live (ADR-5). |
+| N9 | Calendar ≤ 150 ms cold for 365 days at 3600 s | 8,760 samples ≈ 3× the 708 h/900 s timeline measured at p50 12.5 ms cold. |
+
+### 10.3 Data model
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ missions                                                 │
+├──────────────────────────────────────────────────────────┤
+│ id                 text PK   'im-2'                      │
+│ name               text      'IM-2'                      │
+│ vehicle_name       text?     'Athena'                    │
+│ provider           text      'Intuitive Machines'        │
+│ lander             text      'Nova-C'                    │
+│ task_order         text?     as published                │
+│ status             text      enum, below                 │
+│ outcome_note       text      sourced prose, may be ''    │
+│ region             text      'south_polar'|'nearside'|'farside'|'polar_other'
+│ target_name        text                                   │
+│ target_lat_deg     float?    null ⇒ target not published │
+│ target_lon_deg     float?    0..360 east                 │
+│ coordinate_kind    text      'actual_landing'|'planned_target'
+│ ellipse_major_km   float?    semi-axes, if published     │
+│ ellipse_minor_km   float?                                │
+│ ellipse_azimuth_deg float?                               │
+│ launch_date        date?                                 │
+│ launch_precision   text      'day'|'month'|'quarter'|'year'
+│ landing_date       timestamptz?                          │
+│ landing_precision  text                                  │
+│ end_of_mission     timestamptz?  sourced, if it ended    │
+│ planned_surface_days float?                              │
+│ site_id            text? FK → sites   null until linked  │
+│ sources            jsonb  [{url,title,publisher,accessed}] ≥ 1
+│ unconfirmed_fields text[] field names with no source     │
+│ data_version       text   sha256 of the missions.json row│
+└──────────┬───────────────────────────────────────────────┘
+           │ 1:N
+┌──────────▼───────────────────────────────────────────────┐
+│ mission_payloads                                         │
+├──────────────────────────────────────────────────────────┤
+│ id            text PK   '<mission>/<slug>'               │
+│ mission_id    text FK → missions (ON DELETE CASCADE)     │
+│ name          text                                       │
+│ acronym       text?                                      │
+│ organisation  text?                                      │
+│ instrument_types text[]  controlled vocabulary, below    │
+│ purpose       text      one sentence, from the source    │
+│ source_url    text      required                         │
+│ unconfirmed   bool                                       │
+└──────────────────────────────────────────────────────────┘
+   GIN index on instrument_types (the payload filter)
+```
+
+**`status`**: `planned`, `in_transit`, `operating`, `completed`,
+`partial_success`, `landing_failed`, `lost_before_landing`, `cancelled`,
+`reassigned`. The enum states the category; `outcome_note` carries the nuance,
+sourced, so a tipped-over lander that returned data is never flattened to
+"success" or "failure".
+
+**`instrument_types`** (controlled vocabulary, assigned by us from each
+payload's sourced purpose; the assignment rule is in `docs/data-sources.md`):
+`volatiles`, `geology_geophysics`, `heat_flow`, `radiation_space_weather`,
+`exosphere_dust`, `imaging`, `landing_navigation`, `communications`,
+`laser_retroreflector`, `rover_mobility`, `technology_demo`, `other`.
+
+**`sites`** gains three columns, with defaults that leave the 15 existing rows,
+their masks and the golden fixtures untouched:
+
+| Column | Values | Default |
+|---|---|---|
+| `kind` | `candidate` \| `mission_target` | `candidate` |
+| `coordinate_rule` | `derived_open_sky` \| `published` | `derived_open_sky` |
+| `terrain_modelled` | bool | `true` |
+
+A mission target site has id `mission-<mission id>`, `anchor = target`,
+`search_kind = 'published'`, zero search radii and zero offset. One mission,
+one site, even when two missions share a region: their published coordinates
+differ, and so does their skyline.
+
+### 10.4 Coordinates and terrain coverage
+
+The LOLA polar products cover **80°S–90°S**. That boundary decides what a
+mission's numbers can claim.
+
+| Target | Horizon mask | `terrain_modelled` | What the UI says |
+|---|---|---|---|
+| lat ≤ −80° and a fine window fetches | Real ray-cast (20 m + 80 m), as for candidates | `true` | Normal states |
+| lat ≤ −80°, fine window missing | 80 m regional only, `coverage < 1` | `true` | Partial-coverage uncertainty (existing) |
+| lat > −80° (nearside, far side, mid-latitude) | **Curvature-only** mask: 0° on every bearing, `tol = 0`, `dem_product = "none (smooth sphere)"` | `false` | Uncertain state: "Terrain is not modelled outside 80°S; Sun and Earth are computed against a smooth Moon." |
+| No published target | No site | — | "Target not published", no numbers |
+
+A smooth-Moon horizon is not a fabricated number. The Sun and Earth vectors are
+still SPICE, the horizon is stated, and the flag travels in
+`meta.uncertainty.terrain_modelled` into every response for that site. At
+mid-latitudes the Sun climbs high enough that terrain rarely decides it. On the
+far side the result is categorical and real: Earth never rises, so Earth contact
+is 0 h and the mission needs a relay. The mask is **never** presented as terrain.
+
+Mission coordinates are **published, not derived**. The open-sky search in
+`ingest_sites.py` exists to turn a crater name into a landable point. A mission
+already has a point, and moving it would change the mission.
+
+### 10.5 Contract v2 endpoints
+
+#### `GET /api/v1/missions`
+Query: `status` (repeatable), `provider`, `payload_type` (repeatable, any-of),
+`region`, `from`, `to` (landing date), `q`, `limit`, `offset`.
+```jsonc
+{ "items": [ {
+    "id": "im-2", "name": "IM-2", "vehicle_name": "Athena",
+    "provider": "…", "lander": "…", "status": "…", "region": "south_polar",
+    "target": { "name": "…", "lat_deg": …, "lon_deg": …,
+                "coordinate_kind": "actual_landing" } | null,
+    "launch":  { "date": "…", "precision": "day" } | null,
+    "landing": { "date": "…", "precision": "day" } | null,
+    "payload_types": ["volatiles", "…"], "payload_count": 10,
+    "site_id": "mission-im-2" | null,
+    "terrain_modelled": true | null,
+    "summary": { …SiteSummary over the surface window… } | null,
+    "unconfirmed_fields": ["ellipse_major_km"] } ],
+  "total": 12, "meta": {...} }
+```
+Values are elided on purpose; `data/missions.json` is the only place mission
+facts live.
+
+#### `GET /api/v1/missions/{id}`
+The list item, plus `task_order`, `outcome_note`, `end_of_mission`,
+`planned_surface_days`, `payloads[]`, `sources[]`,
+`ellipse_ring: [[lat, lon], …] | null` (64 vertices, built by
+`core/projections.ellipse_ring`, pure) and:
+```jsonc
+"surface_window": { "start": "…", "end": "…",
+                    "basis": "published" | "planned" | "assumed" | "none",
+                    "note": "…" }
+```
+
+| `basis` | Rule |
+|---|---|
+| `published` | Landing and end-of-mission are both sourced to the day or better. |
+| `planned` | Landing is sourced to the day; the planned surface duration is sourced. |
+| `assumed` | Landing is sourced to the day; the duration is not, so one lunar daylight period (14.77 d) is used and **named**. |
+| `none` | Landing is only known to the month or coarser. There is no single window; the UI shows the calendar across the uncertainty span. |
+
+#### `GET /api/v1/sites/{id}/calendar`
+Query: `start`, `end` (≤ 730 days), `bucket` = `day` | `month`.
+```jsonc
+{ "site_id": "…", "start": "…", "end": "…", "bucket": "month", "step_s": 3600,
+  "items": [ { "start": "…", "end": "…",
+               "sun_fraction_up": 0.71, "earth_fraction_up": 0.55,
+               "longest_dark_s": 410400, "longest_dark_open": true,
+               "longest_blackout_s": 864000, "longest_blackout_open": false } ],
+  "meta": {...} }
+```
+One timeline over the whole span, then runs **clipped at bucket edges**. A run
+that touches a bucket edge is reported `*_open: true`, because the bucket, not
+the terrain, ended it. That is the same censoring rule as the window edge in v1.
+
+#### `GET /api/v1/sites` (changed)
+Adds `kind` (default `candidate`), so the Map's candidate list is unchanged. A
+mission target is reached through its mission or by `kind=mission_target`.
+
+#### `POST /api/v1/compare` (changed)
+Ranking becomes **censoring-aware and uncertainty-aware** (§10.7). Each item
+gains `censored: bool` and `tied_with: [site_id]`, and `rank` becomes nullable
+(`null` = cannot be ranked against at least one other item). `ties` stays.
+
+### 10.6 The calendar and the date picker
+
+The window has been fixed at 2027-03-14 + 708 h since M5. v2 makes it movable:
+a start date and a duration in the UI, plus a month strip from the calendar. A
+mission sets it to its surface window.
+
+The calendar is computed **on demand** at 3600 s and cached in Redis under the
+quantised key, not precomputed into `visibility_tables`. The arithmetic: 365
+days is 8,760 samples, about 3× the 2,835 samples the timeline already serves
+at p50 12.5 ms cold. A precomputed table would cost a migration, a worker stage
+and a staleness rule, to save roughly 40 ms on a request the user makes once per
+site. ADR-1's amendment records this and the measured figure.
+
+The worker warms each linked mission's surface window, so a mission's four
+numbers are a cache hit on first view.
+
+### 10.7 Ranking a censored value
+
+A `longest_dark_s` with `longest_dark_open = true` is a **lower bound**: the
+window ended the night, not the terrain, so the true value is in `[v, ∞)`. A
+measured value with arc-edge uncertainty `u` is in `[v − u, v + u]`. For a
+"smaller is better" metric (mirror it for "larger is better"):
+
+```
+hi(X) = ∞        if X censored,  else v_X + u_X
+lo(X) = v_X      if X censored,  else v_X − u_X
+A beats B  ⇔  hi(A) < lo(B)
+```
+
+`u` is the item's own `edge_timing_s`, not the fixed 1 h tie tolerance the v1
+ranking used (D21). "Beats" is a strict partial order, so each item gets a
+**rank range** instead of a single number:
+
+```
+rank_min(X) = 1 + |{Y : Y beats X}|
+rank_max(X) = n − |{Y : X beats Y}|
+```
+
+- `rank_min == rank_max` → `rank` is that number.
+- The range is wider only because of overlapping **measured** values → a tie:
+  `rank = rank_min`, `tied_with` lists the others (v1's "joint first").
+- The range is wider because a **censored** value is involved → `rank = null`,
+  `rank_range = [min, max]`. The UI says "cut short, can't rank" and never
+  "best".
+
+Worked case, the one the review reproduced (D20): Connecting Ridge measured
+122 ± 17 h, de Gerlache rim ≥ 112 h (censored), Malapert ≥ 288 h (censored).
+Connecting Ridge beats Malapert (139 < 288) and nothing beats it, so it is
+ranked 1–2. De Gerlache rim beats nothing and nothing beats it, so it is ranked
+1–3. Malapert is ranked 2–3. v1 called de Gerlache rim "best"; v2 declines,
+which is the correct answer. It is a pure function in `core/metrics.py`, pinned
+by hypothesis properties: a censored value never beats anything; the ranking
+is invariant to input order; `rank_min ≤ rank_max`; and removing an item never
+widens anyone's range.
+
+### 10.8 Agents over missions
+
+Still **exactly six tools**. Missions enter through the two that already take a
+site:
+
+- `get_site` returns `missions: [{id, name, provider, status, landing_date,
+  landing_precision, payload_types}]` for the site. No masses, no costs: the
+  numeric grounding pool (`guards.py`) stays small (D23).
+- `search_sites` gains the filters `kind`, `has_mission`, `mission_status`,
+  `provider` and `payload_type`. Rows stay trimmed to id, name, latitude, the
+  four numbers and their `*_open` flags (C3).
+
+So "which south-polar CLPS targets carry volatiles instruments, and how long is
+their longest night?" is `search_sites(kind=mission_target,
+payload_type=volatiles)` and then `get_metrics` per result. The agent never
+touches a mission table directly, and the import-linter contract that agents
+reach the domain only through `tools.py` still holds.
+
+ISO dates in tool output (`2025-03-06`) must count as grounded tokens, or the
+guard would reject every sentence that dates a mission. This is a guard change
+with its own test.
+
+### 10.9 Failure modes added
+
+| Failure | Blast radius | Behaviour |
+|---|---|---|
+| A `missions.json` record has no source, an unknown enum, or bad coordinates | Seed time only | `ingest_missions.py` fails with the record id and field. It never loads a partial file. |
+| A mission target has no site yet (ingest or precompute pending) | That mission's numbers | `site_id: null`, `summary: null`, UI uncertain state. The mission record still renders. |
+| Target outside 80°S | That mission's terrain claim | `terrain_modelled: false` everywhere downstream (§10.4). |
+| Landing date coarser than a day | That mission's window | `surface_window.basis = "none"`; the calendar is shown instead of one set of four numbers. |
+
+### 10.10 Trade-offs, and what to revisit
+
+- **Curated JSON over a live feed** (ADR-5). It is correct for an offline
+  demo and for a table where every row needs a human-checked source. It goes
+  stale; the 28 Oct 2026 checkpoint and `accessed` dates make staleness visible
+  rather than silent.
+- **One site per mission** doubles the site count at most (15 → ~30). Mask
+  builds are ~130 ms each; the binding cost is the 6 MB fine DEM window per
+  polar target. Both are fine at this scale (§8).
+- **The payload classification is ours.** `instrument_types` is a judgement
+  from each payload's sourced purpose, not a NASA taxonomy. The docs say so,
+  and each payload row links its source so the judgement is checkable.
+- Revisit if the scope grows beyond CLPS: a `programmes` table
+  (CLPS, Artemis, international) and a global DEM tier.

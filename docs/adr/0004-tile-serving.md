@@ -1,6 +1,6 @@
 # ADR-4: Pre-render static PNG tiles at seed time; keep rio-tiler as the builder
 
-**Status:** Accepted
+**Status:** Accepted (amended 2026-09-23, see the end)
 **Date:** 2026-09-18
 **Deciders:** backend lead
 **Relates to:** §7 of the brief, N3 (cold start < 20 s), ADR-1
@@ -189,3 +189,37 @@ shown the product.
        write-through fallback; `ETag`, `immutable`, `X-Tile-Source`.
 4. [ ] `.gitignore` `data/tiles/`; `make tiles` target; runbook entry.
 5. [ ] Legend copy for `psr` stating the multi-year basis of the claim.
+
+---
+
+## Amendment, 2026-09-23: what was built, and the dependencies removed
+
+**What changed** (D11–D13, D36). The decision this ADR argued for, static PNG
+tiles and no tile server process, is what users get. But the builder and the
+parameters differ from what is written above:
+
+- **Builder.** `data/render_tiles.py` renders with numpy and
+  `scipy.ndimage`, and writes PNGs with `zlib` + `struct`. rio-tiler,
+  morecantile and rasterio are declared in `pyproject.toml` and imported
+  nowhere. They are **removed**. Not pulling GDAL is a feature here: the venue
+  install has to work offline and fast, and the DEM is read by the PDS range
+  reader in `data/lola.py`.
+- **Zoom.** `MAX_ZOOM` is 7, not 5. `make tiles` pre-renders z0–z5. z6–z7 are
+  rendered on first request and written through to disk, by the same renderer.
+- **Seeding.** `make seed` does not currently depend on `tiles`, so only two
+  PNGs exist on disk and almost everything is served by the write-through path.
+  `seed` gains `tiles` as a dependency.
+- **Cache header.** It is `public, max-age=86400`, not `immutable`. A re-render
+  after an engine bump must reach clients within a day, and tile URLs are not
+  content-hashed.
+- **Path.** The route is `/tiles/{layer}/{z}/{x}/{y}.png`. An alias without the
+  suffix is added to match the brief's contract.
+
+**Action items, amended**
+1. [x] ~~`render_tiles.py`: rio-tiler + morecantile~~ → numpy/scipy (as built).
+2. [ ] Remove rasterio, rio-tiler and morecantile (and the unused shapely and
+       xarray) from `pyproject.toml`, and update `core/projections.py`'s
+       docstring.
+3. [ ] `make seed` depends on `tiles`; the runbook says so.
+4. [ ] The frontend draws the real hillshade under the polar map instead of
+       schematic terrain (FE-2).

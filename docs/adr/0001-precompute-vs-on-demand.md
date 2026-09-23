@@ -1,6 +1,6 @@
 # ADR-1: Precompute horizon masks; compute timelines on demand
 
-**Status:** Accepted
+**Status:** Accepted (amended 2026-09-23, see the end)
 **Date:** 2026-09-18
 **Deciders:** backend lead (sole engineer on this build)
 **Relates to:** N1 (slider p95 < 150 ms), N2 (mask build budget), §6 of `docs/system-design.md`
@@ -192,3 +192,45 @@ an elimination.
 4. [ ] Stamp `engine_version` on write; assert it on read; surface in `meta`.
 5. [ ] Golden fixtures pinned at 0.25°/900 s so a resolution change is a visible,
        reviewed diff rather than a silent one.
+
+---
+
+## Amendment, 2026-09-23: measured costs, and Tier 2 superseded
+
+**What changed.** The build was measured (`defects-phase1.md` D6, D8, D9), and
+two of this ADR's premises did not hold:
+
+- **The mask costs ~130 ms per site, not ~60 s.** It ranged 128–131 ms over all
+  15 sites against the real 20 m and 80 m products. That is not "20 minutes of
+  offline compute". The precompute decision stands, because the mask still
+  depends only on the site. But the reason is now reuse and determinism, not
+  cost.
+- **There are 15 candidate sites**, plus one site per CLPS mission target
+  (ADR-6). There are not 20.
+- **Tier 2 (`visibility_tables`) was never built**, and it is now superseded.
+  Timelines cost p50 12.5 ms cold for 708 h at 900 s. The one consumer that
+  needs a long span is the v2 date picker, and it is served by
+  `GET /sites/{id}/calendar`. That endpoint computes on demand at 3600 s and is
+  Redis-cached (system-design §10.6). A year is 8,760 samples, about 3× a
+  timeline. A table would add a migration, a worker stage and a staleness rule
+  to save tens of milliseconds on a request a user makes once per site.
+- **The `/sites` list summaries** come from `site_window_metrics`, one reference
+  window at 900 s, as built. The worker additionally warms each mission's
+  surface window.
+
+**Unchanged.** Masks are precomputed at 0.25° over 50 km. Timelines and metrics
+are computed on demand, and quantisation and caching work as in §6.
+
+**numba.** The inner loop is still plain Python with a vectorised sampler per
+ray (D10). The brief names the ray-march as the hot path to JIT. It is fast
+enough today, but numba is what makes finer resolution affordable: 0.1° bearings
+over ~30 sites for the judge question J3. So the action item stays open, with
+the parity requirement below, and the measured before/after goes here.
+
+**Action items, amended**
+1. [ ] Implement numba `@njit(cache=True)` for the ray-march, with the
+       pure-Python path kept as the reference. `test_numba_and_python_agree` is
+       required. Record the timings in this ADR.
+2. [x] ~~coarse table → `visibility_tables`~~. Superseded by the calendar
+       endpoint.
+3. [ ] Calendar endpoint, and warming mission surface windows in the worker.

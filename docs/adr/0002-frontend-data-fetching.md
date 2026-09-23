@@ -1,6 +1,6 @@
 # ADR-2: TanStack Query for frontend data fetching
 
-**Status:** Accepted
+**Status:** Accepted (amended 2026-09-23, see the end)
 **Date:** 2026-09-18
 **Deciders:** backend lead, with the frontend's existing store as a fixed constraint
 **Relates to:** §6 of `docs/system-design.md`, N1
@@ -192,3 +192,33 @@ visibly fight it.
        `useSiteTimeline()` hooks; delete `compute.worker.ts` and its store wiring.
 5. [ ] Keep `LoadingPanel`'s `done/total` by deriving it from `useQueries` statuses.
 6. [ ] Add `engine_version` to every query key.
+
+---
+
+## Amendment, 2026-09-23: the window finally moves
+
+**What changed.** The decision (TanStack Query, per-key queries,
+`keepPreviousData`, a `signal` passed to `fetch`) is implemented, but its
+central use case was never exercised. `setWindow` in `lib/store.ts` has no
+callers. The window is fixed at 2027-03-14 + 708 h, and the date slider only
+moves a cursor inside data already fetched. The overlapping-burst scenario in
+this ADR's Context therefore never happens in the shipped app.
+
+v2 adds a **window picker** (start date and duration), a **month strip** from
+`GET /sites/{id}/calendar`, and missions that set the window to their surface
+window. Those are the rapid, overlapping, superseded requests this ADR was
+written for. The mechanism doesn't change:
+- the key is quantised on the client exactly as on the server;
+- superseded fetches are aborted through `signal`;
+- the server still completes and caches in-flight work (system-design §6).
+
+**Corrections to the action items as written.** The generated types are
+`frontend/src/lib/api/schema.ts`, not `types.ts`. There is no
+`frontend/src/lib/geometry/mask.ts` (D35).
+
+**New action items**
+1. [ ] Wire `setWindow` to a window picker, and write a test that a burst of
+       window changes leaves exactly one live request per site.
+2. [ ] `useMissions` and `useMission`; `useCalendar(siteId, span, bucket)`.
+3. [ ] Every query key carries `engine_version` and, for missions,
+       `data_version`.

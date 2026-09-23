@@ -28,6 +28,11 @@ always drawn identically so the eye compares them without a legend.
 | S6 | `/report` | metrics + windows + provenance |
 | S7 | `/story` | static |
 | S8 | `/states` | all four states, live |
+| S9 | `/missions` | **v2, new home.** `GET /missions` (§10) |
+| S10 | `/missions/:id` | **v2.** `GET /missions/{id}`, the target site's metrics, `/calendar` (§10) |
+
+S1's tile read is aspirational: as of 2026-09-23 `PolarMap` draws schematic terrain
+and never calls `/tiles` (FE-2 wires the real hillshade).
 
 ---
 
@@ -197,3 +202,308 @@ bodies and report `cache: "hit"`.
   hatch — colour and texture never carry meaning alone.
 - Known gap, stated rather than papered over: no screen-reader user has tested
   the arc-list announcements.
+
+---
+
+## 10. CLPS v2 surfaces (2026-09-23)
+
+**Rule for everything below: no new visual language.** Every surface is built
+from the existing tokens (§3) and components (`Panel`, `SectionLabel`,
+`Segmented`, `Chip`, `Button`, `IconButton`, `SearchField`, `EmptyState`,
+`LoadingPanel`, `ErrorPanel`, `UncertaintyNote`, `KeyNumberRow`, `Ribbon`,
+`DateSlider`, `PolarMap`, `Sources`). If a screen seems to need a new colour,
+radius, shadow or type size, it is using the wrong existing one.
+
+**Colour discipline carries over.** `sun` means sunlight and `earth` means Earth
+contact, and nothing else, so **mission pins, statuses and providers are never
+amber or cyan**. `alert` means "over the survival limit" and nothing else, so a
+failed landing is **not** magenta. Missions are drawn in `ink` / `ink-2` /
+`line-strong`, and distinguished by shape and text. `uncertain` and the −45°
+hatch mean "a margin we admit to", which is exactly what an unconfirmed field
+is.
+
+### 10.1 Information architecture and navigation
+
+| Tab (order) | Route | Icon (existing) | Notes |
+|---|---|---|---|
+| Missions | `/missions` | `pin` | **New home.** `/` redirects here after the first visit (U1). |
+| Map | `/map` | a map or grid icon if one exists; otherwise `pin` with a different label | Candidate sites (`kind=candidate`) plus mission-target pins as a toggle layer |
+| Site | `/clocks` | `clocks` | Renamed from "Two clocks" (critique). The route is unchanged. |
+| Compare | `/compare` | `compare` | Can be seeded from a mission |
+| Blackout | `/blackout` | `gap` | |
+
+- Horizon (`/horizon`) is reached from Site ("See the skyline"), and Report
+  (`/report`) from Site and Mission detail ("Hand-over report"). Both keep their
+  routes.
+- **Phone (< 768):** the bottom tab bar is `fixed inset-x-0 bottom-0 z-40
+  bg-canvas`, with `pb-[env(safe-area-inset-bottom)]` and **all 5 tabs**.
+  `<main>` gets `pb-16 lg:pb-0` (U3).
+- **First visit:** `/` goes to `/story`. It is remembered in `localStorage`,
+  wrapped in try/catch, and the default if storage fails is to show Missions.
+  The story's last panel's primary button is "Browse CLPS missions" →
+  `/missions`. "Start here" links to `/story` from the header on desktop and
+  the settings sheet on phones.
+
+### 10.2 S9 Missions (`/missions`)
+
+**Overview.** Every CLPS delivery at a glance: where it went or will go, when,
+what it carries, and whether it worked. The killer interaction is to select the
+*Volatiles* chip: the map and timeline redraw to show only the missions
+carrying volatiles instruments, and the south-polar ones stand out in the inset.
+
+**Layout** (≥ 1280, the intended shape):
+
+```
+┌ header: h1 "CLPS missions" · count "12 of 15 missions" (live region) ─────────┐
+├ filters row: instrument-type Chips (multi) · Segmented status · provider Chips ┤
+├──────────────────────────────────────────┬─────────────────────────────────────┤
+│ Moon view (two orthographic discs:       │ Mission list (buttons), grouped:    │
+│  Near side ◐  Far side ◑)                │  Upcoming · Flown · Cancelled       │
+│ + south-polar inset (PolarMap, real      │ each row: name · provider · date    │
+│   hillshade in FE-2) with mission pins   │  (precision) · status text ·        │
+│   and landing ellipses                   │  payload-type words                 │
+├──────────────────────────────────────────┴─────────────────────────────────────┤
+│ Programme timeline, 2024 → last dated mission + 1 y; one lane per provider     │
+└─────────────────────────────────────────────────────────────────────────────────┘
+│ Ask panel (§10.5), collapsed by default into a Button "Ask about missions"     │
+```
+
+**Moon view.** Two orthographic discs, centred on 0°E and 180°E, with a 30°
+graticule in `line`, the limb in `line-strong` and the disc fill in `panel`.
+Label them "Near side (faces Earth)" and "Far side". **The discs are schematic,
+the positions are exact**: add a caption line "Schematic globe; positions from
+published coordinates" in `text-ink-3`. The south-polar inset is `PolarMap`
+with a mission layer; clicking the pole region on either disc focuses the
+inset. Far side, a caption "Earth never rises here" appears only when a
+far-side mission is focused, and only if its site's `earth_contact_s == 0`. The
+fact comes from the API, never from the view.
+
+**Pins.**
+- Mission targets are a **diamond** (rotated square, 10 px, stroke `ink`,
+  fill `panel`).
+- Candidate sites keep their existing circle-and-letter.
+- Selected: fill `ink`, plus the existing focus ring.
+- Filtered-out missions are **removed**, not dimmed, because the count line says
+  how many are hidden.
+- `planned_target` coordinates get a dashed stroke; `actual_landing` is solid.
+  The legend says so in words.
+
+**Landing ellipse** (inset only): `ellipse_ring` as an SVG path, stroke
+`line-strong` at 1 px, no fill. It is drawn only when not null; there is no
+default ellipse.
+
+**Programme timeline** (the `Ribbon` idiom, horizontal):
+- The x-axis is years. One lane per provider, with its label left-aligned in
+  `text-ink-2`.
+- A mark for each landing date. Its width encodes date precision:
+  - `day`: a 2 px tick in `ink`;
+  - `month`, `quarter` or `year`: a bar spanning that period, filled with the
+    **uncertain −45° hatch**.
+
+  So date uncertainty uses the vocabulary the app already has.
+- A status glyph after the mark is text: ✓ completed, ◐ partly successful, ✕
+  landing failed or lost, ○ planned, → in transit. It always comes with a
+  `title` and the accessible name. The glyph is never the only signal.
+- "Today" is a vertical `line-strong` rule labelled "Today", taken from the
+  client clock. This is the one place the clock is used, and it is labelled.
+- Linked with the list and the map: hover or focus on one highlights the same
+  mission in the other two.
+
+**Filters.**
+- Instrument types: multi-select `Chip`s with `tone="neutral"`. Selection means
+  any-of, and the chip label says what it matches ("Volatiles").
+- Status: `Segmented` with *All · Flown · Upcoming*.
+- Provider: `Chip`s.
+- All filter state lives in the URL query (shareable, back-button safe), not
+  only in zustand.
+
+**States.**
+
+| State | Trigger | Shows |
+|---|---|---|
+| Loading | `useMissions` pending | `LoadingPanel` in the list column; map discs drawn empty with graticule |
+| Empty | filters exclude all | `EmptyState`: title "No missions match these filters", detail names the filters, primary "Clear filters", secondary "Remove {last chip}" |
+| Error | problem detail | `ErrorPanel` from `title`/`detail`/`ui.still_works` |
+| Uncertain | a row has `unconfirmed_fields` | the row shows "Some details unconfirmed" in `text-uncertain`; no value is invented |
+
+**Responsive.**
+
+| Breakpoint | Changes |
+|---|---|
+| 1024–1279 | The list moves below the Moon view; the timeline stays full width |
+| 768–1023 | Discs side by side above the inset; list below; the timeline scrolls horizontally inside its panel (`overflow-x-auto`, with the scroll region labelled) |
+| < 768 | **List first** (it answers faster), then the Moon view, then the timeline. The filter row scrolls horizontally. |
+
+**Accessibility.**
+- Focus order: filters → list → map → timeline.
+- The list is the primary accessible path. Every mission is a `<button>` or
+  link named from the data in this order: "{name}, {provider}, {landing date in
+  words with its precision}, {status}, carries {instrument types}".
+- The map pins are focusable, but `aria-hidden` duplicates of the list are
+  **not** allowed. Either they are real buttons with names, or the map is
+  `role="img"` with a summary sentence and the list is the interaction. Choose
+  the second for the discs and the first for the inset, matching `PolarMap`.
+- The timeline has a table twin (a `T` toggle, as `ArcTable` does) listing
+  mission, provider, date with precision, and status.
+- A filter change announces "Showing 5 of 15 missions" in a polite live region.
+
+### 10.3 S10 Mission detail (`/missions/:id`)
+
+**Overview.** One mission, fully sourced. Then the product's question: *what
+do Sun and Earth do at this target over this mission's days?*
+
+**Layout (≥ 1280):** two columns, 5/7 split.
+
+Left column, the **record**, in `Panel`s:
+1. `h1` with the mission name and vehicle name. Beneath it, one line: provider ·
+   lander · task order.
+2. **Status** with the sourced `outcome_note`. Status is a text label, never
+   colour-coded.
+3. **Dates**: launch, landing, end of mission, each with its precision in words.
+4. **Target**: name, coordinates (mono), coordinate kind ("actual landing" or
+   "planned target"), and the ellipse axes when present.
+5. **Payload manifest**: a real `<table>` with columns Payload · Organisation ·
+   Measures (instrument-type words) · Purpose · Source. Each row's source is a
+   link, with the link text being the publisher name, never "link".
+6. **Sources**: the mission's `sources[]`, each with its accessed date.
+7. The `data_version` in `text-ink-3`.
+
+Right column, **Sun & Earth at this target** (sticky at ≥ 1280):
+1. The **surface window** line, with its basis in words:
+   - *published*: "{start}–{end}, as flown";
+   - *planned*: "{start}–{end}, planned";
+   - *assumed*: "one lunar day from landing (duration not published)";
+   - *none*: "Landing known only to the month; choose a date below".
+2. `UncertaintyNote` when `terrain_modelled == false`: "Terrain is not modelled
+   outside 80°S. Sun and Earth are computed against a smooth Moon, so real hills
+   could block more." The four numbers still render, in the uncertain variant.
+3. `KeyNumberRow`: the same four numbers, in the same order and colours as
+   everywhere (critique: same anchors everywhere).
+4. Two `Ribbon`s (sun, earth) over the window, with the `DateSlider` cursor.
+5. The **window picker** (§10.4).
+6. Actions, as `Button` secondary:
+   - "Open in Site view" → `/clocks` with this site and window;
+   - "Compare with nearby candidates" → `/compare` seeded with the target and
+     the 3 nearest candidates by great-circle distance (computed client-side from
+     coordinates, and labelled "nearest by distance");
+   - "Hand-over report" → `/report`.
+7. **Explain** (A1, §10.5) as a collapsed disclosure: "What is it like at this
+   site?".
+
+**Fields that are unconfirmed.** In place of the value, the word **Unconfirmed**
+in `text-uncertain`, with a `title` and accessible description "No source found
+for this field as of {latest accessed date}". Never a dash, never blank, and
+never a value "for illustration".
+
+**States.**
+
+| State | Shows |
+|---|---|
+| Mission loading | Record skeleton lines in `bg-inset` (static, no shimmer, because motion is reserved); the right column shows `LoadingPanel` |
+| Mission 404 | `ErrorPanel` "That mission isn't in the list", `still_works` "All other missions are available", primary "Back to missions" |
+| No target (`site_id == null`) | The right column is an `EmptyState`: "Target not published, so Sun and Earth can't be computed for it yet" |
+| Metrics loading | `KeyNumberRow` in its `computing` state |
+| Metrics error | `ErrorPanel` inside the right column only; the record stays |
+| Uncertain | as for any site (grazing, coverage), plus `terrain_modelled == false` |
+
+**Responsive:** < 1280 the right column follows the record's header block
+(answer first: status and dates, then the four numbers, then the payloads).
+< 768 the payload table becomes a definition list per payload (`<dl>`), keeping
+the source link in each.
+
+### 10.4 Window picker and month strip (shared by Mission detail and Site)
+
+**Purpose:** "compare … dates quickly". It drives `setWindow(startH, hours)` in
+`lib/store.ts`.
+
+| Element | Component | Behaviour |
+|---|---|---|
+| Start date | native `<input type="date">`, styled like `SearchField` (same height, border and focus ring) | UTC dates only; the label says "Start (UTC)" |
+| Duration | `Segmented` with *Mission · 14 d · 30 d · 90 d · 1 y* ("Mission" only when a surface window exists) | Maximum 730 d, which is the API limit |
+| Month strip | 12 cells (one year from the start's month), each cell two thin bars (sun `bg-sun-fill`, earth `bg-earth-fill`) whose heights are that month's `sun_fraction_up` / `earth_fraction_up`; a censored longest-dark shows the uncertain hatch on the cell's bottom edge | Click or Enter sets the window to that month. Arrow keys move between cells. The strip is a `role="listbox"` with each cell `role="option"` named "{Month year}: sunlight {n} percent, Earth {m} percent", with the values from the API. |
+| Window line | text | "30 days from 14 Mar 2027" in words. ISO appears only in exports (U10). |
+
+**Requests.** Changing the window changes the query key. TanStack cancels the
+superseded fetches through `signal` and keeps the previous numbers dimmed
+(`keepPreviousData`). No debounce is needed: server quantisation collapses
+nearby keys (§7).
+
+### 10.5 Agents: Ask (A4), Advise (A2), Explain (A1), Brief (A3)
+
+**Placement.**
+- **Ask:** a collapsible `Panel` on Missions, with the prompt "Ask about
+  missions and sites".
+- **Advise:** on Compare, as "Find sites that meet a requirement". The
+  requirement is a textarea, with an example as placeholder text: "200 W solar
+  and at least 4 hours of Earth contact per day".
+- **Explain:** on Mission detail and Site, as a disclosure.
+- **Brief:** on Report, as three cards (`Panel` each): Planner memo · Lesson
+  plan · Public explainer. They are one generation, so they can't disagree.
+
+**The shared response card** (one component, used by all four):
+
+```
+┌ Panel ───────────────────────────────────────────────────────────────┐
+│ status line (text-ink-3, mono): "AI answer · gemini-3.8-flash · 3.2 s"│
+│ body: the validated structured output, rendered as text, never HTML  │
+│ "Numbers used" (SectionLabel/h2): each claim → value → tool · field   │
+│ [How the AI got this]  ← opens the run-log drawer at this run_id     │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+| `status` | Card shows |
+|---|---|
+| `ok` | As above. |
+| `insufficient_data` | `EmptyState`-style: title "Not enough data to answer", detail = `reason` from the API verbatim, primary "Rephrase", secondary "Browse missions". **No partial answer.** |
+| `degraded` (timeout, outage, or no key) | `UncertaintyNote`: "The AI didn't respond, so this summary was built directly from the measurements." Then the deterministic summary. The status line reads "Summary from measurements (no AI)". |
+| `guard_rejected` | `UncertaintyNote`: "The AI's answer included a number we couldn't trace to a measurement, so we replaced it with a summary built from the measurements." Then the deterministic summary. |
+| loading | The status line reads "Asking… checking every number against the measurements", and the submit `Button` is disabled. No spinner. A `Cancel` button aborts the request (`signal`). |
+| error (HTTP) | `ErrorPanel` from the problem detail |
+
+Never render model text as HTML. Never show a number in the body that is not
+in "Numbers used"; the server already guarantees this, so the UI must not
+reformat numbers in a way that creates new ones.
+
+### 10.6 Run-log drawer ("How the AI got this")
+
+- A right-side drawer: a `<dialog>`, `aria-modal`, with focus trapped and
+  returned to the opener on close. It opens from any response card, and from a
+  header `IconButton` labelled "AI activity log".
+- Content: `GET /agents/runs`, newest first. Each run is a row with agent,
+  model, status, latency, tokens (in/out), attempts and time. Expanding a row
+  shows its tool calls as a real `<table>`: # · tool · arguments (mono,
+  wrapped, max 3 lines then "Show all") · latency · error.
+- Guard rejections are listed inside the run as "Rejected: {number} not found in
+  tool results". This is the demo's proof that the guard works.
+- Empty: "No AI runs yet. Ask a question to see how the answer is built."
+- Width: 480 px at ≥ 768; full screen below.
+- Motion: slides in with the M3 curve over 460 ms. With reduced motion it
+  appears instantly.
+
+### 10.7 Honesty rules that change existing screens
+
+- **Compare "best"** (U11). Label an item "best" **only** when the API gives
+  `rank == 1` and the item is not censored and not over the limit. When
+  `rank == null`, print "cut short, can't rank" in `text-uncertain`, with the
+  `rank_range` in the title ("could be 1st–3rd"). Tied items print "joint
+  {rank}".
+- **Map filter default** (U5): the dark-gap filter starts at "Any"
+  (`Infinity`), and its maximum is the site maximum rounded up to 24 h.
+- **Provenance badge** (U12): shown on every screen at every width, once.
+
+### 10.8 Accessibility carried into v2 (from the 2026-09-23 critique)
+
+- Change these tokens' values, and only these (U6, U7):
+
+  | Token | Dark | Light |
+  |---|---|---|
+  | `--color-hatch` | `#5f6a75` | `#6b7178` |
+  | `--color-ink-3` | `#8d99a5` | light value unchanged unless it measures under 4.5:1 on `inset` |
+  | `--color-uncertain` | `#8a95a1` | same check |
+
+- `SectionLabel` renders as `<h2>` with the same classes (U9).
+- The single-key shortcuts get an off switch, stored in the store (default on)
+  and exposed in the settings sheet (U8, WCAG 2.1.4).
+- Controls are at least 44 px, and the face switcher `h-11` (U15).
+- Timestamps read as "Day 12, 26 March, 09:00 UTC" on screen and in
+  `aria-valuetext`; ISO stays in the exports (U10).

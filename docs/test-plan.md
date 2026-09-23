@@ -1,6 +1,6 @@
 # POLAR WINDOW — Test Plan
 
-Status: accepted for M1–M8.
+Status: accepted for M1–M8; **extended 2026-09-23 for the CLPS v2 scope (§10)**.
 Scope: `backend/`. Frontend coverage is limited to the API adapter, the cache
 keys, the exports and the accessibility pass (§7), because the components
 themselves are unchanged design.
@@ -31,7 +31,7 @@ that fail *quietly*. Everything else throws.
 
 ```
         ┌────────────────────────┐
-        │ e2e  (2)               │  docker-compose up → seed → smoke the 4 numbers
+        │ e2e  (0 today → 2, §10)│  Playwright + axe over the demo path
         ├────────────────────────┤
         │ integration (~35)      │  real Postgres, real Redis, mocked Gemini
         ├────────────────────────┤
@@ -196,17 +196,22 @@ off-by-one hides, so they are pinned rather than left to the generator.
 
 | Site | Why this one |
 |---|---|
-| Shackleton rim, east shoulder (−89.68°) | Single dominant blocker; terrain, not season, controls the night. The interesting case. |
-| de Gerlache ridge (−88.50°) | High and open; near-flat mask. Catches an over-eager blocker. |
-| Malapert massif (−86.00°) | Far enough out that the Sun genuinely sets; seasonal, not terrain-driven. Catches an ephemeris error that a polar site would mask. |
+| `connecting-ridge` (−89.44°) | Near-polar, high and open: terrain decides, not season. |
+| `malapert-massif` (−85.99°) | Far enough out that the Sun genuinely sets; seasonal, not terrain-driven. Catches an ephemeris error a polar site would mask. |
+| `faustini-rim` (−86.64°) | Sheltered and low: a long night no single ridge is responsible for. |
+
+(Corrected 2026-09-23, D32: an earlier draft named Shackleton rim and
+"de Gerlache ridge"; the committed fixtures have always been the three above.)
 
 **Fixtures committed** (`tests/golden/data/`):
 - `{site}.horizon.npz` — the 1440-entry `el_deg`, `range_m`, `tol_deg`.
 - `{site}.timeline.npz` — az/el/margin for both bodies over a fixed window
   (2027-03-14T00:00Z + 708.734 h, 900 s step).
 - `{site}.metrics.json` — the four numbers, arcs, compound events.
-- `MANIFEST.json` — engine version, kernel set + SHA256s, DEM product + SHA256,
-  the generating command, and the tolerances below.
+- `MANIFEST.json` — engine version, kernel names and byte counts, per-site DEM
+  product and coverage, tolerances and the regeneration reason. **Kernel
+  SHA256s and the generating command are not recorded yet (D15); §10.6 adds
+  them.**
 
 **Tolerances** (from system-design N5, and each justified):
 
@@ -214,9 +219,9 @@ off-by-one hides, so they are pinned rather than left to the generator.
 |---|---|---|
 | horizon `el_deg` | ±0.05° | Below the DEM's own contribution (±2 m at 1.4 km ⇒ ±0.08°), so it catches drift without failing on float noise. |
 | az/el | ±0.01° | An order below the horizon tolerance. |
-| arc edge times | ±0.02 h (72 s) | Bisection converges to ~1 s; 72 s allows a step-schedule tweak but not a logic change. |
-| the four numbers | ±0.1 h absolute **and** ±0.1 % relative, whichever is larger | A 300 h night and a 4 h arc need different scales. |
-| `worst_compound_s` | ±0.05 h | Tighter: it is an intersection, so errors compound and a loose bound would hide them. |
+| arc edge times | ±72 s | Bisection converges to ~1 s; 72 s allows a step-schedule tweak but not a logic change. |
+| the four numbers | ±360 s absolute **or** ±0.1 % relative, whichever is larger | A 300 h night and a 4 h arc need different scales. |
+| `worst_compound_s` | ±180 s | Tighter: it is an intersection, so errors compound and a loose bound would hide them. |
 
 **How a failure reports.** A golden failure must not print "arrays differ". The
 comparator emits: the quantity, the worst offending index, the azimuth or
@@ -378,7 +383,7 @@ not this plan's job. `make test-fe`; 41 tests, 0.2 s, no DOM and no network.
   quoting, matched `BEGIN_WINDOW`/`END_WINDOW` blocks, increasing UTC pairs,
   `# open` on the intervals the window cut short, an empty tolerance for a
   graze, and no composite score in the comparison header.
-- **Accessibility**: `design:accessibility-review` at M8, plus an automated
+- **Accessibility**: a manual WCAG 2.1 AA review at M8, plus an automated
   `axe-core` pass on the eight routes. Automated axe catches perhaps 30 % of
   issues, so it is a floor and the manual review is the actual gate — the
   existing `conventions.md` is honest that no screen-reader user has tested the arc
@@ -423,3 +428,172 @@ Named so that absences are decisions rather than oversights:
   quality is unverified by CI and must be checked by hand before the demo; this
   is written into the runbook as a manual pre-demo step rather than pretended
   away.
+
+---
+
+## 10. CLPS v2 and gap closure (2026-09-23)
+
+**Baseline** (`make test`, 2026-09-23): 211 passed in 6.0 s. That is unit 143,
+integration 52 and golden 16 after parametrisation. The frontend has 41 Vitest
+tests.
+
+This section adds what v2 needs, and names each test the plan above promised
+but the suite does not have. Every row below is a test to write, not one that
+exists.
+
+### 10.1 New risks
+
+| # | Risk | Why it is quiet |
+|---|---|---|
+| R8 | A mission fact loads without a source, or a null field is shown as a value | The UI renders it like any other fact. An expert judge finds it; nobody else does. |
+| R9 | Ranking asserts an order that censored values don't support (D20) | "Best" looks authoritative, and the flag that contradicts it sits on another row. |
+| R10 | A smooth-Moon mask is presented as terrain | The numbers look plausible and are wrong in exactly the way the product promises not to be. |
+| R11 | Calendar buckets cut a night in two and report both halves as measured | The longest-gap column silently shrinks. |
+| R12 | The grounding guard rejects every mission date, or grounds everything because the pool grew | In the first case the agents fall back forever; in the second the guard stops guarding (D23). |
+
+### 10.2 Mission data (R8): `tests/unit/test_missions_data.py`
+
+These are pure and run against the committed `data/missions.json`.
+
+| Test | Asserts |
+|---|---|
+| `test_every_record_validates` | The pydantic contract loads every record. Unknown `status`, `instrument_types` or `*_precision` values fail with the record id. |
+| `test_every_record_has_a_source` | `len(sources) ≥ 1`, and every URL is https and parses. |
+| `test_every_payload_has_a_source_url` | Every payload row has one. |
+| `test_null_means_unconfirmed` | Every nullable field that is null appears in `unconfirmed_fields`, and every name in `unconfirmed_fields` is a real field. |
+| `test_coordinates_in_range` | lat ∈ [−90, 90], lon ∈ [0, 360); `coordinate_kind` is set iff a coordinate is. |
+| `test_dates_are_ordered` | launch ≤ landing ≤ end_of_mission wherever all are day-precision. |
+| `test_ids_are_unique_and_slugs` | ids are unique and kebab-case; payload ids are prefixed with their mission. |
+| `test_ingest_rejects_partial_file` | A fixture with one bad record loads **nothing** (the ingest is transactional). |
+
+### 10.3 Ranking (R9): `tests/unit/test_rank_properties.py`, hypothesis
+
+The generators produce 2–8 items, each with a value, an uncertainty ≥ 0 and a
+censored flag.
+
+| Property | Statement |
+|---|---|
+| `censored_never_beats` | A censored item beats nothing, for a "smaller is better" metric. |
+| `range_is_well_formed` | `1 ≤ rank_min ≤ rank_max ≤ n` for every item. |
+| `order_invariant` | Permuting the input permutes the output and changes no range. |
+| `definite_rank_is_consistent` | If every item has `rank_min == rank_max`, the ranks are a permutation of 1..n after ties are merged. |
+| `removal_never_widens` | Removing any item never widens another item's range. |
+| `no_best_under_censoring` | An item gets `rank == 1` only if nothing it is incomparable with is censored. |
+| `mirror_symmetry` | Ranking a "larger is better" metric equals ranking the negated values as "smaller is better". |
+
+Named cases: the D20 reproduction (Connecting Ridge 122 ± 17 h; de Gerlache rim
+≥ 112 h censored; Malapert ≥ 288 h censored) gives ranges [1,2], [1,3] and [2,3].
+The integration test in §10.8 asserts the same through `POST /compare`.
+
+### 10.4 Calendar (R11): `tests/unit/test_calendar.py`
+
+| Test | Asserts |
+|---|---|
+| `test_bucket_partition` | Bucket spans tile `[start, end)` exactly, with no overlaps; the last bucket is clipped. |
+| `test_edge_run_is_open` | A dark run crossing a bucket edge is split, and **both** halves report `longest_dark_open = true`. |
+| `test_interior_run_is_closed` | A run strictly inside a bucket reports `open = false`, and its length equals the v1 `intervals` result. |
+| `test_fraction_matches_v1` | Over one bucket equal to a v1 window, the fractions match `/metrics` within the golden metric tolerance. |
+| Hypothesis `calendar_sums` | For random boolean series and bucket edges, the sum of per-bucket up-time equals the whole-span up-time. |
+
+### 10.5 Smooth mask and `terrain_modelled` (R10)
+
+| Test | Where | Asserts |
+|---|---|---|
+| `test_smooth_mask_is_zero` | unit | `smooth_mask(1440)` gives el = 0, tol = 0 and the product string "none (smooth sphere)". |
+| `test_far_side_has_no_earth` | golden-geo | A far-side target (a synthetic site at 0°N, 180°E) has Earth elevation < 0 for a whole year, so `earth_contact_s == 0`. |
+| `test_terrain_flag_propagates` | integration | Every site-scoped endpoint for a `terrain_modelled = false` site carries the flag and a note in `meta.uncertainty`. |
+| `test_candidate_goldens_unchanged` | golden | The migration's defaults leave the three golden sites byte-identical. |
+
+### 10.6 Gap closure: tests the plan promised
+
+| Test | Where | Closes |
+|---|---|---|
+| `test_blocker_angular_extent` (a wall) | unit, `test_horizon.py` | D31 |
+| `test_ramp_converges_to_slope` | unit | D31 |
+| `test_crater_floor_lowers_horizon` | unit | D31 |
+| `test_numba_and_python_agree` | unit | D10. Max bearing difference ≤ 1e-4° on the cone, the wall and a real fine window. |
+| `test_resolve_all_matches_sites_json` | golden | C5. `ingest_sites` is removed from the coverage `omit` list. |
+| `test_kernel_sha256` | unit | D14. Every `KernelSpec` has a pinned digest, and the cached files match it. |
+| `test_manifest_records_digests_and_command` | golden | D15 |
+| `test_source_note_states_the_rule` | unit | C4. The served sentence names "most open sky" and "top elevation decile". |
+| `test_list_provenance_is_deduplicated` | integration | C6 |
+| `test_memo_hit_is_labelled` | integration | C7. `cache == "memo"` and `compute_ms == 0`. |
+
+### 10.7 Agents (R12)
+
+- **The transport moves to HTTP** (ADR-3 amendment). `respx` routes intercept
+  `generativelanguage.googleapis.com`, with five fixtures:
+  1. grounded;
+  2. a hallucinated number;
+  3. schema-invalid output;
+  4. a timeout (respx side effect `httpx.ReadTimeout`);
+  5. an outage (503).
+
+  The autouse block on `base._generate` stays, so an unrouted call still fails
+  loudly.
+- `test_thought_signature_round_trip`: the second request's history contains
+  the first response's `Content`, including its signature part, byte for byte.
+- `test_iso_dates_are_grounded`: "landed on 2025-03-06" passes when the tool
+  output contains that date, and fails when it doesn't.
+- `test_search_sites_pool_is_small`: the flattened numeric pool for a 50-row
+  `search_sites` stays under a stated bound. Also a regression check that a
+  random two-digit integer is grounded less than 10 % of the time (D23).
+- `test_tools_keep_open_flags`: `_trim` keeps `longest_dark_open` and
+  `longest_blackout_open` (C2).
+- `test_get_site_lists_missions`: a mission target's `get_site` returns its
+  mission, with no mass or cost fields.
+- `test_agent_meta_complete`: every agent response and `GET /agents/runs`
+  carries computed_at, resolution and uncertainty.
+- **Manual, pre-demo** (runbook): one live call per agent with the real key.
+  Record run ids, latency and tokens in the demo notes.
+
+### 10.8 Integration: an isolated database
+
+Integration tests stop using the dev database. The session fixture:
+- connects to `polar_window_test` (`PW_TEST_DATABASE_URL`);
+- runs `alembic upgrade head`;
+- loads `tests/fixtures/`: three sites, their masks, two missions (one polar,
+  one far side) and their payloads;
+- truncates between modules.
+
+If the test database is unreachable the tests are **skipped with a reason**,
+never pointed at the dev database. New HTTP tests:
+
+- `GET /missions` filters: status, provider, `payload_type` (any-of), region,
+  date range, `q`; `total` is correct under pagination.
+- `GET /missions/{id}`: `surface_window.basis` for each of the four rules;
+  `ellipse_ring` is null when the axes are null; 404 as problem details.
+- `GET /sites?kind=candidate` is the default and returns the v1 list unchanged.
+- `GET /sites/{id}/calendar`: span > 730 d gives 422; `bucket=month` gives
+  calendar months in UTC.
+- `POST /compare`, the D20 reproduction: de Gerlache rim `rank == null`,
+  `censored == true`, and no item is labelled rank 1 unless it is definite.
+
+### 10.9 Frontend (FE-1 / FE-2)
+
+- **Vitest, logic**: adapters for missions and calendar; the rank-range to
+  label mapping ("best" only when `rank == 1`, never when censored or over the
+  limit); query keys carry `data_version`; human-readable timestamps (U10).
+- **Vitest + Testing Library, components**: each data-bound component renders
+  its loading, empty, error, uncertain and insufficient-data states from the
+  fixtures. An error must never render as a loader.
+- **e2e, Playwright** (new, two tests, against a seeded backend):
+  1. **Demo path**: Missions → filter to volatiles → open a south-polar mission
+     → the four numbers render → shift the date (assert exactly one live
+     metrics request per site after a burst) → compare with a candidate → Ask →
+     the run log shows the tool calls.
+  2. **Degraded path**: API down → snapshot fallback with its badge
+     (FE-2); agent with no key → the deterministic answer with its state.
+- **axe-core** in both e2e tests on every route visited: zero serious or
+  critical violations. It is a floor; the manual WCAG 2.1 AA review is the
+  gate (§7).
+
+### 10.10 Coverage targets
+
+| Area | Target |
+|---|---|
+| `core/` | ≥ 95 % lines, 100 % of `intervals.py`, the rank function and the calendar bucketer |
+| `agents/guards.py` | 100 % (unchanged) |
+| `data/ingest_missions.py`, `data/ingest_sites.py` | ≥ 85 %; both are back in coverage |
+| services and routes | ≥ 85 % |
+| frontend logic (`lib/`) | ≥ 80 %; components through state tests, not line coverage |

@@ -1,6 +1,6 @@
 # ADR-3: A single bounded function-calling loop, not a graph
 
-**Status:** Accepted
+**Status:** Accepted (amended 2026-09-23, see the end)
 **Date:** 2026-09-18
 **Deciders:** backend lead
 **Relates to:** §6 of the brief, §8 of `docs/system-design.md`, N4
@@ -227,3 +227,47 @@ function signature, and replacing it does not touch `tools.py`, `guards.py`,
        timeout and error.
 6. [ ] `respx` fixtures: a grounded response, a hallucinated-number response, a
        schema-invalid response, a timeout, and a total outage.
+
+---
+
+## Amendment, 2026-09-23: SDK upgrade, async client, thought signatures, HTTP-level mocks
+
+**What changed.** The loop design is unchanged: one bounded function-calling
+loop, six tools, grounding guard, 20 s budget, one retry, deterministic
+fallback. Four things around it change:
+
+1. **SDK.** `google-genai` is pinned at `0.3.0`, an early release, and no live
+   model call has ever been made from this machine (there was no API key). It
+   moves to the current release before any live run. The loop calls the SDK's
+   **async** client (`client.aio.models.generate_content`) instead of wrapping
+   the sync client in `asyncio.to_thread`. Timeouts become cancellations the
+   event loop owns.
+2. **Thought signatures.** Gemini 3 models return signed thought parts alongside
+   function calls. They must be sent back unchanged in the next turn's history,
+   or the follow-up call is rejected. The loop therefore appends the model's
+   **complete returned `Content`** to the history, never a reconstructed
+   function-call part.
+3. **Mocks at the HTTP level.** The Action Items asked for `respx` fixtures, and
+   the tests instead patched `base._generate` (D18). With the SDK's httpx-based
+   async transport, `respx` can intercept the real request. The fixtures (a
+   grounded answer, a hallucinated number, schema-invalid output, a timeout, an
+   outage) move to HTTP. The `_generate` block stays as a backstop, so a
+   forgotten mock still fails loudly. Confirm at upgrade time that the installed
+   SDK version really routes through httpx.
+4. **Missions.** Agents gain missions **without new tools**. `get_site` returns
+   the linked missions, and `search_sites` gains mission filters
+   (system-design §10.8). The guard treats ISO dates in tool output as grounded
+   tokens.
+
+The status names match the code and README: two guard rejections give
+`guard_rejected` plus the deterministic summary, not `insufficient_data`
+(D19). `insufficient_data` is the agent's own declared outcome when the tools
+don't hold the answer.
+
+**Action items, added**
+1. [ ] Upgrade `google-genai` and move to `client.aio`; carry thought signatures
+       through the history; live-smoke all four agents.
+2. [ ] respx fixtures at the HTTP level, covering the five cases above.
+3. [ ] Date-token grounding in `guards.py`, with a test.
+4. [ ] Full `meta` (computed_at, resolution, uncertainty) on agent responses and
+       on `GET /agents/runs`.
