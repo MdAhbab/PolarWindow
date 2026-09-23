@@ -709,12 +709,13 @@ a mission) and one capability (a movable window).
 │ target_name        text                                   │
 │ target_lat_deg     float?    null ⇒ target not published │
 │ target_lon_deg     float?    0..360 east                 │
-│ coordinate_kind    text      'actual_landing'|'planned_target'
+│ coordinate_kind    text      'actual_landing'|'planned_target'|'feature_centre'
 │ ellipse_major_km   float?    semi-axes, if published     │
 │ ellipse_minor_km   float?                                │
 │ ellipse_azimuth_deg float?                               │
 │ launch_date        date?                                 │
-│ launch_precision   text      'day'|'month'|'quarter'|'year'
+│ launch_precision   text      'minute'|'day'|'month'|'quarter'|'year'
+│ launch_as_published text     the verbatim phrase, e.g. 'late 2027'
 │ landing_date       timestamptz?                          │
 │ landing_precision  text                                  │
 │ end_of_mission     timestamptz?  sourced, if it ended    │
@@ -762,10 +763,15 @@ their masks and the golden fixtures untouched:
 | `coordinate_rule` | `derived_open_sky` \| `published` | `derived_open_sky` |
 | `terrain_modelled` | bool | `true` |
 
-A mission target site has id `mission-<mission id>`, `anchor = target`,
-`search_kind = 'published'`, zero search radii and zero offset. One mission,
-one site, even when two missions share a region: their published coordinates
-differ, and so does their skyline.
+A mission target site has id `mission-<mission id>` for an `actual_landing` or
+`planned_target` coordinate, with `anchor = target`,
+`search_kind = 'published'`, zero search radii and zero offset. A
+`feature_centre` coordinate (the IAU centre of a named target, used when no
+landing point is published) maps to one **shared** site, `feature-<slug>`,
+because three missions aiming at "Mons Mouton" have one coordinate and
+therefore one skyline. The UI labels it "centre of Mons Mouton, not a landing
+point". The precedence rules and the research log are in
+`docs/data-sources.md`.
 
 ### 10.4 Coordinates and terrain coverage
 
@@ -777,6 +783,7 @@ mission's numbers can claim.
 | lat ≤ −80° and a fine window fetches | Real ray-cast (20 m + 80 m), as for candidates | `true` | Normal states |
 | lat ≤ −80°, fine window missing | 80 m regional only, `coverage < 1` | `true` | Partial-coverage uncertainty (existing) |
 | lat > −80° (nearside, far side, mid-latitude) | **Curvature-only** mask: 0° on every bearing, `tol = 0`, `dem_product = "none (smooth sphere)"` | `false` | Uncertain state: "Terrain is not modelled outside 80°S; Sun and Earth are computed against a smooth Moon." |
+| Feature centre only | As the rows above, by latitude | as above | Plus: "Numbers are for the centre of {feature}; the landing point is not published." |
 | No published target | No site | — | "Target not published", no numbers |
 
 A smooth-Moon horizon is not a fabricated number. The Sun and Earth vectors are

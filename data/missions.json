@@ -1,0 +1,1876 @@
+{
+  "schema_version": 1,
+  "compiled": "2026-09-23",
+  "about": "CLPS deliveries, every field sourced. A field that is null is listed in unconfirmed_fields. instrument_types is a classification made by this project from each payload's sourced description (see docs/data-sources.md), not a NASA taxonomy.",
+  "missions": [
+    {
+      "vehicle_name": null,
+      "task_order": "TO2-AB",
+      "provider": "Astrobotic",
+      "lander": "Peregrine",
+      "status": "lost_before_landing",
+      "outcome_note": "Launched January 8, 2024 to deliver 5 NASA CLPS science payloads to Sinus Viscositatis. It did not land.",
+      "region": "nearside",
+      "target": {
+        "name": "Sinus Viscositatis (IAU feature centre)",
+        "lat_deg": 35.25,
+        "lon_deg": 319.01,
+        "coordinate_kind": "feature_centre",
+        "source_url": "https://planetarynames.wr.usgs.gov/Feature/16118",
+        "feature_id": 16118
+      },
+      "target_name": "Sinus Viscositatis",
+      "ellipse": null,
+      "launch": {
+        "date": "2024-01-08",
+        "precision": "day",
+        "as_published": "January 8, 2024"
+      },
+      "landing": null,
+      "end_of_mission": null,
+      "planned_surface_days": null,
+      "payloads": [
+        {
+          "id": "peregrine-m1/lra",
+          "name": "Laser Retroreflector Array",
+          "acronym": "LRA",
+          "organisation": "NASA Goddard Space Flight Center",
+          "instrument_types": [
+            "laser_retroreflector"
+          ],
+          "purpose": "Passive retroreflectors that give orbiting or landing spacecraft a precise laser-ranging location marker.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to2-astrobotic/",
+          "unconfirmed": false
+        },
+        {
+          "id": "peregrine-m1/nss",
+          "name": "Neutron Spectrometer System",
+          "acronym": "NSS",
+          "organisation": "NASA Ames Research Center",
+          "instrument_types": [
+            "volatiles"
+          ],
+          "purpose": "Measures the abundance of hydrogen-bearing materials and bulk regolith composition at the landing site.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to2-astrobotic/",
+          "unconfirmed": false
+        },
+        {
+          "id": "peregrine-m1/lets",
+          "name": "Linear Energy Transfer Spectrometer",
+          "acronym": "LETS",
+          "organisation": "NASA Johnson Space Center",
+          "instrument_types": [
+            "radiation_space_weather"
+          ],
+          "purpose": "Radiation monitor measuring the rate of incident radiation on the lunar surface.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to2-astrobotic/",
+          "unconfirmed": false
+        },
+        {
+          "id": "peregrine-m1/nirvss",
+          "name": "Near-Infrared Volatile Spectrometer System",
+          "acronym": "NIRVSS",
+          "organisation": "NASA Ames Research Center",
+          "instrument_types": [
+            "volatiles"
+          ],
+          "purpose": "Two-channel near-infrared point spectrometer for surface volatiles.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to2-astrobotic/",
+          "unconfirmed": false
+        },
+        {
+          "id": "peregrine-m1/pitms",
+          "name": "Peregrine Ion-Trap Mass Spectrometer",
+          "acronym": "PITMS",
+          "organisation": "NASA Goddard Space Flight Center / ESA",
+          "instrument_types": [
+            "volatiles",
+            "exosphere_dust"
+          ],
+          "purpose": "Ion-trap mass spectrometer, flown under NASA's commitment to ESA.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to2-astrobotic/",
+          "unconfirmed": false
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://science.nasa.gov/lunar-science/clps-deliveries/to2-astrobotic/",
+          "title": "TO2-AB Science Payloads (page updated Jan 22, 2025)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://science.nasa.gov/lunar-discovery/deliveries",
+          "title": "Commercial Lunar Payload Services (CLPS) Deliveries (page updated May 06, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://planetarynames.wr.usgs.gov/Feature/16118",
+          "title": "Gazetteer of Planetary Nomenclature: Sinus Viscositatis",
+          "publisher": "IAU / USGS Astrogeology",
+          "accessed": "2026-09-23"
+        }
+      ],
+      "unconfirmed_fields": [
+        "ellipse",
+        "end_of_mission",
+        "landing",
+        "planned_surface_days",
+        "vehicle_name"
+      ],
+      "notes": [
+        "The target coordinate is the IAU centre of the named feature, not a published landing point."
+      ],
+      "id": "peregrine-m1",
+      "name": "Peregrine Mission One"
+    },
+    {
+      "vehicle_name": "Odysseus",
+      "task_order": "TO2-IM",
+      "provider": "Intuitive Machines",
+      "lander": "Nova-C",
+      "status": "completed",
+      "outcome_note": "Landed February 22, 2024 near Malapert A. The six NASA instruments ceased operations seven days after landing, meeting pre-launch projected mission operations.",
+      "region": "south_polar",
+      "target": {
+        "name": "Odysseus landing site near Malapert A",
+        "lat_deg": -80.13,
+        "lon_deg": 1.44,
+        "coordinate_kind": "actual_landing",
+        "source_url": "https://lroc.im-ldi.com/images/1360",
+        "feature_id": null
+      },
+      "target_name": "Malapert A region",
+      "ellipse": null,
+      "launch": {
+        "date": "2024-02-15",
+        "precision": "day",
+        "as_published": "February 15, 2024"
+      },
+      "landing": {
+        "date": "2024-02-22",
+        "precision": "day",
+        "as_published": "February 22, 2024"
+      },
+      "end_of_mission": {
+        "date": "2024-02-29",
+        "precision": "day",
+        "as_published": "seven days after landing"
+      },
+      "planned_surface_days": null,
+      "payloads": [
+        {
+          "id": "im-1/ln-1",
+          "name": "Lunar Node 1 Navigation Demonstrator",
+          "acronym": "LN-1",
+          "organisation": "NASA Marshall Space Flight Center",
+          "instrument_types": [
+            "landing_navigation",
+            "communications"
+          ],
+          "purpose": "Navigation beacon demonstrating autonomous positioning with radio ranging signals.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to2-im/",
+          "unconfirmed": false
+        },
+        {
+          "id": "im-1/scalpss",
+          "name": "Stereo Cameras for Lunar Plume-Surface Studies",
+          "acronym": "SCALPSS",
+          "organisation": "NASA Langley Research Center",
+          "instrument_types": [
+            "imaging"
+          ],
+          "purpose": "Stereo cameras imaging the descent-engine plume's effect on the surface.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to2-im/",
+          "unconfirmed": false
+        },
+        {
+          "id": "im-1/rolses",
+          "name": "Radio-wave Observations at the Lunar Surface of the photoElectron Sheath",
+          "acronym": "ROLSES",
+          "organisation": "NASA Goddard Space Flight Center",
+          "instrument_types": [
+            "exosphere_dust"
+          ],
+          "purpose": "Low-frequency radio receiver measuring the near-surface photoelectron sheath.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to2-im/",
+          "unconfirmed": false
+        },
+        {
+          "id": "im-1/ndl",
+          "name": "Navigation Doppler Lidar for Precise Velocity and Range Sensing",
+          "acronym": "NDL",
+          "organisation": "NASA Langley Research Center",
+          "instrument_types": [
+            "landing_navigation"
+          ],
+          "purpose": "Lidar measuring velocity and altitude during descent to touchdown.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to2-im/",
+          "unconfirmed": false
+        },
+        {
+          "id": "im-1/rfmg",
+          "name": "Radio Frequency Mass Gauge",
+          "acronym": "RFMG",
+          "organisation": "NASA Glenn Research Center",
+          "instrument_types": [
+            "technology_demo"
+          ],
+          "purpose": "Gauges propellant quantity in low gravity.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to2-im/",
+          "unconfirmed": false
+        },
+        {
+          "id": "im-1/lra",
+          "name": "Laser Retroreflector Array",
+          "acronym": "LRA",
+          "organisation": "NASA Goddard Space Flight Center",
+          "instrument_types": [
+            "laser_retroreflector"
+          ],
+          "purpose": "Passive retroreflectors serving as a precise location marker.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to2-im/",
+          "unconfirmed": false
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://science.nasa.gov/lunar-science/clps-deliveries/to2-im/",
+          "title": "TO2-IM Science Payloads (page updated Jan 22, 2025)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://lroc.im-ldi.com/images/1360",
+          "title": "Intuitive Machines IM-1 On The Moon! (LROC, 26 February 2024)",
+          "publisher": "LROC / Arizona State University",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://www.nasa.gov/missions/lro/nasas-lro-images-intuitive-machines-odysseus-lander/",
+          "title": "NASA's LRO Images Intuitive Machine's Odysseus Lander",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://www.nasa.gov/missions/artemis/clps/nasa-collects-first-surface-science-in-decades-via-commercial-moon-mission/",
+          "title": "NASA Collects First Surface Science in Decades via Commercial Moon Mission (Mar 01, 2024)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        }
+      ],
+      "unconfirmed_fields": [
+        "ellipse",
+        "planned_surface_days"
+      ],
+      "notes": [
+        "Landing and end of mission are known to the day, not the hour."
+      ],
+      "id": "im-1",
+      "name": "IM-1"
+    },
+    {
+      "vehicle_name": "Blue Ghost",
+      "task_order": "TO19D",
+      "provider": "Firefly Aerospace",
+      "lander": "Blue Ghost",
+      "status": "completed",
+      "outcome_note": "Landed upright near Mons Latreille in Mare Crisium on March 2, 2025. All 10 NASA payloads activated and collected data; the mission concluded March 16, 2025.",
+      "region": "nearside",
+      "target": {
+        "name": "Blue Ghost landing site, Mare Crisium",
+        "lat_deg": 18.5623,
+        "lon_deg": 61.8103,
+        "coordinate_kind": "actual_landing",
+        "source_url": "https://lroc.im-ldi.com/images/1407",
+        "feature_id": null
+      },
+      "target_name": "Mare Crisium (near Mons Latreille)",
+      "ellipse": null,
+      "launch": {
+        "date": "2025-01-15",
+        "precision": "day",
+        "as_published": "January 15th 2025"
+      },
+      "landing": {
+        "date": "2025-03-02T08:34:00Z",
+        "precision": "minute",
+        "as_published": "3:34 a.m. EST on Sunday [March 2, 2025]"
+      },
+      "end_of_mission": {
+        "date": "2025-03-16",
+        "precision": "day",
+        "as_published": "concluded its mission March 16"
+      },
+      "planned_surface_days": null,
+      "payloads": [
+        {
+          "id": "blue-ghost-m1/nglr",
+          "name": "Next Generation Lunar Retroreflector",
+          "acronym": "NGLR",
+          "organisation": "University of Maryland",
+          "instrument_types": [
+            "laser_retroreflector"
+          ],
+          "purpose": "Target for Earth-based lunar laser ranging at sub-millimetre precision.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to19d-firefly/",
+          "unconfirmed": false
+        },
+        {
+          "id": "blue-ghost-m1/radpc",
+          "name": "Radiation Tolerant Computer System",
+          "acronym": "RadPC",
+          "organisation": "Montana State University",
+          "instrument_types": [
+            "radiation_space_weather",
+            "technology_demo"
+          ],
+          "purpose": "Radiation-tolerant computer demonstration with dosimeters.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to19d-firefly/",
+          "unconfirmed": false
+        },
+        {
+          "id": "blue-ghost-m1/rac",
+          "name": "Regolith Adherence Characterization",
+          "acronym": "RAC",
+          "organisation": "Aegis Aerospace, Inc.",
+          "instrument_types": [
+            "exosphere_dust"
+          ],
+          "purpose": "Panels of different materials measuring how lunar dust adheres.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to19d-firefly/",
+          "unconfirmed": false
+        },
+        {
+          "id": "blue-ghost-m1/lms",
+          "name": "Lunar Magnetotelluric Sounder",
+          "acronym": "LMS",
+          "organisation": "Southwest Research Institute",
+          "instrument_types": [
+            "geology_geophysics"
+          ],
+          "purpose": "Electrometer and magnetometer sounding the Moon's interior structure.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to19d-firefly/",
+          "unconfirmed": false
+        },
+        {
+          "id": "blue-ghost-m1/lexi",
+          "name": "Lunar Environment Heliospheric X-ray Imager",
+          "acronym": "LEXI",
+          "organisation": "Boston University",
+          "instrument_types": [
+            "radiation_space_weather",
+            "imaging"
+          ],
+          "purpose": "X-ray imager of Earth's magnetosphere.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to19d-firefly/",
+          "unconfirmed": false
+        },
+        {
+          "id": "blue-ghost-m1/lpv",
+          "name": "Lunar PlanetVac",
+          "acronym": "LPV",
+          "organisation": "Honeybee Robotics",
+          "instrument_types": [
+            "technology_demo"
+          ],
+          "purpose": "Pneumatic regolith sampling system.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to19d-firefly/",
+          "unconfirmed": false
+        },
+        {
+          "id": "blue-ghost-m1/lister",
+          "name": "Lunar Instrumentation for Subsurface Thermal Exploration with Rapidity",
+          "acronym": "LISTER",
+          "organisation": "Texas Tech University",
+          "instrument_types": [
+            "heat_flow"
+          ],
+          "purpose": "Pneumatically drilled subsurface thermal probe measuring heat flow.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to19d-firefly/",
+          "unconfirmed": false
+        },
+        {
+          "id": "blue-ghost-m1/scalpss",
+          "name": "Stereo Cameras for Lunar Plume-Surface Studies",
+          "acronym": "SCALPSS",
+          "organisation": "NASA Langley Research Center",
+          "instrument_types": [
+            "imaging"
+          ],
+          "purpose": "Cameras imaging plume-surface interaction during descent.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to19d-firefly/",
+          "unconfirmed": false
+        },
+        {
+          "id": "blue-ghost-m1/eds",
+          "name": "Electrodynamic Dust Shield",
+          "acronym": "EDS",
+          "organisation": "NASA Kennedy Space Center",
+          "instrument_types": [
+            "exosphere_dust",
+            "technology_demo"
+          ],
+          "purpose": "Uses electric fields to clear dust from surfaces.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to19d-firefly/",
+          "unconfirmed": false
+        },
+        {
+          "id": "blue-ghost-m1/lugre",
+          "name": "Lunar GNSS Receiver Experiment",
+          "acronym": "LuGRE",
+          "organisation": "NASA Goddard Space Flight Center",
+          "instrument_types": [
+            "landing_navigation"
+          ],
+          "purpose": "Tests whether GPS and Galileo signals can be used for navigation at the Moon.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to19d-firefly/",
+          "unconfirmed": false
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://science.nasa.gov/lunar-science/clps-deliveries/to19d-firefly/",
+          "title": "TO19D Science Payloads (page updated Apr 30, 2025)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://lroc.im-ldi.com/images/1407",
+          "title": "Blue Ghost Lunar Lander Seen From Above (LROC, 7 March 2025)",
+          "publisher": "LROC / Arizona State University",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://lroc.im-ldi.com/images/1400",
+          "title": "Firefly Blue Ghost Landing Region (LROC, 21 February 2025)",
+          "publisher": "LROC / Arizona State University",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://www.nasa.gov/news-release/touchdown-carrying-nasa-science-fireflys-blue-ghost-lands-on-moon/",
+          "title": "Touchdown! Carrying NASA Science, Firefly's Blue Ghost Lands on Moon (RELEASE 25-022, Mar 02, 2025)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://www.nasa.gov/news-release/nasa-science-continues-after-fireflys-first-moon-mission-concludes/",
+          "title": "NASA Science Continues After Firefly's First Moon Mission Concludes (RELEASE 25-026, Mar 18, 2025)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        }
+      ],
+      "unconfirmed_fields": [
+        "ellipse",
+        "planned_surface_days"
+      ],
+      "notes": [],
+      "id": "blue-ghost-m1",
+      "name": "Blue Ghost Mission 1"
+    },
+    {
+      "vehicle_name": "Athena",
+      "task_order": "PRIME-1",
+      "provider": "Intuitive Machines",
+      "lander": "Nova-C",
+      "status": "partial_success",
+      "outcome_note": "Touched down at Mons Mouton at about 11:30 a.m. CST March 6, 2025, roughly 400 m from the intended site, and came to rest on its side in a 20 m crater. Because the lander was on its side, the PRIME-1 instruments could not accomplish their goals; NASA received some data before Intuitive Machines called an early end of mission at 12:15 a.m. CST March 7.",
+      "region": "south_polar",
+      "target": {
+        "name": "Athena rest position, Mons Mouton",
+        "lat_deg": -84.7906,
+        "lon_deg": 29.1957,
+        "coordinate_kind": "actual_landing",
+        "source_url": "https://lroc.im-ldi.com/images/1408",
+        "feature_id": null
+      },
+      "target_name": "Mons Mouton",
+      "ellipse": null,
+      "launch": null,
+      "landing": {
+        "date": "2025-03-06T17:30:00Z",
+        "precision": "minute",
+        "as_published": "approximately 11:30 a.m. [CST] March 6, 2025"
+      },
+      "end_of_mission": {
+        "date": "2025-03-07T06:15:00Z",
+        "precision": "minute",
+        "as_published": "12:15 a.m. CST Friday [March 7, 2025]"
+      },
+      "planned_surface_days": null,
+      "payloads": [
+        {
+          "id": "im-2/trident",
+          "name": "The Regolith and Ice Drill for Exploring New Terrain",
+          "acronym": "TRIDENT",
+          "organisation": "Honeybee Robotics",
+          "instrument_types": [
+            "volatiles",
+            "technology_demo"
+          ],
+          "purpose": "Drill built to record temperatures and bring up samples from as deep as 1 m.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/prime-1-im/",
+          "unconfirmed": false
+        },
+        {
+          "id": "im-2/msolo",
+          "name": "Mass Spectrometer for Observing Lunar Operations",
+          "acronym": "MSOLO",
+          "organisation": "NASA Kennedy Space Center",
+          "instrument_types": [
+            "volatiles"
+          ],
+          "purpose": "Mass spectrometer analysing drilled material for subsurface volatiles.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/prime-1-im/",
+          "unconfirmed": false
+        },
+        {
+          "id": "im-2/lra",
+          "name": "Laser Retroreflector Array",
+          "acronym": "LRA",
+          "organisation": "NASA Goddard Space Flight Center",
+          "instrument_types": [
+            "laser_retroreflector"
+          ],
+          "purpose": "Passive retroreflectors serving as a precise location marker.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to2-im/",
+          "unconfirmed": false
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://science.nasa.gov/lunar-science/clps-deliveries/prime-1-im/",
+          "title": "PRIME-1 Science (page updated Aug 01, 2025)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://lroc.im-ldi.com/images/1408",
+          "title": "IM-2 Athena Seen Obliquely (LROC, 10 March 2025)",
+          "publisher": "LROC / Arizona State University",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://lroc.im-ldi.com/images/1401",
+          "title": "IM-2 Landing Region (LROC, 26 February 2025)",
+          "publisher": "LROC / Arizona State University",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://www.nasa.gov/news-release/nasa-receives-some-data-before-intuitive-machines-ends-lunar-mission/",
+          "title": "NASA Receives Some Data Before Intuitive Machines Ends Lunar Mission (RELEASE 25-025, Mar 07, 2025)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        }
+      ],
+      "unconfirmed_fields": [
+        "ellipse",
+        "launch",
+        "planned_surface_days"
+      ],
+      "notes": [
+        "The intended landing site was -84.78, 29.13 E (LROC 1401); the coordinate used is where Athena came to rest.",
+        "NASA counts three PRIME-1 payloads: the PRIME-1 page names TRIDENT and MSOLO, and the TO2-IM page lists PRIME-1 among the LRA's task orders."
+      ],
+      "id": "im-2",
+      "name": "IM-2"
+    },
+    {
+      "vehicle_name": "Griffin-1",
+      "task_order": "TO20A",
+      "provider": "Voyager Technologies",
+      "lander": "Griffin",
+      "status": "planned",
+      "outcome_note": "Griffin-1 plans to launch in late 2026; five NASA payloads will be mounted on the Astrolab FLIP rover (NASA, Aug 2026). VIPER, originally on this task order, moved to Blue Origin under CS-7.",
+      "region": "south_polar",
+      "target": {
+        "name": "Mons Mouton (IAU feature centre)",
+        "lat_deg": -84.6,
+        "lon_deg": 31.0,
+        "coordinate_kind": "feature_centre",
+        "source_url": "https://planetarynames.wr.usgs.gov/Feature/16070",
+        "feature_id": 16070
+      },
+      "target_name": "Mons Mouton",
+      "ellipse": null,
+      "launch": {
+        "date": "2026-01-01",
+        "precision": "year",
+        "as_published": "late 2026"
+      },
+      "landing": null,
+      "end_of_mission": null,
+      "planned_surface_days": null,
+      "payloads": [
+        {
+          "id": "griffin-1/lra",
+          "name": "Laser Retroreflector Array",
+          "acronym": "LRA",
+          "organisation": "NASA Goddard Space Flight Center",
+          "instrument_types": [
+            "laser_retroreflector"
+          ],
+          "purpose": "Passive retroreflectors serving as a precise location marker.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/to20a-astrobotic/",
+          "unconfirmed": false
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://science.nasa.gov/lunar-science/clps-deliveries/to20a-astrobotic/",
+          "title": "TO20A Science Payloads (page updated Aug 19, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/",
+          "title": "NASA Provides Updates on Moon Base Cargo Landers, Tech Demonstrations (Aug 04, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://science.nasa.gov/lunar-discovery/deliveries",
+          "title": "Commercial Lunar Payload Services (CLPS) Deliveries (page updated May 06, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://planetarynames.wr.usgs.gov/Feature/16070",
+          "title": "Gazetteer of Planetary Nomenclature: Mons Mouton",
+          "publisher": "IAU / USGS Astrogeology",
+          "accessed": "2026-09-23"
+        }
+      ],
+      "unconfirmed_fields": [
+        "ellipse",
+        "end_of_mission",
+        "landing",
+        "payloads",
+        "planned_surface_days"
+      ],
+      "notes": [
+        "NASA's TO20A page names one payload (LRA); NASA's Aug 2026 update says five NASA payloads on the FLIP rover. Only the named one is listed.",
+        "The deliveries overview still says 'Astrobotic's Griffin lander ... in 2025'; the Aug 2026 pages name Voyager Technologies. The newer pages are used.",
+        "The target coordinate is the IAU centre of Mons Mouton, not a published landing point."
+      ],
+      "id": "griffin-1",
+      "name": "Griffin Mission One"
+    },
+    {
+      "vehicle_name": "Trinity",
+      "task_order": "CP-11",
+      "provider": "Intuitive Machines",
+      "lander": "Nova-C",
+      "status": "planned",
+      "outcome_note": "Will deliver NASA payloads to Reiner Gamma, a lunar swirl, with the Altus-1 data-relay satellite flying alongside (NASA, Aug 2026).",
+      "region": "nearside",
+      "target": {
+        "name": "Reiner Gamma (IAU feature centre)",
+        "lat_deg": 7.39,
+        "lon_deg": 301.04,
+        "coordinate_kind": "feature_centre",
+        "source_url": "https://planetarynames.wr.usgs.gov/Feature/4987",
+        "feature_id": 4987
+      },
+      "target_name": "Reiner Gamma",
+      "ellipse": null,
+      "launch": null,
+      "landing": {
+        "date": "2026-01-01",
+        "precision": "year",
+        "as_published": "in 2026"
+      },
+      "end_of_mission": null,
+      "planned_surface_days": null,
+      "payloads": [
+        {
+          "id": "im-3/lvx",
+          "name": "Lunar Vertex",
+          "acronym": "LVx",
+          "organisation": "Johns Hopkins University Applied Physics Laboratory",
+          "instrument_types": [
+            "geology_geophysics",
+            "rover_mobility"
+          ],
+          "purpose": "Lander and rover suite studying the origin of lunar magnetic fields and swirls.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-11/",
+          "unconfirmed": false
+        },
+        {
+          "id": "im-3/cadre",
+          "name": "Cooperative Autonomous Distributed Robotic Exploration",
+          "acronym": "CADRE",
+          "organisation": "NASA Jet Propulsion Laboratory",
+          "instrument_types": [
+            "rover_mobility",
+            "technology_demo"
+          ],
+          "purpose": "Small cooperating rovers with ground-penetrating radar testing autonomous exploration.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-11/",
+          "unconfirmed": false
+        },
+        {
+          "id": "im-3/mpac",
+          "name": "MoonLIGHT Pointing Actuator",
+          "acronym": "MPAc",
+          "organisation": "ESA",
+          "instrument_types": [
+            "laser_retroreflector"
+          ],
+          "purpose": "Large reflector for Earth-Moon laser ranging.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-11/",
+          "unconfirmed": false
+        },
+        {
+          "id": "im-3/lusem",
+          "name": "Lunar Space Environment Monitor",
+          "acronym": "LUSEM",
+          "organisation": "Korea Astronomy and Space Science Institute",
+          "instrument_types": [
+            "radiation_space_weather"
+          ],
+          "purpose": "Detects high-energy charged particles near the surface.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-11/",
+          "unconfirmed": false
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-11/",
+          "title": "CP-11 Science (page updated Jul 15, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/",
+          "title": "NASA Provides Updates on Moon Base Cargo Landers, Tech Demonstrations (Aug 04, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://planetarynames.wr.usgs.gov/Feature/4987",
+          "title": "Gazetteer of Planetary Nomenclature: Reiner Gamma",
+          "publisher": "IAU / USGS Astrogeology",
+          "accessed": "2026-09-23"
+        }
+      ],
+      "unconfirmed_fields": [
+        "ellipse",
+        "end_of_mission",
+        "launch",
+        "payloads",
+        "planned_surface_days"
+      ],
+      "notes": [
+        "NASA's CP-11 page names four NASA payloads; NASA's Aug 2026 update says five. The four named are listed.",
+        "The target coordinate is the IAU centre of Reiner Gamma, not a published landing point."
+      ],
+      "id": "im-3",
+      "name": "IM-3"
+    },
+    {
+      "vehicle_name": null,
+      "task_order": "CP-12",
+      "provider": "Draper / ispace-U.S.",
+      "lander": "APEX 1.0",
+      "status": "planned",
+      "outcome_note": "Will deliver three NASA CLPS payloads to Schrödinger Basin.",
+      "region": "farside",
+      "target": {
+        "name": "Schrödinger (IAU crater centre)",
+        "lat_deg": -74.73,
+        "lon_deg": 132.93,
+        "coordinate_kind": "feature_centre",
+        "source_url": "https://planetarynames.wr.usgs.gov/Feature/5381",
+        "feature_id": 5381
+      },
+      "target_name": "Schrödinger Basin",
+      "ellipse": null,
+      "launch": null,
+      "landing": null,
+      "end_of_mission": null,
+      "planned_surface_days": null,
+      "payloads": [
+        {
+          "id": "apex-1/fss",
+          "name": "Farside Seismic Suite",
+          "acronym": "FSS",
+          "organisation": "NASA Jet Propulsion Laboratory",
+          "instrument_types": [
+            "geology_geophysics"
+          ],
+          "purpose": "Two seismometers testing whether far-side seismicity differs from the near side.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-12/",
+          "unconfirmed": false
+        },
+        {
+          "id": "apex-1/litms",
+          "name": "Lunar Interior Temperature and Materials Suite",
+          "acronym": "LITMS",
+          "organisation": "Southwest Research Institute",
+          "instrument_types": [
+            "heat_flow",
+            "geology_geophysics"
+          ],
+          "purpose": "Heat-flow probe and magnetotelluric sounder for crustal heat flow and interior conductivity.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-12/",
+          "unconfirmed": false
+        },
+        {
+          "id": "apex-1/lusee-lite",
+          "name": "LuSEE-Lite",
+          "acronym": "LuSEE-Lite",
+          "organisation": "University of California, Berkeley",
+          "instrument_types": [
+            "exosphere_dust"
+          ],
+          "purpose": "Measures the electric and magnetic field and plasma environment at the surface.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-12/",
+          "unconfirmed": false
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-12/",
+          "title": "CP-12 Science (page updated Feb 20, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://science.nasa.gov/lunar-discovery/deliveries",
+          "title": "Commercial Lunar Payload Services (CLPS) Deliveries (page updated May 06, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://planetarynames.wr.usgs.gov/Feature/5381",
+          "title": "Gazetteer of Planetary Nomenclature: Schrödinger",
+          "publisher": "IAU / USGS Astrogeology",
+          "accessed": "2026-09-23"
+        }
+      ],
+      "unconfirmed_fields": [
+        "ellipse",
+        "end_of_mission",
+        "landing",
+        "launch",
+        "planned_surface_days",
+        "vehicle_name"
+      ],
+      "notes": [
+        "The target coordinate is the IAU centre of Schrödinger crater, not a published landing point."
+      ],
+      "id": "apex-1",
+      "name": "CP-12 (APEX 1.0)"
+    },
+    {
+      "vehicle_name": null,
+      "task_order": "CS-3/4",
+      "provider": "Firefly Aerospace",
+      "lander": "Blue Ghost (with Elytra)",
+      "status": "planned",
+      "outcome_note": "Planned to be the first American landing on the Moon's far side, carrying three NASA payloads (NASA, Aug 2026).",
+      "region": "farside",
+      "target": null,
+      "target_name": "Lunar far side",
+      "ellipse": null,
+      "launch": null,
+      "landing": null,
+      "end_of_mission": null,
+      "planned_surface_days": null,
+      "payloads": [
+        {
+          "id": "blue-ghost-m2/lusee-night",
+          "name": "LuSEE-Night",
+          "acronym": "LuSEE-Night",
+          "organisation": "Brookhaven National Lab and Lawrence Berkeley Lab (DOE)",
+          "instrument_types": [
+            "other"
+          ],
+          "purpose": "Low-frequency radio telescope operating through the lunar night.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/cs-3/",
+          "unconfirmed": false
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://science.nasa.gov/lunar-science/clps-deliveries/cs-3/",
+          "title": "CS-3/4 Science (page updated Apr 21, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/",
+          "title": "NASA Provides Updates on Moon Base Cargo Landers, Tech Demonstrations (Aug 04, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        }
+      ],
+      "unconfirmed_fields": [
+        "ellipse",
+        "end_of_mission",
+        "landing",
+        "launch",
+        "payloads",
+        "planned_surface_days",
+        "target",
+        "vehicle_name"
+      ],
+      "notes": [
+        "NASA counts three payloads; its CS-3/4 page names one (LuSEE-Night)."
+      ],
+      "id": "blue-ghost-m2",
+      "name": "Blue Ghost Mission 2"
+    },
+    {
+      "vehicle_name": null,
+      "task_order": "CP-21",
+      "provider": "Firefly Aerospace",
+      "lander": "Blue Ghost",
+      "status": "planned",
+      "outcome_note": "Will deliver six NASA CLPS science payloads to the Gruithuisen Domes.",
+      "region": "nearside",
+      "target": null,
+      "target_name": "Gruithuisen Domes",
+      "ellipse": null,
+      "launch": null,
+      "landing": null,
+      "end_of_mission": null,
+      "planned_surface_days": null,
+      "payloads": [
+        {
+          "id": "blue-ghost-m3/lunar-vise",
+          "name": "Lunar Vulkan Imaging and Spectroscopy Explorer",
+          "acronym": "Lunar-VISE",
+          "organisation": "University of Central Florida",
+          "instrument_types": [
+            "geology_geophysics",
+            "imaging",
+            "rover_mobility"
+          ],
+          "purpose": "Lander and rover cameras and spectrometers studying the silica-rich domes.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-21-science/",
+          "unconfirmed": false
+        },
+        {
+          "id": "blue-ghost-m3/heimdall",
+          "name": "Heimdall",
+          "acronym": "Heimdall",
+          "organisation": "Planetary Science Institute",
+          "instrument_types": [
+            "imaging"
+          ],
+          "purpose": "Four-camera system imaging regolith through all mission stages.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-21-science/",
+          "unconfirmed": false
+        },
+        {
+          "id": "blue-ghost-m3/samplr",
+          "name": "Sample Acquisition, Morphology Filtering, and Probing of Lunar Regolith",
+          "acronym": "SAMPLR",
+          "organisation": "Maxar Technologies",
+          "instrument_types": [
+            "technology_demo"
+          ],
+          "purpose": "Robotic arm with sieve-scoop and penetrometer collecting regolith.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-21-science/",
+          "unconfirmed": false
+        },
+        {
+          "id": "blue-ghost-m3/nmls",
+          "name": "Neutron Measurements at the Lunar Surface",
+          "acronym": "NMLS",
+          "organisation": "NASA Marshall Space Flight Center",
+          "instrument_types": [
+            "radiation_space_weather"
+          ],
+          "purpose": "Measures thermal and epithermal neutron count rates at the surface.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-21-science/",
+          "unconfirmed": false
+        },
+        {
+          "id": "blue-ghost-m3/rolses",
+          "name": "Radio wave Observation at the Lunar Surface of the photo-Electron Sheath",
+          "acronym": "ROLSES",
+          "organisation": "NASA Goddard Space Flight Center",
+          "instrument_types": [
+            "exosphere_dust"
+          ],
+          "purpose": "Low-frequency radio receiver measuring the photoelectron sheath.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-21-science/",
+          "unconfirmed": false
+        },
+        {
+          "id": "blue-ghost-m3/pils",
+          "name": "Photovoltaic Investigation on the Lunar Surface",
+          "acronym": "PILS",
+          "organisation": "NASA Glenn Research Center",
+          "instrument_types": [
+            "technology_demo"
+          ],
+          "purpose": "Compares several solar-cell technologies in the lunar environment.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-21-science/",
+          "unconfirmed": false
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-21-science/",
+          "title": "CP-21 Science (page updated Jun 10, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://science.nasa.gov/lunar-discovery/deliveries",
+          "title": "Commercial Lunar Payload Services (CLPS) Deliveries (page updated May 06, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        }
+      ],
+      "unconfirmed_fields": [
+        "ellipse",
+        "end_of_mission",
+        "landing",
+        "launch",
+        "planned_surface_days",
+        "target",
+        "vehicle_name"
+      ],
+      "notes": [
+        "'Gruithuisen Domes' is not a single IAU feature, so no coordinate is asserted."
+      ],
+      "id": "blue-ghost-m3",
+      "name": "Blue Ghost Mission 3"
+    },
+    {
+      "vehicle_name": null,
+      "task_order": "CP-22",
+      "provider": "Intuitive Machines",
+      "lander": "Nova-C",
+      "status": "planned",
+      "outcome_note": "Will deliver six NASA CLPS science payloads to Mons Mouton.",
+      "region": "south_polar",
+      "target": {
+        "name": "Mons Mouton (IAU feature centre)",
+        "lat_deg": -84.6,
+        "lon_deg": 31.0,
+        "coordinate_kind": "feature_centre",
+        "source_url": "https://planetarynames.wr.usgs.gov/Feature/16070",
+        "feature_id": 16070
+      },
+      "target_name": "Mons Mouton",
+      "ellipse": null,
+      "launch": null,
+      "landing": null,
+      "end_of_mission": null,
+      "planned_surface_days": null,
+      "payloads": [
+        {
+          "id": "im-4/leia",
+          "name": "Lunar Explorer Instrument for space biology Applications",
+          "acronym": "LEIA",
+          "organisation": "NASA Ames Research Center",
+          "instrument_types": [
+            "other"
+          ],
+          "purpose": "Yeast experiment studying the effect of the lunar environment on biology.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-22-science/",
+          "unconfirmed": false
+        },
+        {
+          "id": "im-4/prospect",
+          "name": "Package for Resource Observation and in-Situ Prospecting for Exploration, Commercial exploitation and Transportation",
+          "acronym": "PROSPECT",
+          "organisation": "ESA",
+          "instrument_types": [
+            "volatiles"
+          ],
+          "purpose": "Drill and analysis package searching for water ice and oxygen.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-22-science/",
+          "unconfirmed": false
+        },
+        {
+          "id": "im-4/l-ciris",
+          "name": "Lunar Compact Infrared Imaging System",
+          "acronym": "L-CIRiS",
+          "organisation": "University of Colorado",
+          "instrument_types": [
+            "imaging",
+            "volatiles"
+          ],
+          "purpose": "Multispectral imaging radiometer mapping composition, temperature and possible ice.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-22-science/",
+          "unconfirmed": false
+        },
+        {
+          "id": "im-4/seal",
+          "name": "Surface and Exosphere Alterations by Landers",
+          "acronym": "SEAL",
+          "organisation": "NASA Goddard Space Flight Center",
+          "instrument_types": [
+            "exosphere_dust"
+          ],
+          "purpose": "Analyses how lander exhaust alters regolith and the exosphere.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-22-science/",
+          "unconfirmed": false
+        },
+        {
+          "id": "im-4/mag",
+          "name": "Fluxgate Magnetometer",
+          "acronym": "MAG",
+          "organisation": "NASA Goddard Space Flight Center",
+          "instrument_types": [
+            "geology_geophysics"
+          ],
+          "purpose": "Measures local magnetic fields.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-22-science/",
+          "unconfirmed": false
+        },
+        {
+          "id": "im-4/lra",
+          "name": "Laser Retroreflector Array",
+          "acronym": "LRA",
+          "organisation": "NASA Goddard Space Flight Center",
+          "instrument_types": [
+            "laser_retroreflector"
+          ],
+          "purpose": "Passive retroreflectors serving as a precise location marker.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-22-science/",
+          "unconfirmed": false
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://science.nasa.gov/lunar-science/clps-deliveries/cp-22-science/",
+          "title": "CP-22 Science (page updated Jun 10, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://science.nasa.gov/lunar-discovery/deliveries",
+          "title": "Commercial Lunar Payload Services (CLPS) Deliveries (page updated May 06, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://planetarynames.wr.usgs.gov/Feature/16070",
+          "title": "Gazetteer of Planetary Nomenclature: Mons Mouton",
+          "publisher": "IAU / USGS Astrogeology",
+          "accessed": "2026-09-23"
+        }
+      ],
+      "unconfirmed_fields": [
+        "ellipse",
+        "end_of_mission",
+        "landing",
+        "launch",
+        "planned_surface_days",
+        "vehicle_name"
+      ],
+      "notes": [
+        "The target coordinate is the IAU centre of Mons Mouton, not a published landing point."
+      ],
+      "id": "im-4",
+      "name": "IM-4"
+    },
+    {
+      "vehicle_name": "Endurance",
+      "task_order": "CT-3",
+      "provider": "Blue Origin",
+      "lander": "Blue Moon Mark 1",
+      "status": "planned",
+      "outcome_note": "Will deliver two NASA science payloads to the lunar south pole. In integrated testing as of August 2026; thermal-vacuum testing at NASA Johnson completed.",
+      "region": "south_polar",
+      "target": null,
+      "target_name": "Lunar south pole",
+      "ellipse": null,
+      "launch": null,
+      "landing": null,
+      "end_of_mission": null,
+      "planned_surface_days": null,
+      "payloads": [
+        {
+          "id": "blue-moon-mk1-endurance/scalpss",
+          "name": "Stereo Cameras for Lunar Plume-Surface Studies 1.x",
+          "acronym": "SCALPSS 1.x",
+          "organisation": "NASA Langley Research Center",
+          "instrument_types": [
+            "imaging"
+          ],
+          "purpose": "High-resolution cameras documenting the descent and plume effects.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/ct-3-science/",
+          "unconfirmed": false
+        },
+        {
+          "id": "blue-moon-mk1-endurance/lra",
+          "name": "Laser Retroreflector Array",
+          "acronym": "LRA",
+          "organisation": "NASA Goddard Space Flight Center",
+          "instrument_types": [
+            "laser_retroreflector"
+          ],
+          "purpose": "Passive retroreflectors serving as a precise location marker.",
+          "source_url": "https://science.nasa.gov/lunar-science/clps-deliveries/ct-3-science/",
+          "unconfirmed": false
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://science.nasa.gov/lunar-science/clps-deliveries/ct-3-science/",
+          "title": "CT-3 Science (page updated Jun 10, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/",
+          "title": "NASA Provides Updates on Moon Base Cargo Landers, Tech Demonstrations (Aug 04, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://www.nasa.gov/news-release/nasa-selects-blue-origin-to-deliver-viper-rover-to-moons-south-pole/",
+          "title": "NASA Selects Blue Origin to Deliver VIPER Rover to Moon's South Pole (RELEASE 25-064, Sep 19, 2025)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        }
+      ],
+      "unconfirmed_fields": [
+        "ellipse",
+        "end_of_mission",
+        "landing",
+        "launch",
+        "planned_surface_days",
+        "target"
+      ],
+      "notes": [
+        "NASA's Sept 2025 release targeted launch 'later this year'; the Aug 2026 update shows it still in testing, so no current date is asserted."
+      ],
+      "id": "blue-moon-mk1-endurance",
+      "name": "Blue Moon MK1 (Endurance)"
+    },
+    {
+      "vehicle_name": null,
+      "task_order": "CS-7",
+      "provider": "Blue Origin",
+      "lander": "Blue Moon Mark 1 (second unit)",
+      "status": "planned",
+      "outcome_note": "Blue Origin will deliver NASA's VIPER rover to the lunar surface in late 2027 using a second Blue Moon MK1 lander; the task order has a base award and an option to deliver the rover.",
+      "region": "south_polar",
+      "target": {
+        "name": "Mons Mouton (IAU feature centre)",
+        "lat_deg": -84.6,
+        "lon_deg": 31.0,
+        "coordinate_kind": "feature_centre",
+        "source_url": "https://planetarynames.wr.usgs.gov/Feature/16070",
+        "feature_id": 16070
+      },
+      "target_name": "Mons Mouton",
+      "ellipse": null,
+      "launch": null,
+      "landing": {
+        "date": "2027-01-01",
+        "precision": "year",
+        "as_published": "late 2027"
+      },
+      "end_of_mission": null,
+      "planned_surface_days": null,
+      "payloads": [
+        {
+          "id": "blue-moon-mk1-viper/viper",
+          "name": "Volatiles Investigating Polar Exploration Rover",
+          "acronym": "VIPER",
+          "organisation": "NASA",
+          "instrument_types": [
+            "volatiles",
+            "rover_mobility"
+          ],
+          "purpose": "Rover that will search for volatile resources such as ice.",
+          "source_url": "https://www.nasa.gov/news-release/nasa-selects-blue-origin-to-deliver-viper-rover-to-moons-south-pole/",
+          "unconfirmed": false
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://www.nasa.gov/news-release/nasa-selects-blue-origin-to-deliver-viper-rover-to-moons-south-pole/",
+          "title": "NASA Selects Blue Origin to Deliver VIPER Rover to Moon's South Pole (RELEASE 25-064, Sep 19, 2025)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://science.nasa.gov/lunar-science/clps-deliveries/to20a-astrobotic/",
+          "title": "TO20A Science Payloads (editor's note on CS-7, page updated Aug 19, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://planetarynames.wr.usgs.gov/Feature/16070",
+          "title": "Gazetteer of Planetary Nomenclature: Mons Mouton",
+          "publisher": "IAU / USGS Astrogeology",
+          "accessed": "2026-09-23"
+        }
+      ],
+      "unconfirmed_fields": [
+        "ellipse",
+        "end_of_mission",
+        "launch",
+        "planned_surface_days",
+        "vehicle_name"
+      ],
+      "notes": [
+        "The Mons Mouton destination is from the TO20A editor's note; the coordinate is the IAU feature centre."
+      ],
+      "id": "blue-moon-mk1-viper",
+      "name": "VIPER delivery (Blue Moon MK1)"
+    },
+    {
+      "vehicle_name": null,
+      "task_order": "CS-6",
+      "provider": "Firefly Aerospace",
+      "lander": "Blue Ghost",
+      "status": "planned",
+      "outcome_note": "Will deliver four NASA CLPS science payloads to the lunar south pole.",
+      "region": "south_polar",
+      "target": null,
+      "target_name": "Lunar south pole",
+      "ellipse": null,
+      "launch": null,
+      "landing": null,
+      "end_of_mission": null,
+      "planned_surface_days": null,
+      "payloads": [
+        {
+          "id": "blue-ghost-m4/lims",
+          "name": "Laser Ablation Ionization Mass Spectrometer",
+          "acronym": "LIMS",
+          "organisation": "University of Bern",
+          "instrument_types": [
+            "geology_geophysics"
+          ],
+          "purpose": "Laser mass spectrometer revealing the chemical composition of surface material.",
+          "source_url": "https://science.nasa.gov/lunar-science/programs/clps/cs-6-science/",
+          "unconfirmed": false
+        },
+        {
+          "id": "blue-ghost-m4/moonranger",
+          "name": "MoonRanger",
+          "acronym": "MoonRanger",
+          "organisation": "Astrobotic",
+          "instrument_types": [
+            "volatiles",
+            "rover_mobility"
+          ],
+          "purpose": "Suitcase-sized autonomous rover carrying a neutron spectrometer to detect hydrogen.",
+          "source_url": "https://science.nasa.gov/lunar-science/programs/clps/cs-6-science/",
+          "unconfirmed": false
+        },
+        {
+          "id": "blue-ghost-m4/scalpss",
+          "name": "Stereo Cameras for Lunar Plume-Surface Studies",
+          "acronym": "SCALPSS",
+          "organisation": "NASA Langley Research Center",
+          "instrument_types": [
+            "imaging"
+          ],
+          "purpose": "Cameras documenting descent, plume and surface.",
+          "source_url": "https://science.nasa.gov/lunar-science/programs/clps/cs-6-science/",
+          "unconfirmed": false
+        },
+        {
+          "id": "blue-ghost-m4/lra",
+          "name": "Laser Retroreflector Array",
+          "acronym": "LRA",
+          "organisation": "NASA Goddard Space Flight Center",
+          "instrument_types": [
+            "laser_retroreflector"
+          ],
+          "purpose": "Passive retroreflectors serving as a precise location marker.",
+          "source_url": "https://science.nasa.gov/lunar-science/programs/clps/cs-6-science/",
+          "unconfirmed": false
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://science.nasa.gov/lunar-science/programs/clps/cs-6-science/",
+          "title": "CS-6 Science (page updated May 04, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://science.nasa.gov/lunar-discovery/deliveries",
+          "title": "Commercial Lunar Payload Services (CLPS) Deliveries (page updated May 06, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        }
+      ],
+      "unconfirmed_fields": [
+        "ellipse",
+        "end_of_mission",
+        "landing",
+        "launch",
+        "planned_surface_days",
+        "target",
+        "vehicle_name"
+      ],
+      "notes": [],
+      "id": "blue-ghost-m4",
+      "name": "Blue Ghost Mission 4"
+    },
+    {
+      "vehicle_name": null,
+      "task_order": "CT-4",
+      "provider": "Intuitive Machines",
+      "lander": "Nova-D",
+      "status": "planned",
+      "outcome_note": "Will deliver six NASA CLPS science payloads to the lunar south pole.",
+      "region": "south_polar",
+      "target": null,
+      "target_name": "Lunar south pole",
+      "ellipse": null,
+      "launch": null,
+      "landing": null,
+      "end_of_mission": null,
+      "planned_surface_days": null,
+      "payloads": [],
+      "sources": [
+        {
+          "url": "https://science.nasa.gov/lunar-discovery/deliveries",
+          "title": "Commercial Lunar Payload Services (CLPS) Deliveries (page updated May 06, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        }
+      ],
+      "unconfirmed_fields": [
+        "ellipse",
+        "end_of_mission",
+        "landing",
+        "launch",
+        "payloads",
+        "planned_surface_days",
+        "target",
+        "vehicle_name"
+      ],
+      "notes": [
+        "NASA counts six payloads but does not name them on the deliveries page."
+      ],
+      "id": "ct-4",
+      "name": "CT-4 (Nova-D)"
+    },
+    {
+      "vehicle_name": null,
+      "task_order": "CS-8",
+      "provider": null,
+      "lander": null,
+      "status": "planned",
+      "outcome_note": "Will deliver Moon Base payloads to the lunar surface.",
+      "region": null,
+      "target": null,
+      "target_name": null,
+      "ellipse": null,
+      "launch": null,
+      "landing": null,
+      "end_of_mission": null,
+      "planned_surface_days": null,
+      "payloads": [],
+      "sources": [
+        {
+          "url": "https://science.nasa.gov/lunar-discovery/deliveries",
+          "title": "Commercial Lunar Payload Services (CLPS) Deliveries (page updated May 06, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        }
+      ],
+      "unconfirmed_fields": [
+        "ellipse",
+        "end_of_mission",
+        "lander",
+        "landing",
+        "launch",
+        "payloads",
+        "planned_surface_days",
+        "provider",
+        "region",
+        "target",
+        "target_name",
+        "vehicle_name"
+      ],
+      "notes": [],
+      "id": "cs-8",
+      "name": "CS-8"
+    },
+    {
+      "vehicle_name": null,
+      "task_order": "CX-2",
+      "provider": null,
+      "lander": null,
+      "status": "planned",
+      "outcome_note": "Will deliver one or more Lunar Terrain Vehicles to support the development of NASA's Moon Base.",
+      "region": null,
+      "target": null,
+      "target_name": null,
+      "ellipse": null,
+      "launch": null,
+      "landing": null,
+      "end_of_mission": null,
+      "planned_surface_days": null,
+      "payloads": [],
+      "sources": [
+        {
+          "url": "https://science.nasa.gov/lunar-discovery/deliveries",
+          "title": "Commercial Lunar Payload Services (CLPS) Deliveries (page updated May 06, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        }
+      ],
+      "unconfirmed_fields": [
+        "ellipse",
+        "end_of_mission",
+        "lander",
+        "landing",
+        "launch",
+        "payloads",
+        "planned_surface_days",
+        "provider",
+        "region",
+        "target",
+        "target_name",
+        "vehicle_name"
+      ],
+      "notes": [],
+      "id": "cx-2",
+      "name": "CX-2"
+    },
+    {
+      "vehicle_name": null,
+      "task_order": null,
+      "provider": "Astrobotic",
+      "lander": null,
+      "status": "planned",
+      "outcome_note": "Awarded June 30, 2026 as one of four new CLPS missions to land in late 2028, using an updated version of an already-flown lander design.",
+      "region": null,
+      "target": null,
+      "target_name": null,
+      "ellipse": null,
+      "launch": null,
+      "landing": {
+        "date": "2028-01-01",
+        "precision": "year",
+        "as_published": "late 2028"
+      },
+      "end_of_mission": null,
+      "planned_surface_days": null,
+      "payloads": [
+        {
+          "id": "moon-base-2028-astrobotic-a/scalpss",
+          "name": "Stereo Camera for Lunar Plume Surface Studies",
+          "acronym": "SCALPSS",
+          "organisation": "NASA",
+          "instrument_types": [
+            "imaging"
+          ],
+          "purpose": "Stereo cameras producing a 3D view of the engine plume's effect on lunar dust.",
+          "source_url": "https://www.nasa.gov/news-release/nasa-awards-more-moon-base-science-previews-new-opportunities/",
+          "unconfirmed": false
+        },
+        {
+          "id": "moon-base-2028-astrobotic-a/lra",
+          "name": "Laser Retroreflector Array",
+          "acronym": "LRA",
+          "organisation": "NASA",
+          "instrument_types": [
+            "laser_retroreflector"
+          ],
+          "purpose": "Passive retroreflectors building a network of permanent location markers.",
+          "source_url": "https://www.nasa.gov/news-release/nasa-awards-more-moon-base-science-previews-new-opportunities/",
+          "unconfirmed": false
+        },
+        {
+          "id": "moon-base-2028-astrobotic-a/lets",
+          "name": "Linear Energy Transfer Spectrometer",
+          "acronym": "LETS",
+          "organisation": "NASA",
+          "instrument_types": [
+            "radiation_space_weather"
+          ],
+          "purpose": "Radiation monitor measuring the energy and type of incoming space radiation.",
+          "source_url": "https://www.nasa.gov/news-release/nasa-awards-more-moon-base-science-previews-new-opportunities/",
+          "unconfirmed": false
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://www.nasa.gov/news-release/nasa-awards-more-moon-base-science-previews-new-opportunities/",
+          "title": "NASA Awards More Moon Base Science, Previews New Opportunities (RELEASE 26-053, Jun 30, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        }
+      ],
+      "unconfirmed_fields": [
+        "ellipse",
+        "end_of_mission",
+        "lander",
+        "launch",
+        "planned_surface_days",
+        "region",
+        "target",
+        "target_name",
+        "task_order",
+        "vehicle_name"
+      ],
+      "notes": [
+        "NASA did not publish a task order name, lander, or destination for this award in the release."
+      ],
+      "id": "moon-base-2028-astrobotic-a",
+      "name": "Moon Base science delivery (Astrobotic, first of two)"
+    },
+    {
+      "vehicle_name": null,
+      "task_order": null,
+      "provider": "Astrobotic",
+      "lander": null,
+      "status": "planned",
+      "outcome_note": "Awarded June 30, 2026 as one of four new CLPS missions to land in late 2028, using an updated version of an already-flown lander design.",
+      "region": null,
+      "target": null,
+      "target_name": null,
+      "ellipse": null,
+      "launch": null,
+      "landing": {
+        "date": "2028-01-01",
+        "precision": "year",
+        "as_published": "late 2028"
+      },
+      "end_of_mission": null,
+      "planned_surface_days": null,
+      "payloads": [
+        {
+          "id": "moon-base-2028-astrobotic-b/scalpss",
+          "name": "Stereo Camera for Lunar Plume Surface Studies",
+          "acronym": "SCALPSS",
+          "organisation": "NASA",
+          "instrument_types": [
+            "imaging"
+          ],
+          "purpose": "Stereo cameras producing a 3D view of the engine plume's effect on lunar dust.",
+          "source_url": "https://www.nasa.gov/news-release/nasa-awards-more-moon-base-science-previews-new-opportunities/",
+          "unconfirmed": false
+        },
+        {
+          "id": "moon-base-2028-astrobotic-b/lra",
+          "name": "Laser Retroreflector Array",
+          "acronym": "LRA",
+          "organisation": "NASA",
+          "instrument_types": [
+            "laser_retroreflector"
+          ],
+          "purpose": "Passive retroreflectors building a network of permanent location markers.",
+          "source_url": "https://www.nasa.gov/news-release/nasa-awards-more-moon-base-science-previews-new-opportunities/",
+          "unconfirmed": false
+        },
+        {
+          "id": "moon-base-2028-astrobotic-b/lets",
+          "name": "Linear Energy Transfer Spectrometer",
+          "acronym": "LETS",
+          "organisation": "NASA",
+          "instrument_types": [
+            "radiation_space_weather"
+          ],
+          "purpose": "Radiation monitor measuring the energy and type of incoming space radiation.",
+          "source_url": "https://www.nasa.gov/news-release/nasa-awards-more-moon-base-science-previews-new-opportunities/",
+          "unconfirmed": false
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://www.nasa.gov/news-release/nasa-awards-more-moon-base-science-previews-new-opportunities/",
+          "title": "NASA Awards More Moon Base Science, Previews New Opportunities (RELEASE 26-053, Jun 30, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        }
+      ],
+      "unconfirmed_fields": [
+        "ellipse",
+        "end_of_mission",
+        "lander",
+        "launch",
+        "planned_surface_days",
+        "region",
+        "target",
+        "target_name",
+        "task_order",
+        "vehicle_name"
+      ],
+      "notes": [
+        "NASA did not publish a task order name, lander, or destination for this award in the release."
+      ],
+      "id": "moon-base-2028-astrobotic-b",
+      "name": "Moon Base science delivery (Astrobotic, second of two)"
+    },
+    {
+      "vehicle_name": null,
+      "task_order": null,
+      "provider": "Firefly Aerospace",
+      "lander": null,
+      "status": "planned",
+      "outcome_note": "Awarded June 30, 2026 as one of four new CLPS missions to land in late 2028, using an updated version of an already-flown lander design.",
+      "region": null,
+      "target": null,
+      "target_name": null,
+      "ellipse": null,
+      "launch": null,
+      "landing": {
+        "date": "2028-01-01",
+        "precision": "year",
+        "as_published": "late 2028"
+      },
+      "end_of_mission": null,
+      "planned_surface_days": null,
+      "payloads": [
+        {
+          "id": "moon-base-2028-firefly/scalpss",
+          "name": "Stereo Camera for Lunar Plume Surface Studies",
+          "acronym": "SCALPSS",
+          "organisation": "NASA",
+          "instrument_types": [
+            "imaging"
+          ],
+          "purpose": "Stereo cameras producing a 3D view of the engine plume's effect on lunar dust.",
+          "source_url": "https://www.nasa.gov/news-release/nasa-awards-more-moon-base-science-previews-new-opportunities/",
+          "unconfirmed": false
+        },
+        {
+          "id": "moon-base-2028-firefly/lra",
+          "name": "Laser Retroreflector Array",
+          "acronym": "LRA",
+          "organisation": "NASA",
+          "instrument_types": [
+            "laser_retroreflector"
+          ],
+          "purpose": "Passive retroreflectors building a network of permanent location markers.",
+          "source_url": "https://www.nasa.gov/news-release/nasa-awards-more-moon-base-science-previews-new-opportunities/",
+          "unconfirmed": false
+        },
+        {
+          "id": "moon-base-2028-firefly/lets",
+          "name": "Linear Energy Transfer Spectrometer",
+          "acronym": "LETS",
+          "organisation": "NASA",
+          "instrument_types": [
+            "radiation_space_weather"
+          ],
+          "purpose": "Radiation monitor measuring the energy and type of incoming space radiation.",
+          "source_url": "https://www.nasa.gov/news-release/nasa-awards-more-moon-base-science-previews-new-opportunities/",
+          "unconfirmed": false
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://www.nasa.gov/news-release/nasa-awards-more-moon-base-science-previews-new-opportunities/",
+          "title": "NASA Awards More Moon Base Science, Previews New Opportunities (RELEASE 26-053, Jun 30, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        }
+      ],
+      "unconfirmed_fields": [
+        "ellipse",
+        "end_of_mission",
+        "lander",
+        "launch",
+        "planned_surface_days",
+        "region",
+        "target",
+        "target_name",
+        "task_order",
+        "vehicle_name"
+      ],
+      "notes": [
+        "NASA did not publish a task order name, lander, or destination for this award in the release."
+      ],
+      "id": "moon-base-2028-firefly",
+      "name": "Moon Base science delivery (Firefly Aerospace, one delivery)"
+    },
+    {
+      "vehicle_name": null,
+      "task_order": null,
+      "provider": "Intuitive Machines",
+      "lander": null,
+      "status": "planned",
+      "outcome_note": "Awarded June 30, 2026 as one of four new CLPS missions to land in late 2028, using an updated version of an already-flown lander design.",
+      "region": null,
+      "target": null,
+      "target_name": null,
+      "ellipse": null,
+      "launch": null,
+      "landing": {
+        "date": "2028-01-01",
+        "precision": "year",
+        "as_published": "late 2028"
+      },
+      "end_of_mission": null,
+      "planned_surface_days": null,
+      "payloads": [
+        {
+          "id": "moon-base-2028-intuitive-machines/scalpss",
+          "name": "Stereo Camera for Lunar Plume Surface Studies",
+          "acronym": "SCALPSS",
+          "organisation": "NASA",
+          "instrument_types": [
+            "imaging"
+          ],
+          "purpose": "Stereo cameras producing a 3D view of the engine plume's effect on lunar dust.",
+          "source_url": "https://www.nasa.gov/news-release/nasa-awards-more-moon-base-science-previews-new-opportunities/",
+          "unconfirmed": false
+        },
+        {
+          "id": "moon-base-2028-intuitive-machines/lra",
+          "name": "Laser Retroreflector Array",
+          "acronym": "LRA",
+          "organisation": "NASA",
+          "instrument_types": [
+            "laser_retroreflector"
+          ],
+          "purpose": "Passive retroreflectors building a network of permanent location markers.",
+          "source_url": "https://www.nasa.gov/news-release/nasa-awards-more-moon-base-science-previews-new-opportunities/",
+          "unconfirmed": false
+        },
+        {
+          "id": "moon-base-2028-intuitive-machines/lets",
+          "name": "Linear Energy Transfer Spectrometer",
+          "acronym": "LETS",
+          "organisation": "NASA",
+          "instrument_types": [
+            "radiation_space_weather"
+          ],
+          "purpose": "Radiation monitor measuring the energy and type of incoming space radiation.",
+          "source_url": "https://www.nasa.gov/news-release/nasa-awards-more-moon-base-science-previews-new-opportunities/",
+          "unconfirmed": false
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://www.nasa.gov/news-release/nasa-awards-more-moon-base-science-previews-new-opportunities/",
+          "title": "NASA Awards More Moon Base Science, Previews New Opportunities (RELEASE 26-053, Jun 30, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        }
+      ],
+      "unconfirmed_fields": [
+        "ellipse",
+        "end_of_mission",
+        "lander",
+        "launch",
+        "planned_surface_days",
+        "region",
+        "target",
+        "target_name",
+        "task_order",
+        "vehicle_name"
+      ],
+      "notes": [
+        "NASA did not publish a task order name, lander, or destination for this award in the release."
+      ],
+      "id": "moon-base-2028-intuitive-machines",
+      "name": "Moon Base science delivery (Intuitive Machines, one delivery)"
+    }
+  ]
+}

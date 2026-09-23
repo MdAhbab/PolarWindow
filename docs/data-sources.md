@@ -1,0 +1,122 @@
+# Data sources
+
+Every number and name on screen comes from one of the sources below. This file
+is the research log for `data/missions.json` and the rulebook for anything
+added to it later.
+
+## Terrain and ephemeris
+
+| Input | Product | Publisher | Used for |
+|---|---|---|---|
+| Polar DEM, 20 m | `LDEM_80S_20M` | LOLA team, PDS Geosciences Node | Fine horizon windows (20 km around each polar site) |
+| Polar DEM, 80 m | `LDEM_80S_80M` | LOLA team, PDS Geosciences Node | Regional horizon, 20–50 km |
+| Planetary ephemeris | `de440.bsp` | NAIF / JPL | Sun and Earth vectors |
+| Lunar orientation | `moon_pa_de440_200625.bpc`, `moon_de440_250416.tf`, `pck00011.tpc` | NAIF / JPL | `MOON_ME` frame |
+| Leap seconds | `naif0012.tls` | NAIF | UTC ↔ TDB |
+| Feature names and centres | Gazetteer of Planetary Nomenclature | IAU / USGS Astrogeology | Mission targets with no published landing point |
+| Candidate-site anchors | Lunar South Pole Atlas | LPI | The 15 candidate sites' anchors (`data/sites.json`) |
+
+The polar DEM covers **80°S–90°S only**. Outside it, Sun and Earth are still
+computed with SPICE, but against a smooth-Moon horizon, and every response says
+`terrain_modelled: false` (ADR-6).
+
+## CLPS missions (`data/missions.json`)
+
+Compiled 2026-09-23. 20 deliveries, 64 payloads.
+
+### Source precedence
+
+1. **NASA Science CLPS delivery pages**
+   (`science.nasa.gov/lunar-science/clps-deliveries/…`). These give payload
+   manifests, targets and task orders. Each page's own "last updated" date is
+   recorded in the source title.
+2. **NASA news releases and articles** (`nasa.gov`). These give launch,
+   landing, end of mission, status, and changes that postdate a delivery page.
+3. **LROC** (`lroc.im-ldi.com`, NASA/GSFC/Arizona State University). This gives
+   **actual landing coordinates**, measured from LRO images.
+4. **IAU Gazetteer**, for the centre of a named target feature when no landing
+   point is published.
+5. Provider releases are not used as the only source for any field.
+
+When two NASA pages disagree, the **newer** page wins, and the disagreement is
+written into the record's `notes`. It is never silently resolved.
+
+### Rules
+
+- **Every record has at least one source, and every payload has a
+  `source_url`.** The ingest fails otherwise.
+- **A field with no source is `null` and listed in `unconfirmed_fields`.** The
+  UI shows the word "Unconfirmed", never a guess.
+- `unconfirmed_fields` containing `payloads` means the manifest is **known to be
+  incomplete**: NASA counts more payloads than it names.
+- **Dates carry their precision** (`minute`, `day`, `month`, `quarter`, `year`)
+  and the **verbatim published phrase** (`as_published`, for example
+  "late 2027"). A year-precision date is stored as 1 January of that year. The
+  phrase, not the stored date, is what the UI shows.
+- **Coordinate kinds:**
+  - `actual_landing`: where the lander came to rest, from LROC. This applies to
+    IM-1, IM-2 and Blue Ghost Mission 1.
+  - `planned_target`: a landing point published before flight. None is in use
+    yet; IM-2's intended site is kept in its notes.
+  - `feature_centre`: the IAU centre of the named target (Mons Mouton,
+    Reiner Gamma, Schrödinger, Sinus Viscositatis). **It is not a landing
+    point**, and the UI says so. Missions that share a feature share one site.
+- A region described only as "the lunar south pole", "the far side" or
+  "the Gruithuisen Domes" (not a single IAU feature) gets **no coordinate**.
+
+### Instrument-type classification
+
+`instrument_types` is **this project's** classification. It is assigned from
+each payload's sourced "Type of Instrument", "Key Measurement" or summary. It
+exists so the payload filter works, and it is not a NASA taxonomy.
+
+| Type | Assigned when the source describes… |
+|---|---|
+| `volatiles` | Hydrogen, water ice, volatile gases, or drilling for them (NSS, NIRVSS, PITMS, TRIDENT, MSOLO, PROSPECT, L-CIRiS, MoonRanger, VIPER) |
+| `geology_geophysics` | Composition, seismology, magnetics, interior structure |
+| `heat_flow` | Subsurface temperature or heat-flow probes |
+| `radiation_space_weather` | Radiation dosimetry, energetic particles, magnetosphere imaging |
+| `exosphere_dust` | The photoelectron sheath, plasma, dust adhesion, or lander exhaust alteration |
+| `imaging` | Cameras and imaging radiometers |
+| `landing_navigation` | Descent sensors, navigation beacons, GNSS reception |
+| `communications` | Radio links as the demonstrated capability |
+| `laser_retroreflector` | Passive retroreflectors (LRA, NGLR, MoonLIGHT) |
+| `rover_mobility` | A rover, or a payload mounted on one |
+| `technology_demo` | Engineering demonstrations (drills, arms, dust shields, gauges, solar cells) |
+| `other` | Anything else (space biology, radio astronomy) |
+
+### Known gaps and conflicts, as of 2026-09-23
+
+- **Griffin-1 (TO20A).** NASA's TO20A page names one payload (LRA). NASA's
+  August 2026 update says five NASA payloads will ride on the Astrolab FLIP
+  rover. The deliveries overview still reads "Astrobotic's Griffin lander … in
+  2025"; the newer pages name Voyager Technologies and a late-2026 launch.
+- **IM-3 (CP-11).** The CP-11 page names four NASA payloads; the August 2026
+  update says five.
+- **Blue Ghost Mission 2 (CS-3/4).** NASA counts three payloads and names one
+  (LuSEE-Night).
+- **CT-4, CS-8, CX-2, and the four June 2026 Moon Base awards.** Destinations,
+  landers or names are unpublished, and are recorded as unconfirmed.
+- **Blue Moon MK1 "Endurance" (CT-3).** In September 2025 NASA targeted launch
+  "later this year". In August 2026 it was still in testing, so no date is
+  asserted.
+- **IM-1.** Landing and end of mission are known to the day ("seven days after
+  landing"), not the hour. The surface window is therefore day-precision.
+
+### Re-verification
+
+Re-run the research against the pages above:
+- before any public demo;
+- at the **28 Oct 2026** full-statement checkpoint;
+- whenever NASA announces a launch or landing.
+
+Update `accessed` on every source you re-read. The API serves `data_version` (a
+hash of each record), so a changed record is visible.
+
+## Candidate sites (`data/sites.json`)
+
+These are derived by `backend/app/data/ingest_sites.py` from LPI Lunar South
+Pole Atlas anchors. The landing point is the most open-skied landable post in
+the top elevation decile of a stated ring or disc around the anchor, with a
+maximum slope of 12°. The anchor, search region, offset and rule are stored on
+every site and returned by the API.
