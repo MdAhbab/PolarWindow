@@ -114,7 +114,12 @@ look like a broken service.
 | `lat_min` / `lat_max` | float | −90…0 |
 | `min_sun_fraction` | 0…1 | Coarse filter, reference window |
 | `max_longest_dark_s` | seconds | Coarse filter, reference window |
+| `kind` | `candidate` \| `mission_target` \| `all` | Default `candidate`, so the v1 list is unchanged |
 | `limit` / `offset` | int | Default 100 / 0 |
+
+Every site also carries `kind`, `coordinate_rule` (`derived_open_sky` or
+`published`) and `terrain_modelled`. `elev_m` and `slope_deg` are `null` where
+no elevation model covers the site: an unknown height is not zero.
 
 ```bash
 curl "localhost:8000/api/v1/sites?min_sun_fraction=0.7"
@@ -259,6 +264,14 @@ falls inside it: if the radio is silent for 40 h in the middle of a 122 h night,
 the battery still has to carry the 122 h. Conflating them under-sizes the
 battery, which is the dangerous direction to be wrong in.
 
+Each number also carries its own uncertainty and bounds:
+
+| Field | Meaning |
+|---|---|
+| `sunlit_tolerance_s`, `earth_contact_tolerance_s` | Every crossing's edge tolerance, in quadrature |
+| `longest_dark_tolerance_s`, `longest_blackout_tolerance_s` | The longest gap's two edges, in quadrature; `null` when an edge is a graze (`*_grazing: true`) |
+| `sunlit_full_disc_s` / `sunlit_any_limb_s` | Time the whole solar disc / any part of it was above the skyline. The headline `sunlit_s` times the disc centre; these bracket it. Sampled at the step. Same for `earth_contact_*`. |
+
 **There is no `score` field, and a test asserts there never will be.**
 
 ---
@@ -275,14 +288,25 @@ There is deliberately no composite option.
 
 ```jsonc
 { "rank_by": "longest_dark_s",
-  "items": [{ "site_id": "connecting-ridge", "rank": 1, "metrics": { … },
-              "delta_vs_best": { "sunlit_s": 0.0, … } }],
-  "ties": [["de-gerlache-rim", "de-gerlache-kocher-massif"]],
+  "items": [{ "site_id": "connecting-ridge", "position": 1,
+              "rank": null, "rank_range": [1, 2],
+              "tied": false, "tied_with": [], "incomparable_with": ["de-gerlache-rim"],
+              "censored": false, "grazing": false, "uncertainty_s": 61560.0,
+              "metrics": { … }, "delta_vs_best": { "sunlit_s": 0.0, … } }],
+  "ties": [],
   "unavailable": [{ "site_id": "ghost", "reason": "…" }] }
 ```
 
-**`ties` groups sites the data cannot distinguish** (within one hour). Render
-them at the same rank: ordering them asserts a difference that is not there.
+**Each value is an interval** (system-design §10.7). A measured value is
+`value ± uncertainty_s`, where the tolerance is the site's own for that metric.
+A window-cut longest gap (`censored: true`) is `[value, ∞)`. One site beats
+another only when their intervals do not overlap in its favour:
+
+- `rank` is a number when the place can be stated. Measured sites whose
+  intervals overlap share it (`tied_with`, and a group in `ties`).
+- `rank` is `null` when a lower bound or an untimeable edge makes the place
+  unknowable. `rank_range` is then what can be said, and `incomparable_with`
+  says against whom. **Never label such a site "best".**
 
 **`unavailable`** carries sites that could not be computed. One unsurveyed site
 never blanks the comparison.
@@ -292,9 +316,63 @@ never disagree — asserted by an integration test.
 
 ---
 
+## Missions (contract v2)
+
+CLPS deliveries, from the cited `data/missions.json` (ADR-5,
+`docs/data-sources.md`). A field no source confirms is `null` and named in
+`unconfirmed_fields`; it is never filled in.
+
+### `GET /missions`
+
+| Param | Notes |
+|---|---|
+| `status` (repeatable) | `planned`, `in_transit`, `operating`, `completed`, `partial_success`, `landing_failed`, `lost_before_landing`, `cancelled`, `reassigned` |
+| `payload_type` (repeatable, any-of) | `volatiles`, `geology_geophysics`, `heat_flow`, `radiation_space_weather`, `exosphere_dust`, `imaging`, `landing_navigation`, `communications`, `laser_retroreflector`, `rover_mobility`, `technology_demo`, `other` |
+| `provider`, `region`, `q` | `region` ∈ `south_polar`, `nearside`, `farside`, `polar_other` |
+| `from`, `to` | Landing (else launch) date range |
+
+```bash
+curl "localhost:8000/api/v1/missions?payload_type=volatiles"
+```
+
+Each item has the mission's facts (dates as `{date, precision, as_published}`,
+where the phrase is what to show), its `target` with `coordinate_kind`
+(`actual_landing` from LROC, `planned_target`, or `feature_centre` = the IAU
+centre of the named target, **not a landing point**), the `site_id` standing
+for the target, its `surface_window {start, end, basis, note}` and a `summary`
+of the four numbers over that window, or `null` when there is none.
+
+`surface_window.basis`: `published` (landing and end both sourced to the day),
+`planned` (landing plus a sourced duration), `assumed` (landing plus one lunar
+daylight period, named as an assumption), `none` (no single window; use the
+calendar).
+
+### `GET /missions/{id}`
+
+The brief plus `outcome_note`, `end_of_mission`, `payloads[]` (each with its
+`source_url` and this project's `instrument_types`), `sources[]` with access
+dates, `notes[]` (conflicts between NASA pages, recorded rather than resolved),
+`ellipse_ring` (null unless a landing ellipse is published) and `site`. 404 is a
+problem detail.
+
+A target outside 80°S has `terrain_modelled: false`: Sun and Earth are computed
+against a smooth sphere and every response for that site says so in
+`meta.uncertainty.terrain_modelled` and its notes. On the far side Earth never
+rises: `feature-schrodinger` returns `earth_contact_s: 0`.
+
+### `GET /sites/{id}/calendar`
+
+`start`, `end` (≤ 730 days), `bucket=day|month`. Per bucket: sun and Earth
+fractions, sunlit and Earth-contact seconds, and the longest dark and blackout
+stretches with `*_open` when a bucket edge cut them. One hourly timeline over
+the span, split at UTC day or month boundaries. About 115 ms cold for a year by
+month; a cache hit is about 2 ms.
+
+---
+
 ## Tiles
 
-`GET /tiles/{layer}/{z}/{x}/{y}.png`, layers `hillshade` | `illumination` | `psr`.
+`GET /tiles/{layer}/{z}/{x}/{y}.png` (the suffix is optional), layers `hillshade` | `illumination` | `psr`. `make seed` pre-renders z0–z5 (4,095 tiles, ~134 MB); z6–z7 render on first request.
 
 A plain quadtree over the DEM's own ±304 km extent in lunar south polar
 stereographic. `z0` is one tile; each level doubles.

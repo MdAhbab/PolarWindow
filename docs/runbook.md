@@ -24,18 +24,22 @@ every geometry request. It does four things, and each is separately re-runnable:
 
 | Step | Downloads | Time | Idempotent |
 |---|---|---|---|
-| `make kernels` | ~130 MB SPICE | 1–3 min | yes, verifies and skips |
+| `make kernels` | ~130 MB SPICE | 1–3 min | yes, verifies each file by SHA256 and skips |
 | `make dem` | ~115 MB LOLA 80 m | 2–4 min | yes, skips if present |
 | `make sites` | — | ~20 s | yes, overwrites |
-| `make worker` | ~8 MB per site | 3–5 min | yes, skips existing masks |
+| `make missions` | — | ~2 s | yes, replaces the mission tables from `data/missions.json` |
+| `make worker` | ~8 MB per polar site | 1–3 min | yes, skips existing masks |
+| `make tiles` | — | ~45 s | yes, overwrites (z0–z5, ~134 MB) |
 
 **Verify it worked:**
 
 ```bash
 curl -s localhost:8000/healthz | jq '.status, .kernels.loaded, .dem.fine_windows'
-# "ok", true, 15
+# "ok", true, 18   (15 candidates + 3 polar mission targets)
 curl -s localhost:8000/api/v1/sites | jq '.items | length'
-# 15
+# 15               (candidates; ?kind=all gives 22)
+curl -s localhost:8000/api/v1/missions | jq '.total'
+# 20
 ```
 
 If `fine_windows` is less than the site count, some per-site terrain windows
@@ -125,7 +129,7 @@ Fifteen minutes, in this order:
 
 ```bash
 make lint            # ruff, mypy --strict, 8 layering contracts
-make test            # 211 backend tests
+make test            # rebuilds polar_window_test, then ~280 backend tests
 make test-fe         # the adapter, the cache keys, the exports
 curl -s localhost:8000/healthz | jq .status          # "ok", not "degraded"
 ```
@@ -149,12 +153,24 @@ Then, by hand — these are the things no test covers:
    the paragraph and check it says something true.
 6. **Open `/agents/runs`.** It should have rows. This is the demo's evidence.
 
-**Have a fallback.** If the network dies, `make test` runs offline and the
-synthetic golden tests prove the geometry without kernels or a database.
+**Rehearse with the network off.** Set `OFFLINE=1` (in `.env` or the shell)
+and restart the API. Nothing is downloaded (a missing kernel or DEM is a loud
+error naming the fix), the agents answer from the measurements without calling
+the model, and every other endpoint behaves exactly as online, because all of
+it is local. `make test-fast` also runs with no services at all.
 
 ---
 
 ## 4. Operating notes
+
+**Tests have their own database.** `make test` first runs `make test-db`, which
+rebuilds `polar_window_test` from the migrations plus a copy of the seeded rows,
+and the suite uses Redis database 1. Running the suite never changes what the
+dev API serves.
+
+**Kernels are pinned.** `uv run polar-kernels verify` checks every file against
+its SHA256; `polar-kernels fetch` downloads what is missing (refused under
+`OFFLINE=1`).
 
 **Everything degrades except Postgres.**
 
