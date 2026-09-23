@@ -96,20 +96,29 @@ class GeminiUnavailable(RuntimeError):
 
 async def _generate(
     model: str,
-    contents: list[dict[str, Any]],
+    contents: list[Any],
     system_prompt: str,
     tool_decls: list[dict[str, Any]],
     *,
     response_schema: dict[str, Any] | None,
     timeout_s: float,
 ) -> dict[str, Any]:
-    """One call to Gemini via google-genai.
+    """One call to Gemini via google-genai's async client.
 
-    Isolated behind a function so the whole loop can be exercised offline: the
-    tests intercept the SDK's HTTP transport with respx, and nothing above this
-    line knows or cares.
+    Isolated behind a function so the whole loop can be exercised offline. The
+    SDK's async client speaks httpx, so tests can intercept it at the HTTP layer
+    with respx; the autouse fixture in conftest additionally blanks the key, so
+    a test that forgets its mock fails loudly instead of reaching the network.
+
+    Returns the model's own ``Content`` alongside the parsed calls. Gemini 3
+    models sign their reasoning and attach the signature to function-call parts;
+    the next turn must send that content back unchanged or the call is rejected.
+    Rebuilding a function-call part from its name and arguments drops the
+    signature, so the loop appends ``model_content`` verbatim instead.
     """
     s = get_settings()
+    if s.offline:
+        raise GeminiUnavailable("OFFLINE=1: the model is not called; answering from measurements")
     if not s.gemini_api_key:
         raise GeminiUnavailable("PW_GEMINI_API_KEY is not set")
 
@@ -120,29 +129,38 @@ async def _generate(
     config: dict[str, Any] = {
         "system_instruction": system_prompt,
         "max_output_tokens": s.agent_max_output_tokens,
-        "temperature": 0.2,
     }
+    # Gemini 3 models are tuned for their default temperature; lowering it is
+    # documented to cause looping in agentic use. Only set it when configured.
+    if s.agent_temperature is not None:
+        config["temperature"] = s.agent_temperature
     if tool_decls:
         config["tools"] = [gt.Tool(function_declarations=tool_decls)]
     if response_schema is not None:
         config["response_mime_type"] = "application/json"
         config["response_schema"] = response_schema
 
-    def _call() -> Any:
-        return client.models.generate_content(
+    resp = await asyncio.wait_for(
+        client.aio.models.generate_content(
             model=model, contents=contents, config=gt.GenerateContentConfig(**config)
-        )
-
-    resp = await asyncio.wait_for(asyncio.to_thread(_call), timeout=timeout_s)
+        ),
+        timeout=timeout_s,
+    )
 
     calls: list[dict[str, Any]] = []
     text_parts: list[str] = []
-    for cand in getattr(resp, "candidates", None) or []:
+    model_content: Any = None
+    for i, cand in enumerate(getattr(resp, "candidates", None) or []):
         content = getattr(cand, "content", None)
+        if i == 0:
+            model_content = content
         for part in getattr(content, "parts", None) or []:
             fc = getattr(part, "function_call", None)
             if fc is not None:
                 calls.append({"name": fc.name, "args": dict(fc.args or {})})
+            # Thought parts carry the model's reasoning summary, not its answer.
+            if getattr(part, "thought", False):
+                continue
             txt = getattr(part, "text", None)
             if txt:
                 text_parts.append(txt)
@@ -151,6 +169,7 @@ async def _generate(
     return {
         "function_calls": calls,
         "text": "".join(text_parts),
+        "model_content": model_content,
         "prompt_tokens": int(getattr(usage, "prompt_token_count", 0) or 0),
         "completion_tokens": int(getattr(usage, "candidates_token_count", 0) or 0),
     }
@@ -379,7 +398,7 @@ async def run_agent(
     t0 = time.perf_counter()
 
     decls = [d for d in tools.TOOL_DECLARATIONS if d["name"] in spec.tool_names]
-    contents: list[dict[str, Any]] = [{"role": "user", "parts": [{"text": user_prompt}]}]
+    contents: list[Any] = [{"role": "user", "parts": [{"text": user_prompt}]}]
     call_logs: list[tools.ToolCallLog] = list(prefetched or [])
     guard_failures: list[dict[str, Any]] = []
     prompt_tokens = completion_tokens = 0
@@ -507,8 +526,15 @@ async def run_agent(
                 timeout=remaining(),
             )
             call_logs.extend(results)
+            # The model's own turn goes back verbatim, thought signatures and
+            # all (ADR-3 amendment). The reconstructed form is only a fallback
+            # for scripted test responses that carry no content object.
+            # Only when every call in the turn is being answered: Gemini expects
+            # one function response per call it made.
+            verbatim = len(pending) == len(response["function_calls"])
             contents.append(
-                {
+                (response.get("model_content") if verbatim else None)
+                or {
                     "role": "model",
                     "parts": [
                         {"function_call": {"name": c["name"], "args": c["args"]}} for c in pending

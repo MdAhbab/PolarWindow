@@ -189,6 +189,9 @@ POOL = [
         "seq": 1,
         "tool": "get_metrics",
         "result": {
+            # get_metrics returns its window; dates in an answer ground against it.
+            "start": "2027-03-14T00:00:00Z",
+            "end": "2027-04-12T12:30:00Z",
             "sunlit_s": 2067804.0,
             "longest_dark_s": 437688.0,
             "sun_fraction_up": 0.8103,
@@ -257,3 +260,26 @@ def test_the_users_threshold_cannot_ground_a_measured_value() -> None:
     assert not guards.check_grounding(structured, pool).ok
     quoted = {"nothing_satisfies_message": "No site offers the 600 hours you asked for."}
     assert guards.check_grounding(quoted, pool).ok
+
+
+# --- dates are facts once missions are in the pool --------------------------
+
+
+def test_a_date_the_tools_returned_is_grounded() -> None:
+    tools_ = [{"tool": "get_site", "seq": 1, "result": {"landing": "2025-03-06T17:30:00Z"}}]
+    for text in ("It landed on 2025-03-06.", "It landed on March 6, 2025.", "Landed 6 March 2025."):
+        v = guards.check_grounding({"summary": text}, tools_)
+        assert not [x for x in v.violations if x.kind == "ungrounded_date"], text
+
+
+def test_an_invented_date_is_rejected() -> None:
+    tools_ = [{"tool": "get_site", "seq": 1, "result": {"landing": "2025-03-06T17:30:00Z"}}]
+    v = guards.check_grounding({"summary": "IM-4 lands on 2027-05-01."}, tools_)
+    assert any(x.kind == "ungrounded_date" for x in v.violations)
+    v = guards.check_grounding({"summary": "It lands on May 1, 2027."}, tools_)
+    assert any(x.kind == "ungrounded_date" for x in v.violations)
+
+
+def test_a_month_or_year_alone_is_not_a_date_claim() -> None:
+    v = guards.check_grounding({"summary": "Launch is expected in late 2027, around March."}, [])
+    assert not [x for x in v.violations if x.kind == "ungrounded_date"]

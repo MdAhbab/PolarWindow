@@ -424,6 +424,88 @@ def _match(value: float, pool: list[tuple[str, float, str, int]]) -> tuple[str, 
     return None
 
 
+_MONTH_NUMBER = {
+    name: i
+    for i, names in enumerate(
+        (
+            ("january", "jan"),
+            ("february", "feb"),
+            ("march", "mar"),
+            ("april", "apr"),
+            ("may",),
+            ("june", "jun"),
+            ("july", "jul"),
+            ("august", "aug"),
+            ("september", "sep", "sept"),
+            ("october", "oct"),
+            ("november", "nov"),
+            ("december", "dec"),
+        ),
+        start=1,
+    )
+    for name in names
+}
+_ISO_DATE = re.compile(r"\b(\d{4})-(\d{2})-(\d{2})")
+_MONTH_D_YEAR = re.compile(rf"\b({_MONTHS})\.?\s+(\d{{1,2}})(?:st|nd|rd|th)?,?\s+(\d{{4}})\b", re.I)
+_D_MONTH_YEAR = re.compile(
+    rf"\b(\d{{1,2}})(?:st|nd|rd|th)?\s+(?:of\s+)?({_MONTHS})\.?,?\s+(\d{{4}})\b", re.I
+)
+
+
+def calendar_dates(text: str) -> list[tuple[str, str]]:
+    """Every full calendar date in ``text``, as ``(YYYY-MM-DD, context)``.
+
+    Three spellings: ISO (``2025-03-06``, with or without a time), "March 6,
+    2025" and "6 March 2025". A month or a year on its own is not a date claim
+    and is not returned.
+    """
+    out: list[tuple[str, str]] = []
+
+    def ctx(m: re.Match[str]) -> str:
+        return text[max(0, m.start() - 40) : m.end() + 40].strip()
+
+    for m in _ISO_DATE.finditer(text):
+        out.append((f"{m.group(1)}-{m.group(2)}-{m.group(3)}", ctx(m)))
+    for m in _MONTH_D_YEAR.finditer(text):
+        month = _MONTH_NUMBER.get(m.group(1).lower())
+        if month:
+            out.append((f"{int(m.group(3)):04d}-{month:02d}-{int(m.group(2)):02d}", ctx(m)))
+    for m in _D_MONTH_YEAR.finditer(text):
+        month = _MONTH_NUMBER.get(m.group(2).lower())
+        if month:
+            out.append((f"{int(m.group(3)):04d}-{month:02d}-{int(m.group(1)):02d}", ctx(m)))
+    return out
+
+
+def check_dates(output: dict[str, Any], tool_results: list[dict[str, Any]]) -> list[Violation]:
+    """A full calendar date in an answer must appear in a tool result or the request.
+
+    Dates used to be exempt as "positions in time", which was safe while every
+    date an agent saw was a window edge. Mission launches and landings are
+    facts, and "IM-4 lands on 2027-05-01" is exactly the invention this guard
+    exists to catch.
+    """
+    known: set[str] = set()
+    for call in tool_results:
+        for _path, text in _string_leaves(call.get("result")):
+            known.update(d for d, _c in calendar_dates(text))
+    violations: list[Violation] = []
+    for _path, text in _string_leaves(output):
+        for day, context in calendar_dates(text):
+            if day not in known:
+                violations.append(
+                    Violation(
+                        kind="ungrounded_date",
+                        detail=(
+                            f"The date {day} (in '{context}') does not appear in any tool "
+                            f"result. Use only dates the tools returned."
+                        ),
+                        value=None,
+                    )
+                )
+    return violations
+
+
 def check_grounding(output: dict[str, Any], tool_results: list[dict[str, Any]]) -> Verdict:
     """Every number in ``output`` must trace to ``tool_results``.
 
@@ -499,6 +581,7 @@ def check_grounding(output: dict[str, Any], tool_results: list[dict[str, Any]]) 
                 )
             )
 
+    violations.extend(check_dates(output, tool_results))
     return Verdict(ok=not violations, violations=violations, citations=citations)
 
 

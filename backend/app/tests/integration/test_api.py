@@ -443,8 +443,13 @@ async def test_a_payload_rebuilt_from_memoised_geometry_says_so(client) -> None:
     import secrets
 
     # A window nobody has asked for, so the payload cache cannot answer first.
+    year = 2028 + secrets.randbelow(3)
     day = 1 + secrets.randbelow(27)
-    params = {"start": f"2028-02-{day:02d}T00:00:00Z", "end": f"2028-03-{day:02d}T00:00:00Z"}
+    hour = secrets.randbelow(24)
+    params = {
+        "start": f"{year}-02-{day:02d}T{hour:02d}:00:00Z",
+        "end": f"{year}-03-{day:02d}T{hour:02d}:00:00Z",
+    }
     first = await client.get(f"{API}/sites/{SITE}/metrics", params=params)
     assert first.status_code == 200
     second = await client.get(f"{API}/sites/{SITE}/windows", params=params)

@@ -77,8 +77,8 @@
               "anyOf": [
                 {
                   "type": "number",
-                  "maximum": 0.0,
-                  "minimum": -90.0
+                  "maximum": 0,
+                  "minimum": -90
                 },
                 {
                   "type": "null"
@@ -95,8 +95,8 @@
               "anyOf": [
                 {
                   "type": "number",
-                  "maximum": 0.0,
-                  "minimum": -90.0
+                  "maximum": 0,
+                  "minimum": -90
                 },
                 {
                   "type": "null"
@@ -113,8 +113,8 @@
               "anyOf": [
                 {
                   "type": "number",
-                  "maximum": 1.0,
-                  "minimum": 0.0
+                  "maximum": 1,
+                  "minimum": 0
                 },
                 {
                   "type": "null"
@@ -133,7 +133,7 @@
               "anyOf": [
                 {
                   "type": "number",
-                  "minimum": 0.0
+                  "minimum": 0
                 },
                 {
                   "type": "null"
@@ -259,8 +259,8 @@
             "required": false,
             "schema": {
               "type": "number",
-              "maximum": 360.0,
-              "exclusiveMinimum": 0.0,
+              "maximum": 360,
+              "exclusiveMinimum": 0,
               "description": "Output angular step. Must divide 360 and be a multiple of the stored 0.25 deg resolution.",
               "default": 1.0,
               "title": "Step Deg"
@@ -1045,6 +1045,7 @@
           "result": {
             "anyOf": [
               {
+                "additionalProperties": true,
                 "type": "object"
               },
               {
@@ -1090,6 +1091,7 @@
           },
           "guard_failures": {
             "items": {
+              "additionalProperties": true,
               "type": "object"
             },
             "type": "array",
@@ -1097,6 +1099,7 @@
             "description": "Guards that fired, including ones a retry then fixed. Kept so the guard can be shown working rather than asserted to exist."
           },
           "meta": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Meta"
           }
@@ -1177,6 +1180,7 @@
             "anyOf": [
               {
                 "items": {
+                  "additionalProperties": true,
                   "type": "object"
                 },
                 "type": "array"
@@ -2768,6 +2772,7 @@
             "title": "Tool"
           },
           "args": {
+            "additionalProperties": true,
             "type": "object",
             "title": "Args"
           },

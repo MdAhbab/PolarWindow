@@ -13,7 +13,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 #: Bumped whenever a change to core/ alters the numbers. Stamped onto every
@@ -39,6 +39,11 @@ class Settings(BaseSettings):
 
     # --- service -----------------------------------------------------------
     env: Literal["dev", "test", "prod"] = "dev"
+    #: Demo mode with the network assumed gone: the model is never called
+    #: (agents answer from measurements), kernel and DEM downloads are refused
+    #: with a loud error, and responses say `meta.source = "offline"`. Accepts
+    #: the bare `OFFLINE=1` the build guide uses as well as `PW_OFFLINE`.
+    offline: bool = Field(default=False, validation_alias=AliasChoices("PW_OFFLINE", "OFFLINE"))
     log_level: str = "INFO"
     api_prefix: str = "/api/v1"
 
@@ -134,6 +139,9 @@ class Settings(BaseSettings):
     agent_max_rounds: int = 4
     agent_max_tool_calls: int = 8
     agent_max_output_tokens: int = 2048
+    #: None leaves the model's default. Gemini 3 is tuned for its default
+    #: temperature, and lowering it is documented to cause looping.
+    agent_temperature: float | None = None
 
     @property
     def agents_enabled(self) -> bool:
@@ -142,7 +150,7 @@ class Settings(BaseSettings):
         Deliberately not a startup error: the four key numbers are the product,
         and they must work on a laptop with no API key at all.
         """
-        return bool(self.gemini_api_key)
+        return bool(self.gemini_api_key) and not self.offline
 
     @field_validator("cors_origins", mode="before")
     @classmethod
