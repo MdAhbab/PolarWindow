@@ -10,23 +10,28 @@
   "kernels": [
     {
       "name": "de440.bsp",
-      "bytes": 119799808
+      "bytes": 119799808,
+      "sha256": "a4ce9bf9b3282becc9f4b2ac3cebe03a2ae7599981aabd7265fd8482fff7c4b5"
     },
     {
       "name": "moon_de440_250416.tf",
-      "bytes": 19478
+      "bytes": 19478,
+      "sha256": "a47c71e9c9f33796bdafb2c9d69a7ee447b6016ecad80f71cd6f3e479f9cf768"
     },
     {
       "name": "moon_pa_de440_200625.bpc",
-      "bytes": 12863488
+      "bytes": 12863488,
+      "sha256": "60cd55aa401ea2ea97360636f567554bfe4e37bb829f901b4460a455dfaf783f"
     },
     {
       "name": "naif0012.tls",
-      "bytes": 5257
+      "bytes": 5257,
+      "sha256": "678e32bdb5a744117a467cd9601cd6b373f0e9bc9bbde1371d5eee39600a039b"
     },
     {
       "name": "pck00011.tpc",
-      "bytes": 131226
+      "bytes": 131226,
+      "sha256": "3dff7b1dbeceaa01f25467767d3fa25816051c85d162d1edf04acb310ee28bb1"
     }
   ],
   "tolerances": {
@@ -62,5 +67,6 @@
       "dem_product": "LOLA_LDEM_80S_20M + LDEM_80S_80M",
       "coverage": 1.0
     }
-  }
+  },
+  "command": "GOLDEN_UPDATE_REASON=\"...\" make golden-update"
 }

@@ -83,6 +83,7 @@ REQUIRED_KERNELS: tuple[KernelSpec, ...] = (
         url=f"{NAIF_GENERIC}/lsk/naif0012.tls",
         kind="LSK",
         min_bytes=5_000,
+        sha256="678e32bdb5a744117a467cd9601cd6b373f0e9bc9bbde1371d5eee39600a039b",
         why="Leapseconds. Without it every UTC -> ET conversion fails and no "
         "timestamp can be interpreted at all.",
     ),
@@ -91,6 +92,7 @@ REQUIRED_KERNELS: tuple[KernelSpec, ...] = (
         url=f"{NAIF_GENERIC}/spk/planets/de440.bsp",
         kind="SPK",
         min_bytes=100_000_000,
+        sha256="a4ce9bf9b3282becc9f4b2ac3cebe03a2ae7599981aabd7265fd8482fff7c4b5",
         why="Planetary ephemeris. Without it there are no Sun or Earth "
         "positions, so sunlight and Earth-contact hours cannot be computed.",
     ),
@@ -99,6 +101,7 @@ REQUIRED_KERNELS: tuple[KernelSpec, ...] = (
         url=f"{NAIF_GENERIC}/pck/pck00011.tpc",
         kind="PCK",
         min_bytes=100_000,
+        sha256="3dff7b1dbeceaa01f25467767d3fa25816051c85d162d1edf04acb310ee28bb1",
         why="Body constants: the Moon's radii and orientation model. Without "
         "it the lunar body-fixed frame has no shape to attach to.",
     ),
@@ -107,6 +110,7 @@ REQUIRED_KERNELS: tuple[KernelSpec, ...] = (
         url=f"{NAIF_GENERIC}/pck/moon_pa_de440_200625.bpc",
         kind="PCK",
         min_bytes=10_000_000,
+        sha256="60cd55aa401ea2ea97360636f567554bfe4e37bb829f901b4460a455dfaf783f",
         why="Lunar principal-axis orientation. Without it MOON_PA -- and "
         "therefore MOON_ME -- cannot be realised, so azimuths are meaningless.",
     ),
@@ -115,6 +119,7 @@ REQUIRED_KERNELS: tuple[KernelSpec, ...] = (
         url=f"{NAIF_GENERIC}/fk/satellites/moon_de440_250416.tf",
         kind="FK",
         min_bytes=5_000,
+        sha256="a47c71e9c9f33796bdafb2c9d69a7ee447b6016ecad80f71cd6f3e479f9cf768",
         why="Frame kernel defining MOON_ME relative to MOON_PA. Without it "
         "SPICE knows the Moon's spin but not the mean-Earth frame the site "
         "coordinates are expressed in.",
@@ -124,12 +129,25 @@ REQUIRED_KERNELS: tuple[KernelSpec, ...] = (
 METAKERNEL_NAME = "polar-window.tm"
 
 
+_DIGESTS: dict[tuple[str, int, int], str] = {}
+
+
 def _sha256(path: Path) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as fh:
-        for chunk in iter(lambda: fh.read(1 << 20), b""):
-            h.update(chunk)
-    return h.hexdigest()
+    """The file's SHA-256, computed once per (path, size, mtime).
+
+    ``/healthz`` verifies every kernel on each call; re-hashing the 120 MB
+    ephemeris there would make a liveness probe take half a second. A changed
+    file changes its size or mtime and is hashed again.
+    """
+    st = path.stat()
+    key = (str(path), st.st_size, st.st_mtime_ns)
+    if key not in _DIGESTS:
+        h = hashlib.sha256()
+        with path.open("rb") as fh:
+            for chunk in iter(lambda: fh.read(1 << 20), b""):
+                h.update(chunk)
+        _DIGESTS[key] = h.hexdigest()
+    return _DIGESTS[key]
 
 
 def verify(spec: KernelSpec, directory: Path) -> Path:
@@ -147,6 +165,7 @@ def verify(spec: KernelSpec, directory: Path) -> Path:
             f"SPICE kernel missing: {spec.name}\n"
             f"  expected at : {path}\n"
             f"  download    : {spec.url}\n"
+            f"  sha256      : {spec.sha256 or 'not pinned'}\n"
             f"  needed for  : {spec.why}\n"
             f"  fix         : make kernels   (or: uv run polar-kernels fetch)"
         )
@@ -330,3 +349,34 @@ def manifest(directory: Path, specs: Iterable[KernelSpec] = REQUIRED_KERNELS) ->
         "kernels": entries,
         "missing": missing(directory, specs),
     }
+
+
+def main(argv: list[str] | None = None) -> None:
+    """``polar-kernels fetch|verify``: the command the error messages name.
+
+    ``fetch`` downloads whatever is missing or corrupt, verifies every digest
+    and writes the metakernel. Under ``OFFLINE=1`` it refuses to download and
+    only verifies, so a demo machine with the network gone fails loudly here
+    rather than hanging on NAIF.
+    """
+    import argparse
+
+    from app.config import get_settings
+
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    p = argparse.ArgumentParser(prog="polar-kernels", description=main.__doc__)
+    p.add_argument("action", choices=("fetch", "verify"))
+    args = p.parse_args(argv)
+    s = get_settings()
+    try:
+        if args.action == "fetch":
+            if s.offline:
+                log.warning("OFFLINE=1: not downloading; verifying what is on disk")
+            ensure(s.kernel_dir, allow_download=not s.offline)
+            mk = write_metakernel(s.kernel_dir)
+            log.info("kernels verified by sha256; metakernel at %s", mk)
+        else:
+            verify_all(s.kernel_dir)
+            log.info("all %d kernels present and verified by sha256", len(REQUIRED_KERNELS))
+    except KernelError as exc:
+        raise SystemExit(str(exc)) from exc

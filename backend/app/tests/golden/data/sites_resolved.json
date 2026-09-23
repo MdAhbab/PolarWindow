@@ -1,0 +1,125 @@
+{
+  "why": "resolve_all() on the 80 m regional LOLA model: the rule that decides every candidate coordinate (C5).",
+  "sites": [
+    {
+      "id": "shackleton-rim",
+      "lat_deg": -89.29924,
+      "lon_deg": 131.6425,
+      "elev_m": 1283.0,
+      "slope_deg": 1.69,
+      "offset_from_anchor_km": 10.96
+    },
+    {
+      "id": "connecting-ridge",
+      "lat_deg": -89.43804,
+      "lon_deg": 222.71699,
+      "elev_m": 1957.5,
+      "slope_deg": 1.04,
+      "offset_from_anchor_km": 0.42
+    },
+    {
+      "id": "peak-near-shackleton",
+      "lat_deg": -89.77967,
+      "lon_deg": 203.64902,
+      "elev_m": 1736.5,
+      "slope_deg": 1.79,
+      "offset_from_anchor_km": 0.04
+    },
+    {
+      "id": "de-gerlache-rim",
+      "lat_deg": -88.66481,
+      "lon_deg": 291.62272,
+      "elev_m": 1814.0,
+      "slope_deg": 2.33,
+      "offset_from_anchor_km": 14.83
+    },
+    {
+      "id": "de-gerlache-kocher-massif",
+      "lat_deg": -88.44339,
+      "lon_deg": 292.15302,
+      "elev_m": 1574.0,
+      "slope_deg": 2.88,
+      "offset_from_anchor_km": 10.47
+    },
+    {
+      "id": "haworth-rim",
+      "lat_deg": -86.8609,
+      "lon_deg": 342.56987,
+      "elev_m": 1487.0,
+      "slope_deg": 5.0,
+      "offset_from_anchor_km": 25.78
+    },
+    {
+      "id": "malapert-massif",
+      "lat_deg": -85.98763,
+      "lon_deg": 2.0528,
+      "elev_m": 5172.0,
+      "slope_deg": 0.76,
+      "offset_from_anchor_km": 1.42
+    },
+    {
+      "id": "shoemaker-rim",
+      "lat_deg": -88.75106,
+      "lon_deg": 19.04731,
+      "elev_m": 21.5,
+      "slope_deg": 0.74,
+      "offset_from_anchor_km": 28.75
+    },
+    {
+      "id": "faustini-rim",
+      "lat_deg": -86.64464,
+      "lon_deg": 71.6505,
+      "elev_m": 575.0,
+      "slope_deg": 2.49,
+      "offset_from_anchor_km": 21.64
+    },
+    {
+      "id": "nobile-rim-1",
+      "lat_deg": -84.35735,
+      "lon_deg": 44.39432,
+      "elev_m": 6162.5,
+      "slope_deg": 3.79,
+      "offset_from_anchor_km": 35.84
+    },
+    {
+      "id": "nobile-rim-2",
+      "lat_deg": -85.98874,
+      "lon_deg": 20.09092,
+      "elev_m": 1803.5,
+      "slope_deg": 5.11,
+      "offset_from_anchor_km": 34.32
+    },
+    {
+      "id": "amundsen-rim",
+      "lat_deg": -83.07716,
+      "lon_deg": 91.36315,
+      "elev_m": 81.5,
+      "slope_deg": 4.63,
+      "offset_from_anchor_km": 51.52
+    },
+    {
+      "id": "leibnitz-beta-plateau",
+      "lat_deg": -85.22988,
+      "lon_deg": 36.59436,
+      "elev_m": 6798.5,
+      "slope_deg": 1.04,
+      "offset_from_anchor_km": 10.48
+    },
+    {
+      "id": "sverdrup-rim",
+      "lat_deg": -87.98746,
+      "lon_deg": 193.6082,
+      "elev_m": 1274.0,
+      "slope_deg": 1.29,
+      "offset_from_anchor_km": 16.47
+    },
+    {
+      "id": "cabeus-rim",
+      "lat_deg": -87.00951,
+      "lon_deg": 316.28653,
+      "elev_m": -66.5,
+      "slope_deg": 6.32,
+      "offset_from_anchor_km": 52.0
+    }
+  ]
+}

@@ -235,3 +235,17 @@ def test_manifest_records_its_provenance() -> None:
     assert manifest["engine_version"]
     assert manifest["kernels"], "no kernel set recorded"
     assert {k["name"] for k in manifest["kernels"]} >= {"de440.bsp", "naif0012.tls"}
+
+
+def test_manifest_records_digests_and_command() -> None:
+    """D15: the manifest names exactly which kernels the goldens were built from."""
+    import json
+    from pathlib import Path
+
+    from app.core.kernels import REQUIRED_KERNELS
+
+    m = json.loads((Path(__file__).parent / "data" / "MANIFEST.json").read_text())
+    assert m["command"]
+    pinned = {k.name: k.sha256 for k in REQUIRED_KERNELS}
+    for k in m["kernels"]:
+        assert k["sha256"] == pinned[k["name"]], k["name"]

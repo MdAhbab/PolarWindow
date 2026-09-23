@@ -54,6 +54,12 @@ def _print_drift(
         print(f"    {key:20s} {(getattr(m, key) - old[key]) / 3600.0:+8.3f} h")
 
 
+def _sha256(path: Path) -> str:
+    from app.core.kernels import _sha256 as digest
+
+    return digest(path)
+
+
 async def main() -> None:
     reason = os.environ.get("GOLDEN_UPDATE_REASON")
     if not reason:
@@ -78,13 +84,14 @@ async def main() -> None:
         "engine_version": ENGINE_VERSION,
         "generated_at": datetime.now(UTC).isoformat(),
         "reason": reason,
+        "command": 'GOLDEN_UPDATE_REASON="..." make golden-update',
         "window": {
             "start": WINDOW_START.isoformat(),
             "hours": WINDOW_HOURS,
             "step_s": STEP_S,
         },
         "kernels": [
-            {"name": p.name, "bytes": p.stat().st_size}
+            {"name": p.name, "bytes": p.stat().st_size, "sha256": _sha256(p)}
             for p in sorted(s.kernel_dir.glob("*"))
             if p.suffix in (".bsp", ".tls", ".tpc", ".bpc", ".tf")
         ],

@@ -56,3 +56,24 @@ def test_every_problem_is_reported_at_once(tmp_path: Path) -> None:
         verify_all(tmp_path, specs)
     assert "3 of 3" in str(err.value)
     assert missing(tmp_path, specs) == ["k0.bsp", "k1.bsp", "k2.bsp"]
+
+
+def test_every_required_kernel_has_a_pinned_digest() -> None:
+    """D14: a kernel that loads is not the same as the kernel the goldens used."""
+    from app.core.kernels import REQUIRED_KERNELS
+
+    for spec in REQUIRED_KERNELS:
+        assert spec.sha256 and len(spec.sha256) == 64, spec.name
+
+
+def test_a_wrong_digest_fails_with_both_digests_named(tmp_path) -> None:
+    from dataclasses import replace
+
+    import pytest
+
+    from app.core.kernels import KernelError, KernelSpec, verify
+
+    spec = KernelSpec(name="k.tls", url="https://example.invalid/k.tls", kind="LSK", min_bytes=1)
+    (tmp_path / "k.tls").write_text("not a kernel")
+    with pytest.raises(KernelError, match="expected sha256"):
+        verify(replace(spec, sha256="0" * 64), tmp_path)

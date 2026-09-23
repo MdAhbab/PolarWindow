@@ -24,12 +24,8 @@ install: ## Install backend and frontend dependencies
 	cd $(BE) && $(UV) sync --extra dev
 	cd $(FE) && npm install
 
-kernels: ## Download and verify the SPICE kernels (~130 MB, once)
-	cd $(BE) && $(UV) run python -c "\
-from pathlib import Path; from app.core.kernels import ensure, write_metakernel; \
-import logging; logging.basicConfig(level=logging.INFO, format='%(message)s'); \
-d=Path('../$(DATA)/kernels').resolve(); ensure(d, allow_download=True); \
-print('metakernel:', write_metakernel(d))"
+kernels: ## Download and verify the SPICE kernels by sha256 (~130 MB, once; refuses under OFFLINE=1)
+	cd $(BE) && $(UV) run polar-kernels fetch
 
 dem: ## Fetch the regional LOLA elevation model (~115 MB, once)
 	cd $(BE) && $(UV) run python -c "\
