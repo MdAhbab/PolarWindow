@@ -83,7 +83,7 @@ implementations of "which site is best" is one more than this product can
 defend.
 
 **The expensive step is precomputed by construction.** Ray-casting a site's
-skyline is ~120 ms against real terrain and depends on nothing but the site.
+skyline is ~45 ms against real terrain and depends on nothing but the site.
 After it, a site *is* 1,440 numbers and everything the date slider touches is a
 lookup plus one vectorised `spkpos`. Never move the ray-cast onto a request path.
 

@@ -221,16 +221,25 @@ two of this ADR's premises did not hold:
 **Unchanged.** Masks are precomputed at 0.25° over 50 km. Timelines and metrics
 are computed on demand, and quantisation and caching work as in §6.
 
-**numba.** The inner loop is still plain Python with a vectorised sampler per
-ray (D10). The brief names the ray-march as the hot path to JIT. It is fast
-enough today, but numba is what makes finer resolution affordable: 0.1° bearings
-over ~30 sites for the judge question J3. So the action item stays open, with
-the parity requirement below, and the measured before/after goes here.
+**numba (done, 2026-09-24).** All 1,440 rays are now sampled in one vectorised
+call, and the per-sample skyline selection is one kernel,
+`core.horizon.skyline_reference`, compiled with `numba.njit(cache=True)`. The
+plain-Python function is the same source and stays as the reference;
+`test_numba_and_python_agree` pins them together on four surfaces. Measured on
+real LOLA terrain (median of four runs, 0.25°, 50 km):
+
+| Site | JIT | Python kernel | Previous per-ray numpy loop | max \|Δ el\| |
+|---|---|---|---|---|
+| Connecting Ridge | 43 ms | 333 ms | ~129 ms | 0 |
+| Malapert massif | 44 ms | 329 ms | ~129 ms | 0 |
+| Faustini rim | 44 ms | 320 ms | ~129 ms | 0 |
+
+At 0.1° (3,600 rays) the JIT build takes 142 ms. A finer mask is therefore a
+seeding choice, not a cost problem (judge question J3).
 
 **Action items, amended**
-1. [ ] Implement numba `@njit(cache=True)` for the ray-march, with the
-       pure-Python path kept as the reference. `test_numba_and_python_agree` is
-       required. Record the timings in this ADR.
+1. [x] numba `@njit(cache=True)` ray-march selection with the Python
+       reference kept; parity test in place; timings recorded above.
 2. [x] ~~coarse table → `visibility_tables`~~. Superseded by the calendar
        endpoint.
 3. [ ] Calendar endpoint, and warming mission surface windows in the worker.

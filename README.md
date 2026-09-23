@@ -163,7 +163,7 @@ reachable only through `core/spice.py`, and agents reach the domain only through
 `agents/tools.py`.
 
 **The expensive step is precomputed by construction.** Ray-casting a site's
-skyline is ~120 ms against real terrain and depends on nothing but the site;
+skyline is ~45 ms against real terrain and depends on nothing but the site;
 after it, a site *is* 1,440 numbers and everything the date slider touches is a
 lookup plus one vectorised `spkpos`. A 708-hour timeline at 900 s (2,835
 samples) costs about 12 ms cold and about 3 ms warm, measured on this build.
@@ -215,7 +215,8 @@ make lint        # ruff, mypy --strict, import-linter
 - **A synthetic golden set** runs the same code paths with no kernels and no
   database, so the safety net survives on a laptop.
 - **The ray-march is tested against analytic surfaces** whose horizon can be
-  derived by hand.
+  derived by hand: a plane, a cone, a wall, a ramp and a crater bowl. The
+  numba-compiled selection is pinned to its plain-Python twin.
 - **No test reaches the real Gemini API.** An autouse fixture blocks the
   transport, so a forgotten mock fails loudly.
 

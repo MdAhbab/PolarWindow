@@ -31,6 +31,7 @@ Two details that are easy to get wrong and expensive to get wrong:
 from __future__ import annotations
 
 import logging
+import math
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Final, Protocol
@@ -199,13 +200,14 @@ def build_mask(
     dem_vertical_error_m: float = DEM_VERTICAL_ERROR_M,
     sample_sigma: TerrainSampler | None = None,
     r_body_m: float = R_MOON_M,
+    use_jit: bool = True,
 ) -> HorizonMask:
     """Ray-march a full horizon mask.
 
-    Vectorised per-ray: one sampler call per azimuth with all distances at
-    once. That shape matters because the sampler is backed by a windowed raster
-    read, and 1440 calls of 600 points each is two orders of magnitude cheaper
-    than 864,000 calls of one point.
+    Every ray is sampled in one vectorised call, and the per-sample skyline
+    selection runs in ``skyline_reference`` -- compiled with numba when it is
+    installed and ``use_jit`` is true, as plain Python otherwise. The two are
+    the same source, and ``test_numba_and_python_agree`` pins them together.
 
     ``site_height_m`` defaults to the sampled height at the origin. Passing it
     explicitly is how the synthetic tests pin a site onto a known surface.
@@ -230,10 +232,6 @@ def build_mask(
         max_range_m, min_step_m, min_range_m=MIN_RANGE_POSTS * dem_post_spacing_m
     )
     drop = curvature_drop_m(distances, r_body_m)
-    # The angular noise floor at each range: the apparent elevation a pure
-    # vertical DEM error would produce there. Per ray when the error varies by
-    # product, otherwise the same for every ray.
-    constant_floor_deg = np.degrees(np.arctan2(dem_vertical_error_m, distances))
 
     if site_height_m is None:
         h0_arr = sample_h(np.zeros(1), np.zeros(1))
@@ -247,73 +245,38 @@ def build_mask(
     else:
         h0 = float(site_height_m)
 
-    el_deg = np.empty(n_az, dtype=np.float32)
-    range_m = np.empty(n_az, dtype=np.float32)
-    sigma_m = np.full(n_az, dem_vertical_error_m, dtype=np.float32)
-    inside_total = 0
-    sample_total = 0
-
     azimuths = np.arange(n_az, dtype=np.float64) * azimuth_step_deg
     # Azimuth is measured from north, clockwise: east = sin(A), north = cos(A).
     sin_a = np.sin(np.radians(azimuths))
     cos_a = np.cos(np.radians(azimuths))
 
-    for i in range(n_az):
-        xs = sin_a[i] * distances
-        ys = cos_a[i] * distances
-        h = sample_h(xs, ys)
+    # Every ray sampled in one call. The DEM sampler is vectorised bilinear
+    # arithmetic, so 1440 rays of ~600 points is one 864k-point call rather
+    # than 1440 small ones; the per-sample selection below is then a tight
+    # loop, which is what the JIT is for.
+    xs = (sin_a[:, None] * distances[None, :]).ravel()
+    ys = (cos_a[:, None] * distances[None, :]).ravel()
+    n_d = distances.size
+    heights = np.asarray(sample_h(xs, ys), dtype=np.float64).reshape(n_az, n_d)
+    if sample_sigma is not None:
+        sig = np.asarray(sample_sigma(xs, ys), dtype=np.float64).reshape(n_az, n_d)
+        sig = np.where(np.isfinite(sig), sig, dem_vertical_error_m)
+    else:
+        sig = np.full((n_az, n_d), dem_vertical_error_m, dtype=np.float64)
 
-        valid = np.isfinite(h)
-        inside_total += int(valid.sum())
-        sample_total += valid.size
-
-        if sample_sigma is not None:
-            sig = np.asarray(sample_sigma(xs, ys), dtype=np.float64)
-            sig = np.where(np.isfinite(sig), sig, dem_vertical_error_m)
-            noise_floor_deg = np.degrees(np.arctan2(sig, distances))
-        else:
-            sig = None
-            noise_floor_deg = constant_floor_deg
-
-        if not valid.any():
-            # No DEM anywhere along this ray. The honest horizon is the
-            # spherical one -- the curvature-limited skyline of a smooth body --
-            # and coverage will report that this bearing is unmodelled.
-            el_deg[i] = np.float32(spherical_horizon_deg(h0, r_body_m))
-            range_m[i] = np.float32(max_range_m)
-            continue
-
-        theta = np.degrees(np.arctan2(np.where(valid, h, -np.inf) - h0 - drop, distances))
-
-        # A blocker has to rise above the noise it could be confused with.
-        #
-        # The angular error a vertical DEM error induces at range r is
-        # atan(sigma / r), which at 40 m with sigma = 2 m is 2.9 degrees -- larger
-        # than almost any real skyline at these sites. Taking a plain argmax
-        # therefore picks gridding noise in the first few samples and calls it
-        # terrain: on Connecting Ridge it reported a 2.46 degree skyline whose
-        # "blocker" was 40 m away and 1.7 m high, which is indistinguishable
-        # from nothing at all.
-        #
-        # So a sample is only eligible to set the skyline if its own angle
-        # exceeds its own noise floor. Far samples clear a floor near zero and
-        # are almost always eligible; near samples must be genuinely steep --
-        # a 10 degree rise at 100 m is real and is kept, a 2 degree one is not.
-        # If nothing clears its floor, the bearing is genuinely open and the
-        # skyline is whatever the far field says, which is the honest answer.
-        # A sample may set the skyline if EITHER it stands clearly above the
-        # noise that could be mistaken for it, OR it is far enough out that that
-        # noise is negligible anyway. The second clause is what makes the rule
-        # total: the far field is always eligible, so there is never a need to
-        # fall back to "pick the loudest near-field sample", which is what an
-        # earlier version did and which simply reinstated the bug.
-        eligible = (theta > noise_floor_deg) | (noise_floor_deg < RESOLVED_NOISE_DEG)
-        candidates = np.where(eligible & valid, theta, -np.inf)
-        k = int(np.argmax(candidates))
-        el_deg[i] = np.float32(theta[k])
-        range_m[i] = np.float32(distances[k])
-        if sig is not None:
-            sigma_m[i] = np.float32(sig[k])
+    select = _skyline_jit() if use_jit else None
+    el_deg, range_m, sigma_m, inside_total = (select or skyline_reference)(
+        heights,
+        sig,
+        distances,
+        drop,
+        h0,
+        RESOLVED_NOISE_DEG,
+        spherical_horizon_deg(h0, r_body_m),
+        max_range_m,
+        dem_vertical_error_m,
+    )
+    sample_total = n_az * n_d
 
     tol_deg = np.degrees(
         np.arctan2(sigma_m.astype(np.float64), np.maximum(range_m.astype(np.float64), 1.0))
@@ -334,6 +297,88 @@ def build_mask(
         compute_ms=(time.perf_counter() - t0) * 1000.0,
         blocker_sigma_m=sigma_m,
     )
+
+
+def skyline_reference(
+    heights: FloatArray,
+    sigma: FloatArray,
+    distances: FloatArray,
+    drop: FloatArray,
+    h0: float,
+    resolved_noise_deg: float,
+    spherical_el_deg: float,
+    max_range_m: float,
+    default_sigma_m: float,
+) -> tuple[F32Array, F32Array, F32Array, int]:
+    """Pick each ray's skyline sample. Plain Python; also the JIT's source.
+
+    For every bearing, a sample may set the skyline if it stands above the
+    noise its own DEM error could produce, or is far enough out that the noise
+    is negligible (see ``build_mask``). The highest such sample wins, first on
+    a tie. A ray with no DEM at all takes the smooth-sphere horizon.
+
+    Returns ``(el_deg, range_m, sigma_m, samples_inside_the_dem)``.
+    """
+    n_az, n_d = heights.shape
+    el = np.empty(n_az, dtype=np.float32)
+    rng = np.empty(n_az, dtype=np.float32)
+    sgm = np.empty(n_az, dtype=np.float32)
+    inside = 0
+    to_deg = 180.0 / math.pi
+    for i in range(n_az):
+        best = -math.inf
+        k = -1
+        any_valid = False
+        for j in range(n_d):
+            h = heights[i, j]
+            if not math.isfinite(h):
+                continue
+            any_valid = True
+            inside += 1
+            theta = math.atan2(h - h0 - drop[j], distances[j]) * to_deg
+            floor = math.atan2(sigma[i, j], distances[j]) * to_deg
+            if (theta > floor or floor < resolved_noise_deg) and theta > best:
+                best = theta
+                k = j
+        if not any_valid:
+            el[i] = spherical_el_deg
+            rng[i] = max_range_m
+            sgm[i] = default_sigma_m
+        elif k < 0:
+            # Nothing cleared its noise floor: the first sample stands, as the
+            # array argmax this replaced returned for an all -inf row.
+            h = heights[i, 0]
+            el[i] = (
+                math.atan2(h - h0 - drop[0], distances[0]) * to_deg
+                if math.isfinite(h)
+                else -math.inf
+            )
+            rng[i] = distances[0]
+            sgm[i] = sigma[i, 0]
+        else:
+            el[i] = best
+            rng[i] = distances[k]
+            sgm[i] = sigma[i, k]
+    return el, rng, sgm, inside
+
+
+_JIT_CACHE: list[Callable[..., tuple[F32Array, F32Array, F32Array, int]] | None] = []
+
+
+def _skyline_jit() -> Callable[..., tuple[F32Array, F32Array, F32Array, int]] | None:
+    """``skyline_reference`` compiled by numba, or None where numba is absent.
+
+    Compiled once per process and cached on disk (``cache=True``), so only the
+    first mask build after an install pays the compile.
+    """
+    if not _JIT_CACHE:
+        try:
+            from numba import njit
+
+            _JIT_CACHE.append(njit(cache=True)(skyline_reference))
+        except ImportError:  # pragma: no cover - numba is a pinned dependency
+            _JIT_CACHE.append(None)
+    return _JIT_CACHE[0]
 
 
 def _centred_windows(n: int, target_count: int) -> npt.NDArray[np.intp]:

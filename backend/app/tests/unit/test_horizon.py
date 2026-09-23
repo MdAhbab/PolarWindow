@@ -255,3 +255,122 @@ def test_mask_is_reproducible() -> None:
     a = build_mask(cone(200.0, 1500.0, 120.0), azimuth_step_deg=1.0, site_height_m=0.0)
     b = build_mask(cone(200.0, 1500.0, 120.0), azimuth_step_deg=1.0, site_height_m=0.0)
     assert np.array_equal(a.el_deg, b.el_deg)
+
+
+# --- analytic surfaces the plan promised (D31) --------------------------------
+
+
+def wall(a0_deg: float, a1_deg: float, r0_m: float, width_m: float, height_m: float):
+    """A wall of known height occupying a bearing band and a range band."""
+
+    def sample(x, y):
+        x = np.asarray(x, dtype=np.float64)
+        y = np.asarray(y, dtype=np.float64)
+        brg = np.degrees(np.arctan2(x, y)) % 360.0
+        r = np.hypot(x, y)
+        inside = (brg >= a0_deg) & (brg <= a1_deg) & (r >= r0_m) & (r <= r0_m + width_m)
+        return np.where(inside, height_m, 0.0)
+
+    return sample
+
+
+def test_blocker_angular_extent() -> None:
+    """A wall sets the skyline exactly across its bearing band and nowhere else."""
+    a0, a1, r0, hgt = 100.125, 130.125, 2000.0, 300.0
+    m = build_mask(
+        wall(a0, a1, r0, 400.0, hgt), azimuth_step_deg=0.25, max_range_m=20_000.0, site_height_m=0.0
+    )
+    az = m.azimuths()
+    inside = (az >= a0) & (az <= a1)
+    # The first sample at or beyond r0 sets the angle; the step there is 1 % of r.
+    r_hit = m.range_m[inside]
+    assert np.all((r_hit >= r0) & (r_hit <= r0 * 1.011))
+    expected = np.degrees(np.arctan2(hgt - r_hit * r_hit / (2 * R_MOON_M), r_hit))
+    np.testing.assert_allclose(m.el_deg[inside], expected, atol=1e-4)
+    # Outside the band, the flat-plane horizon: below level.
+    assert np.all(m.el_deg[~inside] < 0.0)
+    # Edges land in the right bins: the first and last blocked bins are the band's.
+    blocked = np.flatnonzero(m.el_deg > 1.0)
+    assert az[blocked[0]] == pytest.approx(100.25) and az[blocked[-1]] == pytest.approx(130.0)
+
+
+def ramp(bearing_deg: float, slope_deg: float):
+    t = np.tan(np.radians(slope_deg))
+    a = np.radians(bearing_deg)
+
+    def sample(x, y):
+        return t * (np.asarray(x) * np.sin(a) + np.asarray(y) * np.cos(a))
+
+    return sample
+
+
+def test_ramp_converges_to_slope() -> None:
+    """On an inclined plane the skyline is the slope uphill and minus it downhill."""
+    slope = 10.0
+    m = build_mask(
+        ramp(45.0, slope), azimuth_step_deg=0.25, max_range_m=20_000.0, site_height_m=0.0
+    )
+    up = int(round(45.0 / 0.25))
+    down = int(round(225.0 / 0.25))
+    assert float(m.el_deg[up]) == pytest.approx(slope, abs=0.1)
+    assert float(m.el_deg[down]) == pytest.approx(-slope, abs=0.1)
+
+
+def bowl(radius_m: float, rim_m: float):
+    """A site at the bottom of a paraboloid crater with a flat rim beyond it."""
+
+    def sample(x, y):
+        r = np.hypot(np.asarray(x, dtype=np.float64), np.asarray(y, dtype=np.float64))
+        return np.where(r < radius_m, rim_m * (r / radius_m) ** 2, rim_m)
+
+    return sample
+
+
+def test_crater_rim_encloses_a_floor_site() -> None:
+    """From the floor, every bearing looks up at the rim: a raised skyline all round."""
+    radius, rim = 5000.0, 800.0
+    m = build_mask(bowl(radius, rim), azimuth_step_deg=1.0, max_range_m=30_000.0, site_height_m=0.0)
+    expected = np.degrees(np.arctan2(rim - radius * radius / (2 * R_MOON_M), radius))
+    assert float(m.el_deg.min()) > 0.0
+    np.testing.assert_allclose(m.el_deg, expected, atol=0.15)
+    assert float(m.el_deg.max() - m.el_deg.min()) < 0.01  # symmetric
+
+
+# --- the JIT is the same function as the reference (D10) ----------------------
+
+
+def rough(seed: int = 7):
+    rng = np.random.default_rng(seed)
+    peaks = [
+        (rng.uniform(0, 360), rng.uniform(500, 15_000), rng.uniform(50, 900), rng.uniform(80, 900))
+        for _ in range(25)
+    ]
+
+    def sample(x, y):
+        x = np.asarray(x, dtype=np.float64)
+        y = np.asarray(y, dtype=np.float64)
+        h = np.zeros_like(x)
+        for brg, r, hgt, sig in peaks:
+            a = np.radians(brg)
+            h += hgt * np.exp(-((x - np.sin(a) * r) ** 2 + (y - np.cos(a) * r) ** 2) / (2 * sig**2))
+        return h
+
+    return sample
+
+
+@pytest.mark.parametrize(
+    "surface",
+    [flat(), cone(120.0, 3000.0, 400.0), wall(10.125, 40.125, 1500.0, 300.0, 200.0), rough()],
+    ids=["flat", "cone", "wall", "rough"],
+)
+def test_numba_and_python_agree(surface) -> None:
+    jit = build_mask(
+        surface, use_jit=True, azimuth_step_deg=0.25, max_range_m=20_000.0, site_height_m=0.0
+    )
+    ref = build_mask(
+        surface, use_jit=False, azimuth_step_deg=0.25, max_range_m=20_000.0, site_height_m=0.0
+    )
+    np.testing.assert_allclose(jit.el_deg, ref.el_deg, atol=1e-4)
+    np.testing.assert_array_equal(jit.range_m, ref.range_m)
+    np.testing.assert_array_equal(jit.tol_deg, ref.tol_deg)
+    assert jit.coverage == ref.coverage

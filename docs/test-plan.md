@@ -510,7 +510,7 @@ The integration test in §10.8 asserts the same through `POST /compare`.
 |---|---|---|
 | `test_blocker_angular_extent` (a wall) | unit, `test_horizon.py` | D31 |
 | `test_ramp_converges_to_slope` | unit | D31 |
-| `test_crater_floor_lowers_horizon` | unit | D31 |
+| `test_crater_rim_encloses_a_floor_site` | unit | D31 |
 | `test_numba_and_python_agree` | unit | D10. Max bearing difference ≤ 1e-4° on the cone, the wall and a real fine window. |
 | `test_resolve_all_matches_sites_json` | golden | C5. `ingest_sites` is removed from the coverage `omit` list. |
 | `test_kernel_sha256` | unit | D14. Every `KernelSpec` has a pinned digest, and the cached files match it. |

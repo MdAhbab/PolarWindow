@@ -81,7 +81,7 @@ make worker                                   # all sites
 cd backend && uv run python -m app.workers.precompute --sites nobile-rim-2
 ```
 
-The API deliberately does not build a mask on demand: it is ~120 ms of tight
+The API deliberately does not build a mask on demand: it is ~45 ms of tight
 numpy plus a multi-second terrain fetch, and putting it on a request path would
 make the first click of a demo take a minute.
 
