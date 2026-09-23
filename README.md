@@ -59,7 +59,7 @@ Not a mockup wired to fixtures, and no longer a synthetic stand-in either:
 5. **The four numbers, and the compound events** — the intersection of "no Sun"
    and "no link", which is what the autonomy packet is sized from.
 
-Move the date slider and the numbers genuinely change, because the geometry is
+Change the window and the numbers are recomputed, because the geometry is
 being evaluated, not replayed.
 
 ### What it says
@@ -69,31 +69,38 @@ Fifteen sites, one lunar day from 2027-03-14, computed by this build:
 | code | site | lat | sun | Earth | longest night | longest blackout |
 |---|---|---|---|---|---|---|
 | B | Connecting Ridge | 89.44°S | **81 %** | 61 % | **122 h** | 278 h |
-| E | de Gerlache-Kocher massif | 88.44°S | 74 % | 69 % | 101 h | 221 h |
-| D | de Gerlache rim | 88.66°S | 74 % | 70 % | 112 h | 213 h |
+| E | de Gerlache-Kocher massif | 88.44°S | 74 % | 69 % | ≥ 101 h | 221 h |
+| D | de Gerlache rim | 88.66°S | 74 % | 70 % | ≥ 112 h | 213 h |
 | C | Peak near Shackleton | 89.78°S | 73 % | 63 % | **64 h** | 263 h |
 | N | Sverdrup rim | 87.99°S | 70 % | 45 % | 167 h | 387 h |
 | M | Leibnitz Beta plateau | 85.23°S | 59 % | **76 %** | 291 h | 171 h |
 | J | Nobile rim 1 | 84.36°S | 57 % | **82 %** | 304 h | **130 h** |
-| G | Malapert massif | 85.99°S | 56 % | 80 % | 288 h | 138 h |
+| G | Malapert massif | 85.99°S | 56 % | 80 % | ≥ 288 h | 138 h |
 | A | Shackleton rim, east shoulder | 89.30°S | 47 % | 57 % | 206 h | 304 h |
 | … | *(six more)* | | | | | |
 
+"≥" marks a night the window cut short: the reference window, not the
+terrain, ended it, so the figure is a lower bound and the true night is
+longer. The API returns this as `longest_dark_open`, and `/compare` refuses
+to rank a lower bound as best.
+
 Three findings fell out of the physics rather than being designed in:
 
-- **The power/comms trade is a latitude trade.** Every site above 70 % sunlight
-  sits within two degrees of the pole and has 61–70 % Earth contact. Every site
-  above 76 % Earth contact sits four to six degrees out and pays for it with a
-  288–304 hour night. Ice is at the pole, continuous power is at the pole, and
+- **The power/comms trade is a latitude trade.** Of the five sites above 70 %
+  sunlight, four sit within 1.6° of the pole and have 61–70 % Earth contact;
+  the fifth, Sverdrup rim, sits 2° out and gets 45 %. Both sites above 76 %
+  Earth contact sit four to six degrees out and pay for it with a night of
+  304 h and at least 288 h. Ice is at the pole, continuous power is at the pole, and
   continuous Earth contact is *away* from it.
 - **At the pole the Sun never rises, and that is not the problem.** At
   Connecting Ridge the Sun's elevation stays between −1.6° and −0.7° for the
   entire month — it never gets above level. The site is still sunlit 81 % of
-  the time, because it stands 1,958 m above its surroundings and looks *down* at
-  a horizon averaging −2.4°. Terrain, not season, decides who has power.
+  the time, because it stands 1,958 m above the lunar reference sphere and
+  looks *down* at a horizon averaging −2.4°. Terrain, not season, decides who has power.
 - **Direct-to-Earth at the pole is libration-limited, not terrain-limited.**
-  Earth swings ±6.7° about the horizon on a 27-day cycle, so polar sites lose it
-  for days at a time in one long stretch rather than in short terrain-cut gaps.
+  Earth's elevation swings through about 13° on a 27-day cycle (−7.4° to +6.0°
+  at Connecting Ridge), so polar sites lose it for days at a time in one long
+  stretch rather than in short terrain-cut gaps.
 
 ### A site is not a crater
 
@@ -158,7 +165,8 @@ reachable only through `core/spice.py`, and agents reach the domain only through
 **The expensive step is precomputed by construction.** Ray-casting a site's
 skyline is ~120 ms against real terrain and depends on nothing but the site;
 after it, a site *is* 1,440 numbers and everything the date slider touches is a
-lookup plus one vectorised `spkpos`. Timeline responses are ~35 ms warm.
+lookup plus one vectorised `spkpos`. A 708-hour timeline at 900 s (2,835
+samples) costs about 12 ms cold and about 3 ms warm, measured on this build.
 
 ---
 
@@ -206,8 +214,8 @@ make lint        # ruff, mypy --strict, import-linter
   without `GOLDEN_UPDATE_REASON`.
 - **A synthetic golden set** runs the same code paths with no kernels and no
   database, so the safety net survives on a laptop.
-- **The ray-march is tested against analytic surfaces** — a plane, a cone, a
-  wall — whose horizon can be derived by hand.
+- **The ray-march is tested against analytic surfaces** whose horizon can be
+  derived by hand.
 - **No test reaches the real Gemini API.** An autouse fixture blocks the
   transport, so a forgotten mock fails loudly.
 
@@ -243,5 +251,28 @@ Tab         nav → filters → map → card → rail
 
 ---
 
-Not an official product of any space agency. Data product names are the public
-identifiers of the intended inputs, nothing more.
+## Data and credits
+
+Every number in this product traces to a public source, listed in full in
+`docs/data-sources.md`:
+
+- **Terrain:** LOLA polar digital elevation models `LDEM_80S_20M` and
+  `LDEM_80S_80M`, from the LOLA team via the PDS Geosciences Node.
+- **Ephemeris and frames:** NAIF SPICE kernels `de440`, `moon_pa_de440_200625`,
+  `moon_de440_250416`, `pck00011` and `naif0012`, from NAIF / JPL.
+- **CLPS missions:** NASA Science CLPS delivery pages, NASA news releases, and
+  LROC landing-site images (NASA/GSFC/Arizona State University), with a source
+  and an access date on every record in `data/missions.json`.
+- **Feature names and centres:** the IAU Gazetteer of Planetary Nomenclature
+  (USGS Astrogeology) and the LPI Lunar South Pole Atlas.
+
+## License
+
+Apache License 2.0; see `LICENSE`.
+
+---
+
+**This is not a NASA product and is not endorsed by NASA** or by any other
+space agency. It was built for the NASA International Space Apps Challenge.
+Data product and mission names are the public identifiers of the sources
+above, used to cite them; no agency logo or insignia appears anywhere in it.

@@ -379,9 +379,9 @@ Measured on a laptop, warm, against the live service:
 | Endpoint | Typical | Notes |
 |---|---|---|
 | `/metrics` | 25–30 ms cold, < 5 ms cached | one vectorised `spkpos` per body |
-| `/timeline` | 36 ms, 210 KB | 2,835 samples × 2 bodies |
+| `/timeline` | ~12 ms cold, ~3 ms warm; 207 KB | 2,835 samples × 2 bodies |
 | `/horizon` | < 5 ms | a stored array |
-| `/compare` ×4 | ~120 ms cold | sequential; they share one SPICE thread |
+| `/compare` ×8 | ~70 ms cold, ~1 ms warm | sequential; they share one SPICE thread |
 
 **Window quantisation is why the slider is fast.** `start` and `end` snap to the
 `step_s` grid before anything else happens, so a drag emitting starts 41 s apart

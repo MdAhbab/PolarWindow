@@ -157,8 +157,8 @@ Each of these reached running code. Do not reintroduce them.
 - **Near-field DEM noise looks exactly like a ridge.** At 40 m a 2 m error is
   2.9° of apparent skyline. The mask only counts blockers clearing their own
   noise floor. Do not "simplify" that rule away.
-- **The horizon can be negative and must not be clamped.** A site 1,958 m above
-  its surroundings looks *down* at −2.4°, which is the entire reason it has
+- **The horizon can be negative and must not be clamped.** A site 1,958 m above the
+  lunar reference sphere looks *down* at −2.4°, which is the entire reason it has
   81 % sunlight while the Sun never rises above level.
 - **Prefetched agent facts must enter the grounding pool**, not just the prompt.
 - **respx cannot intercept google-genai** (it runs in a worker thread). Model

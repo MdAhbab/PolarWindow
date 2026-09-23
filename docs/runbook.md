@@ -218,7 +218,7 @@ Learned the hard way while building this, recorded so nobody rediscovers them:
   error is 2.9° of apparent skyline, which is larger than most real horizons
   here. The mask only counts a blocker that clears its own noise floor.
 - **The horizon can be negative and must not be clamped.** A site standing
-  1,958 m above its surroundings looks *down* at a −2.4° horizon, and that is
+  1,958 m above the lunar reference sphere looks *down* at a −2.4° horizon, and that is
   the entire reason it has 81 % sunlight while the Sun never rises above level.
 - **`asyncio.run()` inside an async worker** raises. The DEM fetcher has both a
   sync and an async entry point for this reason.
