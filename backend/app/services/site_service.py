@@ -122,13 +122,24 @@ class _Memo:
     async def get(
         self, key: Hashable, factory: Callable[[], Awaitable[ComputedWindow]]
     ) -> ComputedWindow:
+        value, _hit = await self.get_with_state(key, factory)
+        return value
+
+    async def get_with_state(
+        self, key: Hashable, factory: Callable[[], Awaitable[ComputedWindow]]
+    ) -> tuple[ComputedWindow, bool]:
+        """The window, and whether it came from memory rather than a computation.
+
+        A caller that joins an in-flight computation counts as a hit: it did not
+        pay for the geometry, so it must not report that it did (C7).
+        """
         hit = self._done.get(key)
         if hit is not None:
             self._done.move_to_end(key)
-            return hit
+            return hit, True
         pending = self._inflight.get(key)
         if pending is not None and not pending.done():
-            return await asyncio.shield(pending)
+            return await asyncio.shield(pending), True
 
         fut: asyncio.Future[ComputedWindow] = asyncio.get_running_loop().create_future()
         self._inflight[key] = fut
@@ -147,7 +158,7 @@ class _Memo:
             self._done[key] = value
             if len(self._done) > self.capacity:
                 self._done.popitem(last=False)
-            return value
+            return value, False
         finally:
             self._inflight.pop(key, None)
 
@@ -172,6 +183,18 @@ async def compute(
     Memoised in-process on the quantised window (see ``_Memo``); the Redis
     payload cache sits above this in ``cached_payload``.
     """
+    cw, _hit = await compute_with_state(session, site_id, start, end, step_s)
+    return cw
+
+
+async def compute_with_state(
+    session: AsyncSession,
+    site_id: str,
+    start: datetime,
+    end: datetime,
+    step_s: int,
+) -> tuple[ComputedWindow, bool]:
+    """As ``compute``, plus whether the geometry came from the in-process memo."""
     qs, qe, step_s = geometry_service.validate_window(start, end, step_s)
 
     async def build() -> ComputedWindow:
@@ -189,7 +212,7 @@ async def compute(
         )
         return ComputedWindow(site=site, mask_record=mask_rec, result=result)
 
-    return await _memo.get((ENGINE_VERSION, site_id, qs, qe, step_s), build)
+    return await _memo.get_with_state((ENGINE_VERSION, site_id, qs, qe, step_s), build)
 
 
 # ---------------------------------------------------------------------------
@@ -455,7 +478,10 @@ def set_meta(
     open_cut = any(
         v.get("longest_dark_open") or v.get("longest_blackout_open") for v in summaries.values()
     )
-    products = sorted({r.dem_product for r in recs})
+    # A mask's product can itself read "A + B" (a fine and a regional tier), so
+    # split before de-duplicating; joining whole strings printed
+    # "LOLA_LDEM_80S_20M + LOLA_LDEM_80S_20M + LDEM_80S_80M" (C6).
+    products = sorted({part.strip() for r in recs for part in r.dem_product.split(" + ")})
     notes = [
         "Summaries are computed over the reference window at a "
         f"{s.default_step_s} s step, not over any window you have selected.",
@@ -539,16 +565,25 @@ async def cached_payload(
         "metrics": metrics_payload,
     }[kind]
 
+    memo_hit = False
+
     async def compute_it() -> dict[str, Any]:
-        cw = await compute(session, site_id, qs, qe, step_s)
+        nonlocal memo_hit
+        cw, memo_hit = await compute_with_state(session, site_id, qs, qe, step_s)
         return builder(cw)
 
     payload, state = await cache.single_flight(key, compute_it, ttl)
     # The cached body carries whatever cache state it had when stored; correct
     # it so `meta.cache` describes *this* request rather than the one that
-    # populated the entry.
+    # populated the entry. A payload rebuilt from memoised geometry cost no
+    # computation, so it says "memo" and 0 ms instead of replaying the original
+    # compute time as if it had been paid again (C7).
     if isinstance(payload.get("meta"), dict):
-        payload["meta"]["cache"] = state
+        if memo_hit and state != "hit":
+            payload["meta"]["cache"] = "memo"
+            payload["meta"]["compute_ms"] = 0.0
+        else:
+            payload["meta"]["cache"] = state
     return payload
 
 

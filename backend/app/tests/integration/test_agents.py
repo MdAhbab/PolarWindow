@@ -401,3 +401,37 @@ async def test_fallback_never_prints_a_missing_value_as_zero() -> None:
     out = deterministic_summary(SPEC, [partial], "test")
     assert "0 hours" not in out["paragraph"]
     assert "574 hours" in out["paragraph"]
+
+
+async def test_compare_tool_keeps_the_open_flags(client) -> None:
+    """C2: an agent must see that a gap is a lower bound, or it states the order as fact."""
+    from app.agents import tools
+    from app.db.session import session_scope
+
+    async with session_scope() as session:
+        entry = await tools.execute(
+            session,
+            "compare_sites",
+            {"site_ids": [SITE, "de-gerlache-rim", "malapert-massif"], "rank_by": "longest_dark_s"},
+            1,
+        )
+    assert entry.error is None and entry.result is not None
+    for it in entry.result["items"]:
+        assert {"longest_dark_open", "longest_blackout_open", "censored", "rank_range"} <= set(it)
+
+
+async def test_search_rows_are_trimmed_so_the_pool_stays_small(client) -> None:
+    """C3/D23: every extra numeric leaf widens what the grounding guard accepts."""
+    from app.agents import tools
+    from app.agents.tools import SUMMARY_KEYS
+    from app.db.session import session_scope
+
+    async with session_scope() as session:
+        entry = await tools.execute(session, "search_sites", {"limit": 50}, 1)
+    assert entry.error is None and entry.result is not None
+    for row in entry.result["sites"]:
+        assert set(row) == {"site_id", "name", "lat_deg", "summary"}
+        if row["summary"] is not None:
+            assert set(row["summary"]) <= set(SUMMARY_KEYS)
+    # Four numbers, two fractions and a latitude per site, and nothing else.
+    assert len(entry.numbers) <= 7 * len(entry.result["sites"]) + 1

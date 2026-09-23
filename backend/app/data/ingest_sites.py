@@ -384,13 +384,17 @@ def resolve(
 ) -> ResolvedSite:
     """Find a landing point for one seed by searching the DEM.
 
-    Selection rule, stated plainly so it can be argued with: **the highest point
-    within the search region whose local slope is under the threshold.**
+    Selection rule, stated plainly so it can be argued with: **among the posts
+    in the search region whose local slope is under the threshold and whose
+    height is in the region's top decile, the one with the most open sky**
+    (the lowest coarse horizon, from the ring proxy in `_horizon_proxy_deg`).
 
-    Height is the right primary criterion near the pole because elevation is
-    what buys both sunlight and an Earth view -- it is the one variable that
-    improves all four key numbers at once. Slope is a hard filter rather than a
-    weighted term because a steep spot is not a worse site, it is not a site.
+    Openness is the criterion because it is directly what the four key numbers
+    reward. The high-ground floor stops a large crater's floor from scoring as
+    "open" while sitting in permanent shadow. Slope is a hard filter rather than
+    a weighted term because a steep spot is not a worse site, it is not a site.
+    The two rules tried before this one, and why each failed, are recorded
+    beside the scoring code below.
     """
     ax, ay = geographic_to_polar(np.array([seed.anchor_lon_deg]), np.array([seed.anchor_lat_deg]))
     ax_f, ay_f = float(ax[0]), float(ay[0])
@@ -535,8 +539,9 @@ def resolve(
         source_note=(
             f"Derived, not catalogued. Anchor is the IAU centre of {seed.name.split(',')[0]} "
             f"at {seed.anchor_lat_deg:.2f} deg, {seed.anchor_lon_deg:.2f} deg E. "
-            f"The landing point is "
-            f"the highest post with local slope <= {max_slope_deg:.0f} deg in a "
+            f"The landing point is the post with the most open sky (lowest coarse "
+            f"horizon) among those with local slope <= {max_slope_deg:.0f} deg and height "
+            f"in the top {100 - HIGH_GROUND_PERCENTILE:.0f}% of a "
             f"{'ring' if seed.search == 'rim' else 'disc'} of "
             f"{seed.inner_km:.0f}-{seed.outer_km:.0f} km around that anchor, measured on "
             f"{SOURCE_DEM} at {tile.scale_m:.0f} m posts. Not a surveyed landing "

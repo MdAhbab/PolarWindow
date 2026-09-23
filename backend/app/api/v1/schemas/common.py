@@ -67,7 +67,7 @@ class Meta(BaseModel):
     resolution: Resolution
     uncertainty: Uncertainty
     engine_version: str
-    cache: Literal["hit", "miss", "bypass"] = "miss"
+    cache: Literal["hit", "miss", "bypass", "memo"] = "miss"
     compute_ms: float | None = None
 
 

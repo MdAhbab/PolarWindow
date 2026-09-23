@@ -404,3 +404,53 @@ async def test_openapi_document_in_docs_matches_the_app(client) -> None:
     live = (await client.get(f"{API}/openapi.json")).json()
     committed = json.loads((Path(__file__).parents[4] / "docs" / "openapi.json").read_text())
     assert live == committed, "docs/openapi.json is stale: run `make codegen`"
+
+
+async def test_compare_declines_to_call_a_lower_bound_best(client) -> None:
+    """D20, reproduced: de Gerlache rim's night is cut by the window (>= 112 h).
+
+    Ranked against Connecting Ridge's measured ~122 h, the old ranking called de
+    Gerlache best. Its place cannot be stated, and neither can the site it
+    cannot be ordered against.
+    """
+    r = await client.post(
+        f"{API}/compare",
+        json={
+            "site_ids": [SITE, "de-gerlache-rim", "malapert-massif"],
+            "rank_by": "longest_dark_s",
+        },
+    )
+    assert r.status_code == 200, r.text
+    items = {it["site_id"]: it for it in r.json()["items"]}
+    dg = items["de-gerlache-rim"]
+    if not dg["metrics"]["longest_dark_open"]:
+        pytest.skip("reference window no longer cuts de Gerlache rim's night")
+    assert dg["censored"] is True
+    assert dg["rank"] is None
+    assert dg["rank_range"][0] < dg["rank_range"][1]
+    assert not any(it["rank"] == 1 and it["incomparable_with"] for it in items.values())
+
+
+async def test_list_provenance_names_each_product_once(client) -> None:
+    """C6: the one line a reader uses to know what the numbers came from."""
+    body = (await client.get(f"{API}/sites")).json()
+    parts = [p.strip() for p in body["meta"]["resolution"]["dem_product"].split(" + ")]
+    assert len(parts) == len(set(parts)), parts
+
+
+async def test_a_payload_rebuilt_from_memoised_geometry_says_so(client) -> None:
+    """C7: metrics and windows share one geometry; the second must not claim its cost."""
+    import secrets
+
+    # A window nobody has asked for, so the payload cache cannot answer first.
+    day = 1 + secrets.randbelow(27)
+    params = {"start": f"2028-02-{day:02d}T00:00:00Z", "end": f"2028-03-{day:02d}T00:00:00Z"}
+    first = await client.get(f"{API}/sites/{SITE}/metrics", params=params)
+    assert first.status_code == 200
+    second = await client.get(f"{API}/sites/{SITE}/windows", params=params)
+    assert second.status_code == 200
+    meta = second.json()["meta"]
+    if meta["cache"] == "hit":
+        pytest.skip("payload cache already held this window")
+    assert meta["cache"] == "memo"
+    assert meta["compute_ms"] == 0.0
