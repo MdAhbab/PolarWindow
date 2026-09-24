@@ -72,6 +72,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/missions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List CLPS missions */
+        get: operations["list_missions_api_v1_missions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One mission, fully sourced */
+        get: operations["get_mission_api_v1_missions__mission_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sites/{site_id}/timeline": {
         parameters: {
             query?: never;
@@ -123,6 +157,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sites/{site_id}/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sun and Earth by day or month, for choosing dates */
+        get: operations["calendar_api_v1_sites__site_id__calendar_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/compare": {
         parameters: {
             query?: never;
@@ -149,6 +200,23 @@ export interface paths {
         };
         /** Terrain hillshade, approximate illumination and approximate PSR */
         get: operations["get_tile_api_v1_tiles__layer___z___x___y__png_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tiles/{layer}/{z}/{x}/{y}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Same tile as the .png route, for clients that omit the suffix */
+        get: operations["get_tile_unsuffixed_api_v1_tiles__layer___z___x___y__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -283,6 +351,46 @@ export interface components {
             end?: string | null;
         };
         /**
+         * AgentMeta
+         * @description The shared `meta` envelope for agent answers and the run log.
+         */
+        AgentMeta: {
+            /**
+             * Computed At
+             * Format: date-time
+             */
+            computed_at: string;
+            resolution: components["schemas"]["AgentResolution"];
+            uncertainty: components["schemas"]["AgentUncertainty"];
+            /** Engine Version */
+            engine_version: string;
+            /** Model */
+            model: string;
+            /**
+             * Agents Configured
+             * @description False without an API key or under OFFLINE=1.
+             */
+            agents_configured: boolean;
+            /** Offline */
+            offline: boolean;
+            /** Notice */
+            notice: string;
+        };
+        /**
+         * AgentResolution
+         * @description What the answer's numbers were computed at: those of the tools it called.
+         */
+        AgentResolution: {
+            /** Time Step S */
+            time_step_s: number;
+            /** Azimuth Deg */
+            azimuth_deg: number;
+            /** Ephemeris */
+            ephemeris: string;
+            /** Source */
+            source: string;
+        };
+        /**
          * AgentResponse
          * @description Shared envelope for all four agents.
          *
@@ -305,7 +413,9 @@ export interface components {
             /** Reason */
             reason?: string | null;
             /** Result */
-            result?: Record<string, never> | null;
+            result?: {
+                [key: string]: unknown;
+            } | null;
             /** Provenance */
             provenance?: components["schemas"]["ProvenanceItem"][];
             /** Tool Calls */
@@ -326,14 +436,16 @@ export interface components {
              * Guard Failures
              * @description Guards that fired, including ones a retry then fixed. Kept so the guard can be shown working rather than asserted to exist.
              */
-            guard_failures?: Record<string, never>[];
-            /** Meta */
-            meta?: Record<string, never>;
+            guard_failures?: {
+                [key: string]: unknown;
+            }[];
+            meta: components["schemas"]["AgentMeta"];
         };
         /** AgentRunList */
         AgentRunList: {
             /** Items */
             items: components["schemas"]["AgentRunView"][];
+            meta: components["schemas"]["AgentMeta"];
         };
         /** AgentRunView */
         AgentRunView: {
@@ -361,7 +473,19 @@ export interface components {
             /** Tool Calls */
             tool_calls: components["schemas"]["ToolCallView"][];
             /** Guard Failures */
-            guard_failures?: Record<string, never>[] | null;
+            guard_failures?: {
+                [key: string]: unknown;
+            }[] | null;
+        };
+        /** AgentUncertainty */
+        AgentUncertainty: {
+            /**
+             * Grounded
+             * @description Every number in the answer traced to a tool result (always true for an answer that is shown; a failed check replaces the text with the measurements).
+             */
+            grounded: boolean;
+            /** Notes */
+            notes: string[];
         };
         /**
          * Arc
@@ -510,6 +634,66 @@ export interface components {
             /** End */
             end?: string | null;
         };
+        /** CalendarBucket */
+        CalendarBucket: {
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /** Sun Fraction Up */
+            sun_fraction_up: number;
+            /** Earth Fraction Up */
+            earth_fraction_up: number;
+            /** Sunlit S */
+            sunlit_s: number;
+            /** Earth Contact S */
+            earth_contact_s: number;
+            /** Longest Dark S */
+            longest_dark_s: number;
+            /**
+             * Longest Dark Open
+             * @description The longest night in this bucket was cut by the bucket's edge: a lower bound.
+             */
+            longest_dark_open: boolean;
+            /** Longest Blackout S */
+            longest_blackout_s: number;
+            /** Longest Blackout Open */
+            longest_blackout_open: boolean;
+        };
+        /**
+         * CalendarResponse
+         * @description Sun and Earth by day or by month, for choosing dates (contract v2).
+         */
+        CalendarResponse: {
+            /** Site Id */
+            site_id: string;
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /**
+             * Bucket
+             * @enum {string}
+             */
+            bucket: "day" | "month";
+            /** Step S */
+            step_s: number;
+            /** Items */
+            items: components["schemas"]["CalendarBucket"][];
+            meta: components["schemas"]["Meta"];
+        };
         /** CompareItem */
         CompareItem: {
             /** Site Id */
@@ -521,14 +705,44 @@ export interface components {
             position: number;
             /**
              * Rank
-             * @description Competition rank: sites the data cannot distinguish share their group leader's rank (1, 1, 3), so a tie is never printed as an order.
+             * @description Definite competition rank, shared by measured sites whose intervals overlap (1, 1, 3). Null when a window-censored value or an untimeable edge is involved, so the place cannot be stated: read `rank_range` instead.
              */
-            rank: number;
+            rank: number | null;
+            /**
+             * Rank Range
+             * @description [best possible, worst possible] place given every site's interval.
+             */
+            rank_range: number[];
             /**
              * Tied
-             * @description This site is in one of the `ties` groups.
+             * @description Overlaps at least one other measured site.
              */
             tied: boolean;
+            /**
+             * Tied With
+             * @description Measured sites this one cannot be separated from.
+             */
+            tied_with: string[];
+            /**
+             * Incomparable With
+             * @description Sites this one cannot be ordered against because a lower bound or an untimeable edge is involved.
+             */
+            incomparable_with: string[];
+            /**
+             * Censored
+             * @description The ranked value is a lower bound: the window, not the terrain, ended it.
+             */
+            censored: boolean;
+            /**
+             * Grazing
+             * @description An edge of the ranked value cannot be timed.
+             */
+            grazing: boolean;
+            /**
+             * Uncertainty S
+             * @description This site's own timing tolerance on the ranked metric; null when grazing.
+             */
+            uncertainty_s: number | null;
             metrics: components["schemas"]["MetricsResponse"];
             /** Delta Vs Best */
             delta_vs_best: {
@@ -561,7 +775,7 @@ export interface components {
             items: components["schemas"]["CompareItem"][];
             /**
              * Ties
-             * @description Groups whose metric differs by less than the tie tolerance. Reported rather than ordered: ranking sites the data cannot distinguish asserts a difference that is not there.
+             * @description Connected groups of measured sites whose intervals overlap. Reported rather than ordered: ranking sites the data cannot distinguish asserts a difference that is not there.
              */
             ties: string[][];
             /**
@@ -728,7 +942,7 @@ export interface components {
              * @default miss
              * @enum {string}
              */
-            cache: "hit" | "miss" | "bypass";
+            cache: "hit" | "miss" | "bypass" | "memo";
             /** Compute Ms */
             compute_ms?: number | null;
         };
@@ -779,8 +993,248 @@ export interface components {
             longest_blackout_open: boolean;
             /** Worst Compound Open */
             worst_compound_open: boolean;
+            /**
+             * Sunlit Full Disc S
+             * @description Time the whole solar disc was above the skyline (lower bound on sunlit_s; sampled at the timeline step). sunlit_s times the disc centre.
+             */
+            sunlit_full_disc_s: number;
+            /**
+             * Sunlit Any Limb S
+             * @description Time any part of the solar disc was above the skyline (upper bound).
+             */
+            sunlit_any_limb_s: number;
+            /** Earth Contact Full Disc S */
+            earth_contact_full_disc_s: number;
+            /** Earth Contact Any Limb S */
+            earth_contact_any_limb_s: number;
+            /**
+             * Sunlit Tolerance S
+             * @description Timing uncertainty of the sunlit total: every skyline crossing's edge tolerance, added in quadrature. Seconds.
+             */
+            sunlit_tolerance_s: number;
+            /**
+             * Earth Contact Tolerance S
+             * @description Timing uncertainty of the Earth-contact total, as for sunlit. Seconds.
+             */
+            earth_contact_tolerance_s: number;
+            /**
+             * Longest Dark Tolerance S
+             * @description Tolerance of the longest night's two edges in quadrature; null when an edge is a graze and cannot be timed. Seconds.
+             */
+            longest_dark_tolerance_s: number | null;
+            /**
+             * Longest Blackout Tolerance S
+             * @description Tolerance of the longest blackout's two edges; null when grazing. Seconds.
+             */
+            longest_blackout_tolerance_s: number | null;
+            /** Longest Dark Grazing */
+            longest_dark_grazing: boolean;
+            /** Longest Blackout Grazing */
+            longest_blackout_grazing: boolean;
             autonomy: components["schemas"]["Autonomy"];
             meta: components["schemas"]["Meta"];
+        };
+        /** MissionBrief */
+        MissionBrief: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Vehicle Name */
+            vehicle_name: string | null;
+            /** Task Order */
+            task_order: string | null;
+            /** Provider */
+            provider: string | null;
+            /** Lander */
+            lander: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "planned" | "in_transit" | "operating" | "completed" | "partial_success" | "landing_failed" | "lost_before_landing" | "cancelled" | "reassigned";
+            /** Region */
+            region: ("south_polar" | "nearside" | "farside" | "polar_other") | null;
+            /** Target Name */
+            target_name: string | null;
+            target: components["schemas"]["MissionTarget"] | null;
+            launch: components["schemas"]["PublishedDate"] | null;
+            landing: components["schemas"]["PublishedDate"] | null;
+            /** Payload Types */
+            payload_types: ("volatiles" | "geology_geophysics" | "heat_flow" | "radiation_space_weather" | "exosphere_dust" | "imaging" | "landing_navigation" | "communications" | "laser_retroreflector" | "rover_mobility" | "technology_demo" | "other")[];
+            /** Payload Count */
+            payload_count: number;
+            /**
+             * Site Id
+             * @description The site standing for the target; open it for the full site views.
+             */
+            site_id: string | null;
+            /**
+             * Terrain Modelled
+             * @description False outside the 80-90 deg S elevation model; null with no target.
+             */
+            terrain_modelled: boolean | null;
+            surface_window: components["schemas"]["SurfaceWindow"];
+            /** @description Null when there is no surface window or no target. Never zeros. */
+            summary: components["schemas"]["MissionSummary"] | null;
+            /** Unconfirmed Fields */
+            unconfirmed_fields: string[];
+            /** Data Version */
+            data_version: string;
+        };
+        /** MissionDetail */
+        MissionDetail: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Vehicle Name */
+            vehicle_name: string | null;
+            /** Task Order */
+            task_order: string | null;
+            /** Provider */
+            provider: string | null;
+            /** Lander */
+            lander: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "planned" | "in_transit" | "operating" | "completed" | "partial_success" | "landing_failed" | "lost_before_landing" | "cancelled" | "reassigned";
+            /** Region */
+            region: ("south_polar" | "nearside" | "farside" | "polar_other") | null;
+            /** Target Name */
+            target_name: string | null;
+            target: components["schemas"]["MissionTarget"] | null;
+            launch: components["schemas"]["PublishedDate"] | null;
+            landing: components["schemas"]["PublishedDate"] | null;
+            /** Payload Types */
+            payload_types: ("volatiles" | "geology_geophysics" | "heat_flow" | "radiation_space_weather" | "exosphere_dust" | "imaging" | "landing_navigation" | "communications" | "laser_retroreflector" | "rover_mobility" | "technology_demo" | "other")[];
+            /** Payload Count */
+            payload_count: number;
+            /**
+             * Site Id
+             * @description The site standing for the target; open it for the full site views.
+             */
+            site_id: string | null;
+            /**
+             * Terrain Modelled
+             * @description False outside the 80-90 deg S elevation model; null with no target.
+             */
+            terrain_modelled: boolean | null;
+            surface_window: components["schemas"]["SurfaceWindow"];
+            /** @description Null when there is no surface window or no target. Never zeros. */
+            summary: components["schemas"]["MissionSummary"] | null;
+            /** Unconfirmed Fields */
+            unconfirmed_fields: string[];
+            /** Data Version */
+            data_version: string;
+            /** Outcome Note */
+            outcome_note: string;
+            end_of_mission: components["schemas"]["PublishedDate"] | null;
+            /** Planned Surface Days */
+            planned_surface_days: number | null;
+            /** Payloads */
+            payloads: components["schemas"]["Payload"][];
+            /** Sources */
+            sources: components["schemas"]["Source"][];
+            /** Notes */
+            notes: string[];
+            /**
+             * Ellipse Ring
+             * @description Published landing ellipse as [lat, lon] vertices; null when none is published.
+             */
+            ellipse_ring: number[][] | null;
+            site: components["schemas"]["TargetSite"] | null;
+            meta: components["schemas"]["Meta"];
+        };
+        /** MissionList */
+        MissionList: {
+            /** Items */
+            items: components["schemas"]["MissionBrief"][];
+            /** Total */
+            total: number;
+            meta: components["schemas"]["Meta"];
+        };
+        /**
+         * MissionSummary
+         * @description The four numbers at the target over the surface window.
+         */
+        MissionSummary: {
+            /**
+             * Window Start
+             * Format: date-time
+             */
+            window_start: string;
+            /**
+             * Window End
+             * Format: date-time
+             */
+            window_end: string;
+            /** Sunlit S */
+            sunlit_s: number;
+            /** Earth Contact S */
+            earth_contact_s: number;
+            /** Longest Dark S */
+            longest_dark_s: number;
+            /** Longest Blackout S */
+            longest_blackout_s: number;
+            /** Sun Fraction Up */
+            sun_fraction_up: number;
+            /** Earth Fraction Up */
+            earth_fraction_up: number;
+            /** Longest Dark Open */
+            longest_dark_open: boolean;
+            /** Longest Blackout Open */
+            longest_blackout_open: boolean;
+            /** Grazing */
+            grazing: boolean;
+            /** Terrain Modelled */
+            terrain_modelled: boolean;
+        };
+        /** MissionTarget */
+        MissionTarget: {
+            /** Name */
+            name: string;
+            /** Lat Deg */
+            lat_deg: number;
+            /**
+             * Lon Deg
+             * @description Degrees east, 0-360.
+             */
+            lon_deg: number;
+            /**
+             * Coordinate Kind
+             * @description `feature_centre` is the IAU centre of the named target, used because no landing point is published. It is not a landing point.
+             * @enum {string}
+             */
+            coordinate_kind: "actual_landing" | "planned_target" | "feature_centre";
+            /** Source Url */
+            source_url: string;
+            /** Feature Id */
+            feature_id?: number | null;
+        };
+        /** Payload */
+        Payload: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Acronym */
+            acronym: string | null;
+            /** Organisation */
+            organisation: string | null;
+            /**
+             * Instrument Types
+             * @description This project's classification from the sourced description, not NASA's.
+             */
+            instrument_types: ("volatiles" | "geology_geophysics" | "heat_flow" | "radiation_space_weather" | "exosphere_dust" | "imaging" | "landing_navigation" | "communications" | "laser_retroreflector" | "rover_mobility" | "technology_demo" | "other")[];
+            /** Purpose */
+            purpose: string;
+            /** Source Url */
+            source_url: string;
+            /** Unconfirmed */
+            unconfirmed: boolean;
         };
         /**
          * Provenance
@@ -823,6 +1277,24 @@ export interface components {
             call_seq: number;
             /** Field */
             field: string;
+        };
+        /** PublishedDate */
+        PublishedDate: {
+            /**
+             * Date
+             * @description ISO date or datetime. A year-precision date is 1 January.
+             */
+            date: string;
+            /**
+             * Precision
+             * @enum {string}
+             */
+            precision: "minute" | "day" | "month" | "quarter" | "year";
+            /**
+             * As Published
+             * @description The phrase as published, e.g. 'late 2027'. Show this.
+             */
+            as_published: string;
         };
         /**
          * Resolution
@@ -869,10 +1341,13 @@ export interface components {
             lat_deg: number;
             /** Lon Deg */
             lon_deg: number;
-            /** Elev M */
-            elev_m: number;
+            /**
+             * Elev M
+             * @description Height above the 1737.4 km reference sphere, metres. Null where no elevation model covers the site: an unknown height is not zero.
+             */
+            elev_m: number | null;
             /** Slope Deg */
-            slope_deg: number;
+            slope_deg: number | null;
             /** Note */
             note: string;
             /**
@@ -880,7 +1355,27 @@ export interface components {
              * @description How the landing point was found: on the rim of a named crater (so it borders that crater's shadowed floor) or on a massif or plateau.
              * @enum {string}
              */
-            search_kind: "rim" | "massif";
+            search_kind: "rim" | "massif" | "published";
+            /**
+             * Kind
+             * @description A derived candidate site, or a CLPS mission target (ADR-6).
+             * @default candidate
+             * @enum {string}
+             */
+            kind: "candidate" | "mission_target";
+            /**
+             * Coordinate Rule
+             * @description Searched in the DEM for open sky, or used exactly as published.
+             * @default derived_open_sky
+             * @enum {string}
+             */
+            coordinate_rule: "derived_open_sky" | "published";
+            /**
+             * Terrain Modelled
+             * @description False outside the 80-90 deg S elevation model: smooth-sphere skyline.
+             * @default true
+             */
+            terrain_modelled: boolean;
             summary?: components["schemas"]["SiteSummary"] | null;
         };
         /** SiteDetail */
@@ -897,10 +1392,13 @@ export interface components {
             lat_deg: number;
             /** Lon Deg */
             lon_deg: number;
-            /** Elev M */
-            elev_m: number;
+            /**
+             * Elev M
+             * @description Height above the 1737.4 km reference sphere, metres. Null where no elevation model covers the site: an unknown height is not zero.
+             */
+            elev_m: number | null;
             /** Slope Deg */
-            slope_deg: number;
+            slope_deg: number | null;
             /** Note */
             note: string;
             /**
@@ -908,7 +1406,27 @@ export interface components {
              * @description How the landing point was found: on the rim of a named crater (so it borders that crater's shadowed floor) or on a massif or plateau.
              * @enum {string}
              */
-            search_kind: "rim" | "massif";
+            search_kind: "rim" | "massif" | "published";
+            /**
+             * Kind
+             * @description A derived candidate site, or a CLPS mission target (ADR-6).
+             * @default candidate
+             * @enum {string}
+             */
+            kind: "candidate" | "mission_target";
+            /**
+             * Coordinate Rule
+             * @description Searched in the DEM for open sky, or used exactly as published.
+             * @default derived_open_sky
+             * @enum {string}
+             */
+            coordinate_rule: "derived_open_sky" | "published";
+            /**
+             * Terrain Modelled
+             * @description False outside the 80-90 deg S elevation model: smooth-sphere skyline.
+             * @default true
+             */
+            terrain_modelled: boolean;
             summary?: components["schemas"]["SiteSummary"] | null;
             provenance: components["schemas"]["Provenance"];
             horizon?: components["schemas"]["HorizonSummary"] | null;
@@ -975,6 +1493,63 @@ export interface components {
              */
             computed_at: string;
         };
+        /** Source */
+        Source: {
+            /** Url */
+            url: string;
+            /** Title */
+            title: string;
+            /** Publisher */
+            publisher: string;
+            /**
+             * Accessed
+             * Format: date
+             */
+            accessed: string;
+        };
+        /** SurfaceWindow */
+        SurfaceWindow: {
+            /** Start */
+            start: string | null;
+            /** End */
+            end: string | null;
+            /**
+             * Basis
+             * @enum {string}
+             */
+            basis: "published" | "planned" | "assumed" | "none";
+            /** Note */
+            note: string;
+        };
+        /** TargetSite */
+        TargetSite: {
+            /** Id */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Lat Deg */
+            lat_deg: number;
+            /** Lon Deg */
+            lon_deg: number;
+            /** Elev M */
+            elev_m: number | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "candidate" | "mission_target";
+            /**
+             * Coordinate Rule
+             * @enum {string}
+             */
+            coordinate_rule: "derived_open_sky" | "published";
+            /** Terrain Modelled */
+            terrain_modelled: boolean;
+            /** Source Note */
+            source_note: string;
+        };
         /** TimelineResponse */
         TimelineResponse: {
             /** Site Id */
@@ -1010,7 +1585,9 @@ export interface components {
             /** Tool */
             tool: string;
             /** Args */
-            args: Record<string, never>;
+            args: {
+                [key: string]: unknown;
+            };
             /** Latency Ms */
             latency_ms: number;
             /** Error */
@@ -1058,6 +1635,12 @@ export interface components {
             penumbra_sun_deg: number;
             /** Penumbra Earth Deg */
             penumbra_earth_deg: number;
+            /**
+             * Terrain Modelled
+             * @description False when no elevation model covers the site (a CLPS target outside 80 deg S): the skyline is a smooth sphere, so real terrain could block more.
+             * @default true
+             */
+            terrain_modelled: boolean;
             /** Notes */
             notes: string[];
         };
@@ -1132,6 +1715,8 @@ export interface operations {
                 /** @description Coarse filter against the reference window, not the window on screen. Sites without a precompute are excluded when this is set, because they cannot be judged against it. */
                 min_sun_fraction?: number | null;
                 max_longest_dark_s?: number | null;
+                /** @description Derived candidates (the default, so the v1 list is unchanged), CLPS mission targets, or both. */
+                kind?: "candidate" | "mission_target" | "all";
                 limit?: number;
                 offset?: number;
             };
@@ -1215,6 +1800,81 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HorizonResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_missions_api_v1_missions_get: {
+        parameters: {
+            query?: {
+                /** @description Any of these statuses. */
+                status?: ("planned" | "in_transit" | "operating" | "completed" | "partial_success" | "landing_failed" | "lost_before_landing" | "cancelled" | "reassigned")[] | null;
+                provider?: string | null;
+                /** @description Missions carrying at least one payload of any of these types. */
+                payload_type?: ("volatiles" | "geology_geophysics" | "heat_flow" | "radiation_space_weather" | "exosphere_dust" | "imaging" | "landing_navigation" | "communications" | "laser_retroreflector" | "rover_mobility" | "technology_demo" | "other")[] | null;
+                /** @description south_polar, nearside, farside, polar_other */
+                region?: string | null;
+                /** @description Landing (else launch) on or after. */
+                from?: string | null;
+                /** @description Landing (else launch) on or before. */
+                to?: string | null;
+                /** @description Substring of name, provider, target or task order. */
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MissionList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_mission_api_v1_missions__mission_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Mission slug, e.g. `im-2`. */
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MissionDetail"];
                 };
             };
             /** @description Validation Error */
@@ -1345,6 +2005,44 @@ export interface operations {
             };
         };
     };
+    calendar_api_v1_sites__site_id__calendar_get: {
+        parameters: {
+            query?: {
+                /** @description ISO 8601 UTC. Defaults to the reference start. */
+                start?: string | null;
+                /** @description ISO 8601 UTC; at most 730 days after start. */
+                end?: string | null;
+                bucket?: "day" | "month";
+            };
+            header?: never;
+            path: {
+                /** @description Site slug, e.g. `connecting-ridge`. */
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     post_compare_api_v1_compare_post: {
         parameters: {
             query?: never;
@@ -1411,6 +2109,48 @@ export interface operations {
             };
             /** @description Unknown layer, or z/x/y outside the tile scheme. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_tile_unsuffixed_api_v1_tiles__layer___z___x___y__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description One of hillshade, illumination, psr. */
+                layer: string;
+                z: number;
+                x: number;
+                y: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": unknown;
+                };
+            };
+            /** @description No data here. */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };

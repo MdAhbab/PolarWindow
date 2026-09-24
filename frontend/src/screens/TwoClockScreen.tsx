@@ -9,19 +9,25 @@ import { TERRAIN_BLOCKER_MIN_EL_DEG, TwoClockRings } from '../components/TwoCloc
 import { EducatorGuide } from '../components/EducatorGuide'
 import { KeyNumberRow } from '../components/KeyNumbers'
 import { ArcTable } from '../components/ArcTable'
-import { LoadingPanel, UncertaintyNote } from '../components/States'
-import { useProvenance } from '../lib/useProvenance'
-import { Button, Panel, SampleDataBadge, SectionLabel } from '../components/ui'
+import { ProblemPanel, UncertaintyNote } from '../components/States'
+import { Button, Panel, SectionLabel } from '../components/ui'
 import { Icon } from '../components/Icon'
+import { WindowPicker } from '../components/WindowPicker'
+import { SummarySpeaker } from '../components/SummarySpeaker'
+import { ExplainPanel } from '../components/Agents'
+import { useWindowParams } from '../lib/mission'
 import { bearing, bound, coords, degrees, hoursWithUnit, humanDuration } from '../lib/format'
 
 /**
- * S2 — the signature screen. Everything else calibrates to this.
- * One shape, two bodies, four numbers underneath at display size.
+ * S2, "Site" in the navigation — the signature screen.
+ *
+ * Answer first (U2): the four numbers sit above the ring, and the ring
+ * explains them. The planner rail is one panel plus a single disclosure for
+ * how sure, where from and the table, instead of four panels competing.
  */
 export function TwoClockScreen() {
   const view = useFocusedView()
-  const provenance = useProvenance()
+  const w = useWindowParams()
   const { siteId, cursorH, face, showTable, toggleTable } = useMission(
     useShallow((s) => ({
       siteId: s.siteId,
@@ -33,6 +39,7 @@ export function TwoClockScreen() {
   )
   const metrics = useFocusedMetrics()
   const site = siteById(siteId)
+  const terrainModelled = view.meta?.uncertainty.terrainModelled ?? site.terrainModelled
 
   const worst = metrics?.sun.longestDownArc
   const worstOpen = Boolean(metrics?.sun.longestDownOpen)
@@ -46,18 +53,32 @@ export function TwoClockScreen() {
         <div className="flex min-w-[260px] flex-col gap-1">
           <h1 className="text-[24px] font-semibold tracking-[-0.005em]">{site.name}</h1>
           <div className="font-mono text-[12px] text-ink-3">
-            {coords(site.latDeg, site.lonDeg)} · elev {site.elevM.toLocaleString()} m
+            {coords(site.latDeg, site.lonDeg)} ·{' '}
+            {site.elevM !== null ? `elev ${site.elevM.toLocaleString()} m` : 'height not modelled'}
           </div>
+          <SummarySpeaker view={view} />
         </div>
         <DateSlider />
-        <span className="xl:hidden">
-          <SampleDataBadge provenance={provenance} />
-        </span>
       </div>
 
       <div className="flex grow flex-col gap-6 p-4 lg:flex-row lg:p-6">
-        <div className="flex grow flex-col items-center gap-6">
-          {metrics ? (
+        <div className="flex min-w-0 grow flex-col items-center gap-6">
+          {!terrainModelled && (
+            <UncertaintyNote className="w-full">
+              Terrain is not modelled outside 80°S. Sun and Earth are computed against a smooth Moon, so real
+              hills could block more.
+            </UncertaintyNote>
+          )}
+          {view.error ? (
+            <div className="w-full max-w-2xl">
+              <ProblemPanel error={view.error} fallbackTitle="Cannot compute this site" onRetry={view.refetch} />
+            </div>
+          ) : face !== 'public' ? (
+            <div className="w-full">
+              <KeyNumberRow metrics={metrics} face={face} uncertain={!terrainModelled} />
+            </div>
+          ) : null}
+          {metrics && !view.error ? (
             <div className="flex w-full flex-col items-center gap-6 xl:flex-row xl:justify-center">
               <TwoClockRings
                 metrics={metrics}
@@ -66,13 +87,9 @@ export function TwoClockScreen() {
               />
               {face !== 'public' && <RingKey />}
             </div>
-          ) : (
-            <div className="w-full max-w-2xl">
-              <LoadingPanel />
-            </div>
-          )}
+          ) : null}
 
-          {face === 'public' && metrics && worst ? (
+          {face === 'public' && metrics && worst && !view.error ? (
             <div className="flex max-w-[520px] flex-col items-center gap-4 text-center">
               <div className="text-[96px] leading-[88px] font-semibold tracking-[-0.03em] tnum">
                 {bound(worstOpen)}
@@ -93,11 +110,33 @@ export function TwoClockScreen() {
                 Why is that?
               </Link>
             </div>
-          ) : (
-            <div className="w-full">
-              <KeyNumberRow metrics={metrics} face={face} />
-            </div>
-          )}
+          ) : face === 'public' && metrics && !worst && !view.error ? (
+            <p className="max-w-[520px] text-center text-[17px] leading-7 text-ink text-pretty">
+              In this window the Sun never sets here: the whole stretch is daylight. Choose a longer window
+              below to see this spot’s nights.
+            </p>
+          ) : null}
+
+          <div className="flex w-full flex-wrap gap-x-6 gap-y-1">
+            <Link to="/horizon" className="inline-flex h-11 items-center text-[14px] font-semibold">
+              See the skyline →
+            </Link>
+            <Link to="/blackout" className="inline-flex h-11 items-center text-[14px] font-semibold">
+              Plan around the blackouts →
+            </Link>
+            <Link to="/report" className="inline-flex h-11 items-center text-[14px] font-semibold">
+              Hand-over report →
+            </Link>
+          </div>
+
+          <Panel className="flex w-full flex-col gap-3 p-5">
+            <SectionLabel>Change the dates</SectionLabel>
+            <WindowPicker siteId={siteId} />
+          </Panel>
+
+          <div className="w-full">
+            <ExplainPanel siteId={siteId} start={w.start} end={w.end} />
+          </div>
 
           {showTable && metrics && (
             <div className="w-full">
@@ -147,11 +186,28 @@ export function TwoClockScreen() {
                     See it on the horizon profile →
                   </Link>
                 </>
+              ) : view.error ? (
+                <p className="text-[13px] text-ink-2">Not available: the numbers for this window did not load.</p>
+              ) : metrics ? (
+                // A window with no dark stretch at all is an answer, not a
+                // pending state: nothing blocks the Sun in it.
+                <p className="text-[13px] leading-5 text-ink">
+                  The Sun stays above this site’s skyline for the whole window, so nothing blocks it here.
+                  Choose a longer window to find its nights.
+                </p>
               ) : (
                 <p className="text-[13px] text-ink-3">Computing the skyline…</p>
               )}
             </Panel>
 
+            <details className="group border border-line bg-panel">
+              <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-5 text-[15px] font-medium text-ink">
+                How sure is this? · Sources · Table
+                <span aria-hidden="true" className="text-ink-3 transition-transform group-open:rotate-90">
+                  ›
+                </span>
+              </summary>
+              <div className="flex flex-col gap-4 p-4 pt-0">
             {metrics && view.meta && (
               <UncertaintyNote>
                 Terrain heights carry up to ±{view.meta.uncertainty.demVerticalErrorM} m of vertical error.
@@ -170,7 +226,7 @@ export function TwoClockScreen() {
                     here; a gap carries both of its edges.
                   </>
                 )}
-                {view.meta.uncertainty.partialCoverage
+                {view.meta.uncertainty.partialCoverage && view.meta.uncertainty.terrainModelled
                   ? ` Terrain covers only ${(view.meta.uncertainty.coverage * 100).toFixed(0)}% of the sampled bearings; the rest assume a smooth Moon and are likely optimistic.`
                   : ''}
               </UncertaintyNote>
@@ -187,7 +243,9 @@ export function TwoClockScreen() {
               </p>
             </Panel>
 
-            <Sources meta={view.meta} className="mt-auto" />
+            <Sources meta={view.meta} />
+              </div>
+            </details>
           </aside>
         )}
 

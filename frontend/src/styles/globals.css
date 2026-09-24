@@ -23,7 +23,7 @@
   /* ink */
   --color-ink: #e6ebf0; /* 16.3:1 */
   --color-ink-2: #9aa5b1; /* 7.8:1  */
-  --color-ink-3: #7d8995; /* 5.5:1  */
+  --color-ink-3: #8d99a5; /* 6.8:1 on canvas, 5.39:1 on inset (U7) */
 
   /* sunlight & power */
   --color-sun: #f2a33c; /* 9.4:1 as text */
@@ -41,7 +41,7 @@
 
   /* darkness & blackout — never an empty gap, always a hatch */
   --color-dark-fill: #14181d;
-  --color-hatch: #2c343c;
+  --color-hatch: #5f6a75; /* 3.23:1 against dark-fill (U6, WCAG 1.4.11) */
 
   /* over the survival limit — magenta, never red, never paired with green */
   --color-alert: #ff5e93; /* 6.8:1 */
@@ -55,7 +55,7 @@
   --color-psr: #0e1114;
 
   /* the margin we admit to */
-  --color-uncertain: #78838f;
+  --color-uncertain: #8a95a1; /* 5.14:1 on inset (U7) */
 
   --color-focus: #a6e4f1; /* 13.4:1 */
 
@@ -80,7 +80,7 @@
 
   --color-ink: #14171a; /* 15.9:1 */
   --color-ink-2: #3c434b; /* 8.9:1  */
-  --color-ink-3: #5e6670; /* 5.2:1  */
+  --color-ink-3: #5e6670; /* 5.2:1, 4.74:1 on inset: passes, unchanged */
 
   --color-sun: #8a5605; /* 5.4:1 as text */
   --color-sun-fill: #b4761f; /* 3.4:1 as a mark */
@@ -95,7 +95,7 @@
   --color-on-earth: #ffffff;
 
   --color-dark-fill: #dcdad3;
-  --color-hatch: #7b8087;
+  --color-hatch: #6b7178; /* 3.53:1 against dark-fill (U6) */
 
   --color-alert: #b3134f; /* 6.0:1 */
   --color-alert-deep: #f7dbe5;
@@ -201,6 +201,22 @@
      If you notice it, it is wrong. */
   .breathe {
     animation: pw-breathe 8s linear infinite alternate;
+  }
+}
+
+/* The run log and settings sheets (§10.6): M3's curve, 460 ms, from the right.
+   Under reduced motion the class is not applied at all (decided in code), and
+   the blanket rule below is the floor. */
+.pw-sheet-in {
+  animation: pw-sheet-in 460ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes pw-sheet-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
   }
 }
 

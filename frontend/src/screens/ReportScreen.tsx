@@ -6,12 +6,14 @@ import { useMission } from '../lib/store'
 import { siteById } from '../lib/sites'
 import { useProvenance } from '../lib/useProvenance'
 import { Ribbon } from '../components/Ribbon'
-import { LoadingPanel } from '../components/States'
+import { LoadingPanel, ProblemPanel } from '../components/States'
+import { BriefPanel } from '../components/Agents'
 import { Button, PROVENANCE_COPY, SectionLabel } from '../components/ui'
 import { Mark } from '../components/Icon'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
+import { rankLabel } from '../lib/rank'
 import { comparisonCsv, download } from '../lib/export'
-import { hoursWithUnit, percent, shortDateUTC } from '../lib/format'
+import { hoursWithUnit, msFromModelH, percent, shortDate } from '../lib/format'
 
 /**
  * S6 — the one page a planner can hand over.
@@ -22,22 +24,28 @@ import { hoursWithUnit, percent, shortDateUTC } from '../lib/format'
 export function ReportScreen() {
   const reportMeta = useFocusedView().meta
   const provenance = useProvenance()
-  const { compareIds, windowStartH, windowHours } = useMission(
+  const { compareIds, windowStartH, windowHours, siteId } = useMission(
     useShallow((s) => ({
       compareIds: s.compareIds,
       windowStartH: s.windowStartH,
       windowHours: s.windowHours,
+      siteId: s.siteId,
     })),
   )
-  const { map: metrics, autonomy, done, total } = useSiteMetricsMap(compareIds)
-  const ranking = useCompare(compareIds, useWindowParams(), 'longest_dark_s')
+  const { map: metrics, autonomy, done, total, error } = useSiteMetricsMap(compareIds)
+  const w = useWindowParams()
+  const ranking = useCompare(compareIds, w, 'longest_dark_s')
   const ready = compareIds.every((id) => metrics[id] && autonomy[id])
 
   if (!ready) {
     return (
       <div className="p-6">
         <div className="max-w-2xl">
-          <LoadingPanel done={done} total={total} />
+          {error ? (
+            <ProblemPanel error={error} fallbackTitle="Cannot build the report" />
+          ) : (
+            <LoadingPanel done={done} total={total} />
+          )}
         </div>
       </div>
     )
@@ -48,8 +56,23 @@ export function ReportScreen() {
   const items = ranking.data?.items ?? []
   const ranked = items.map((it) => it.site_id).filter((id) => compareIds.includes(id))
   const order = [...ranked, ...compareIds.filter((id) => !ranked.includes(id))]
-  const rankOf = Object.fromEntries(items.map((it) => [it.site_id, it.rank])) as Record<string, number>
+  const itemOf = Object.fromEntries(items.map((it) => [it.site_id, it]))
+  const rankOf = Object.fromEntries(items.map((it) => [it.site_id, it.rank])) as Record<string, number | null>
   const tiedOf = Object.fromEntries(items.map((it) => [it.site_id, it.tied])) as Record<string, boolean>
+  const labelOf = (id: string) => {
+    const it = itemOf[id]
+    return it
+      ? rankLabel({
+          rank: it.rank,
+          rankRange: it.rank_range,
+          tied: it.tied,
+          censored: it.censored,
+          grazing: it.grazing,
+          overLimit: metrics[id].sun.longestDownH > SURVIVAL_LIMIT_H,
+          incomparableWith: it.incomparable_with.map((x) => siteById(x).code),
+        })
+      : undefined
+  }
   // A night the window cuts short is a lower bound: it cannot be said to fit
   // inside the limit, only to exceed it.
   const survivors = order.filter(
@@ -60,13 +83,13 @@ export function ReportScreen() {
   const stamp = PROVENANCE_COPY[provenance]
   const exportRows = order.map((id) => ({
     site: { id, name: siteById(id).name, metrics: metrics[id], autonomy: autonomy[id] },
-    rank: rankOf[id],
+    rank: rankOf[id] ?? undefined,
     tied: tiedOf[id],
   }))
 
   return (
     <div className="flex grow flex-col items-center gap-4 bg-inset p-4 lg:p-8">
-      <div className="flex w-full max-w-[816px] items-center justify-between">
+      <div className="flex w-full max-w-[816px] flex-wrap items-center justify-between gap-3">
         <SectionLabel>Export — one page, Letter, light theme</SectionLabel>
         <div className="flex flex-wrap gap-3">
           <Button
@@ -86,30 +109,30 @@ export function ReportScreen() {
 
       <article
         data-theme="light"
-        className="w-full max-w-[816px] bg-canvas p-10 text-ink shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+        className="w-full max-w-[816px] bg-canvas p-5 text-ink shadow-[0_8px_24px_rgba(0,0,0,0.35)] sm:p-10"
         style={{ minHeight: 1056 }}
       >
-        <header className="flex items-end justify-between gap-6 border-b-2 border-ink pb-3">
+        <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b-2 border-ink pb-3">
           <div className="flex items-center gap-3">
             <Mark size={30} />
             <span className="text-[17px] font-semibold tracking-[0.2em]">
               POLAR<span className="font-normal text-sun">&nbsp;WINDOW</span>
             </span>
           </div>
-          <div className="text-right font-mono text-[13px] leading-5 text-ink-2">
+          <div className="font-mono text-[13px] leading-5 text-ink-2 sm:text-right">
             Landing site comparison
             <br />
             generated {new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC
           </div>
         </header>
 
-        <div className="mt-5 flex items-start justify-between gap-5">
+        <div className="mt-5 flex flex-wrap items-start justify-between gap-5 sm:flex-nowrap">
           <div className="flex flex-col gap-2">
             <h1 className="text-[30px] leading-9 font-semibold tracking-[-0.015em] text-balance">
               {compareIds.length} candidates, one {Math.round(windowHours)} h window
             </h1>
             <p className="text-[16px] leading-6 text-ink-2">
-              {shortDateUTC(windowStartH)} → {shortDateUTC(windowStartH + windowHours)} · survival limit{' '}
+              {shortDate(msFromModelH(windowStartH))} → {shortDate(msFromModelH(windowStartH + windowHours))} · survival limit{' '}
               {SURVIVAL_LIMIT_H} h of continuous darkness
             </p>
           </div>
@@ -123,20 +146,34 @@ export function ReportScreen() {
           </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-3 gap-4">
+        <div className="mt-5 grid gap-4 sm:grid-cols-3">
           {order.map((id, i) => {
             const m = metrics[id]
             const s = siteById(id)
             const over = m.sun.longestDownH > SURVIVAL_LIMIT_H
-            const rank = rankOf[id] ?? i + 1
+            const rank = rankOf[id] ?? null
+            const label = labelOf(id)
             return (
               <div key={id} className={`border bg-panel p-3.5 ${over ? 'border-2 border-alert' : 'border-line-strong'}`}>
-                <div className="mb-2.5 flex items-baseline gap-2 border-b border-line pb-2">
-                  <span className={`text-[20px] font-bold ${rank === 1 ? 'text-earth' : 'text-ink-3'}`}>{rank}</span>
+                <div className="mb-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 border-b border-line pb-2">
+                  <span
+                    className={`text-[20px] font-bold ${
+                      rank === null ? 'text-uncertain' : label?.kind === 'best' ? 'text-earth' : 'text-ink-3'
+                    }`}
+                  >
+                    {rank ?? (itemOf[id] ? `${itemOf[id].rank_range[0]}–${itemOf[id].rank_range[1]}` : i + 1)}
+                  </span>
                   <span className="text-[15px] font-semibold">
                     {s.code} — {s.name.split(',')[0]}
                   </span>
-                  {tiedOf[id] && <span className="ml-auto text-[12px] text-ink-3">tied</span>}
+                  {label && (
+                    <span
+                      className={`w-full text-[12px] ${label.tone === 'uncertain' ? 'text-uncertain' : 'text-ink-3'}`}
+                      title={label.title}
+                    >
+                      {label.text}
+                    </span>
+                  )}
                 </div>
                 <Figure label="Sunlight" value={hoursWithUnit(m.sun.upHours)} tone="text-sun" />
                 <Figure label="Earth contact" value={hoursWithUnit(m.earth.upHours)} tone="text-earth" />
@@ -212,7 +249,7 @@ export function ReportScreen() {
           </p>
         </div>
 
-        <div className="mt-4 flex gap-4">
+        <div className="mt-4 flex flex-col gap-4 sm:flex-row">
           <div className="grow border border-line-strong bg-panel p-4">
             <div className="mb-1.5 text-[13px] font-semibold tracking-[0.1em] text-ink-3 uppercase">
               Autonomy required — site {siteById(best).code}
@@ -225,7 +262,7 @@ export function ReportScreen() {
               {hoursWithUnit(bestPacket.survivalNeededH, 0, bestPacket.survivalOpen)}.
             </p>
           </div>
-          <div className="w-60 shrink-0 border border-line-strong bg-panel p-4">
+          <div className="shrink-0 border border-line-strong bg-panel p-4 sm:w-60">
             <div className="mb-1.5 text-[13px] font-semibold tracking-[0.1em] text-ink-3 uppercase">
               Uncertainty
             </div>
@@ -237,16 +274,20 @@ export function ReportScreen() {
           </div>
         </div>
 
-        <footer className="mt-6 flex justify-between gap-5 border-t border-line-strong pt-2.5">
+        <footer className="mt-6 flex flex-wrap justify-between gap-5 border-t border-line-strong pt-2.5">
           <p className="font-mono text-[12px] leading-[18px] text-ink-2">
             <SourcesLine meta={reportMeta} />
             <br />
-            Every figure is computed by this build from those inputs and is prefixed ≈. Not an official
+            Every figure is an estimate computed by this build from those inputs. Not an official
             product of any space agency.
           </p>
           <span className="shrink-0 font-mono text-[12px] text-ink-2">page 1 of 1</span>
         </footer>
       </article>
+
+      <div className="w-full max-w-[816px] print:hidden">
+        <BriefPanel siteId={siteId} start={w.start} end={w.end} />
+      </div>
     </div>
   )
 }

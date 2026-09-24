@@ -1,0 +1,234 @@
+{
+ "items": [
+  {
+   "id": "peregrine-m1",
+   "name": "Peregrine Mission One",
+   "vehicle_name": null,
+   "task_order": "TO2-AB",
+   "provider": "Astrobotic",
+   "lander": "Peregrine",
+   "status": "lost_before_landing",
+   "region": "nearside",
+   "target_name": "Sinus Viscositatis",
+   "target": {
+    "name": "Sinus Viscositatis (IAU feature centre)",
+    "lat_deg": 35.25,
+    "lon_deg": 319.01,
+    "coordinate_kind": "feature_centre",
+    "source_url": "https://planetarynames.wr.usgs.gov/Feature/16118",
+    "feature_id": 16118
+   },
+   "launch": {
+    "date": "2024-01-08",
+    "precision": "day",
+    "as_published": "January 8, 2024"
+   },
+   "landing": null,
+   "payload_types": [
+    "laser_retroreflector",
+    "volatiles",
+    "radiation_space_weather",
+    "exosphere_dust"
+   ],
+   "payload_count": 5,
+   "site_id": "feature-sinus-viscositatis",
+   "terrain_modelled": false,
+   "surface_window": {
+    "start": null,
+    "end": null,
+    "basis": "none",
+    "note": "This mission has no time on the surface."
+   },
+   "summary": null,
+   "unconfirmed_fields": [
+    "ellipse",
+    "end_of_mission",
+    "landing",
+    "planned_surface_days",
+    "vehicle_name"
+   ],
+   "data_version": "228fbfb3fa7b16c2"
+  },
+  {
+   "id": "im-2",
+   "name": "IM-2",
+   "vehicle_name": "Athena",
+   "task_order": "PRIME-1",
+   "provider": "Intuitive Machines",
+   "lander": "Nova-C",
+   "status": "partial_success",
+   "region": "south_polar",
+   "target_name": "Mons Mouton",
+   "target": {
+    "name": "Athena rest position, Mons Mouton",
+    "lat_deg": -84.7906,
+    "lon_deg": 29.1957,
+    "coordinate_kind": "actual_landing",
+    "source_url": "https://lroc.im-ldi.com/images/1408",
+    "feature_id": null
+   },
+   "launch": null,
+   "landing": {
+    "date": "2025-03-06T17:30:00Z",
+    "precision": "minute",
+    "as_published": "approximately 11:30 a.m. [CST] March 6, 2025"
+   },
+   "payload_types": [
+    "volatiles",
+    "technology_demo",
+    "laser_retroreflector"
+   ],
+   "payload_count": 3,
+   "site_id": "mission-im-2",
+   "terrain_modelled": true,
+   "surface_window": {
+    "start": "2025-03-06T17:30:00Z",
+    "end": "2025-03-07T06:15:00Z",
+    "basis": "published",
+    "note": "From landing (approximately 11:30 a.m. [CST] March 6, 2025) to end of mission (12:15 a.m. CST Friday [March 7, 2025]), as published."
+   },
+   "summary": {
+    "window_start": "2025-03-06T17:30:00Z",
+    "window_end": "2025-03-07T06:15:00Z",
+    "sunlit_s": 45900.0,
+    "earth_contact_s": 45900.0,
+    "longest_dark_s": 0.0,
+    "longest_blackout_s": 0.0,
+    "sun_fraction_up": 1.0,
+    "earth_fraction_up": 1.0,
+    "longest_dark_open": false,
+    "longest_blackout_open": false,
+    "grazing": false,
+    "terrain_modelled": true
+   },
+   "unconfirmed_fields": [
+    "ellipse",
+    "launch",
+    "planned_surface_days"
+   ],
+   "data_version": "7436b64e25f34b90"
+  },
+  {
+   "id": "blue-moon-mk1-viper",
+   "name": "VIPER delivery (Blue Moon MK1)",
+   "vehicle_name": null,
+   "task_order": "CS-7",
+   "provider": "Blue Origin",
+   "lander": "Blue Moon Mark 1 (second unit)",
+   "status": "planned",
+   "region": "south_polar",
+   "target_name": "Mons Mouton",
+   "target": {
+    "name": "Mons Mouton (IAU feature centre)",
+    "lat_deg": -84.6,
+    "lon_deg": 31.0,
+    "coordinate_kind": "feature_centre",
+    "source_url": "https://planetarynames.wr.usgs.gov/Feature/16070",
+    "feature_id": 16070
+   },
+   "launch": null,
+   "landing": {
+    "date": "2027-01-01",
+    "precision": "year",
+    "as_published": "late 2027"
+   },
+   "payload_types": [
+    "volatiles",
+    "rover_mobility"
+   ],
+   "payload_count": 1,
+   "site_id": "feature-mons-mouton",
+   "terrain_modelled": true,
+   "surface_window": {
+    "start": null,
+    "end": null,
+    "basis": "none",
+    "note": "The landing date is known only as 'late 2027', so there is no single window: compare months on the calendar instead."
+   },
+   "summary": null,
+   "unconfirmed_fields": [
+    "ellipse",
+    "end_of_mission",
+    "launch",
+    "planned_surface_days",
+    "vehicle_name"
+   ],
+   "data_version": "a6c8075f01d1cea8"
+  },
+  {
+   "id": "cs-8",
+   "name": "CS-8",
+   "vehicle_name": null,
+   "task_order": "CS-8",
+   "provider": null,
+   "lander": null,
+   "status": "planned",
+   "region": null,
+   "target_name": null,
+   "target": null,
+   "launch": null,
+   "landing": null,
+   "payload_types": [],
+   "payload_count": 0,
+   "site_id": null,
+   "terrain_modelled": null,
+   "surface_window": {
+    "start": null,
+    "end": null,
+    "basis": "none",
+    "note": "The landing date is not published."
+   },
+   "summary": null,
+   "unconfirmed_fields": [
+    "ellipse",
+    "end_of_mission",
+    "lander",
+    "landing",
+    "launch",
+    "payloads",
+    "planned_surface_days",
+    "provider",
+    "region",
+    "target",
+    "target_name",
+    "vehicle_name"
+   ],
+   "data_version": "6e46ab50925c4548"
+  }
+ ],
+ "total": 4,
+ "meta": {
+  "computed_at": "2026-09-23T22:11:10.163336Z",
+  "resolution": {
+   "azimuth_deg": 0.25,
+   "azimuth_count": 1440,
+   "time_step_s": 900,
+   "max_range_m": 50000.0,
+   "dem_product": "LDEM_80S_80M + LOLA_LDEM_80S_20M + none (smooth sphere)",
+   "dem_resolution_m": 20.0,
+   "ephemeris": "de440 + moon_pa_de440 (MOON_ME)",
+   "frame": "MOON_ME"
+  },
+  "uncertainty": {
+   "dem_vertical_error_m": 4.0,
+   "dem_resolution_m": 20.0,
+   "coverage": 0.0,
+   "horizon_el_deg": 0.8807,
+   "edge_timing_s": null,
+   "grazing": false,
+   "penumbra_sun_deg": 0.2665,
+   "penumbra_earth_deg": 0.9497,
+   "terrain_modelled": false,
+   "notes": [
+    "Mission facts are compiled by hand from NASA pages, LROC images and the IAU Gazetteer; every record carries its sources, last read 2026-09-23.",
+    "20 of 20 missions have fields no source confirms; they are listed as unconfirmed, never filled in.",
+    "Numbers are Sun and Earth geometry at the target over the mission's surface window, not what any lander measured.",
+    "4 target(s) lie outside the 80-90 deg S elevation model; there Sun and Earth are computed against a smooth sphere, so terrain could block more.",
+    "Where no landing point is published, the target is the IAU centre of the named feature, which is not a landing point."
+   ]
+  },
+  "engine_version": "hz-2/vis-2",
+  "cache": "bypass",
+  "compute_ms": null
+ }
+}

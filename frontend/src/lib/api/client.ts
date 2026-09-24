@@ -24,6 +24,16 @@ export type CompareDTO = Schemas['CompareResponse']
 export type AgentDTO = Schemas['AgentResponse']
 export type MetaDTO = Schemas['Meta']
 export type ArcDTO = Schemas['Arc']
+export type CompareItemDTO = Schemas['CompareItem']
+export type MissionListDTO = Schemas['MissionList']
+export type MissionBriefDTO = Schemas['MissionBrief']
+export type MissionDetailDTO = Schemas['MissionDetail']
+export type PublishedDateDTO = Schemas['PublishedDate']
+export type CalendarDTO = Schemas['CalendarResponse']
+export type AgentRunListDTO = Schemas['AgentRunList']
+export type AgentRunDTO = Schemas['AgentRunView']
+export type ToolCallDTO = Schemas['ToolCallView']
+export type ProvenanceItemDTO = Schemas['ProvenanceItem']
 
 export const API_BASE =
   (import.meta.env.VITE_API_BASE as string | undefined) ?? 'http://localhost:8000/api/v1'
@@ -79,13 +89,25 @@ export class ApiUnreachable extends ApiError {
   }
 }
 
-type Query = Record<string, string | number | boolean | null | undefined>
+type Scalar = string | number | boolean
+export type Query = Record<string, Scalar | readonly Scalar[] | null | undefined>
 
-function qs(params: Query | undefined): string {
+/**
+ * Query string, with arrays sent as repeated keys (`status=a&status=b`), which
+ * is how FastAPI reads a list parameter. Empty values are dropped rather than
+ * sent as `key=`, so "no filter" and "filter on the empty string" cannot be
+ * confused by the server.
+ */
+export function qs(params: Query | undefined): string {
   if (!params) return ''
   const sp = new URLSearchParams()
   for (const [k, v] of Object.entries(params)) {
-    if (v !== undefined && v !== null && v !== '') sp.set(k, String(v))
+    if (v === undefined || v === null || v === '') continue
+    if (Array.isArray(v)) {
+      for (const item of v) if (item !== '') sp.append(k, String(item))
+    } else {
+      sp.set(k, String(v))
+    }
   }
   const s = sp.toString()
   return s ? `?${s}` : ''
@@ -153,6 +175,15 @@ export const api = {
   compare: (body: Schemas['CompareRequest'], signal?: AbortSignal) =>
     request<CompareDTO>('/compare', { body, signal }),
 
+  calendar: (id: string, q: Query, signal?: AbortSignal) =>
+    request<CalendarDTO>(`/sites/${id}/calendar`, { query: q, signal }),
+
+  missions: (query: Query = {}, signal?: AbortSignal) =>
+    request<MissionListDTO>('/missions', { query, signal }),
+
+  mission: (id: string, signal?: AbortSignal) =>
+    request<MissionDetailDTO>(`/missions/${encodeURIComponent(id)}`, { signal }),
+
   explain: (body: Schemas['ExplainRequest'], signal?: AbortSignal) =>
     request<AgentDTO>('/agents/explain', { body, signal }),
 
@@ -166,7 +197,7 @@ export const api = {
     request<AgentDTO>('/agents/ask', { body, signal }),
 
   agentRuns: (limit = 50, signal?: AbortSignal) =>
-    request<Schemas['AgentRunList']>('/agents/runs', { query: { limit }, signal }),
+    request<AgentRunListDTO>('/agents/runs', { query: { limit }, signal }),
 
   tileUrl: (layer: 'hillshade' | 'illumination' | 'psr', z: number, x: number, y: number) =>
     `${API_BASE}/tiles/${layer}/${z}/${x}/${y}.png`,

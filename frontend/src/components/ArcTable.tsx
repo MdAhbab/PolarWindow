@@ -1,5 +1,5 @@
 import type { Arc, SiteMetrics } from '../lib/types'
-import { bearing, clockUTC, degrees, plusMinus } from '../lib/format'
+import { bearing, degrees, humanStamp, msFromModelH, plusMinus } from '../lib/format'
 import { TERRAIN_BLOCKER_MIN_EL_DEG } from './TwoClockRings'
 import { SectionLabel } from './ui'
 
@@ -14,6 +14,11 @@ export function ArcTable({ metrics, body }: { metrics: SiteMetrics; body?: 'sun'
   const rows: Arc[] = body
     ? metrics[body].arcs
     : [...metrics.sun.arcs, ...metrics.earth.arcs].sort((a, b) => a.startH - b.startH)
+  // Arc hours count from the window's own opening instant, which moves with
+  // the window picker; the model epoch is only the fallback. (U10: words on
+  // screen, ISO in the CSV export.)
+  const origin = metrics.windowStartIso ? Date.parse(metrics.windowStartIso) : msFromModelH(metrics.windowStartH)
+  const stamp = (h: number) => humanStamp(origin, h)
 
   return (
     <div className="flex flex-col gap-3">
@@ -21,7 +26,7 @@ export function ArcTable({ metrics, body }: { metrics: SiteMetrics; body?: 'sun'
         <SectionLabel>Every chart is also a table</SectionLabel>
         <span className="text-[12px] text-ink-3">{rows.length} arcs</span>
       </div>
-      <div className="overflow-x-auto border border-line">
+      <div className="relative overflow-x-auto border border-line">
         <table className="w-full min-w-[720px] border-collapse text-left">
           <caption className="sr-only">
             Arc list for this site: each stretch above or below the local skyline, with its start, end,
@@ -58,11 +63,11 @@ export function ArcTable({ metrics, body }: { metrics: SiteMetrics; body?: 'sun'
                   </span>
                 </td>
                 <td className="px-4 py-2.5 font-mono text-[13px] text-ink-2">{a.up ? 'above' : 'below'}</td>
-                <td className="px-4 py-2.5 font-mono text-[13px] text-ink-2">
-                  {a.openStart ? `before ${clockUTC(a.startH)}` : clockUTC(a.startH)}
+                <td className="px-4 py-2.5 text-[13px] text-ink-2">
+                  {a.openStart ? `before ${stamp(a.startH)}` : stamp(a.startH)}
                 </td>
-                <td className="px-4 py-2.5 font-mono text-[13px] text-ink-2">
-                  {a.openEnd ? `after ${clockUTC(a.endH)}` : clockUTC(a.endH)}
+                <td className="px-4 py-2.5 text-[13px] text-ink-2">
+                  {a.openEnd ? `after ${stamp(a.endH)}` : stamp(a.endH)}
                 </td>
                 <td className="px-4 py-2.5 text-right font-mono text-[13px] text-ink tnum">
                   {a.openStart || a.openEnd ? '≥' : ''}

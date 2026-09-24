@@ -52,10 +52,23 @@ export function hasSite(id: string): boolean {
   return Boolean(byId[id])
 }
 
+/**
+ * The derived candidate sites only.
+ *
+ * The registry holds every site (`kind=all`) so a mission target resolves by
+ * id on the Site, Compare, Horizon and Blackout screens. The Map's list, its
+ * pins and the default comparison stay the 15 candidates, as in v1.
+ */
+export function getCandidates(): Site[] {
+  return registry.filter((s) => s.kind === 'candidate')
+}
+
 /** The three the compare screen opens on, resolved against whatever loaded. */
 export function defaultCompare(): string[] {
   const preferred = ['connecting-ridge', 'malapert-massif', 'faustini-rim']
   const present = preferred.filter(hasSite)
   if (present.length >= 2) return present
-  return registry.slice(0, 3).map((s) => s.id)
+  return getCandidates()
+    .slice(0, 3)
+    .map((s) => s.id)
 }

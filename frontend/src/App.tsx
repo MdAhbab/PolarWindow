@@ -10,10 +10,25 @@ import { BlackoutScreen } from './screens/BlackoutScreen'
 import { ReportScreen } from './screens/ReportScreen'
 import { StoryScreen } from './screens/StoryScreen'
 import { StatesScreen } from './screens/StatesScreen'
+import { MissionsScreen } from './screens/MissionsScreen'
+import { MissionDetailScreen } from './screens/MissionDetailScreen'
 import { useMission } from './lib/store'
 import { useEngineVersionWatch, useSites } from './lib/api/queries'
-import { setSites, hasSite, defaultCompare } from './lib/sites'
+import { setSites, hasSite, defaultCompare, getCandidates } from './lib/sites'
 import { ApiError } from './lib/api/client'
+import { hasVisited } from './lib/firstVisit'
+
+/**
+ * `/` on a first visit goes to the story (U1); after that, to the missions.
+ *
+ * Read in render and never written here: the story marks the visit when it
+ * mounts. Writing in render would run twice under StrictMode and send a first
+ * visitor past the story. If storage is unavailable the answer is Missions,
+ * the page that answers fastest.
+ */
+function Home() {
+  return <Navigate to={hasVisited() ? '/missions' : '/story'} replace />
+}
 
 /**
  * Loads the site registry, then renders.
@@ -25,7 +40,10 @@ import { ApiError } from './lib/api/client'
  * an error that says what still works, and an empty state that is not a shrug.
  */
 export default function App() {
-  const sites = useSites()
+  // Every site, candidates and mission targets alike, so a mission's target
+  // resolves by id on Site, Compare, Horizon and Blackout. The Map narrows to
+  // the candidates itself.
+  const sites = useSites({ kind: 'all' })
   useEngineVersionWatch()
   const setSite = useMission((s) => s.setSite)
   const siteId = useMission((s) => s.siteId)
@@ -46,7 +64,7 @@ export default function App() {
   // they are not in the dataset, fall back rather than render nothing.
   useEffect(() => {
     if (!sites.data?.items.length) return
-    if (!hasSite(siteId)) setSite(sites.data.items[0].site.id)
+    if (!hasSite(siteId)) setSite((getCandidates()[0] ?? sites.data.items[0].site).id)
     const compare = defaultCompare()
     if (compare.length >= 2) useMission.setState({ compareIds: compare })
   }, [sites.data, siteId, setSite])
@@ -98,7 +116,9 @@ export default function App() {
   return (
     <AppShell>
       <Routes>
-        <Route path="/" element={<Navigate to="/clocks" replace />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/missions" element={<MissionsScreen />} />
+        <Route path="/missions/:id" element={<MissionDetailScreen />} />
         <Route path="/map" element={<MapScreen />} />
         <Route path="/clocks" element={<TwoClockScreen />} />
         <Route path="/compare" element={<CompareScreen />} />
@@ -107,7 +127,7 @@ export default function App() {
         <Route path="/report" element={<ReportScreen />} />
         <Route path="/story" element={<StoryScreen />} />
         <Route path="/states" element={<StatesScreen />} />
-        <Route path="*" element={<Navigate to="/clocks" replace />} />
+        <Route path="*" element={<Navigate to="/missions" replace />} />
       </Routes>
     </AppShell>
   )

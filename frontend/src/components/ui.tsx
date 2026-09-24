@@ -1,3 +1,4 @@
+import type React from 'react'
 import type { ReactNode } from 'react'
 import { Icon } from './Icon'
 
@@ -18,15 +19,23 @@ export function Button({
   title,
   className = '',
   type = 'button',
+  expanded,
+  controls,
+  describedBy,
+  buttonRef,
 }: {
   children: ReactNode
   variant?: 'primary' | 'secondary' | 'ghost'
   size?: 'md' | 'sm'
-  onClick?: () => void
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void
   disabled?: boolean
   title?: string
   className?: string
   type?: 'button' | 'submit'
+  expanded?: boolean
+  controls?: string
+  describedBy?: string
+  buttonRef?: React.Ref<HTMLButtonElement>
 }) {
   const variants = {
     primary:
@@ -38,10 +47,14 @@ export function Button({
   const sizes = { md: 'h-12 px-4 text-[15px]', sm: 'h-12 px-3 text-[14px]' }
   return (
     <button
+      ref={buttonRef}
       type={type}
       onClick={onClick}
       disabled={disabled}
       title={title}
+      aria-expanded={expanded}
+      aria-controls={controls}
+      aria-describedby={describedBy}
       className={`${BASE} ${variants[variant]} ${sizes[size]} ${className}`}
     >
       {children}
@@ -55,18 +68,25 @@ export function IconButton({
   onClick,
   pressed,
   className = '',
+  expanded,
+  haspopup,
 }: {
   name: Parameters<typeof Icon>[0]['name']
   label: string
-  onClick?: () => void
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void
   pressed?: boolean
   className?: string
+  expanded?: boolean
+  haspopup?: 'dialog'
 }) {
   return (
     <button
       type="button"
       aria-label={label}
+      title={label}
       aria-pressed={pressed}
+      aria-expanded={expanded}
+      aria-haspopup={haspopup}
       onClick={onClick}
       className={`inline-flex size-12 items-center justify-center rounded-control border border-line-strong text-ink hover:bg-inset ${className}`}
     >
@@ -98,7 +118,7 @@ export function Chip({
       type="button"
       aria-pressed={!!selected}
       onClick={onClick}
-      className={`inline-flex h-12 items-center gap-2 rounded-control border px-4 text-[14px] font-semibold transition-colors ${
+      className={`inline-flex h-12 shrink-0 items-center gap-2 rounded-control border px-4 text-[14px] font-semibold whitespace-nowrap transition-colors ${
         selected ? on : 'border-line-strong text-ink-2 hover:bg-inset'
       }`}
     >
@@ -132,11 +152,42 @@ export function Panel({
   )
 }
 
-export function SectionLabel({ children, className = '' }: { children: ReactNode; className?: string }) {
+/**
+ * A section's name. An `<h2>` (U9): panel titles were styled text, so each
+ * page had one heading and screen-reader users could not move between
+ * sections, which is how most of them navigate. Same classes, same look.
+ * `as="div"` is for the rare label that names a control group, not a section.
+ */
+export function SectionLabel({
+  children,
+  className = '',
+  as: As = 'h2',
+  id,
+}: {
+  children: ReactNode
+  className?: string
+  as?: 'h2' | 'h3' | 'div'
+  id?: string
+}) {
   return (
-    <div className={`text-[12px] font-semibold tracking-[0.12em] text-ink-3 uppercase ${className}`}>
+    <As id={id} className={`text-[12px] font-semibold tracking-[0.12em] text-ink-3 uppercase ${className}`}>
       {children}
-    </div>
+    </As>
+  )
+}
+
+/**
+ * A field no source confirms (§10.3). The word, in the uncertain ink, with the
+ * reason as its title and accessible description. Never a dash, never blank,
+ * never a value "for illustration".
+ */
+export function Unconfirmed({ asOf, className = '' }: { asOf?: string | null; className?: string }) {
+  const why = `No source found for this field${asOf ? ` as of ${asOf}` : ''}`
+  return (
+    <span className={`text-uncertain ${className}`} title={why}>
+      Unconfirmed
+      <span className="sr-only">: {why.charAt(0).toLowerCase() + why.slice(1)}</span>
+    </span>
   )
 }
 
@@ -244,14 +295,14 @@ export function Segmented<T extends string>({
 }) {
   if (pill) {
     return (
-      <div role="group" aria-label={label} className="inline-flex gap-1 rounded-pill border border-line-strong bg-inset p-1">
+      <div role="group" aria-label={label} className="inline-flex w-fit max-w-full gap-1 overflow-x-auto rounded-pill border border-line-strong bg-inset p-1">
         {options.map((o) => (
           <button
             key={o.value}
             type="button"
             aria-pressed={value === o.value}
             onClick={() => onChange(o.value)}
-            className={`h-10 rounded-pill px-4 text-[13px] font-semibold transition-colors ${
+            className={`h-11 shrink-0 rounded-pill px-4 text-[13px] font-semibold whitespace-nowrap transition-colors ${
               value === o.value ? 'bg-ink text-canvas' : 'text-ink-2 hover:text-ink'
             }`}
           >
@@ -262,14 +313,15 @@ export function Segmented<T extends string>({
     )
   }
   return (
-    <div role="group" aria-label={label} className="inline-flex overflow-hidden rounded-control border border-line-strong">
+    // Scrolls sideways rather than clipping a segment at 320 px (WCAG 1.4.10).
+    <div role="group" aria-label={label} className="inline-flex w-fit max-w-full overflow-x-auto rounded-control border border-line-strong">
       {options.map((o, i) => (
         <button
           key={o.value}
           type="button"
           aria-pressed={value === o.value}
           onClick={() => onChange(o.value)}
-          className={`h-12 px-4 text-[13px] font-semibold transition-colors ${
+          className={`h-12 shrink-0 px-4 text-[13px] font-semibold whitespace-nowrap transition-colors ${
             i > 0 ? 'border-l border-line-strong' : ''
           } ${value === o.value ? 'bg-ink text-canvas' : 'text-ink-2 hover:bg-inset hover:text-ink'}`}
         >

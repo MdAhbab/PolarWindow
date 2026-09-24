@@ -1,18 +1,23 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { useSiteMetricsMap } from '../lib/useMetricsMap'
 import { useCompare, useWindowParams } from '../lib/mission'
 import { useMission } from '../lib/store'
-import { siteById } from '../lib/sites'
+import { hasSite, siteById } from '../lib/sites'
+import { useMissions } from '../lib/api/queries'
+import type { CompareItemDTO } from '../lib/api/client'
+import { rankLabel, type RankLabel } from '../lib/rank'
 import { DateSlider } from '../components/DateSlider'
 import { Ribbon } from '../components/Ribbon'
 import { KeyNumberTile } from '../components/KeyNumbers'
-import { LoadingPanel } from '../components/States'
+import { LoadingPanel, ProblemPanel } from '../components/States'
+import { AdvisePanel } from '../components/Agents'
 import { Panel, SectionLabel, Segmented } from '../components/ui'
 import { Icon } from '../components/Icon'
 import { useReducedMotion } from '../hooks/useMotion'
 import { metricValue, SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
-import { TERM, bound, coords, hoursWithUnit } from '../lib/format'
+import { bound, coords, hoursWithUnit, termLabel } from '../lib/format'
 import type { MetricKey, SiteMetrics } from '../lib/types'
 
 const GAP = 24
@@ -26,10 +31,10 @@ const API_METRIC: Record<MetricKey, string> = {
 }
 
 const RANKS: { value: MetricKey; label: string }[] = [
-  { value: 'sunHours', label: 'Sunlight' },
-  { value: 'earthHours', label: 'Earth contact' },
-  { value: 'longestDark', label: 'Dark gap' },
-  { value: 'longestBlackout', label: 'RF blackout' },
+  { value: 'sunHours', label: 'Time in the Sun' },
+  { value: 'earthHours', label: 'Time it can call home' },
+  { value: 'longestDark', label: 'Longest night' },
+  { value: 'longestBlackout', label: "Longest time it can't call home" },
 ]
 
 function useIsWide() {
@@ -59,14 +64,20 @@ export function CompareScreen() {
       cursorH: s.cursorH,
     })),
   )
-  const { map: metrics, done, total, isPending } = useSiteMetricsMap(compareIds)
-  const ranking = useCompare(compareIds, useWindowParams(), API_METRIC[rankBy])
+  const { map: metrics, done, total, isPending, error } = useSiteMetricsMap(compareIds)
+  const w = useWindowParams()
+  const ranking = useCompare(compareIds, w, API_METRIC[rankBy])
+  const [params] = useSearchParams()
+  const fromId = params.get('from')
+  const fromMission = useMissions({}).data?.items.find((m) => m.id === fromId)
+  const seeded = fromMission?.siteId && compareIds[0] === fromMission.siteId ? fromMission : undefined
   const compute = { status: isPending ? 'running' : 'ready', done, total } as const
   const reduced = useReducedMotion()
   const wide = useIsWide()
   const ref = useRef<HTMLDivElement>(null)
   const [colW, setColW] = useState(0)
   const [colH, setColH] = useState(560)
+  const cards = useRef(new Map<string, HTMLDivElement>())
 
   const ready = compareIds.every((id) => metrics[id])
 
@@ -82,13 +93,30 @@ export function CompareScreen() {
     return () => ro.disconnect()
   }, [compareIds.length, wide, ready])
 
+  // The absolutely positioned columns give the container no height of their
+  // own, so it takes the tallest card's -- measured at the real column width
+  // and re-measured when a card's content changes. It used to only ever grow,
+  // and the first measurement was at zero width, which left a gap of several
+  // hundred pixels under the cards.
+  useLayoutEffect(() => {
+    if (!wide || !colW) return
+    const measure = () => {
+      const hs = [...cards.current.values()].map((el) => el.offsetHeight)
+      if (hs.length) setColH(Math.max(...hs))
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    for (const el of cards.current.values()) ro.observe(el)
+    return () => ro.disconnect()
+  }, [wide, colW, compareIds])
+
   // Order, ranks and ties are the server's (`POST /compare`), so this screen
   // and the API can never disagree, and sites the data cannot tell apart share
   // a rank instead of being put in an order that is not there. Until the
   // ranking arrives the columns keep request order.
-  const { order, ranks, tiedWith } = useMemo(() => {
-    const items = ranking.data?.items ?? []
-    const known = items.map((it) => it.site_id).filter((id) => compareIds.includes(id))
+  const { order, items, tiedWith } = useMemo(() => {
+    const list = ranking.data?.items ?? []
+    const known = list.map((it) => it.site_id).filter((id) => compareIds.includes(id))
     const rest = compareIds.filter((id) => !known.includes(id))
     const tied: Record<string, string[]> = {}
     for (const group of ranking.data?.ties ?? []) {
@@ -96,13 +124,34 @@ export function CompareScreen() {
     }
     return {
       order: [...known, ...rest],
-      ranks: Object.fromEntries(items.map((it) => [it.site_id, it.rank])) as Record<string, number>,
+      items: Object.fromEntries(list.map((it) => [it.site_id, it])) as Record<string, CompareItemDTO>,
       tiedWith: tied,
     }
   }, [ranking.data, compareIds])
 
+  // U11: what each site may be called, from the server's rank, range and
+  // flags. "best" only for a definite first place that is neither cut short
+  // nor over the survival limit.
+  const code = (id: string) => (hasSite(id) ? siteById(id).code : id)
+  const labels: Record<string, RankLabel | undefined> = {}
+  for (const id of compareIds) {
+    const it = items[id]
+    const m = metrics[id]
+    labels[id] = it
+      ? rankLabel({
+          rank: it.rank,
+          rankRange: it.rank_range,
+          tied: it.tied,
+          censored: it.censored,
+          grazing: it.grazing,
+          overLimit: m ? m.sun.longestDownH > SURVIVAL_LIMIT_H : false,
+          incomparableWith: it.incomparable_with.map(code),
+        })
+      : undefined
+  }
+
   const orderLabel = order
-    .map((id) => `${siteById(id).code}${tiedWith[id]?.length ? ' (tied)' : ''}`)
+    .map((id) => `${code(id)}${labels[id] ? ` (${labels[id]!.text})` : ''}`)
     .join(' → ')
   const tieSentence = (ranking.data?.ties ?? [])
     .map((g) => `${g.map((id) => siteById(id).code).join(' and ')} are tied — the data cannot tell them apart`)
@@ -113,28 +162,56 @@ export function CompareScreen() {
       <div className="flex grow flex-col gap-6 p-4 lg:p-6">
         <DateSlider />
         <div className="max-w-2xl">
-          <LoadingPanel />
+          {error ? (
+            <ProblemPanel error={error} fallbackTitle="Cannot compute the comparison" />
+          ) : (
+            <LoadingPanel done={done} total={total} />
+          )}
         </div>
       </div>
     )
   }
 
   const best = order[0]
+  const bestLabel = labels[best]
+  const leads = bestLabel?.kind === 'best' || (bestLabel?.kind === 'joint' && items[best]?.rank === 1)
   const disqualified = order.filter((id) => metrics[id].sun.longestDownH > SURVIVAL_LIMIT_H)
+  const unavailable = ranking.data?.unavailable ?? []
 
   return (
     <div className="flex grow flex-col">
       <div className="flex flex-wrap items-end gap-x-8 gap-y-4 border-b border-line px-4 py-4 lg:px-6">
         <DateSlider />
-        <div className="flex flex-col gap-2">
-          <SectionLabel>Rank by</SectionLabel>
+        <div className="flex min-w-0 max-w-full flex-col gap-2">
+          <SectionLabel as="div">Rank by</SectionLabel>
           <Segmented options={RANKS} value={rankBy} onChange={setRankBy} label="Rank by" />
         </div>
       </div>
 
       <p aria-live="polite" className="sr-only">
-        Now ranked by {TERM[rankBy][face]}: {orderLabel}.{tieSentence ? ` ${tieSentence}.` : ''}
+        Now ranked by {termLabel(rankBy, face).label}: {orderLabel}.{tieSentence ? ` ${tieSentence}.` : ''}
       </p>
+
+      {(seeded || unavailable.length > 0 || ranking.error) && (
+        <div className="flex flex-col gap-1 border-b border-line px-4 py-3 text-[13px] leading-5 text-ink-2 lg:px-6">
+          {seeded && (
+            <p>
+              Seeded from {seeded.name}: its target and the three candidate sites nearest to it by distance.
+            </p>
+          )}
+          {unavailable.map((u) => (
+            <p key={u.site_id}>
+              {code(u.site_id)} could not be ranked: {u.reason}
+            </p>
+          ))}
+          {ranking.error ? (
+            <p>
+              The ranking did not load ({(ranking.error as { title?: string }).title ?? 'request failed'}), so the
+              columns are in the order you chose them and none is called best.
+            </p>
+          ) : null}
+        </div>
+      )}
 
       <div className="grow p-4 lg:p-6">
         {wide ? (
@@ -145,7 +222,8 @@ export function CompareScreen() {
                 <div
                   key={id}
                   ref={(el) => {
-                    if (el) setColH((h) => Math.max(h, el.offsetHeight))
+                    if (el) cards.current.set(id, el)
+                    else cards.current.delete(id)
                   }}
                   className="absolute top-0 left-0"
                   style={{
@@ -156,8 +234,8 @@ export function CompareScreen() {
                 >
                   <CompareCard
                     siteId={id}
-                    rank={ranks[id] ?? position + 1}
-                    tied={Boolean(tiedWith[id]?.length)}
+                    item={items[id]}
+                    label={labels[id]}
                     metrics={metrics[id]}
                     cursorH={cursorH}
                     rankBy={rankBy}
@@ -168,12 +246,12 @@ export function CompareScreen() {
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            {order.map((id, position) => (
+            {order.map((id) => (
               <CompareCard
                 key={id}
                 siteId={id}
-                rank={ranks[id] ?? position + 1}
-                tied={Boolean(tiedWith[id]?.length)}
+                item={items[id]}
+                label={labels[id]}
                 metrics={metrics[id]}
                 cursorH={cursorH}
                 rankBy={rankBy}
@@ -186,20 +264,24 @@ export function CompareScreen() {
       <footer className="flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-line bg-panel px-4 py-5 lg:px-6">
         <SectionLabel className="shrink-0">The trade-off, stated</SectionLabel>
         <p className="max-w-4xl text-[15px] leading-6 text-ink">
-          Ranked by {TERM[rankBy][face].toLowerCase()},{' '}
-          {tiedWith[best]?.length ? (
+          Ranked by {termLabel(rankBy, face).label.toLowerCase()},{' '}
+          {!leads ? (
             <>
-              <strong>{[best, ...tiedWith[best]].map((id) => siteById(id).code).join(' and ')}</strong> share
-              the lead — the data cannot separate them.{' '}
+              no site can be called first: {bestLabel ? 'a value cut short by the window, or an edge that cannot be timed, overlaps the others' : 'the ranking has not arrived'}.{' '}
+            </>
+          ) : tiedWith[best]?.length ? (
+            <>
+              <strong>{[best, ...tiedWith[best]].map(code).join(' and ')}</strong> share the lead — the data
+              cannot separate them.{' '}
             </>
           ) : (
             <>
-              <strong>{siteById(best).code}</strong> leads.{' '}
+              <strong>{code(best)}</strong> leads.{' '}
             </>
           )}
           {disqualified.length > 0 ? (
             <>
-              {disqualified.map((id) => siteById(id).code).join(' and ')}{' '}
+              {disqualified.map(code).join(' and ')}{' '}
               {disqualified.length > 1 ? 'are' : 'is'} out on the night alone —{' '}
               <span className="text-alert">
                 over the {SURVIVAL_LIMIT_H} h survival limit
@@ -214,22 +296,27 @@ export function CompareScreen() {
           {compute.status === 'ready' ? `order: ${orderLabel}` : 'computing…'}
         </span>
       </footer>
+
+      <div className="px-4 py-6 lg:px-6">
+        <AdvisePanel start={w.start} end={w.end} />
+      </div>
     </div>
   )
 }
 
 function CompareCard({
   siteId,
-  rank,
-  tied,
+  item,
+  label,
   metrics,
   cursorH,
   rankBy,
 }: {
   siteId: string
-  /** Competition rank from the server: tied sites share it (1, 1, 3). */
-  rank: number
-  tied: boolean
+  /** The server's ranking of this site; undefined until it arrives. */
+  item: CompareItemDTO | undefined
+  /** What the site may be called (U11); undefined until the ranking arrives. */
+  label: RankLabel | undefined
   metrics: SiteMetrics
   cursorH: number
   rankBy: MetricKey
@@ -237,7 +324,10 @@ function CompareCard({
   const site = siteById(siteId)
   const face = useMission((s) => s.face)
   const over = metrics.sun.longestDownH > SURVIVAL_LIMIT_H
-  const leading = rank === 1
+  const rank = item?.rank ?? null
+  const tied = Boolean(item?.tied)
+  const leading = label?.kind === 'best' || (label?.kind === 'joint' && rank === 1)
+  const range = item?.rank_range ?? []
   const openFor: Record<MetricKey, boolean> = {
     sunHours: false,
     earthHours: false,
@@ -251,17 +341,39 @@ function CompareCard({
       as="section"
     >
       <div className="flex items-start gap-3 border-b border-line p-4">
-        <span
-          className={`inline-flex size-7 shrink-0 items-center justify-center text-[14px] font-bold ${
-            leading ? 'bg-earth-fill text-on-earth' : 'bg-line-strong text-ink'
-          }`}
-        >
-          {rank}
-        </span>
+        {rank !== null ? (
+          <span
+            className={`inline-flex size-7 shrink-0 items-center justify-center text-[14px] font-bold ${
+              leading ? 'bg-earth-fill text-on-earth' : 'bg-line-strong text-ink'
+            }`}
+            aria-label={`Rank ${rank}`}
+          >
+            {rank}
+          </span>
+        ) : (
+          // No place can be stated: the badge carries the range the server
+          // gives, in the uncertain ink and dashed edge, never a number alone.
+          <span
+            className="inline-flex h-7 min-w-7 shrink-0 items-center justify-center border border-dashed border-uncertain px-1 text-[12px] font-bold text-uncertain"
+            aria-label={label?.title ?? 'Rank not stated'}
+            title={label?.title}
+          >
+            {range.length === 2 ? `${range[0]}–${range[1]}` : '?'}
+          </span>
+        )}
         <div className="flex min-w-0 flex-col gap-0.5">
           <div className="text-[17px] font-semibold">
             {site.code} — {site.name}
           </div>
+          {label && (
+            <div
+              className={`text-[13px] font-semibold ${label.tone === 'uncertain' ? 'text-uncertain' : 'text-ink'}`}
+              title={label.title}
+            >
+              {label.text}
+              {label.title && <span className="sr-only"> ({label.title})</span>}
+            </div>
+          )}
           {tied && <div className="text-[12px] text-ink-2">tied — the data cannot separate these</div>}
           <div className="font-mono text-[11px] text-ink-3">{coords(site.latDeg, site.lonDeg)}</div>
         </div>
@@ -275,7 +387,8 @@ function CompareCard({
 
       <div className="p-4">
         <KeyNumberTile
-          label={`${TERM[rankBy][face]}${leading ? (tied ? ' · joint best' : ' · best') : ''}`}
+          label={`${termLabel(rankBy, face).label}${label?.kind === 'best' ? ' · best' : ''}`}
+          expert={termLabel(rankBy, face).expert}
           value={metricValue(metrics, rankBy)}
           open={openFor[rankBy]}
           tone={rankBy === 'sunHours' ? 'sun' : rankBy === 'earthHours' ? 'earth' : over ? 'alert' : 'neutral'}
@@ -289,15 +402,15 @@ function CompareCard({
       </div>
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-3 px-4">
-        <Mini label="Sun h" value={metrics.sun.upHours} tone="text-sun" />
-        <Mini label="DTE h" value={metrics.earth.upHours} tone="text-earth" />
+        <Mini label="Sun, h" value={metrics.sun.upHours} tone="text-sun" />
+        <Mini label="Call home, h" value={metrics.earth.upHours} tone="text-earth" />
         <Mini
-          label="Dark gap"
+          label="Longest night, h"
           value={metrics.sun.longestDownH}
           open={metrics.sun.longestDownOpen}
           tone={over ? 'text-alert' : 'text-ink'}
         />
-        <Mini label="RF gap" value={metrics.earth.longestDownH} open={metrics.earth.longestDownOpen} tone="text-ink" />
+        <Mini label="Can't call home, h" value={metrics.earth.longestDownH} open={metrics.earth.longestDownOpen} tone="text-ink" />
       </div>
 
       <div className="flex flex-col gap-3 p-4">

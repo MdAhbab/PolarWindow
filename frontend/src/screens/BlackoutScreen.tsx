@@ -4,12 +4,12 @@ import { useFocusedView } from '../lib/mission'
 import { siteById } from '../lib/sites'
 import { BlackoutTimeline } from '../components/BlackoutTimeline'
 import { DateSlider } from '../components/DateSlider'
-import { LoadingPanel } from '../components/States'
+import { LoadingPanel, ProblemPanel, UncertaintyNote } from '../components/States'
 import { Button, Panel, SectionLabel } from '../components/ui'
 import { Icon } from '../components/Icon'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
 import { arcsCsv, download, spiceWindows } from '../lib/export'
-import { bound, clockUTC, hoursWithUnit } from '../lib/format'
+import { bound, hoursWithUnit, humanStamp, msFromModelH } from '../lib/format'
 
 /** S5 — the screen nobody else builds. */
 export function BlackoutScreen() {
@@ -21,17 +21,24 @@ export function BlackoutScreen() {
   const packet = view.data?.autonomy
   const site = siteById(siteId)
 
-  if (!metrics || !packet) {
+  if (!metrics || !packet || view.error) {
     return (
       <div className="flex grow flex-col gap-6 p-4 lg:p-6">
         <div className="max-w-2xl">
-          <LoadingPanel />
+          {view.error ? (
+            <ProblemPanel error={view.error} fallbackTitle="Cannot plan this window" onRetry={view.refetch} />
+          ) : (
+            <LoadingPanel done={0} total={1} />
+          )}
         </div>
       </div>
     )
   }
+  const terrainModelled = view.meta?.uncertainty.terrainModelled ?? site.terrainModelled
 
   const marginPct = Math.round(packet.marginFraction * 100)
+  const origin = metrics.windowStartIso ? Date.parse(metrics.windowStartIso) : msFromModelH(0)
+  const when = (h: number) => humanStamp(origin, h)
   const exportSite = { id: site.id, name: site.name, metrics, meta: view.meta, autonomy: packet }
   const stamp = (metrics.windowStartIso ?? 'window').slice(0, 10)
   const blackouts = metrics.earth.arcs.filter((a) => !a.up).sort((a, b) => b.hours - a.hours)
@@ -58,11 +65,17 @@ export function BlackoutScreen() {
             scroll inside their own panels. Without it the column takes their
             width as its minimum and pushes the packet off the right edge. */}
         <div className="flex min-w-0 grow flex-col gap-6">
+          {!terrainModelled && (
+            <UncertaintyNote>
+              Terrain is not modelled outside 80°S. Sun and Earth are computed against a smooth Moon, so real
+              hills could block more.
+            </UncertaintyNote>
+          )}
           <Panel className="flex flex-col">
             <div className="flex items-center gap-4 border-b border-line px-4 py-3">
               <SectionLabel>The mission window, hour by hour</SectionLabel>
               <span className="ml-auto font-mono text-[11px] text-ink-3">
-                {Math.round(metrics.windowHours)} h · one lunar day
+                {Math.round(metrics.windowHours)} h
               </span>
             </div>
             <div className="overflow-x-auto p-4">
@@ -75,7 +88,7 @@ export function BlackoutScreen() {
               <SectionLabel>Blackout ledger</SectionLabel>
               <span className="ml-auto text-[12px] text-ink-3">sorted by length</span>
             </div>
-            <div className="overflow-x-auto">
+            <div className="relative overflow-x-auto">
               <table className="w-full min-w-[720px] border-collapse text-left">
                 <caption className="sr-only">
                   Every Earth-link blackout in the window, longest first, and whether it overlaps a dark
@@ -105,10 +118,10 @@ export function BlackoutScreen() {
                       <tr key={i} className={`border-t border-line ${overlap > 0 ? 'bg-alert-wash' : ''}`}>
                         <td className="px-4 py-3 font-mono text-[13px] text-ink-3">B{i + 1}</td>
                         <td className="px-4 py-3 font-mono text-[13px] text-ink">
-                          {a.openStart ? `before ${clockUTC(a.startH)}` : clockUTC(a.startH)}
+                          {a.openStart ? `before ${when(a.startH)}` : when(a.startH)}
                         </td>
                         <td className="px-4 py-3 font-mono text-[13px] text-ink">
-                          {a.openEnd ? `after ${clockUTC(a.endH)}` : clockUTC(a.endH)}
+                          {a.openEnd ? `after ${when(a.endH)}` : when(a.endH)}
                         </td>
                         <td className="px-4 py-3 text-right text-[15px] font-semibold tnum">
                           {hoursWithUnit(a.hours, 0, a.openStart || a.openEnd)}

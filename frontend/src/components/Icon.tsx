@@ -108,6 +108,28 @@ const PATHS: Record<string, JSX.Element> = {
   ),
   back: <path d="M15 5 L8 12 L15 19" />,
   check: <path d="M4 12 L10 18 L20 6" />,
+  close: <path d="M6 6 L18 18 M18 6 L6 18" />,
+  settings: (
+    <>
+      <path d="M4 7 H20 M4 12 H20 M4 17 H20" />
+      <circle cx="9" cy="7" r="2" />
+      <circle cx="15" cy="12" r="2" />
+      <circle cx="8" cy="17" r="2" />
+    </>
+  ),
+  log: (
+    <>
+      <path d="M8 6 H20 M8 12 H20 M8 18 H20" />
+      <path d="M4 6 h0.01 M4 12 h0.01 M4 18 h0.01" />
+    </>
+  ),
+  speaker: (
+    <>
+      <path d="M11 5 L6 9 H3 V15 H6 L11 19 Z" />
+      <path d="M15.5 8.5 a5 5 0 0 1 0 7" />
+      <path d="M18.5 5.5 a9 9 0 0 1 0 13" />
+    </>
+  ),
 }
 
 export type IconName = keyof typeof PATHS

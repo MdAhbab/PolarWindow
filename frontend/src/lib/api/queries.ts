@@ -10,23 +10,39 @@
  * serving the previous geometry out of the client cache — the worst failure
  * available here, because nothing looks wrong.
  */
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
   keepPreviousData,
+  useMutation,
   useQueries,
   useQuery,
   useQueryClient,
   type UseQueryResult,
 } from '@tanstack/react-query'
-import { api, type CompareDTO, type MetricsDTO, type TimelineDTO, type WindowsDTO } from './client'
 import {
+  ApiError,
+  api,
+  type AgentDTO,
+  type CompareDTO,
+  type MetricsDTO,
+  type Schemas,
+  type TimelineDTO,
+  type WindowsDTO,
+} from './client'
+import {
+  adaptCalendar,
   adaptHorizon,
   adaptMeta,
+  adaptMission,
+  adaptMissionDetail,
   adaptSite,
   adaptSiteBrief,
   type AdaptedSite,
   type AdaptedSiteBrief,
+  type InstrumentType,
   type Meta,
+  type Mission,
+  type MissionStatus,
 } from './adapters'
 import type { HorizonMask } from '../types'
 
@@ -43,6 +59,18 @@ export const setEngineVersion = (v: string) => {
   engineVersion = v
 }
 export const getEngineVersion = () => engineVersion
+
+/**
+ * Each mission record's `data_version` (a hash of its row in `missions.json`),
+ * as last reported by the list. Folded into the mission-detail key, so a record
+ * that changed server-side is fetched again rather than served from the client
+ * cache: the engine version does not move when only mission facts change.
+ */
+const missionVersions = new Map<string, string>()
+export const setMissionVersions = (items: { id: string; dataVersion: string }[]) => {
+  for (const m of items) missionVersions.set(m.id, m.dataVersion)
+}
+export const resetMissionVersions = () => missionVersions.clear()
 
 const FIVE_MIN = 5 * 60 * 1000
 
@@ -65,6 +93,13 @@ const windowKey = (w: WindowParams) => [w.start, w.end, w.stepS] as const
  */
 export const keys = {
   sites: (filters: SiteFilters) => ['sites', filters] as const,
+  missions: (filters: MissionFilters) =>
+    ['missions', engineVersion, normaliseMissionFilters(filters)] as const,
+  mission: (missionId: string | undefined) =>
+    ['mission', engineVersion, missionId, (missionId && missionVersions.get(missionId)) || null] as const,
+  calendar: (siteId: string | undefined, span: CalendarSpan | undefined, bucket: CalendarBucketSize) =>
+    ['calendar', engineVersion, siteId, span?.start, span?.end, bucket] as const,
+  agentRuns: () => ['agentRuns'] as const,
   site: (siteId: string | undefined) => ['site', engineVersion, siteId] as const,
   horizon: (siteId: string | undefined) => ['horizon', engineVersion, siteId] as const,
   windows: (siteId: string | undefined, w: WindowParams) =>
@@ -83,6 +118,8 @@ export const keys = {
 // ---------------------------------------------------------------------------
 
 export interface SiteFilters {
+  /** `all` so mission targets resolve by id; the Map narrows to candidates itself. */
+  kind?: 'candidate' | 'mission_target' | 'all'
   q?: string
   region?: string
   latMin?: number
@@ -104,6 +141,7 @@ export function useSites(filters: SiteFilters = {}) {
           lat_max: filters.latMax,
           min_sun_fraction: filters.minSunFraction,
           max_longest_dark_s: filters.maxLongestDarkS,
+          kind: filters.kind,
           limit: 100,
         },
         signal,
@@ -196,6 +234,8 @@ export interface SiteView {
   isPending: boolean
   isFetching: boolean
   error: unknown
+  /** Retry every part of the view; the ErrorPanel's Retry calls this. */
+  refetch: () => void
 }
 
 /**
@@ -234,6 +274,17 @@ export function useSiteView(
     [siteId, windows.data, metrics.data, horizon.data, tl],
   )
 
+  const { refetch: rw } = windows
+  const { refetch: rm } = metrics
+  const { refetch: rh } = horizon
+  const { refetch: rt } = timeline
+  const refetch = useCallback(() => {
+    void rw()
+    void rm()
+    void rh()
+    if (withTimeline) void rt()
+  }, [rw, rm, rh, rt, withTimeline])
+
   return {
     data,
     meta: data?.meta,
@@ -241,6 +292,7 @@ export function useSiteView(
     isFetching:
       windows.isFetching || metrics.isFetching || horizon.isFetching || timeline.isFetching,
     error: windows.error ?? metrics.error ?? horizon.error ?? timeline.error,
+    refetch,
   }
 }
 
@@ -310,6 +362,176 @@ export function useCompare(siteIds: string[], w: WindowParams, rankBy: string) {
         { site_ids: siteIds, start: w.start, end: w.end, step_s: w.stepS, rank_by: rankBy },
         signal,
       ),
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Missions (contract v2)
+// ---------------------------------------------------------------------------
+
+export interface MissionFilters {
+  /** Any of these statuses. */
+  status?: MissionStatus[]
+  /** Missions carrying at least one payload of any of these types. */
+  payloadType?: InstrumentType[]
+  provider?: string
+  region?: string
+  from?: string
+  to?: string
+  q?: string
+}
+
+/**
+ * One canonical form per filter set: arrays sorted and de-duplicated, empty
+ * values dropped, keys in a fixed order. Selecting Volatiles then Imaging and
+ * Imaging then Volatiles is one query, not two.
+ */
+export function normaliseMissionFilters(f: MissionFilters): MissionFilters {
+  const out: MissionFilters = {}
+  const list = <T extends string>(v: T[] | undefined) =>
+    v && v.length ? [...new Set(v)].sort() : undefined
+  const text = (v: string | undefined) => (v && v.trim() ? v.trim() : undefined)
+  const status = list(f.status)
+  const payloadType = list(f.payloadType)
+  if (status) out.status = status
+  if (payloadType) out.payloadType = payloadType
+  if (text(f.provider)) out.provider = text(f.provider)
+  if (text(f.region)) out.region = text(f.region)
+  if (text(f.from)) out.from = text(f.from)
+  if (text(f.to)) out.to = text(f.to)
+  if (text(f.q)) out.q = text(f.q)
+  return out
+}
+
+export interface MissionList {
+  items: Mission[]
+  total: number
+  meta: Meta
+}
+
+export function useMissions(filters: MissionFilters = {}) {
+  const f = normaliseMissionFilters(filters)
+  return useQuery({
+    queryKey: keys.missions(f),
+    staleTime: FIVE_MIN,
+    // A chip toggle keeps the previous list on screen until the next arrives,
+    // so the list and the count never flash empty between two real answers.
+    placeholderData: keepPreviousData,
+    queryFn: async ({ signal }): Promise<MissionList> => {
+      const dto = await api.missions(
+        {
+          status: f.status,
+          payload_type: f.payloadType,
+          provider: f.provider,
+          region: f.region,
+          from: f.from,
+          to: f.to,
+          q: f.q,
+        },
+        signal,
+      )
+      const items = dto.items.map(adaptMission)
+      setMissionVersions(items)
+      return { items, total: dto.total, meta: adaptMeta(dto.meta) }
+    },
+  })
+}
+
+export function useMission(missionId: string | undefined) {
+  return useQuery({
+    queryKey: keys.mission(missionId),
+    enabled: Boolean(missionId),
+    staleTime: FIVE_MIN,
+    // A 404 is an answer ("that mission isn't in the list"), not a blip.
+    retry: (count, err) => !(err instanceof ApiError && err.status === 404) && count < 1,
+    queryFn: async ({ signal }) => adaptMissionDetail(await api.mission(missionId as string, signal)),
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Calendar (contract v2): the month strip under the window picker
+// ---------------------------------------------------------------------------
+
+export interface CalendarSpan {
+  start: string
+  end: string
+}
+export type CalendarBucketSize = 'day' | 'month'
+
+export function useCalendar(
+  siteId: string | undefined,
+  span: CalendarSpan | undefined,
+  bucket: CalendarBucketSize = 'month',
+) {
+  return useQuery({
+    queryKey: keys.calendar(siteId, span, bucket),
+    enabled: Boolean(siteId && span),
+    staleTime: FIVE_MIN,
+    placeholderData: keepPreviousData,
+    queryFn: async ({ signal }) =>
+      adaptCalendar(
+        await api.calendar(
+          siteId as string,
+          { start: span?.start, end: span?.end, bucket },
+          signal,
+        ),
+      ),
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Agents (contract v2): Explain, Advise, Brief, Ask, and the run log
+// ---------------------------------------------------------------------------
+
+export type AgentKind = 'explain' | 'advise' | 'brief' | 'ask'
+
+export interface AgentRequests {
+  explain: Schemas['ExplainRequest']
+  advise: Schemas['AdviseRequest']
+  brief: Schemas['BriefRequest']
+  ask: Schemas['AskRequest']
+}
+
+/**
+ * One agent call, cancellable.
+ *
+ * A mutation, not a query: every call is a new run with its own log entry,
+ * and caching an answer by its question would hide that. `cancel` aborts the
+ * request through its signal and returns the card to idle; the run log is
+ * refreshed whenever a call settles, so "How the AI got this" always has the
+ * run it is asked to show.
+ */
+export function useAgent<K extends AgentKind>(kind: K, scope?: readonly unknown[]) {
+  const client = useQueryClient()
+  const ctrl = useRef<AbortController | null>(null)
+  const mutation = useMutation({
+    mutationKey: ['agent', kind, ...(scope ?? [])],
+    mutationFn: (body: AgentRequests[K]): Promise<AgentDTO> => {
+      ctrl.current?.abort()
+      const c = new AbortController()
+      ctrl.current = c
+      const call = api[kind] as (b: AgentRequests[K], s?: AbortSignal) => Promise<AgentDTO>
+      return call(body, c.signal)
+    },
+    retry: false,
+    onSettled: () => client.invalidateQueries({ queryKey: keys.agentRuns() }),
+  })
+  const { reset } = mutation
+  const cancel = useCallback(() => {
+    ctrl.current?.abort()
+    ctrl.current = null
+    reset()
+  }, [reset])
+  useEffect(() => () => ctrl.current?.abort(), [])
+  return { ...mutation, cancel }
+}
+
+export function useAgentRuns(enabled = true) {
+  return useQuery({
+    queryKey: keys.agentRuns(),
+    enabled,
+    staleTime: 0,
+    queryFn: ({ signal }) => api.agentRuns(50, signal),
   })
 }
 

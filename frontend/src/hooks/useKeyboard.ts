@@ -26,6 +26,10 @@ export function useKeyboardMap({ reducedMotion }: { reducedMotion: boolean }) {
       if (el && (TYPING.has(el.tagName) || (el as HTMLElement).isContentEditable)) return
       if (e.metaKey || e.ctrlKey || e.altKey) return
       const s = useMission.getState()
+      // U8 / WCAG 2.1.4: every bare-key shortcut can be switched off.
+      if (!s.shortcuts) return
+      // A modal (the run log, the settings sheet) owns the keyboard while open.
+      if (el instanceof HTMLElement && el.closest('dialog[open]')) return
 
       switch (e.key) {
         case '[':

@@ -1,5 +1,5 @@
 import { useCountUp } from '../hooks/useCountUp'
-import { TERM, bound, hoursSpoken, percent, plusMinus } from '../lib/format'
+import { bound, hoursSpoken, percent, plusMinus, termLabel } from '../lib/format'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
 import type { Face, SiteMetrics } from '../lib/types'
 import { Icon } from './Icon'
@@ -38,8 +38,11 @@ export function KeyNumberTile({
   icon,
   open = false,
   spoken,
+  expert,
 }: {
   label: string
+  /** The expert term, shown as a second line on the Planner face (U14). */
+  expert?: string
   value: number
   unit?: string
   tone?: Tone
@@ -69,7 +72,10 @@ export function KeyNumberTile({
 
   const numberClass =
     size === 'lg'
-      ? 'text-[64px] leading-[58px]'
+      ? // The four stay together as a 2×2 on a phone; at 64 px a three-digit
+        // value is wider than its tile below 640 px, so it steps down to the
+        // md size there rather than overflowing (WCAG 1.4.10).
+        'text-[44px] leading-[42px] sm:text-[64px] sm:leading-[58px]'
       : size === 'md'
         ? 'text-[44px] leading-[42px]'
         : 'text-[30px] leading-[30px]'
@@ -97,6 +103,9 @@ export function KeyNumberTile({
         ) : null}
         <span>{label}</span>
       </div>
+      {expert && expert !== label && (
+        <div className="-mt-1.5 text-[12px] leading-4 text-ink-3">{expert}</div>
+      )}
 
       {shown && <span className="sr-only">{said}</span>}
       {/* Wraps rather than overflows: at `sm` in the map's two-column rail the
@@ -149,13 +158,20 @@ export function KeyNumberRow({
   face,
   size = 'lg',
   columns = 4,
+  uncertain = false,
 }: {
   metrics?: SiteMetrics
   face: Face
   size?: 'lg' | 'md' | 'sm'
   columns?: 2 | 4
+  /**
+   * Every tile in its uncertain variant, numbers still shown: terrain is not
+   * modelled at this site (outside 80°S), so the skyline is a smooth sphere.
+   */
+  uncertain?: boolean
 }) {
   const computing = !metrics
+  const ready = uncertain ? 'uncertain' : 'ready'
 
   const win = metrics?.windowHours ?? 1
   const sunH = metrics?.sun.upHours ?? 0
@@ -178,41 +194,54 @@ export function KeyNumberRow({
 
   const grid = columns === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-2'
   const short = columns === 2
-  const L = {
-    sun: short ? 'Sunlight' : TERM.sunHours[face],
-    earth: short ? 'Earth contact' : TERM.earthHours[face],
-    dark: short ? 'Dark gap' : TERM.longestDark[face],
-    rf: short ? 'RF blackout' : TERM.longestBlackout[face],
+  // U14: plain words by default; the Planner face adds the expert term.
+  const t = {
+    sun: termLabel('sunHours', face),
+    earth: termLabel('earthHours', face),
+    dark: termLabel('longestDark', face),
+    rf: termLabel('longestBlackout', face),
   }
+  const L = {
+    sun: short ? 'Time in the Sun' : t.sun.label,
+    earth: short ? 'Time it can call home' : t.earth.label,
+    dark: short ? 'Longest night' : t.dark.label,
+    rf: short ? "Longest time it can't call home" : t.rf.label,
+  }
+  const X = short
+    ? { sun: undefined, earth: undefined, dark: undefined, rf: undefined }
+    : { sun: t.sun.expert, earth: t.earth.expert, dark: t.dark.expert, rf: t.rf.expert }
 
   return (
     <div className={`grid gap-4 ${grid}`}>
       <KeyNumberTile
         label={L.sun}
+        expert={X.sun}
         value={sunH}
         tone="sun"
         icon="sun"
         size={size}
-        state={computing ? 'computing' : 'ready'}
+        state={computing ? 'computing' : ready}
         fraction={sunFrac}
         footnote={metrics ? `${percent(sunFrac)} of the window` : 'ray-casting the skyline'}
       />
       <KeyNumberTile
         label={L.earth}
+        expert={X.earth}
         value={earthH}
         tone="earth"
         icon="earth"
         size={size}
-        state={computing ? 'computing' : 'ready'}
+        state={computing ? 'computing' : ready}
         fraction={earthFrac}
         footnote={metrics ? `${percent(earthFrac)} of the window` : undefined}
       />
       <KeyNumberTile
         label={L.dark}
+        expert={X.dark}
         value={dark}
         tone={overLimit ? 'alert' : 'neutral'}
         size={size}
-        state={computing ? 'computing' : darkGrazing ? 'uncertain' : 'ready'}
+        state={computing ? 'computing' : darkGrazing ? 'uncertain' : ready}
         toleranceH={darkGrazing ? undefined : darkTol}
         open={darkOpen}
         fraction={dark / SURVIVAL_LIMIT_H}
@@ -228,10 +257,11 @@ export function KeyNumberRow({
       />
       <KeyNumberTile
         label={L.rf}
+        expert={X.rf}
         value={rf}
         tone="neutral"
         size={size}
-        state={computing ? 'computing' : rfGrazing ? 'uncertain' : 'ready'}
+        state={computing ? 'computing' : rfGrazing ? 'uncertain' : ready}
         toleranceH={rfGrazing ? undefined : rfTol}
         open={rfOpen}
         fraction={rf / win}

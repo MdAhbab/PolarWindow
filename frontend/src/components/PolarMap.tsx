@@ -1,7 +1,29 @@
 import { useMemo } from 'react'
 import { subSolarPoint, type SubPoint } from '../lib/geometry/ephemeris'
-import { SITES } from '../lib/sites'
+import { getCandidates } from '../lib/sites'
 import { bearing } from '../lib/format'
+import type { Site } from '../lib/types'
+
+/**
+ * One mission-target pin (§10.2). Missions that share a coordinate (three aim
+ * at the centre of Mons Mouton) share one pin, and its name lists them all.
+ */
+export interface MissionPin {
+  key: string
+  latDeg: number
+  lonDeg: number
+  /** Dashed for a planned target or a feature centre; solid for an actual landing. */
+  dashed: boolean
+  /** The pin button's accessible name. */
+  label: string
+  /** Filled in ink: selected, or linked to the row being hovered or focused. */
+  highlighted: boolean
+  /** The pin is the selected one (a pressed toggle), where selection applies. */
+  pressed?: boolean
+}
+
+/** The inner edge of the map: pins north of 80°S are outside it. */
+export const POLAR_MAP_EDGE_LAT = -80
 
 const CX = 350
 const CY = 350
@@ -103,12 +125,25 @@ export function PolarMap({
   onSelect,
   size = 700,
   className = '',
+  sites: siteList,
+  missionPins = [],
+  onMissionPin,
+  onMissionHover,
+  ellipses = [],
 }: {
   tH: number
   selectedSiteId: string
   onSelect?: (id: string) => void
   size?: number
   className?: string
+  /** Candidate sites drawn as lettered pins. Defaults to every candidate. */
+  sites?: Site[]
+  /** The mission layer: diamonds, drawn over the candidates. */
+  missionPins?: MissionPin[]
+  onMissionPin?: (key: string) => void
+  onMissionHover?: (key: string | null) => void
+  /** Published landing ellipses as [lat, lon] rings. Drawn only when published. */
+  ellipses?: [number, number][][]
 }) {
   // One schematic sub-solar point per instant, shared by both paths. They
   // used to be solved three times per render, including renders where the
@@ -117,7 +152,21 @@ export function PolarMap({
     const sp = subSolarPoint(tH)
     return { sub: sp, dark: darkRegionPath(sp), term: terminatorPath(sp) }
   }, [tH])
-  const sites = SITES.map((s) => ({ site: s, at: project(s.latDeg, s.lonDeg) }))
+  const shown = siteList ?? getCandidates()
+  const sites = shown.map((s) => ({ site: s, at: project(s.latDeg, s.lonDeg) }))
+  const pins = missionPins
+    .filter((p) => p.latDeg <= POLAR_MAP_EDGE_LAT)
+    .map((p) => ({ pin: p, at: project(p.latDeg, p.lonDeg) }))
+  const rings = ellipses
+    .filter((r) => r.length > 2 && r.every(([lat]) => lat <= POLAR_MAP_EDGE_LAT))
+    .map((r) =>
+      r
+        .map(([lat, lon], i) => {
+          const q = project(lat, lon)
+          return `${i === 0 ? 'M' : 'L'}${q.x.toFixed(1)} ${q.y.toFixed(1)}`
+        })
+        .join(' ') + ' Z',
+    )
 
   return (
     // Square by construction, so the site buttons below -- positioned in
@@ -130,7 +179,9 @@ export function PolarMap({
         viewBox="0 0 700 700"
         className="absolute inset-0 h-full w-full"
         role="img"
-        aria-label={`South polar map from 80 degrees south to the pole. ${SITES.length} candidate sites. The sub-solar point is at longitude ${Math.round(
+        aria-label={`South polar map from 80 degrees south to the pole. ${sites.length} candidate sites${
+          pins.length ? ` and ${pins.length} mission target${pins.length === 1 ? '' : 's'}` : ''
+        }. The sub-solar point is at longitude ${Math.round(
           ((sub.lonDeg % 360) + 360) % 360,
         )} degrees east, so the unlit region lies opposite it.`}
       >
@@ -229,6 +280,33 @@ export function PolarMap({
           )
         })}
 
+        {rings.map((d, i) => (
+          <path key={`ring-${i}`} d={d} fill="none" stroke="var(--color-line-strong)" strokeWidth="1" aria-hidden="true" />
+        ))}
+
+        {/* Mission targets: a 10 px diamond (at the map's usual on-screen
+            scale), stroke ink, fill panel; dashed where the coordinate is a
+            plan or a feature centre, solid where a lander came to rest. Never
+            amber or cyan: those mean sunlight and Earth contact. */}
+        {pins.map(({ pin, at }) => (
+          <g key={pin.key} transform={`translate(${at.x} ${at.y})`} aria-hidden="true">
+            {pin.highlighted && (
+              <circle r="17" fill="none" stroke="var(--color-ink)" strokeWidth="2" strokeOpacity="0.55" />
+            )}
+            <rect
+              x="-8"
+              y="-8"
+              width="16"
+              height="16"
+              transform="rotate(45)"
+              fill={pin.highlighted ? 'var(--color-ink)' : 'var(--color-panel)'}
+              stroke="var(--color-ink)"
+              strokeWidth="2"
+              strokeDasharray={pin.dashed ? '4 3' : undefined}
+            />
+          </g>
+        ))}
+
         <g>
           <rect x="452" y="42" width="216" height="26" fill="var(--color-canvas)" fillOpacity="0.85" />
           <text
@@ -264,6 +342,22 @@ export function PolarMap({
             aria-label={`${s.code}, ${s.name}`}
             className="absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-control bg-transparent"
             style={{ left: `${(p.x / 700) * 100}%`, top: `${(p.y / 700) * 100}%` }}
+          />
+        ))}
+      {onMissionPin &&
+        pins.map(({ pin, at }) => (
+          <button
+            key={pin.key}
+            type="button"
+            onClick={() => onMissionPin(pin.key)}
+            onMouseEnter={() => onMissionHover?.(pin.key)}
+            onMouseLeave={() => onMissionHover?.(null)}
+            onFocus={() => onMissionHover?.(pin.key)}
+            onBlur={() => onMissionHover?.(null)}
+            aria-pressed={pin.pressed}
+            aria-label={pin.label}
+            className="absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-control bg-transparent"
+            style={{ left: `${(at.x / 700) * 100}%`, top: `${(at.y / 700) * 100}%` }}
           />
         ))}
     </div>

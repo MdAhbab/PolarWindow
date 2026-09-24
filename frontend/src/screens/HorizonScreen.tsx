@@ -4,7 +4,7 @@ import { useFocusedMetrics, useFocusedView } from '../lib/mission'
 import { siteById } from '../lib/sites'
 import { HorizonProfile } from '../components/HorizonProfile'
 import { DateSlider } from '../components/DateSlider'
-import { LoadingPanel, UncertaintyNote } from '../components/States'
+import { LoadingPanel, ProblemPanel, UncertaintyNote } from '../components/States'
 import { Panel, SectionLabel } from '../components/ui'
 import { bearing, bound, compass, coords, degrees, hoursWithUnit } from '../lib/format'
 
@@ -17,15 +17,20 @@ export function HorizonScreen() {
   const metrics = useFocusedMetrics()
   const site = siteById(siteId)
 
-  if (!metrics) {
+  if (!metrics || view.error) {
     return (
       <div className="flex grow flex-col gap-6 p-4 lg:p-6">
         <div className="max-w-2xl">
-          <LoadingPanel />
+          {view.error ? (
+            <ProblemPanel error={view.error} fallbackTitle="Cannot draw this skyline" onRetry={view.refetch} />
+          ) : (
+            <LoadingPanel done={0} total={1} />
+          )}
         </div>
       </div>
     )
   }
+  const terrainModelled = view.meta?.uncertainty.terrainModelled ?? site.terrainModelled
 
   const worst = metrics.sun.longestDownArc
   const blockAz = worst?.blockedByBearingDeg ?? metrics.mask.maxElBearingDeg
@@ -52,7 +57,13 @@ export function HorizonScreen() {
       </div>
 
       <div className="flex grow flex-col gap-6 p-4 lg:flex-row lg:p-6">
-        <div className="flex grow flex-col gap-6">
+        <div className="flex min-w-0 grow flex-col gap-6">
+          {!terrainModelled && (
+            <UncertaintyNote>
+              Terrain is not modelled outside 80°S. Sun and Earth are computed against a smooth Moon, so real
+              hills could block more. The skyline below is that smooth horizon, not terrain.
+            </UncertaintyNote>
+          )}
           <Panel className="flex flex-col">
             <div className="flex items-center gap-4 border-b border-line px-4 py-3">
               <SectionLabel>Local skyline — elevation above the flat horizon, by bearing</SectionLabel>

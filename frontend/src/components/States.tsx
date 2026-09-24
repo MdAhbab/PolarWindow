@@ -43,20 +43,32 @@ export function EmptyState({
  * resolution, and what the bar tracks is each site's Sun and Earth track being
  * worked out against its stored skyline.
  */
-export function LoadingPanel({ done = 0, total = 0 }: { done?: number; total?: number }) {
+export function LoadingPanel({
+  done = 0,
+  total = 0,
+  title = 'Working out sunlight and Earth contact',
+  unit = 'sites',
+  note,
+}: {
+  done?: number
+  total?: number
+  title?: string
+  unit?: string
+  note?: ReactNode
+}) {
   const pct = total ? Math.round((done / total) * 100) : 0
   return (
     <Panel className="flex flex-col gap-4 p-6">
-      <div className="flex items-baseline justify-between">
-        <SectionLabel>Working out sunlight and Earth contact</SectionLabel>
+      <div className="flex items-baseline justify-between gap-3">
+        <SectionLabel>{title}</SectionLabel>
         <span className="font-mono text-[12px] text-ink">
-          {done} / {total} sites
+          {done} / {total} {unit}
         </span>
       </div>
       <div
         className="flex h-2 bg-dark-fill"
         role="progressbar"
-        aria-label="Sites computed"
+        aria-label={`${unit.charAt(0).toUpperCase()}${unit.slice(1)} loaded`}
         aria-valuemin={0}
         aria-valuemax={total || 1}
         aria-valuenow={done}
@@ -64,9 +76,8 @@ export function LoadingPanel({ done = 0, total = 0 }: { done?: number; total?: n
         <div className="bg-terrain-high transition-[width] duration-200" style={{ width: `${pct}%` }} />
       </div>
       <p className="text-[13px] leading-5 text-ink-2">
-        Each site’s skyline was ray-cast once, ahead of time, against its elevation model. What is
-        happening now is the fast part: the Sun’s and Earth’s paths for this window, checked against that
-        skyline. Each site appears as soon as its own answer arrives.
+        {note ??
+          'Each site’s skyline was ray-cast once, ahead of time, against its elevation model. What is happening now is the fast part: the Sun’s and Earth’s paths for this window, checked against that skyline. Each site appears as soon as its own answer arrives.'}
       </p>
     </Panel>
   )
@@ -77,11 +88,14 @@ export function ErrorPanel({
   detail,
   stillWorks,
   onRetry,
+  action,
 }: {
   title: string
   detail: ReactNode
   stillWorks: ReactNode
   onRetry?: () => void
+  /** The server's own next step (`ui.action`), when it names one. */
+  action?: { label: string; onClick: () => void }
 }) {
   return (
     <Panel className="flex flex-col gap-4 border-alert p-6">
@@ -96,11 +110,18 @@ export function ErrorPanel({
         <SectionLabel>What still works</SectionLabel>
         <div className="text-[13px] leading-5 text-ink-2">{stillWorks}</div>
       </Panel>
-      {onRetry && (
-        <div className="flex gap-3">
-          <Button variant="primary" onClick={onRetry}>
-            Retry
-          </Button>
+      {(onRetry || action) && (
+        <div className="flex flex-wrap gap-3">
+          {action && (
+            <Button variant="primary" onClick={action.onClick}>
+              {action.label}
+            </Button>
+          )}
+          {onRetry && (
+            <Button variant={action ? 'secondary' : 'primary'} onClick={onRetry}>
+              Retry
+            </Button>
+          )}
         </div>
       )}
     </Panel>
@@ -127,5 +148,35 @@ export function UncertaintyNote({
         <span className="text-[12px] text-ink-3">drawn at every arc edge, in every view</span>
       </div>
     </Panel>
+  )
+}
+
+/**
+ * `ErrorPanel` fed directly from a problem detail (§5): the server writes the
+ * title, the detail and what still works, so the copy can be improved without
+ * a frontend deploy. `fallback` is used only when the error is not an API
+ * problem at all.
+ */
+export function ProblemPanel({
+  error,
+  fallbackTitle = 'Something failed',
+  onRetry,
+  action,
+}: {
+  error: unknown
+  fallbackTitle?: string
+  onRetry?: () => void
+  action?: { label: string; onClick: () => void }
+}) {
+  const e = error as Partial<{ title: string; detail: string; stillWorks: string; retryable: boolean }>
+  const isProblem = typeof e?.title === 'string'
+  return (
+    <ErrorPanel
+      title={isProblem ? (e.title as string) : fallbackTitle}
+      detail={isProblem ? (e.detail ?? '') : String((error as Error)?.message ?? error)}
+      stillWorks={e?.stillWorks ?? 'Everything already on screen is unaffected.'}
+      onRetry={onRetry && (isProblem ? e.retryable !== false : true) ? onRetry : undefined}
+      action={action}
+    />
   )
 }

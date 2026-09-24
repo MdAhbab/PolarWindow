@@ -12,14 +12,25 @@ export interface Site {
   latDeg: number
   /** Selenographic longitude, degrees east. */
   lonDeg: number
-  /** Elevation relative to the 1737.4 km reference sphere, metres. */
-  elevM: number
+  /**
+   * Elevation relative to the 1737.4 km reference sphere, metres. Null where no
+   * elevation model covers the site (a CLPS target outside 80°S): an unknown
+   * height is not zero, so it is never shown as one.
+   */
+  elevM: number | null
   note: string
   /**
    * How the landing point was found: on the rim of a named polar crater (so it
-   * borders that crater's permanently shadowed floor) or on a massif/plateau.
+   * borders that crater's permanently shadowed floor), on a massif/plateau, or
+   * used exactly as published (a CLPS mission target).
    */
-  searchKind: 'rim' | 'massif'
+  searchKind: 'rim' | 'massif' | 'published'
+  /** A derived candidate, or the site standing for a CLPS mission's target. */
+  kind: 'candidate' | 'mission_target'
+  /** Searched in the DEM for open sky, or used exactly as published. */
+  coordinateRule: 'derived_open_sky' | 'published'
+  /** False outside the 80–90°S elevation model: the skyline is a smooth sphere. */
+  terrainModelled: boolean
 }
 
 export interface HorizonMask {

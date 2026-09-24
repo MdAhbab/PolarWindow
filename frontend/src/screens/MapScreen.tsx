@@ -3,14 +3,17 @@ import { Link } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { useSiteMetricsMap } from '../lib/useMetricsMap'
 import { useMission } from '../lib/store'
-import { SITES, siteById } from '../lib/sites'
-import { PolarMap } from '../components/PolarMap'
+import { getCandidates, siteById } from '../lib/sites'
+import { useMissions } from '../lib/api/queries'
+import { PolarMap, type MissionPin } from '../components/PolarMap'
 import { DateSlider } from '../components/DateSlider'
 import { KeyNumberRow } from '../components/KeyNumbers'
-import { EmptyState, LoadingPanel } from '../components/States'
+import { EmptyState, LoadingPanel, ProblemPanel } from '../components/States'
 import { Button, Chip, Panel, SearchField, SectionLabel } from '../components/ui'
 import { bound, coords, percent } from '../lib/format'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
+import { coordinateKindWords } from '../lib/missions'
+import type { Mission } from '../lib/api/adapters'
 import type { SiteMetrics } from '../lib/types'
 
 /** S1 — where you start: pick a site, see the terminator sweep across the pole. */
@@ -24,23 +27,40 @@ export function MapScreen() {
       face: s.face,
     })),
   )
+  // The candidates only: mission targets are a separate, optional layer.
   // Keyed on the registry's contents, not frozen at first render: a refetched
   // site list must reach the map.
-  const idKey = SITES.map((s) => s.id).join('|')
+  const candidates = getCandidates()
+  const idKey = candidates.map((s) => s.id).join('|')
   const allIds = useMemo(() => (idKey ? idKey.split('|') : []), [idKey])
-  const { map: metrics, done, total, isPending } = useSiteMetricsMap(allIds)
+  const focusIds = useMemo(
+    () => (allIds.includes(siteId) ? allIds : [...allIds, siteId]),
+    [allIds, siteId],
+  )
+  const { map: metrics, done, total, isPending, error } = useSiteMetricsMap(focusIds)
   const compute = { status: isPending ? 'running' : 'ready', done, total } as const
   const site = siteById(siteId)
   const focused = metrics[siteId]
 
   const [query, setQuery] = useState('')
   const [minSun, setMinSun] = useState(0)
-  const [maxDark, setMaxDark] = useState(400)
+  // U5: no filter is applied until the user applies one. "Any" is Infinity,
+  // and the slider's top is the longest night on this list rounded up to a
+  // whole day, so every site can be shown.
+  const [maxDark, setMaxDark] = useState(Infinity)
   const [nearPsr, setNearPsr] = useState(false)
+  const [showMissions, setShowMissions] = useState(false)
+  const missions = useMissions({})
+
+  const darkMax = useMemo(() => {
+    const longest = allIds.map((id) => metrics[id]?.sun.longestDownH ?? 0)
+    const m = Math.max(0, ...longest)
+    return m > 0 ? Math.ceil(m / 24) * 24 : 0
+  }, [allIds, metrics])
 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return SITES.filter((s) => {
+    return candidates.filter((s) => {
       if (q && !`${s.code} ${s.name}`.toLowerCase().includes(q)) return false
       const m: SiteMetrics | undefined = metrics[s.id]
       if (!m) return true
@@ -52,12 +72,39 @@ export function MapScreen() {
       if (nearPsr && s.searchKind !== 'rim') return false
       return true
     })
-  }, [query, minSun, maxDark, nearPsr, metrics])
+    // `candidates` is rebuilt from the registry each render; its ids are the key.
+  }, [query, minSun, maxDark, nearPsr, metrics, idKey])
 
   const binding =
     minSun > 0 && matches.length === 0
       ? `sunlight at least ${minSun}%`
-      : `longest dark gap under ${maxDark} h`
+      : Number.isFinite(maxDark)
+        ? `longest dark gap under ${maxDark} h`
+        : nearPsr
+          ? 'beside a shadowed floor'
+          : `the search “${query}”`
+
+  const missionPins: MissionPin[] = useMemo(() => {
+    if (!showMissions) return []
+    const groups = new Map<string, Mission[]>()
+    for (const m of missions.data?.items ?? []) {
+      if (!m.target || !m.siteId) continue
+      groups.set(m.siteId, [...(groups.get(m.siteId) ?? []), m])
+    }
+    return [...groups].map(([id, ms]) => {
+      const t = ms[0].target!
+      return {
+        key: id,
+        latDeg: t.latDeg,
+        lonDeg: t.lonDeg,
+        dashed: t.coordinateKind !== 'actual_landing',
+        label: `${ms.map((m) => m.name).join(', ')}: ${t.name}, ${coordinateKindWords(t.coordinateKind, ms[0].targetName)}`,
+        highlighted: id === siteId,
+        pressed: id === siteId,
+      }
+    })
+  }, [showMissions, missions.data, siteId])
+  const missionsHere = (missions.data?.items ?? []).filter((m) => m.siteId === siteId)
 
   return (
     <div className="flex grow flex-col">
@@ -85,13 +132,15 @@ export function MapScreen() {
               />
               <Slider
                 id="f-dark"
-                label="Dark gap under"
-                value={maxDark}
-                display={`${maxDark} h`}
-                min={20}
-                max={400}
-                step={10}
-                onChange={setMaxDark}
+                label="Longest night under"
+                value={Number.isFinite(maxDark) ? maxDark : darkMax || 24}
+                display={Number.isFinite(maxDark) ? `${maxDark} h` : 'Any'}
+                min={24}
+                max={darkMax || 24}
+                step={24}
+                disabled={!darkMax}
+                valueText={Number.isFinite(maxDark) ? `${maxDark} hours` : 'Any length'}
+                onChange={(v) => setMaxDark(v >= darkMax ? Infinity : v)}
                 tone="bg-terrain-high"
               />
 
@@ -103,13 +152,21 @@ export function MapScreen() {
                   Sites on the rim of a named polar crater, next to its permanently shadowed floor.
                 </p>
               </div>
+              <div className="flex flex-wrap gap-2 border-t border-line pt-4">
+                <Chip selected={showMissions} onClick={() => setShowMissions((v) => !v)} tone="neutral">
+                  Mission targets
+                </Chip>
+                <p className="text-[12px] leading-[17px] text-ink-3">
+                  Adds the CLPS targets inside 80°S as diamonds. Choose one to see its numbers here.
+                </p>
+              </div>
             </Panel>
 
             <Panel className="flex grow flex-col">
               <div className="flex items-baseline justify-between border-b border-line px-4 py-3">
                 <SectionLabel>Matching sites</SectionLabel>
-                <span className="text-[12px] text-ink-2">
-                  {matches.length} of {SITES.length}
+                  <span className="text-[12px] text-ink-2" aria-live="polite">
+                  {matches.length} of {candidates.length}
                 </span>
               </div>
               {matches.length === 0 ? (
@@ -117,15 +174,19 @@ export function MapScreen() {
                   title="No site clears every filter"
                   detail={
                     <>
-                      {SITES.length} sites checked. The binding one is <strong className="text-ink">{binding}</strong>.
+                      {candidates.length} sites checked. The binding one is <strong className="text-ink">{binding}</strong>.
                     </>
                   }
-                  primary={{ label: 'Relax the dark gap to 400 h', onClick: () => setMaxDark(400) }}
+                  primary={
+                    Number.isFinite(maxDark)
+                      ? { label: 'Allow a night of any length', onClick: () => setMaxDark(Infinity) }
+                      : undefined
+                  }
                   secondary={{
                     label: 'Clear all filters',
                     onClick: () => {
                       setMinSun(0)
-                      setMaxDark(400)
+                      setMaxDark(Infinity)
                       setNearPsr(false)
                       setQuery('')
                     },
@@ -150,7 +211,7 @@ export function MapScreen() {
                       </span>
                       <span className="font-mono text-[11px] text-ink-3">
                         {m
-                          ? `sun ${percent(m.sun.fractionUp)} · dte ${percent(m.earth.fractionUp)} · gap `
+                          ? `sun ${percent(m.sun.fractionUp)} · call home ${percent(m.earth.fractionUp)} · night `
                           : 'computing…'}
                         {m && (
                           <span className={m.sun.longestDownH > SURVIVAL_LIMIT_H ? 'text-alert' : ''}>
@@ -179,6 +240,9 @@ export function MapScreen() {
               selectedSiteId={siteId}
               onSelect={setSite}
               size={640}
+              sites={candidates}
+              missionPins={missionPins}
+              onMissionPin={setSite}
             />
           </div>
 
@@ -194,8 +258,10 @@ export function MapScreen() {
         </section>
 
         <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-[320px]">
-          {compute.status === 'running' && !focused ? (
-            <LoadingPanel />
+          {error && !focused ? (
+            <ProblemPanel error={error} fallbackTitle="Cannot compute this site" />
+          ) : compute.status === 'running' && !focused ? (
+            <LoadingPanel done={done} total={total} />
           ) : (
             <Panel elevated className="flex flex-col">
               <div className="flex items-start gap-3 border-b border-line p-4">
@@ -212,11 +278,22 @@ export function MapScreen() {
               </div>
               <div className="flex flex-col gap-2.5 border-t border-line p-4">
                 <p className="text-[13px] leading-5 text-ink-2">{site.note}</p>
+                {missionsHere.length > 0 && (
+                  <p className="text-[13px] leading-5 text-ink-2">
+                    CLPS {missionsHere.length === 1 ? 'mission' : 'missions'} aiming here:{' '}
+                    {missionsHere.map((m, i) => (
+                      <span key={m.id}>
+                        {i > 0 && ', '}
+                        <Link to={`/missions/${m.id}`}>{m.name}</Link>
+                      </span>
+                    ))}
+                  </p>
+                )}
                 <Link
                   to="/clocks"
                   className="inline-flex h-12 items-center justify-center rounded-control bg-sun-fill text-[15px] font-semibold text-on-sun no-underline"
                 >
-                  Open the two clocks
+                  Open in Site view
                 </Link>
                 <Button onClick={() => useMission.getState().toggleCompare(site.id)}>Add to compare</Button>
               </div>
@@ -234,6 +311,7 @@ export function MapScreen() {
               <br />
               T read the current chart as a table
             </p>
+            <p className="text-[12px] leading-[18px] text-ink-3">Single-key shortcuts can be turned off in Settings.</p>
           </Panel>
         </aside>
       </div>
@@ -260,6 +338,8 @@ function Slider({
   step = 1,
   onChange,
   tone,
+  disabled = false,
+  valueText,
 }: {
   id: string
   label: string
@@ -270,8 +350,10 @@ function Slider({
   step?: number
   onChange: (v: number) => void
   tone: string
+  disabled?: boolean
+  valueText?: string
 }) {
-  const pct = ((value - min) / (max - min)) * 100
+  const pct = max > min ? ((value - min) / (max - min)) * 100 : 100
   return (
     <div className="flex flex-col gap-2">
       <label htmlFor={id} className="text-[13px] font-medium text-ink">
@@ -291,8 +373,10 @@ function Slider({
           max={max}
           step={step}
           value={value}
+          disabled={disabled}
+          aria-valuetext={valueText}
           onChange={(e) => onChange(Number(e.target.value))}
-          className="absolute inset-x-0 h-12 w-full cursor-pointer opacity-0"
+          className="absolute inset-x-0 h-12 w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
         />
       </div>
     </div>

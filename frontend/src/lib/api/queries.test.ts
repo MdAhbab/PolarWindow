@@ -7,14 +7,24 @@
  * instants turns one window into a new request on every pointer move.
  */
 import { afterEach, describe, expect, it } from 'vitest'
-import { getEngineVersion, keys, setEngineVersion } from './queries'
+import {
+  getEngineVersion,
+  keys,
+  normaliseMissionFilters,
+  resetMissionVersions,
+  setEngineVersion,
+  setMissionVersions,
+} from './queries'
 import { quantiseWindow } from './adapters'
 
 const START = Date.UTC(2027, 2, 14)
 const SPAN = 709 * 3_600_000
 const W = { ...quantiseWindow(START, START + SPAN, 900), stepS: 900 }
 
-afterEach(() => setEngineVersion('unknown'))
+afterEach(() => {
+  setEngineVersion('unknown')
+  resetMissionVersions()
+})
 
 describe('query keys', () => {
   it('carry the engine version everywhere a number comes from the engine', () => {
@@ -72,5 +82,55 @@ describe('query keys', () => {
     const ids = ['b', 'a']
     keys.compare(ids, W, 'sun')
     expect(ids).toEqual(['b', 'a'])
+  })
+})
+
+describe('mission and calendar keys (contract v2)', () => {
+  it('carry the engine version', () => {
+    setEngineVersion('hz-2/vis-2')
+    expect(keys.missions({})).toContain('hz-2/vis-2')
+    expect(keys.mission('im-2')).toContain('hz-2/vis-2')
+    expect(keys.calendar('connecting-ridge', { start: W.start, end: W.end }, 'month')).toContain('hz-2/vis-2')
+  })
+
+  it('treat the same filters in any order as one query', () => {
+    const a = keys.missions({ payloadType: ['volatiles', 'imaging'], status: ['planned', 'in_transit'] })
+    const b = keys.missions({ status: ['in_transit', 'planned', 'planned'], payloadType: ['imaging', 'volatiles'] })
+    expect(JSON.stringify(b)).toBe(JSON.stringify(a))
+  })
+
+  it('drop empty filters, so "no filter" is one key however it was expressed', () => {
+    expect(keys.missions({ payloadType: [], provider: '  ', q: '' })).toEqual(keys.missions({}))
+    expect(normaliseMissionFilters({ provider: ' Astrobotic ' })).toEqual({ provider: 'Astrobotic' })
+  })
+
+  it('separate different filter sets', () => {
+    expect(keys.missions({ payloadType: ['volatiles'] })).not.toEqual(keys.missions({}))
+    expect(keys.missions({ provider: 'Astrobotic' })).not.toEqual(keys.missions({ provider: 'Blue Origin' }))
+  })
+
+  it('fold the record\'s data_version into the detail key once the list reports it', () => {
+    const before = keys.mission('im-2')
+    expect(before.at(-1)).toBeNull()
+    setMissionVersions([{ id: 'im-2', dataVersion: 'aaaa' }])
+    const v1 = keys.mission('im-2')
+    expect(v1).toContain('aaaa')
+    setMissionVersions([{ id: 'im-2', dataVersion: 'bbbb' }])
+    // A changed record is a new key: the cached detail cannot be served for it.
+    expect(keys.mission('im-2')).not.toEqual(v1)
+    expect(keys.mission('im-1').at(-1)).toBeNull()
+  })
+
+  it('key the calendar on site, span and bucket', () => {
+    const span = { start: '2027-03-01T00:00:00Z', end: '2028-03-01T00:00:00Z' }
+    const later = { start: '2027-04-01T00:00:00Z', end: '2028-04-01T00:00:00Z' }
+    expect(keys.calendar('a', span, 'month')).not.toEqual(keys.calendar('b', span, 'month'))
+    expect(keys.calendar('a', span, 'month')).not.toEqual(keys.calendar('a', later, 'month'))
+    expect(keys.calendar('a', span, 'month')).not.toEqual(keys.calendar('a', span, 'day'))
+    expect(keys.calendar('a', span, 'month')).toEqual(keys.calendar('a', { ...span }, 'month'))
+  })
+
+  it('leave the run log un-keyed on the engine: a run is a record, not geometry', () => {
+    expect(keys.agentRuns()).toEqual(['agentRuns'])
   })
 })

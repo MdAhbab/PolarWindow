@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { markVisited } from '../lib/firstVisit'
 import { useMission } from '../lib/store'
 import { useFocusedMetrics } from '../lib/mission'
 import { siteById } from '../lib/sites'
@@ -11,6 +12,8 @@ import { TERRAIN_BLOCKER_MIN_EL_DEG } from '../components/TwoClockRings'
  *  sentence shorter. */
 export function StoryScreen() {
   const [step, setStep] = useState(0)
+  // Having seen the story is what makes the next visit start on Missions (U1).
+  useEffect(() => markVisited(), [])
   const metrics = useFocusedMetrics()
   const site = siteById(useMission((s) => s.siteId))
 
@@ -64,8 +67,8 @@ export function StoryScreen() {
             {p.title}
           </h1>
         </div>
-        <Link to="/map" className="hidden shrink-0 text-[14px] font-semibold sm:inline">
-          Skip to the map →
+        <Link to="/missions" className="hidden h-12 shrink-0 items-center text-[14px] font-semibold sm:inline-flex">
+          Skip to the missions →
         </Link>
       </div>
 
@@ -99,10 +102,10 @@ export function StoryScreen() {
           </Button>
         ) : (
           <Link
-            to="/map"
+            to="/missions"
             className="inline-flex h-12 grow items-center justify-center rounded-control bg-sun-fill px-6 text-[15px] font-semibold text-on-sun no-underline sm:grow-0"
           >
-            Pick a spot and see for yourself
+            Browse CLPS missions
           </Link>
         )}
       </div>

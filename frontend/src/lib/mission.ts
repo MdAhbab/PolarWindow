@@ -29,11 +29,29 @@ import type { MetricsDTO } from './api/client'
 export function useWindowParams(): WindowParams {
   const windowStartH = useMission((s) => s.windowStartH)
   const windowHours = useMission((s) => s.windowHours)
-  return useMemo(() => {
-    const startMs = MODEL_EPOCH_MS + windowStartH * 3_600_000
-    const { start, end } = quantiseWindow(startMs, startMs + windowHours * 3_600_000, DEFAULT_STEP_S)
-    return { start, end, stepS: DEFAULT_STEP_S }
-  }, [windowStartH, windowHours])
+  return useMemo(() => windowParamsFor(windowStartH, windowHours), [windowStartH, windowHours])
+}
+
+/**
+ * The sampling step for a window of this length.
+ *
+ * 900 s over one lunar day is the step the golden fixtures pin, and it stays
+ * the step for anything up to 45 days. A movable window (v2) can be two years
+ * long, and 900 s over 730 days is 70,080 samples per body: coarser steps keep
+ * every window under about 9,000 samples, inside the API's 300–7,200 s bounds.
+ */
+export function stepForHours(hours: number): number {
+  if (hours <= 45 * 24) return DEFAULT_STEP_S
+  if (hours <= 120 * 24) return 1800
+  if (hours <= 400 * 24) return 3600
+  return 7200
+}
+
+export function windowParamsFor(windowStartH: number, windowHours: number): WindowParams {
+  const stepS = stepForHours(windowHours)
+  const startMs = MODEL_EPOCH_MS + windowStartH * 3_600_000
+  const { start, end } = quantiseWindow(startMs, startMs + windowHours * 3_600_000, stepS)
+  return { start, end, stepS }
 }
 
 /**

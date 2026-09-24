@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useMission } from '../lib/store'
 import { useReducedMotion } from '../hooks/useMotion'
-import { clockUTC, shortDateUTC } from '../lib/format'
+import { humanStampH, msFromModelH, shortDate, spanWords } from '../lib/format'
+import { SYNODIC_HOURS } from '../lib/store'
 import { Icon } from './Icon'
 
 /**
@@ -46,16 +47,19 @@ export function DateSlider({ compact = false }: { compact?: boolean }) {
   }, [playing, windowHours, setCursor, reduced])
 
   const pct = (cursorH / windowHours) * 100
+  // U10: a person's timestamp on screen and in aria-valuetext; ISO is for exports.
+  const now = humanStampH(windowStartH + cursorH, windowStartH)
+  const lunarDay = Math.abs(windowHours - SYNODIC_HOURS) < 1
 
   return (
     <div className="flex grow flex-col gap-2">
       <div className="flex items-baseline justify-between gap-4">
         <label htmlFor="pw-date" className="text-[12px] font-semibold tracking-[0.12em] text-ink-3 uppercase">
-          Mission window — one lunar day, {Math.round(windowHours)} h
+          Window — {lunarDay ? `one lunar day, ${Math.round(windowHours)} h` : spanWords(windowHours)}
         </label>
-        <span className="font-mono text-[12px] text-ink-2">
-          {shortDateUTC(windowStartH)} → {shortDateUTC(windowStartH + windowHours)}
-          <span className="text-ink"> · {clockUTC(windowStartH + cursorH)}</span>
+        <span className="text-right font-mono text-[12px] text-ink-2">
+          {shortDate(msFromModelH(windowStartH))} → {shortDate(msFromModelH(windowStartH + windowHours))}
+          <span className="text-ink"> · {now}</span>
         </span>
       </div>
 
@@ -96,7 +100,8 @@ export function DateSlider({ compact = false }: { compact?: boolean }) {
               setPlaying(false)
             }}
             className="absolute inset-x-0 h-12 w-full cursor-pointer opacity-0"
-            aria-valuetext={clockUTC(windowStartH + cursorH)}
+            aria-valuetext={now}
+            aria-keyshortcuts="[ ] Shift+[ Shift+]"
           />
         </div>
 

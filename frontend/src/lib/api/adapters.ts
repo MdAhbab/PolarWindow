@@ -26,7 +26,19 @@ import type {
   SiteMetrics,
   TrackSample,
 } from '../types'
-import type { ArcDTO, HorizonDTO, MetaDTO, MetricsDTO, SiteBriefDTO, TimelineDTO, WindowsDTO } from './client'
+import type {
+  ArcDTO,
+  CalendarDTO,
+  HorizonDTO,
+  MetaDTO,
+  MetricsDTO,
+  MissionBriefDTO,
+  MissionDetailDTO,
+  PublishedDateDTO,
+  SiteBriefDTO,
+  TimelineDTO,
+  WindowsDTO,
+} from './client'
 
 const S_PER_H = 3600
 
@@ -79,13 +91,19 @@ export interface Uncertainty {
   partialCoverage: boolean
   penumbraSunDeg: number
   penumbraEarthDeg: number
+  /**
+   * False when no elevation model covers the site (a CLPS target outside
+   * 80°S): the skyline is a smooth sphere. The numbers are still real SPICE
+   * geometry and are still shown, in the uncertain state.
+   */
+  terrainModelled: boolean
   notes: string[]
 }
 
 export interface Meta {
   computedAt: string
   engineVersion: string
-  cache: 'hit' | 'miss' | 'bypass'
+  cache: 'hit' | 'miss' | 'bypass' | 'memo'
   computeMs: number | null
   resolution: {
     azimuthDeg: number
@@ -127,6 +145,8 @@ export function adaptMeta(m: MetaDTO): Meta {
       partialCoverage: u.coverage < 0.999,
       penumbraSunDeg: u.penumbra_sun_deg,
       penumbraEarthDeg: u.penumbra_earth_deg,
+      // Absent on a v1 payload: every v1 site was inside the polar model.
+      terrainModelled: u.terrain_modelled ?? true,
       notes: u.notes,
     },
   }
@@ -356,6 +376,9 @@ export function adaptSiteBrief(dto: SiteBriefDTO): AdaptedSiteBrief {
       elevM: dto.elev_m,
       note: dto.note,
       searchKind: dto.search_kind,
+      kind: dto.kind ?? 'candidate',
+      coordinateRule: dto.coordinate_rule ?? 'derived_open_sky',
+      terrainModelled: dto.terrain_modelled ?? true,
     },
     summary: dto.summary
       ? {
@@ -373,5 +396,323 @@ export function adaptSiteBrief(dto: SiteBriefDTO): AdaptedSiteBrief {
           referenceWindowEnd: dto.summary.reference_window_end,
         }
       : null,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Contract v2: CLPS missions
+// ---------------------------------------------------------------------------
+
+export type MissionStatus = MissionBriefDTO['status']
+export type InstrumentType = MissionBriefDTO['payload_types'][number]
+export type DatePrecision = PublishedDateDTO['precision']
+export type CoordinateKind = NonNullable<MissionBriefDTO['target']>['coordinate_kind']
+export type SurfaceBasis = MissionBriefDTO['surface_window']['basis']
+export type MissionRegion = NonNullable<MissionBriefDTO['region']>
+
+/**
+ * A date as a source published it.
+ *
+ * `asPublished` is the phrase the UI shows ("late 2027"). `startMs` and `endMs`
+ * are the span the precision implies, used only to *place* the date on the
+ * programme timeline -- a year-precision date is stored as 1 January, and
+ * drawing it as that day would claim a precision the source never gave.
+ */
+export interface PublishedDate {
+  iso: string
+  precision: DatePrecision
+  asPublished: string
+  startMs: number
+  endMs: number
+}
+
+/** The end of the span a published date with this precision covers. */
+export function precisionSpanEnd(startMs: number, precision: DatePrecision): number {
+  const d = new Date(startMs)
+  const y = d.getUTCFullYear()
+  const m = d.getUTCMonth()
+  switch (precision) {
+    case 'minute':
+      return startMs + 60_000
+    case 'day':
+      return Date.UTC(y, m, d.getUTCDate() + 1)
+    case 'month':
+      return Date.UTC(y, m + 1, 1)
+    case 'quarter':
+      return Date.UTC(y, m + 3, 1)
+    case 'year':
+      return Date.UTC(y + 1, 0, 1)
+  }
+}
+
+export function adaptPublishedDate(dto: PublishedDateDTO | null): PublishedDate | null {
+  if (!dto) return null
+  const startMs = Date.parse(dto.date)
+  return {
+    iso: dto.date,
+    precision: dto.precision,
+    asPublished: dto.as_published,
+    startMs,
+    endMs: precisionSpanEnd(startMs, dto.precision),
+  }
+}
+
+export interface MissionTarget {
+  name: string
+  latDeg: number
+  /** Degrees east, 0–360, as the API sends it. */
+  lonDeg: number
+  coordinateKind: CoordinateKind
+  sourceUrl: string
+  featureId: number | null
+}
+
+export interface SurfaceWindow {
+  startIso: string | null
+  endIso: string | null
+  basis: SurfaceBasis
+  note: string
+}
+
+/** The four numbers at the target over its surface window, in hours. Null, never zeros. */
+export interface MissionSummary {
+  windowStartIso: string
+  windowEndIso: string
+  sunHours: number
+  earthHours: number
+  longestDarkH: number
+  longestBlackoutH: number
+  sunFraction: number
+  earthFraction: number
+  longestDarkOpen: boolean
+  longestBlackoutOpen: boolean
+  grazing: boolean
+  terrainModelled: boolean
+}
+
+export interface Mission {
+  id: string
+  name: string
+  vehicleName: string | null
+  taskOrder: string | null
+  provider: string | null
+  lander: string | null
+  status: MissionStatus
+  region: MissionRegion | null
+  targetName: string | null
+  target: MissionTarget | null
+  launch: PublishedDate | null
+  landing: PublishedDate | null
+  payloadTypes: InstrumentType[]
+  payloadCount: number
+  siteId: string | null
+  terrainModelled: boolean | null
+  surfaceWindow: SurfaceWindow
+  summary: MissionSummary | null
+  /** Field names no source confirms. The UI prints "Unconfirmed" for them, never a guess. */
+  unconfirmedFields: string[]
+  dataVersion: string
+}
+
+export interface Payload {
+  id: string
+  name: string
+  acronym: string | null
+  organisation: string | null
+  instrumentTypes: InstrumentType[]
+  purpose: string
+  sourceUrl: string
+  unconfirmed: boolean
+}
+
+export interface MissionSource {
+  url: string
+  title: string
+  publisher: string
+  /** ISO date the source was last read. */
+  accessed: string
+}
+
+export interface TargetSite {
+  id: string
+  code: string
+  name: string
+  latDeg: number
+  lonDeg: number
+  elevM: number | null
+  kind: 'candidate' | 'mission_target'
+  coordinateRule: 'derived_open_sky' | 'published'
+  terrainModelled: boolean
+  sourceNote: string
+}
+
+export interface MissionDetail extends Mission {
+  outcomeNote: string
+  endOfMission: PublishedDate | null
+  plannedSurfaceDays: number | null
+  payloads: Payload[]
+  sources: MissionSource[]
+  notes: string[]
+  /** Published landing ellipse as [lat, lon] vertices; null when none is published. */
+  ellipseRing: [number, number][] | null
+  site: TargetSite | null
+  meta: Meta
+}
+
+export function adaptMission(dto: MissionBriefDTO): Mission {
+  const t = dto.target
+  const sw = dto.surface_window
+  const sm = dto.summary
+  return {
+    id: dto.id,
+    name: dto.name,
+    vehicleName: dto.vehicle_name,
+    taskOrder: dto.task_order,
+    provider: dto.provider,
+    lander: dto.lander,
+    status: dto.status,
+    region: dto.region,
+    targetName: dto.target_name,
+    target: t
+      ? {
+          name: t.name,
+          latDeg: t.lat_deg,
+          lonDeg: t.lon_deg,
+          coordinateKind: t.coordinate_kind,
+          sourceUrl: t.source_url,
+          featureId: t.feature_id ?? null,
+        }
+      : null,
+    launch: adaptPublishedDate(dto.launch),
+    landing: adaptPublishedDate(dto.landing),
+    payloadTypes: dto.payload_types,
+    payloadCount: dto.payload_count,
+    siteId: dto.site_id,
+    terrainModelled: dto.terrain_modelled,
+    surfaceWindow: { startIso: sw.start, endIso: sw.end, basis: sw.basis, note: sw.note },
+    summary: sm
+      ? {
+          windowStartIso: sm.window_start,
+          windowEndIso: sm.window_end,
+          sunHours: toHours(sm.sunlit_s),
+          earthHours: toHours(sm.earth_contact_s),
+          longestDarkH: toHours(sm.longest_dark_s),
+          longestBlackoutH: toHours(sm.longest_blackout_s),
+          sunFraction: sm.sun_fraction_up,
+          earthFraction: sm.earth_fraction_up,
+          longestDarkOpen: sm.longest_dark_open,
+          longestBlackoutOpen: sm.longest_blackout_open,
+          grazing: sm.grazing,
+          terrainModelled: sm.terrain_modelled,
+        }
+      : null,
+    unconfirmedFields: dto.unconfirmed_fields,
+    dataVersion: dto.data_version,
+  }
+}
+
+export function adaptMissionDetail(dto: MissionDetailDTO): MissionDetail {
+  return {
+    ...adaptMission(dto),
+    outcomeNote: dto.outcome_note,
+    endOfMission: adaptPublishedDate(dto.end_of_mission),
+    plannedSurfaceDays: dto.planned_surface_days,
+    payloads: dto.payloads.map((p) => ({
+      id: p.id,
+      name: p.name,
+      acronym: p.acronym,
+      organisation: p.organisation,
+      instrumentTypes: p.instrument_types,
+      purpose: p.purpose,
+      sourceUrl: p.source_url,
+      unconfirmed: p.unconfirmed,
+    })),
+    sources: dto.sources.map((x) => ({
+      url: x.url,
+      title: x.title,
+      publisher: x.publisher,
+      accessed: x.accessed,
+    })),
+    notes: dto.notes,
+    ellipseRing: dto.ellipse_ring
+      ? dto.ellipse_ring.filter((v) => v.length >= 2).map((v) => [v[0], v[1]] as [number, number])
+      : null,
+    site: dto.site
+      ? {
+          id: dto.site.id,
+          code: dto.site.code,
+          name: dto.site.name,
+          latDeg: dto.site.lat_deg,
+          lonDeg: dto.site.lon_deg,
+          elevM: dto.site.elev_m,
+          kind: dto.site.kind,
+          coordinateRule: dto.site.coordinate_rule,
+          terrainModelled: dto.site.terrain_modelled,
+          sourceNote: dto.site.source_note,
+        }
+      : null,
+    meta: adaptMeta(dto.meta),
+  }
+}
+
+/** The latest date any of a mission's sources was read: what "Unconfirmed" is "as of". */
+export function latestAccessed(sources: MissionSource[]): string | null {
+  let best: string | null = null
+  for (const s of sources) if (!best || s.accessed > best) best = s.accessed
+  return best
+}
+
+// ---------------------------------------------------------------------------
+// Contract v2: the calendar behind the month strip
+// ---------------------------------------------------------------------------
+
+export interface CalendarBucket {
+  startIso: string
+  endIso: string
+  startMs: number
+  endMs: number
+  sunFraction: number
+  earthFraction: number
+  sunHours: number
+  earthHours: number
+  longestDarkH: number
+  /** The bucket's edge, not the terrain, ended the longest night: a lower bound. */
+  longestDarkOpen: boolean
+  longestBlackoutH: number
+  longestBlackoutOpen: boolean
+}
+
+export interface Calendar {
+  siteId: string
+  startIso: string
+  endIso: string
+  bucket: 'day' | 'month'
+  stepS: number
+  items: CalendarBucket[]
+  meta: Meta
+}
+
+export function adaptCalendar(dto: CalendarDTO): Calendar {
+  return {
+    siteId: dto.site_id,
+    startIso: dto.start,
+    endIso: dto.end,
+    bucket: dto.bucket,
+    stepS: dto.step_s,
+    items: dto.items.map((b) => ({
+      startIso: b.start,
+      endIso: b.end,
+      startMs: Date.parse(b.start),
+      endMs: Date.parse(b.end),
+      sunFraction: b.sun_fraction_up,
+      earthFraction: b.earth_fraction_up,
+      sunHours: toHours(b.sunlit_s),
+      earthHours: toHours(b.earth_contact_s),
+      longestDarkH: toHours(b.longest_dark_s),
+      longestDarkOpen: b.longest_dark_open,
+      longestBlackoutH: toHours(b.longest_blackout_s),
+      longestBlackoutOpen: b.longest_blackout_open,
+    })),
+    meta: adaptMeta(dto.meta),
   }
 }
