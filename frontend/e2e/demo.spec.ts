@@ -19,7 +19,7 @@ test('front page: one click signs in and the guide opens on the first feature', 
   await expect(page).toHaveURL(/\/missions$/)
   const guide = page.getByRole('region', { name: 'Guide' })
   await expect(guide).toContainText('1 of 9')
-  await expect(guide).toContainText('Find a mission')
+  await expect(guide).toContainText('Find a CLPS mission')
   await expect(page.locator('[data-guide-active]')).toHaveAttribute('data-guide', 'missions-filters')
   await expectNoSeriousAxe(page, '/missions with the guide open')
 
@@ -37,7 +37,7 @@ test('front page: one click signs in and the guide opens on the first feature', 
   await page.reload()
   await expect(page.getByRole('region', { name: 'Guide' })).toHaveCount(0)
   await page.getByRole('button', { name: 'Guide', exact: true }).click()
-  await expect(page.getByRole('region', { name: 'Guide' })).toContainText('Find a mission')
+  await expect(page.getByRole('region', { name: 'Guide' })).toContainText('Find a CLPS mission')
   expect(problems).toEqual([])
 })
 

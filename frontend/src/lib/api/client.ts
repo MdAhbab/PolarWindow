@@ -86,7 +86,7 @@ export class ApiUnreachable extends ApiError {
         detail: `Nothing answered at ${serviceHost()}. The service may be stopped, still starting, or blocked by the network.`,
         ui: {
           still_works:
-            'Nothing has been calculated incorrectly — there is simply nothing to calculate with. The interface, the terrain map and anything already on screen are unaffected.',
+            'Nothing has been calculated incorrectly. There is simply nothing to calculate with. The interface, the terrain map and anything already on screen are unaffected.',
           retryable: true,
           action: 'Check the service is running',
         },

@@ -203,7 +203,7 @@ export function CompareScreen() {
     .map((id) => `${code(id)}${labels[id] ? ` (${labels[id]!.text})` : ''}`)
     .join(' → ')
   const tieSentence = (ranking.data?.ties ?? [])
-    .map((g) => `${g.map((id) => siteById(id).code).join(' and ')} are tied — the data cannot tell them apart`)
+    .map((g) => `${g.map((id) => siteById(id).code).join(' and ')} are tied: the data cannot tell them apart`)
     .join('. ')
 
   if (!ready) {

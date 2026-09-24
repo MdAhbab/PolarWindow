@@ -56,7 +56,7 @@ export function MissionDetailScreen() {
   }, [m, setWindow])
 
   useEffect(() => {
-    if (m) document.title = `${m.name} — POLAR WINDOW`
+    if (m) document.title = `${m.name} · POLAR WINDOW`
   }, [m])
 
   if (q.isPending) {

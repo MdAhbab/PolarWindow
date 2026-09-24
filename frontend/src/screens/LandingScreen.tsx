@@ -98,7 +98,7 @@ export default function LandingScreen() {
     const p = readPrefs()
     document.documentElement.dataset.theme = p.theme
     document.documentElement.dataset.motion = p.motion
-    document.title = 'POLAR WINDOW — plan landings at the Moon’s south pole'
+    document.title = 'POLAR WINDOW · plan landings at the Moon’s south pole'
   }, [])
 
   // The Moon, and what scrolling and the pointer do to it.

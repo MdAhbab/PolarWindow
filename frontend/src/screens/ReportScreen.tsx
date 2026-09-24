@@ -167,7 +167,7 @@ export function ReportScreen() {
                     {rank ?? (itemOf[id] ? '–' : i + 1)}
                   </span>
                   <span className="text-control font-semibold">
-                    {s.code} — {s.name.split(',')[0]}
+                    {s.code} · {s.name.split(',')[0]}
                   </span>
                   {label && (
                     <span
@@ -255,7 +255,7 @@ export function ReportScreen() {
         <div className="mt-4 flex flex-col gap-4 sm:flex-row">
           <div className="grow border border-line-strong bg-panel p-4">
             <div className="mb-1.5 text-small font-semibold tracking-caps-md text-ink-3 uppercase">
-              Time working alone — site {siteById(best).code}
+              Time working alone: site {siteById(best).code}
             </div>
             <p className="text-lede leading-6">
               The longest time dark and out of contact is{' '}

@@ -121,7 +121,7 @@ function Dashboard() {
             detail={e.detail ?? String(sites.error)}
             stillWorks={
               e.stillWorks ??
-              'The interface is loaded. Nothing has been computed incorrectly — there is simply nothing to compute against yet.'
+              'The interface is loaded. Nothing has been computed incorrectly. There is simply nothing to compute against yet.'
             }
             onRetry={() => void sites.refetch()}
           />

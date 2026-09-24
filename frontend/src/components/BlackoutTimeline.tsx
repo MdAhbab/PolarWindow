@@ -121,7 +121,7 @@ export function BlackoutTimeline({
       <rect x={X0} y="126" width={X1 - X0} height={TRACK_H} fill="none" stroke="var(--color-line)" />
 
       <text x={X0} y="206" fill="var(--color-alert)" fontFamily="var(--font-sans)" fontSize="12" fontWeight="600" letterSpacing="1.4">
-        NEITHER — DARK AND OUT OF CONTACT
+        NEITHER: DARK AND OUT OF CONTACT
       </text>
       <rect x={X0} y="216" width={X1 - X0} height="32" fill="var(--color-dark-fill)" />
       {metrics.compound.map((c, i) => (

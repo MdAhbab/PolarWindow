@@ -51,7 +51,7 @@ function useRouteFocus() {
   const first = useRef(true)
   useEffect(() => {
     const title = TITLES[pathname] ?? (pathname.startsWith('/missions/') ? 'Mission' : 'POLAR WINDOW')
-    document.title = `${title} — POLAR WINDOW`
+    document.title = `${title} · POLAR WINDOW`
     if (first.current) {
       first.current = false
       return
