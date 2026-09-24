@@ -9,7 +9,8 @@
  * requests the app actually sends, with the exact query strings and bodies it
  * will send again. Each answer is saved as received.
  *
- * APP_URL and API_BASE override the two addresses.
+ * APP_URL and API_BASE override the two addresses; SNAPSHOT_OUT writes the
+ * copy somewhere else, for a trial run that leaves the saved one alone.
  */
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -18,7 +19,7 @@ import { chromium, type Page } from '@playwright/test'
 
 const APP = process.env.APP_URL ?? 'http://localhost:5174'
 const API = process.env.API_BASE ?? 'http://localhost:8000/api/v1'
-const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'snapshot')
+const OUT = process.env.SNAPSHOT_OUT ?? join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'snapshot')
 
 interface Entry {
   file: string
@@ -31,6 +32,8 @@ function keyOf(method: string, url: string, body: string | null): string | null 
   if (!url.startsWith(API)) return null
   const path = url.slice(API.length)
   if (path.startsWith('/tiles/')) return null
+  // A copy with no server has no sign-in and no project settings to save.
+  if (path.startsWith('/auth/') || path.startsWith('/settings')) return null
   if (method === 'POST') return `POST ${path} ${body ?? 'null'}`
   return `GET ${path}`
 }
@@ -84,15 +87,23 @@ async function main() {
   mkdirSync(join(OUT, 'r'), { recursive: true })
   const browser = await chromium.launch()
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } })
-  await context.addInitScript(() => {
-    localStorage.setItem('pw-visited', '1')
+  // Signed in as the landing page's button would, with the guide closed.
+  const signIn = (await (await fetch(`${API}/auth/demo`, { method: 'POST' })).json()) as {
+    token: string
+    role_name: string
+    expires_at: string
+  }
+  const session = { token: signIn.token, roleName: signIn.role_name, expiresAt: Date.parse(signIn.expires_at), offline: false }
+  await context.addInitScript((sess) => {
+    localStorage.setItem('pw-session', JSON.stringify(sess))
+    localStorage.setItem('pw-guide', JSON.stringify({ open: false, step: 0 }))
     localStorage.setItem('pw-prefs', JSON.stringify({ face: 'planner', theme: 'dark', motion: 'full', shortcuts: true }))
-  })
+  }, session)
   const page = await context.newPage()
   await record(page)
 
   // The candidate sites at the default window, on every screen.
-  for (const path of ['/story', '/missions', '/map', '/clocks', '/horizon', '/blackout', '/report', '/compare']) {
+  for (const path of ['/', '/missions', '/map', '/clocks', '/horizon', '/blackout', '/report', '/compare']) {
     await visit(page, path)
   }
   await page.goto(`${APP}/map`)
@@ -110,7 +121,7 @@ async function main() {
   for (const m of missions.items) {
     await visit(page, `/missions/${m.id}`)
     if (!m.site_id) continue
-    await page.getByRole('button', { name: 'Open in Site view' }).click()
+    await page.getByRole('button', { name: 'Open the site page' }).click()
     await settle(page)
     for (const path of ['/horizon', '/blackout', '/report', '/missions']) {
       await page.evaluate((p) => {
@@ -120,9 +131,9 @@ async function main() {
       await settle(page)
     }
     await visit(page, `/missions/${m.id}`)
-    await page.getByRole('button', { name: 'Compare with nearby candidates' }).click()
+    await page.getByRole('button', { name: 'Compare with nearby sites' }).click()
     await settle(page)
-    for (const rank of ['Time in the Sun', 'Time it can call home', "Longest time it can't call home", 'Longest night']) {
+    for (const rank of ['Time in sunlight', 'Time in contact with Earth', 'Longest time without contact', 'Longest night']) {
       await page.getByRole('button', { name: rank, exact: true }).click()
       await settle(page)
     }
@@ -133,7 +144,7 @@ async function main() {
   for (const id of ['im-2', 'blue-moon-mk1-viper']) {
     await visit(page, `/missions/${id}`)
     await everyMonth(page)
-    await page.getByRole('button', { name: 'Open in Site view' }).click()
+    await page.getByRole('button', { name: 'Open the site page' }).click()
     await settle(page)
   }
 
@@ -142,7 +153,7 @@ async function main() {
   await page.getByRole('button', { name: 'Ask about missions' }).click()
   await page
     .getByLabel('Your question')
-    .fill('Which south-polar CLPS targets carry volatiles instruments, and what is their longest night?')
+    .fill('Which south-pole missions look for ice, and how long is their longest night?')
   await page.getByRole('button', { name: 'Ask', exact: true }).click()
   await page.getByText('Summary from measurements').waitFor()
   await page.getByRole('button', { name: 'AI activity log' }).click()
@@ -151,7 +162,7 @@ async function main() {
   for (const id of ['im-2', 'blue-ghost-m1', 'blue-moon-mk1-viper']) {
     await visit(page, `/missions/${id}`)
     await page.getByText('What is it like at this site?').click()
-    await page.getByRole('button', { name: 'Explain this site' }).click()
+    await page.getByRole('button', { name: 'Describe this site' }).click()
     await page.getByText(/Summary from measurements|AI answer/).first().waitFor()
   }
   await visit(page, '/compare')

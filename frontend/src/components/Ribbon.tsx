@@ -94,7 +94,7 @@ export function Ribbon({
         />
       )}
       <span className="sr-only">
-        Window opens at hour {Math.round(windowStartH)} and runs {Math.round(windowHours)} hours.
+        These dates start at hour {Math.round(windowStartH)} and last {Math.round(windowHours)} hours.
       </span>
     </div>
   )

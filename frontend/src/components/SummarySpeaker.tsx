@@ -180,7 +180,7 @@ export function Speaker({ summary, what, resetKey }: { summary: Summary | null; 
         <div
           role="region"
           aria-label="Summary playing"
-          className="fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 mx-auto flex max-w-2xl items-center gap-4 border border-line-strong bg-raised p-4 shadow-raised lg:bottom-4"
+          className="fixed inset-x-4 bottom-[calc(5rem+var(--pw-guide-h,0px)+env(safe-area-inset-bottom))] z-50 mx-auto flex max-w-2xl items-center gap-4 border border-line-strong bg-raised p-4 shadow-raised lg:bottom-[calc(1rem+var(--pw-guide-h,0px))]"
         >
           <p aria-hidden="true" className="grow text-title leading-7 text-ink">
             {summary.sentences[Math.max(current, 0)]}

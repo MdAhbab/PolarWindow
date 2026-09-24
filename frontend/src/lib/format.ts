@@ -7,7 +7,7 @@ import type { Face } from './types'
  * for a lower bound and "±" for a timing margin.
  */
 export const ESTIMATES =
-  'All figures are estimates from the lunar elevation model and the ephemeris, not flight values. “≥” marks a value the window cut short; “±” is its timing margin.'
+  'All figures are estimates from a terrain map of the Moon and calculated Sun and Earth positions, not readings from a lander. “≥” means the chosen dates cut the value short, so the real one is longer; “±” is how far the timing could be off.'
 
 /**
  * A value the window cut short. The night (or blackout) began before the window
@@ -60,6 +60,16 @@ export function compass(deg: number): string {
   const names = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
   const i = Math.round((((deg % 360) + 360) % 360) / 22.5) % 16
   return names[i]
+}
+
+/** The same compass point in words, for sentences: "south-south-east". */
+export function compassWords(deg: number): string {
+  const words: Record<string, string> = { N: 'north', E: 'east', S: 'south', W: 'west' }
+  const p = compass(deg)
+  // "SSE" -> "south-south-east"; "NE" -> "north-east"; "S" -> "south".
+  return p.length === 3
+    ? `${words[p[0]]}-${words[p[1]]}${words[p[2]]}`.replace(/(north|south)(east|west)$/, '$1-$2')
+    : p.split('').map((c) => words[c]).join('-')
 }
 
 const MODEL_EPOCH = Date.UTC(2027, 2, 14, 0, 0, 0)
@@ -203,24 +213,24 @@ export function termLabel(key: string, face: Face): { label: string; expert?: st
 
 export const TERM: Record<string, Record<Face, string>> = {
   sunHours: {
-    planner: 'Sunlight in window',
+    planner: 'Sunlit hours',
     educator: 'Time in sunlight',
-    public: 'Time in the Sun',
+    public: 'Time in sunlight',
   },
   earthHours: {
-    planner: 'Earth contact (DTE)',
-    educator: 'Time able to reach Earth',
-    public: 'Time it can call home',
+    planner: 'Direct-to-Earth (DTE) contact',
+    educator: 'Time in contact with Earth',
+    public: 'Time in contact with Earth',
   },
   longestDark: {
-    planner: 'Longest unbroken dark gap',
+    planner: 'Longest unbroken darkness',
     educator: 'Longest night',
     public: 'Longest night',
   },
   longestBlackout: {
-    planner: 'Longest RF blackout',
-    educator: 'Longest time out of contact',
-    public: "Longest time it can't call home",
+    planner: 'Longest radio (RF) blackout',
+    educator: 'Longest time without contact',
+    public: 'Longest time without contact',
   },
 }
 
@@ -234,9 +244,9 @@ export function edgeMargin(
   arc: { toleranceH: number; startToleranceH?: number; endToleranceH?: number } | undefined,
   terrainModelled: boolean,
 ): string {
-  if (!arc) return 'no margin: there is no gap in this window'
-  if (!terrainModelled) return 'no margin that can be stated, because terrain is not modelled here'
+  if (!arc) return 'no margin: there is no gap in these dates'
+  if (!terrainModelled) return 'no margin that can be stated, because there is no terrain data here'
   if (arc.startToleranceH === undefined && arc.endToleranceH === undefined)
-    return 'no margin: both of its ends are the window’s own edges'
+    return 'no margin: it starts and ends at the edges of the chosen dates'
   return `${plusMinus(arc.toleranceH, 2)} h`
 }

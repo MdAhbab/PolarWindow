@@ -51,10 +51,10 @@ export function WindowPicker({
 
   const durations: { value: Duration; label: string }[] = [
     ...(missionWindow ? [{ value: 'mission' as const, label: 'Mission' }] : []),
-    { value: '14', label: '14 d' },
-    { value: '30', label: '30 d' },
-    { value: '90', label: '90 d' },
-    { value: '365', label: '1 y' },
+    { value: '14', label: '14 days' },
+    { value: '30', label: '30 days' },
+    { value: '90', label: '90 days' },
+    { value: '365', label: '1 year' },
   ]
 
   const current: Duration | '' = (() => {
@@ -206,7 +206,7 @@ function MonthStrip({
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span id={labelId} className="text-small font-medium text-ink">
-          Months from {monthWords(anchor)}: pick one to use it as the window
+          Months from {monthWords(anchor)}: pick one to use its dates
         </span>
         <span className="flex items-center gap-3 text-caption text-ink-3" aria-hidden="true">
           <span className="flex items-center gap-1.5">

@@ -6,16 +6,16 @@ import { expectNoSeriousAxe, returningVisitor, watchConsole } from './helpers'
  * the offline copy (public/snapshot, `npm run snapshot`) and says so, and an
  * agent answers from the measurements alone.
  */
-test('API unreachable: saved answers, the Cached snapshot badge, and a degraded agent', async ({ page, context }) => {
+test('API unreachable: saved answers, the Saved copy badge, and a degraded agent', async ({ page, context }) => {
   await returningVisitor(context)
   // Every call to the service fails at the network, as with the service down.
   await context.route(/localhost:8000\//, (route) => route.abort('connectionrefused'))
   const problems = watchConsole(page)
 
   await page.goto('/missions')
-  const badge = page.getByRole('status', { name: /^Data provenance: Cached snapshot/ })
+  const badge = page.getByRole('status', { name: /^Data source: Saved copy/ })
   await expect(badge).toBeVisible()
-  await expect(badge).toHaveText('Cached snapshot')
+  await expect(badge).toHaveText('Saved copy')
   await page.getByRole('button', { name: 'Volatiles' }).click()
   await expect(page.locator('[aria-live="polite"]').filter({ hasText: 'missions' }).first()).toHaveText(
     'Showing 5 of 20 missions',
@@ -24,7 +24,7 @@ test('API unreachable: saved answers, the Cached snapshot badge, and a degraded 
 
   await page.getByRole('link', { name: /^IM-2,/ }).click()
   await expect(page.locator('main')).toContainText('6 Mar 2025, 17:30 UTC')
-  await expect(page.locator('main')).toContainText('100% of the window')
+  await expect(page.locator('main')).toContainText('100% of the time')
 
   await page.getByRole('link', { name: 'Missions' }).first().click()
   await page.getByRole('button', { name: 'Ask about missions' }).click()

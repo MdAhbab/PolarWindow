@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import { expectNoSeriousAxe, returningVisitor, watchConsole } from './helpers'
 
 const ROUTES = [
+  '/',
   '/missions',
   '/missions/im-2',
   '/missions/blue-ghost-m1',
@@ -12,19 +13,12 @@ const ROUTES = [
   '/horizon',
   '/blackout',
   '/report',
-  '/story',
 ]
 
 for (const theme of ['dark', 'light'] as const) {
   for (const face of ['public', 'planner'] as const) {
     test(`axe: every route, ${theme} theme, ${face === 'public' ? 'Simple' : 'Expert'}`, async ({ page, context }) => {
-      await context.addInitScript(
-        ([t, f]) => {
-          localStorage.setItem('pw-visited', '1')
-          localStorage.setItem('pw-prefs', JSON.stringify({ face: f, theme: t, motion: 'full', shortcuts: true }))
-        },
-        [theme, face],
-      )
+      await returningVisitor(context, face, { theme })
       const problems = watchConsole(page)
       for (const r of ROUTES) {
         await page.goto(r)
@@ -53,6 +47,16 @@ test('axe and the fixed tab bar on a phone', async ({ page, context }) => {
   const footer = page.getByText('All figures are estimates', { exact: false })
   const [f, t] = await Promise.all([footer.boundingBox(), tabs.boundingBox()])
   expect(f!.y + f!.height).toBeLessThanOrEqual(t!.y + 1)
+
+  // With the guide open, it sits above the tab bar, and the page still ends above both.
+  await page.getByRole('button', { name: 'Guide', exact: true }).click()
+  const guide = page.getByRole('region', { name: 'Guide' })
+  await expect(guide).toBeVisible()
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+  const [f2, g, t2] = await Promise.all([footer.boundingBox(), guide.boundingBox(), tabs.boundingBox()])
+  expect(g!.y + g!.height).toBeLessThanOrEqual(t2!.y + 1)
+  expect(f2!.y + f2!.height).toBeLessThanOrEqual(g!.y + 1)
+  await expectNoSeriousAxe(page, '/compare at 375 px with the guide open')
 })
 
 test('mission filters live in the URL; the back button undoes a chip', async ({ page, context }) => {
@@ -125,12 +129,9 @@ test('an unknown mission is a 404 panel with a way back', async ({ page, context
 })
 
 test('reduced motion swaps play for step buttons, decided in code', async ({ page, context }) => {
-  await context.addInitScript(() => {
-    localStorage.setItem('pw-visited', '1')
-    localStorage.setItem('pw-prefs', JSON.stringify({ face: 'planner', theme: 'dark', motion: 'reduced', shortcuts: true }))
-  })
+  await returningVisitor(context, 'planner', { motion: 'reduced' })
   await page.goto('/clocks')
-  await expect(page.getByRole('button', { name: 'Play the window' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Play through the dates' })).toBeDisabled()
   await expect(page.getByRole('button', { name: 'Step forward six hours' })).toBeVisible()
   const slider = page.getByRole('slider')
   await expect(slider).toHaveAttribute('aria-valuetext', /^Day \d+, \d+ \w+, \d\d:\d\d UTC$/)

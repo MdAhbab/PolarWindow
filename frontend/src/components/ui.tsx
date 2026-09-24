@@ -133,14 +133,18 @@ export function Panel({
   className = '',
   elevated = false,
   as: As = 'div',
+  guide,
 }: {
   children: ReactNode
   className?: string
   elevated?: boolean
   as?: 'div' | 'section' | 'aside'
+  /** Where the guide bar can point (`data-guide`). */
+  guide?: string
 }) {
   return (
     <As
+      data-guide={guide}
       className={
         elevated
           ? `border border-line-strong bg-raised shadow-raised ${className}`
@@ -217,22 +221,22 @@ export const PROVENANCE_COPY: Record<Provenance, { label: string; title: string 
   measured: {
     label: 'Measured',
     title:
-      'Terrain from the LOLA lunar polar elevation model; Sun and Earth positions from SPICE with the DE440 ephemeris. Every value carries its own margin.',
+      'Terrain from NASA’s laser-altimeter map of the pole (LOLA); Sun and Earth positions calculated with NASA’s SPICE tools (DE440). Every value shows how far it could be off.',
   },
   partial: {
     label: 'Partial data',
     title:
-      'Some inputs are missing, so parts of this screen are computed from less than the full model. Affected values say so where they appear.',
+      'Some data is missing, so parts of this screen are worked out from less than usual. The values affected say so where they appear.',
   },
   snapshot: {
-    label: 'Cached snapshot',
+    label: 'Saved copy',
     title:
       'The live service is not answering, so these are saved answers from it, shown exactly as it gave them. Views that were not saved say so.',
   },
   unavailable: {
     label: 'No data',
     title:
-      'The geometry service has neither an ephemeris nor an elevation model loaded, so nothing on this screen is computed.',
+      'The service has neither the Sun and Earth positions nor the terrain map loaded, so nothing on this screen can be worked out.',
   },
 }
 
@@ -247,7 +251,7 @@ export function SampleDataBadge({ provenance = 'measured', note }: { provenance?
     // screen reader heard the explanation and never heard the word.
     <span
       role="status"
-      aria-label={`Data provenance: ${copy.label}. ${title}`}
+      aria-label={`Data source: ${copy.label}. ${title}`}
       className="inline-flex h-7 items-center gap-2 border border-uncertain px-2.5 text-tag font-semibold tracking-caps text-ink-2 uppercase"
       title={title}
     >

@@ -6,6 +6,7 @@ import { useMission } from '../lib/store'
 import { hasSite, siteById } from '../lib/sites'
 import { Button, Panel, ScrollRegion, SectionLabel } from './ui'
 import { Icon } from './Icon'
+import { fieldWords, toolWords } from '../lib/fieldWords'
 import { ProblemPanel, UncertaintyNote } from './States'
 
 /**
@@ -36,7 +37,7 @@ const GUARD_COPY =
   "The AI's answer included a number we couldn't trace to a measurement, so we replaced it with a summary built from the measurements."
 const DEGRADED_COPY = "The AI didn't respond, so this summary was built directly from the measurements."
 const NO_MODEL_COPY =
-  'No AI model is configured on this server, so this summary was built directly from the measurements. Every number in it still comes from a tool result.'
+  'No AI model is set up on this server, so this summary was built directly from the measurements. Every number in it still comes from those measurements.'
 
 /** The server says no model key is configured (`meta.agents_configured`). */
 const notConfigured = (r: AgentDTO): boolean =>
@@ -101,7 +102,7 @@ function AskBody({ result }: { result: Record<string, unknown> }) {
                 <span className="font-mono text-caption text-ink-2">
                   {' '}
                   {Object.entries(row.values)
-                    .map(([k, v]) => `${k} ${asSent(v)}`)
+                    .map(([k, v]) => `${fieldWords(k)} ${asSent(v)}`)
                     .join(' · ')}
                 </span>
               )}
@@ -262,7 +263,7 @@ function NumbersUsed({ items }: { items: ProvenanceItemDTO[] }) {
                 <td className="px-3 py-2 text-caption leading-caption text-ink-2">…{p.claim}…</td>
                 <td className="px-3 py-2 font-mono text-caption text-ink tnum">{asSent(p.value)}</td>
                 <td className="px-3 py-2 font-mono text-caption text-ink-2">
-                  {p.tool} · {p.field}
+                  {toolWords(p.tool)} · {fieldWords(p.field)}
                 </td>
               </tr>
             ))}
@@ -456,7 +457,7 @@ export function AskPanel() {
         label="Your question"
         value={q}
         onChange={setQ}
-        placeholder="Which south-polar CLPS targets carry volatiles instruments, and how long is their longest night?"
+        placeholder="Which south-pole missions look for ice, and how long is their longest night?"
         fieldRef={field}
         onSubmit={submit}
       />
@@ -542,7 +543,7 @@ export function ExplainPanel({
         </p>
         <div>
           <Button onClick={ask} disabled={agent.isPending}>
-            Explain this site
+            Describe this site
           </Button>
         </div>
         <AgentCard kind="explain" agent={agent} onRetry={ask} />

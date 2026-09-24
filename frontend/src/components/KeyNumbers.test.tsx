@@ -52,32 +52,32 @@ describe('KeyNumberRow', () => {
 
   it('shows the four numbers in order, with the night over the limit and its margin', () => {
     render(<KeyNumberRow metrics={real()} face="public" />)
-    const labels = screen.getAllByText(/^(Time in the Sun|Time it can call home|Longest night|Longest time it can't call home)$/)
+    const labels = screen.getAllByText(/^(Time in sunlight|Time in contact with Earth|Longest night|Longest time without contact)$/)
     expect(labels.map((l) => l.textContent)).toEqual([
-      'Time in the Sun',
-      'Time it can call home',
+      'Time in sunlight',
+      'Time in contact with Earth',
       'Longest night',
-      "Longest time it can't call home",
+      'Longest time without contact',
     ])
     const night = tile(/^Longest night$/)
     expect(within(night).getByText('122')).toBeTruthy()
     expect(within(night).getByText('±17.1')).toBeTruthy()
-    expect(within(night).getByText(/2 h over the 120 h limit/)).toBeTruthy()
+    expect(within(night).getByText(/2 h over the 120 h battery limit/)).toBeTruthy()
     expect(within(night).getByText(/about 122 hours, plus or minus 17.1 hours/)).toBeTruthy()
   })
 
   it('adds the expert term only in Expert', () => {
     const { rerender } = render(<KeyNumberRow metrics={real()} face="public" />)
-    expect(screen.queryByText('Earth contact (DTE)')).toBeNull()
+    expect(screen.queryByText('Direct-to-Earth (DTE) contact')).toBeNull()
     rerender(<KeyNumberRow metrics={real()} face="planner" />)
-    expect(screen.getByText('Earth contact (DTE)')).toBeTruthy()
+    expect(screen.getByText('Direct-to-Earth (DTE) contact')).toBeTruthy()
   })
 
   it('says plainly when there is no night and no blackout: no ±, no margin arithmetic', () => {
     render(<KeyNumberRow metrics={allDay()} face="public" />)
     expect(screen.queryByText(/±/)).toBeNull()
-    expect(screen.getByText('The Sun did not set in this window')).toBeTruthy()
-    expect(screen.getByText('Earth stayed in view for the whole window')).toBeTruthy()
+    expect(screen.getByText('The Sun did not set on these dates')).toBeTruthy()
+    expect(screen.getByText('Earth stayed in view on all of these dates')).toBeTruthy()
     expect(screen.queryByText(/margin on/)).toBeNull()
   })
 

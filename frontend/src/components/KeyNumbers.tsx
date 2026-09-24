@@ -225,10 +225,10 @@ export function KeyNumberRow({
     rf: termLabel('longestBlackout', face),
   }
   const L = {
-    sun: short ? 'Time in the Sun' : t.sun.label,
-    earth: short ? 'Time it can call home' : t.earth.label,
+    sun: short ? 'Time in sunlight' : t.sun.label,
+    earth: short ? 'Time in contact with Earth' : t.earth.label,
     dark: short ? 'Longest night' : t.dark.label,
-    rf: short ? "Longest time it can't call home" : t.rf.label,
+    rf: short ? 'Longest time without contact' : t.rf.label,
   }
   const X = short
     ? { sun: undefined, earth: undefined, dark: undefined, rf: undefined }
@@ -245,7 +245,7 @@ export function KeyNumberRow({
         size={size}
         state={computing ? 'computing' : ready}
         fraction={sunFrac}
-        footnote={metrics ? `${percent(sunFrac)} of the window` : 'ray-casting the skyline'}
+        footnote={metrics ? `${percent(sunFrac)} of the time` : 'measuring the skyline'}
       />
       <KeyNumberTile
         label={L.earth}
@@ -256,7 +256,7 @@ export function KeyNumberRow({
         size={size}
         state={computing ? 'computing' : ready}
         fraction={earthFrac}
-        footnote={metrics ? `${percent(earthFrac)} of the window` : undefined}
+        footnote={metrics ? `${percent(earthFrac)} of the time` : undefined}
       />
       <KeyNumberTile
         label={L.dark}
@@ -272,12 +272,12 @@ export function KeyNumberRow({
           computing
             ? undefined
             : noNight
-              ? 'The Sun did not set in this window'
+              ? 'The Sun did not set on these dates'
               : overLimit
-                ? `${darkOpen ? 'at least ' : ''}${Math.round(dark - SURVIVAL_LIMIT_H)} h over the ${SURVIVAL_LIMIT_H} h limit`
+                ? `${darkOpen ? 'at least ' : ''}${Math.round(dark - SURVIVAL_LIMIT_H)} h over the ${SURVIVAL_LIMIT_H} h battery limit`
                 : darkOpen
-                  ? `the window cuts this night short; it may run past the ${SURVIVAL_LIMIT_H} h limit`
-                  : `${Math.round(SURVIVAL_LIMIT_H - dark)} h inside the ${SURVIVAL_LIMIT_H} h limit`
+                  ? `these dates cut this night short; it may run past the ${SURVIVAL_LIMIT_H} h battery limit`
+                  : `${Math.round(SURVIVAL_LIMIT_H - dark)} h inside the ${SURVIVAL_LIMIT_H} h battery limit`
         }
       />
       <KeyNumberTile
@@ -294,9 +294,9 @@ export function KeyNumberRow({
           computing
             ? undefined
             : noBlackout
-              ? 'Earth stayed in view for the whole window'
+              ? 'Earth stayed in view on all of these dates'
               : rfOpen
-                ? 'the window cuts this short; the lander must work alone at least this long'
+                ? 'these dates cut this short; the lander must work alone at least this long'
                 : 'the lander must work alone this long'
         }
       />

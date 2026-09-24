@@ -85,8 +85,9 @@ export class SnapshotMiss extends Error {
   }
 }
 
-export function requestKey(method: 'GET' | 'POST', pathAndQuery: string, body?: unknown): string {
-  return method === 'POST' ? `POST ${pathAndQuery} ${JSON.stringify(body ?? null)}` : `GET ${pathAndQuery}`
+export function requestKey(method: string, pathAndQuery: string, body?: unknown): string {
+  if (method === 'POST') return `POST ${pathAndQuery} ${JSON.stringify(body ?? null)}`
+  return `${method} ${pathAndQuery}`
 }
 
 /**
@@ -94,7 +95,7 @@ export function requestKey(method: 'GET' | 'POST', pathAndQuery: string, body?: 
  * HTTP status, so a saved 404 is still a 404.
  */
 export async function fromSnapshot(
-  method: 'GET' | 'POST',
+  method: string,
   pathAndQuery: string,
   body?: unknown,
 ): Promise<{ status: number; json: unknown }> {

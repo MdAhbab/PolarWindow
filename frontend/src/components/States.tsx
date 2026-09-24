@@ -77,7 +77,7 @@ export function LoadingPanel({
       </div>
       <p className="text-small leading-5 text-ink-2">
         {note ??
-          'Each site’s skyline was ray-cast once, ahead of time, against its elevation model. What is happening now is the fast part: the Sun’s and Earth’s paths for this window, checked against that skyline. Each site appears as soon as its own answer arrives.'}
+          'Each site’s skyline was measured once, ahead of time, from the terrain map. What happens now is the quick part: tracing the Sun and Earth across the sky for these dates and checking them against that skyline. Each site appears as soon as its own answer arrives.'}
       </p>
     </Panel>
   )

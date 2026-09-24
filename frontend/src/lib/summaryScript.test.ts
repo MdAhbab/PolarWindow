@@ -29,28 +29,28 @@ describe('buildSiteSummary', () => {
     const s = buildSiteSummary(site)
     expect(s.text).toContain('Sunlight 574 hours, 81 percent of the time.')
     expect(s.text).toContain('Longest night: about 122 hours, give or take 17 hours.')
-    expect(s.text).toContain('2 hours over the 120 hour survival limit')
+    expect(s.text).toContain('2 hours over the 120 hour battery limit')
     expect(s.text).not.toMatch(/[≈±%]/)
   })
 
   it('says a cut-short night is at least its value, and never gives it a margin', () => {
     const s = buildSiteSummary({ ...site, nightH: 112, nightOpen: true })
-    expect(s.text).toContain('Longest night: at least 112 hours. This period cut it short')
-    expect(s.text).toContain('It may exceed the 120 hour survival limit.')
+    expect(s.text).toContain('Longest night: at least 112 hours. These dates cut it short')
+    expect(s.text).toContain('It may run past the 120 hour battery limit.')
   })
 
   it('says plainly when there was no night and no blackout', () => {
     const s = buildSiteSummary({ ...site, windowHours: 12.75, nightH: 0, silenceH: 0, worstCompoundH: 0 })
     expect(s.text).toContain('Over 12.75 hours from 14 March 2027')
-    expect(s.text).toContain('The Sun did not set in this window.')
-    expect(s.text).toContain('It can call home the whole time.')
+    expect(s.text).toContain('The Sun did not set on these dates.')
+    expect(s.text).toContain('It stays in contact with Earth the whole time.')
     expect(s.text).not.toMatch(/about 0 hours|inside the 120 hour/)
   })
 
-  it('says a northern site is north, and flags a smooth-Moon skyline', () => {
+  it('says a northern site is north, and flags a flat-ground skyline', () => {
     const s = buildSiteSummary({ ...site, latDeg: 18.56, terrainModelled: false })
     expect(s.text).toContain('18.6 degrees north')
-    expect(s.text).toContain('Terrain is not modelled here')
+    expect(s.text).toContain('There is no terrain data here')
   })
 })
 
@@ -66,8 +66,8 @@ describe('buildComparisonSummary', () => {
       ],
     })
     expect(s.text).not.toMatch(/\bbest\b/)
-    expect(s.text).toContain("de Gerlache rim can't be ranked, because the window cut its value short; it could be 1st–3rd: at least 112 hours.")
-    expect(s.text).toContain('Connecting Ridge has a night over the 120 hour survival limit')
+    expect(s.text).toContain("de Gerlache rim can't be ranked, because the chosen dates cut its value short; it could be 1st–3rd: at least 112 hours.")
+    expect(s.text).toContain('Connecting Ridge has a night over the 120 hour battery limit')
   })
 
   it('says best only where the ranking allows it, and joint places as ties', () => {

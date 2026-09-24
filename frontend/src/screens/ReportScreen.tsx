@@ -133,7 +133,7 @@ export function ReportScreen() {
               {compareIds.length} candidates, one {Math.round(windowHours)} h window
             </h1>
             <p className="text-lede leading-6 text-ink-2">
-              {shortDate(msFromModelH(windowStartH))} → {shortDate(msFromModelH(windowStartH + windowHours))} · survival limit{' '}
+              {shortDate(msFromModelH(windowStartH))} → {shortDate(msFromModelH(windowStartH + windowHours))} · battery limit{' '}
               {SURVIVAL_LIMIT_H} h of continuous darkness
             </p>
           </div>
@@ -223,7 +223,7 @@ export function ReportScreen() {
           <p className="text-small leading-5 text-ink-2">
             Totals do not decide this. The magenta hatch marks a site’s single longest night where it runs
             past the {SURVIVAL_LIMIT_H} h limit, and that is the number a battery has to survive. “≥” marks a
-            night the window cuts short: the real one is longer.
+            night the chosen dates cut short: the real one is longer.
           </p>
         </div>
 
@@ -234,9 +234,9 @@ export function ReportScreen() {
           <p className="text-lede leading-6">
             {survivors.length === 0 ? (
               <>
-                No candidate in this set survives its longest night on stored energy alone. The binding
-                constraint is latitude, not terrain: every site here except the ones within about a degree
-                of the pole has a true seasonal night.
+                No candidate in this set survives its longest night on its battery alone. What limits them
+                is latitude, not terrain: every site here except those within about a degree of the pole
+                has a real seasonal night.
               </>
             ) : (
               <>
@@ -246,7 +246,7 @@ export function ReportScreen() {
                   .map((id) => `${siteById(id).code} ${hoursWithUnit(metrics[id].sun.longestDownH)}`)
                   .join(', ')}
                 ). {siteById(survivors[0]).code} pays for that with Earth contact:{' '}
-                {percent(metrics[survivors[0]].earth.fractionUp)} of the window.
+                {percent(metrics[survivors[0]].earth.fractionUp)} of the time.
               </>
             )}
           </p>
@@ -255,13 +255,13 @@ export function ReportScreen() {
         <div className="mt-4 flex flex-col gap-4 sm:flex-row">
           <div className="grow border border-line-strong bg-panel p-4">
             <div className="mb-1.5 text-small font-semibold tracking-caps-md text-ink-3 uppercase">
-              Autonomy required — site {siteById(best).code}
+              Time working alone — site {siteById(best).code}
             </div>
             <p className="text-lede leading-6">
-              Worst compound event {hoursWithUnit(bestPacket.worstCompoundH, 0, bestPacket.worstCompoundOpen)}{' '}
-              with neither sunlight nor an Earth link. With a {Math.round(bestPacket.marginFraction * 100)}%
-              margin: <strong>{hoursWithUnit(bestPacket.requiredAutonomyH)}</strong> of command buffer,
-              storage and autonomous fault response. The battery still carries the longest night,{' '}
+              The longest time dark and out of contact is{' '}
+              {hoursWithUnit(bestPacket.worstCompoundH, 0, bestPacket.worstCompoundOpen)}. With a{' '}
+              {Math.round(bestPacket.marginFraction * 100)}% margin: <strong>{hoursWithUnit(bestPacket.requiredAutonomyH)}</strong>{' '}
+              of stored commands, data storage and fault handling. The battery still has to last the longest night,{' '}
               {hoursWithUnit(bestPacket.survivalNeededH, 0, bestPacket.survivalOpen)}.
             </p>
           </div>
@@ -271,8 +271,8 @@ export function ReportScreen() {
             </div>
             <p className="text-lede leading-6">
               {metrics[best].sun.longestDownArc?.grazing
-                ? 'The longest night has a crossing too shallow to time; its length stands, its edges do not.'
-                : `The longest night’s edges carry ${edgeMargin(metrics[best].sun.longestDownArc, terrainOf(best))} from the elevation model’s vertical accuracy.`}
+                ? 'The longest night starts or ends too shallowly to time; its length stands, its edges do not.'
+                : `The longest night’s start and end carry ${edgeMargin(metrics[best].sun.longestDownArc, terrainOf(best))} from the terrain map’s height accuracy.`}
             </p>
           </div>
         </div>

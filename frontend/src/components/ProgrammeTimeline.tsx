@@ -141,7 +141,7 @@ export function ProgrammeTimeline({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <SectionLabel>Programme timeline</SectionLabel>
+        <SectionLabel>Timeline</SectionLabel>
         <Button size="sm" onClick={onToggleTable} expanded={showTable} controls={`${regionId}-table`}>
           <Icon name="table" size={16} strokeWidth={1.7} />
           {showTable ? 'Hide the timeline table' : 'Read the timeline as a table'}
@@ -151,7 +151,7 @@ export function ProgrammeTimeline({
       <div
         ref={boxRef}
         role="region"
-        aria-label="Programme timeline, scrolls sideways"
+        aria-label="Timeline, scrolls sideways"
         tabIndex={0}
         className="relative overflow-x-auto border border-line bg-panel"
       >
@@ -161,7 +161,7 @@ export function ProgrammeTimeline({
           viewBox={`0 0 ${W} ${height}`}
           className="block"
           role="img"
-          aria-label={`Programme timeline from ${years[0]} to ${years[years.length - 1]}: ${dated.length} dated mission${
+          aria-label={`Timeline of missions from ${years[0]} to ${years[years.length - 1]}: ${dated.length} dated mission${
             dated.length === 1 ? '' : 's'
           } in ${lanes.length} provider lane${lanes.length === 1 ? '' : 's'}. A tick is a date known to the day; a hatched bar is a date known only to the month, quarter or year. The table twin lists every mission.`}
         >

@@ -81,7 +81,7 @@ function buildSteps(siteName: string, m: SiteMetrics, meta?: Meta): Step[] {
     ? u.grazing
       ? 'At least one crossing is too shallow to time, so its hour is not knowable from this data.'
       : !u.terrainModelled
-        ? 'Terrain is not modelled here, so the crossing times assume a smooth Moon and carry no stated margin.'
+        ? 'There is no terrain data here, so the crossing times assume flat ground and carry no stated margin.'
         : u.edgeTimingH !== null
         ? `Each crossing time is known to about ${plusMinus(u.edgeTimingH, 1)} h, because the terrain heights are known to about ±${u.demVerticalErrorM} m.`
         : ''
@@ -125,7 +125,7 @@ function buildSteps(siteName: string, m: SiteMetrics, meta?: Meta): Step[] {
           }.`
         : 'There is no dark stretch in this window: the Sun stays above the skyline throughout.',
       ask: 'What would a lander need to carry to survive the whole night, and what would that cost it?',
-      caveat: `The ${SURVIVAL_LIMIT_H} h survival limit is a placeholder, not a real lander’s rating. ${edge}`,
+      caveat: `The ${SURVIVAL_LIMIT_H} h battery limit is a placeholder, not a real lander’s rating. ${edge}`,
     },
     {
       title: 'When both are gone',

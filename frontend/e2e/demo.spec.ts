@@ -5,19 +5,67 @@ import { expectNoSeriousAxe, returningVisitor, watchConsole } from './helpers'
  * The video's path (report-work demo script, beats 1–8), end to end, with
  * axe on every screen it visits and no console errors or warnings.
  */
-test('first visit: the story, then the missions', async ({ page }) => {
+test('front page: one click signs in and the guide opens on the first feature', async ({ page }) => {
   const problems = watchConsole(page)
   await page.goto('/')
-  await expect(page).toHaveURL(/\/story$/)
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('The Sun never climbs')
-  await expectNoSeriousAxe(page, '/story')
-  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: /^Next/ }).click()
-  await page.getByRole('link', { name: 'Browse CLPS missions' }).click()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Plan a landing where the Sun barely rises')
+  await expectNoSeriousAxe(page, '/ (front page)')
+  // The old story's address opens the front page at the four ideas.
+  await page.goto('/story')
+  await expect(page).toHaveURL(/\/#why$/)
+  await expect(page.getByRole('heading', { name: 'The Sun never climbs' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Open the dashboard' }).first().click()
   await expect(page).toHaveURL(/\/missions$/)
-  // The visit is remembered: the front door now opens on the missions.
-  await page.goto('/')
+  const guide = page.getByRole('region', { name: 'Guide' })
+  await expect(guide).toContainText('1 of 9')
+  await expect(guide).toContainText('Find a mission')
+  await expect(page.locator('[data-guide-active]')).toHaveAttribute('data-guide', 'missions-filters')
+  await expectNoSeriousAxe(page, '/missions with the guide open')
+
+  // Next moves to the page the step is about and points at its feature.
+  await guide.getByRole('button', { name: 'Next' }).click()
+  await expect(page).toHaveURL(/\/map$/)
+  await expect(guide).toContainText('Choose a site on the map')
+  await expect(page.locator('[data-guide-active]')).toHaveAttribute('data-guide', 'map')
+  await guide.getByRole('button', { name: 'Back' }).click()
   await expect(page).toHaveURL(/\/missions$/)
+
+  // Closed, it stays closed across a reload, and Guide in the header brings it back.
+  await guide.getByRole('button', { name: 'Close the guide' }).click()
+  await expect(guide).toHaveCount(0)
+  await page.reload()
+  await expect(page.getByRole('region', { name: 'Guide' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Guide', exact: true }).click()
+  await expect(page.getByRole('region', { name: 'Guide' })).toContainText('Find a mission')
   expect(problems).toEqual([])
+})
+
+test('a deep link without a session goes to the front page, then on to the page asked for', async ({ page }) => {
+  await page.goto('/missions/im-2')
+  await expect(page).toHaveURL(/\/\?next=%2Fmissions%2Fim-2$/)
+  await page.getByRole('button', { name: 'Open the dashboard' }).first().click()
+  await expect(page).toHaveURL(/\/missions\/im-2$/)
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('IM-2')
+})
+
+test('settings: the project controls, behind a confirm step', async ({ page, context }) => {
+  await returningVisitor(context)
+  await page.goto('/missions')
+  await page.getByRole('button', { name: 'Settings' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Settings' })
+  await expect(sheet).toContainText('Signed in as Project manager')
+  await expect(sheet.getByRole('group', { name: 'AI assistant' })).toBeVisible()
+  await expect(sheet.getByText('Moon terrain map')).toBeVisible()
+  await expectNoSeriousAxe(page, 'the Settings sheet')
+  // A destructive action asks first, and "Keep them" leaves everything as it was.
+  const clear = sheet.getByRole('button', { name: 'Clear the AI activity log' })
+  if (await clear.isEnabled()) {
+    await clear.click()
+    await expect(sheet.getByRole('group', { name: 'Clear the AI activity log' })).toContainText('can’t be undone')
+    await sheet.getByRole('button', { name: 'Keep them' }).click()
+    await expect(clear).toBeVisible()
+  }
 })
 
 test('demo path: volatiles → IM-2 → shift the date → compare → ask → run log', async ({ page, context }) => {
@@ -84,9 +132,9 @@ test('demo path: volatiles → IM-2 → shift the date → compare → ask → r
   await expect(months.nth(7)).toHaveAttribute('aria-label', /^October 2025: sunlight \d+ percent, Earth \d+ percent/)
 
   // Beat 5: compare with the nearest candidates, and no "best" on a bound.
-  await page.getByRole('button', { name: 'Compare with nearby candidates' }).click()
+  await page.getByRole('button', { name: 'Compare with nearby sites' }).click()
   await expect(page).toHaveURL(/\/compare\?from=im-2&sites=/)
-  await expect(page.locator('main')).toContainText('Seeded from IM-2')
+  await expect(page.locator('main')).toContainText('Started from IM-2')
   await expect(page.locator('main')).toContainText('nearest to it by distance')
   await page.getByRole('button', { name: 'Longest night' }).click()
   await expectNoSeriousAxe(page, '/compare')
@@ -121,10 +169,10 @@ test('beats 4 and 7: VIPER month strip and the far side', async ({ page, context
 
   await page.goto('/missions/apex-1')
   const main = page.locator('main')
-  await expect(main).toContainText('Terrain is not modelled outside 80°S')
+  await expect(main).toContainText('There is no terrain data outside 80°S')
   await expect(main).toContainText('Numbers are for the centre of Schrödinger')
   // Earth contact is zero on the far side: a measurement, shown as 0.
-  const earth = main.locator('div.border.bg-panel', { hasText: 'Time it can call home' }).first()
+  const earth = main.locator('div.border.bg-panel', { hasText: 'Time in contact with Earth' }).first()
   await expect(earth).toContainText('about 0 hours')
   await expectNoSeriousAxe(page, '/missions/apex-1')
   expect(problems).toEqual([])

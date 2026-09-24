@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { lazy, Suspense, useEffect, useMemo, type ReactNode } from 'react'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
 import { ErrorPanel, LoadingPanel } from './components/States'
 import { MapScreen } from './screens/MapScreen'
@@ -8,7 +8,6 @@ import { CompareScreen } from './screens/CompareScreen'
 import { HorizonScreen } from './screens/HorizonScreen'
 import { BlackoutScreen } from './screens/BlackoutScreen'
 import { ReportScreen } from './screens/ReportScreen'
-import { StoryScreen } from './screens/StoryScreen'
 import { StatesScreen } from './screens/StatesScreen'
 import { MissionsScreen } from './screens/MissionsScreen'
 import { MissionDetailScreen } from './screens/MissionDetailScreen'
@@ -16,18 +15,52 @@ import { useMission } from './lib/store'
 import { useEngineVersionWatch, useSites } from './lib/api/queries'
 import { setSites, hasSite, defaultCompare, getCandidates } from './lib/sites'
 import { ApiError } from './lib/api/client'
-import { hasVisited } from './lib/firstVisit'
+import { useSession } from './lib/session'
 
 /**
- * `/` on a first visit goes to the story (U1); after that, to the missions.
- *
- * Read in render and never written here: the story marks the visit when it
- * mounts. Writing in render would run twice under StrictMode and send a first
- * visitor past the story. If storage is unavailable the answer is Missions,
- * the page that answers fastest.
+ * The front page is its own chunk: three.js and GSAP are for it alone, and
+ * the dashboard should not download them.
  */
-function Home() {
-  return <Navigate to={hasVisited() ? '/missions' : '/story'} replace />
+const LandingScreen = lazy(() => import('./screens/LandingScreen'))
+
+/**
+ * `/` is the front page, open to anyone. Everything else is the dashboard,
+ * which needs a session: without one, the visitor goes to the front page and
+ * its one button, then on to the page they asked for.
+ */
+export default function App() {
+  return (
+    <Routes>
+      <Route
+        path="/"
+        element={
+          <Suspense fallback={<div className="min-h-full bg-canvas" />}>
+            <LandingScreen />
+          </Suspense>
+        }
+      />
+      {/* The four ideas the story told now open the front page. */}
+      <Route path="/story" element={<Navigate to={{ pathname: '/', hash: '#why' }} replace />} />
+      <Route
+        path="/*"
+        element={
+          <RequireSession>
+            <Dashboard />
+          </RequireSession>
+        }
+      />
+    </Routes>
+  )
+}
+
+function RequireSession({ children }: { children: ReactNode }) {
+  const session = useSession((s) => s.session)
+  const location = useLocation()
+  if (!session || session.expiresAt <= Date.now()) {
+    const next = `${location.pathname}${location.search}`
+    return <Navigate to={`/?next=${encodeURIComponent(next)}`} replace />
+  }
+  return <>{children}</>
 }
 
 /**
@@ -39,7 +72,7 @@ function Home() {
  * states the design already has components for: loading with real progress,
  * an error that says what still works, and an empty state that is not a shrug.
  */
-export default function App() {
+function Dashboard() {
   // Every site, candidates and mission targets alike, so a mission's target
   // resolves by id on Site, Compare, Horizon and Blackout. The Map narrows to
   // the candidates itself.
@@ -116,7 +149,6 @@ export default function App() {
   return (
     <AppShell>
       <Routes>
-        <Route path="/" element={<Home />} />
         <Route path="/missions" element={<MissionsScreen />} />
         <Route path="/missions/:id" element={<MissionDetailScreen />} />
         <Route path="/map" element={<MapScreen />} />
@@ -125,7 +157,6 @@ export default function App() {
         <Route path="/horizon" element={<HorizonScreen />} />
         <Route path="/blackout" element={<BlackoutScreen />} />
         <Route path="/report" element={<ReportScreen />} />
-        <Route path="/story" element={<StoryScreen />} />
         <Route path="/states" element={<StatesScreen />} />
         <Route path="*" element={<Navigate to="/missions" replace />} />
       </Routes>

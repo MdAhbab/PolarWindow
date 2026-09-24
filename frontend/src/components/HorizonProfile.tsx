@@ -129,7 +129,7 @@ export function HorizonProfile({
       <line x1={X0} y1={yOf(0)} x2={X1} y2={yOf(0)} stroke="var(--color-terrain-mid)" strokeWidth="1.5" strokeDasharray="7 6" />
       <rect x={X0 + 4} y={yOf(0) - 22} width="330" height="17" fill="var(--color-psr)" />
       <text x={X0 + 8} y={yOf(0) - 9} fontFamily="var(--font-sans)" fontSize="12" fontWeight="600" fill="var(--color-ink-3)">
-        FLAT HORIZON 0° — what a globe-only tool draws
+        FLAT HORIZON 0° — what a tool that ignores terrain draws
       </text>
 
       {/* the bearings that cost the longest gap */}
@@ -179,7 +179,7 @@ export function HorizonProfile({
           fontWeight="600"
           fill="var(--color-earth)"
         >
-          EARTH — a narrow libration loop, not a path
+          EARTH — a small loop in the sky (libration), not a path
         </text>
       )}
 

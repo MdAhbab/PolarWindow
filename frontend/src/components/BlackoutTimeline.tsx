@@ -51,12 +51,12 @@ export function BlackoutTimeline({
       className={className}
       role="img"
       aria-label={
-        `Timeline of ${Math.round(win)} hours. Sunlight has ${metrics.sun.arcs.filter((a) => !a.up).length} ` +
-        `dark periods, the longest ${metrics.sun.longestDownOpen ? 'at least' : 'about'} ` +
-        `${Math.round(metrics.sun.longestDownH)} hours. The Earth link has ` +
-        `${metrics.earth.arcs.filter((a) => !a.up).length} blackouts, the longest ` +
+        `Timeline of ${Math.round(win)} hours. There are ${metrics.sun.arcs.filter((a) => !a.up).length} ` +
+        `nights, the longest ${metrics.sun.longestDownOpen ? 'at least' : 'about'} ` +
+        `${Math.round(metrics.sun.longestDownH)} hours. There are ` +
+        `${metrics.earth.arcs.filter((a) => !a.up).length} times without contact with Earth, the longest ` +
         `${metrics.earth.longestDownOpen ? 'at least' : 'about'} ${Math.round(metrics.earth.longestDownH)} hours. ` +
-        `There are ${metrics.compound.length} periods with neither, the worst about ` +
+        `There are ${metrics.compound.length} times with neither, the longest about ` +
         `${Math.round(metrics.worstCompoundH)} hours. Hatched bands at each crossing show its timing margin.`
       }
     >
@@ -91,7 +91,7 @@ export function BlackoutTimeline({
       <rect x={X0} y="36" width={X1 - X0} height={TRACK_H} fill="none" stroke="var(--color-line)" />
 
       <text x={X0} y="116" fill="var(--color-earth)" fontFamily="var(--font-sans)" fontSize="12" fontWeight="600" letterSpacing="1.4">
-        EARTH LINK
+        CONTACT WITH EARTH
       </text>
       <rect x={X0} y="126" width={X1 - X0} height={TRACK_H} fill="var(--color-earth-fill)" />
       {metrics.earth.arcs
@@ -121,7 +121,7 @@ export function BlackoutTimeline({
       <rect x={X0} y="126" width={X1 - X0} height={TRACK_H} fill="none" stroke="var(--color-line)" />
 
       <text x={X0} y="206" fill="var(--color-alert)" fontFamily="var(--font-sans)" fontSize="12" fontWeight="600" letterSpacing="1.4">
-        NEITHER — DARK AND SILENT AT ONCE
+        NEITHER — DARK AND OUT OF CONTACT
       </text>
       <rect x={X0} y="216" width={X1 - X0} height="32" fill="var(--color-dark-fill)" />
       {metrics.compound.map((c, i) => (
@@ -137,7 +137,7 @@ export function BlackoutTimeline({
           fontSize="13"
           fontWeight="600"
         >
-          ← {hoursWithUnit(worstCompound.hours, 0, cut(worstCompound))}, the worst compound event
+          ← {hoursWithUnit(worstCompound.hours, 0, cut(worstCompound))}, the longest time dark and out of contact
         </text>
       )}
 

@@ -210,7 +210,7 @@ export function MissionsScreen() {
         </p>
       </header>
 
-      <div role="group" aria-label="Filters" className="flex flex-col gap-3 border-b border-line px-4 py-3 lg:px-6">
+      <div role="group" aria-label="Filters" data-guide="missions-filters" className="flex flex-col gap-3 border-b border-line px-4 py-3 lg:px-6">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <span className="text-small font-medium text-ink">Status</span>
           <Segmented label="Status" options={STATUS_OPTIONS} value={status} onChange={setStatus} />
@@ -319,7 +319,7 @@ export function MissionsScreen() {
           >
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line px-4 py-3">
               <SectionLabel as="h3" id="missions-inset-h">
-                South-polar inset · 80°S to the pole
+                Close-up of the south pole · 80°S to the pole
               </SectionLabel>
               <span className="ml-auto text-caption text-ink-3">
                 {polarCount} target{polarCount === 1 ? '' : 's'} inside 80°S
@@ -345,7 +345,7 @@ export function MissionsScreen() {
         </section>
       </div>
 
-      <section className="px-4 pb-6 lg:px-6" aria-label="Programme timeline">
+      <section className="px-4 pb-6 lg:px-6" aria-label="Timeline">
         <ProgrammeTimeline
           missions={shown}
           highlight={highlight}

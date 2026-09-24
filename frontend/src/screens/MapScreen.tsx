@@ -119,125 +119,124 @@ export function MapScreen() {
       </div>
 
       <div className="flex grow flex-col gap-4 p-4 lg:flex-row lg:gap-6 lg:p-6">
-        {face === 'planner' && (
-          <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-[260px]" aria-label="Search and filters">
-            <SearchField value={query} onChange={setQuery} />
+        {/* Search and filters at every detail level: finding a site is not an expert task. */}
+        <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-[260px]" aria-label="Search and filters">
+          <SearchField value={query} onChange={setQuery} />
 
-            <Panel className="flex flex-col gap-5 p-4">
-              <SectionLabel>Filters</SectionLabel>
+          <Panel className="flex flex-col gap-5 p-4">
+            <SectionLabel>Filters</SectionLabel>
 
-              <Slider
-                id="f-sun"
-                label="Sunlight at least"
-                value={minSun}
-                display={`${minSun}%`}
-                min={0}
-                max={100}
-                onChange={setMinSun}
-                tone="bg-sun-fill"
+            <Slider
+              id="f-sun"
+              label="Sunlight at least"
+              value={minSun}
+              display={`${minSun}%`}
+              min={0}
+              max={100}
+              onChange={setMinSun}
+              tone="bg-sun-fill"
+            />
+            <Slider
+              id="f-dark"
+              label="Longest night under"
+              value={Number.isFinite(maxDark) ? maxDark : darkMax || 24}
+              display={Number.isFinite(maxDark) ? `${maxDark} h` : 'Any'}
+              min={24}
+              max={darkMax || 24}
+              step={24}
+              disabled={!darkMax}
+              valueText={Number.isFinite(maxDark) ? `${maxDark} hours` : 'Any length'}
+              onChange={(v) => setMaxDark(v >= darkMax ? Infinity : v)}
+              tone="bg-terrain-high"
+            />
+
+            <div className="flex flex-wrap gap-2 border-t border-line pt-4">
+              <Chip selected={nearPsr} onClick={() => setNearPsr((v) => !v)} tone="neutral">
+                Beside a shadowed floor
+              </Chip>
+              <p className="text-caption leading-caption-tight text-ink-3">
+                Sites on the rim of a named polar crater, next to its permanently shadowed floor.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 border-t border-line pt-4">
+              <Chip selected={showMissions} onClick={() => setShowMissions((v) => !v)} tone="neutral">
+                Mission landing spots
+              </Chip>
+              <p className="text-caption leading-caption-tight text-ink-3">
+                Adds CLPS missions’ landing spots inside 80°S as diamonds. Choose one to see its numbers here.
+              </p>
+            </div>
+          </Panel>
+
+          <Panel className="flex grow flex-col">
+            <div className="flex items-baseline justify-between border-b border-line px-4 py-3">
+              <SectionLabel>Matching sites</SectionLabel>
+                <span className="text-caption text-ink-2" aria-live="polite">
+                {matches.length} of {candidates.length}
+              </span>
+            </div>
+            {matches.length === 0 ? (
+              <EmptyState
+                title="No site clears every filter"
+                detail={
+                  <>
+                    {candidates.length} sites checked. The binding one is <strong className="text-ink">{binding}</strong>.
+                  </>
+                }
+                primary={
+                  Number.isFinite(maxDark)
+                    ? { label: 'Allow a night of any length', onClick: () => setMaxDark(Infinity) }
+                    : undefined
+                }
+                secondary={{
+                  label: 'Clear all filters',
+                  onClick: () => {
+                    setMinSun(0)
+                    setMaxDark(Infinity)
+                    setNearPsr(false)
+                    setQuery('')
+                  },
+                }}
               />
-              <Slider
-                id="f-dark"
-                label="Longest night under"
-                value={Number.isFinite(maxDark) ? maxDark : darkMax || 24}
-                display={Number.isFinite(maxDark) ? `${maxDark} h` : 'Any'}
-                min={24}
-                max={darkMax || 24}
-                step={24}
-                disabled={!darkMax}
-                valueText={Number.isFinite(maxDark) ? `${maxDark} hours` : 'Any length'}
-                onChange={(v) => setMaxDark(v >= darkMax ? Infinity : v)}
-                tone="bg-terrain-high"
-              />
+            ) : (
+              matches.map((s) => {
+                const m = metrics[s.id]
+                const active = s.id === siteId
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setSite(s.id)}
+                    aria-current={active ? 'true' : undefined}
+                    className={`flex flex-col gap-1 border-b border-line px-4 py-3 text-left last:border-b-0 ${
+                      active ? 'bg-inset' : 'hover:bg-inset'
+                    }`}
+                  >
+                    <span className="text-body font-semibold text-ink">
+                      {s.code} — {s.name}
+                    </span>
+                    <span className="font-mono text-tag text-ink-3">
+                      {m
+                        ? `sunlight ${percent(m.sun.fractionUp)} · contact ${percent(m.earth.fractionUp)} · night `
+                        : 'computing…'}
+                      {m && (
+                        <span className={m.sun.longestDownH > SURVIVAL_LIMIT_H ? 'text-alert' : ''}>
+                          {bound(m.sun.longestDownOpen)}
+                          {Math.round(m.sun.longestDownH)} h
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                )
+              })
+            )}
+          </Panel>
+        </aside>
 
-              <div className="flex flex-wrap gap-2 border-t border-line pt-4">
-                <Chip selected={nearPsr} onClick={() => setNearPsr((v) => !v)} tone="neutral">
-                  Beside a shadowed floor
-                </Chip>
-                <p className="text-caption leading-caption-tight text-ink-3">
-                  Sites on the rim of a named polar crater, next to its permanently shadowed floor.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2 border-t border-line pt-4">
-                <Chip selected={showMissions} onClick={() => setShowMissions((v) => !v)} tone="neutral">
-                  Mission targets
-                </Chip>
-                <p className="text-caption leading-caption-tight text-ink-3">
-                  Adds the CLPS targets inside 80°S as diamonds. Choose one to see its numbers here.
-                </p>
-              </div>
-            </Panel>
-
-            <Panel className="flex grow flex-col">
-              <div className="flex items-baseline justify-between border-b border-line px-4 py-3">
-                <SectionLabel>Matching sites</SectionLabel>
-                  <span className="text-caption text-ink-2" aria-live="polite">
-                  {matches.length} of {candidates.length}
-                </span>
-              </div>
-              {matches.length === 0 ? (
-                <EmptyState
-                  title="No site clears every filter"
-                  detail={
-                    <>
-                      {candidates.length} sites checked. The binding one is <strong className="text-ink">{binding}</strong>.
-                    </>
-                  }
-                  primary={
-                    Number.isFinite(maxDark)
-                      ? { label: 'Allow a night of any length', onClick: () => setMaxDark(Infinity) }
-                      : undefined
-                  }
-                  secondary={{
-                    label: 'Clear all filters',
-                    onClick: () => {
-                      setMinSun(0)
-                      setMaxDark(Infinity)
-                      setNearPsr(false)
-                      setQuery('')
-                    },
-                  }}
-                />
-              ) : (
-                matches.map((s) => {
-                  const m = metrics[s.id]
-                  const active = s.id === siteId
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => setSite(s.id)}
-                      aria-current={active ? 'true' : undefined}
-                      className={`flex flex-col gap-1 border-b border-line px-4 py-3 text-left last:border-b-0 ${
-                        active ? 'bg-inset' : 'hover:bg-inset'
-                      }`}
-                    >
-                      <span className="text-body font-semibold text-ink">
-                        {s.code} — {s.name}
-                      </span>
-                      <span className="font-mono text-tag text-ink-3">
-                        {m
-                          ? `sun ${percent(m.sun.fractionUp)} · call home ${percent(m.earth.fractionUp)} · night `
-                          : 'computing…'}
-                        {m && (
-                          <span className={m.sun.longestDownH > SURVIVAL_LIMIT_H ? 'text-alert' : ''}>
-                            {bound(m.sun.longestDownOpen)}
-                            {Math.round(m.sun.longestDownH)} h
-                          </span>
-                        )}
-                      </span>
-                    </button>
-                  )
-                })
-              )}
-            </Panel>
-          </aside>
-        )}
-
-        <section className="flex grow flex-col border border-line bg-panel">
+        <section data-guide="map" className="flex grow flex-col border border-line bg-panel">
           <div className="flex items-center gap-4 border-b border-line px-4 py-3">
-            <SectionLabel>South polar stereographic · 80°S to the pole</SectionLabel>
-            <span className="ml-auto text-caption text-ink-3">relief from LOLA; shadow on a smooth Moon</span>
+            <SectionLabel>The south pole from above · 80°S to the pole</SectionLabel>
+            <span className="ml-auto text-caption text-ink-3">terrain from LOLA; shadow ignores hills</span>
           </div>
 
           <div className="flex grow items-start justify-center p-3">
@@ -256,11 +255,11 @@ export function MapScreen() {
           </div>
 
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line px-4 py-3">
-            <LegendSwatch className="bg-terrain-mid">Relief: LOLA hillshade, 80 m</LegendSwatch>
-            <LegendSwatch className="bg-psr">Sun down at this instant, smooth Moon</LegendSwatch>
+            <LegendSwatch className="bg-terrain-mid">Terrain: laser-altimeter map (LOLA), 80 m detail</LegendSwatch>
+            <LegendSwatch className="bg-psr">Sun below the horizon at this moment, ignoring hills</LegendSwatch>
             <LegendSwatch className="hatch-uncertain">Shadow-line margin</LegendSwatch>
             <p className="ml-auto max-w-[360px] text-right text-caption leading-caption-tight text-ink-3">
-              The shadow line is where the Sun sets on a smooth Moon, from the same SPICE Sun as every number.
+              The shadow line is where the Sun sets if the ground were flat, using the same Sun positions (SPICE) as every number.
               Ridges and craters are not shaded here; each site’s own skyline decides its numbers.
             </p>
           </div>
@@ -302,32 +301,19 @@ export function MapScreen() {
                   to="/clocks"
                   className="inline-flex h-12 items-center justify-center rounded-control bg-sun-fill text-control font-semibold text-on-sun no-underline"
                 >
-                  Open in Site view
+                  Open the site page
                 </Link>
                 <Button
                   onClick={() => useMission.getState().toggleCompare(site.id)}
                   disabled={inCompare && compareCount <= 2}
                   title={inCompare && compareCount <= 2 ? 'A comparison needs at least two sites' : undefined}
                 >
-                  {inCompare ? `Remove from compare (${compareCount} sites)` : `Add to compare (${compareCount} sites)`}
+                  {inCompare ? `Remove from Compare (${compareCount} there now)` : `Add to Compare (${compareCount} there now)`}
                 </Button>
               </div>
             </Panel>
           )}
 
-          <Panel className="mt-auto flex flex-col gap-2 p-4">
-            <SectionLabel>Keyboard</SectionLabel>
-            <p className="font-mono text-tag leading-code text-ink-2">
-              [ ] step the date by 6 h
-              <br />
-              ⇧[ ⇧] step by one day
-              <br />
-              1 2 3 Simple, Explain, Expert
-              <br />
-              T read the current chart as a table
-            </p>
-            <p className="text-caption leading-caption text-ink-3">Single-key shortcuts can be turned off in Settings.</p>
-          </Panel>
         </aside>
       </div>
     </div>

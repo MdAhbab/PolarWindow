@@ -12,6 +12,7 @@
  */
 import type { components, paths } from './schema'
 import { DATA_MODE, SnapshotMiss, fromSnapshot, isSnapshotActive, markLive, snapshotTileUrl } from './snapshot'
+import { currentToken, renewToken } from '../session'
 
 export type Schemas = components['schemas']
 export type SiteListDTO = Schemas['SiteList']
@@ -35,6 +36,9 @@ export type AgentRunListDTO = Schemas['AgentRunList']
 export type AgentRunDTO = Schemas['AgentRunView']
 export type ToolCallDTO = Schemas['ToolCallView']
 export type ProvenanceItemDTO = Schemas['ProvenanceItem']
+export type SettingsDTO = Schemas['SettingsOut']
+export type ModelStateDTO = Schemas['ModelState']
+export type ClearedDTO = Schemas['Cleared']
 
 export const API_BASE =
   (import.meta.env.VITE_API_BASE as string | undefined) ?? 'http://localhost:8000/api/v1'
@@ -125,22 +129,51 @@ export function qs(params: Query | undefined): string {
   return s ? `?${s}` : ''
 }
 
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+
+/** The calls the server checks a session on: the AI panels (they cost quota) and the settings. */
+const SESSION_PATHS = /^\/(agents\/(explain|advise|brief|ask)$|settings|auth\/me)/
+
 async function request<T>(
   path: string,
-  { signal, query, body }: { signal?: AbortSignal; query?: Query; body?: unknown } = {},
+  {
+    signal,
+    query,
+    body,
+    method: asked,
+  }: { signal?: AbortSignal; query?: Query; body?: unknown; method?: Method } = {},
 ): Promise<T> {
-  const method = body ? 'POST' : 'GET'
+  const method: Method = asked ?? (body ? 'POST' : 'GET')
   const pathAndQuery = `${path}${qs(query)}`
   // A snapshot build never calls the network: the saved answers are the data.
   if (DATA_MODE === 'snapshot') return fromSaved<T>(method, pathAndQuery, body)
-  let res: Response
-  try {
-    res = await fetch(`${API_BASE}${pathAndQuery}`, {
+
+  // Only the calls that need a session carry it. Reading is public, and an
+  // Authorization header on a read would make the browser ask permission
+  // (a CORS preflight) before every slider step.
+  const needsSession = SESSION_PATHS.test(path)
+  const send = (token: string | null) => {
+    const headers: Record<string, string> = {}
+    if (body) headers['content-type'] = 'application/json'
+    if (token && needsSession) headers.authorization = `Bearer ${token}`
+    return fetch(`${API_BASE}${pathAndQuery}`, {
       signal,
       method,
-      headers: body ? { 'content-type': 'application/json' } : undefined,
+      headers,
       body: body ? JSON.stringify(body) : undefined,
     })
+  }
+
+  let res: Response
+  try {
+    const token = currentToken()
+    res = await send(token)
+    // The server no longer accepts this session (it restarted with a new
+    // secret, or the session ended). Sign in again once, then retry once.
+    if (res.status === 401 && needsSession) {
+      const fresh = await renewToken()
+      if (fresh) res = await send(fresh)
+    }
   } catch (cause) {
     // An abort is the caller superseding itself, not a failure. Rethrow it so
     // TanStack Query drops the result quietly instead of showing an error.
@@ -168,7 +201,7 @@ async function request<T>(
 }
 
 /** A saved answer, returned exactly as received; a saved error is still an error. */
-async function fromSaved<T>(method: 'GET' | 'POST', pathAndQuery: string, body: unknown): Promise<T> {
+async function fromSaved<T>(method: Method, pathAndQuery: string, body: unknown): Promise<T> {
   let saved: { status: number; json: unknown }
   try {
     saved = await fromSnapshot(method, pathAndQuery, body)
@@ -250,6 +283,18 @@ export const api = {
 
   ask: (body: Schemas['AskRequest'], signal?: AbortSignal) =>
     request<AgentDTO>('/agents/ask', { body, signal }),
+
+  settings: (signal?: AbortSignal) => request<SettingsDTO>('/settings', { signal }),
+
+  saveAi: (body: Schemas['AiSettingsIn']) => request<SettingsDTO>('/settings/ai', { body, method: 'PUT' }),
+
+  resetAi: () => request<SettingsDTO>('/settings/ai/reset', { method: 'POST' }),
+
+  retryModels: () => request<SettingsDTO>('/settings/ai/retry', { method: 'POST' }),
+
+  clearRunLog: () => request<ClearedDTO>('/settings/agent-runs', { method: 'DELETE' }),
+
+  clearCache: () => request<ClearedDTO>('/settings/cache', { method: 'DELETE' }),
 
   agentRuns: (limit = 50, signal?: AbortSignal) =>
     request<AgentRunListDTO>('/agents/runs', { query: { limit }, signal }),

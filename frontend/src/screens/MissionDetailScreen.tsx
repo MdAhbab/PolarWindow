@@ -126,7 +126,7 @@ export function MissionDetailScreen() {
                 lander {u}
               </>
             )}{' '}
-            · task order {m.taskOrder ?? u}
+            · NASA task order {m.taskOrder ?? u}
             {!vehicle && (
               <>
                 {' '}
@@ -161,6 +161,7 @@ export function MissionDetailScreen() {
       {/* The answer: sticky on the right at ≥ 1280. */}
       <section
         aria-labelledby="sun-earth-h"
+        data-guide="sun-earth"
         className="flex min-w-0 flex-col gap-4 xl:sticky xl:top-4 xl:col-span-7 xl:col-start-6 xl:row-span-2 xl:row-start-1"
       >
         <SectionLabel id="sun-earth-h">Sun &amp; Earth at this target</SectionLabel>
@@ -192,7 +193,7 @@ export function MissionDetailScreen() {
                 <span className="font-mono text-small">{coords(m.target.latDeg, m.target.lonDeg)}</span>
               </Row>
               <Row term="Kind">{coordinateKindWords(m.target.coordinateKind, m.targetName)}</Row>
-              <Row term="Landing ellipse">{m.ellipseRing ? 'published; drawn on the Map' : u}</Row>
+              <Row term="Landing area (ellipse)">{m.ellipseRing ? 'published; drawn on the Map' : u}</Row>
               <Row term="Source">
                 <SourceLink url={m.target.sourceUrl} sources={m.sources} what="the coordinates" />
               </Row>
@@ -276,7 +277,7 @@ function Payloads({ mission: m, asOf }: { mission: MissionDetail; asOf: string |
   const name = (p: MissionDetail['payloads'][number]) => (p.acronym ? `${p.name} (${p.acronym})` : p.name)
   return (
     <Panel as="section" className="flex flex-col gap-3 p-5">
-      <SectionLabel>Payload manifest</SectionLabel>
+      <SectionLabel>What it carries</SectionLabel>
       {incomplete && (
         <p className="text-small leading-5 text-uncertain">
           Known to be incomplete: NASA counts more payloads than it names. Only the named ones are listed.
@@ -388,7 +389,7 @@ function SurfaceWindowLine({ mission: m }: { mission: MissionDetail }) {
   }
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-small font-medium text-ink-3">Surface window</span>
+      <span className="text-small font-medium text-ink-3">Time on the surface</span>
       <p className="text-control leading-6 text-ink">{line}</p>
     </div>
   )
@@ -425,19 +426,20 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
           <span className="text-title font-semibold text-ink">{site.name}</span>
           <span className="font-mono text-caption text-ink-3">
             {coords(site.latDeg, site.lonDeg)} ·{' '}
-            {site.elevM !== null ? `elev ${site.elevM.toLocaleString()} m` : 'height not modelled'}
+            {site.elevM !== null ? `height ${site.elevM.toLocaleString()} m` : 'height not known'}
           </span>
         </div>
         <SurfaceWindowLine mission={m} />
-        <SummarySpeaker view={view} />
+        <div data-guide="listen">
+          <SummarySpeaker view={view} />
+        </div>
       </Panel>
 
       {(!terrainModelled || featureCentre || meta?.uncertainty.partialCoverage) && (
         <UncertaintyNote>
           {!terrainModelled && (
             <span className="block">
-              Terrain is not modelled outside 80°S. Sun and Earth are computed against a smooth Moon, so real
-              hills could block more.
+              There is no terrain data outside 80°S, so the Sun and Earth are worked out as if the ground were flat. Real hills could block more.
             </span>
           )}
           {featureCentre && (
@@ -448,8 +450,8 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
           )}
           {terrainModelled && meta?.uncertainty.partialCoverage && (
             <span className="mt-1 block">
-              Terrain covers only {Math.round(meta.uncertainty.coverage * 100)}% of the sampled bearings here;
-              the rest assume a smooth Moon, so these numbers are likely optimistic.
+              Terrain data covers only {Math.round(meta.uncertainty.coverage * 100)}% of the directions around
+              this spot; the rest assume flat ground, so these numbers are likely too hopeful.
             </span>
           )}
         </UncertaintyNote>
@@ -467,7 +469,7 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
         <Panel className="flex flex-col gap-3 p-5">
           <DateSlider compact />
           <div className="flex flex-col gap-1.5">
-            <span className="text-tag font-semibold tracking-caps-md text-sun uppercase">Sun over the window</span>
+            <span className="text-tag font-semibold tracking-caps-md text-sun uppercase">Sunlight over these dates</span>
             <Ribbon
               arcs={metrics.sun.arcs}
               windowStartH={metrics.windowStartH}
@@ -478,7 +480,7 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <span className="text-tag font-semibold tracking-caps-md text-earth uppercase">Time it can call home</span>
+            <span className="text-tag font-semibold tracking-caps-md text-earth uppercase">Contact with Earth over these dates</span>
             <Ribbon
               arcs={metrics.earth.arcs}
               windowStartH={metrics.windowStartH}
@@ -490,7 +492,7 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
         </Panel>
       )}
 
-      <Panel className="flex flex-col gap-3 p-5">
+      <Panel guide="dates" className="flex flex-col gap-3 p-5">
         <SectionLabel as="h3">Change the dates</SectionLabel>
         <WindowPicker siteId={siteId} missionWindow={missionWindow} />
       </Panel>
@@ -503,7 +505,7 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
               navigate('/clocks')
             }}
           >
-            Open in Site view
+            Open the site page
           </Button>
           <Button
             onClick={() => {
@@ -512,7 +514,7 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
             }}
             describedBy="nearest-note"
           >
-            Compare with nearby candidates
+            Compare with nearby sites
           </Button>
           <Button
             onClick={() => {
@@ -520,7 +522,7 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
               navigate('/report')
             }}
           >
-            Hand-over report
+            Printable report
           </Button>
         </div>
         <p id="nearest-note" className="text-caption text-ink-3">

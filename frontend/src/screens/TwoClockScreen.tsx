@@ -5,6 +5,7 @@ import { useFocusedMetrics, useFocusedView } from '../lib/mission'
 import { Sources } from '../components/Sources'
 import { siteById } from '../lib/sites'
 import { DateSlider } from '../components/DateSlider'
+import { SitePicker } from '../components/SitePicker'
 import { TERRAIN_BLOCKER_MIN_EL_DEG, TwoClockRings } from '../components/TwoClockRings'
 import { EducatorGuide } from '../components/EducatorGuide'
 import { KeyNumberRow } from '../components/KeyNumbers'
@@ -16,7 +17,7 @@ import { WindowPicker } from '../components/WindowPicker'
 import { SummarySpeaker } from '../components/SummarySpeaker'
 import { ExplainPanel } from '../components/Agents'
 import { useWindowParams } from '../lib/mission'
-import { bearing, coords, degrees, edgeMargin, hoursWithUnit, humanDuration } from '../lib/format'
+import { bearing, compassWords, coords, degrees, edgeMargin, hoursWithUnit, humanDuration } from '../lib/format'
 
 /**
  * S2, "Site" in the navigation — the signature screen.
@@ -67,10 +68,13 @@ export function TwoClockScreen() {
           <h1 className="text-heading font-semibold tracking-title">{site.name}</h1>
           <div className="font-mono text-caption text-ink-3">
             {coords(site.latDeg, site.lonDeg)} ·{' '}
-            {site.elevM !== null ? `elev ${site.elevM.toLocaleString()} m` : 'height not modelled'}
+            {site.elevM !== null ? `height ${site.elevM.toLocaleString()} m` : 'height not known'}
           </div>
-          <SummarySpeaker view={view} />
+          <div data-guide="listen">
+            <SummarySpeaker view={view} />
+          </div>
         </div>
+        <SitePicker />
         <DateSlider />
       </div>
 
@@ -78,8 +82,7 @@ export function TwoClockScreen() {
         <div className="flex min-w-0 grow flex-col items-center gap-6">
           {!terrainModelled && (
             <UncertaintyNote className="w-full">
-              Terrain is not modelled outside 80°S. Sun and Earth are computed against a smooth Moon, so real
-              hills could block more.
+              There is no terrain data outside 80°S, so the Sun and Earth are worked out as if the ground were flat. Real hills could block more.
             </UncertaintyNote>
           )}
           {view.error ? (
@@ -94,7 +97,7 @@ export function TwoClockScreen() {
             </div>
           )}
           {metrics && !view.error ? (
-            <div className="flex w-full flex-col items-center gap-6 xl:flex-row xl:justify-center">
+            <div data-guide="rings" className="flex w-full flex-col items-center gap-6 xl:flex-row xl:justify-center">
               <TwoClockRings
                 metrics={metrics}
                 cursorH={cursorH}
@@ -108,13 +111,13 @@ export function TwoClockScreen() {
             <div className="flex max-w-[520px] flex-col items-center gap-4 text-center">
               <p className="text-title leading-7 text-ink text-pretty">
                 {byTerrain
-                  ? `At this spot on the Moon, one ridge ${bearing(worst.blockedByBearingDeg ?? 0)} of here switches off the sunlight for ${humanDuration(worst.hours, 'public', worstOpen)}${nightMargin}.`
+                  ? `At this spot on the Moon, one ridge to the ${compassWords(worst.blockedByBearingDeg ?? 0)} switches off the sunlight for ${humanDuration(worst.hours, 'public', worstOpen)}${nightMargin}.`
                   : `At this spot on the Moon, the Sun dips below the horizon for ${humanDuration(worst.hours, 'public', worstOpen)}${nightMargin}.`}{' '}
-                {worstOpen ? 'This window cuts the night short, so the real one is longer. ' : ''}A lander
+                {worstOpen ? 'These dates cut the night short, so the real one is longer. ' : ''}A lander
                 has to survive that on batteries alone.
               </p>
               <Link
-                to="/story"
+                to="/#why"
                 className="inline-flex h-12 items-center rounded-control bg-sun-fill px-6 text-control font-semibold text-on-sun no-underline"
               >
                 Why is that?
@@ -122,7 +125,7 @@ export function TwoClockScreen() {
             </div>
           ) : face === 'public' && metrics && !worst && !view.error ? (
             <p className="max-w-[520px] text-center text-title leading-7 text-ink text-pretty">
-              In this window the Sun never sets here: the whole stretch is daylight. Choose a longer window
+              On these dates the Sun never sets here: the whole stretch is daylight. Choose longer dates
               below to see this spot’s nights.
             </p>
           ) : null}
@@ -132,10 +135,10 @@ export function TwoClockScreen() {
               See the skyline →
             </Link>
             <Link to="/blackout" className="inline-flex h-11 items-center text-body font-semibold">
-              Plan around the blackouts →
+              Plan for time without contact →
             </Link>
             <Link to="/report" className="inline-flex h-11 items-center text-body font-semibold">
-              Hand-over report →
+              Printable report →
             </Link>
           </div>
 
@@ -166,7 +169,7 @@ export function TwoClockScreen() {
                     <p className="text-small leading-5 text-ink">
                       {byTerrain ? (
                         <>
-                          The {hoursWithUnit(worst.hours, 0, worstOpen)} gap is terrain at bearing{' '}
+                          The {hoursWithUnit(worst.hours, 0, worstOpen)} night is terrain at bearing{' '}
                           {bearing(worst.blockedByBearingDeg ?? 0)}, standing{' '}
                           {degrees(worst.blockedByElDeg ?? 0, 2)} above the flat horizon —{' '}
                           {Math.round(
@@ -178,46 +181,46 @@ export function TwoClockScreen() {
                         </>
                       ) : (
                         <>
-                          The {hoursWithUnit(worst.hours, 0, worstOpen)} gap is the Sun below the horizon, not
+                          The {hoursWithUnit(worst.hours, 0, worstOpen)} night is the Sun below the horizon, not
                           a ridge: no terrain stands above level along its path.
                         </>
                       )}
-                      {worstOpen ? ' The window cuts it short, so the night itself is longer.' : ''}
+                      {worstOpen ? ' These dates cut it short, so the night itself is longer.' : ''}
                     </p>
                   </div>
                   <div className="flex gap-2.5">
                     <div className="w-[3px] shrink-0 bg-earth-fill" />
                     <p className="text-small leading-5 text-ink">
                       {!blackout ? (
-                        'Earth stays above this site’s skyline for the whole window.'
+                        'Earth stays above this site’s skyline on all of these dates.'
                       ) : blackoutByTerrain ? (
                         <>
-                          The {hoursWithUnit(blackout.hours, 0, blackoutOpen)} blackout is terrain at bearing{' '}
+                          The {hoursWithUnit(blackout.hours, 0, blackoutOpen)} without contact is terrain at bearing{' '}
                           {bearing(blackout.blockedByBearingDeg ?? 0)}, standing{' '}
                           {degrees(blackout.blockedByElDeg ?? 0, 2)} above the flat horizon: Earth sinks low with
-                          libration and a ridge finishes the job.
+                          the Moon’s wobble (libration) and a ridge finishes the job.
                         </>
                       ) : (
                         <>
-                          The {hoursWithUnit(blackout.hours, 0, blackoutOpen)} blackout is Earth below the
-                          horizon itself, as the Moon’s libration carries it down; no ridge stands above level
+                          The {hoursWithUnit(blackout.hours, 0, blackoutOpen)} without contact is Earth below the
+                          horizon itself, as the Moon’s wobble (libration) carries it down; no ridge stands above level
                           along its path.
                         </>
                       )}
                     </p>
                   </div>
                   <Link to="/horizon" className="text-small font-semibold">
-                    See it on the horizon profile →
+                    See it on the skyline →
                   </Link>
                 </>
               ) : view.error ? (
-                <p className="text-small text-ink-2">Not available: the numbers for this window did not load.</p>
+                <p className="text-small text-ink-2">Not available: the numbers for these dates did not load.</p>
               ) : metrics ? (
                 // A window with no dark stretch at all is an answer, not a
                 // pending state: nothing blocks the Sun in it.
                 <p className="text-small leading-5 text-ink">
-                  The Sun stays above this site’s skyline for the whole window, so nothing blocks it here.
-                  Choose a longer window to find its nights.
+                  The Sun stays above this site’s skyline on all of these dates, so nothing blocks it here.
+                  Choose longer dates to find its nights.
                 </p>
               ) : (
                 <p className="text-small text-ink-3">Computing the skyline…</p>
@@ -236,22 +239,22 @@ export function TwoClockScreen() {
               <UncertaintyNote>
                 {terrainModelled
                   ? `Terrain heights carry up to ±${view.meta.uncertainty.demVerticalErrorM} m of vertical error.`
-                  : 'Terrain is not modelled here: the skyline is a smooth Moon, so real hills could block more.'}
+                  : 'There is no terrain data here, so the skyline is a flat horizon; real hills could block more.'}
                 {worst?.grazing ? (
                   <>
-                    {' '}The longest gap has a crossing too shallow to time, so it is marked{' '}
-                    <span className="font-mono text-ink">grazing</span> rather than given a false
-                    precision.
+                    {' '}The longest gap starts or ends with the Sun only skimming the skyline, too shallow
+                    to time, so it is marked <span className="font-mono text-ink">grazing</span> rather than
+                    given a false precision.
                   </>
                 ) : (
                   <>
                     {' '}The longest gap carries{' '}
                     <span className="font-mono text-ink">{edgeMargin(worst, terrainModelled)}</span>{' '}
-                    here; a gap carries both of its edges.
+                    here, counting the uncertainty at both of its ends.
                   </>
                 )}
                 {view.meta.uncertainty.partialCoverage && view.meta.uncertainty.terrainModelled
-                  ? ` Terrain covers only ${(view.meta.uncertainty.coverage * 100).toFixed(0)}% of the sampled bearings; the rest assume a smooth Moon and are likely optimistic.`
+                  ? ` Terrain data covers only ${(view.meta.uncertainty.coverage * 100).toFixed(0)}% of the directions around this site; the rest assume flat ground, so these numbers are likely too hopeful.`
                   : ''}
               </UncertaintyNote>
             )}
@@ -260,10 +263,10 @@ export function TwoClockScreen() {
               <SectionLabel>Every chart is also a table</SectionLabel>
               <Button onClick={toggleTable}>
                 <Icon name="table" size={16} strokeWidth={1.7} />
-                {showTable ? 'Hide the arc table' : `Read the ${metrics ? metrics.sun.arcs.length + metrics.earth.arcs.length : ''} arcs as a table`}
+                {showTable ? 'Hide the table' : `Show the ${metrics ? metrics.sun.arcs.length + metrics.earth.arcs.length : ''} stretches as a table`}
               </Button>
               <p className="text-caption leading-caption text-ink-3">
-                Press T anywhere. Each arc announces its start, end, length and what blocks it.
+                Press T anywhere. Each row gives a stretch’s start, end, length and what blocks it.
               </p>
             </Panel>
 
@@ -286,10 +289,10 @@ export function TwoClockScreen() {
 function RingKey() {
   return (
     <div className="flex w-full flex-row flex-wrap gap-6 xl:w-[210px] xl:flex-col">
-      <KeyItem swatch={<span className="h-3.5 w-6 bg-sun-fill" />} title="Outer — Sun" tone="text-sun">
+      <KeyItem swatch={<span className="h-3.5 w-6 bg-sun-fill" />} title="Outer ring — Sun" tone="text-sun">
         Filled where the Sun is above this site’s own horizon.
       </KeyItem>
-      <KeyItem swatch={<span className="h-3.5 w-6 bg-earth-fill" />} title="Inner — Earth" tone="text-earth">
+      <KeyItem swatch={<span className="h-3.5 w-6 bg-earth-fill" />} title="Inner ring — Earth" tone="text-earth">
         Filled where Earth is above it.
       </KeyItem>
       <KeyItem
@@ -299,7 +302,7 @@ function RingKey() {
       >
         Below the horizon, or behind terrain.
       </KeyItem>
-      <KeyItem swatch={<span className="h-[3px] w-6 bg-alert" />} title="Longest dark gap" tone="text-alert" />
+      <KeyItem swatch={<span className="h-[3px] w-6 bg-alert" />} title="Longest night" tone="text-alert" />
       <KeyItem swatch={<span className="h-[3px] w-6 bg-ink" />} title="Now" tone="text-ink" />
     </div>
   )

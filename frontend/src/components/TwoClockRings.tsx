@@ -139,10 +139,10 @@ export function TwoClockRings({
       </g>
       <g fill="var(--color-ink-3)" fontFamily="var(--font-mono)" fontSize="12">
         <text x={CX} y="18" textAnchor="middle">
-          d0
+          day 0
         </text>
-        <text x="500" y={CY + 4} textAnchor="end">
-          d{Math.round(win / 96)}
+        <text x="518" y={CY - 12} textAnchor="end">
+          day {Math.round(win / 96)}
         </text>
       </g>
 
@@ -333,7 +333,7 @@ function Gauge({ x, label, sample, tone }: { x: number; label: string; sample?: 
         fontFamily="var(--font-sans)"
         fontSize="11"
       >
-        {sample ? (up ? 'visible' : `behind ${bearing(sample.azDeg)} skyline`) : 'computing'}
+        {sample ? (up ? 'visible' : 'behind the skyline') : 'computing'}
       </text>
     </g>
   )

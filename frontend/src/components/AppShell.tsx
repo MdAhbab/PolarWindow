@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { useMission } from '../lib/store'
 import { useKeyboardMap } from '../hooks/useKeyboard'
@@ -9,20 +9,23 @@ import { useProvenance } from '../lib/useProvenance'
 import { IconButton, SampleDataBadge, Segmented, SvgDefs } from './ui'
 import { RunLogDrawer } from './RunLog'
 import { SettingsSheet } from './SettingsSheet'
+import { GuideBar } from './GuideBar'
+import { useGuide } from '../lib/guide'
 import type { Face } from '../lib/types'
 import { ESTIMATES, isoDateWords } from '../lib/format'
 import { snapshotCapturedAt } from '../lib/api/snapshot'
 
 /**
- * The five tabs (§10.1), in order. Horizon is reached from Site ("See the
- * skyline") and Report from Site and Mission detail; both keep their routes.
+ * The five tabs (§10.1), in order. The skyline page is reached from Site
+ * ("See the skyline") and the report from Site and Mission detail; both keep
+ * their routes.
  */
 const NAV = [
   { to: '/missions', label: 'Missions', icon: 'pin' as const },
   { to: '/map', label: 'Map', icon: 'layers' as const },
   { to: '/clocks', label: 'Site', icon: 'clocks' as const },
   { to: '/compare', label: 'Compare', icon: 'compare' as const },
-  { to: '/blackout', label: 'Blackout', icon: 'gap' as const },
+  { to: '/blackout', label: 'Plan', icon: 'gap' as const },
 ]
 
 const TITLES: Record<string, string> = {
@@ -30,11 +33,10 @@ const TITLES: Record<string, string> = {
   '/map': 'Map',
   '/clocks': 'Site',
   '/compare': 'Compare',
-  '/horizon': 'Horizon',
-  '/blackout': 'Blackout',
-  '/report': 'Report',
-  '/story': 'Why the pole is hard',
-  '/states': 'States',
+  '/horizon': 'Skyline',
+  '/blackout': 'Plan for time without contact',
+  '/report': 'Printable report',
+  '/states': 'Screen states',
 }
 
 /**
@@ -75,20 +77,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   const capturedAt = snapshotCapturedAt()
   // Selectors, not the whole store: during M1 the cursor changes sixty times a
   // second, and a whole-store subscription re-rendered the shell on each one.
-  const { face, setFace, theme, setTheme, motion, setMotion, openRunLog, settingsOpen, setSettingsOpen } =
-    useMission(
-      useShallow((s) => ({
-        face: s.face,
-        setFace: s.setFace,
-        theme: s.theme,
-        setTheme: s.setTheme,
-        motion: s.motion,
-        setMotion: s.setMotion,
-        openRunLog: s.openRunLog,
-        settingsOpen: s.settingsOpen,
-        setSettingsOpen: s.setSettingsOpen,
-      })),
-    )
+  const { face, setFace, openRunLog, settingsOpen, setSettingsOpen } = useMission(
+    useShallow((s) => ({
+      face: s.face,
+      setFace: s.setFace,
+      openRunLog: s.openRunLog,
+      settingsOpen: s.settingsOpen,
+      setSettingsOpen: s.setSettingsOpen,
+    })),
+  )
+  const guideOpen = useGuide((g) => g.open)
+  const setGuideOpen = useGuide((g) => g.setOpen)
   useKeyboardMap({ reducedMotion: useReducedMotion() })
   useRouteFocus()
 
@@ -130,38 +129,27 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Below lg: logo and the two sheet buttons on the first line, the
             provenance badge and the faces on the second. */}
         <div className="order-3 flex w-full flex-wrap items-center gap-x-3 gap-y-2 lg:order-none lg:ml-auto lg:w-auto lg:justify-end">
-          <Link to="/story" className="hidden h-12 items-center text-body font-semibold lg:inline-flex">
-            Start here
-          </Link>
           {/* Once, at every width (U12): the one element that says how much to
               trust everything else. */}
           <SampleDataBadge
             provenance={provenance}
             note={provenance === 'snapshot' && capturedAt ? `Saved ${isoDateWords(capturedAt)}.` : undefined}
           />
-          <Segmented options={FACES} value={face} onChange={setFace} label="Detail" pill />
-          <button
-            type="button"
-            aria-pressed={theme === 'light'}
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="hidden h-12 rounded-control border border-line-strong px-3 text-small font-semibold text-ink hover:bg-inset xl:inline-flex xl:items-center"
-            aria-label={theme === 'dark' ? 'Switch to the light theme' : 'Switch to the dark theme'}
-            title="Both themes pass contrast. The light one is for print and projection."
-          >
-            {theme === 'dark' ? 'Light' : 'Dark'}
-          </button>
-          <button
-            type="button"
-            aria-pressed={motion === 'reduced'}
-            onClick={() => setMotion(motion === 'full' ? 'reduced' : 'full')}
-            className="hidden h-12 rounded-control border border-line-strong px-3 text-small font-semibold text-ink hover:bg-inset xl:inline-flex xl:items-center"
-            aria-label={motion === 'full' ? 'Reduce motion' : 'Turn motion back on'}
-            title="Every animation has a named static fallback."
-          >
-            {motion === 'full' ? 'Reduce motion' : 'Motion on'}
-          </button>
+          <div data-guide="detail">
+            <Segmented options={FACES} value={face} onChange={setFace} label="Detail" pill />
+          </div>
         </div>
         <div className="ml-auto flex items-center gap-2 lg:ml-0">
+          <button
+            type="button"
+            aria-pressed={guideOpen}
+            onClick={() => setGuideOpen(!guideOpen)}
+            title={guideOpen ? 'Hide the guide' : 'Show the guide: a short tour of every feature'}
+            className="inline-flex h-12 items-center gap-2 rounded-control border border-line-strong px-3 text-body font-semibold text-ink hover:bg-inset"
+          >
+            <Icon name="info" size={18} aria-hidden="true" />
+            Guide
+          </button>
           <IconButton
             name="log"
             label="AI activity log"
@@ -184,8 +172,13 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      {/* pb-16 below lg: the fixed tab bar must never cover the last line. */}
-      <main id="pw-main" tabIndex={-1} className="flex grow flex-col pb-16 outline-none lg:pb-0">
+      {/* Below lg the fixed tab bar, and at every width the guide bar when it
+          is open, must never cover the last line. */}
+      <main
+        id="pw-main"
+        tabIndex={-1}
+        className="flex grow flex-col pb-[calc(4rem+var(--pw-guide-h,0px))] outline-none lg:pb-[var(--pw-guide-h,0px)]"
+      >
         {children}
         {/* U13: one line per screen instead of "≈" before every value. */}
         <p className="border-t border-line px-4 py-3 text-caption leading-caption text-ink-3 lg:px-6">{ESTIMATES}</p>
@@ -214,6 +207,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         ))}
       </nav>
 
+      <GuideBar />
       <RunLogDrawer />
       <SettingsSheet />
     </div>

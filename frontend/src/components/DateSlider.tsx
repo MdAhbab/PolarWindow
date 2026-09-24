@@ -55,7 +55,7 @@ export function DateSlider({ compact = false }: { compact?: boolean }) {
     <div className="flex grow flex-col gap-2">
       <div className="flex items-baseline justify-between gap-4">
         <label htmlFor="pw-date" className="text-caption font-semibold tracking-caps text-ink-3 uppercase">
-          Window — {lunarDay ? `one lunar day, ${Math.round(windowHours)} h` : spanWords(windowHours)}
+          Dates — {lunarDay ? `one lunar day, ${Math.round(windowHours)} hours` : spanWords(windowHours)}
         </label>
         <span className="text-right font-mono text-caption text-ink-2">
           {shortDate(msFromModelH(windowStartH))} → {shortDate(msFromModelH(windowStartH + windowHours))}
@@ -67,13 +67,13 @@ export function DateSlider({ compact = false }: { compact?: boolean }) {
         {!compact && (
           <button
             type="button"
-            aria-label={playing ? 'Pause the window' : 'Play the window'}
+            aria-label={playing ? 'Pause' : 'Play through the dates'}
             onClick={() => setPlaying(!playing)}
             disabled={reduced}
             title={
               reduced
                 ? 'Play is off under reduced motion — use [ and ] to step'
-                : 'Play the window (Space)'
+                : 'Play through the dates (Space)'
             }
             className="inline-flex size-12 shrink-0 items-center justify-center rounded-control border border-line-strong text-ink hover:bg-inset disabled:text-ink-3"
           >

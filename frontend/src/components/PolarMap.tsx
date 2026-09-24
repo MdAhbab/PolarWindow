@@ -291,13 +291,13 @@ export function PolarMap({
   const canZoom = (g: typeof sites) => poleView && view === 'region' && g.every((m) => 90 + m.site.latDeg < poleColat)
 
   const hiddenSites = shown.length - sites.length
-  const summary = `South polar map, ${VIEWS[view].name}, over LOLA hillshade relief. ${sites.length} candidate site${
+  const summary = `South pole map, ${VIEWS[view].name}, over the LOLA terrain map. ${sites.length} candidate site${
     sites.length === 1 ? '' : 's'
   }${pins.length ? ` and ${pins.length} mission target${pins.length === 1 ? '' : 's'}` : ''} shown${
     hiddenSites > 0 ? `; ${hiddenSites} more lie outside this close-up` : ''
   }. ${
     sun
-      ? 'The shaded region is where the Sun is down on a smooth Moon at this moment; ridges and craters are not shaded.'
+      ? 'The shaded region is where the Sun is below a flat horizon at this moment; the shadows of ridges and craters are not included.'
       : 'The Sun position is still loading, so no shadow is drawn.'
   }`
 
@@ -528,7 +528,7 @@ export function PolarMap({
               letterSpacing="1.2"
               fill="var(--color-ink-2)"
             >
-              RELIEF: LOLA HILLSHADE
+              TERRAIN: LOLA
             </text>
             <text
               x="566"
@@ -540,7 +540,7 @@ export function PolarMap({
               letterSpacing="1.2"
               fill="var(--color-ink-2)"
             >
-              SHADOW: SMOOTH MOON
+              SHADOW: HILLS NOT COUNTED
             </text>
           </g>
         </svg>

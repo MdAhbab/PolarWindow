@@ -12,7 +12,6 @@ import {
   publisherFor,
 } from './missions'
 import { windowParamsFor, stepForHours } from './mission'
-import { hasVisited, markVisited } from './firstVisit'
 import type { Site } from './types'
 
 const list = listFixture as unknown as MissionListDTO
@@ -83,29 +82,6 @@ describe('window sampling step', () => {
       expect(w.stepS).toBeGreaterThanOrEqual(300)
       expect(w.stepS).toBeLessThanOrEqual(7200)
     }
-  })
-})
-
-describe('first visit (U1)', () => {
-  it('treats a visitor with no flag as new, and a marked one as returning', () => {
-    const store = new Map<string, string>()
-    const s = { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => void store.set(k, v) }
-    expect(hasVisited(s)).toBe(false)
-    markVisited(s)
-    expect(hasVisited(s)).toBe(true)
-  })
-
-  it('sends a visitor to Missions when storage throws, and never throws itself', () => {
-    const broken = {
-      getItem: () => {
-        throw new Error('SecurityError')
-      },
-      setItem: () => {
-        throw new Error('QuotaExceededError')
-      },
-    }
-    expect(hasVisited(broken)).toBe(true)
-    expect(() => markVisited(broken)).not.toThrow()
   })
 })
 

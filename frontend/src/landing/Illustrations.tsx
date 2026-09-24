@@ -1,119 +1,10 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { markVisited } from '../lib/firstVisit'
-import { useMission } from '../lib/store'
-import { useFocusedMetrics } from '../lib/mission'
-import { siteById } from '../lib/sites'
-import { Button } from '../components/ui'
-import { bearing, compass, humanDuration } from '../lib/format'
-import { TERRAIN_BLOCKER_MIN_EL_DEG } from '../components/TwoClockRings'
+/**
+ * The four drawings the front page shows beside its four ideas. Schematic, not
+ * to scale, and labelled as drawings. They are also what shows when WebGL is
+ * not available or motion is reduced.
+ */
 
-/** S7 — the public face. One idea per panel, and no caveat dropped to make a
- *  sentence shorter. */
-export function StoryScreen() {
-  const [step, setStep] = useState(0)
-  // Having seen the story is what makes the next visit start on Missions (U1).
-  useEffect(() => markVisited(), [])
-  const metrics = useFocusedMetrics()
-  const site = siteById(useMission((s) => s.siteId))
-
-  const night = metrics?.sun.longestDownArc
-  const nightText = night
-    ? humanDuration(night.hours, 'public', metrics?.sun.longestDownOpen)
-    : 'days at a time'
-  const blockAz = night?.blockedByBearingDeg ?? 0
-  const byTerrain =
-    night?.blockedByElDeg !== undefined && night.blockedByElDeg > TERRAIN_BLOCKER_MIN_EL_DEG
-
-  const panels = [
-    {
-      kicker: 'One',
-      title: 'The Sun never climbs',
-      body: 'At the Moon’s pole the Sun does not rise and set overhead. It circles the horizon, staying within a degree or two of it, all month long.',
-      art: <SunPathArt />,
-    },
-    {
-      kicker: 'Two',
-      title: 'So a hill can switch off the Sun',
-      body: byTerrain
-        ? `Sunlight that low is easy to block. At ${site.name.split(',')[0]}, terrain to the ${compass(blockAz)} — bearing ${bearing(blockAz)} — puts the ground in shadow for ${nightText}, every single month.`
-        : `Sunlight that low is easy to lose. At ${site.name.split(',')[0]} the Sun dips below the horizon itself for ${nightText}; at other spots near here a ridge does it instead.`,
-      art: <RidgeArt />,
-    },
-    {
-      kicker: 'Three',
-      title: 'Earth is low down there too',
-      body: 'Radio needs a straight line. From the pole, Earth also hangs near the horizon and swings above and below it as the Moon wobbles — so there are days when nothing can call home.',
-      art: <EarthArt />,
-    },
-    {
-      kicker: 'Four',
-      title: 'The ice is in the dark. The power is in the light.',
-      body: 'Water ice only survives where the Sun has never reached, in crater floors dark for billions of years. Solar power only works where it has. They are never the same place.',
-      art: <IceArt />,
-    },
-  ]
-
-  const p = panels[step]
-
-  return (
-    <div className="mx-auto flex w-full max-w-[1100px] grow flex-col gap-6 px-4 py-6 lg:px-8">
-      <div className="flex items-end justify-between gap-6 border-b border-line pb-4">
-        <div className="flex flex-col gap-2">
-          <div className="text-small font-semibold tracking-caps-lg text-ink-3 uppercase">
-            Why is the Moon’s south pole hard?
-          </div>
-          <h1 className="text-display-sm leading-10 font-semibold tracking-display lg:text-display lg:leading-display">
-            {p.title}
-          </h1>
-        </div>
-        <Link to="/missions" className="hidden h-12 shrink-0 items-center text-body font-semibold sm:inline-flex">
-          Skip to the missions →
-        </Link>
-      </div>
-
-      <div className="flex gap-1.5" aria-hidden="true">
-        {panels.map((_, i) => (
-          <span key={i} className={`h-1.5 grow ${i <= step ? 'bg-sun-fill' : 'bg-line-strong'}`} />
-        ))}
-      </div>
-
-      <div className="flex grow flex-col items-center gap-8 lg:flex-row lg:gap-14">
-        <div className="w-full max-w-[560px] shrink-0 border border-line bg-panel p-6">{p.art}</div>
-        <div className="flex flex-col gap-5">
-          <div className="text-caption font-semibold tracking-caps-lg text-sun uppercase">{p.kicker} of four</div>
-          <p className="max-w-[520px] text-large leading-8 text-ink text-pretty">{p.body}</p>
-          {step === panels.length - 1 && (
-            <p className="max-w-[520px] text-lede leading-7 text-ink-2">
-              Which is why where you land matters down to about 500 metres — and why this tool refuses to
-              give a site a single score.
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="flex gap-3 border-t border-line pt-5">
-        <Button onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0}>
-          Back
-        </Button>
-        {step < panels.length - 1 ? (
-          <Button variant="primary" className="grow sm:grow-0" onClick={() => setStep((s) => s + 1)}>
-            Next — {panels[step + 1].title.toLowerCase()}
-          </Button>
-        ) : (
-          <Link
-            to="/missions"
-            className="inline-flex h-12 grow items-center justify-center rounded-control bg-sun-fill px-6 text-control font-semibold text-on-sun no-underline sm:grow-0"
-          >
-            Browse CLPS missions
-          </Link>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function SunPathArt() {
+export function SunPathArt() {
   return (
     <svg viewBox="0 0 320 220" className="w-full" role="img" aria-label="At the equator the Sun climbs in a high arc overhead. At the pole it circles just above the horizon.">
       <text x="78" y="18" textAnchor="middle" fill="var(--color-ink-3)" fontSize="12" fontWeight="600" letterSpacing="1.2">AT THE EQUATOR</text>
@@ -134,7 +25,7 @@ function SunPathArt() {
   )
 }
 
-function RidgeArt() {
+export function RidgeArt() {
   return (
     <svg viewBox="0 0 320 220" className="w-full" role="img" aria-label="A lander on flat ground beside a ridge. When the Sun passes behind the ridge, a long shadow covers it.">
       <circle cx="34" cy="62" r="14" fill="var(--color-sun-fill)" />
@@ -155,7 +46,7 @@ function RidgeArt() {
   )
 }
 
-function EarthArt() {
+export function EarthArt() {
   return (
     <svg viewBox="0 0 320 220" className="w-full" role="img" aria-label="Earth sits low over the horizon. One radio path is clear; a ridge blocks another.">
       <circle cx="46" cy="72" r="22" fill="var(--color-earth-fill)" />
@@ -180,7 +71,7 @@ function EarthArt() {
   )
 }
 
-function IceArt() {
+export function IceArt() {
   return (
     <svg viewBox="0 0 320 220" className="w-full" role="img" aria-label="A crater floor in permanent shadow holds ice; a sunlit ridge a few kilometres away holds the power.">
       <path d="M0 150 H320" stroke="var(--color-terrain-high)" strokeWidth="2" />

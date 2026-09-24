@@ -26,6 +26,7 @@ import {
   type CompareDTO,
   type MetricsDTO,
   type Schemas,
+  type SettingsDTO,
   type TimelineDTO,
   type WindowsDTO,
 } from './client'
@@ -111,6 +112,7 @@ export const keys = {
   compare: (siteIds: string[], w: WindowParams, rankBy: string) =>
     ['compare', engineVersion, [...siteIds].sort(), ...windowKey(w), rankBy] as const,
   health: () => ['health'] as const,
+  settings: () => ['settings'] as const,
 }
 
 // ---------------------------------------------------------------------------
@@ -524,6 +526,40 @@ export function useAgentRuns(enabled = true) {
     staleTime: 0,
     queryFn: ({ signal }) => api.agentRuns(50, signal),
   })
+}
+
+// ---------------------------------------------------------------------------
+// The project manager's settings
+// ---------------------------------------------------------------------------
+
+export function useProjectSettings(enabled: boolean) {
+  return useQuery({
+    queryKey: keys.settings(),
+    enabled,
+    staleTime: 0,
+    retry: false,
+    queryFn: ({ signal }) => api.settings(signal),
+  })
+}
+
+/**
+ * The settings' actions. Each one answers with the new state (or what it
+ * removed), so the panel shows the server's word, not a guess.
+ */
+export function useSettingsActions() {
+  const client = useQueryClient()
+  const settle = (data: SettingsDTO) => client.setQueryData(keys.settings(), data)
+  const refresh = () => {
+    void client.invalidateQueries({ queryKey: keys.settings() })
+    void client.invalidateQueries({ queryKey: keys.agentRuns() })
+  }
+  return {
+    saveAi: useMutation({ mutationFn: api.saveAi, onSuccess: settle }),
+    resetAi: useMutation({ mutationFn: api.resetAi, onSuccess: settle }),
+    retryModels: useMutation({ mutationFn: api.retryModels, onSuccess: settle }),
+    clearRunLog: useMutation({ mutationFn: api.clearRunLog, onSettled: refresh }),
+    clearCache: useMutation({ mutationFn: api.clearCache, onSettled: refresh }),
+  }
 }
 
 // ---------------------------------------------------------------------------

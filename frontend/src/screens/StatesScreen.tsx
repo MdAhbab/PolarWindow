@@ -54,7 +54,7 @@ export function StatesScreen() {
         </Panel>
 
         <Panel className="flex flex-col">
-          <Head kind="Loading" note="ray-casting 360 bearings" />
+          <Head kind="Loading" note="measuring the skyline in 360 directions" />
           <div className="grow bg-canvas p-5">
             <LoadingPanel />
             <div className="mt-4">
@@ -78,7 +78,7 @@ export function StatesScreen() {
                   every number that does not depend on Earth is still live.
                 </>
               }
-              stillWorks="Sunlight, the dark gap, the map, the horizon profile, and compare on the Sun metrics. The time it can call home, and the longest time it can’t, go blank — not zero."
+              stillWorks="Sunlight, the dark gap, the map, the horizon profile, and compare on the Sun metrics. Time in contact with Earth, and the longest time without it, go blank — not zero."
             />
             <div className="mt-4 flex gap-3">
               <Button

@@ -4,6 +4,7 @@ import { useFocusedView } from '../lib/mission'
 import { siteById } from '../lib/sites'
 import { BlackoutTimeline } from '../components/BlackoutTimeline'
 import { DateSlider } from '../components/DateSlider'
+import { SitePicker } from '../components/SitePicker'
 import { LoadingPanel, ProblemPanel, UncertaintyNote } from '../components/States'
 import { Button, Panel, ScrollRegion, SectionLabel } from '../components/ui'
 import { Icon } from '../components/Icon'
@@ -52,12 +53,15 @@ export function BlackoutScreen() {
     <div className="flex grow flex-col">
       <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-line px-4 py-4 lg:px-6">
         <div className="flex min-w-[260px] flex-col gap-1">
-          <h1 className="text-heading font-semibold">Blackout planner — {site.code}</h1>
+          <h1 className="text-heading font-semibold">Plan for time without contact — {site.name}</h1>
           <div className="font-mono text-caption text-ink-3">
-            {Math.round(metrics.windowHours)} h · {blackouts.length} blackouts ·{' '}
-            {metrics.sun.arcs.filter((a) => !a.up).length} dark periods
+            {Math.round(metrics.windowHours)} hours · {blackouts.length}{' '}
+            {blackouts.length === 1 ? 'time' : 'times'} without contact ·{' '}
+            {metrics.sun.arcs.filter((a) => !a.up).length}{' '}
+            {metrics.sun.arcs.filter((a) => !a.up).length === 1 ? 'night' : 'nights'}
           </div>
         </div>
+        <SitePicker />
         <DateSlider />
       </div>
 
@@ -68,13 +72,12 @@ export function BlackoutScreen() {
         <div className="flex min-w-0 grow flex-col gap-6">
           {!terrainModelled && (
             <UncertaintyNote>
-              Terrain is not modelled outside 80°S. Sun and Earth are computed against a smooth Moon, so real
-              hills could block more.
+              There is no terrain data outside 80°S, so the Sun and Earth are worked out as if the ground were flat. Real hills could block more.
             </UncertaintyNote>
           )}
           <Panel className="flex flex-col">
             <div className="flex items-center gap-4 border-b border-line px-4 py-3">
-              <SectionLabel>The mission window, hour by hour</SectionLabel>
+              <SectionLabel>These dates, hour by hour</SectionLabel>
               <span className="ml-auto font-mono text-tag text-ink-3">
                 {Math.round(metrics.windowHours)} h
               </span>
@@ -84,20 +87,20 @@ export function BlackoutScreen() {
             </ScrollRegion>
           </Panel>
 
-          <Panel className="flex flex-col">
+          <Panel guide="plan-list" className="flex flex-col">
             <div className="flex items-center gap-4 border-b border-line px-4 py-3">
-              <SectionLabel>Blackout ledger</SectionLabel>
+              <SectionLabel>Every time without contact</SectionLabel>
               <span className="ml-auto text-caption text-ink-3">sorted by length</span>
             </div>
-            <ScrollRegion label="Blackout ledger, scrolls sideways">
+            <ScrollRegion label="Every time without contact, scrolls sideways">
               <table className="w-full min-w-[720px] border-collapse text-left">
                 <caption className="sr-only">
-                  Every Earth-link blackout in the window, longest first, and whether it overlaps a dark
-                  period.
+                  Every time without contact with Earth on these dates, longest first, and whether it overlaps a
+                  night.
                 </caption>
                 <thead>
                   <tr className="bg-inset">
-                    {['#', 'Start', 'End', 'Length', 'Overlaps darkness'].map((h) => (
+                    {['#', 'Start', 'End', 'Length', 'Also dark?'].map((h) => (
                       <th
                         key={h}
                         scope="col"
@@ -114,7 +117,7 @@ export function BlackoutScreen() {
                   {blackouts.length === 0 && (
                     <tr className="border-t border-line">
                       <td colSpan={5} className="px-4 py-4 text-body text-ink-2">
-                        No blackouts: Earth stayed above the skyline for the whole window.
+                        None: Earth stayed above the skyline for all of these dates.
                       </td>
                     </tr>
                   )}
@@ -124,7 +127,7 @@ export function BlackoutScreen() {
                     const overlaps = metrics.compound.some((c) => c.startH < a.endH && c.endH > a.startH && c.hours >= 0.25)
                     return (
                       <tr key={i} className={`border-t border-line ${overlaps ? 'bg-alert-wash' : ''}`}>
-                        <td className="px-4 py-3 font-mono text-small text-ink-3">B{i + 1}</td>
+                        <td className="px-4 py-3 font-mono text-small text-ink-3">{i + 1}</td>
                         <td className="px-4 py-3 font-mono text-small text-ink">
                           {a.openStart ? `before ${when(a.startH)}` : when(a.startH)}
                         </td>
@@ -156,19 +159,18 @@ export function BlackoutScreen() {
         <aside className="flex w-full shrink-0 flex-col border border-line-strong bg-raised lg:w-[400px]">
           <div className="flex flex-col gap-1.5 border-b border-line-strong p-5">
             <div className="text-caption font-semibold tracking-caps-lg text-ink-3 uppercase">
-              Autonomy packet
+              Working alone
             </div>
-            <div className="text-subhead font-semibold">What the lander runs alone on</div>
+            <div className="text-subhead font-semibold">What the lander must handle on its own</div>
             <p className="text-small leading-5 text-ink-2">
               {noCompound ? (
-                'Sunlight and an Earth link are never lost together in this window, so nothing has to run alone; the battery still carries the longest night.'
+                'Sunlight and contact with Earth are never lost together on these dates, so nothing has to run alone; the battery still has to last the longest night.'
               ) : (
                 <>
-                  Sized for the worst compound event:{' '}
+                  Planned for the longest time with neither sunlight nor contact:{' '}
                   <strong className="text-ink">
                     {hoursWithUnit(packet.worstCompoundH, 0, packet.worstCompoundOpen)}
                   </strong>{' '}
-                  with neither sunlight nor an Earth link
                   {worstCompound ? `, starting ${when(worstCompound.startH)}` : ''}, plus a {marginPct}% margin.
                 </>
               )}
@@ -181,46 +183,46 @@ export function BlackoutScreen() {
               {Math.round(packet.requiredAutonomyH)}
             </span>
             <div className="flex flex-col">
-              <span className="text-lede text-ink-2">h of full autonomy</span>
+              <span className="text-lede text-ink-2">hours working alone</span>
               <span className="text-caption text-ink-3">
                 {noCompound
-                  ? 'no compound event'
-                  : `${hoursWithUnit(packet.worstCompoundH, 0, packet.worstCompoundOpen)} event + ${marginPct}%`}
+                  ? 'never dark and out of contact at once'
+                  : `${hoursWithUnit(packet.worstCompoundH, 0, packet.worstCompoundOpen)} + ${marginPct}% margin`}
               </span>
             </div>
           </div>
 
           <PacketRow
             done
-            title="Command buffer"
-            detail={`${hoursWithUnit(packet.requiredAutonomyH)} of sequenced activity, uplinked in the preceding contact window.`}
+            title="Stored commands"
+            detail={`${hoursWithUnit(packet.requiredAutonomyH)} of planned activity, sent up during the contact before.`}
             value={hoursWithUnit(packet.requiredAutonomyH)}
           />
           <PacketRow
             done
-            title="Onboard storage"
-            detail={`${hoursWithUnit(packet.requiredAutonomyH)} of science and housekeeping at the payload’s own data rate, held until the next pass.`}
+            title="Data storage"
+            detail={`${hoursWithUnit(packet.requiredAutonomyH)} of science and health data at the payload’s own data rate, kept until the next contact.`}
             value="per payload"
           />
           <PacketRow
             alert={metrics.sun.longestDownH > SURVIVAL_LIMIT_H}
-            title="Survival energy"
+            title="Battery for the night"
             detail={
               packet.compoundInsideDark
-                ? `The worst silence falls inside a night, and the battery carries the longest night whatever the radio is doing: ${hoursWithUnit(packet.survivalNeededH, 0, packet.survivalOpen)}.`
-                : `No silence overlaps a night badly enough to matter, but the battery still carries the longest night: ${hoursWithUnit(packet.survivalNeededH, 0, packet.survivalOpen)}.`
+                ? `The longest time without contact falls inside a night, and the battery has to last the longest night either way: ${hoursWithUnit(packet.survivalNeededH, 0, packet.survivalOpen)}.`
+                : `No time without contact overlaps a night badly enough to matter, but the battery still has to last the longest night: ${hoursWithUnit(packet.survivalNeededH, 0, packet.survivalOpen)}.`
             }
             value={hoursWithUnit(packet.survivalNeededH, 0, packet.survivalOpen)}
           />
           <PacketRow
             done
-            title="Fault response"
-            detail={`Safing rules that hold state for ${hoursWithUnit(packet.requiredAutonomyH)} without a ground call, and a recovery that does not need one.`}
+            title="Handling faults"
+            detail={`Rules that put the lander in a safe state for ${hoursWithUnit(packet.requiredAutonomyH)} without help from Earth, and a way to recover that does not need it.`}
             value="rules"
           />
           <PacketRow
-            title="Decisions delegated"
-            detail="Anything time-critical inside the window: target selection, abort thresholds, thermal shedding order."
+            title="Decisions it makes itself"
+            detail="Anything urgent that can’t wait for Earth: choosing targets, when to abort, which heaters to switch off first."
             value="to plan"
           />
 
@@ -228,9 +230,9 @@ export function BlackoutScreen() {
             {metrics.sun.longestDownH > SURVIVAL_LIMIT_H && (
               <p className="flex items-start gap-2 text-small leading-5 text-alert">
                 <Icon name="alert" size={16} strokeWidth={2.2} className="mt-0.5 shrink-0" />
-                No packet saves this site: the night alone is{' '}
+                No plan saves this site: the night alone is{' '}
                 {Math.round(metrics.sun.longestDownH - SURVIVAL_LIMIT_H)} h past the {SURVIVAL_LIMIT_H} h
-                survival limit.
+                battery limit.
               </p>
             )}
             <Button
@@ -238,15 +240,15 @@ export function BlackoutScreen() {
               onClick={() => download(`${site.id}-${stamp}-arcs.csv`, arcsCsv(exportSite), 'text/csv')}
             >
               <Icon name="table" size={16} strokeWidth={1.7} />
-              Export the arcs as CSV
+              Download as a spreadsheet (CSV)
             </Button>
             <Button onClick={() => download(`${site.id}-${stamp}-windows.txt`, spiceWindows(exportSite))}>
-              Export SPICE interval lists
+              Download for SPICE (engineers)
             </Button>
             <p className="text-caption leading-caption text-ink-3">
-              Both files are built from the same arcs as the timeline and the ledger, with their margins and
-              provenance. The SPICE file lists each lit, contact and dark-and-silent interval in UTC, ready for{' '}
-              <span className="font-mono">str2et</span> and <span className="font-mono">wninsd</span>.
+              Both files hold the same stretches as the timeline and the list, with their margins and where they
+              come from. The SPICE file lists each sunlit, in-contact and dark-and-silent stretch in UTC, ready for
+              NASA’s SPICE toolkit (<span className="font-mono">str2et</span>, <span className="font-mono">wninsd</span>).
             </p>
           </div>
         </aside>
@@ -270,16 +272,15 @@ function PacketRow({
 }) {
   return (
     <div className={`flex gap-3.5 border-b border-line p-4 ${alert ? 'bg-alert-wash' : ''}`}>
-      <div
-        className={`mt-0.5 flex size-5 shrink-0 items-center justify-center border ${
-          alert ? 'border-alert' : done ? 'border-ink' : 'border-line-strong'
-        }`}
-      >
+      {/* A plain mark, not a box: this is a list of what to plan, not a checklist to tick. */}
+      <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center" aria-hidden="true">
         {alert ? (
-          <Icon name="alert" size={12} strokeWidth={3} className="text-alert" />
+          <Icon name="alert" size={14} strokeWidth={2.6} className="text-alert" />
         ) : done ? (
-          <Icon name="check" size={12} strokeWidth={3.2} className="text-ink" />
-        ) : null}
+          <Icon name="check" size={14} strokeWidth={2.6} className="text-ink-2" />
+        ) : (
+          <span className="size-1.5 bg-ink-3" />
+        )}
       </div>
       <div className="flex grow flex-col gap-0.5">
         <div className={`text-body font-semibold ${alert ? 'text-alert' : ''}`}>{title}</div>

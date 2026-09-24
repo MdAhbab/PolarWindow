@@ -79,34 +79,34 @@ export function buildSiteSummary(s: SummaryInput): Summary {
 
   out.push(`${s.siteName}, at ${lat}. Over ${spanWords(s.windowHours)}${when ? ` from ${when}` : ''}:`)
   out.push(`Sunlight ${round(s.sunUpH)} hours, ${pct(s.sunFraction)} of the time.`)
-  out.push(`It can call home for ${round(s.earthUpH)} hours, ${pct(s.earthFraction)}.`)
+  out.push(`It is in contact with Earth for ${round(s.earthUpH)} hours, ${pct(s.earthFraction)}.`)
 
   // No gap at all is a measurement too, and says so plainly rather than as
   // "about 0 hours, 120 hours inside the limit".
   const noNight = s.nightH <= 0 && !s.nightOpen
   const over = s.nightH - s.survivalLimitH
   if (noNight) {
-    out.push('The Sun did not set in this window.')
+    out.push('The Sun did not set on these dates.')
   } else {
     let night = `Longest night: ${duration(s.nightH, s.nightOpen, s.nightToleranceH, s.nightGrazing)}.`
-    if (s.nightOpen) night += ' This period cut it short, so the real night is longer.'
+    if (s.nightOpen) night += ' These dates cut it short, so the real night is longer.'
     if (s.nightGrazing) night += ' Its start and end cannot be timed precisely.'
     out.push(night)
     if (over > 0) {
       out.push(
-        `That is ${s.nightOpen ? 'at least ' : ''}${round(over)} hours over the ${s.survivalLimitH} hour survival limit.`,
+        `That is ${s.nightOpen ? 'at least ' : ''}${round(over)} hours over the ${s.survivalLimitH} hour battery limit.`,
       )
     } else if (s.nightOpen) {
-      out.push(`It may exceed the ${s.survivalLimitH} hour survival limit.`)
+      out.push(`It may run past the ${s.survivalLimitH} hour battery limit.`)
     } else {
-      out.push(`That is ${round(-over)} hours inside the ${s.survivalLimitH} hour survival limit.`)
+      out.push(`That is ${round(-over)} hours inside the ${s.survivalLimitH} hour battery limit.`)
     }
   }
 
   if (s.silenceH <= 0 && !s.silenceOpen) {
-    out.push('It can call home the whole time.')
+    out.push('It stays in contact with Earth the whole time.')
   } else {
-    let silence = `Longest time it can't call home: ${duration(s.silenceH, s.silenceOpen, s.silenceToleranceH, s.silenceGrazing)}.`
+    let silence = `Longest time without contact: ${duration(s.silenceH, s.silenceOpen, s.silenceToleranceH, s.silenceGrazing)}.`
     if (s.silenceOpen) silence += ' The real one is longer.'
     out.push(silence)
   }
@@ -119,7 +119,7 @@ export function buildSiteSummary(s: SummaryInput): Summary {
 
   if (s.terrainModelled === false) {
     out.push(
-      'Terrain is not modelled here, so these figures assume a smooth Moon, and real hills could block more.',
+      'There is no terrain data here, so these figures assume flat ground, and real hills could block more.',
     )
   } else if (s.coverage < 0.999) {
     out.push(
@@ -177,13 +177,13 @@ export function buildComparisonSummary(c: ComparisonInput): Summary {
         place = `is ${s.label.text}, tied with a site the data cannot separate it from`
         break
       case 'over':
-        place = 'is first, but over the survival limit'
+        place = 'is first, but over the battery limit'
         break
       case 'place':
         place = `is ${s.label.text}`
         break
       case 'unranked':
-        place = `can't be ranked${s.open ? ', because the window cut its value short' : ''}${
+        place = `can't be ranked${s.open ? ', because the chosen dates cut its value short' : ''}${
           s.label.title ? `; it ${s.label.title}` : ''
         }`
         break
@@ -195,7 +195,7 @@ export function buildComparisonSummary(c: ComparisonInput): Summary {
     out.push(
       `${over.map((s) => s.name).join(' and ')} ${over.length === 1 ? 'has a night' : 'have nights'} over the ${
         c.survivalLimitH
-      } hour survival limit in this window.`,
+      } hour battery limit on these dates.`,
     )
   }
   out.push('These are planning estimates, not official values.')

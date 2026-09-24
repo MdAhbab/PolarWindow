@@ -1,10 +1,10 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { useSiteMetricsMap } from '../lib/useMetricsMap'
 import { useCompare, useWindowParams } from '../lib/mission'
 import { useMission } from '../lib/store'
-import { hasSite, siteById } from '../lib/sites'
+import { getSites, hasSite, siteById } from '../lib/sites'
 import { useMissions } from '../lib/api/queries'
 import type { CompareItemDTO } from '../lib/api/client'
 import { rankLabel, type RankLabel } from '../lib/rank'
@@ -33,10 +33,10 @@ const API_METRIC: Record<MetricKey, string> = {
 }
 
 const RANKS: { value: MetricKey; label: string }[] = [
-  { value: 'sunHours', label: 'Time in the Sun' },
-  { value: 'earthHours', label: 'Time it can call home' },
+  { value: 'sunHours', label: 'Time in sunlight' },
+  { value: 'earthHours', label: 'Time in contact with Earth' },
   { value: 'longestDark', label: 'Longest night' },
-  { value: 'longestBlackout', label: "Longest time it can't call home" },
+  { value: 'longestBlackout', label: 'Longest time without contact' },
 ]
 
 /** The window cut this site's value for `key` short: it is a lower bound. Totals never are. */
@@ -260,10 +260,11 @@ export function CompareScreen() {
       <h1 className="sr-only">Compare sites</h1>
       <div className="flex flex-wrap items-end gap-x-8 gap-y-4 border-b border-line px-4 py-4 lg:px-6">
         <DateSlider />
-        <div className="flex min-w-0 max-w-full flex-col gap-2">
+        <div data-guide="rank-by" className="flex min-w-0 max-w-full flex-col gap-2">
           <SectionLabel as="div">Rank by</SectionLabel>
           <Segmented options={RANKS} value={rankBy} onChange={setRankBy} label="Rank by" />
         </div>
+        <AddSite compareIds={compareIds} />
         <Speaker summary={spoken} what="this comparison" resetKey={`${compareIds.join('|')}|${rankBy}|${w.start}`} />
       </div>
 
@@ -275,7 +276,7 @@ export function CompareScreen() {
         <div className="flex flex-col gap-1 border-b border-line px-4 py-3 text-small leading-5 text-ink-2 lg:px-6">
           {seeded && (
             <p>
-              Seeded from {seeded.name}: its target and the three candidate sites nearest to it by distance.
+              Started from {seeded.name}: its landing spot and the three candidate sites nearest to it by distance.
             </p>
           )}
           {unavailable.map((u) => (
@@ -346,7 +347,7 @@ export function CompareScreen() {
           Ranked by {termLabel(rankBy, face).label.toLowerCase()},{' '}
           {!leads ? (
             <>
-              no site can be called first: {bestLabel ? 'a value cut short by the window, or an edge that cannot be timed, overlaps the others' : 'the ranking has not arrived'}.{' '}
+              no site can be called first: {bestLabel ? 'a value cut short by the chosen dates, or an edge that cannot be timed, overlaps the others' : 'the ranking has not arrived'}.{' '}
             </>
           ) : tiedWith[best]?.length ? (
             <>
@@ -361,10 +362,10 @@ export function CompareScreen() {
           {disqualified.length > 0 ? (
             <>
               {disqualified.map(code).join(' and ')}{' '}
-              {disqualified.length > 1 ? 'are' : 'is'} out on the night alone in this window:{' '}
-              <span className="text-alert">over the {SURVIVAL_LIMIT_H} h survival limit</span>. Nights change
-              through the year, so a different date can change that; the month strip on the Site screen shows
-              how.
+              {disqualified.length > 1 ? 'are' : 'is'} out on the night alone on these dates:{' '}
+              <span className="text-alert">over the {SURVIVAL_LIMIT_H} h battery limit</span>. Nights change
+              through the year, so other dates can change that; the months under “Change the dates” on the Site
+              page show how.
             </>
           ) : (
             'Every candidate here survives its longest night, so the choice is genuinely about what the payload needs.'
@@ -449,12 +450,15 @@ function CompareCard({
           {tied && <div className="text-caption text-ink-2">tied — the data cannot separate these</div>}
           <div className="font-mono text-tag text-ink-3">{coords(site.latDeg, site.lonDeg)}</div>
         </div>
-        {over && (
-          <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 bg-alert-deep px-2 py-1 text-tag font-semibold tracking-caps-sm text-alert uppercase">
-            <Icon name="alert" size={12} strokeWidth={2.4} />
-            Over limit
-          </span>
-        )}
+        <div className="ml-auto flex shrink-0 items-start gap-1">
+          {over && (
+            <span className="inline-flex items-center gap-1.5 bg-alert-deep px-2 py-1 text-tag font-semibold tracking-caps-sm text-alert uppercase">
+              <Icon name="alert" size={12} strokeWidth={2.4} />
+              Over limit
+            </span>
+          )}
+          <RemoveSite siteId={siteId} name={site.name} />
+        </div>
       </div>
 
       <div className="p-4">
@@ -474,20 +478,20 @@ function CompareCard({
       </div>
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-3 px-4">
-        <Mini label="Sun, h" value={metrics.sun.upHours} tone="text-sun" />
-        <Mini label="Call home, h" value={metrics.earth.upHours} tone="text-earth" />
+        <Mini label="Sunlight, h" value={metrics.sun.upHours} tone="text-sun" />
+        <Mini label="Contact, h" value={metrics.earth.upHours} tone="text-earth" />
         <Mini
           label="Longest night, h"
           value={metrics.sun.longestDownH}
           open={metrics.sun.longestDownOpen}
           tone={over ? 'text-alert' : 'text-ink'}
         />
-        <Mini label="Can't call home, h" value={metrics.earth.longestDownH} open={metrics.earth.longestDownOpen} tone="text-ink" />
+        <Mini label="Without contact, h" value={metrics.earth.longestDownH} open={metrics.earth.longestDownOpen} tone="text-ink" />
       </div>
 
       <div className="flex flex-col gap-3 p-4">
         <div className="flex flex-col gap-1.5">
-          <span className="text-tag font-semibold tracking-caps-md text-sun uppercase">Sun over the window</span>
+          <span className="text-tag font-semibold tracking-caps-md text-sun uppercase">Sunlight over these dates</span>
           <Ribbon
             arcs={metrics.sun.arcs}
             windowStartH={metrics.windowStartH}
@@ -498,7 +502,7 @@ function CompareCard({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <span className="text-tag font-semibold tracking-caps-md text-earth uppercase">Time it can call home</span>
+          <span className="text-tag font-semibold tracking-caps-md text-earth uppercase">Contact with Earth over these dates</span>
           <Ribbon
             arcs={metrics.earth.arcs}
             windowStartH={metrics.windowStartH}
@@ -541,5 +545,52 @@ function Mini({
         {Math.round(value)}
       </span>
     </div>
+  )
+}
+
+/** Add a site to the comparison, up to eight, without going back to the map. */
+function AddSite({ compareIds }: { compareIds: string[] }) {
+  const id = useId()
+  const toggle = useMission((s) => s.toggleCompare)
+  const rest = getSites().filter((s) => !compareIds.includes(s.id))
+  const full = compareIds.length >= 8
+  return (
+    <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto">
+      <label htmlFor={id} className="text-small font-medium text-ink-3">
+        {full ? 'Eight sites is the most' : 'Add a site'}
+      </label>
+      <select
+        id={id}
+        value=""
+        disabled={full || rest.length === 0}
+        onChange={(e) => e.target.value && toggle(e.target.value)}
+        className="h-12 w-full max-w-full rounded-control border border-line-strong bg-canvas px-3 text-control text-ink hover:border-ink-3 disabled:text-ink-3"
+      >
+        <option value="">Choose a site…</option>
+        {rest.map((s) => (
+          <option key={s.id} value={s.id}>
+            {s.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
+/** Take a site out; a comparison keeps at least two. */
+function RemoveSite({ siteId, name }: { siteId: string; name: string }) {
+  const count = useMission((s) => s.compareIds.length)
+  const toggle = useMission((s) => s.toggleCompare)
+  if (count <= 2) return null
+  return (
+    <button
+      type="button"
+      onClick={() => toggle(siteId)}
+      aria-label={`Remove ${name} from the comparison`}
+      title="Remove from the comparison"
+      className="-mt-2 -mr-2 inline-flex size-12 items-center justify-center rounded-control text-ink-3 hover:bg-inset hover:text-ink"
+    >
+      <Icon name="close" size={16} />
+    </button>
   )
 }

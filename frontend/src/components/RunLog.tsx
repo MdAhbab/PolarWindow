@@ -7,6 +7,7 @@ import { shortDate } from '../lib/format'
 import { Sheet } from './Sheet'
 import { ProblemPanel } from './States'
 import { SectionLabel } from './ui'
+import { toolWords } from '../lib/fieldWords'
 
 /**
  * "How the AI got this" (§10.6): every agent run, newest first, with the tool
@@ -23,8 +24,8 @@ export function RunLogDrawer() {
     <Sheet open={open} onClose={closeRunLog} title="AI activity log" wide>
       <div className="flex flex-col gap-4 p-5">
         <p className="text-small leading-5 text-ink-2">
-          Each run of the site agents: which tools they called, with what, and whether any number in the
-          answer failed the check against those tools’ results.
+          Every time the AI answered: which data it looked up, and whether any number in its answer failed
+          the check against that data.
         </p>
         {runs.isPending ? (
           <p role="status" className="font-mono text-caption text-ink-3">
@@ -57,7 +58,7 @@ function timeWords(iso: string): string {
 const STATUS_WORDS: Record<string, string> = {
   ok: 'answered',
   insufficient_data: 'not enough data',
-  guard_rejected: 'answer replaced by the guard',
+  guard_rejected: 'answer replaced: a number failed the check',
   timeout: 'timed out',
   degraded: 'no AI; measurements only',
   error: 'failed',
@@ -133,7 +134,7 @@ function RunTable({ runs, focusId }: { runs: AgentRunDTO[]; focusId: string | nu
                   <td className="px-3 py-2 font-mono text-caption leading-5 whitespace-nowrap text-ink-2 tnum">
                     {r.latency_ms} ms
                     <br />
-                    {r.prompt_tokens} / {r.completion_tokens} tokens
+                    {r.prompt_tokens} / {r.completion_tokens} tokens (text in / out)
                     <br />
                     {r.attempts} {r.attempts === 1 ? 'attempt' : 'attempts'}
                   </td>
@@ -164,7 +165,7 @@ interface GuardFailure {
 
 function guardLine(g: GuardFailure): string {
   if ((g.kind === 'ungrounded_number' || g.kind === 'ungrounded_no_tools') && typeof g.value === 'number') {
-    return `Rejected: ${g.value} not found in tool results`
+    return `Rejected: ${g.value} is not in the data it looked up`
   }
   // Not a rejection: the run moved on to the next model in its chain.
   if (g.kind === 'model_unavailable') return `Skipped ${g.model ?? 'a model'}: ${g.detail ?? 'unavailable'}`
@@ -189,7 +190,7 @@ function RunDetail({ run }: { run: AgentRunDTO }) {
       )}
       <SectionLabel as="h3">Tool calls</SectionLabel>
       {run.tool_calls.length === 0 ? (
-        <p className="text-small text-ink-2">No tools were called in this run.</p>
+        <p className="text-small text-ink-2">No data was looked up in this run.</p>
       ) : (
         <table className="w-full border-collapse text-left">
           <caption className="sr-only">Tool calls in this run, in order.</caption>
@@ -220,7 +221,7 @@ function ToolRow({ call }: { call: ToolCallDTO }) {
   return (
     <tr className="border-t border-line align-top">
       <td className="py-1.5 pr-3 font-mono text-caption text-ink-3 tnum">{call.seq}</td>
-      <td className="py-1.5 pr-3 font-mono text-caption text-ink">{call.tool}</td>
+      <td className="py-1.5 pr-3 text-caption text-ink">{toolWords(call.tool)}</td>
       <td className="max-w-[220px] py-1.5 pr-3">
         <span className={`font-mono text-caption break-all text-ink-2 ${all ? '' : 'line-clamp-3'}`}>{args}</span>
         {long && (

@@ -190,6 +190,14 @@
     outline-offset: 2px;
   }
 
+  /* What the guide bar is pointing at: dashed, so it is never mistaken for
+     focus, and in ink, because it carries no Sun, Earth or limit meaning. */
+  [data-guide-active] {
+    outline: 2px dashed var(--color-ink-2);
+    outline-offset: 6px;
+    scroll-margin-bottom: calc(var(--pw-guide-h, 0px) + 5rem);
+  }
+
   button,
   input,
   select {
