@@ -132,3 +132,73 @@ export function buildSiteSummary(s: SummaryInput): Summary {
   const words = text.split(/\s+/).length
   return { sentences: out, text, seconds: Math.round((words / 165) * 60) }
 }
+
+export interface ComparisonSite {
+  name: string
+  /** What the ranking lets this site be called (lib/rank.ts). */
+  label: { kind: 'best' | 'joint' | 'place' | 'over' | 'unranked'; text: string; title?: string }
+  /** The ranked value, hours, as the API gave it. */
+  valueH: number
+  /** The ranked value is a lower bound: the window cut it short. */
+  open: boolean
+  overLimit: boolean
+}
+
+export interface ComparisonInput {
+  /** The ranking metric's plain name: "Longest night". */
+  rankedBy: string
+  windowStartIso?: string
+  windowHours: number
+  survivalLimitH: number
+  /** In the server's order. */
+  sites: ComparisonSite[]
+}
+
+/**
+ * The comparison, spoken. Bound-aware in the same way as the screen: a value
+ * the window cut short is "at least", a site whose place cannot be stated is
+ * said to be unrankable with the range it could fall in, and "best" is only
+ * ever said where the screen says it.
+ */
+export function buildComparisonSummary(c: ComparisonInput): Summary {
+  const out: string[] = []
+  const when = startDate(c.windowStartIso)
+  out.push(
+    `Comparing ${c.sites.length} sites over ${spanWords(c.windowHours)}${when ? ` from ${when}` : ''}, by ${c.rankedBy.toLowerCase()}.`,
+  )
+  for (const s of c.sites) {
+    const value = `${s.open ? 'at least' : 'about'} ${round(s.valueH)} hours`
+    let place: string
+    switch (s.label.kind) {
+      case 'best':
+        place = 'is best'
+        break
+      case 'joint':
+        place = `is ${s.label.text}, tied with a site the data cannot separate it from`
+        break
+      case 'over':
+        place = 'is first, but over the survival limit'
+        break
+      case 'place':
+        place = `is ${s.label.text}`
+        break
+      case 'unranked':
+        place = `can't be ranked${s.open ? ', because the window cut its value short' : ''}${
+          s.label.title ? `; it ${s.label.title}` : ''
+        }`
+        break
+    }
+    out.push(`${s.name} ${place}: ${value}.`)
+  }
+  const over = c.sites.filter((s) => s.overLimit)
+  if (over.length) {
+    out.push(
+      `${over.map((s) => s.name).join(' and ')} ${over.length === 1 ? 'has a night' : 'have nights'} over the ${
+        c.survivalLimitH
+      } hour survival limit in this window.`,
+    )
+  }
+  out.push('These are planning estimates, not official values.')
+  const text = out.join(' ')
+  return { sentences: out, text, seconds: Math.round((text.split(/\s+/).length / 165) * 60) }
+}

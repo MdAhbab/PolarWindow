@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom'
 import type { SiteView } from '../lib/api/queries'
 import { hasSite, siteById } from '../lib/sites'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
-import { buildSiteSummary } from '../lib/summaryScript'
+import { buildSiteSummary, type Summary } from '../lib/summaryScript'
 import { Icon } from './Icon'
 
 /**
@@ -24,14 +24,6 @@ import { Icon } from './Icon'
  *  - Where speech synthesis is unavailable the button opens the transcript.
  */
 export function SummarySpeaker({ view }: { view: SiteView }) {
-  const { pathname } = useLocation()
-  const transcriptId = useId()
-  const [speaking, setSpeaking] = useState(false)
-  const [current, setCurrent] = useState(-1)
-  const [showText, setShowText] = useState(false)
-  const cancelled = useRef(false)
-  const canSpeak = typeof window !== 'undefined' && 'speechSynthesis' in window
-
   const m = view.data?.metrics
   const meta = view.data?.meta
   const summary = useMemo(() => {
@@ -60,6 +52,22 @@ export function SummarySpeaker({ view }: { view: SiteView }) {
       terrainModelled: meta?.uncertainty.terrainModelled ?? true,
     })
   }, [m, meta])
+  return <Speaker summary={summary} what="this site" resetKey={`${m?.siteId}|${m?.windowStartIso}`} />
+}
+
+/**
+ * The control itself, for any script built from API numbers: a site, a
+ * comparison. `what` finishes its name ("a 28-second summary of this site");
+ * a change of `resetKey` stops the voice, as a change of route does.
+ */
+export function Speaker({ summary, what, resetKey }: { summary: Summary | null; what: string; resetKey: string }) {
+  const { pathname } = useLocation()
+  const transcriptId = useId()
+  const [speaking, setSpeaking] = useState(false)
+  const [current, setCurrent] = useState(-1)
+  const [showText, setShowText] = useState(false)
+  const cancelled = useRef(false)
+  const canSpeak = typeof window !== 'undefined' && 'speechSynthesis' in window
 
   const stop = useCallback(() => {
     cancelled.current = true
@@ -99,7 +107,7 @@ export function SummarySpeaker({ view }: { view: SiteView }) {
   }, [summary, canSpeak])
 
   // A new site, window, route, or leaving the page must never leave a voice talking.
-  useEffect(() => stop, [m?.siteId, m?.windowStartIso, pathname, stop])
+  useEffect(() => stop, [resetKey, pathname, stop])
 
   useEffect(() => {
     const onKey = (ev: KeyboardEvent) => {
@@ -138,9 +146,15 @@ export function SummarySpeaker({ view }: { view: SiteView }) {
           className="inline-flex h-11 min-w-11 items-center gap-2 rounded-control border border-line-strong px-4 text-[15px] font-medium text-ink hover:bg-inset"
         >
           <Icon name="speaker" size={18} strokeWidth={2} />
-          <span>{speaking ? 'Stop' : 'Listen'}</span>
+          {/* Both words share one grid cell, so the button keeps the wider
+              one's width and nothing beside it moves when it changes. The
+              hidden word is out of the accessible name as well as the view. */}
+          <span className="grid">
+            <span className={`col-start-1 row-start-1 ${speaking ? 'invisible' : ''}`}>Listen</span>
+            <span className={`col-start-1 row-start-1 ${speaking ? '' : 'invisible'}`}>Stop</span>
+          </span>
           <span className="sr-only">
-            {speaking ? ' the summary' : ` to a ${summary.seconds}-second summary of this site`}
+            {speaking ? ' the summary' : ` to a ${summary.seconds}-second summary of ${what}`}
           </span>
         </button>
         <button

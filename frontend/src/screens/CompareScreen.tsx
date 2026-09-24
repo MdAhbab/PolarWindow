@@ -13,6 +13,8 @@ import { Ribbon } from '../components/Ribbon'
 import { KeyNumberTile } from '../components/KeyNumbers'
 import { LoadingPanel, ProblemPanel } from '../components/States'
 import { AdvisePanel } from '../components/Agents'
+import { Speaker } from '../components/SummarySpeaker'
+import { buildComparisonSummary } from '../lib/summaryScript'
 import { Panel, SectionLabel, Segmented } from '../components/ui'
 import { Icon } from '../components/Icon'
 import { useReducedMotion } from '../hooks/useMotion'
@@ -36,6 +38,13 @@ const RANKS: { value: MetricKey; label: string }[] = [
   { value: 'longestDark', label: 'Longest night' },
   { value: 'longestBlackout', label: "Longest time it can't call home" },
 ]
+
+/** The window cut this site's value for `key` short: it is a lower bound. Totals never are. */
+function isOpen(m: SiteMetrics, key: MetricKey): boolean {
+  if (key === 'longestDark') return Boolean(m.sun.longestDownOpen)
+  if (key === 'longestBlackout') return Boolean(m.earth.longestDownOpen)
+  return false
+}
 
 const RANK_PARAM: Record<MetricKey, string> = {
   sunHours: 'sunlight',
@@ -215,6 +224,31 @@ export function CompareScreen() {
     )
   }
 
+  // Only once the server's ranking is in: the words a site may be called
+  // come from it, never from the client's own order.
+  const spoken = ranking.data
+    ? buildComparisonSummary({
+        rankedBy: termLabel(rankBy, face).label,
+        windowStartIso: w.start,
+        windowHours: metrics[order[0]].windowHours,
+        survivalLimitH: SURVIVAL_LIMIT_H,
+        sites: order.flatMap((id) => {
+          const label = labels[id]
+          return label
+            ? [
+                {
+                  name: siteById(id).name,
+                  label,
+                  valueH: metricValue(metrics[id], rankBy),
+                  open: isOpen(metrics[id], rankBy),
+                  overLimit: metrics[id].sun.longestDownH > SURVIVAL_LIMIT_H,
+                },
+              ]
+            : []
+        }),
+      })
+    : null
+
   const best = order[0]
   const bestLabel = labels[best]
   const leads = bestLabel?.kind === 'best' || (bestLabel?.kind === 'joint' && items[best]?.rank === 1)
@@ -223,12 +257,14 @@ export function CompareScreen() {
 
   return (
     <div className="flex grow flex-col">
+      <h1 className="sr-only">Compare sites</h1>
       <div className="flex flex-wrap items-end gap-x-8 gap-y-4 border-b border-line px-4 py-4 lg:px-6">
         <DateSlider />
         <div className="flex min-w-0 max-w-full flex-col gap-2">
           <SectionLabel as="div">Rank by</SectionLabel>
           <Segmented options={RANKS} value={rankBy} onChange={setRankBy} label="Rank by" />
         </div>
+        <Speaker summary={spoken} what="this comparison" resetKey={`${compareIds.join('|')}|${rankBy}|${w.start}`} />
       </div>
 
       <p aria-live="polite" className="sr-only">
@@ -370,12 +406,6 @@ function CompareCard({
   const tied = Boolean(item?.tied)
   const leading = label?.kind === 'best' || (label?.kind === 'joint' && rank === 1)
   const range = item?.rank_range ?? []
-  const openFor: Record<MetricKey, boolean> = {
-    sunHours: false,
-    earthHours: false,
-    longestDark: Boolean(metrics.sun.longestDownOpen),
-    longestBlackout: Boolean(metrics.earth.longestDownOpen),
-  }
 
   return (
     <Panel
@@ -432,7 +462,7 @@ function CompareCard({
           label={`${termLabel(rankBy, face).label}${label?.kind === 'best' ? ' · best' : ''}`}
           expert={termLabel(rankBy, face).expert}
           value={metricValue(metrics, rankBy)}
-          open={openFor[rankBy]}
+          open={isOpen(metrics, rankBy)}
           tone={rankBy === 'sunHours' ? 'sun' : rankBy === 'earthHours' ? 'earth' : over ? 'alert' : 'neutral'}
           size="md"
           fraction={

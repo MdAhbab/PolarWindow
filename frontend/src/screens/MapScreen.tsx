@@ -113,6 +113,7 @@ export function MapScreen() {
 
   return (
     <div className="flex grow flex-col">
+      <h1 className="sr-only">Map of the south pole and its candidate sites</h1>
       <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-line px-4 py-4 lg:px-6">
         <DateSlider />
       </div>
