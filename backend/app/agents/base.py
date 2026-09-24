@@ -312,10 +312,22 @@ def _metric_sentences(r: dict[str, Any], name: str) -> list[str]:
                 "At least one crossing is too shallow to time, so its edges are not "
                 "knowable from this data; the totals stand."
             )
-        elif isinstance(u.get("edge_timing_s"), int | float):
+        elif u.get("terrain_modelled") is False:
+            # A smooth-sphere skyline has no height error, so its margin is not
+            # zero hours: there is no stated margin at all.
             out.append(
-                f"Arc edges are uncertain by up to {u['edge_timing_s'] / 3600:.0f} hours "
-                "from the elevation model's vertical error."
+                "Terrain is not modelled here, so the skyline is a smooth Moon: the arc "
+                "edges carry no stated margin, and real hills could only block more."
+            )
+        elif isinstance(u.get("edge_timing_s"), int | float):
+            edge_h = u["edge_timing_s"] / 3600
+            out.append(
+                (
+                    f"Arc edges are uncertain by up to {edge_h:.0f} hours "
+                    if edge_h >= 1
+                    else "Arc edges are uncertain by less than an hour "
+                )
+                + "from the elevation model's vertical error."
             )
     return out
 

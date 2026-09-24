@@ -323,6 +323,9 @@ async def execute(session: Session, name: str, raw_args: dict[str, Any], seq: in
                 "edge_timing_s": u["edge_timing_s"],
                 "grazing": u["grazing"],
                 "coverage": u["coverage"],
+                # False outside 80°S: a smooth-sphere skyline, whose zero
+                # margin is no margin at all, and must not be read as one.
+                "terrain_modelled": u.get("terrain_modelled", True),
             }
 
         elif name == "get_windows":
