@@ -1,7 +1,7 @@
 import type { Arc, SiteMetrics } from '../lib/types'
 import { bearing, degrees, humanStamp, msFromModelH, plusMinus } from '../lib/format'
 import { TERRAIN_BLOCKER_MIN_EL_DEG } from './TwoClockRings'
-import { SectionLabel } from './ui'
+import { ScrollRegion, SectionLabel } from './ui'
 
 /**
  * The table twin.
@@ -26,7 +26,7 @@ export function ArcTable({ metrics, body }: { metrics: SiteMetrics; body?: 'sun'
         <SectionLabel>Every chart is also a table</SectionLabel>
         <span className="text-[12px] text-ink-3">{rows.length} arcs</span>
       </div>
-      <div className="relative overflow-x-auto border border-line">
+      <ScrollRegion label="Arc table, scrolls sideways" className="border border-line">
         <table className="w-full min-w-[720px] border-collapse text-left">
           <caption className="sr-only">
             Arc list for this site: each stretch above or below the local skyline, with its start, end,
@@ -87,7 +87,7 @@ export function ArcTable({ metrics, body }: { metrics: SiteMetrics; body?: 'sun'
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
       <p className="text-[12px] leading-5 text-ink-3">
         “Grazing” is not a rounding failure. It means the body crosses the skyline so shallowly that the
         crossing time is not knowable at this elevation model’s accuracy — a real finding, and one the

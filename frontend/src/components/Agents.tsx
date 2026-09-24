@@ -4,7 +4,7 @@ import type { AgentDTO, ProvenanceItemDTO } from '../lib/api/client'
 import { useAgent, type AgentKind } from '../lib/api/queries'
 import { useMission } from '../lib/store'
 import { hasSite, siteById } from '../lib/sites'
-import { Button, Panel, SectionLabel } from './ui'
+import { Button, Panel, ScrollRegion, SectionLabel } from './ui'
 import { Icon } from './Icon'
 import { ProblemPanel, UncertaintyNote } from './States'
 
@@ -237,7 +237,7 @@ function NumbersUsed({ items }: { items: ProvenanceItemDTO[] }) {
   return (
     <div className="flex flex-col gap-2">
       <SectionLabel as="h3">Numbers used</SectionLabel>
-      <div className="relative overflow-x-auto border border-line">
+      <ScrollRegion label="Numbers used, scrolls sideways" className="border border-line">
         <table className="w-full min-w-[520px] border-collapse text-left">
           <caption className="sr-only">
             Every number in the answer, the sentence it appears in, and the tool call and field it was
@@ -268,7 +268,7 @@ function NumbersUsed({ items }: { items: ProvenanceItemDTO[] }) {
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
     </div>
   )
 }

@@ -190,7 +190,7 @@ function IceArt() {
       <path d="M232 150 L268 92 L296 114 L320 132 L320 150 Z" fill="var(--color-sun-fill)" fillOpacity="0.35" />
       <path d="M232 150 L268 92 L296 114" fill="none" stroke="var(--color-sun)" strokeWidth="3" />
       <circle cx="306" cy="60" r="11" fill="var(--color-sun-fill)" />
-      <text x="118" y="176" textAnchor="middle" fill="var(--color-earth-soft)" fontSize="13" fontWeight="600">ice · never lit</text>
+      <text x="118" y="176" textAnchor="middle" fill="var(--color-ink)" fontSize="13" fontWeight="600">ice · never lit</text>
       <text x="278" y="80" textAnchor="middle" fill="var(--color-sun-soft)" fontSize="13" fontWeight="600">power</text>
       <path d="M118 208 H272" stroke="var(--color-ink)" strokeWidth="1.5" />
       <path d="M118 202 V214 M272 202 V214" stroke="var(--color-ink)" strokeWidth="1.5" />

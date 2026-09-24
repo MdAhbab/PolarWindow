@@ -5,7 +5,7 @@ import { siteById } from '../lib/sites'
 import { BlackoutTimeline } from '../components/BlackoutTimeline'
 import { DateSlider } from '../components/DateSlider'
 import { LoadingPanel, ProblemPanel, UncertaintyNote } from '../components/States'
-import { Button, Panel, SectionLabel } from '../components/ui'
+import { Button, Panel, ScrollRegion, SectionLabel } from '../components/ui'
 import { Icon } from '../components/Icon'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
 import { arcsCsv, download, spiceWindows } from '../lib/export'
@@ -79,9 +79,9 @@ export function BlackoutScreen() {
                 {Math.round(metrics.windowHours)} h
               </span>
             </div>
-            <div className="overflow-x-auto p-4">
+            <ScrollRegion label="Hour-by-hour timeline, scrolls sideways" className="p-4">
               <BlackoutTimeline metrics={metrics} cursorH={cursorH} className="min-w-[860px]" />
-            </div>
+            </ScrollRegion>
           </Panel>
 
           <Panel className="flex flex-col">
@@ -89,7 +89,7 @@ export function BlackoutScreen() {
               <SectionLabel>Blackout ledger</SectionLabel>
               <span className="ml-auto text-[12px] text-ink-3">sorted by length</span>
             </div>
-            <div className="relative overflow-x-auto">
+            <ScrollRegion label="Blackout ledger, scrolls sideways">
               <table className="w-full min-w-[720px] border-collapse text-left">
                 <caption className="sr-only">
                   Every Earth-link blackout in the window, longest first, and whether it overlaps a dark
@@ -149,7 +149,7 @@ export function BlackoutScreen() {
                   })}
                 </tbody>
               </table>
-            </div>
+            </ScrollRegion>
           </Panel>
         </div>
 

@@ -240,13 +240,13 @@ export function TwoClockScreen() {
                 {worst?.grazing ? (
                   <>
                     {' '}The longest gap has a crossing too shallow to time, so it is marked{' '}
-                    <span className="font-mono text-earth-soft">grazing</span> rather than given a false
+                    <span className="font-mono text-ink">grazing</span> rather than given a false
                     precision.
                   </>
                 ) : (
                   <>
                     {' '}The longest gap carries{' '}
-                    <span className="font-mono text-earth-soft">{edgeMargin(worst, terrainModelled)}</span>{' '}
+                    <span className="font-mono text-ink">{edgeMargin(worst, terrainModelled)}</span>{' '}
                     here; a gap carries both of its edges.
                   </>
                 )}

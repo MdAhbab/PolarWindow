@@ -332,6 +332,27 @@ export function Segmented<T extends string>({
   )
 }
 
+/**
+ * A panel that scrolls sideways when its content is wider than the screen: a
+ * named region that takes focus, so a keyboard user can scroll it with the
+ * arrow keys (WCAG 2.1.1). Content with its own controls does not need one.
+ */
+export function ScrollRegion({
+  label,
+  children,
+  className = '',
+}: {
+  label: string
+  children: ReactNode
+  className?: string
+}) {
+  return (
+    <div role="region" aria-label={label} tabIndex={0} className={`relative overflow-x-auto ${className}`}>
+      {children}
+    </div>
+  )
+}
+
 /** Shared SVG pattern defs. Mounted once, referenced by url(#id) anywhere. */
 export function SvgDefs() {
   return (

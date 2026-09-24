@@ -115,7 +115,7 @@ export function StatesScreen() {
         </Panel>
 
         <Panel className="flex flex-col border-dashed border-uncertain">
-          <Head kind="Uncertain" note="the state that matters most" tone="text-earth-soft" />
+          <Head kind="Uncertain" note="the state that matters most" tone="text-ink-2" />
           <div className="grow bg-canvas p-5">
             <div className="flex flex-col gap-4">
               <KeyNumberTile

@@ -150,7 +150,7 @@ export function MapScreen() {
               />
 
               <div className="flex flex-wrap gap-2 border-t border-line pt-4">
-                <Chip selected={nearPsr} onClick={() => setNearPsr((v) => !v)} tone="earth">
+                <Chip selected={nearPsr} onClick={() => setNearPsr((v) => !v)} tone="neutral">
                   Beside a shadowed floor
                 </Chip>
                 <p className="text-[12px] leading-[17px] text-ink-3">

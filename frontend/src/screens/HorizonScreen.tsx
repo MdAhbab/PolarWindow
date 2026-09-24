@@ -5,7 +5,7 @@ import { siteById } from '../lib/sites'
 import { HorizonProfile } from '../components/HorizonProfile'
 import { DateSlider } from '../components/DateSlider'
 import { LoadingPanel, ProblemPanel, UncertaintyNote } from '../components/States'
-import { Panel, SectionLabel } from '../components/ui'
+import { Panel, ScrollRegion, SectionLabel } from '../components/ui'
 import { bearing, bound, compass, coords, degrees, edgeMargin, hoursWithUnit } from '../lib/format'
 
 /** S4 — the screen that makes the physics click for a non-expert. */
@@ -74,9 +74,9 @@ export function HorizonScreen() {
                 peak {degrees(metrics.mask.maxElDeg, 2)} at {bearing(metrics.mask.maxElBearingDeg)}
               </span>
             </div>
-            <div className="overflow-x-auto p-3">
+            <ScrollRegion label="Skyline chart, scrolls sideways" className="p-3">
               <HorizonProfile metrics={metrics} cursorH={cursorH} className="min-w-[860px]" />
-            </div>
+            </ScrollRegion>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line px-4 py-3">
               <Legend swatch="h-[3px] w-5 bg-sun-fill">Sun over this window</Legend>
               <Legend swatch="h-[3px] w-5 bg-earth-fill">Earth libration loop</Legend>
@@ -147,7 +147,7 @@ export function HorizonScreen() {
                 {view.meta ? `up to ±${view.meta.uncertainty.demVerticalErrorM} m` : 'a few metres'}) seen from
                 the range of that bearing’s blocker, so it is wide for a near ridge and thin for a far one. Where
                 the Sun path runs inside it the crossing time is uncertain by{' '}
-                <span className="font-mono text-earth-soft">
+                <span className="font-mono text-ink">
                   {worst?.grazing ? 'more than can be timed (grazing)' : edgeMargin(worst, terrainModelled)}
                 </span>
                 .
