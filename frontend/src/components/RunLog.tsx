@@ -158,12 +158,16 @@ interface GuardFailure {
   kind?: string
   detail?: string
   value?: number | null
+  /** For a model the run moved past: which one. */
+  model?: string
 }
 
 function guardLine(g: GuardFailure): string {
   if ((g.kind === 'ungrounded_number' || g.kind === 'ungrounded_no_tools') && typeof g.value === 'number') {
     return `Rejected: ${g.value} not found in tool results`
   }
+  // Not a rejection: the run moved on to the next model in its chain.
+  if (g.kind === 'model_unavailable') return `Skipped ${g.model ?? 'a model'}: ${g.detail ?? 'unavailable'}`
   return `Rejected: ${g.detail ?? g.kind ?? 'a check failed'}`
 }
 
