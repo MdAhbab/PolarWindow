@@ -437,7 +437,7 @@ Named so that absences are decisions rather than oversights:
 integration 52 and golden 16 after parametrisation. The frontend has 41 Vitest
 tests.
 
-**Baseline** (2026-09-24): 292 passed in 17.7 s: unit 198, integration 75, golden
+**Baseline** (2026-09-24): 295 passed in 18.1 s: unit 201, integration 75, golden
 19. The frontend has 129 Vitest tests (units and jsdom component tests) and 18
 Playwright tests with axe (`npm run e2e`).
 

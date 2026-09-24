@@ -556,12 +556,11 @@ def resolve(
 def anchor_words(seed: SiteSeed) -> str:
     """What the anchor is, and nothing more.
 
-    The note used to call every anchor "the IAU centre of" its feature. Five
-    features (Connecting Ridge, the Peak near Shackleton, Malapert massif, the
-    de Gerlache-Kocher massif, the Leibnitz Beta plateau) have informal names
-    and no IAU centre, and the two Nobile rim sites search around two different
-    anchors, which cannot both be the crater's centre. So the note says only
-    that this is the point the search was centred on.
+    The note used to call every anchor "the IAU centre of" its feature. Some
+    features, Connecting Ridge among them, have informal names and no IAU
+    centre, and the two Nobile rim sites search around two different anchors,
+    which cannot both be the crater's centre. So the note says only that this
+    is the point the search was centred on.
     """
     return f"The search was centred on {seed.name.split(',')[0]}"
 

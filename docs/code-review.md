@@ -10,8 +10,8 @@
 A backend that computes four numbers from real LOLA terrain and real SPICE
 positions, behind an API whose layering is machine-enforced, with an agent layer
 whose central guard is a pure function and is exhaustively tested. At
-2026-09-24: 292 backend tests, 129 frontend unit and component tests and 18
-browser tests, mypy strict clean across 97 files, 8/8 import contracts kept.
+2026-09-24: 295 backend tests, 129 frontend unit and component tests and 18
+browser tests, mypy strict clean across 98 files, 8/8 import contracts kept.
 
 The parts most likely to be wrong — interval arithmetic, the ray-march, the
 grounding guard — got the most test attention, which is the right allocation.

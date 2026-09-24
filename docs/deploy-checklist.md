@@ -14,10 +14,10 @@ deliberately skipped here are listed in *Not doing, and why*.
 | | Check | Result |
 |---|---|---|
 | ✅ | `ruff check` | All checks passed |
-| ✅ | `ruff format --check app` | 97 files already formatted |
-| ✅ | `mypy --strict` | No issues in 97 source files |
+| ✅ | `ruff format --check app` | 98 files already formatted |
+| ✅ | `mypy --strict` | No issues in 98 source files |
 | ✅ | Layering contracts (import-linter) | **8 kept, 0 broken** |
-| ✅ | Test suite | **292 passed** (198 unit, 75 integration, 19 golden) in 17.7 s |
+| ✅ | Test suite | **295 passed** (201 unit, 75 integration, 19 golden) in 18.1 s |
 | ✅ | Frontend unit and component tests (`make test-fe`) | **129 passed** |
 | ✅ | Browser tests (`npm run e2e`, axe included) | **18 passed**, zero serious or critical axe findings |
 | ✅ | Frontend build | `tsc -b && vite build` clean, 164 KB gz JS + 9 KB gz CSS |

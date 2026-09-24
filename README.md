@@ -200,7 +200,7 @@ including every rejection, is recorded in `agent_runs` and served at
 
 ```bash
 make test-fast   # unit + property + synthetic golden. No services, < 20 s
-make test        # everything: unit, integration and golden (292 tests)
+make test        # everything: unit, integration and golden (295 tests)
 make test-fe     # frontend unit and component tests (129)
 cd frontend && npm run e2e   # browser tests, axe included; API on :8000
 make lint        # ruff, mypy --strict, import-linter
