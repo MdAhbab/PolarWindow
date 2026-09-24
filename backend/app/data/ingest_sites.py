@@ -11,15 +11,18 @@ and -3932 m respectively. Anything that lists a crater's catalogue coordinate as
 a "landing site" is quietly describing a hole.
 
 So site coordinates here are **derived, not asserted**. For each named feature
-we take its IAU centre as an anchor, search the DEM over a stated region (an
-annulus at the rim radius for crater-rim sites; a disc for massifs and
-plateaus), and select the highest point whose local slope is landable. The
-procedure, the anchor and the search parameters are all recorded on the site, so
-the number can be reproduced or disputed rather than merely trusted.
+we take an anchor position for the feature (several have informal names and no
+IAU centre) and search the DEM over a stated region around it (an annulus at
+the rim radius for crater-rim sites; a disc for massifs, ridges and plateaus). Among the landable
+posts (slope under the limit) in the highest tenth of that region, the one with
+the most open sky wins. The procedure, the anchor and the search parameters are
+all recorded on the site, so the number can be reproduced or disputed rather
+than merely trusted.
 
 This is not a claim to be an official candidate-site list. It is a defensible,
-reproducible way to get ~16 physically real, distinguishable sites onto a map --
-which is what the product needs to demonstrate the comparison it is about.
+reproducible way to get fifteen physically real, distinguishable sites onto a
+map -- which is what the product needs to demonstrate the comparison it is
+about.
 """
 
 from __future__ import annotations
@@ -537,7 +540,7 @@ def resolve(
         source=SOURCE_ATLAS,
         source_url=SOURCE_ATLAS_URL,
         source_note=(
-            f"Derived, not catalogued. Anchor is the IAU centre of {seed.name.split(',')[0]} "
+            f"Derived, not catalogued. {anchor_words(seed)} "
             f"at {seed.anchor_lat_deg:.2f} deg, {seed.anchor_lon_deg:.2f} deg E. "
             f"The landing point is the post with the most open sky (lowest coarse "
             f"horizon) among those with local slope <= {max_slope_deg:.0f} deg and height "
@@ -548,6 +551,19 @@ def resolve(
             f"ellipse and not an official candidate site."
         ),
     )
+
+
+def anchor_words(seed: SiteSeed) -> str:
+    """What the anchor is, and nothing more.
+
+    The note used to call every anchor "the IAU centre of" its feature. Five
+    features (Connecting Ridge, the Peak near Shackleton, Malapert massif, the
+    de Gerlache-Kocher massif, the Leibnitz Beta plateau) have informal names
+    and no IAU centre, and the two Nobile rim sites search around two different
+    anchors, which cannot both be the crater's centre. So the note says only
+    that this is the point the search was centred on.
+    """
+    return f"The search was centred on {seed.name.split(',')[0]}"
 
 
 def resolve_all(tile: DemTile) -> list[ResolvedSite]:
