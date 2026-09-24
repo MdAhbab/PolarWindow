@@ -85,3 +85,94 @@ is structurally correct and the alt text carries the numbers, but "structurally
 correct" and "usable" are different claims and only one of them has been
 verified. This is the first thing to fix, and the accessibility copy in the app
 says so rather than claiming a pass.
+
+---
+
+## 2026-09-24 review: the CLPS v2 screens (WCAG 2.1 AA)
+
+Scope: every route (Missions, Mission detail, Map, Site, Compare, Horizon,
+Blackout, Report, Story, States), both themes, the Simple and Expert faces,
+at 1440, 1280, 1024, 720 (1440 at 200 % zoom), 375 and 320 px, with reduced
+motion on and off.
+
+### How it was checked
+
+- **axe** (`@axe-core/playwright`, tags `wcag2a wcag2aa wcag21a wcag21aa`) on
+  every route in both themes and both faces, on the phone layout, inside the
+  run-log and settings dialogs, and on the offline copy: **zero serious or
+  critical violations**. This runs in `npm run e2e` and fails the build.
+- **Keyboard**: the e2e suite drives the demo path by keyboard where it
+  matters: the month strip (arrows, Home, End, Enter), the table twin (T and
+  its button), the shortcut switch, Escape out of every dialog with focus
+  returned to the opener, and Tab held inside a dialog.
+- **Reflow**: no page-level horizontal scroll on any route at 320, 375, 720,
+  1024 or 1280 px. Wide charts and tables scroll inside a named, focusable
+  region instead.
+- **Contrast**: computed from the tokens in `frontend/src/styles/globals.css`
+  (table below).
+
+### Fixed in this pass
+
+| Issue | WCAG | Fix |
+|---|---|---|
+| Horizontal scroll regions (Horizon chart, Blackout timeline and ledger, arc table, "Numbers used") could not be reached by keyboard | 2.1.1 | `ScrollRegion`: a named `region` with `tabIndex=0` |
+| Timing margins printed in `earth-soft` failed 4.5:1 in the light theme, and used Earth's colour for something that is not Earth contact | 1.4.3, 1.4.1 | ink |
+| Tab could walk out of the run-log and settings dialogs into the browser's own controls | 2.4.3 | focus wraps inside `Sheet` |
+| The close buttons of the dialogs were named "Close ai activity log" | 4.1.2 | "Close: AI activity log" |
+| Compare and Map had no page heading | 1.3.1, 2.4.6 | an `h1` each |
+| The Listen button changed width between "Listen" and "Stop", moving what sat beside it | advisory | both words share one grid cell |
+| Pins near the pole overlapped, so letters were unreadable and targets overlapped | 1.4.3, 2.5.5 (advisory) | clusters, and a pole close-up where they separate |
+| Dates shown as raw source phrases with square brackets | 3.1.5 (advisory) | dates in words; the source phrase is the tooltip |
+| The face switcher asked "who are you" | advisory (U15) | Simple · Explain · Expert, 44 px targets |
+
+### Verified as passing
+
+- U1 first visit goes to the story, which ends on "Browse CLPS missions"; U2
+  the four numbers sit above the ring on every face; U3 the phone tab bar is
+  fixed with all five tabs and nothing is hidden under it; U5 the Map's night
+  filter starts at "Any"; U8 single-key shortcuts can be switched off and the
+  choice is remembered; U9 section labels are `h2`; U10 timestamps read "Day
+  12, 26 March, 09:40 UTC" on screen and in `aria-valuetext`; U12 one
+  provenance badge per screen; U15 face targets are 44 px; U16 the Listen
+  control never auto-plays, is `aria-pressed`, stops on Escape, on a new
+  screen and in a hidden tab, toggles with Alt+S, and opens its transcript
+  where speech synthesis is missing.
+- Reduced motion branches in code: play is disabled and the ±6 h step buttons
+  appear; the sheets appear without sliding; numbers are set, not rolled.
+- The mission list is the primary accessible path: each row's name is built
+  from the data ("IM-2, Intuitive Machines, landed 6 March 2025, 17:30 UTC,
+  Partly successful, carries volatiles, …"), and a filter change is announced
+  as "Showing 5 of 20 missions".
+- Model text is never rendered as HTML (a component test injects markup).
+
+### Contrast, measured from the tokens
+
+| Pair | Needs | Dark | Light |
+|---|---|---|---|
+| `ink` on `canvas` | 4.5:1 | 16.33 | 15.92 |
+| `ink-2` on `panel` | 4.5:1 | 7.26 | 10.02 |
+| `ink-3` on `inset` | 4.5:1 | 5.39 | 4.74 |
+| `uncertain` on `inset` | 4.5:1 | 5.14 | 4.74 |
+| `sun` on `panel` | 4.5:1 | 8.72 | 6.15 |
+| `earth` on `panel` | 4.5:1 | 9.08 | 7.22 |
+| `alert` on `alert-wash` | 4.5:1 | 6.30 | 5.81 |
+| `on-sun` on `sun-fill` | 4.5:1 | 9.40 | 4.76 |
+| `hatch` on `dark-fill` | 3:1 | 3.23 | 3.53 |
+| `focus` on `canvas` | 3:1 | 13.98 | 6.39 |
+| `sun-fill` on `dark-fill` | 3:1 | 8.56 | **2.70** |
+| `earth-fill` on `dark-fill` | 3:1 | 8.90 | **2.87** |
+| `line-strong` on `panel` | 3:1 | **1.62** | **1.99** |
+
+### Still open
+
+- **Light theme, month strip.** Its sunlight and Earth bars stand on
+  `dark-fill` at 2.70:1 and 2.87:1, under the 3:1 a graphic needs. Each month's
+  values are in its accessible name, but a sighted user reading the bars in the
+  light theme gets less than AA. The fix is a token value (`sun-fill` and
+  `earth-fill` in the light theme, or the well's colour), which this pass was
+  not allowed to change.
+- **Input borders.** `line-strong` against `panel` is 1.62:1 (dark) and 1.99:1
+  (light). Buttons are identified by their text, but the date, search and
+  question fields rely on their border. Same constraint: a token change.
+- The known gap above still stands: no screen-reader user has tested the arc
+  list, and none has tested the mission list either.
