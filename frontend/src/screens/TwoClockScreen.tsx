@@ -46,6 +46,10 @@ export function TwoClockScreen() {
   const byTerrain =
     worst?.blockedByElDeg !== undefined && worst.blockedByElDeg > TERRAIN_BLOCKER_MIN_EL_DEG
   const ringSize = face === 'public' ? 460 : 540
+  const blackout = metrics?.earth.longestDownArc
+  const blackoutOpen = Boolean(metrics?.earth.longestDownOpen)
+  const blackoutByTerrain =
+    blackout?.blockedByElDeg !== undefined && blackout.blockedByElDeg > TERRAIN_BLOCKER_MIN_EL_DEG
 
   return (
     <div className="flex grow flex-col">
@@ -175,8 +179,22 @@ export function TwoClockScreen() {
                   <div className="flex gap-2.5">
                     <div className="w-[3px] shrink-0 bg-earth-fill" />
                     <p className="text-[13px] leading-5 text-ink">
-                      Earth sets below the horizon with libration, not with terrain — that is why its gap is
-                      measured in days and no ridge is responsible for it.
+                      {!blackout ? (
+                        'Earth stays above this site’s skyline for the whole window.'
+                      ) : blackoutByTerrain ? (
+                        <>
+                          The {hoursWithUnit(blackout.hours, 0, blackoutOpen)} blackout is terrain at bearing{' '}
+                          {bearing(blackout.blockedByBearingDeg ?? 0)}, standing{' '}
+                          {degrees(blackout.blockedByElDeg ?? 0, 2)} above the flat horizon: Earth sinks low with
+                          libration and a ridge finishes the job.
+                        </>
+                      ) : (
+                        <>
+                          The {hoursWithUnit(blackout.hours, 0, blackoutOpen)} blackout is Earth below the
+                          horizon itself, as the Moon’s libration carries it down; no ridge stands above level
+                          along its path.
+                        </>
+                      )}
                     </p>
                   </div>
                   <Link to="/horizon" className="text-[13px] font-semibold">
