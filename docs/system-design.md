@@ -672,10 +672,10 @@ additive, and every v1 response keeps its shape.
   ├─ record: provider · lander · task order · dates (+precision) · status · outcome
   ├─ payload manifest, a source on every row, "unconfirmed" where unsourced
   └─ "Sun & Earth at this target"  (the linked site, window = surface window)
-        ├─ four numbers + two-clock ring   → /clocks   (existing, unchanged)
+        ├─ four numbers + two-clock ring   → /site
         ├─ shift the date: window picker + month strip (calendar, §10.6)
         ├─ compare with nearby candidates  → /compare  (existing, seeded)
-        └─ skyline / blackout / report     → /horizon /blackout /report
+        └─ skyline / plan / report         → /skyline /plan /report
 ```
 
 The existing screens do not change their design. They gain one entry path (from

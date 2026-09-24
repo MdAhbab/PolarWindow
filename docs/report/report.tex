@@ -68,8 +68,8 @@
 \vspace{-2.4\baselineskip}
 \begin{center}\small
 Submission report for the 2026 challenge \emph{CLPS Lunar Mission Browser}.
-Every figure below was measured on commit \texttt{97d7626},
-24~September~2026.
+Timings and site figures were measured on commit \texttt{97d7626}; test counts on
+the final build of 24~September~2026.
 \end{center}
 
 % ---------------------------------------------------------------------------
@@ -149,8 +149,10 @@ named feature. The anchor and the rule are stored with it. Mission targets are t
 reverse case: we use them exactly as published, because moving one would describe a
 different mission.
 
-\paragraph{Three faces, one dataset.} Simple, Explain and Expert views change wording and
-density, not data: every face shows the same four numbers with their $\pm$ or $\geq$.
+\paragraph{One view, detail on request.} Every visitor sees the same plain-English view
+with the same four numbers and their $\pm$ or $\geq$. Pressing a number's label says what it
+means and gives its professional name; closed rows beside the chart open what blocks the
+Sun and Earth, how sure the numbers are, their sources and other dates.
 
 \paragraph{Agents that cannot state an unmeasured number.} Four agents see the system
 only through six declared tools. A guard checks every number and full date in an answer
@@ -161,8 +163,8 @@ built from measurements alone.
 \section{Results}
 \label{sec:results}
 
-\paragraph{Build.} 295 backend tests (201 unit, 75 integration, 19 golden), 129 frontend
-unit and component tests and 18 browser tests pass. In the browser tests, axe reports no
+\paragraph{Build.} 316 backend tests (207 unit, 90 integration, 19 golden), 140 frontend
+unit and component tests and 20 browser tests pass. In the browser tests, axe reports no
 serious or critical WCAG~2.1~AA violation on any screen, in either theme or on a phone.
 Strict type checking and all eight import contracts are clean.
 \Cref{tab:timing} was measured on an Apple M3; ``cold'' counts only cache misses.
@@ -293,7 +295,7 @@ moves to the next when one is over its quota.
 \item \textbf{The map shows relief, not terrain shadow.} It draws the LOLA hillshade and
   the line where the Sun sets on a smooth Moon, from the same SPICE Sun as the numbers;
   ridges cast no shadow on it. The approximate illumination and PSR tiles are not drawn.
-\item \textbf{No screen-reader user has tested it.} Axe and 18 browser tests now run on
+\item \textbf{No screen-reader user has tested it.} Axe and 20 browser tests now run on
   every screen, but automated checks do not replace a person.
 \item \textbf{CLPS coverage is thin.} Eleven missions have no published target, and only
   the three flown ones have a known surface window. No mission has a published ellipse.
@@ -457,8 +459,8 @@ stamped on every stored row, cache key and response. The limit is that the fixtu
 from this code, so they detect change, not error. \\
 \addlinespace
 How large is the test suite, and what does it not cover?
-& 295 backend tests (201 unit, 75 integration, 19 golden), 129 frontend unit and
-component tests and 18 browser tests pass. The integration tests use their own database.
+& 316 backend tests (207 unit, 90 integration, 19 golden), 140 frontend unit and
+component tests and 20 browser tests pass. The integration tests use their own database.
 The browser tests walk the demo path, check that superseded requests are cancelled, run
 axe on every screen in both themes and on a phone, and serve the saved copy with the
 service unreachable. No test stops Redis or Postgres, and there is no load test. \\
@@ -513,12 +515,12 @@ are therefore upper bounds. Four of the seven target sites are like this, includ
 Ghost~1. There the screens print no $\pm$ and say the terrain is not modelled, rather than
 a $\pm 0$ that would read as certainty exactly where there is least. \\
 \addlinespace
-What stops the public face being a simpler lie?
-& All three faces (Simple, Explain, Expert) read the same responses; only density and
-wording change. Simple shows the same four numbers with their $\pm$ or $\geq$, and its
-sentence about the night carries the margin or says the edges cannot be timed. What blocks
-Earth is read from the data at each site. Our rule is that simpler words must never mean a
-simpler claim. \\
+Does plain English make the claims simpler than the data?
+& There is one view, and it shows the same four numbers with their $\pm$ or $\geq$ that the
+API returns. Detail opens in place rather than living in a separate ``expert'' version, so
+no one sees a reduced claim: the margin, what blocks the Sun and Earth at each site, and
+the sources are one press away on every screen. Our rule is that simpler words must never
+mean a simpler claim. \\
 \addlinespace[4pt]
 
 \multicolumn{2}{@{}l}{\textbf{Ethics and provenance}}\\
@@ -555,8 +557,8 @@ What did your own review find that you did not fix?
 scripted run log, until it is cleared. The placeholder terrain error and the
 \qty{120}{\hour} limit. Two light-theme contrast gaps. No load test, and no test that stops
 Redis or Postgres. Fixed since the review: the map's season, $\pm 0$ and ``uncertain by up
-to 0 hours'' on smooth-sphere targets, the false Earth sentence, the missing $\pm$ on the
-simple face, stale counts in the documents, and the missing browser and accessibility
+to 0 hours'' on smooth-sphere targets, the false Earth sentence, the missing $\pm$ in the
+plain view, stale counts in the documents, and the missing browser and accessibility
 tests. \\
 \end{xltabular}
 \normalsize

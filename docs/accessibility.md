@@ -123,7 +123,7 @@ motion on and off.
 | The Listen button changed width between "Listen" and "Stop", moving what sat beside it | advisory | both words share one grid cell |
 | Pins near the pole overlapped, so letters were unreadable and targets overlapped | 1.4.3, 2.5.5 (advisory) | clusters, and a pole close-up where they separate |
 | Dates shown as raw source phrases with square brackets | 3.1.5 (advisory) | dates in words; the source phrase is the tooltip |
-| The face switcher asked "who are you" | advisory (U15) | Simple · Explain · Expert, 44 px targets |
+| The face switcher asked "who are you" | advisory (U15) | fixed then; the switch itself was removed on 24 September (see below) |
 
 ### Verified as passing
 
@@ -198,3 +198,30 @@ findings, and by keyboard.
   contrast gap listed above (a token change).
 - The guide's step order was tried by keyboard and screen reader in the
   browser's accessibility tree only; no screen-reader user has tried it.
+
+---
+
+## 2026-09-24 (evening): one view, detail on request
+
+The Simple · Explain · Expert switch was removed: every visitor gets the one
+plain-English view. What the other two added is now reached from the content
+itself, and each path was checked with axe (both themes) and by keyboard:
+
+- **A number's label is a button** (`aria-expanded`, `aria-controls`) that opens
+  one sentence on what the number means and, where there is one, its
+  professional name ("Also called Direct-to-Earth (DTE) contact").
+- **Closed rows** (`<details>`/`<summary>`, the `Disclosure` component) hold what
+  used to be the Expert sidebar and the Explain panels: what blocks the Sun and
+  Earth, how sure the numbers are, the sources and the table, other dates, a
+  mission's target, payloads and sources. A browser test opens every row on
+  Mission detail, Site, Skyline and Plan and runs axe with them open.
+- **"Too close to call"** on Compare is a button that states the reason and the
+  places the site could take; the reason is also in the live ranking sentence.
+- The **1 2 3 shortcuts** went with the switch. The remaining single keys
+  (T, [ ], Space) can still be switched off in Settings (2.1.4).
+- The data-source badge appears only when the data is not live, so the status
+  that matters (*Saved copy*, *Partial data*, *No data*) is never lost among
+  a badge that always says the same thing.
+- Routes were renamed to plain words (`/site`, `/plan`, `/skyline`); the old
+  addresses redirect.
+

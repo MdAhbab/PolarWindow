@@ -154,12 +154,13 @@ curl -s localhost:8000/healthz | jq .status          # "ok", not "degraded"
 
 Then, by hand — these are the things no test covers:
 
-1. **Open `/clocks`.** The badge should read **MEASURED**. If it says *Partial
-   data*, `/healthz` is telling you something; fix that first.
+1. **Open `/site`.** No data-source badge should show in the header. If one
+   says *Partial data*, `/healthz` is telling you something; fix that first.
 2. **Drag the date slider.** Numbers must move. Watch the network panel: after
    the first pass every request should report `cache: "hit"`.
 3. **Open `/compare`.** Change the ranking metric; the order must change.
-4. **Open `/states`.** All four states render live.
+4. **Stop the API and reload.** The *Saved copy* badge appears and the
+   missions still load from the offline copy.
 5. **Call one agent.** Prompt quality is *not* covered by CI — every test mocks
    the model — so this is a genuine manual gate:
    ```bash

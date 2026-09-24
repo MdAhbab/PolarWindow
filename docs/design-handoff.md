@@ -1,5 +1,12 @@
 # Handoff Spec: POLAR WINDOW frontend ← backend API
 
+> **Updated 24 September 2026.** Routes are now `/site`, `/skyline` and `/plan`
+> (the old `/clocks`, `/horizon` and `/blackout` redirect). There is one view
+> for everyone: the Simple · Explain · Expert switch was removed, and detail
+> opens on request (a key number's label, closed rows). `/states` and `/story`
+> are gone (the four ideas are on the front page, `/#why`). The data contracts
+> and the four states in §5 are unchanged.
+
 Scope: what an engineer needs to wire `frontend/` to the API **without changing
 a single visual decision**. The design is finished. Colours, spacing, type,
 motion and layout are fixed and documented in `conventions.md`; this spec does not
@@ -21,13 +28,12 @@ always drawn identically so the eye compares them without a legend.
 | | route | reads |
 |---|---|---|
 | S1 | `/map` | site list, tiles, per-site summaries |
-| S2 | `/clocks` | focused site's arcs + the four numbers |
+| S2 | `/site` | focused site's arcs + the four numbers |
 | S3 | `/compare` | `POST /compare` |
-| S4 | `/horizon` | `GET /sites/{id}/horizon` |
-| S5 | `/blackout` | `GET /sites/{id}/windows` + autonomy |
+| S4 | `/skyline` | `GET /sites/{id}/horizon` |
+| S5 | `/plan` | `GET /sites/{id}/windows` + autonomy |
 | S6 | `/report` | metrics + windows + provenance |
-| S7 | `/story` | static |
-| S8 | `/states` | all four states, live |
+| S7 | `/` | the front page (static, plus `/sites` counts) |
 | S9 | `/missions` | **v2, new home.** `GET /missions` (§10) |
 | S10 | `/missions/:id` | **v2.** `GET /missions/{id}`, the target site's metrics, `/calendar` (§10) |
 
@@ -83,7 +89,7 @@ Token groups, unchanged:
 | alert | `alert` `alert-deep` `alert-wash` | Magenta, never red, never paired with green |
 | terrain | `terrain-high` `terrain-mid` `terrain-low` `psr` | Low chroma only |
 | margin | `uncertain` | The margin we admit to |
-| radius | `none` (data) `control` 2px `pill` (faces only) | |
+| radius | `none` (data) `control` 2px `pill` (view switches only) | |
 
 ---
 
@@ -228,13 +234,12 @@ is.
 |---|---|---|---|
 | Missions | `/missions` | `pin` | **New home.** `/` redirects here after the first visit (U1). |
 | Map | `/map` | a map or grid icon if one exists; otherwise `pin` with a different label | Candidate sites (`kind=candidate`) plus mission-target pins as a toggle layer |
-| Site | `/clocks` | `clocks` | Renamed from "Two clocks" (critique). The route is unchanged. |
+| Site | `/site` | `clocks` | Renamed from "Two clocks" (critique); the old `/clocks` redirects. |
 | Compare | `/compare` | `compare` | Can be seeded from a mission |
-| Blackout | `/blackout` | `gap` | |
+| Plan | `/plan` | `gap` | Was "Blackout"; the old `/blackout` redirects. |
 
-- Horizon (`/horizon`) is reached from Site ("See the skyline"), and Report
-  (`/report`) from Site and Mission detail ("Hand-over report"). Both keep their
-  routes.
+- Skyline (`/skyline`) is reached from Site ("See the skyline"), and Report
+  (`/report`) from Site and Mission detail ("Printable report").
 - **Phone (< 768):** the bottom tab bar is `fixed inset-x-0 bottom-0 z-40
   bg-canvas`, with `pb-[env(safe-area-inset-bottom)]` and **all 5 tabs**.
   `<main>` gets `pb-16 lg:pb-0` (U3).
@@ -382,11 +387,11 @@ Right column, **Sun & Earth at this target** (sticky at ≥ 1280):
 4. Two `Ribbon`s (sun, earth) over the window, with the `DateSlider` cursor.
 5. The **window picker** (§10.4).
 6. Actions, as `Button` secondary:
-   - "Open in Site view" → `/clocks` with this site and window;
+   - "Open the site page" → `/site` with this site and window;
    - "Compare with nearby candidates" → `/compare` seeded with the target and
      the 3 nearest candidates by great-circle distance (computed client-side from
      coordinates, and labelled "nearest by distance");
-   - "Hand-over report" → `/report`.
+   - "Printable report" → `/report`.
 7. **Explain** (A1, §10.5) as a collapsed disclosure: "What is it like at this
    site?".
 
@@ -504,6 +509,6 @@ reformat numbers in a way that creates new ones.
 - `SectionLabel` renders as `<h2>` with the same classes (U9).
 - The single-key shortcuts get an off switch, stored in the store (default on)
   and exposed in the settings sheet (U8, WCAG 2.1.4).
-- Controls are at least 44 px, and the face switcher `h-11` (U15).
+- Controls are at least 44 px (U15).
 - Timestamps read as "Day 12, 26 March, 09:00 UTC" on screen and in
   `aria-valuetext`; ISO stays in the exports (U10).

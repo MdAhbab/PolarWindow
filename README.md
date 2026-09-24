@@ -1,72 +1,50 @@
 # POLAR WINDOW
 
-**Landing site planning for the Moon's south pole.**
-NASA Space Apps Challenge 2026 — *CLPS Lunar Mission Browser*.
+**Sunlight and contact with Earth for every NASA CLPS mission and for candidate
+landing sites at the Moon's south pole.**
+NASA Space Apps Challenge 2026: *CLPS Lunar Mission Browser*.
 
-Sun, Earth and terrain at candidate south-pole landing sites, in one picture a
-mission planner can read in about ten seconds.
+A project manager picks a mission or a site and reads, in about ten seconds,
+how much sunlight a lander gets, how long it can talk to Earth, and the longest
+stretch it has to survive alone. The numbers are computed from real NASA terrain
+and real Sun and Earth positions, and each one shows how far it could be off.
 
 ```bash
-make install     # backend + frontend dependencies
-make seed        # SPICE kernels, LOLA terrain, 15 sites, horizon masks (~10 min, once)
-make dev         # postgres, redis, api on :8000, frontend on :5173
+make install     # backend and frontend dependencies
+make seed        # SPICE kernels, LOLA terrain, 15 sites, horizon masks (about 10 min, once)
+make dev         # postgres, redis, API on :8000, frontend on :5173
 ```
+
+Or `python3 run.py`: it starts Postgres and Redis, installs what is missing, and
+runs the API and the frontend together. The frontend also runs with no backend
+at all from a saved copy of the API's answers: `cd frontend && npm run build:snapshot && npm run preview`.
 
 ---
 
-## What problem this solves
+## The problem
 
 The challenge brief says the existing tools have "complicated interfaces" that
-make it "difficult to evaluate critical information with efficiency". That is an
-interface problem stated as an interface problem, and this is an answer to it:
-the science is solved to the second, and getting a *decision* out of it is the
-part that still takes a week.
-
-Four numbers decide a mission, and they always appear together:
+make it "difficult to evaluate critical information with efficiency". The
+science of polar lighting is solved; getting a decision out of it is the slow
+part. POLAR WINDOW answers that with four numbers that always appear together:
 
 | | |
 |---|---|
-| **Sunlight** | hours the Sun is above the site's own horizon |
-| **Earth contact** | hours Earth is above it — direct-to-Earth geometry |
-| **Longest dark gap** | the single longest unbroken night |
-| **Longest RF blackout** | the single longest unbroken silence |
+| **Time in sunlight** | hours the Sun is above the site's own skyline: when the solar panels charge |
+| **Time in contact with Earth** | hours Earth is above it: when the lander can radio home directly |
+| **Longest night** | the single longest stretch without sunlight: what the battery must survive |
+| **Longest time without contact** | the single longest stretch with Earth out of sight: how long the lander works alone |
 
-The last two are the ones that kill missions, and they are the ones a total or
-an average hides. There is **no composite score** anywhere in this system, and
-a test asserts there never will be: a score ranks sites on one axis and hides
-which corner was given up, and the trade is the product.
+The last two are the ones that end missions, and a total or an average hides
+them. There is **no combined score** anywhere in the system, and a test makes
+sure there never will be: a score ranks sites on one axis and hides which corner
+was given up, and that trade is the decision.
 
----
+## What it finds
 
-## It computes, from real data
+Fifteen candidate sites, one lunar day from 14 March 2027, computed by this build:
 
-Not a mockup wired to fixtures, and no longer a synthetic stand-in either:
-
-1. **Terrain** — the LOLA gridded polar DEM (`LDEM_80S_20M`, 20 m posts) from
-   the PDS Geosciences Node. Fetched per site as a 20 km window by HTTP range
-   request, with an 80 m regional tile covering 20–50 km.
-2. **Horizon mask** — a real ray-cast: 1,440 bearings at 0.25°, stepped outward
-   to 50 km, curvature drop of `r²/2R` subtracted, and a blocker only counted
-   where it stands above the noise its own DEM error could produce.
-3. **Positions** — SPICE `spkpos` against DE440 in the `MOON_ME` frame, with
-   light-time and stellar aberration, projected into each site's local
-   east/north/up frame using unit vectors rather than the textbook azimuth
-   formula, which loses all its precision within a degree of the pole.
-4. **Arcs** — every sign change of `elevation − skyline` is bracketed at 15
-   minutes and refined by bisection, and each crossing carries a timing
-   uncertainty derived from the DEM's vertical error divided by the rate the
-   body crosses the skyline.
-5. **The four numbers, and the compound events** — the intersection of "no Sun"
-   and "no link", which is what the autonomy packet is sized from.
-
-Change the window and the numbers are recomputed, because the geometry is
-being evaluated, not replayed.
-
-### What it says
-
-Fifteen sites, one lunar day from 2027-03-14, computed by this build:
-
-| code | site | lat | sun | Earth | longest night | longest blackout |
+| code | site | lat | sunlight | contact with Earth | longest night | longest time without contact |
 |---|---|---|---|---|---|---|
 | B | Connecting Ridge | 89.44°S | **81 %** | 61 % | **122 h** | 278 h |
 | E | de Gerlache-Kocher massif | 88.44°S | 74 % | 69 % | ≥ 101 h | 221 h |
@@ -79,213 +57,207 @@ Fifteen sites, one lunar day from 2027-03-14, computed by this build:
 | A | Shackleton rim, east shoulder | 89.30°S | 47 % | 57 % | 206 h | 304 h |
 | … | *(six more)* | | | | | |
 
-"≥" marks a night the window cut short: the reference window, not the
-terrain, ended it, so the figure is a lower bound and the true night is
-longer. The API returns this as `longest_dark_open`, and `/compare` refuses
-to rank a lower bound as best.
+"≥" marks a night the chosen dates cut short, so the real night is longer. The
+API returns this as `longest_dark_open`, and Compare never calls such a value
+best.
 
-Three findings fell out of the physics rather than being designed in:
+Three findings came out of the physics rather than being designed in:
 
-- **The power/comms trade is a latitude trade.** Of the five sites above 70 %
-  sunlight, four sit within 1.6° of the pole and have 61–70 % Earth contact;
-  the fifth, Sverdrup rim, sits 2° out and gets 45 %. Both sites above 76 %
-  Earth contact sit four to six degrees out and pay for it with a night of
-  304 h and at least 288 h. Ice is at the pole, continuous power is at the pole, and
-  continuous Earth contact is *away* from it.
+- **The power and contact trade is a latitude trade.** Of the five sites above
+  70 % sunlight, four sit within 1.6° of the pole and have 61–70 % contact with
+  Earth; the fifth, Sverdrup rim, sits 2° out and gets 45 %. Both sites above
+  76 % contact sit four to six degrees out and pay for it with nights of 304 h
+  and at least 288 h.
 - **At the pole the Sun never rises, and that is not the problem.** At
-  Connecting Ridge the Sun's elevation stays between −1.6° and −0.7° for the
-  entire month — it never gets above level. The site is still sunlit 81 % of
-  the time, because it stands 1,958 m above the lunar reference sphere and
-  looks *down* at a horizon averaging −2.4°. Terrain, not season, decides who has power.
-- **Direct-to-Earth at the pole is libration-limited, not terrain-limited.**
-  Earth's elevation swings through about 13° on a 27-day cycle (−7.4° to +6.0°
-  at Connecting Ridge), so polar sites lose it for days at a time in one long
-  stretch rather than in short terrain-cut gaps.
-
-### A site is not a crater
-
-Every well-known name near the south pole refers to a *crater*, and the IAU
-coordinate for a crater is its **centre** — which is the permanently shadowed
-floor and the worst possible place to land. Sampling LOLA at the published
-centres of Shackleton, Haworth and Shoemaker returns −2,767 m, −3,316 m and
-−3,932 m.
-
-So site coordinates here are **derived, not asserted**. Each named feature's IAU
-centre is an anchor; the landing point is the most *open-skied* landable post in
-a stated ring or disc around it, found by searching the DEM. The anchor, the
-search region, the offset and the rule are all recorded on every site and
-returned by the API. One seed was removed entirely rather than moved until its
-number looked acceptable — see `backend/app/data/ingest_sites.py`.
-
----
+  Connecting Ridge the Sun stays between −1.6° and −0.7° for the whole month.
+  The site is still sunlit 81 % of the time, because it stands 1,958 m up and
+  looks *down* at a skyline averaging −2.4°. Terrain, not season, decides power.
+- **Contact with Earth at the pole is limited by the Moon's wobble (libration),
+  not by terrain.** Earth's elevation swings through about 13° on a 27-day
+  cycle, so polar sites lose it for days in one long stretch.
 
 ## Who it is for
 
-**The project manager of a lunar lander mission** is the one stakeholder the
-product is built around: someone choosing where and when to land, who has to
-know how much sunlight the lander will get, how long it can talk to Earth, and
-the longest stretch it must survive alone. They read everything, and they run
-the service for their team from one place: **Settings**. There is no separate
-admin account; the project manager's Settings holds the controls an admin
-would otherwise need (the AI assistant, its activity log, saved results, and a
-health check of the data). Hackathon judges get the same view with one click.
+One stakeholder: **the project manager of a lunar lander mission**, choosing
+where and when to land. They read everything, and they run the service for
+their team from **Settings**: the AI assistant, its activity log, saved results
+and a health check of the data. There is no separate admin account. Judges get
+the same view with one click.
 
-The detail switch (**Simple · Explain · Expert**) changes how much is shown,
-never the numbers, and never drops a caveat to make a sentence shorter.
+There is one view for everyone, in plain English. Detail is there on request:
+press a number's label to see what it means (and its professional name, such as
+"Direct-to-Earth contact"), and open any closed row (*What blocks the Sun and
+Earth here?*, *How sure is this?*, *Change the dates*) to see more in place.
 
 ## The screens
 
-| | |
+| route | |
 |---|---|
-| **`/`** | The front page: four ideas about the pole on a 3D Moon (the south-polar terrain is the real LOLA map), and one button in |
-| **`/missions`** | Every NASA CLPS delivery, flown and planned, with filters and a timeline |
-| **`/missions/:id`** | One mission: its sourced record, and Sun and Earth at its landing spot over its days on the surface |
-| **`/map`** | The south pole from above, the shadow for the moment shown, and every candidate site |
-| **`/clocks`** (Site) | One site: four numbers and two rings, sunlight outside and contact with Earth inside |
-| **`/compare`** | Two to eight sites side by side, ranked by one measure at a time |
-| **`/horizon`** | The skyline all around a site, and what blocks the Sun |
-| **`/blackout`** (Plan) | Every time without contact, what the lander must handle alone, and downloads |
-| **`/report`** | A one-page printable report |
+| `/` | Front page: why the pole is hard, on a 3D Moon whose south-polar terrain is the real LOLA map, and one button in |
+| `/missions` | Every NASA CLPS delivery, flown and planned: filters, a map of where they land, a timeline |
+| `/missions/:id` | One mission: status and dates, then the four numbers at its landing spot over its days on the surface; target, payloads and sources open on request |
+| `/map` | The south pole from above, the shadow at the moment shown, and every candidate site |
+| `/site` | One site: the four numbers and two rings, sunlight outside and contact with Earth inside |
+| `/compare` | Two to eight sites side by side, ranked by one measure at a time; "too close to call" where the data cannot separate them |
+| `/plan` | Every time without contact, what the lander must handle alone, and downloads (spreadsheet, SPICE) |
+| `/skyline` | The skyline all around a site, and what blocks the Sun |
+| `/report` | A one-page printable report |
 
-**Signing in.** The front page's *Open the dashboard* button asks the API for a
-project manager's session (`POST /api/v1/auth/demo`, a signed JWT) with no user
-name or password, so a judge is in with one click. Reading is public; the
-session is checked where it matters: the AI panels (they cost model quota) and
-the project settings (they change the service for everyone).
-`PW_DEMO_SIGN_IN=false` turns the button off anywhere real.
+**Signing in.** *Open the dashboard* asks the API for a project manager's
+session (`POST /api/v1/auth/demo`, a signed JWT) with no user name or password.
+Reading is public; the session is checked where it matters, on the AI panels
+(they use model quota) and the project settings (they change the service for
+everyone). `PW_DEMO_SIGN_IN=false` turns the button off anywhere real.
 
 **The guide.** On the first visit a bar along the bottom introduces each major
-feature once, in nine short steps, taking you to each page and outlining the
-part it describes. Close it any time; *Guide* in the header brings it back.
+feature once, in nine short steps. *Guide* in the header brings it back.
 
 ---
+
+## How it computes
+
+1. **Terrain.** The LOLA polar elevation model `LDEM_80S_20M` (20 m posts) from
+   the PDS Geosciences Node, fetched per site as a 20 km window, with an 80 m
+   regional tile out to 50 km.
+2. **Skyline.** A ray-cast over 1,440 directions at 0.25°, out to 50 km, with the
+   Moon's curvature subtracted; a ridge only counts where it stands above the
+   noise its own terrain error could produce.
+3. **Sun and Earth positions.** SPICE `spkpos` against DE440 in the `MOON_ME`
+   frame, with light-time and stellar aberration, turned into each site's local
+   east/north/up frame with unit vectors (the textbook azimuth formula loses its
+   precision within a degree of the pole).
+4. **Stretches.** Every rise and set against the skyline is bracketed at 15
+   minutes and refined by bisection. Each crossing carries a timing margin: the
+   terrain's height error divided by how fast the body crosses the skyline.
+5. **The four numbers, and the stretches with neither sunlight nor contact**,
+   which size what the lander must do on its own.
+
+Change the dates and the numbers are recomputed: the geometry is evaluated, not
+replayed. Ray-casting one skyline takes about 45 ms and is done once per site;
+after that a 708-hour timeline at 900 s steps costs about 15 ms cold and 4 ms
+warm over HTTP (Apple M3, 24 September 2026).
+
+**A site is not a crater.** The IAU coordinate of a named crater is its centre,
+which is the permanently shadowed floor (LOLA gives −2,767 m at Shackleton's
+centre). So site coordinates are derived, not asserted: each name's centre is an
+anchor, and the site is the most open-skied landable point in a stated ring
+around it, found in the terrain. The anchor, the search area and the rule are
+stored on every site and returned by the API.
 
 ## Architecture
 
 ```
-frontend/          React 19 + Vite + Tailwind v4. Design is finished; do not redesign.
-  src/lib/api/     generated types, typed client, adapters, TanStack Query hooks
+frontend/          React 19, Vite, Tailwind v4, TanStack Query, zustand, three.js
+  src/lib/api/     generated types, typed client, adapters, query hooks
+  e2e/             Playwright browser tests with axe accessibility checks
 backend/
-  app/core/        PURE. No I/O, no DB, no clock. kernels, spice, horizon,
+  app/core/        pure computation, no I/O: kernels, spice, horizon,
                    visibility, intervals, metrics, timeline, projections
   app/data/        LOLA access, site resolution, tile rendering
-  app/db/          SQLAlchemy 2.x models + one repository per aggregate
-  app/services/    policy. Never imports FastAPI, so the worker and the agent
-                   tools call exactly the same code the routes do
-  app/api/v1/      routes + pydantic schemas only
-  app/agents/      four agents, six tools, the grounding guard
-  app/workers/     precompute: masks and reference metrics
-docs/              conventions, system design, six ADRs, test plan, API, runbook
+  app/db/          SQLAlchemy 2.x models, one repository per aggregate
+  app/services/    policy; never imports FastAPI, so workers and agents
+                   call exactly the code the routes do
+  app/api/v1/      routes and pydantic schemas only
+  app/agents/      four agents, six tools, the number guard
+  app/workers/     precompute: skylines and reference numbers
+data/              CLPS mission records, each field with a source and access date
+docs/              system design, seven ADRs, API, data sources, validation,
+                   test plan, runbook, accessibility, and the judge report
 ```
 
-**The layering rule is enforced, not trusted.** `make contracts` runs
-import-linter over eight contracts: `core/` imports no I/O, routes import
-neither the ORM nor the data layer, services import no FastAPI, `spiceypy` is
-reachable only through `core/spice.py`, and agents reach the domain only through
-`agents/tools.py`.
+The layering is enforced, not trusted: `make contracts` runs import-linter over
+eight contracts (`core/` does no I/O, routes import neither the ORM nor the data
+layer, services import no FastAPI, `spiceypy` is reached only through
+`core/spice.py`, agents reach the domain only through `agents/tools.py`).
 
-**The expensive step is precomputed by construction.** Ray-casting a site's
-skyline is ~45 ms against real terrain and depends on nothing but the site;
-after it, a site *is* 1,440 numbers and everything the date slider touches is a
-lookup plus one vectorised `spkpos`. A 708-hour timeline at 900 s (2,836
-samples) costs about 15 ms cold and about 4 ms warm over HTTP, measured on this
-build (Apple M3, 24 September 2026).
+## The AI helpers
 
----
+Four agents over the same numbers, reachable only through six declared tools,
+running on Google Gemini models with a fallback order set in Settings:
 
-## The AI layer
+- **What is it like at this site?** (A1): one plain paragraph about a site.
+- **Find sites that meet a requirement** (A2): ranks sites against a stated need,
+  and says plainly when nothing qualifies.
+- **Summary memo** (A3): a memo for the team on the printable report.
+- **Ask about missions and sites** (A4): questions in plain language over the data.
 
-Four agents over the same numbers, reachable only through six declared tools:
-
-- **A1 Site Explainer** — one plain paragraph about what a site is like.
-- **A2 Trade-off Advisor** — ranks sites against a stated requirement, and must
-  say plainly when nothing qualifies.
-- **A3 Audience Writer** — the same facts as a planner memo, a lesson plan and a
-  public explainer, from one generation so they cannot disagree.
-- **A4 Question Answerer** — natural language over the site database.
-
-**Every numeric claim must trace to a tool result.** A response containing a
-number that is not in the tool outputs is rejected, the model is told which
-number and what was actually available, and it gets one retry. Fail twice and
-the answer is discarded and replaced by a deterministic summary built from the
-measurements — which is also what happens if the model times out or is not
-configured at all. The four numbers never depend on an API key.
-
-A *correct* derived number is still rejected: the guard cannot tell correct
-arithmetic from lucky arithmetic, so derivations belong in tools. Every run,
-including every rejection, is recorded in `agent_runs` and served at
-`GET /api/v1/agents/runs`.
-
----
+**Every number in an answer must trace to a tool result.** An answer with a
+number that is not in the tool outputs is rejected, the model is told which one,
+and it gets one retry. Fail twice, time out, or have no model configured, and
+the answer is replaced by a summary built directly from the measurements. The
+four numbers never depend on an API key. Every run, rejections included, is
+recorded and shown in the AI activity log (Settings → Project).
 
 ## Tests
 
 ```bash
-make test-fast   # unit + property + synthetic golden. No services, < 20 s
-make test        # everything: unit, integration and golden (316 tests)
-make test-fe     # frontend unit and component tests (140)
-cd frontend && npm run e2e   # browser tests, axe included; API on :8000
-make lint        # ruff, mypy --strict, import-linter
+make test-fast               # unit, property and synthetic golden tests; no services
+make test                    # all 316 backend tests: unit, integration, golden
+make test-fe                 # 140 frontend unit and component tests
+cd frontend && npm run e2e   # 20 browser tests with axe (WCAG 2.1 AA); API on :8000
+make lint                    # ruff, mypy --strict, import-linter
 ```
 
-- **Property tests** over `core/intervals.py` with hypothesis: partition,
+- **Property tests** (hypothesis) over the interval arithmetic: partition,
   alternation, contiguity, inversion symmetry, concatenation, monotonicity.
-  Off-by-one errors in longest-run detection are the most likely silent bug in
-  this project, and they produce a plausible number rather than an exception.
-- **Golden fixtures** for three sites chosen to exercise different physics,
-  pinned with stated tolerances and a manifest recording the kernels, the DEM
-  and the reason they were last regenerated. `make golden-update` refuses
-  without `GOLDEN_UPDATE_REASON`.
-- **A synthetic golden set** runs the same code paths with no kernels and no
-  database, so the safety net survives on a laptop.
-- **The ray-march is tested against analytic surfaces** whose horizon can be
-  derived by hand: a plane, a cone, a wall, a ramp and a crater bowl. The
-  numba-compiled selection is pinned to its plain-Python twin.
-- **No test reaches the real Gemini API.** An autouse fixture blocks the
-  transport, so a forgotten mock fails loudly.
+- **Golden fixtures** for three sites with different physics, pinned with stated
+  tolerances; `make golden-update` refuses without `GOLDEN_UPDATE_REASON`.
+- **The ray-march is tested against analytic surfaces** whose skyline can be
+  worked out by hand: a plane, a cone, a wall, a ramp and a crater bowl.
+- **Hindcast against flown landers** in `docs/validation.md`.
+- **No test reaches the real Gemini API**: the transport is blocked in tests.
 
----
+## Known limits
 
-## What is still a placeholder
+Named, rather than left for someone to find:
 
-Named, rather than quietly left:
+- The 120 h battery limit is a stand-in. The backend returns durations and
+  refuses to return verdicts, because a verdict needs a thermal model this
+  system does not have.
+- The map's shadow is where the Sun sets on flat ground (hills are not counted).
+  Every number uses each site's real skyline.
+- Terrain height error is a per-product constant (2 m for 20 m data, 4 m for
+  80 m), not a per-pixel figure.
+- Outside 80°S there is no terrain data, so a skyline there is a flat horizon and
+  says so on screen.
+- No screen-reader user has tested the announcements yet.
 
-- `SURVIVAL_LIMIT_H = 120` in the frontend is a stand-in. The backend returns
-  durations and refuses to return verdicts, because a verdict needs a thermal
-  model this system does not have.
-- The map's shadow line is where the Sun sets on flat ground (hills are not
-  counted), from the same SPICE Sun as every number.
-- The `illumination` and `psr` tile layers are approximations from a ring-based
-  horizon proxy, labelled as such in the response headers. They are right about
-  which craters are dark; they are not published products.
-- DEM vertical error is a per-tier constant — 2 m for the 20 m product, 4 m for
-  the 80 m one — and each bearing carries the tier that actually set it. It is
-  still not a per-pixel figure: wire the LDEC count products and every
-  uncertainty in the app follows automatically.
-- No screen-reader user has tested the arc-list announcements.
-
----
+More in `docs/report/report.pdf` (Limitations) and `docs/validation.md`.
 
 ## Keyboard
 
 ```
-[  ]        step the date by 6 h        ⇧[ ⇧]  by one day
-1 2 3       Simple, Explain, Expert     T      read the chart as a table
-Tab         nav → filters → map → card → rail
+[  ]   step the date by 6 h        ⇧[ ⇧]  by one day
+T      read the chart as a table   Space  play through the dates
 ```
 
----
+Single-key shortcuts can be switched off in Settings (WCAG 2.1.4).
+
+## Documentation
+
+| | |
+|---|---|
+| `docs/report/report.pdf` | The judge report: what was built, measured results, limitations, questions |
+| `docs/system-design.md` | Architecture, data model, API design, performance |
+| `docs/adr/` | Seven decision records |
+| `docs/api.md`, `docs/openapi.json` | The REST API |
+| `docs/data-sources.md` | Every dataset and where it comes from |
+| `docs/validation.md` | Hindcast of flown landers |
+| `docs/test-plan.md` | What is tested and why |
+| `docs/accessibility.md` | WCAG audit and fixes |
+| `docs/runbook.md`, `docs/deploy-checklist.md` | Running and deploying it |
+| `docs/conventions.md` | Invariants, and the plain-English word list |
 
 ## Data and credits
 
-Every number in this product traces to a public source, listed in full in
-`docs/data-sources.md`:
+Every number traces to a public source, listed in full in `docs/data-sources.md`:
 
-- **Terrain:** LOLA polar digital elevation models `LDEM_80S_20M` and
-  `LDEM_80S_80M`, from the LOLA team via the PDS Geosciences Node.
-- **Ephemeris and frames:** NAIF SPICE kernels `de440`, `moon_pa_de440_200625`,
-  `moon_de440_250416`, `pck00011` and `naif0012`, from NAIF / JPL.
-- **CLPS missions:** NASA Science CLPS delivery pages, NASA news releases, and
+- **Terrain:** LOLA polar elevation models `LDEM_80S_20M` and `LDEM_80S_80M`,
+  from the LOLA team via the PDS Geosciences Node.
+- **Sun and Earth positions, and frames:** NAIF SPICE kernels `de440`,
+  `moon_pa_de440_200625`, `moon_de440_250416`, `pck00011` and `naif0012`, from
+  NAIF / JPL.
+- **CLPS missions:** NASA Science CLPS delivery pages, NASA news releases and
   LROC landing-site images (NASA/GSFC/Arizona State University), with a source
   and an access date on every record in `data/missions.json`.
 - **Feature names and centres:** the IAU Gazetteer of Planetary Nomenclature
@@ -297,7 +269,7 @@ Apache License 2.0; see `LICENSE`.
 
 ---
 
-**This is not a NASA product and is not endorsed by NASA** or by any other
-space agency. It was built for the NASA International Space Apps Challenge.
-Data product and mission names are the public identifiers of the sources
-above, used to cite them; no agency logo or insignia appears anywhere in it.
+**This is not a NASA product and is not endorsed by NASA** or any other space
+agency. It was built for the NASA International Space Apps Challenge. Data
+product and mission names are the public identifiers of the sources above, used
+to cite them; no agency logo or insignia appears anywhere in it.

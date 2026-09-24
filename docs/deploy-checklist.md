@@ -89,12 +89,14 @@ curl -s -X POST localhost:8000/api/v1/agents/explain \
 
 ### By hand, because no test covers it
 
-1. Open `/clocks`. The provenance badge must read **MEASURED**. *Partial data*
-   means `/healthz` is telling you something — fix that first.
+1. Open `/site`. No data-source badge should show in the header: it appears
+   only for *Partial data*, *Saved copy* or *No data*, and then `/healthz` is
+   telling you something — fix that first.
 2. Drag the date slider. Numbers must move, and after one pass the network
    panel should show `cache: "hit"` on repeats.
 3. Open `/compare`, change the ranking metric, confirm the order changes.
-4. Open `/states` — all four states render live.
+4. Stop the API and reload: the *Saved copy* badge appears and the missions
+   still load from the offline copy.
 5. **Read one agent paragraph.** Prompt quality is not covered by CI, because
    every test mocks the model. This is a genuine manual gate.
 6. Open `/api/v1/agents/runs` and confirm it has rows.

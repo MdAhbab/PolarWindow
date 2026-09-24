@@ -107,10 +107,12 @@ data layer; services import no FastAPI; `spiceypy` is reachable only through
 2. **Every number carries its ±, or says why it cannot.** `crossingTolerance`
    returns `grazing: true` when the body crosses the skyline too shallowly to
    time. Show the word, never a fake precision.
-3. **Every value is prefixed `≈`** (`format.ts`, `APPROX`) and every response
-   carries `meta.uncertainty`, which is never null. The provenance badge reads
-   from `/healthz` and says *Measured*, *Partial data* or *No data* — it is not
-   a hardcoded label, and it must never become one again.
+3. **Every value is an estimate, and says so once per screen** (the footer line,
+   `format.ts` `ESTIMATES`); "≥" marks a value the dates cut short and "±" a
+   timing margin. Every response carries `meta.uncertainty`, which is never
+   null. The data-source badge reads from `/healthz` and appears only when the
+   data is not live (*Saved copy*, *Partial data*, *No data*) — it is never a
+   hardcoded label.
 4. **Colour never carries meaning alone.** Sun is amber *and* the outer ring
    *and* labelled; blocked is hatched at 45°; uncertain is hatched at −45°;
    over-limit is magenta *and* a triangle glyph *and* the words. No red/green
@@ -118,8 +120,9 @@ data layer; services import no FastAPI; `spiceypy` is reachable only through
 5. **Every chart has a table twin** rendered from the same arc array
    (`ArcTable`). The screen-reader path and the export path must not diverge
    from the picture.
-6. **Radius 0 on data surfaces**, 2px on controls, pill only on the audience
-   switcher. Glow means sunlight and nothing else.
+6. **Radius 0 on data surfaces**, 2px on controls, pill only on a view switch
+   (the Missions map's *South pole · Whole Moon*). Amber and glow mean sunlight
+   and nothing else: primary buttons are ink, never amber.
 7. **Real elements.** `<button>`, `<a href>`, `<input>` + `<label>`. Never
    `role`/`onClick` on a div. Minimum target 48×48.
 8. **Every animation has a named static fallback** and branches in code, not
@@ -131,15 +134,16 @@ data layer; services import no FastAPI; `spiceypy` is reachable only through
 ## Words
 
 One name for each idea, in plain English, everywhere it appears. No coined
-terms on screen; a technical term is spelled out where it appears (Expert may
-add the professional term as a second line). Keep to these:
+terms on screen; a technical term is spelled out where it appears. The
+professional name of a key number is shown only when its label is pressed
+("Also called …"). Keep to these:
 
 | Say | Not |
 |---|---|
 | time in sunlight | time in the Sun, sunlit window |
-| time in contact with Earth | call home, Earth link, DTE (Expert: "Direct-to-Earth (DTE) contact") |
+| time in contact with Earth | call home, Earth link, DTE (on request: "Also called Direct-to-Earth (DTE) contact") |
 | longest night | longest dark gap, dark period |
-| time without contact | blackout, silence, RF blackout (Expert may say "radio (RF) blackout") |
+| time without contact | blackout, silence, RF blackout (on request: "Also called radio (RF) blackout") |
 | dark and out of contact at once | compound event |
 | the dates, these dates | the window |
 | stretch | arc |
@@ -211,5 +215,6 @@ Each of these reached running code. Do not reintroduce them.
 - The exports on S5 and S6 emit CSV and SPICE interval lists from the arcs
   already on screen (`lib/export.ts`), but nothing validates the SPICE file by
   loading it back through spiceypy.
-- The guided walk-through on the educator face is four steps on S2 only. The
-  other screens change density and pacing but have no path of their own.
+- There is one view. Detail is on request (a number's label, a closed row);
+  nothing is hidden that a claim depends on: a caveat that changes what a
+  number means stays on screen as a one-line note.
