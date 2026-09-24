@@ -16,7 +16,7 @@ import { WindowPicker } from '../components/WindowPicker'
 import { SummarySpeaker } from '../components/SummarySpeaker'
 import { ExplainPanel } from '../components/Agents'
 import { useWindowParams } from '../lib/mission'
-import { bearing, bound, coords, degrees, hoursWithUnit, humanDuration } from '../lib/format'
+import { bearing, coords, degrees, edgeMargin, hoursWithUnit, humanDuration } from '../lib/format'
 
 /**
  * S2, "Site" in the navigation — the signature screen.
@@ -73,11 +73,13 @@ export function TwoClockScreen() {
             <div className="w-full max-w-2xl">
               <ProblemPanel error={view.error} fallbackTitle="Cannot compute this site" onRetry={view.refetch} />
             </div>
-          ) : face !== 'public' ? (
+          ) : (
+            // The same four numbers, in the same place, on every face: the one
+            // anchor a user learns once. Simple explains them below the ring.
             <div className="w-full">
               <KeyNumberRow metrics={metrics} face={face} uncertain={!terrainModelled} />
             </div>
-          ) : null}
+          )}
           {metrics && !view.error ? (
             <div className="flex w-full flex-col items-center gap-6 xl:flex-row xl:justify-center">
               <TwoClockRings
@@ -91,11 +93,6 @@ export function TwoClockScreen() {
 
           {face === 'public' && metrics && worst && !view.error ? (
             <div className="flex max-w-[520px] flex-col items-center gap-4 text-center">
-              <div className="text-[96px] leading-[88px] font-semibold tracking-[-0.03em] tnum">
-                {bound(worstOpen)}
-                {Math.round(worst.hours)}
-              </div>
-              <div className="text-[20px] text-ink-2">hours of night</div>
               <p className="text-[17px] leading-7 text-ink text-pretty">
                 {byTerrain
                   ? `At this spot on the Moon, one ridge ${bearing(worst.blockedByBearingDeg ?? 0)} of here switches off the sunlight for ${humanDuration(worst.hours, 'public', worstOpen)}.`
@@ -210,7 +207,9 @@ export function TwoClockScreen() {
               <div className="flex flex-col gap-4 p-4 pt-0">
             {metrics && view.meta && (
               <UncertaintyNote>
-                Terrain heights carry up to ±{view.meta.uncertainty.demVerticalErrorM} m of vertical error.
+                {terrainModelled
+                  ? `Terrain heights carry up to ±${view.meta.uncertainty.demVerticalErrorM} m of vertical error.`
+                  : 'Terrain is not modelled here: the skyline is a smooth Moon, so real hills could block more.'}
                 {worst?.grazing ? (
                   <>
                     {' '}The longest gap has a crossing too shallow to time, so it is marked{' '}
@@ -220,9 +219,7 @@ export function TwoClockScreen() {
                 ) : (
                   <>
                     {' '}The longest gap carries{' '}
-                    <span className="font-mono text-earth-soft">
-                      ±{(worst?.toleranceH ?? 0).toFixed(2)} h
-                    </span>{' '}
+                    <span className="font-mono text-earth-soft">{edgeMargin(worst, terrainModelled)}</span>{' '}
                     here; a gap carries both of its edges.
                   </>
                 )}

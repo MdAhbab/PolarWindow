@@ -35,8 +35,10 @@ export function hoursSpoken(v: number, open?: boolean): string {
   return `${open ? 'at least' : 'about'} ${Math.round(v)} hours`
 }
 
+/** A timing margin. Below what the digits can show it reads "±<0.1", never "±0.0". */
 export function plusMinus(v: number, digits = 1): string {
-  return `±${v.toFixed(digits)}`
+  const floor = 0.5 * 10 ** -digits
+  return v < floor ? `±<${(2 * floor).toFixed(digits)}` : `±${v.toFixed(digits)}`
 }
 
 export function percent(fraction: number): string {
@@ -212,7 +214,7 @@ export function humanDuration(h: number, face: Face, open?: boolean): string {
 
 /**
  * The label a number carries (U14): the plain words by default, on every
- * face, and the expert term as a second line on the Planner face only. One
+ * face, and the expert term as a second line in Expert only. One
  * concept, one name, wherever it appears.
  */
 export function termLabel(key: string, face: Face): { label: string; expert?: string } {
@@ -241,4 +243,21 @@ export const TERM: Record<string, Record<Face, string>> = {
     educator: 'Longest time out of contact',
     public: "Longest time it can't call home",
   },
+}
+
+/**
+ * The timing margin of a gap's edges, in words, for the sentences that quote
+ * it. A smooth-Moon skyline (outside the terrain model) has no height error,
+ * so its zero is not a margin, and a gap whose ends are both the window's has
+ * no edge to time; both say so instead of printing "±0.00 h".
+ */
+export function edgeMargin(
+  arc: { toleranceH: number; startToleranceH?: number; endToleranceH?: number } | undefined,
+  terrainModelled: boolean,
+): string {
+  if (!arc) return 'no margin: there is no gap in this window'
+  if (!terrainModelled) return 'no margin that can be stated, because terrain is not modelled here'
+  if (arc.startToleranceH === undefined && arc.endToleranceH === undefined)
+    return 'no margin: both of its ends are the window’s own edges'
+  return `${plusMinus(arc.toleranceH, 2)} h`
 }

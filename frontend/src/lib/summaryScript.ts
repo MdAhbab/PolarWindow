@@ -1,3 +1,5 @@
+import { spanWords } from './format'
+
 /**
  * The words the summary speaker says, built only from numbers the API returned.
  *
@@ -72,35 +74,42 @@ function startDate(iso?: string): string {
 
 export function buildSiteSummary(s: SummaryInput): Summary {
   const out: string[] = []
-  const days = s.windowHours / 24
   const when = startDate(s.windowStartIso)
-  const lat = `${Math.abs(s.latDeg).toFixed(1)} degrees south`
+  const lat = `${Math.abs(s.latDeg).toFixed(1)} degrees ${s.latDeg < 0 ? 'south' : 'north'}`
 
-  out.push(
-    `${s.siteName}, at ${lat}. Over ${days.toFixed(0)} days${when ? ` from ${when}` : ''}:`,
-  )
+  out.push(`${s.siteName}, at ${lat}. Over ${spanWords(s.windowHours)}${when ? ` from ${when}` : ''}:`)
   out.push(`Sunlight ${round(s.sunUpH)} hours, ${pct(s.sunFraction)} of the time.`)
   out.push(`Earth in view ${round(s.earthUpH)} hours, ${pct(s.earthFraction)}.`)
 
-  let night = `Longest night: ${duration(s.nightH, s.nightOpen, s.nightToleranceH, s.nightGrazing)}.`
-  if (s.nightOpen) night += ' This period cut it short, so the real night is longer.'
-  if (s.nightGrazing) night += ' Its start and end cannot be timed precisely.'
-  out.push(night)
-
+  // No gap at all is a measurement too, and says so plainly rather than as
+  // "about 0 hours, 120 hours inside the limit".
+  const noNight = s.nightH <= 0 && !s.nightOpen
   const over = s.nightH - s.survivalLimitH
-  if (over > 0) {
-    out.push(
-      `That is ${s.nightOpen ? 'at least ' : ''}${round(over)} hours over the ${s.survivalLimitH} hour survival limit.`,
-    )
-  } else if (s.nightOpen) {
-    out.push(`It may exceed the ${s.survivalLimitH} hour survival limit.`)
+  if (noNight) {
+    out.push('The Sun did not set in this window.')
   } else {
-    out.push(`That is ${round(-over)} hours inside the ${s.survivalLimitH} hour survival limit.`)
+    let night = `Longest night: ${duration(s.nightH, s.nightOpen, s.nightToleranceH, s.nightGrazing)}.`
+    if (s.nightOpen) night += ' This period cut it short, so the real night is longer.'
+    if (s.nightGrazing) night += ' Its start and end cannot be timed precisely.'
+    out.push(night)
+    if (over > 0) {
+      out.push(
+        `That is ${s.nightOpen ? 'at least ' : ''}${round(over)} hours over the ${s.survivalLimitH} hour survival limit.`,
+      )
+    } else if (s.nightOpen) {
+      out.push(`It may exceed the ${s.survivalLimitH} hour survival limit.`)
+    } else {
+      out.push(`That is ${round(-over)} hours inside the ${s.survivalLimitH} hour survival limit.`)
+    }
   }
 
-  let silence = `Longest silence with Earth: ${duration(s.silenceH, s.silenceOpen, s.silenceToleranceH, s.silenceGrazing)}.`
-  if (s.silenceOpen) silence += ' The real one is longer.'
-  out.push(silence)
+  if (s.silenceH <= 0 && !s.silenceOpen) {
+    out.push('Earth stayed in view the whole time.')
+  } else {
+    let silence = `Longest silence with Earth: ${duration(s.silenceH, s.silenceOpen, s.silenceToleranceH, s.silenceGrazing)}.`
+    if (s.silenceOpen) silence += ' The real one is longer.'
+    out.push(silence)
+  }
 
   out.push(
     s.worstCompoundH >= 0.25

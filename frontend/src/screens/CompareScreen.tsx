@@ -337,14 +337,14 @@ function CompareCard({
 
   return (
     <Panel
-      className={`flex flex-col ${over ? 'border-alert' : leading ? 'border-earth' : ''}`}
+      className={`flex flex-col ${over ? 'border-alert' : leading ? 'border-ink' : ''}`}
       as="section"
     >
       <div className="flex items-start gap-3 border-b border-line p-4">
         {rank !== null ? (
           <span
             className={`inline-flex size-7 shrink-0 items-center justify-center text-[14px] font-bold ${
-              leading ? 'bg-earth-fill text-on-earth' : 'bg-line-strong text-ink'
+              leading ? 'bg-ink text-canvas' : 'bg-line-strong text-ink'
             }`}
             aria-label={`Rank ${rank}`}
           >

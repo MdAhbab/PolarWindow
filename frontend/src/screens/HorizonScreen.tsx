@@ -6,7 +6,7 @@ import { HorizonProfile } from '../components/HorizonProfile'
 import { DateSlider } from '../components/DateSlider'
 import { LoadingPanel, ProblemPanel, UncertaintyNote } from '../components/States'
 import { Panel, SectionLabel } from '../components/ui'
-import { bearing, bound, compass, coords, degrees, hoursWithUnit } from '../lib/format'
+import { bearing, bound, compass, coords, degrees, edgeMargin, hoursWithUnit } from '../lib/format'
 
 /** S4 — the screen that makes the physics click for a non-expert. */
 export function HorizonScreen() {
@@ -127,7 +127,7 @@ export function HorizonScreen() {
             seen from the range of that bearing’s blocker, so it is wide for a near ridge and thin for a far
             one. Where the Sun path runs inside it the crossing time is uncertain by{' '}
             <span className="font-mono text-earth-soft">
-              {worst?.grazing ? 'more than can be timed (grazing)' : `±${(worst?.toleranceH ?? 0).toFixed(2)} h`}
+              {worst?.grazing ? 'more than can be timed (grazing)' : edgeMargin(worst, terrainModelled)}
             </span>
             .
           </UncertaintyNote>

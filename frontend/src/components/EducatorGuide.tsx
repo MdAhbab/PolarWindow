@@ -80,7 +80,9 @@ function buildSteps(siteName: string, m: SiteMetrics, meta?: Meta): Step[] {
   const edge = u
     ? u.grazing
       ? 'At least one crossing is too shallow to time, so its hour is not knowable from this data.'
-      : u.edgeTimingH !== null
+      : !u.terrainModelled
+        ? 'Terrain is not modelled here, so the crossing times assume a smooth Moon and carry no stated margin.'
+        : u.edgeTimingH !== null
         ? `Each crossing time is known to about ${plusMinus(u.edgeTimingH, 1)} h, because the terrain heights are known to about ±${u.demVerticalErrorM} m.`
         : ''
     : ''

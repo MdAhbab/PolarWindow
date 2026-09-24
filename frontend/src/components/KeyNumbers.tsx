@@ -1,7 +1,7 @@
 import { useCountUp } from '../hooks/useCountUp'
 import { bound, hoursSpoken, percent, plusMinus, termLabel } from '../lib/format'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
-import type { Face, SiteMetrics } from '../lib/types'
+import type { Arc, Face, SiteMetrics } from '../lib/types'
 import { Icon } from './Icon'
 
 export type Tone = 'sun' | 'earth' | 'neutral' | 'alert'
@@ -41,7 +41,7 @@ export function KeyNumberTile({
   expert,
 }: {
   label: string
-  /** The expert term, shown as a second line on the Planner face (U14). */
+  /** The expert term, shown as a second line in Expert (U14). */
   expert?: string
   value: number
   unit?: string
@@ -57,8 +57,10 @@ export function KeyNumberTile({
   /** What a screen reader hears for the value; defaults to a sentence from it. */
   spoken?: string
 }) {
-  const rolled = useCountUp(state === 'ready' || state === 'uncertain' ? value : 0)
   const shown = state === 'ready' || state === 'uncertain'
+  // NaN while there is no value: the first real value is set directly, and
+  // the roll (M4) only ever runs between two real values, never from zero.
+  const rolled = useCountUp(shown ? value : Number.NaN)
   // One sentence with the final value, its unit and its margin. The visible
   // figure rolls through intermediate values (M4) and its ± sits in a separate
   // element, so reading the visuals aloud announced "±17.1" with no unit.
@@ -66,7 +68,11 @@ export function KeyNumberTile({
     spoken ??
     (unit === 'h'
       ? `${hoursSpoken(value, open)}${
-          toleranceH !== undefined ? `, plus or minus ${toleranceH.toFixed(1)} hours` : ''
+          toleranceH === undefined
+            ? ''
+            : toleranceH < 0.05
+              ? ', timed to within a few minutes'
+              : `, plus or minus ${toleranceH.toFixed(1)} hours`
         }${state === 'uncertain' ? ', uncertain' : ''}`
       : `${bound(open) === '≥' ? 'at least' : 'about'} ${Math.round(value)} ${unit}`)
 
@@ -89,8 +95,10 @@ export function KeyNumberTile({
 
   return (
     <div className={`flex flex-col gap-2 border bg-panel px-5 py-5 ${border}`}>
+      {/* Two lines tall even when the label fits on one, so the four values
+          sit on one baseline when a neighbour's label wraps. */}
       <div
-        className={`flex items-center gap-2 text-[12px] font-semibold tracking-[0.12em] uppercase ${
+        className={`flex min-h-8 items-start gap-2 text-[12px] font-semibold tracking-[0.12em] uppercase ${
           tone === 'alert' ? 'text-alert' : state === 'uncertain' ? 'text-ink-2' : 'text-ink-3'
         }`}
       >
@@ -149,6 +157,11 @@ export function KeyNumberTile({
   )
 }
 
+/** The gap has at least one edge that is a real crossing, so its ± means something. */
+function hasTimedEdge(arc: Arc | undefined): boolean {
+  return Boolean(arc && (arc.startToleranceH !== undefined || arc.endToleranceH !== undefined))
+}
+
 /**
  * The four numbers that decide a mission, always together and always in this
  * order: two totals, then the two worst-case gaps.
@@ -181,20 +194,30 @@ export function KeyNumberRow({
   const sunFrac = metrics?.sun.fractionUp ?? 0
   const earthFrac = metrics?.earth.fractionUp ?? 0
   const dark = metrics?.sun.longestDownH ?? 0
-  const darkTol = metrics?.sun.longestDownToleranceH
-  const darkGrazing = metrics?.sun.longestDownArc?.grazing
+  const darkArc = metrics?.sun.longestDownArc
+  const darkGrazing = darkArc?.grazing
   const darkOpen = Boolean(metrics?.sun.longestDownOpen)
+  // A ± times the edges of a gap. With no gap in the window, or a gap whose
+  // both ends are the window's own edges, there is no crossing to time, so no
+  // ± is shown at all rather than "±0.0".
+  // Outside the terrain model the skyline is a smooth sphere with no height
+  // error, so its tolerance is zero by construction, not a measured margin:
+  // the uncertain state says why, and no ± is printed.
+  const darkTol = hasTimedEdge(darkArc) && !uncertain ? metrics?.sun.longestDownToleranceH : undefined
   const rf = metrics?.earth.longestDownH ?? 0
-  const rfTol = metrics?.earth.longestDownToleranceH
-  const rfGrazing = metrics?.earth.longestDownArc?.grazing
+  const rfArc = metrics?.earth.longestDownArc
+  const rfGrazing = rfArc?.grazing
   const rfOpen = Boolean(metrics?.earth.longestDownOpen)
+  const rfTol = hasTimedEdge(rfArc) && !uncertain ? metrics?.earth.longestDownToleranceH : undefined
   // A lower bound over the limit is certainly over it; a lower bound under the
   // limit is not certainly under it -- the night continues past the window.
   const overLimit = dark > SURVIVAL_LIMIT_H
+  const noNight = Boolean(metrics) && !darkArc
+  const noBlackout = Boolean(metrics) && !rfArc
 
   const grid = columns === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-2'
   const short = columns === 2
-  // U14: plain words by default; the Planner face adds the expert term.
+  // U14: plain words by default; Expert adds the expert term.
   const t = {
     sun: termLabel('sunHours', face),
     earth: termLabel('earthHours', face),
@@ -248,11 +271,13 @@ export function KeyNumberRow({
         footnote={
           computing
             ? undefined
-            : overLimit
-              ? `${darkOpen ? 'at least ' : ''}${Math.round(dark - SURVIVAL_LIMIT_H)} h over the ${SURVIVAL_LIMIT_H} h limit`
-              : darkOpen
-                ? `at most ${Math.round(SURVIVAL_LIMIT_H - dark)} h of margin on ${SURVIVAL_LIMIT_H} h — the window cuts this night short`
-                : `${Math.round(SURVIVAL_LIMIT_H - dark)} h of margin on ${SURVIVAL_LIMIT_H} h`
+            : noNight
+              ? 'The Sun did not set in this window'
+              : overLimit
+                ? `${darkOpen ? 'at least ' : ''}${Math.round(dark - SURVIVAL_LIMIT_H)} h over the ${SURVIVAL_LIMIT_H} h limit`
+                : darkOpen
+                  ? `the window cuts this night short; it may run past the ${SURVIVAL_LIMIT_H} h limit`
+                  : `${Math.round(SURVIVAL_LIMIT_H - dark)} h inside the ${SURVIVAL_LIMIT_H} h limit`
         }
       />
       <KeyNumberTile
@@ -268,9 +293,11 @@ export function KeyNumberRow({
         footnote={
           computing
             ? undefined
-            : rfOpen
-              ? 'the window cuts this blackout short; autonomy must cover at least this'
-              : 'autonomy must cover this'
+            : noBlackout
+              ? 'Earth stayed in view for the whole window'
+              : rfOpen
+                ? 'the window cuts this short; the lander must work alone at least this long'
+                : 'the lander must work alone this long'
         }
       />
     </div>

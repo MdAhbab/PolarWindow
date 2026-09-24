@@ -10,6 +10,7 @@ import {
   isoDateWords,
   modelHFromMs,
   msFromModelH,
+  plusMinus,
   precisionWords,
   spanWords,
   windowLine,
@@ -66,5 +67,13 @@ describe('window and date words', () => {
     expect(dateTimeWords(Date.UTC(2025, 2, 6, 17, 30))).toBe('6 March 2025, 17:30 UTC')
     expect(dateTimeWords(Date.UTC(2025, 2, 17))).toBe('17 March 2025')
     expect(isoDateWords('2026-09-23')).toBe('23 September 2026')
+  })
+})
+
+describe('plusMinus', () => {
+  it('never prints a zero margin', () => {
+    expect(plusMinus(17.09)).toBe('±17.1')
+    expect(plusMinus(0.02)).toBe('±<0.1')
+    expect(plusMinus(0.004, 2)).toBe('±<0.01')
   })
 })

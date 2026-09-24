@@ -13,7 +13,7 @@ import { Mark } from '../components/Icon'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
 import { rankLabel } from '../lib/rank'
 import { comparisonCsv, download } from '../lib/export'
-import { hoursWithUnit, msFromModelH, percent, shortDate } from '../lib/format'
+import { edgeMargin, hoursWithUnit, msFromModelH, percent, shortDate } from '../lib/format'
 
 /**
  * S6 — the one page a planner can hand over.
@@ -79,6 +79,7 @@ export function ReportScreen() {
     (id) => metrics[id].sun.longestDownH <= SURVIVAL_LIMIT_H && !metrics[id].sun.longestDownOpen,
   )
   const best = order[0]
+  const terrainOf = (id: string) => siteById(id).terrainModelled
   const bestPacket = autonomy[best]
   const stamp = PROVENANCE_COPY[provenance]
   const exportRows = order.map((id) => ({
@@ -140,8 +141,10 @@ export function ReportScreen() {
               label. This box used to read SAMPLE DATA / synthetic terrain
               unconditionally, which stopped being true when the terrain became
               LOLA and the positions SPICE. */}
-          <div className="shrink-0 border-2 border-alert p-2 text-center" title={stamp.title}>
-            <div className="text-[14px] font-bold tracking-[0.1em] text-alert uppercase">{stamp.label}</div>
+          {/* Magenta means over the survival limit and nothing else, so the
+              provenance stamp uses the uncertain edge, like the header badge. */}
+          <div className="shrink-0 border-2 border-uncertain p-2 text-center" title={stamp.title}>
+            <div className="text-[14px] font-bold tracking-[0.1em] text-ink uppercase">{stamp.label}</div>
             <div className="text-[12px] text-ink-3">derived values · not flight values</div>
           </div>
         </div>
@@ -158,7 +161,7 @@ export function ReportScreen() {
                 <div className="mb-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 border-b border-line pb-2">
                   <span
                     className={`text-[20px] font-bold ${
-                      rank === null ? 'text-uncertain' : label?.kind === 'best' ? 'text-earth' : 'text-ink-3'
+                      rank === null ? 'text-uncertain' : label?.kind === 'best' ? 'text-ink' : 'text-ink-3'
                     }`}
                   >
                     {rank ?? (itemOf[id] ? `${itemOf[id].rank_range[0]}–${itemOf[id].rank_range[1]}` : i + 1)}
@@ -269,7 +272,7 @@ export function ReportScreen() {
             <p className="text-[16px] leading-6">
               {metrics[best].sun.longestDownArc?.grazing
                 ? 'The longest night has a crossing too shallow to time; its length stands, its edges do not.'
-                : `The longest night’s edges carry ±${metrics[best].sun.longestDownToleranceH.toFixed(2)} h from the elevation model’s vertical accuracy.`}
+                : `The longest night’s edges carry ${edgeMargin(metrics[best].sun.longestDownArc, terrainOf(best))} from the elevation model’s vertical accuracy.`}
             </p>
           </div>
         </div>
