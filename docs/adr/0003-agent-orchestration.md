@@ -18,7 +18,8 @@ Four agents sit on top of the deterministic core:
 - **A4 Question Answerer** — natural language over the site database.
 
 They reach the system only through six tools in `agents/tools.py`. Model:
-`gemini-3.8-flash`, with `gemini-3.5-flash-lite` for short explainers.
+`gemini-3.8-flash`, with `gemini-3.5-flash-lite` for short explainers, each at
+the head of a fallback chain (amendment below).
 
 The brief's own framing settles half the argument before it starts: *justify
 against demo reliability, not elegance.* The requirements that follow from that
@@ -197,7 +198,8 @@ function signature, and replacing it does not touch `tools.py`, `guards.py`,
   is a pure function over two values.
 - Mocking is trivial — `respx` intercepts the `google-genai` HTTP calls and the
   whole loop runs offline. No real API key in CI, ever.
-- Swapping `gemini-3.5-flash-lite` for A1 is a field on the spec.
+- Swapping `gemini-3.5-flash-lite` for A1 is a field on the spec (`models`, the
+  chain the agent tries).
 
 **Harder**
 - Concurrency within a round is hand-rolled (`asyncio.gather` over tool calls),
@@ -271,3 +273,33 @@ don't hold the answer.
 3. [ ] Date-token grounding in `guards.py`, with a test.
 4. [ ] Full `meta` (computed_at, resolution, uncertainty) on agent responses and
        on `GET /agents/runs`.
+
+## Amendment, 2026-09-24: a model chain, not a model
+
+Free-tier quotas are per model and per day (20 requests a day on each Flash
+model), and a demo that loses its agents when one model's quota runs out is the
+failure N4 exists to prevent. So each agent tries an ordered chain
+(`PW_AGENT_MODELS`, `PW_AGENT_MODELS_LIGHT`): the Flash models first, then the
+Flash-Lite models, whose daily quotas are far larger; nothing older than
+Gemini 2.5.
+
+- A run moves to the next model on a 429 (quota), 403 or 404 (not available to
+  this key, or not served under that name) and a 5xx (outage). Not on a 400:
+  the next model would reject the same request.
+- Each model gets a **clean run**. Gemini 3 signs its own function calls, and a
+  conversation begun on one model is not continued on another. A model over its
+  quota fails on its first request, so moving on costs one round trip.
+- A model that failed is skipped until it can answer again: a daily quota until
+  midnight Pacific, when the API resets it; a per-minute quota for the delay the
+  API asks for; an unknown or forbidden model for six hours; an outage for 30 s.
+  The cooldowns live in the process.
+- Every skip is in the run's record (`guard_failures`, kind `model_unavailable`)
+  and the response's `meta.model` names the model that answered. When no model
+  in the chain can answer, the run degrades to the measurement-only summary,
+  exactly as with no key.
+
+Considered and not taken: the Antigravity managed agent (Interactions API,
+`antigravity-preview-05-2026`). It runs its own multi-step loop on Google's
+side, which is the loop this ADR keeps in our code so that every tool call is
+bounded, logged and seen by the grounding guard.
+

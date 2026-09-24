@@ -56,12 +56,16 @@ def _envelope(outcome: AgentOutcome, s: Settings) -> dict[str, Any]:
         "attempts": outcome.attempts,
         "latency_ms": round(outcome.latency_ms, 1),
         "guard_failures": outcome.guard_failures,
-        "meta": agent_meta(s),
+        "meta": agent_meta(s, model=outcome.model),
     }
 
 
-def agent_meta(s: Settings) -> dict[str, Any]:
-    """The `meta` block every agent response and the run log carry."""
+def agent_meta(s: Settings, model: str | None = None) -> dict[str, Any]:
+    """The `meta` block every agent response and the run log carry.
+
+    `model` is the one that answered this run, which the fallback chain can
+    make a later one than the first choice; the run log names the first choice.
+    """
     notes = [
         "Numbers come only from the tools the agent called; the model computes none.",
         "A number that does not trace to a tool result is rejected; after one failed "
@@ -81,7 +85,7 @@ def agent_meta(s: Settings) -> dict[str, Any]:
         },
         "uncertainty": {"grounded": True, "notes": notes},
         "engine_version": ENGINE_VERSION,
-        "model": s.agent_model,
+        "model": model or s.agent_model,
         "agents_configured": s.agents_enabled,
         "offline": s.offline,
         "notice": (

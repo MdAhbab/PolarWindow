@@ -94,6 +94,9 @@ def no_live_gemini(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     from app.config import get_settings
 
     _REAL.setdefault("generate", base._generate)
+    # Model cooldowns live in the process; one test's quota error must not
+    # skip a model in the next.
+    base.reset_model_cooldowns()
 
     async def blocked(*_args: object, **_kwargs: object) -> dict:
         if not get_settings().gemini_api_key:

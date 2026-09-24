@@ -11,10 +11,10 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import AliasChoices, Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 #: Bumped whenever a change to core/ alters the numbers. Stamped onto every
 #: precomputed row and every cache key, and reported in `meta`, so stale
@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     #: Origins allowed to call the API. The Vite dev server's two spellings are
     #: both here because "works in curl, fails in the browser" is the single
     #: most common wasted hour in a hackathon.
-    cors_origins: tuple[str, ...] = (
+    cors_origins: Annotated[tuple[str, ...], NoDecode] = (
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:5174",
@@ -137,8 +137,37 @@ class Settings(BaseSettings):
 
     # --- agents ------------------------------------------------------------
     gemini_api_key: str = ""
-    agent_model: str = "gemini-3.8-flash"
-    agent_model_light: str = "gemini-3.5-flash-lite"
+    #: Models to try, in order. A run moves to the next one when a model is
+    #: over its quota (429), not served to this key (403, 404) or down (5xx),
+    #: and a model that failed is skipped until its quota resets. Nothing older
+    #: than Gemini 2.5. The Flash models come first for tool use and structured
+    #: answers; the Flash-Lite models, with far larger daily quotas on the free
+    #: tier, keep the agents answering once those run out. Override with a
+    #: comma-separated PW_AGENT_MODELS.
+    agent_models: Annotated[tuple[str, ...], NoDecode] = (
+        "gemini-3.8-flash",
+        "gemini-3.7-flash",
+        "gemini-3.6-flash",
+        "gemini-3.5-flash",
+        "gemini-3-flash",
+        "gemini-2.5-flash",
+        "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite",
+        "gemini-2.5-flash-lite",
+    )
+    #: The same, lightest first: the Explainer writes one paragraph from facts
+    #: it is handed, with no search, so a Flash-Lite model is enough.
+    agent_models_light: Annotated[tuple[str, ...], NoDecode] = (
+        "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite",
+        "gemini-2.5-flash-lite",
+        "gemini-3.8-flash",
+        "gemini-3.7-flash",
+        "gemini-3.6-flash",
+        "gemini-3.5-flash",
+        "gemini-3-flash",
+        "gemini-2.5-flash",
+    )
     agent_timeout_s: float = 20.0
     agent_max_rounds: int = 4
     agent_max_tool_calls: int = 8
@@ -156,7 +185,12 @@ class Settings(BaseSettings):
         """
         return bool(self.gemini_api_key) and not self.offline
 
-    @field_validator("cors_origins", mode="before")
+    @property
+    def agent_model(self) -> str:
+        """The first choice, for the `meta` of responses that ran no model."""
+        return self.agent_models[0]
+
+    @field_validator("cors_origins", "agent_models", "agent_models_light", mode="before")
     @classmethod
     def _split_origins(cls, v: object) -> object:
         if isinstance(v, str):

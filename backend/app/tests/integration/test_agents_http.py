@@ -108,3 +108,66 @@ async def test_thought_signature_round_trip(client, gemini_http) -> None:
     follow_up = json.loads(route.calls[1].request.content)
     sent = [p for c in follow_up["contents"] for p in c.get("parts", [])]
     assert any(p.get("thoughtSignature") == SIGNATURE for p in sent), "signature was dropped"
+
+
+def _over_quota(per_day: bool = True) -> httpx.Response:
+    quota = "GenerateRequestsPerDayPerProjectPerModel-FreeTier" if per_day else "PerMinute"
+    return httpx.Response(
+        429,
+        json={
+            "error": {
+                "code": 429,
+                "status": "RESOURCE_EXHAUSTED",
+                "message": "You exceeded your current quota.",
+                "details": [
+                    {
+                        "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                        "violations": [{"quotaId": quota}],
+                    }
+                ],
+            }
+        },
+    )
+
+
+def _model_of(call: Any) -> str:
+    return str(call.request.url).split("/models/")[1].split(":")[0]
+
+
+async def test_a_model_over_its_quota_hands_the_run_to_the_next(client, gemini_http) -> None:
+    from app.config import get_settings
+
+    script, route = gemini_http
+    script(_over_quota(), NOTHING_MORE, text(GROUNDED))
+    body = await explain(client)
+    chain = get_settings().agent_models_light
+    assert body["status"] == "ok", body.get("reason")
+    assert [_model_of(c) for c in route.calls[:2]] == [chain[0], chain[1]]
+    assert body["meta"]["model"] == chain[1]
+    skipped = [g for g in body["guard_failures"] if g["kind"] == "model_unavailable"]
+    assert skipped == [
+        {"kind": "model_unavailable", "model": chain[0], "detail": "daily quota used up"}
+    ]
+
+    # The used-up model is not asked again until its quota resets.
+    before = route.call_count
+    script(NOTHING_MORE, text(GROUNDED))
+    body = await explain(client)
+    assert body["status"] == "ok"
+    assert chain[0] not in [_model_of(c) for c in route.calls[before:]]
+
+
+async def test_every_model_over_quota_degrades_without_asking_again(client, gemini_http) -> None:
+    from app.config import get_settings
+
+    script, route = gemini_http
+    script(_over_quota())
+    body = await explain(client)
+    assert body["status"] == "degraded"
+    assert body["run_status"] == "degraded"
+    assert "over its quota" in body["reason"]
+    assert route.call_count == len(get_settings().agent_models_light)
+
+    body = await explain(client)
+    assert body["status"] == "degraded"
+    assert route.call_count == len(get_settings().agent_models_light), "a cooled model was asked"

@@ -20,9 +20,13 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 import time
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
+from datetime import time as dt_time
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, ValidationError
 
@@ -52,6 +56,13 @@ class AgentStatus:
     ERROR = "error"
 
 
+BUDGET_SPENT_PROMPT = (
+    "Tool call budget exhausted. Answer with what you have, or "
+    "return status='insufficient_data'."
+)
+ANSWER_NOW_PROMPT = "Now answer. Respond ONLY with JSON matching the required schema."
+
+
 class DeadlineExceeded(TimeoutError):
     """The agent's whole wall-clock budget is spent."""
 
@@ -68,7 +79,8 @@ class AgentSpec:
     system_prompt: str
     tool_names: tuple[str, ...]
     output_model: type[BaseModel]
-    model: str | None = None
+    #: The model chain to try, in order; the settings' chain when None.
+    models: tuple[str, ...] | None = None
     max_rounds: int | None = None
 
 
@@ -83,6 +95,8 @@ class AgentOutcome:
     attempts: int = 1
     latency_ms: float = 0.0
     guard_failures: list[dict[str, Any]] = field(default_factory=list)
+    #: The model that answered, or the last one tried.
+    model: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -92,6 +106,69 @@ class AgentOutcome:
 
 class GeminiUnavailable(RuntimeError):
     pass
+
+
+class ModelUnavailable(RuntimeError):
+    """This model cannot answer now, and the next model in the chain might.
+
+    Raised for a quota that is used up (429), a model this key cannot use or
+    that is not served under that name (403, 404), and an outage (5xx). Not for
+    a malformed request: the next model would reject it too.
+    """
+
+    def __init__(self, model: str, why: str, cooldown_s: float) -> None:
+        super().__init__(f"{model}: {why}")
+        self.model = model
+        self.why = why
+        self.cooldown_s = cooldown_s
+
+
+#: When each model may be tried again, in `time.monotonic()` seconds. Kept in
+#: the process: after a restart the first request finds out again, once.
+_cooldown_until: dict[str, float] = {}
+
+
+def _cool(model: str, seconds: float) -> None:
+    _cooldown_until[model] = max(_cooldown_until.get(model, 0.0), time.monotonic() + seconds)
+
+
+def _usable(models: list[str]) -> list[str]:
+    now = time.monotonic()
+    return [m for m in models if _cooldown_until.get(m, 0.0) <= now]
+
+
+def reset_model_cooldowns() -> None:
+    """Forget every cooldown: for tests, and after a key's quota is raised."""
+    _cooldown_until.clear()
+
+
+def _seconds_to_daily_reset(now: datetime | None = None) -> float:
+    """Seconds until the Gemini API's daily quotas reset: midnight Pacific time."""
+    tz = ZoneInfo("America/Los_Angeles")
+    local = (now or datetime.now(UTC)).astimezone(tz)
+    midnight = datetime.combine(local.date() + timedelta(days=1), dt_time(0, 0), tzinfo=tz)
+    return max(60.0, (midnight - local).total_seconds())
+
+
+_RETRY_DELAY = re.compile(r"retryDelay\W+(\d+(?:\.\d+)?)s")
+
+
+def classify_api_error(model: str, code: object, details: str) -> ModelUnavailable | None:
+    """Whether an API error means "try the next model", and for how long to skip this one."""
+    if code == 429:
+        if "PerDay" in details or "per day" in details.lower():
+            return ModelUnavailable(model, "daily quota used up", _seconds_to_daily_reset())
+        m = _RETRY_DELAY.search(details)
+        return ModelUnavailable(
+            model, "per-minute quota used up", float(m.group(1)) + 1.0 if m else 60.0
+        )
+    if code == 403:
+        return ModelUnavailable(model, "not available to this API key", 6 * 3600.0)
+    if code == 404:
+        return ModelUnavailable(model, "not served under this name", 6 * 3600.0)
+    if isinstance(code, int) and 500 <= code < 600:
+        return ModelUnavailable(model, f"the service answered {code}", 30.0)
+    return None
 
 
 async def _generate(
@@ -123,6 +200,7 @@ async def _generate(
         raise GeminiUnavailable("PW_GEMINI_API_KEY is not set")
 
     from google import genai
+    from google.genai import errors as genai_errors
     from google.genai import types as gt
 
     client = genai.Client(api_key=s.gemini_api_key)
@@ -143,12 +221,18 @@ async def _generate(
         config["response_mime_type"] = "application/json"
         config["response_schema"] = response_schema
 
-    resp = await asyncio.wait_for(
-        client.aio.models.generate_content(
-            model=model, contents=contents, config=gt.GenerateContentConfig(**config)
-        ),
-        timeout=timeout_s,
-    )
+    try:
+        resp = await asyncio.wait_for(
+            client.aio.models.generate_content(
+                model=model, contents=contents, config=gt.GenerateContentConfig(**config)
+            ),
+            timeout=timeout_s,
+        )
+    except genai_errors.APIError as exc:
+        unavailable = classify_api_error(model, exc.code, f"{exc.status} {exc.details}")
+        if unavailable is None:
+            raise
+        raise unavailable from exc
 
     calls: list[dict[str, Any]] = []
     text_parts: list[str] = []
@@ -395,13 +479,16 @@ async def run_agent(
     model was told, or the guard is measuring the wrong thing.
     """
     s = get_settings()
-    model = spec.model or s.agent_model
+    models = list(spec.models or s.agent_models)
+    model = models[0]
+    skipped: list[dict[str, Any]] = []
     max_rounds = spec.max_rounds or s.agent_max_rounds
     deadline = time.monotonic() + s.agent_timeout_s
     t0 = time.perf_counter()
 
     decls = [d for d in tools.TOOL_DECLARATIONS if d["name"] in spec.tool_names]
-    contents: list[Any] = [{"role": "user", "parts": [{"text": user_prompt}]}]
+    opening: list[Any] = [{"role": "user", "parts": [{"text": user_prompt}]}]
+    contents: list[Any] = list(opening)
     call_logs: list[tools.ToolCallLog] = list(prefetched or [])
     guard_failures: list[dict[str, Any]] = []
     prompt_tokens = completion_tokens = 0
@@ -452,7 +539,10 @@ async def run_agent(
     async def finish(outcome: AgentOutcome) -> AgentOutcome:
         outcome.latency_ms = (time.perf_counter() - t0) * 1000.0
         outcome.tool_calls = call_logs
-        outcome.guard_failures = guard_failures
+        # Models skipped on the way are part of the record, before any
+        # rejection by the guard of the model that answered.
+        outcome.guard_failures = skipped + guard_failures
+        outcome.model = model
         run_id = await record_run(
             session,
             AgentRunRecord(
@@ -465,7 +555,7 @@ async def run_agent(
                 completion_tokens=completion_tokens,
                 latency_ms=outcome.latency_ms,
                 attempts=outcome.attempts,
-                guard_failures=guard_failures or None,
+                guard_failures=outcome.guard_failures or None,
                 error=outcome.reason if outcome.status == AgentStatus.ERROR else None,
                 tool_calls=[
                     ToolCallRecord(
@@ -484,186 +574,210 @@ async def run_agent(
         outcome.run_id = str(run_id)
         return outcome
 
-    # --- phase 1: gather ---------------------------------------------------
+    # --- the model chain --------------------------------------------------
+    # Each model gets a clean run: Gemini 3 signs its own function calls, and
+    # a conversation begun on one model cannot be continued on another. A
+    # model over its quota fails on its first request, so moving on costs one
+    # round trip, and it is skipped until its quota resets.
     response: dict[str, Any] | None = None
     try:
-        for _round in range(max_rounds):
-            response = await _generate(
-                model,
-                contents,
-                spec.system_prompt,
-                decls,
-                response_schema=None,
-                timeout_s=remaining(),
-            )
-            prompt_tokens += response["prompt_tokens"]
-            completion_tokens += response["completion_tokens"]
-
-            if not response["function_calls"]:
-                break
-            if len(call_logs) >= s.agent_max_tool_calls:
-                contents.append(
-                    {
-                        "role": "user",
-                        "parts": [
-                            {
-                                "text": "Tool call budget exhausted. Answer with what you have, or "
-                                "return status='insufficient_data'."
-                            }
-                        ],
-                    }
-                )
-                break
-
-            # Tool calls within a round run concurrently; they are independent
-            # reads and the round's latency is then its slowest call, not its sum.
-            # They count against the same deadline as the model calls.
-            pending = response["function_calls"][: s.agent_max_tool_calls - len(call_logs)]
-            results = await asyncio.wait_for(
-                asyncio.gather(
-                    *(
-                        tools.execute(session, c["name"], c["args"], len(call_logs) + i + 1)
-                        for i, c in enumerate(pending)
-                    )
-                ),
-                timeout=remaining(),
-            )
-            call_logs.extend(results)
-            # The model's own turn goes back verbatim, thought signatures and
-            # all (ADR-3 amendment). The reconstructed form is only a fallback
-            # for scripted test responses that carry no content object.
-            # Only when every call in the turn is being answered: Gemini expects
-            # one function response per call it made.
-            verbatim = len(pending) == len(response["function_calls"])
-            contents.append(
-                (response.get("model_content") if verbatim else None)
-                or {
-                    "role": "model",
-                    "parts": [
-                        {"function_call": {"name": c["name"], "args": c["args"]}} for c in pending
-                    ],
-                }
-            )
-            contents.append(
-                {
-                    "role": "user",
-                    "parts": [
-                        {"function_response": {"name": r.tool, "response": r.result or {}}}
-                        for r in results
-                    ],
-                }
-            )
-        else:
-            return await finish(
-                AgentOutcome(
-                    status=AgentStatus.INSUFFICIENT,
-                    result=None,
-                    reason=(
-                        f"The assistant kept requesting data after {max_rounds} rounds "
-                        f"without producing an answer. The underlying numbers are "
-                        f"available on the site and comparison views."
-                    ),
-                    attempts=attempts,
-                )
-            )
-
-        # --- phase 2: structured answer, validated, one repair -------------
-        contents.append(
-            {
-                "role": "user",
-                "parts": [
-                    {"text": "Now answer. Respond ONLY with JSON matching the required schema."}
-                ],
-            }
-        )
-        # The user's own request is a legitimate source of numbers.
-        #
-        # Echoing "at least 4 hours of Earth contact" back in a requirement
-        # summary is quoting, not claiming, and the first version of this guard
-        # rejected it -- the advisor could not restate the requirement it was
-        # given without failing. The request is added as an explicit pseudo-tool
-        # so those numbers are grounded *and* visibly attributed to the user
-        # rather than to a measurement, which is the distinction that matters
-        # when reading the provenance list.
-        tool_dicts = tool_dicts_for_guard()
-        last_failure = "grounding"
-
-        for attempt in (1, 2):
-            attempts = attempt
-            response = await _generate(
-                model,
-                contents,
-                spec.system_prompt,
-                [],
-                response_schema=_schema_for(spec.output_model),
-                timeout_s=remaining(),
-            )
-            prompt_tokens += response["prompt_tokens"]
-            completion_tokens += response["completion_tokens"]
-
+        for model in _usable(models):
+            contents = list(opening)
+            call_logs = list(prefetched or [])
+            guard_failures = []
+            attempts = 1
             try:
-                parsed = spec.output_model.model_validate_json(response["text"])
-                payload = json.loads(parsed.model_dump_json())
-            except (ValidationError, ValueError) as exc:
-                last_failure = "schema"
-                guard_failures.append({"kind": "schema_invalid", "detail": str(exc)[:500]})
-                if attempt == 2:
-                    break
+                # --- phase 1: gather -------------------------------------------
+                for _round in range(max_rounds):
+                    response = await _generate(
+                        model,
+                        contents,
+                        spec.system_prompt,
+                        decls,
+                        response_schema=None,
+                        timeout_s=remaining(),
+                    )
+                    prompt_tokens += response["prompt_tokens"]
+                    completion_tokens += response["completion_tokens"]
+
+                    if not response["function_calls"]:
+                        break
+                    if len(call_logs) >= s.agent_max_tool_calls:
+                        contents.append(
+                            {
+                                "role": "user",
+                                "parts": [{"text": BUDGET_SPENT_PROMPT}],
+                            }
+                        )
+                        break
+
+                    # Tool calls within a round run concurrently; they are independent
+                    # reads and the round's latency is then its slowest call, not its sum.
+                    # They count against the same deadline as the model calls.
+                    pending = response["function_calls"][: s.agent_max_tool_calls - len(call_logs)]
+                    results = await asyncio.wait_for(
+                        asyncio.gather(
+                            *(
+                                tools.execute(session, c["name"], c["args"], len(call_logs) + i + 1)
+                                for i, c in enumerate(pending)
+                            )
+                        ),
+                        timeout=remaining(),
+                    )
+                    call_logs.extend(results)
+                    # The model's own turn goes back verbatim, thought signatures and
+                    # all (ADR-3 amendment). The reconstructed form is only a fallback
+                    # for scripted test responses that carry no content object.
+                    # Only when every call in the turn is being answered: Gemini expects
+                    # one function response per call it made.
+                    verbatim = len(pending) == len(response["function_calls"])
+                    contents.append(
+                        (response.get("model_content") if verbatim else None)
+                        or {
+                            "role": "model",
+                            "parts": [
+                                {"function_call": {"name": c["name"], "args": c["args"]}}
+                                for c in pending
+                            ],
+                        }
+                    )
+                    contents.append(
+                        {
+                            "role": "user",
+                            "parts": [
+                                {"function_response": {"name": r.tool, "response": r.result or {}}}
+                                for r in results
+                            ],
+                        }
+                    )
+                else:
+                    return await finish(
+                        AgentOutcome(
+                            status=AgentStatus.INSUFFICIENT,
+                            result=None,
+                            reason=(
+                                f"The assistant kept requesting data after {max_rounds} rounds "
+                                f"without producing an answer. The underlying numbers are "
+                                f"available on the site and comparison views."
+                            ),
+                            attempts=attempts,
+                        )
+                    )
+
+                # --- phase 2: structured answer, validated, one repair -------------
                 contents.append(
                     {
                         "role": "user",
-                        "parts": [
-                            {
-                                "text": (
-                                    f"Your reply did not match the schema "
-                                    f"({exc}). Reply with JSON matching it exactly."
-                                )
-                            }
-                        ],
+                        "parts": [{"text": ANSWER_NOW_PROMPT}],
                     }
                 )
+                # The user's own request is a legitimate source of numbers.
+                #
+                # Echoing "at least 4 hours of Earth contact" back in a requirement
+                # summary is quoting, not claiming, and the first version of this guard
+                # rejected it -- the advisor could not restate the requirement it was
+                # given without failing. The request is added as an explicit pseudo-tool
+                # so those numbers are grounded *and* visibly attributed to the user
+                # rather than to a measurement, which is the distinction that matters
+                # when reading the provenance list.
+                tool_dicts = tool_dicts_for_guard()
+                last_failure = "grounding"
+
+                for attempt in (1, 2):
+                    attempts = attempt
+                    response = await _generate(
+                        model,
+                        contents,
+                        spec.system_prompt,
+                        [],
+                        response_schema=_schema_for(spec.output_model),
+                        timeout_s=remaining(),
+                    )
+                    prompt_tokens += response["prompt_tokens"]
+                    completion_tokens += response["completion_tokens"]
+
+                    try:
+                        parsed = spec.output_model.model_validate_json(response["text"])
+                        payload = json.loads(parsed.model_dump_json())
+                    except (ValidationError, ValueError) as exc:
+                        last_failure = "schema"
+                        guard_failures.append({"kind": "schema_invalid", "detail": str(exc)[:500]})
+                        if attempt == 2:
+                            break
+                        contents.append(
+                            {
+                                "role": "user",
+                                "parts": [
+                                    {
+                                        "text": (
+                                            f"Your reply did not match the schema "
+                                            f"({exc}). Reply with JSON matching it exactly."
+                                        )
+                                    }
+                                ],
+                            }
+                        )
+                        continue
+
+                    verdict = guards.check(payload, tool_dicts)
+                    if verdict.ok:
+                        return await finish(
+                            AgentOutcome(
+                                status=(
+                                    AgentStatus.INSUFFICIENT
+                                    if payload.get("status") == "insufficient_data"
+                                    else AgentStatus.OK
+                                ),
+                                result=payload,
+                                reason=payload.get("reason"),
+                                provenance=[_citation(c) for c in verdict.citations],
+                                attempts=attempt,
+                            )
+                        )
+
+                    last_failure = "grounding"
+                    guard_failures.extend(v.as_dict() for v in verdict.violations)
+                    log.warning(
+                        "%s: guard rejected attempt %d: %s",
+                        spec.name,
+                        attempt,
+                        "; ".join(v.kind for v in verdict.violations),
+                    )
+                    if attempt == 1:
+                        contents.append(
+                            {"role": "user", "parts": [{"text": verdict.repair_hint()}]}
+                        )
+
+                # Two rejections. Degrade rather than render ungrounded text.
+                what = (
+                    "did not match the required structure"
+                    if last_failure == "schema"
+                    else "contained numbers that are not in the data"
+                )
+                return await finish(
+                    fallback(
+                        AgentStatus.GUARD_REJECTED,
+                        f"The written answer {what} twice, so it was discarded; showing a "
+                        "measurement-only summary instead.",
+                        f"The written answer {what}, so it was discarded. This summary is "
+                        "generated directly from the measurements.",
+                    )
+                )
+
+            except ModelUnavailable as exc:
+                _cool(exc.model, exc.cooldown_s)
+                log.warning("%s: %s; trying the next model", spec.name, exc)
+                skipped.append({"kind": "model_unavailable", "model": exc.model, "detail": exc.why})
                 continue
 
-            verdict = guards.check(payload, tool_dicts)
-            if verdict.ok:
-                return await finish(
-                    AgentOutcome(
-                        status=(
-                            AgentStatus.INSUFFICIENT
-                            if payload.get("status") == "insufficient_data"
-                            else AgentStatus.OK
-                        ),
-                        result=payload,
-                        reason=payload.get("reason"),
-                        provenance=[_citation(c) for c in verdict.citations],
-                        attempts=attempt,
-                    )
-                )
-
-            last_failure = "grounding"
-            guard_failures.extend(v.as_dict() for v in verdict.violations)
-            log.warning(
-                "%s: guard rejected attempt %d: %s",
-                spec.name,
-                attempt,
-                "; ".join(v.kind for v in verdict.violations),
-            )
-            if attempt == 1:
-                contents.append({"role": "user", "parts": [{"text": verdict.repair_hint()}]})
-
-        # Two rejections. Degrade rather than render ungrounded text.
-        what = (
-            "did not match the required structure"
-            if last_failure == "schema"
-            else "contained numbers that are not in the data"
-        )
+        # No model in the chain could answer: every one is over its quota,
+        # not served to this key, or down.
         return await finish(
             fallback(
-                AgentStatus.GUARD_REJECTED,
-                f"The written answer {what} twice, so it was discarded; showing a "
-                "measurement-only summary instead.",
-                f"The written answer {what}, so it was discarded. This summary is "
-                "generated directly from the measurements.",
+                AgentStatus.DEGRADED,
+                "Every configured model is over its quota or unavailable right now, so this "
+                "summary is generated directly from the measurements.",
+                "No model could answer right now.",
             )
         )
 

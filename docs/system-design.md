@@ -251,7 +251,7 @@ NOT BUILT — superseded by the on-demand calendar (§10.6, ADR-1 amendment 2026
 ├────────────────────────────────────────────────────┤
 │ id             uuid PK                             │
 │ agent          text   'explainer'|'advisor'|'writer'|'asker'
-│ model          text   'gemini-3.8-flash'           │
+│ model          text   the model that answered      │
 │ status         text   'ok'|'insufficient_data'|'guard_rejected'
 │                       |'timeout'|'degraded'|'error'│
 │ request        jsonb                               │
