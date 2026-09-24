@@ -8,7 +8,11 @@ is generated from (`make codegen`). **Never hand-write the client.**
 - Durations are **seconds**, always. Hours are a presentation unit and the
   conversion happens once, in the frontend adapter.
 - Angles are **degrees**. Azimuth is from north, clockwise.
-- No authentication. This is a read-only public dataset served on a demo host.
+- Reading needs no session: the sites, missions, numbers and tiles are public
+  data. A **session** (a JWT from `POST /auth/demo`, sent as
+  `Authorization: Bearer <token>`) is needed for the four AI panels, which cost
+  model quota, and for the project settings, which change the service for
+  everyone. See *Sign-in* and *Settings* below.
 
 ---
 
@@ -395,7 +399,9 @@ about the demo window.
 `POST /agents/explain` · `advise` · `brief` · `ask`
 
 ```bash
+TOKEN=$(curl -s -X POST localhost:8000/api/v1/auth/demo | jq -r .token)
 curl -X POST localhost:8000/api/v1/agents/advise \
+  -H "authorization: Bearer $TOKEN" \
   -H 'content-type: application/json' \
   -d '{"requirement":"at least 96 hours of Earth contact and no night longer than 150 hours"}'
 ```
@@ -423,10 +429,62 @@ which is quoting rather than claiming.
 `guard_failures` retains rejections that a retry then fixed. That is what lets
 the guard be *shown working* rather than asserted to exist.
 
+Without a session these four answer **401** with `WWW-Authenticate: Bearer`.
+When the project manager has turned the AI off in Settings they still answer,
+with `status: "degraded"` and a summary built from the measurements.
+
 ### `GET /agents/runs`
 
 Every invocation, whatever its outcome, with its tool calls, latency, tokens and
 guard failures. This is the demo's proof that the AI layer is real and bounded.
+Public, like every read.
+
+---
+
+## Sign-in
+
+### `POST /auth/demo`
+
+A project manager's session with no user name or password: the front page's
+*Open the dashboard* button. For a judged demo; `PW_DEMO_SIGN_IN=false` turns
+it off, and it then answers **403** with a problem detail.
+
+```jsonc
+{ "token": "eyJ…", "token_type": "bearer", "subject": "demo-3f9a1c2e",
+  "role": "project_manager", "role_name": "Project manager",
+  "expires_at": "2026-09-25T09:00:00Z" }
+```
+
+The token is an HS256 JWT signed with `PW_JWT_SECRET` (a random secret per
+process when that is blank, so a restart ends every session; the client then
+signs in again once and retries). It lasts `PW_JWT_TTL_S`, 12 hours by default.
+
+### `GET /auth/me`
+
+Who a session belongs to: the same fields without the token. **401** without a
+valid one.
+
+---
+
+## Settings
+
+The project manager's controls. Every route needs a session with the
+`project_manager` role (**401** without one, **403** with another role). Each
+change applies to everyone using the server, and each can be undone or is
+harmless: the AI settings reset to the configured defaults, a cleared result
+is worked out again when next needed, and the run log only ever records.
+
+| | |
+|---|---|
+| `GET /settings` | The AI assistant (on or off, the two model orders with each model ready or skipped until when and why) and the system (terrain map, ephemeris, database, cache, and counts of missions, sites, runs and cached results) |
+| `PUT /settings/ai` | `{enabled, models, models_light}`. The lists reorder or drop the configured models (`PW_AGENT_MODELS`, `PW_AGENT_MODELS_LIGHT`); an unknown or repeated model is a **422** and the previous settings stay |
+| `POST /settings/ai/reset` | Back to the configured defaults |
+| `POST /settings/ai/retry` | Forget every model's cooldown, e.g. after the key's quota was raised |
+| `DELETE /settings/agent-runs` | Clear the AI activity log: `{what, removed, message}` |
+| `DELETE /settings/cache` | Clear cached results, only this service's keys (`pw:*`), never the whole Redis database |
+
+The AI settings are stored in `app_settings` and read on every AI request, so
+every process serving the API follows the same switch.
 
 ---
 

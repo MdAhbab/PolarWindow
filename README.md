@@ -119,22 +119,44 @@ number looked acceptable — see `backend/app/data/ingest_sites.py`.
 
 ---
 
+## Who it is for
+
+**The project manager of a lunar lander mission** is the one stakeholder the
+product is built around: someone choosing where and when to land, who has to
+know how much sunlight the lander will get, how long it can talk to Earth, and
+the longest stretch it must survive alone. They read everything, and they run
+the service for their team from one place: **Settings**. There is no separate
+admin account; the project manager's Settings holds the controls an admin
+would otherwise need (the AI assistant, its activity log, saved results, and a
+health check of the data). Hackathon judges get the same view with one click.
+
+The detail switch (**Simple · Explain · Expert**) changes how much is shown,
+never the numbers, and never drops a caveat to make a sentence shorter.
+
 ## The screens
 
 | | |
 |---|---|
-| **S1 `/map`** | South polar stereographic, live terminator, site picker, filters |
-| **S2 `/clocks`** | The signature view: two concentric rings, four numbers |
-| **S3 `/compare`** | Several sites, one shared window, re-ordering by metric |
-| **S4 `/horizon`** | Standing at the site, looking out at the skyline |
-| **S5 `/blackout`** | Comms timeline, compound events, autonomy packet |
-| **S6 `/report`** | One-page hand-over, light theme, print-ready |
-| **S7 `/story`** | Four panels: why the south pole is hard |
-| **S8 `/states`** | Empty, loading, error and uncertain — live, not drawn |
+| **`/`** | The front page: four ideas about the pole on a 3D Moon (the south-polar terrain is the real LOLA map), and one button in |
+| **`/missions`** | Every NASA CLPS delivery, flown and planned, with filters and a timeline |
+| **`/missions/:id`** | One mission: its sourced record, and Sun and Earth at its landing spot over its days on the surface |
+| **`/map`** | The south pole from above, the shadow for the moment shown, and every candidate site |
+| **`/clocks`** (Site) | One site: four numbers and two rings, sunlight outside and contact with Earth inside |
+| **`/compare`** | Two to eight sites side by side, ranked by one measure at a time |
+| **`/horizon`** | The skyline all around a site, and what blocks the Sun |
+| **`/blackout`** (Plan) | Every time without contact, what the lander must handle alone, and downloads |
+| **`/report`** | A one-page printable report |
 
-Three audience faces (planner / educator / public) change density and pacing.
-They never change the data, and they never drop a caveat to make a sentence
-shorter.
+**Signing in.** The front page's *Open the dashboard* button asks the API for a
+project manager's session (`POST /api/v1/auth/demo`, a signed JWT) with no user
+name or password, so a judge is in with one click. Reading is public; the
+session is checked where it matters: the AI panels (they cost model quota) and
+the project settings (they change the service for everyone).
+`PW_DEMO_SIGN_IN=false` turns the button off anywhere real.
+
+**The guide.** On the first visit a bar along the bottom introduces each major
+feature once, in nine short steps, taking you to each page and outlining the
+part it describes. Close it any time; *Guide* in the header brings it back.
 
 ---
 
@@ -200,8 +222,8 @@ including every rejection, is recorded in `agent_runs` and served at
 
 ```bash
 make test-fast   # unit + property + synthetic golden. No services, < 20 s
-make test        # everything: unit, integration and golden (295 tests)
-make test-fe     # frontend unit and component tests (129)
+make test        # everything: unit, integration and golden (316 tests)
+make test-fe     # frontend unit and component tests (140)
 cd frontend && npm run e2e   # browser tests, axe included; API on :8000
 make lint        # ruff, mypy --strict, import-linter
 ```
@@ -231,8 +253,8 @@ Named, rather than quietly left:
 - `SURVIVAL_LIMIT_H = 120` in the frontend is a stand-in. The backend returns
   durations and refuses to return verdicts, because a verdict needs a thermal
   model this system does not have.
-- The map's terminator is drawn from a mean-element model, not SPICE. It is a
-  schematic overlay; every *number* comes from the API.
+- The map's shadow line is where the Sun sets on flat ground (hills are not
+  counted), from the same SPICE Sun as every number.
 - The `illumination` and `psr` tile layers are approximations from a ring-based
   horizon proxy, labelled as such in the response headers. They are right about
   which craters are dark; they are not published products.
@@ -248,7 +270,7 @@ Named, rather than quietly left:
 
 ```
 [  ]        step the date by 6 h        ⇧[ ⇧]  by one day
-1 2 3       switch audience face        T      read the chart as a table
+1 2 3       Simple, Explain, Expert     T      read the chart as a table
 Tab         nav → filters → map → card → rail
 ```
 

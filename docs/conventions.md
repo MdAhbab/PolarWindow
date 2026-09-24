@@ -128,6 +128,31 @@ data layer; services import no FastAPI; `spiceypy` is reachable only through
 
 ---
 
+## Words
+
+One name for each idea, in plain English, everywhere it appears. No coined
+terms on screen; a technical term is spelled out where it appears (Expert may
+add the professional term as a second line). Keep to these:
+
+| Say | Not |
+|---|---|
+| time in sunlight | time in the Sun, sunlit window |
+| time in contact with Earth | call home, Earth link, DTE (Expert: "Direct-to-Earth (DTE) contact") |
+| longest night | longest dark gap, dark period |
+| time without contact | blackout, silence, RF blackout (Expert may say "radio (RF) blackout") |
+| dark and out of contact at once | compound event |
+| the dates, these dates | the window |
+| stretch | arc |
+| skyline | horizon mask |
+| flat ground, hills not counted | smooth Moon |
+| terrain map (LOLA) | elevation model, hillshade, DEM |
+| Sun and Earth positions (SPICE) | ephemeris |
+| battery limit | survival limit |
+| Plan (the page) | Blackout planner |
+| Printable report | Hand-over report |
+| Saved copy | Cached snapshot |
+| landing spot | target, feature centre (say "centre of X, not a landing point") |
+
 ## Motion
 
 | id | what | duration | easing | fallback |

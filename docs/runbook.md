@@ -113,7 +113,25 @@ curl -s localhost:8000/api/v1/sites/connecting-ridge/metrics | jq .meta
 
 `cache: "hit"` with an old `computed_at` means Redis is serving a previous
 engine version — it should be impossible, since the version is in the cache key,
-but if it happens: `redis-cli FLUSHDB`, then `make seed`.
+but if it happens: Settings → Project → *Clear saved results* (it deletes only
+this service's `pw:*` keys), then `make seed`. From a shell, the same thing is
+`curl -X DELETE -H "authorization: Bearer $TOKEN" localhost:8000/api/v1/settings/cache`.
+
+### The project manager's controls
+
+Settings → Project, in the dashboard, does what used to need a shell:
+
+| Task | In Settings | Undo |
+|---|---|---|
+| Turn the AI off (every panel answers from the measurements) | AI assistant → Off | On |
+| Change which Gemini model is tried first | Move a model up or down | Reset the AI settings |
+| A model was skipped for quota and the quota was raised | Try skipped models now | none needed |
+| Clear the AI activity log before a demo | Clear the AI activity log, then confirm | none: the log only records |
+| Stale results after new data | Clear saved results, then confirm | none needed: results are worked out again |
+
+The panel's *System* list says whether the terrain map, the Sun and Earth
+positions, the database and the cache are working, and counts the missions,
+sites, AI runs and saved results.
 
 To rebuild masks after a change to `core/`:
 

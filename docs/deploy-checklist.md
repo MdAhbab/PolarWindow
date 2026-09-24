@@ -14,14 +14,14 @@ deliberately skipped here are listed in *Not doing, and why*.
 | | Check | Result |
 |---|---|---|
 | ✅ | `ruff check` | All checks passed |
-| ✅ | `ruff format --check app` | 98 files already formatted |
-| ✅ | `mypy --strict` | No issues in 98 source files |
+| ✅ | `ruff format --check app` | 107 files already formatted |
+| ✅ | `mypy --strict` | No issues in 107 source files |
 | ✅ | Layering contracts (import-linter) | **8 kept, 0 broken** |
-| ✅ | Test suite | **295 passed** (201 unit, 75 integration, 19 golden) in 18.1 s |
-| ✅ | Frontend unit and component tests (`make test-fe`) | **129 passed** |
-| ✅ | Browser tests (`npm run e2e`, axe included) | **18 passed**, zero serious or critical axe findings |
-| ✅ | Frontend build | `tsc -b && vite build` clean, 164 KB gz JS + 9 KB gz CSS |
-| ✅ | OpenAPI emitted and client regenerated from it | 19 paths, 52 schemas |
+| ✅ | Test suite | **316 passed** (207 unit, 90 integration, 19 golden) in 19.3 s |
+| ✅ | Frontend unit and component tests (`make test-fe`) | **140 passed** |
+| ✅ | Browser tests (`npm run e2e`, axe included) | **20 passed**, zero serious or critical axe findings |
+| ✅ | Frontend build | `tsc -b && vite build` clean: dashboard 168 KB gz JS + 10 KB gz CSS; the front page's own chunk (three.js, GSAP) 182 KB gz, loaded only on `/` |
+| ✅ | OpenAPI emitted and client regenerated from it | 27 paths, 61 schemas |
 | ✅ | Golden fixtures present with a provenance manifest | 3 sites, kernels + DEM recorded |
 | ✅ | No test reaches a live model API | autouse transport block |
 
@@ -31,7 +31,7 @@ deliberately skipped here are listed in *Not doing, and why*.
       prerequisite. Until it does, every geometry endpoint returns 409 with a
       readable message — the API starts and reports the problem rather than
       crashing, but nothing computes.
-- [ ] `alembic upgrade head` — the API container runs this on boot. Three
+- [ ] `alembic upgrade head` — the API container runs this on boot. Four
       migrations; their upgrades only add tables and columns or relax NOT NULL,
       so re-running is safe. The drops are in the downgrades.
 - [ ] `data/` volume is a **bind mount**, not a named volume. 250 MB of kernels
@@ -50,6 +50,12 @@ deliberately skipped here are listed in *Not doing, and why*.
 - [ ] `PW_GEMINI_API_KEY` — optional. Without it every agent returns
       `status: "degraded"` with a deterministic summary built from the
       measurements. That is correct behaviour, not a failure.
+- [ ] `PW_JWT_SECRET` is set to a long random value if more than one API
+      process serves requests; blank is fine for one process (sessions then end
+      on restart and the dashboard signs in again by itself).
+- [ ] `PW_DEMO_SIGN_IN` is **true** for the judged demo, **false** anywhere real.
+- [ ] Before judging: Settings → Project → *Clear the AI activity log*, so the
+      log shows only runs made during the demo.
 - [ ] `PW_DOWNLOAD_KERNELS_ON_START` stays **false**. A container that silently
       pulls 114 MB at boot turns a fast, obvious failure into a slow mystery.
 
@@ -121,7 +127,8 @@ Named so the absences are decisions rather than oversights.
 | Canary / blue-green | Same. |
 | Load testing | N1 is verified by one timed assertion in the integration suite. A real load suite is not a hackathon deliverable. |
 | Alerting and on-call | Nobody is on call for a hackathon entry. `/healthz` is the monitoring. |
-| Rate limiting | Read-only public data on a demo host. The agent endpoints are the only expensive ones and they are bounded at 20 s with one retry. |
+| Rate limiting | Read-only public data on a demo host. The agent endpoints are the only expensive ones: they need a session, and each run is bounded at 20 s with one retry. |
+| Real sign-in | Judges must get in with one click, so the session is issued without a password. Set `PW_DEMO_SIGN_IN=false` and put a real identity provider in front of `/auth` before anything real. |
 | Secrets manager | One optional API key, supplied by environment. |
 | HA / failover | Explicitly single-node in the system design. Stated rather than implied. |
 | Backups | Everything in Postgres is regenerable by `make seed` in about ten minutes. The only irreplaceable data is the agent run log, which is demo evidence, not records. |

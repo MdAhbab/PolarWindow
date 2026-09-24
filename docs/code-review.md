@@ -10,8 +10,8 @@
 A backend that computes four numbers from real LOLA terrain and real SPICE
 positions, behind an API whose layering is machine-enforced, with an agent layer
 whose central guard is a pure function and is exhaustively tested. At
-2026-09-24: 295 backend tests, 129 frontend unit and component tests and 18
-browser tests, mypy strict clean across 98 files, 8/8 import contracts kept.
+2026-09-24: 316 backend tests, 140 frontend unit and component tests and 20
+browser tests, mypy strict clean across 107 files, 8/8 import contracts kept.
 
 The parts most likely to be wrong — interval arithmetic, the ray-march, the
 grounding guard — got the most test attention, which is the right allocation.
@@ -57,11 +57,21 @@ because the way each was caught is the argument for the corresponding test:
 | SSRF | Outbound requests go to two pinned hosts (NAIF, PDS Geosciences) built from module constants. No user input contributes to a URL. |
 | Agent tool arguments | Validated by pydantic models with `extra="forbid"` before anything executes. A `site_id` of `'; DROP TABLE sites;--` fails the arg model and is recorded as a tool error — tested. |
 | Agent blast radius | Six read-only tools, enforced by an import contract: no agent module except `tools.py` can import a service or repository. |
-| Secrets | One optional API key, read through typed settings. Nothing logged. |
+| Secrets | One optional model API key and the token-signing secret, read through typed settings. Nothing logged. |
+| Settings changes | Model lists are checked against the configured models (no free-text model names). Clearing the cache deletes only `pw:*` keys, never `FLUSHDB`. Destructive actions need a second, explicit step in the UI. |
 | Unbounded work | Window ≤ 730 days, step ∈ [300, 7200], compare ≤ 8 sites, agents ≤ 4 rounds / 8 tool calls / 20 s. |
 
-Container runs non-root. No authentication, by design — read-only public data on
-a demo host, stated in the API docs rather than omitted.
+Container runs non-root. Reading is public, by design: public data on a demo
+host. A signed session (HS256 JWT) guards the two things that are not reads:
+the AI panels, which spend model quota, and the project manager's settings,
+which change the service for everyone. The session is issued with one click
+and no password (`POST /auth/demo`), because judges must get in without an
+account; that is a stated demo decision, switched off with
+`PW_DEMO_SIGN_IN=false`, not a claim of access control. The token verifies
+its signature, issuer and expiry, and refuses an unsigned (`alg: none`) or
+foreign-secret token, which the unit tests check. The client sends it only on
+the calls that need it, so reads carry no credential and cause no CORS
+preflight.
 
 ---
 

@@ -176,3 +176,25 @@ motion on and off.
   question fields rely on their border. Same constraint: a token change.
 - The known gap above still stands: no screen-reader user has tested the arc
   list, and none has tested the mission list either.
+
+## 2026-09-24 (later): the front page, the guide and the project settings
+
+What was added, and how each part meets WCAG 2.1 AA. Checked with axe in the
+browser tests (front page, the dashboard with the guide open, the Settings
+sheet, and a 375 px phone with the guide open) with zero serious or critical
+findings, and by keyboard.
+
+| Part | How it is accessible |
+|---|---|
+| Front page 3D Moon | The canvas is `aria-hidden` and carries nothing the text does not. Every idea is real text with a drawing beside it. Reduced motion (the system setting or the app's own) draws one still frame and turns off scrolling effects and the pointer tilt; with no WebGL the canvas is hidden and the drawings remain. Below 1024 px the Moon sits behind the text, so it is dimmed to keep the words at full contrast. A skip link leads to the content. |
+| Sign-in | One real button, named *Open the dashboard*. A failure is announced (`role="alert"`) in words. No user name or password, so nothing to mistype. |
+| Guide bar | A named region (`Guide`), not a dialog, so the page stays usable while it is open. The step text is a polite live region. Back, Next and Close are real buttons at 48 px; Esc closes it. The element a step describes gets a dashed ink outline, distinct from the focus ring, and is scrolled into view (instantly under reduced motion). On a phone it sits above the tab bar, and the page leaves room for it, which the phone test measures. |
+| Settings, Project | Grouped under headings. The AI switch is a labelled button group. Model order is changed with *Move … up/down* buttons, not drag and drop. The two clears need a second step whose explanation is in a named group; results are announced in a live region; errors use `role="alert"`. |
+| Site picker, Add a site | Native `<select>` elements with visible labels. |
+
+### Still open from this pass
+
+- The new selects use the `line-strong` border, so they share the input-border
+  contrast gap listed above (a token change).
+- The guide's step order was tried by keyboard and screen reader in the
+  browser's accessibility tree only; no screen-reader user has tried it.
