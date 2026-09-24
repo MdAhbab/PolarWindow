@@ -507,7 +507,7 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
           <Button
             onClick={() => {
               seed()
-              navigate(`/compare?from=${encodeURIComponent(m.id)}`)
+              navigate(`/compare?from=${encodeURIComponent(m.id)}&sites=${seedIds.map(encodeURIComponent).join(',')}`)
             }}
             describedBy="nearest-note"
           >

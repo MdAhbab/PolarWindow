@@ -37,6 +37,48 @@ const RANKS: { value: MetricKey; label: string }[] = [
   { value: 'longestBlackout', label: "Longest time it can't call home" },
 ]
 
+const RANK_PARAM: Record<MetricKey, string> = {
+  sunHours: 'sunlight',
+  earthHours: 'earth',
+  longestDark: 'night',
+  longestBlackout: 'blackout',
+}
+
+/**
+ * The comparison lives in the URL too (`?sites=a,b,c&rank=night`), so it can
+ * be shared and the back button restores it. The URL wins when the screen
+ * opens with one; after that the URL follows the store.
+ */
+function useCompareUrl(
+  params: URLSearchParams,
+  setParams: ReturnType<typeof useSearchParams>[1],
+  compareIds: string[],
+  rankBy: MetricKey,
+  setRankBy: (k: MetricKey) => void,
+) {
+  // Read once, on arrival; the store and this flag update in one render, so
+  // the write-back below never sees the pre-URL selection.
+  const [read, setRead] = useState(false)
+  useEffect(() => {
+    if (read) return
+    const ids = (params.get('sites') ?? '').split(',').filter(hasSite)
+    if (ids.length >= 2) useMission.setState({ compareIds: [...new Set(ids)].slice(0, 8) })
+    const rank = (Object.keys(RANK_PARAM) as MetricKey[]).find((k) => RANK_PARAM[k] === params.get('rank'))
+    if (rank) setRankBy(rank)
+    setRead(true)
+  }, [read, params, setRankBy])
+  useEffect(() => {
+    if (!read) return
+    const sites = compareIds.join(',')
+    const rank = RANK_PARAM[rankBy]
+    if (params.get('sites') === sites && params.get('rank') === rank) return
+    const next = new URLSearchParams(params)
+    next.set('sites', sites)
+    next.set('rank', rank)
+    setParams(next, { replace: true })
+  }, [read, compareIds, rankBy, params, setParams])
+}
+
 function useIsWide() {
   const [wide, setWide] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024)
   useEffect(() => {
@@ -67,8 +109,9 @@ export function CompareScreen() {
   const { map: metrics, done, total, isPending, error } = useSiteMetricsMap(compareIds)
   const w = useWindowParams()
   const ranking = useCompare(compareIds, w, API_METRIC[rankBy])
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const fromId = params.get('from')
+  useCompareUrl(params, setParams, compareIds, rankBy, setRankBy)
   const fromMission = useMissions({}).data?.items.find((m) => m.id === fromId)
   const seeded = fromMission?.siteId && compareIds[0] === fromMission.siteId ? fromMission : undefined
   const compute = { status: isPending ? 'running' : 'ready', done, total } as const

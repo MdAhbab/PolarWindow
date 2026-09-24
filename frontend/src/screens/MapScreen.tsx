@@ -19,8 +19,9 @@ import type { SiteMetrics } from '../lib/types'
 
 /** S1 — where you start: pick a site, see the terminator sweep across the pole. */
 export function MapScreen() {
-  const { siteId, setSite, cursorH, windowStartH, face } = useMission(
+  const { siteId, setSite, cursorH, windowStartH, face, compareIds } = useMission(
     useShallow((s) => ({
+      compareIds: s.compareIds,
       siteId: s.siteId,
       setSite: s.setSite,
       cursorH: s.cursorH,
@@ -43,6 +44,8 @@ export function MapScreen() {
   const compute = { status: isPending ? 'running' : 'ready', done, total } as const
   const site = siteById(siteId)
   const focused = metrics[siteId]
+  const inCompare = compareIds.includes(siteId)
+  const compareCount = compareIds.length
 
   const [query, setQuery] = useState('')
   const [minSun, setMinSun] = useState(0)
@@ -300,7 +303,13 @@ export function MapScreen() {
                 >
                   Open in Site view
                 </Link>
-                <Button onClick={() => useMission.getState().toggleCompare(site.id)}>Add to compare</Button>
+                <Button
+                  onClick={() => useMission.getState().toggleCompare(site.id)}
+                  disabled={inCompare && compareCount <= 2}
+                  title={inCompare && compareCount <= 2 ? 'A comparison needs at least two sites' : undefined}
+                >
+                  {inCompare ? `Remove from compare (${compareCount} sites)` : `Add to compare (${compareCount} sites)`}
+                </Button>
               </div>
             </Panel>
           )}
