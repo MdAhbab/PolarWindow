@@ -16,8 +16,12 @@ import {
   useManySiteMetrics,
   useSites,
   useSiteView,
+  useTimeline,
   type WindowParams,
 } from './api/queries'
+import { hasSite, siteById } from './sites'
+import { msFromModelH } from './format'
+import { subSolarAt, type SubPoint } from './subSolar'
 import { adaptAutonomy, quantiseWindow, toHours, type Meta } from './api/adapters'
 import type { MetricsDTO } from './api/client'
 
@@ -78,6 +82,24 @@ export function useFocusedView() {
   const siteId = useMission((s) => s.siteId)
   const w = useWindowParams()
   return useSiteView(siteId, w, true)
+}
+
+/**
+ * The sub-solar point at an instant (in model hours), from the focused site's
+ * Sun track over the current window: the same SPICE Sun as every number. The
+ * query is the one the Site screen already makes, so on most screens it is a
+ * cache hit. Null until it arrives, or for an instant outside the window.
+ */
+export function useSubSolar(atH: number): SubPoint | null {
+  const siteId = useMission((s) => s.siteId)
+  const w = useWindowParams()
+  const tl = useTimeline(siteId, w)
+  const data = tl.data
+  return useMemo(() => {
+    if (!data || !hasSite(siteId)) return null
+    const site = siteById(siteId)
+    return subSolarAt(data, site.latDeg, site.lonDeg, msFromModelH(atH))
+  }, [data, siteId, atH])
 }
 
 export interface ComputeState {

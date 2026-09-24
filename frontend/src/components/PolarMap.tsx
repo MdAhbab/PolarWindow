@@ -1,8 +1,8 @@
 import { useId, useMemo, useState } from 'react'
-import { subSolarPoint, type SubPoint } from '../lib/geometry/ephemeris'
 import { getCandidates } from '../lib/sites'
 import { api } from '../lib/api/client'
 import type { Site } from '../lib/types'
+import type { SubPoint } from '../lib/subSolar'
 import { Segmented } from './ui'
 
 /**
@@ -141,30 +141,33 @@ function tilesFor(p: Projection): TileRef[] {
 }
 
 /**
- * The unlit region and the terminator, from a mean-element Sun. Schematic,
- * and labelled so on the map: every number the product reports comes from
- * each site's own skyline and SPICE, never from this drawing.
+ * The unlit region and the terminator on a smooth Moon, for the Sun at `sub`
+ * (the sub-solar point, from SPICE through the API). Ridges and craters cast
+ * no shadow here; that is what each site's own skyline is for, and the map
+ * says so.
  *
- * Elevation is zero where tan(colatitude) = tan(declination) / cos(delta
- * longitude). Below about a degree and a half of sub-solar latitude that puts
- * the lit region inside a lens around the pole, and the dark side is
- * everything outside the curve on the anti-solar side.
+ * The Sun's elevation at colatitude c from the south pole is zero where
+ * tan(c) = tan(declination) / cos(delta longitude). The curve exists on the
+ * side where cos(delta longitude) has the declination's sign. With the Sun
+ * south of the equator the pole is lit and the dark side lies beyond the
+ * curve; with it north, the pole is dark and only the ground beyond the curve
+ * on the sunward side is lit.
  */
 function shadowPaths(sub: SubPoint, p: Projection): { dark: string | null; term: string | null } {
   const tanDec = Math.tan(sub.latDeg * DEG)
+  const disc = `M${CX - R_EDGE} ${CY} a${R_EDGE} ${R_EDGE} 0 1 0 ${2 * R_EDGE} 0 a${R_EDGE} ${R_EDGE} 0 1 0 ${-2 * R_EDGE} 0 Z`
+  if (tanDec === 0) return { dark: null, term: null }
   const pts: { x: number; y: number }[] = []
   const edge: { x: number; y: number }[] = []
-  // The curve exists on one side only: where cos(delta longitude) has the
-  // sign of the declination. Sweeping that half-turn from end to end keeps it
-  // one unbroken line; a sweep from 0 to 360 degrees would join its two ends
+  // Sweep the half-turn where the curve exists from end to end, so it stays
+  // one unbroken line; a sweep from 0 to 360 degrees joins its two ends
   // straight across the map whenever the half-turn wraps past 0.
   const from = sub.lonDeg + (tanDec > 0 ? -90 : 90)
   for (let i = 1; i < 180; i++) {
     const lon = from + i
     const cosD = Math.cos((lon - sub.lonDeg) * DEG)
-    if (cosD === 0) continue
     const tanC = tanDec / cosD
-    if (tanC <= 0) continue
+    if (!(tanC > 0)) continue
     const colat = Math.atan(tanC) / DEG
     if (colat >= p.edgeColat) continue
     const r = p.radius(colat)
@@ -172,14 +175,20 @@ function shadowPaths(sub: SubPoint, p: Projection): { dark: string | null; term:
     pts.push({ x: CX + r * Math.sin(th), y: CY - r * Math.cos(th) })
     edge.push({ x: CX + R_EDGE * Math.sin(th), y: CY - R_EDGE * Math.cos(th) })
   }
-  if (pts.length < 3) return { dark: null, term: null }
+  if (pts.length < 3) {
+    // The curve lies outside the view: all of it is dark (Sun north) or lit.
+    return { dark: tanDec > 0 ? disc : null, term: null }
+  }
   const line = pts.map((q, i) => `${i === 0 ? 'M' : 'L'}${q.x.toFixed(1)} ${q.y.toFixed(1)}`).join(' ')
   const back = edge
     .slice()
     .reverse()
     .map((q) => `L${q.x.toFixed(1)} ${q.y.toFixed(1)}`)
     .join(' ')
-  return { dark: `${line} ${back} Z`, term: line }
+  const beyond = `${line} ${back} Z`
+  // Sun north: the region beyond the curve is the lit one, so the dark one is
+  // the rest of the disc (drawn with the even-odd rule).
+  return { dark: tanDec > 0 ? `${disc} ${beyond}` : beyond, term: line }
 }
 
 /**
@@ -210,7 +219,7 @@ const centroid = (pts: { at: { x: number; y: number } }[]) => ({
 const pct = (v: number) => `${(v / 700) * 100}%`
 
 export function PolarMap({
-  tH,
+  sun,
   selectedSiteId,
   onSelect,
   size = 700,
@@ -223,7 +232,8 @@ export function PolarMap({
   poleView = false,
   siteMarks = 'pins',
 }: {
-  tH: number
+  /** The sub-solar point for the shadow line; null draws none (still loading, say). */
+  sun: SubPoint | null
   selectedSiteId: string
   onSelect?: (id: string) => void
   size?: number
@@ -251,8 +261,7 @@ export function PolarMap({
   const p = useMemo(() => projection(view), [view])
   const tiles = useMemo(() => tilesFor(p), [p])
   const [failed, setFailed] = useState<ReadonlySet<string>>(() => new Set())
-  // One schematic sub-solar point per instant, shared by both paths.
-  const { dark, term } = useMemo(() => shadowPaths(subSolarPoint(tH), p), [tH, p])
+  const { dark, term } = useMemo(() => (sun ? shadowPaths(sun, p) : { dark: null, term: null }), [sun, p])
 
   const shown = siteList ?? getCandidates()
   const inView = (lat: number) => 90 + lat <= p.edgeColat
@@ -283,7 +292,11 @@ export function PolarMap({
     sites.length === 1 ? '' : 's'
   }${pins.length ? ` and ${pins.length} mission target${pins.length === 1 ? '' : 's'}` : ''} shown${
     hiddenSites > 0 ? `; ${hiddenSites} more lie outside this close-up` : ''
-  }. The shaded region is a schematic of the Sun's position, for orientation only.`
+  }. ${
+    sun
+      ? 'The shaded region is where the Sun is down on a smooth Moon at this moment; ridges and craters are not shaded.'
+      : 'The Sun position is still loading, so no shadow is drawn.'
+  }`
 
   return (
     <div className={`flex w-full flex-col gap-2 ${className}`} style={{ maxWidth: `min(${size}px, 70vh)` }}>
@@ -333,7 +346,7 @@ export function PolarMap({
             {/* M1 — sunlight over the whole disc, then the unlit region laid
                 on top of it. Translucent, so the relief reads through. */}
             <circle cx={CX} cy={CY} r={R_EDGE} fill="var(--color-sun-fill)" fillOpacity="0.14" />
-            {dark && <path d={dark} fill="var(--color-psr)" fillOpacity="0.6" />}
+            {dark && <path d={dark} fill="var(--color-psr)" fillOpacity="0.7" fillRule="evenodd" />}
             {term && (
               <>
                 <path d={term} fill="none" stroke="url(#pw-uncertain)" strokeWidth="14" strokeOpacity="0.5" />
@@ -524,7 +537,7 @@ export function PolarMap({
               letterSpacing="1.2"
               fill="var(--color-ink-2)"
             >
-              SHADOW: SCHEMATIC
+              SHADOW: SMOOTH MOON
             </text>
           </g>
         </svg>

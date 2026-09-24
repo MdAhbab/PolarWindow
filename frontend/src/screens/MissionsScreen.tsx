@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { useMission as useStore } from '../lib/store'
+import { useSubSolar } from '../lib/mission'
 import { useMissions, useSites } from '../lib/api/queries'
 import type { InstrumentType, Mission } from '../lib/api/adapters'
 import {
@@ -68,6 +69,7 @@ export function MissionsScreen() {
     })),
   )
 
+  const sun = useSubSolar(windowStartH + cursorH)
   const [hover, setHover] = useState<string[] | null>(null)
   const [picked, setPicked] = useState<string[]>([])
   const rowRefs = useRef(new Map<string, HTMLAnchorElement>())
@@ -325,7 +327,7 @@ export function MissionsScreen() {
             </div>
             <div className="flex justify-center p-3">
               <PolarMap
-                tH={windowStartH + cursorH}
+                sun={sun}
                 selectedSiteId=""
                 size={440}
                 missionPins={pins}

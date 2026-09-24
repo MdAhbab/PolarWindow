@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { useSiteMetricsMap } from '../lib/useMetricsMap'
 import { useMission } from '../lib/store'
+import { useSubSolar } from '../lib/mission'
 import { getCandidates, siteById } from '../lib/sites'
 import { useMissions } from '../lib/api/queries'
 import { PolarMap, type MissionPin } from '../components/PolarMap'
@@ -30,6 +31,7 @@ export function MapScreen() {
   // The candidates only: mission targets are a separate, optional layer.
   // Keyed on the registry's contents, not frozen at first render: a refetched
   // site list must reach the map.
+  const sun = useSubSolar(windowStartH + cursorH)
   const candidates = getCandidates()
   const idKey = candidates.map((s) => s.id).join('|')
   const allIds = useMemo(() => (idKey ? idKey.split('|') : []), [idKey])
@@ -231,12 +233,12 @@ export function MapScreen() {
         <section className="flex grow flex-col border border-line bg-panel">
           <div className="flex items-center gap-4 border-b border-line px-4 py-3">
             <SectionLabel>South polar stereographic · 80°S to the pole</SectionLabel>
-            <span className="ml-auto text-[12px] text-ink-3">relief from LOLA; shadow line schematic</span>
+            <span className="ml-auto text-[12px] text-ink-3">relief from LOLA; shadow on a smooth Moon</span>
           </div>
 
-          <div className="flex grow items-center justify-center p-3">
+          <div className="flex grow items-start justify-center p-3">
             <PolarMap
-              tH={windowStartH + cursorH}
+              sun={sun}
               selectedSiteId={siteId}
               onSelect={setSite}
               size={640}
@@ -251,11 +253,11 @@ export function MapScreen() {
 
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line px-4 py-3">
             <LegendSwatch className="bg-terrain-mid">Relief: LOLA hillshade, 80 m</LegendSwatch>
-            <LegendSwatch className="bg-psr">In shadow at this instant (schematic)</LegendSwatch>
+            <LegendSwatch className="bg-psr">Sun down at this instant, smooth Moon</LegendSwatch>
             <LegendSwatch className="hatch-uncertain">Shadow-line margin</LegendSwatch>
             <p className="ml-auto max-w-[360px] text-right text-[12px] leading-[17px] text-ink-3">
-              The shadow is drawn from an average Sun, for orientation. Every number comes from each site’s own
-              skyline and the SPICE ephemeris.
+              The shadow line is where the Sun sets on a smooth Moon, from the same SPICE Sun as every number.
+              Ridges and craters are not shaded here; each site’s own skyline decides its numbers.
             </p>
           </div>
         </section>
