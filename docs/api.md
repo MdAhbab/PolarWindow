@@ -164,7 +164,7 @@ of the stored mask.
   "search_kind": "massif", "search_inner_km": 0.0, "search_outer_km": 8.0,
   "offset_from_anchor_km": 0.4,
   "source": "LPI Lunar South Pole Atlas (feature names and anchors)",
-  "source_note": "Derived, not catalogued. Anchor is the IAU centre of … The landing point is the highest post with local slope <= 12 deg in a disc of 0-8 km around that anchor, measured on LOLA LDEM 80S at 80 m posts. Not a surveyed landing ellipse and not an official candidate site."
+  "source_note": "Derived, not catalogued. The search was centred on … at …. The landing point is the post with the most open sky (lowest coarse horizon) among those with local slope <= 12 deg and height in the top 10% of a disc of 0-8 km around that anchor, measured on LOLA LDEM 80S (PDS Geosciences Node) at 80 m posts. Not a surveyed landing ellipse and not an official candidate site."
 }
 ```
 
@@ -189,7 +189,7 @@ looks *down* at its horizon: `arccos(R / (R + h))` is 2.7° at 1,958 m.
 
 The date-slider endpoint. `start`, `end`, `step_s` (300…7200, default 900).
 
-Parallel arrays rather than an array of objects: 2,835 samples × 2 bodies × 5
+Parallel arrays rather than an array of objects: 2,836 samples × 2 bodies × 5
 fields is ~1.1 MB as objects and ~210 KB as arrays.
 
 ```jsonc
@@ -452,13 +452,15 @@ are no Sun or Earth positions at all, which is the product.
 
 ## Performance
 
-Measured on a laptop, warm, against the live service:
+Measured over HTTP against the live service on an Apple M3, 24 September 2026 (medians; "cold" counts only cache misses):
 
 | Endpoint | Typical | Notes |
 |---|---|---|
-| `/metrics` | 25–30 ms cold, < 5 ms cached | one vectorised `spkpos` per body |
-| `/timeline` | ~12 ms cold, ~3 ms warm; 207 KB | 2,835 samples × 2 bodies |
-| `/horizon` | < 5 ms | a stored array |
+| `/metrics` | 11 ms cold, 0.8 ms cached (median) | one vectorised `spkpos` per body |
+| `/timeline` | 15 ms cold, 4 ms warm; 210 KB | 2,836 samples × 2 bodies |
+| `/horizon` | 1 ms | a stored array |
+| `/missions` | 4 ms warm (all 20), 3 ms with a filter | Postgres only, no geometry |
+| `/calendar` | 103 ms cold for 365 days by month | one hourly timeline over the span |
 | `/compare` ×8 | ~70 ms cold, ~1 ms warm | sequential; they share one SPICE thread |
 
 **Window quantisation is why the slider is fast.** `start` and `end` snap to the

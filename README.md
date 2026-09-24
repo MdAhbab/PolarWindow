@@ -153,7 +153,7 @@ backend/
   app/api/v1/      routes + pydantic schemas only
   app/agents/      four agents, six tools, the grounding guard
   app/workers/     precompute: masks and reference metrics
-docs/              conventions, system design, four ADRs, test plan, API, runbook
+docs/              conventions, system design, six ADRs, test plan, API, runbook
 ```
 
 **The layering rule is enforced, not trusted.** `make contracts` runs
@@ -165,8 +165,9 @@ reachable only through `core/spice.py`, and agents reach the domain only through
 **The expensive step is precomputed by construction.** Ray-casting a site's
 skyline is ~45 ms against real terrain and depends on nothing but the site;
 after it, a site *is* 1,440 numbers and everything the date slider touches is a
-lookup plus one vectorised `spkpos`. A 708-hour timeline at 900 s (2,835
-samples) costs about 12 ms cold and about 3 ms warm, measured on this build.
+lookup plus one vectorised `spkpos`. A 708-hour timeline at 900 s (2,836
+samples) costs about 15 ms cold and about 4 ms warm over HTTP, measured on this
+build (Apple M3, 24 September 2026).
 
 ---
 
@@ -199,8 +200,9 @@ including every rejection, is recorded in `agent_runs` and served at
 
 ```bash
 make test-fast   # unit + property + synthetic golden. No services, < 20 s
-make test        # everything (211 tests)
-make test-fe     # frontend units: the adapter, the cache keys, the exports
+make test        # everything: unit, integration and golden (292 tests)
+make test-fe     # frontend unit and component tests (129)
+cd frontend && npm run e2e   # browser tests, axe included; API on :8000
 make lint        # ruff, mypy --strict, import-linter
 ```
 

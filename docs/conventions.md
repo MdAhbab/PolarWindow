@@ -11,7 +11,7 @@ design is finished — do not redesign it.
 make install       # both halves
 make seed          # kernels, terrain, sites, horizon masks. ~10 min, once.
 make dev           # services + api on :8000 + frontend on :5173
-make test          # 211 backend tests
+make test          # every backend test: unit, integration, golden
 make test-fe       # frontend units: the adapter, the cache keys, the exports
 make lint          # ruff, mypy --strict, 8 import contracts
 make test-fast     # unit + property + synthetic golden. No services, < 20 s.

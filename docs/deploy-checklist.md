@@ -14,13 +14,14 @@ deliberately skipped here are listed in *Not doing, and why*.
 | | Check | Result |
 |---|---|---|
 | ✅ | `ruff check` | All checks passed |
-| ✅ | `ruff format --check` | 78 files already formatted |
-| ✅ | `mypy --strict` | No issues in 78 source files |
+| ✅ | `ruff format --check app` | 97 files already formatted |
+| ✅ | `mypy --strict` | No issues in 97 source files |
 | ✅ | Layering contracts (import-linter) | **8 kept, 0 broken** |
-| ✅ | Test suite | **211 passed** in 5.6 s |
-| ✅ | Frontend units (`make test-fe`) | **41 passed** in 0.2 s |
-| ✅ | Frontend build | `tsc -b && vite build` clean, 131 KB gz |
-| ✅ | OpenAPI emitted and client regenerated from it | 15 paths, 37 schemas |
+| ✅ | Test suite | **292 passed** (198 unit, 75 integration, 19 golden) in 17.7 s |
+| ✅ | Frontend unit and component tests (`make test-fe`) | **129 passed** |
+| ✅ | Browser tests (`npm run e2e`, axe included) | **18 passed**, zero serious or critical axe findings |
+| ✅ | Frontend build | `tsc -b && vite build` clean, 164 KB gz JS + 9 KB gz CSS |
+| ✅ | OpenAPI emitted and client regenerated from it | 19 paths, 52 schemas |
 | ✅ | Golden fixtures present with a provenance manifest | 3 sites, kernels + DEM recorded |
 | ✅ | No test reaches a live model API | autouse transport block |
 
@@ -30,8 +31,9 @@ deliberately skipped here are listed in *Not doing, and why*.
       prerequisite. Until it does, every geometry endpoint returns 409 with a
       readable message — the API starts and reports the problem rather than
       crashing, but nothing computes.
-- [ ] `alembic upgrade head` — the API container runs this on boot. Single
-      migration, additive, no destructive statements, so re-running is safe.
+- [ ] `alembic upgrade head` — the API container runs this on boot. Three
+      migrations; their upgrades only add tables and columns or relax NOT NULL,
+      so re-running is safe. The drops are in the downgrades.
 - [ ] `data/` volume is a **bind mount**, not a named volume. 250 MB of kernels
       and terrain take ten minutes to re-fetch, and `docker compose down -v`
       must not be able to destroy them.
@@ -128,12 +130,10 @@ Named so the absences are decisions rather than oversights.
 
 ## Known state at time of writing
 
-- **`make` and `git` are unavailable on the build machine** because the Xcode
-  licence has not been accepted (`sudo xcodebuild -license`). Both need a
-  password, so they are the operator's to run. Every `make` target has been
-  exercised as its underlying command; the Makefile itself is unverified.
-- The repository is **not under version control** for the same reason, so
-  "rollback via `git revert`" assumes `git init` has happened first.
-- Tiles have not been pre-rendered on this machine (`make tiles`). The API
-  falls back to rendering on demand and writing through, so the map works
-  either way — the first view of each tile is just slower.
+- `make` and `git` work on the build machine, and the repository is under
+  version control, so rollback is `git revert` of the release commit.
+- Tiles are pre-rendered to z5 by `make seed`; z6 and z7 render on first
+  request and are written through.
+- The frontend also builds without a backend: `npm run build:snapshot` serves
+  the demo path from `public/snapshot/` (refresh it with `npm run snapshot`
+  against a running API).

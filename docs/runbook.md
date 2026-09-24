@@ -129,7 +129,7 @@ Fifteen minutes, in this order:
 
 ```bash
 make lint            # ruff, mypy --strict, 8 layering contracts
-make test            # rebuilds polar_window_test, then ~280 backend tests
+make test            # rebuilds polar_window_test, then every backend test
 make test-fe         # the adapter, the cache keys, the exports
 curl -s localhost:8000/healthz | jq .status          # "ok", not "degraded"
 ```

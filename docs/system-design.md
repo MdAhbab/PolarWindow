@@ -200,7 +200,7 @@ in the adapter, once.
 │ dem_product       text      'LOLA_LDEM_80S_20M'    │
 │ dem_resolution_m  float     20.0                   │
 │ dem_vertical_error_m float   2.0                   │
-│ dem_coverage      text      'full' | 'partial' | 'synthetic'
+│ coverage          float     share of rays inside the DEM, 0–1
 │ computed_at       timestamptz                      │
 │ compute_ms        float                            │
 └────────────────────────────────────────────────────┘
@@ -394,7 +394,10 @@ Angles in degrees. Every response body carries `meta`.
     "horizon_el_deg": 0.08,       // that error at the mask's own blocker range
     "edge_timing_s": 1820,        // worst arc-edge tolerance in this response
     "grazing": false,             // true ⇒ at least one crossing is untimeable
-    "penumbra_deg": 0.26,
+    "coverage": 1.0,              // share of the skyline set by terrain inside the DEM
+    "penumbra_sun_deg": 0.2665,   // the discs' angular sizes: the partly-lit band
+    "penumbra_earth_deg": 0.9705,
+    "terrain_modelled": true,     // false outside 80°S: a smooth-sphere skyline
     "notes": [
       "DEM clipped to 50 km around the site; terrain beyond is not modelled.",
       "Shadow edges are resolution-limited: a 20 m post cannot resolve a boulder."
@@ -590,7 +593,7 @@ at 3600 s on demand, Redis-cached. ADR-1 (amended) argues the resolution choice.
 | Failure | Blast radius | Behaviour |
 |---|---|---|
 | A SPICE kernel is missing | Total for Sun/Earth | `kernels.py` raises at startup with the exact filename, expected SHA and the NAIF URL. `/healthz` 503. The API still starts — so the message is *visible in the UI*, not only in a crashed container's logs. |
-| DEM tile missing for a site | That site only | Mask falls back to a spherical horizon, `dem_coverage="none"`, `meta.uncertainty.notes` says so, and the site is flagged `degraded` in `/sites`. Never silently a flat horizon presented as terrain. |
+| A site outside the DEM | That site only | A candidate site outside the elevation model is refused when its mask is built (`core/horizon.py` raises): its coordinates or the DEM subset are wrong. A mission target outside 80°S gets a smooth-sphere skyline instead, stored with `dem_product = "none (smooth sphere)"`, and every response for it carries `meta.uncertainty.terrain_modelled = false` and a note. Rays that leave the DEM partway lower `coverage`, which the UI states. Never silently a flat horizon presented as terrain. |
 | Redis down | Latency only | Cache and single-flight become no-ops behind a `try/except`. `meta.cache = "bypass"`. |
 | Postgres down | Total | 503. No fallback; sites and masks live there. |
 | Gemini down / slow | Agents only | 20 s timeout → 1 retry → deterministic template summary built from the same tool outputs, `status="degraded"`. Every other endpoint is unaffected. |
@@ -605,11 +608,14 @@ Load estimate for the target: a handful of judges and a demo screen. Call it
 **10 concurrent users, 30 rps peak during a slider drag**, 20 sites, one year of
 coverage.
 
-- Timeline compute: ~40 ms CPU per site-window at 900 s step (one vectorised
-  `spkpos` + numpy). At 30 rps with a 90 % cache hit rate that is ~0.12 cores.
-- Mask build: 20 sites × ~60 s = 20 min, once, offline.
-- Storage: masks 20 × 17 KB; coarse tables 20 × 2 bodies × 8,766 h × 12 B ≈ 4 MB;
-  DEM subset ~2 GB; kernels ~130 MB.
+- Timeline compute: about 10 ms CPU per site-window at 900 s step (ephemeris
+  6.6 ms, Sun track 2.0 ms, Earth track 0.7 ms, measured 2026-09-24); 11 ms
+  cold and 0.8 ms cached for `/metrics` over HTTP. At 30 rps with a 90 % cache
+  hit rate that is well under a tenth of a core.
+- Mask build: 45 ms per site with the numba kernel, plus 23 ms to load its fine
+  DEM window: the 22 sites in a few seconds, once, offline.
+- Storage: masks 22 × 17 KB; no coarse tables (the calendar is computed on
+  demand and cached, §10.6); DEM 320 MB; kernels 127 MB; tiles to z5 134 MB.
 
 Everything fits on one laptop-sized node, which is the correct answer for this
 build and is stated so that "it scales" is never implied.
@@ -706,23 +712,21 @@ a mission) and one capability (a movable window).
 │ status             text      enum, below                 │
 │ outcome_note       text      sourced prose, may be ''    │
 │ region             text      'south_polar'|'nearside'|'farside'|'polar_other'
-│ target_name        text                                   │
-│ target_lat_deg     float?    null ⇒ target not published │
-│ target_lon_deg     float?    0..360 east                 │
-│ coordinate_kind    text      'actual_landing'|'planned_target'|'feature_centre'
-│ ellipse_major_km   float?    semi-axes, if published     │
-│ ellipse_minor_km   float?                                │
-│ ellipse_azimuth_deg float?                               │
-│ launch_date        date?                                 │
-│ launch_precision   text      'minute'|'day'|'month'|'quarter'|'year'
-│ launch_as_published text     the verbatim phrase, e.g. 'late 2027'
-│ landing_date       timestamptz?                          │
-│ landing_precision  text                                  │
-│ end_of_mission     timestamptz?  sourced, if it ended    │
+│ target_name        text?                                  │
+│ target             jsonb?    {name, lat_deg, lon_deg (0..360 E),
+│                              coordinate_kind: 'actual_landing'|
+│                              'planned_target'|'feature_centre',
+│                              source_url, feature_id}; null ⇒ not published
+│ ellipse            jsonb?    {major_km, minor_km, azimuth_deg}, if published
+│ launch             jsonb?    {date, precision: 'minute'|'day'|'month'|
+│ landing            jsonb?     'quarter'|'year', as_published: the verbatim
+│ end_of_mission     jsonb?     phrase, e.g. 'late 2027'}; null ⇒ unconfirmed
 │ planned_surface_days float?                              │
+│ sort_at            timestamptz?  landing, else launch: list order and filters
 │ site_id            text? FK → sites   null until linked  │
 │ sources            jsonb  [{url,title,publisher,accessed}] ≥ 1
-│ unconfirmed_fields text[] field names with no source     │
+│ unconfirmed_fields jsonb  field names with no source     │
+│ notes              jsonb  conflicts between sources, kept│
 │ data_version       text   sha256 of the missions.json row│
 └──────────┬───────────────────────────────────────────────┘
            │ 1:N
@@ -814,7 +818,7 @@ Query: `status` (repeatable), `provider`, `payload_type` (repeatable, any-of),
     "site_id": "mission-im-2" | null,
     "terrain_modelled": true | null,
     "summary": { …SiteSummary over the surface window… } | null,
-    "unconfirmed_fields": ["ellipse_major_km"] } ],
+    "unconfirmed_fields": ["ellipse"] } ],
   "total": 12, "meta": {...} }
 ```
 Values are elided on purpose; `data/missions.json` is the only place mission
