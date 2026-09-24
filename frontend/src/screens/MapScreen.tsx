@@ -231,7 +231,7 @@ export function MapScreen() {
         <section className="flex grow flex-col border border-line bg-panel">
           <div className="flex items-center gap-4 border-b border-line px-4 py-3">
             <SectionLabel>South polar stereographic · 80°S to the pole</SectionLabel>
-            <span className="ml-auto text-[12px] text-ink-3">terminator solved, not drawn</span>
+            <span className="ml-auto text-[12px] text-ink-3">relief from LOLA; shadow line schematic</span>
           </div>
 
           <div className="flex grow items-center justify-center p-3">
@@ -242,17 +242,20 @@ export function MapScreen() {
               size={640}
               sites={candidates}
               missionPins={missionPins}
-              onMissionPin={setSite}
+              poleView
+              // Targets drawn together share one button: each press moves to
+              // the next of them, so every one is reachable.
+              onMissionPin={(keys) => setSite(keys[(keys.indexOf(siteId) + 1) % keys.length])}
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line px-4 py-3">
-            <LegendSwatch className="bg-terrain-low">Lit at this instant</LegendSwatch>
-            <LegendSwatch className="bg-psr">In shadow at this instant</LegendSwatch>
-            <LegendSwatch className="border border-terrain-mid bg-psr">Never lit — PSR</LegendSwatch>
-            <LegendSwatch className="hatch-uncertain">Terminator margin</LegendSwatch>
-            <p className="ml-auto max-w-[320px] text-right text-[12px] leading-[17px] text-ink-3">
-              Shading is the instantaneous shadow, not an average. Averages hide the gap that kills a lander.
+            <LegendSwatch className="bg-terrain-mid">Relief: LOLA hillshade, 80 m</LegendSwatch>
+            <LegendSwatch className="bg-psr">In shadow at this instant (schematic)</LegendSwatch>
+            <LegendSwatch className="hatch-uncertain">Shadow-line margin</LegendSwatch>
+            <p className="ml-auto max-w-[360px] text-right text-[12px] leading-[17px] text-ink-3">
+              The shadow is drawn from an average Sun, for orientation. Every number comes from each site’s own
+              skyline and the SPICE ephemeris.
             </p>
           </div>
         </section>
@@ -307,7 +310,7 @@ export function MapScreen() {
               <br />
               ⇧[ ⇧] step by one day
               <br />
-              1 2 3 switch audience face
+              1 2 3 Simple, Explain, Expert
               <br />
               T read the current chart as a table
             </p>

@@ -1,8 +1,9 @@
-import { useMemo } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { subSolarPoint, type SubPoint } from '../lib/geometry/ephemeris'
 import { getCandidates } from '../lib/sites'
-import { bearing } from '../lib/format'
+import { api } from '../lib/api/client'
 import type { Site } from '../lib/types'
+import { Segmented } from './ui'
 
 /**
  * One mission-target pin (§10.2). Missions that share a coordinate (three aim
@@ -25,99 +26,188 @@ export interface MissionPin {
 /** The inner edge of the map: pins north of 80°S are outside it. */
 export const POLAR_MAP_EDGE_LAT = -80
 
+/** Lunar radius, metres: the sphere the LOLA polar products are projected from. */
+const R_MOON_M = 1_737_400
+
+/**
+ * Half the side of the tile pyramid's square, metres. The tile service builds
+ * its quadtree over the regional DEM's own extent (LDEM 80S at 80 m, origin at
+ * ±303,960 m), so this is what places a tile; the map's circle is 80°S at
+ * 304,006 m, a few pixels outside it.
+ */
+const TILE_HALF_EXTENT_M = 303_960
+
 const CX = 350
 const CY = 350
 const R_EDGE = 330
-/** Map edge, degrees of colatitude from the south pole. */
-const EDGE_COLAT = 10
-
 const DEG = Math.PI / 180
 
-/** South polar stereographic. Longitude 0 at the top, east clockwise. */
-function project(latDeg: number, lonDeg: number): { x: number; y: number } {
-  const colat = 90 + latDeg
-  const k = R_EDGE / Math.tan((EDGE_COLAT * DEG) / 2)
-  const r = k * Math.tan((colat * DEG) / 2)
-  const th = lonDeg * DEG
-  return { x: CX + r * Math.sin(th), y: CY - r * Math.cos(th) }
+type View = 'region' | 'pole'
+
+/**
+ * The two extents. The whole map runs from 80°S to the pole; the close-up
+ * from 87.5°S, where seven candidate sites sit within a few kilometres of
+ * each other and their pins would otherwise land on top of one another.
+ */
+const VIEWS: Record<View, { edgeColat: number; rings: { colat: number; label: string }[]; name: string }> = {
+  region: {
+    edgeColat: 10,
+    rings: [
+      { colat: 2, label: '88°S' },
+      { colat: 5, label: '85°S' },
+    ],
+    name: '80 degrees south to the pole',
+  },
+  pole: {
+    edgeColat: 2.5,
+    rings: [
+      { colat: 1, label: '89°S' },
+      { colat: 2, label: '88°S' },
+    ],
+    name: 'a close-up from 87.5 degrees south to the pole',
+  },
 }
 
-function radiusForColat(colat: number): number {
-  const k = R_EDGE / Math.tan((EDGE_COLAT * DEG) / 2)
-  return k * Math.tan((colat * DEG) / 2)
+/** Distance from the pole in south polar stereographic, metres (scale true at the pole). */
+const stereoM = (colatDeg: number) => 2 * R_MOON_M * Math.tan((colatDeg * DEG) / 2)
+
+interface Projection {
+  edgeColat: number
+  /** SVG units per metre. */
+  s: number
+  project: (latDeg: number, lonDeg: number) => { x: number; y: number }
+  radius: (colatDeg: number) => number
 }
 
 /**
- * The terminator, solved rather than drawn.
+ * South polar stereographic, exactly as the LOLA products and the tile
+ * service use it: longitude 0 at the top (grid +y), east clockwise, and the
+ * map's edge at `edgeColat` degrees from the pole.
+ */
+function projection(view: View): Projection {
+  const edgeColat = VIEWS[view].edgeColat
+  const s = R_EDGE / stereoM(edgeColat)
+  const radius = (colat: number) => stereoM(colat) * s
+  return {
+    edgeColat,
+    s,
+    radius,
+    project: (latDeg, lonDeg) => {
+      const r = radius(90 + latDeg)
+      const th = lonDeg * DEG
+      return { x: CX + r * Math.sin(th), y: CY - r * Math.cos(th) }
+    },
+  }
+}
+
+interface TileRef {
+  key: string
+  href: string
+  x: number
+  y: number
+  size: number
+}
+
+/**
+ * The hillshade tiles that cover the visible circle, at the zoom that puts
+ * about four tiles across it: 1,024 source pixels for a map drawn at up to
+ * ~640 CSS pixels. The pyramid is pre-rendered to z5, so this never asks the
+ * service to render one on demand.
+ */
+function tilesFor(p: Projection): TileRef[] {
+  const visibleM = stereoM(p.edgeColat)
+  const z = Math.max(0, Math.min(5, Math.round(Math.log2((4 * TILE_HALF_EXTENT_M) / visibleM))))
+  const n = 2 ** z
+  const sizeM = (2 * TILE_HALF_EXTENT_M) / n
+  const out: TileRef[] = []
+  for (let tx = 0; tx < n; tx++) {
+    for (let ty = 0; ty < n; ty++) {
+      const xMin = -TILE_HALF_EXTENT_M + tx * sizeM
+      const yMax = TILE_HALF_EXTENT_M - ty * sizeM
+      // Skip tiles that miss the visible circle entirely.
+      const dx = Math.max(xMin, Math.min(0, xMin + sizeM))
+      const dy = Math.max(yMax - sizeM, Math.min(0, yMax))
+      if (Math.hypot(dx, dy) > visibleM) continue
+      out.push({
+        key: `${z}/${tx}/${ty}`,
+        href: api.tileUrl('hillshade', z, tx, ty),
+        x: CX + xMin * p.s,
+        y: CY - yMax * p.s,
+        size: sizeM * p.s,
+      })
+    }
+  }
+  return out
+}
+
+/**
+ * The unlit region and the terminator, from a mean-element Sun. Schematic,
+ * and labelled so on the map: every number the product reports comes from
+ * each site's own skyline and SPICE, never from this drawing.
  *
  * Elevation is zero where tan(colatitude) = tan(declination) / cos(delta
- * longitude). Below about a degree and a half of sub-solar latitude that
- * puts the whole lit region inside a lens around the pole, and the dark side
- * is everything outside the curve on the anti-solar side. Sweeping the
- * sub-solar longitude once a month rotates the whole pattern — which is M1.
+ * longitude). Below about a degree and a half of sub-solar latitude that puts
+ * the lit region inside a lens around the pole, and the dark side is
+ * everything outside the curve on the anti-solar side.
  */
-function darkRegionPath(sub: SubPoint): string | null {
+function shadowPaths(sub: SubPoint, p: Projection): { dark: string | null; term: string | null } {
   const tanDec = Math.tan(sub.latDeg * DEG)
   const pts: { x: number; y: number }[] = []
   const edge: { x: number; y: number }[] = []
-
-  for (let i = 0; i <= 180; i++) {
-    const lon = (i / 180) * 360
-    const dLon = (lon - sub.lonDeg) * DEG
-    const cosD = Math.cos(dLon)
-    if (cosD === 0) continue
-    const tanC = tanDec / cosD
-    if (tanC <= 0) continue
-    const colat = Math.atan(tanC) / DEG
-    if (colat >= EDGE_COLAT) continue
-    const r = radiusForColat(colat)
-    const th = lon * DEG
-    pts.push({ x: CX + r * Math.sin(th), y: CY - r * Math.cos(th) })
-    edge.push({ x: CX + R_EDGE * Math.sin(th), y: CY - R_EDGE * Math.cos(th) })
-  }
-
-  if (pts.length < 3) return null
-  const fwd = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ')
-  const back = edge
-    .slice()
-    .reverse()
-    .map((p) => `L${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
-    .join(' ')
-  return `${fwd} ${back} Z`
-}
-
-function terminatorPath(sub: SubPoint): string | null {
-  const tanDec = Math.tan(sub.latDeg * DEG)
-  const pts: string[] = []
-  for (let i = 0; i <= 180; i++) {
-    const lon = (i / 180) * 360
+  // The curve exists on one side only: where cos(delta longitude) has the
+  // sign of the declination. Sweeping that half-turn from end to end keeps it
+  // one unbroken line; a sweep from 0 to 360 degrees would join its two ends
+  // straight across the map whenever the half-turn wraps past 0.
+  const from = sub.lonDeg + (tanDec > 0 ? -90 : 90)
+  for (let i = 1; i < 180; i++) {
+    const lon = from + i
     const cosD = Math.cos((lon - sub.lonDeg) * DEG)
     if (cosD === 0) continue
     const tanC = tanDec / cosD
     if (tanC <= 0) continue
     const colat = Math.atan(tanC) / DEG
-    if (colat >= EDGE_COLAT) continue
-    const r = radiusForColat(colat)
+    if (colat >= p.edgeColat) continue
+    const r = p.radius(colat)
     const th = lon * DEG
-    pts.push(`${pts.length === 0 ? 'M' : 'L'}${(CX + r * Math.sin(th)).toFixed(1)} ${(CY - r * Math.cos(th)).toFixed(1)}`)
+    pts.push({ x: CX + r * Math.sin(th), y: CY - r * Math.cos(th) })
+    edge.push({ x: CX + R_EDGE * Math.sin(th), y: CY - R_EDGE * Math.cos(th) })
   }
-  return pts.length > 2 ? pts.join(' ') : null
+  if (pts.length < 3) return { dark: null, term: null }
+  const line = pts.map((q, i) => `${i === 0 ? 'M' : 'L'}${q.x.toFixed(1)} ${q.y.toFixed(1)}`).join(' ')
+  const back = edge
+    .slice()
+    .reverse()
+    .map((q) => `L${q.x.toFixed(1)} ${q.y.toFixed(1)}`)
+    .join(' ')
+  return { dark: `${line} ${back} Z`, term: line }
 }
 
 /**
- * Schematic terrain. This is a stand-in for LOLA hillshade tiles at map scale
- * — the per-site DEM covers 20 km, this view covers about 300 km. Labelled as
- * schematic on the map so nobody reads a crater edge as a measurement.
+ * Single-link clusters of points closer than `gap` (SVG units). Pins that
+ * would collide are drawn as one marker with one name, instead of letters
+ * printed over each other.
  */
-const CRATERS: { lat: number; lon: number; rDeg: number; psr: boolean; name: string }[] = [
-  { lat: -89.9, lon: 0, rDeg: 0.7, psr: true, name: 'Shackleton' },
-  { lat: -88.5, lon: 300, rDeg: 0.9, psr: true, name: 'de Gerlache' },
-  { lat: -87.4, lon: 0, rDeg: 1.3, psr: true, name: 'Haworth' },
-  { lat: -88.1, lon: 45, rDeg: 1.6, psr: true, name: 'Shoemaker' },
-  { lat: -87.3, lon: 84, rDeg: 1.1, psr: true, name: 'Faustini' },
-  { lat: -85.6, lon: 65, rDeg: 1.8, psr: false, name: 'Nobile' },
-  { lat: -86.0, lon: 200, rDeg: 1.4, psr: false, name: 'unnamed' },
-]
+function clusters<T extends { at: { x: number; y: number } }>(items: T[], gap: number): T[][] {
+  const parent = items.map((_, i) => i)
+  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])))
+  for (let i = 0; i < items.length; i++) {
+    for (let j = i + 1; j < items.length; j++) {
+      const a = items[i].at
+      const b = items[j].at
+      if (Math.hypot(a.x - b.x, a.y - b.y) < gap) parent[find(i)] = find(j)
+    }
+  }
+  const groups = new Map<number, T[]>()
+  items.forEach((it, i) => groups.set(find(i), [...(groups.get(find(i)) ?? []), it]))
+  return [...groups.values()]
+}
+
+const centroid = (pts: { at: { x: number; y: number } }[]) => ({
+  x: pts.reduce((a, q) => a + q.at.x, 0) / pts.length,
+  y: pts.reduce((a, q) => a + q.at.y, 0) / pts.length,
+})
+
+const pct = (v: number) => `${(v / 700) * 100}%`
 
 export function PolarMap({
   tH,
@@ -130,6 +220,8 @@ export function PolarMap({
   onMissionPin,
   onMissionHover,
   ellipses = [],
+  poleView = false,
+  siteMarks = 'pins',
 }: {
   tH: number
   selectedSiteId: string
@@ -140,226 +232,364 @@ export function PolarMap({
   sites?: Site[]
   /** The mission layer: diamonds, drawn over the candidates. */
   missionPins?: MissionPin[]
-  onMissionPin?: (key: string) => void
-  onMissionHover?: (key: string | null) => void
+  /** Called with every pin key a marker stands for (one, or a cluster). */
+  onMissionPin?: (keys: string[]) => void
+  onMissionHover?: (keys: string[] | null) => void
   /** Published landing ellipses as [lat, lon] rings. Drawn only when published. */
   ellipses?: [number, number][][]
+  /** Offer the pole close-up, where the candidates near the pole separate. */
+  poleView?: boolean
+  /**
+   * `dots` draws the candidates as unlabelled context marks, for a small map
+   * whose subject is something else (the missions inset): lettered pins at
+   * that size are too small to read and fall on top of each other.
+   */
+  siteMarks?: 'pins' | 'dots'
 }) {
-  // One schematic sub-solar point per instant, shared by both paths. They
-  // used to be solved three times per render, including renders where the
-  // instant had not moved.
-  const { sub, dark, term } = useMemo(() => {
-    const sp = subSolarPoint(tH)
-    return { sub: sp, dark: darkRegionPath(sp), term: terminatorPath(sp) }
-  }, [tH])
+  const clipId = useId()
+  const [view, setView] = useState<View>('region')
+  const p = useMemo(() => projection(view), [view])
+  const tiles = useMemo(() => tilesFor(p), [p])
+  const [failed, setFailed] = useState<ReadonlySet<string>>(() => new Set())
+  // One schematic sub-solar point per instant, shared by both paths.
+  const { dark, term } = useMemo(() => shadowPaths(subSolarPoint(tH), p), [tH, p])
+
   const shown = siteList ?? getCandidates()
-  const sites = shown.map((s) => ({ site: s, at: project(s.latDeg, s.lonDeg) }))
-  const pins = missionPins
-    .filter((p) => p.latDeg <= POLAR_MAP_EDGE_LAT)
-    .map((p) => ({ pin: p, at: project(p.latDeg, p.lonDeg) }))
+  const inView = (lat: number) => 90 + lat <= p.edgeColat
+  const sites = shown.filter((s) => inView(s.latDeg)).map((s) => ({ site: s, at: p.project(s.latDeg, s.lonDeg) }))
+  const pins = missionPins.filter((m) => inView(m.latDeg)).map((pin) => ({ pin, at: p.project(pin.latDeg, pin.lonDeg) }))
   const rings = ellipses
-    .filter((r) => r.length > 2 && r.every(([lat]) => lat <= POLAR_MAP_EDGE_LAT))
-    .map((r) =>
-      r
-        .map(([lat, lon], i) => {
-          const q = project(lat, lon)
-          return `${i === 0 ? 'M' : 'L'}${q.x.toFixed(1)} ${q.y.toFixed(1)}`
-        })
-        .join(' ') + ' Z',
+    .filter((r) => r.length > 2 && r.every(([lat]) => inView(lat)))
+    .map(
+      (r) =>
+        r
+          .map(([lat, lon], i) => {
+            const q = p.project(lat, lon)
+            return `${i === 0 ? 'M' : 'L'}${q.x.toFixed(1)} ${q.y.toFixed(1)}`
+          })
+          .join(' ') + ' Z',
     )
 
+  // About 36 CSS pixels at the size the map is drawn: closer than that, two
+  // lettered pins collide.
+  const gap = 36 * (700 / Math.min(size, 700))
+  const siteGroups = siteMarks === 'dots' ? [] : clusters(sites, gap)
+  const pinGroups = clusters(pins, gap * 0.6)
+  const poleColat = VIEWS.pole.edgeColat
+  const canZoom = (g: typeof sites) => poleView && view === 'region' && g.every((m) => 90 + m.site.latDeg < poleColat)
+
+  const hiddenSites = shown.length - sites.length
+  const summary = `South polar map, ${VIEWS[view].name}, over LOLA hillshade relief. ${sites.length} candidate site${
+    sites.length === 1 ? '' : 's'
+  }${pins.length ? ` and ${pins.length} mission target${pins.length === 1 ? '' : 's'}` : ''} shown${
+    hiddenSites > 0 ? `; ${hiddenSites} more lie outside this close-up` : ''
+  }. The shaded region is a schematic of the Sun's position, for orientation only.`
+
   return (
-    // Square by construction, so the site buttons below -- positioned in
-    // per cent of the 700 x 700 view box -- sit exactly on their pins.
-    <div
-      className={`relative aspect-square w-full ${className}`}
-      style={{ maxWidth: `min(${size}px, 70vh)` }}
-    >
-      <svg
-        viewBox="0 0 700 700"
-        className="absolute inset-0 h-full w-full"
-        role="img"
-        aria-label={`South polar map from 80 degrees south to the pole. ${sites.length} candidate sites${
-          pins.length ? ` and ${pins.length} mission target${pins.length === 1 ? '' : 's'}` : ''
-        }. The sub-solar point is at longitude ${Math.round(
-          ((sub.lonDeg % 360) + 360) % 360,
-        )} degrees east, so the unlit region lies opposite it.`}
-      >
-        <defs>
-          <clipPath id="pw-map-clip">
-            <circle cx={CX} cy={CY} r={R_EDGE} />
-          </clipPath>
-        </defs>
+    <div className={`flex w-full flex-col gap-2 ${className}`} style={{ maxWidth: `min(${size}px, 70vh)` }}>
+      {poleView && (
+        <Segmented<View>
+          label="Map extent"
+          value={view}
+          onChange={setView}
+          options={[
+            { value: 'region', label: '80°S to the pole' },
+            { value: 'pole', label: 'Pole close-up' },
+          ]}
+        />
+      )}
+      {/* Square by construction, so the buttons below -- positioned in per
+          cent of the 700 x 700 view box -- sit exactly on their pins. */}
+      <div className="relative aspect-square w-full">
+        <svg viewBox="0 0 700 700" className="absolute inset-0 h-full w-full" role="img" aria-label={summary}>
+          <defs>
+            <clipPath id={clipId}>
+              <circle cx={CX} cy={CY} r={R_EDGE} />
+            </clipPath>
+          </defs>
 
-        <circle cx={CX} cy={CY} r={R_EDGE} fill="var(--color-raised)" />
+          <circle cx={CX} cy={CY} r={R_EDGE} fill="var(--color-terrain-low)" />
 
-        <g clipPath="url(#pw-map-clip)">
-          <rect x="0" y="0" width="700" height="700" fill="var(--color-terrain-low)" />
+          <g clipPath={`url(#${clipId})`}>
+            {/* Relief: the pre-rendered LOLA hillshade pyramid, in the same
+                projection as the pins. A tile that fails to load leaves the
+                plain ground colour, never a broken-image mark. */}
+            {tiles
+              .filter((t) => !failed.has(t.key))
+              .map((t) => (
+                <image
+                  key={t.key}
+                  href={t.href}
+                  x={t.x}
+                  y={t.y}
+                  // Half a unit of overlap hides the hairline seam between tiles.
+                  width={t.size + 0.5}
+                  height={t.size + 0.5}
+                  preserveAspectRatio="none"
+                  onError={() => setFailed((f) => new Set(f).add(t.key))}
+                />
+              ))}
 
-          {/* broad relief */}
-          <path d="M0 250 Q160 190 300 250 T700 220 L700 0 L0 0 Z" fill="var(--color-terrain-mid)" opacity="0.35" />
-          <path d="M0 470 Q180 420 340 480 T700 450 L700 700 L0 700 Z" fill="var(--color-psr)" opacity="0.4" />
+            {/* M1 — sunlight over the whole disc, then the unlit region laid
+                on top of it. Translucent, so the relief reads through. */}
+            <circle cx={CX} cy={CY} r={R_EDGE} fill="var(--color-sun-fill)" fillOpacity="0.14" />
+            {dark && <path d={dark} fill="var(--color-psr)" fillOpacity="0.6" />}
+            {term && (
+              <>
+                <path d={term} fill="none" stroke="url(#pw-uncertain)" strokeWidth="14" strokeOpacity="0.5" />
+                <path d={term} fill="none" stroke="var(--color-sun)" strokeWidth="2.5" />
+              </>
+            )}
 
-          {CRATERS.map((c) => {
-            const p = project(c.lat, c.lon)
-            const rr = radiusForColat(c.rDeg)
+            <g fill="none" stroke="var(--color-line-strong)" strokeWidth="1" strokeDasharray="4 5">
+              {VIEWS[view].rings.map((r) => (
+                <circle key={r.label} cx={CX} cy={CY} r={p.radius(r.colat)} />
+              ))}
+              <path d={`M${CX} 20 V680 M20 ${CY} H680`} />
+            </g>
+          </g>
+
+          <circle cx={CX} cy={CY} r={R_EDGE} fill="none" stroke="var(--color-line-strong)" strokeWidth="2" />
+
+          <g
+            fill="var(--color-ink-2)"
+            fontFamily="var(--font-mono)"
+            fontSize="11"
+            paintOrder="stroke"
+            stroke="var(--color-canvas)"
+            strokeWidth="3"
+          >
+            {VIEWS[view].rings.map((r) => (
+              <text key={r.label} x={CX + 8} y={CY - p.radius(r.colat) + 4}>
+                {r.label}
+              </text>
+            ))}
+            <text x={CX} y="14" textAnchor="middle">
+              0°
+            </text>
+            <text x="692" y={CY + 4} textAnchor="end">
+              90°E
+            </text>
+          </g>
+
+          {siteMarks === 'dots' &&
+            sites.map(({ site: s, at }) => (
+              <circle
+                key={s.id}
+                cx={at.x}
+                cy={at.y}
+                r="5"
+                fill="var(--color-ink-2)"
+                stroke="var(--color-canvas)"
+                strokeWidth="1.5"
+                aria-hidden="true"
+              />
+            ))}
+
+          {siteGroups.map((g) => {
+            if (g.length === 1) {
+              const { site: s, at } = g[0]
+              const selected = s.id === selectedSiteId
+              return (
+                <g key={s.id} transform={`translate(${at.x} ${at.y})`} aria-hidden="true">
+                  {selected && <circle r="20" fill="none" stroke="var(--color-sun)" strokeWidth="2" strokeOpacity="0.55" />}
+                  <path
+                    d="M0 12 s10-9.5 10-16a10 10 0 1 0-20 0c0 6.5 10 16 10 16Z"
+                    fill={selected ? 'var(--color-sun-fill)' : 'var(--color-ink)'}
+                    stroke="var(--color-canvas)"
+                    strokeWidth="1.5"
+                  />
+                  <circle cy="-4" r="3.4" fill="var(--color-canvas)" />
+                  <text
+                    y="32"
+                    textAnchor="middle"
+                    fontFamily="var(--font-sans)"
+                    fontSize="13"
+                    fontWeight="600"
+                    fill={selected ? 'var(--color-sun)' : 'var(--color-ink)'}
+                    paintOrder="stroke"
+                    stroke="var(--color-canvas)"
+                    strokeWidth="3"
+                  >
+                    {s.code}
+                  </text>
+                </g>
+              )
+            }
+            // A cluster: each site a small dot at its exact position, and one
+            // label naming them, beside the group rather than on top of it.
+            const c = centroid(g)
+            const right = Math.max(...g.map((m) => m.at.x)) + 12
+            const selected = g.some((m) => m.site.id === selectedSiteId)
+            const codes = g.map((m) => m.site.code).join(' ')
             return (
-              <g key={c.name + c.lon}>
-                <ellipse
-                  cx={p.x}
-                  cy={p.y}
-                  rx={rr}
-                  ry={rr * 0.94}
-                  fill={c.psr ? 'url(#pw-psr)' : 'var(--color-psr)'}
-                  stroke="var(--color-terrain-mid)"
-                  strokeWidth="2"
-                />
-                <path
-                  d={`M${p.x - rr} ${p.y} a${rr} ${rr * 0.94} 0 0 1 ${rr * 2} 0`}
-                  fill="none"
-                  stroke="var(--color-terrain-high)"
-                  strokeWidth="2.5"
-                  opacity="0.8"
-                />
+              <g key={g.map((m) => m.site.id).join('|')} aria-hidden="true">
+                {g.map((m) => (
+                  <circle
+                    key={m.site.id}
+                    cx={m.at.x}
+                    cy={m.at.y}
+                    r="4.5"
+                    fill={m.site.id === selectedSiteId ? 'var(--color-sun-fill)' : 'var(--color-ink)'}
+                    stroke="var(--color-canvas)"
+                    strokeWidth="1.5"
+                  />
+                ))}
+                {selected && <circle cx={c.x} cy={c.y} r="24" fill="none" stroke="var(--color-sun)" strokeWidth="2" strokeOpacity="0.55" />}
+                <text
+                  x={right}
+                  y={c.y + 4}
+                  fontFamily="var(--font-sans)"
+                  fontSize="13"
+                  fontWeight="600"
+                  fill="var(--color-ink)"
+                  paintOrder="stroke"
+                  stroke="var(--color-canvas)"
+                  strokeWidth="3"
+                >
+                  {g.length > 4 ? `${g.length} sites` : codes}
+                </text>
               </g>
             )
           })}
 
-          {/* M1 — sunlight over the whole disc, then the unlit region laid on
-              top of it. The sweep is the single most important animation here. */}
-          <circle cx={CX} cy={CY} r={R_EDGE} fill="var(--color-sun-fill)" fillOpacity="0.14" />
-          {dark && <path d={dark} fill="var(--color-psr)" fillOpacity="0.9" />}
-          {term && (
-            <>
-              <path d={term} fill="none" stroke="url(#pw-uncertain)" strokeWidth="14" strokeOpacity="0.5" />
-              <path d={term} fill="none" stroke="var(--color-sun)" strokeWidth="2.5" />
-            </>
-          )}
+          {rings.map((d, i) => (
+            <path key={`ring-${i}`} d={d} fill="none" stroke="var(--color-line-strong)" strokeWidth="1" aria-hidden="true" />
+          ))}
 
-          <g fill="none" stroke="var(--color-line-strong)" strokeWidth="1" strokeDasharray="4 5">
-            <circle cx={CX} cy={CY} r={radiusForColat(2)} />
-            <circle cx={CX} cy={CY} r={radiusForColat(5)} />
-            <path d={`M${CX} 20 V680 M20 ${CY} H680`} />
-          </g>
-        </g>
-
-        <circle cx={CX} cy={CY} r={R_EDGE} fill="none" stroke="var(--color-line-strong)" strokeWidth="2" />
-
-        <g fill="var(--color-ink-3)" fontFamily="var(--font-mono)" fontSize="11">
-          <text x={CX + 8} y={CY - radiusForColat(2) + 4}>88°S</text>
-          <text x={CX + 8} y={CY - radiusForColat(5) + 4}>85°S</text>
-          <text x={CX} y="14" textAnchor="middle">0°</text>
-          <text x="692" y={CY + 4} textAnchor="end">90°E</text>
-        </g>
-
-        {sites.map(({ site: s, at: p }) => {
-          const selected = s.id === selectedSiteId
-          return (
-            <g key={s.id} transform={`translate(${p.x} ${p.y})`} aria-hidden="true">
-              {selected && (
-                <circle r="20" fill="none" stroke="var(--color-sun)" strokeWidth="2" strokeOpacity="0.55" />
+          {/* Mission targets: a diamond, stroke ink, fill panel; dashed where
+              the coordinate is a plan or a feature centre, solid where a
+              lander came to rest. Never amber or cyan: those mean sunlight and
+              Earth contact. Targets that sit together keep their exact
+              positions and gain one count beside them. */}
+          {pinGroups.map((g) => (
+            <g key={g.map((m) => m.pin.key).join('|')} aria-hidden="true">
+              {g.map(({ pin, at }) => (
+                <g key={pin.key} transform={`translate(${at.x} ${at.y})`}>
+                  {pin.highlighted && (
+                    <circle r="17" fill="none" stroke="var(--color-ink)" strokeWidth="2" strokeOpacity="0.55" />
+                  )}
+                  <rect
+                    x="-8"
+                    y="-8"
+                    width="16"
+                    height="16"
+                    transform="rotate(45)"
+                    fill={pin.highlighted ? 'var(--color-ink)' : 'var(--color-panel)'}
+                    stroke="var(--color-ink)"
+                    strokeWidth="2"
+                    strokeDasharray={pin.dashed ? '4 3' : undefined}
+                  />
+                </g>
+              ))}
+              {g.length > 1 && (
+                <text
+                  x={Math.max(...g.map((m) => m.at.x)) + 16}
+                  y={centroid(g).y - 10}
+                  fontFamily="var(--font-sans)"
+                  fontSize="13"
+                  fontWeight="700"
+                  fill="var(--color-ink)"
+                  paintOrder="stroke"
+                  stroke="var(--color-canvas)"
+                  strokeWidth="3"
+                >
+                  ×{g.length}
+                </text>
               )}
-              <path
-                d="M0 12 s10-9.5 10-16a10 10 0 1 0-20 0c0 6.5 10 16 10 16Z"
-                fill={selected ? 'var(--color-sun-fill)' : 'var(--color-ink)'}
-                stroke="var(--color-canvas)"
-                strokeWidth="1.5"
-              />
-              <circle cy="-4" r="3.4" fill="var(--color-canvas)" />
-              <text
-                y="32"
-                textAnchor="middle"
-                fontFamily="var(--font-sans)"
-                fontSize="13"
-                fontWeight="600"
-                fill={selected ? 'var(--color-sun)' : 'var(--color-ink)'}
-              >
-                {s.code}
-              </text>
             </g>
-          )
-        })}
+          ))}
 
-        {rings.map((d, i) => (
-          <path key={`ring-${i}`} d={d} fill="none" stroke="var(--color-line-strong)" strokeWidth="1" aria-hidden="true" />
-        ))}
-
-        {/* Mission targets: a 10 px diamond (at the map's usual on-screen
-            scale), stroke ink, fill panel; dashed where the coordinate is a
-            plan or a feature centre, solid where a lander came to rest. Never
-            amber or cyan: those mean sunlight and Earth contact. */}
-        {pins.map(({ pin, at }) => (
-          <g key={pin.key} transform={`translate(${at.x} ${at.y})`} aria-hidden="true">
-            {pin.highlighted && (
-              <circle r="17" fill="none" stroke="var(--color-ink)" strokeWidth="2" strokeOpacity="0.55" />
-            )}
-            <rect
-              x="-8"
-              y="-8"
-              width="16"
-              height="16"
-              transform="rotate(45)"
-              fill={pin.highlighted ? 'var(--color-ink)' : 'var(--color-panel)'}
-              stroke="var(--color-ink)"
-              strokeWidth="2"
-              strokeDasharray={pin.dashed ? '4 3' : undefined}
-            />
+          <g aria-hidden="true">
+            <rect x="452" y="30" width="228" height="44" fill="var(--color-canvas)" fillOpacity="0.85" />
+            <text
+              x="566"
+              y="48"
+              textAnchor="middle"
+              fontFamily="var(--font-sans)"
+              fontSize="12"
+              fontWeight="600"
+              letterSpacing="1.2"
+              fill="var(--color-ink-2)"
+            >
+              RELIEF: LOLA HILLSHADE
+            </text>
+            <text
+              x="566"
+              y="65"
+              textAnchor="middle"
+              fontFamily="var(--font-sans)"
+              fontSize="12"
+              fontWeight="600"
+              letterSpacing="1.2"
+              fill="var(--color-ink-2)"
+            >
+              SHADOW: SCHEMATIC
+            </text>
           </g>
-        ))}
+        </svg>
 
-        <g>
-          <rect x="452" y="42" width="216" height="26" fill="var(--color-canvas)" fillOpacity="0.85" />
-          <text
-            x="560"
-            y="60"
-            textAnchor="middle"
-            fontFamily="var(--font-sans)"
-            fontSize="12"
-            fontWeight="600"
-            letterSpacing="1.2"
-            fill="var(--color-ink-2)"
-          >
-            SCHEMATIC TERRAIN
-          </text>
-        </g>
-        <text x="32" y="676" fontFamily="var(--font-mono)" fontSize="11" fill="var(--color-ink-3)">
-          sub-solar {bearing(sub.lonDeg)}E
-        </text>
-      </svg>
-
-      {/* Real buttons, one per pin. An SVG cannot hold a <button>, so the pins
-          above are drawn presentationally and these sit on top of them: a
-          48 x 48 target each, reachable by Tab, announced with the site's
-          name and whether it is the one selected. They replace <g role=button>,
-          which the rule about real elements forbids. */}
-      {onSelect &&
-        sites.map(({ site: s, at: p }) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => onSelect(s.id)}
-            aria-pressed={s.id === selectedSiteId}
-            aria-label={`${s.code}, ${s.name}`}
-            className="absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-control bg-transparent"
-            style={{ left: `${(p.x / 700) * 100}%`, top: `${(p.y / 700) * 100}%` }}
-          />
-        ))}
-      {onMissionPin &&
-        pins.map(({ pin, at }) => (
-          <button
-            key={pin.key}
-            type="button"
-            onClick={() => onMissionPin(pin.key)}
-            onMouseEnter={() => onMissionHover?.(pin.key)}
-            onMouseLeave={() => onMissionHover?.(null)}
-            onFocus={() => onMissionHover?.(pin.key)}
-            onBlur={() => onMissionHover?.(null)}
-            aria-pressed={pin.pressed}
-            aria-label={pin.label}
-            className="absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-control bg-transparent"
-            style={{ left: `${(at.x / 700) * 100}%`, top: `${(at.y / 700) * 100}%` }}
-          />
-        ))}
+        {/* Real buttons over the pins. An SVG cannot hold a <button>, so the
+            marks above are presentational and these sit on top of them: a
+            48 x 48 target each, reachable by Tab, named from the data. A
+            cluster near the pole is one button that opens the close-up, where
+            its sites separate; any other cluster keeps a button per site. */}
+        {onSelect &&
+          siteGroups.flatMap((g) => {
+            if (g.length > 1 && canZoom(g)) {
+              const c = centroid(g)
+              const names = g.map((m) => `${m.site.code}, ${m.site.name}`).join('; ')
+              const selected = g.find((m) => m.site.id === selectedSiteId)
+              return [
+                <button
+                  key={`cluster-${g[0].site.id}`}
+                  type="button"
+                  onClick={() => setView('pole')}
+                  aria-label={`${g.length} candidate sites near the pole: ${names}${
+                    selected ? `. Includes the selected site, ${selected.site.code}` : ''
+                  }. Show the pole close-up`}
+                  className="absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-control bg-transparent"
+                  style={{ left: pct(c.x), top: pct(c.y) }}
+                />,
+              ]
+            }
+            return g.map(({ site: s, at }) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => onSelect(s.id)}
+                aria-pressed={s.id === selectedSiteId}
+                aria-label={`${s.code}, ${s.name}`}
+                className="absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-control bg-transparent"
+                style={{ left: pct(at.x), top: pct(at.y) }}
+              />
+            ))
+          })}
+        {onMissionPin &&
+          pinGroups.map((g) => {
+            const keys = g.map((m) => m.pin.key)
+            const c = centroid(g)
+            const label =
+              g.length === 1
+                ? g[0].pin.label
+                : `${g.length} targets close together. ${g.map((m) => m.pin.label).join('. ')}`
+            return (
+              <button
+                key={keys.join('|')}
+                type="button"
+                onClick={() => onMissionPin(keys)}
+                onMouseEnter={() => onMissionHover?.(keys)}
+                onMouseLeave={() => onMissionHover?.(null)}
+                onFocus={() => onMissionHover?.(keys)}
+                onBlur={() => onMissionHover?.(null)}
+                aria-pressed={g.length === 1 ? g[0].pin.pressed : undefined}
+                aria-label={label}
+                className="absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-control bg-transparent"
+                style={{ left: pct(c.x), top: pct(c.y) }}
+              />
+            )
+          })}
+      </div>
     </div>
   )
 }

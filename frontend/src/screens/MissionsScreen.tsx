@@ -15,6 +15,7 @@ import {
   isInstrumentType,
   missionAccessibleName,
   missionDate,
+  publishedTitle,
   publishedWords,
   type StatusFilter,
 } from '../lib/missions'
@@ -328,12 +329,13 @@ export function MissionsScreen() {
                 selectedSiteId=""
                 size={440}
                 missionPins={pins}
-                onMissionPin={(key) => {
-                  const ids = idsForPin(key)
+                siteMarks="dots"
+                onMissionPin={(keys) => {
+                  const ids = keys.flatMap(idsForPin)
                   setPicked(ids)
                   rowRefs.current.get(ids[0])?.focus()
                 }}
-                onMissionHover={(key) => setHover(key ? idsForPin(key) : null)}
+                onMissionHover={(keys) => setHover(keys ? keys.flatMap(idsForPin) : null)}
               />
             </div>
             <PinLegend />
@@ -407,7 +409,8 @@ function MissionRow({
         {m.provider ?? <Unconfirmed />} ·{' '}
         {d ? (
           <>
-            {d.which === 'landing' ? 'landing' : 'launch'} {publishedWords(d.date)}
+            {d.which === 'landing' ? 'landing' : 'launch'}{' '}
+            <span title={publishedTitle(d.date)}>{publishedWords(d.date)}</span>
           </>
         ) : (
           <>
@@ -441,11 +444,13 @@ function PinLegend() {
         Dashed diamond: a planned target or a feature centre, not a landing point
       </span>
       <span className="flex items-center gap-2">
-        <svg width="12" height="16" viewBox="-11 -15 22 28" aria-hidden="true">
-          <path d="M0 12 s10-9.5 10-16a10 10 0 1 0-20 0c0 6.5 10 16 10 16Z" fill="var(--color-ink)" />
-          <circle cy="-4" r="3.4" fill="var(--color-canvas)" />
+        <svg width="12" height="12" viewBox="-6 -6 12 12" aria-hidden="true">
+          <circle r="4.5" fill="var(--color-ink-2)" stroke="var(--color-canvas)" strokeWidth="1.5" />
         </svg>
-        Lettered pin: a candidate site
+        Dot: a candidate site, named on the <Link to="/map">Map</Link>
+      </span>
+      <span className="flex items-center gap-2">
+        <span className="font-semibold">×2</span> two targets drawn close together
       </span>
     </div>
   )
