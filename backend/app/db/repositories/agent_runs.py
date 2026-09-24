@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import desc, select
+from sqlalchemy import delete, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -81,6 +81,16 @@ class AgentRunRepository:
         self._s.add(run)
         await self._s.flush()
         return run.id
+
+    async def count(self) -> int:
+        stmt = select(func.count()).select_from(AgentRun)
+        return int((await self._s.execute(stmt)).scalar_one())
+
+    async def clear(self) -> tuple[int, int]:
+        """Delete every run and its tool calls. Returns (runs, tool calls) deleted."""
+        calls = await self._s.execute(delete(AgentToolCall))
+        runs = await self._s.execute(delete(AgentRun))
+        return int(getattr(runs, "rowcount", 0) or 0), int(getattr(calls, "rowcount", 0) or 0)
 
     async def recent(self, limit: int = 50, agent: str | None = None) -> list[AgentRunRecord]:
         stmt = (

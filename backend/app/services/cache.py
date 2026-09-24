@@ -123,6 +123,50 @@ async def get(key: str) -> dict[str, Any] | None:
         return None
 
 
+#: Every key this service writes starts with this, whatever the engine version.
+NAMESPACE = "pw:"
+
+
+async def count() -> int | None:
+    """How many cached results there are; None when Redis is not in use."""
+    client = await get_client()
+    if client is None:
+        return None
+    n = 0
+    try:
+        async for _ in client.scan_iter(match=f"{NAMESPACE}*", count=500):
+            n += 1
+    except Exception as exc:
+        log.warning("cache count failed (%s)", exc)
+        await reset()
+        return None
+    return n
+
+
+async def clear() -> int | None:
+    """Delete every cached result, and only ours: never FLUSHDB on a shared Redis.
+
+    Returns how many keys went; None when Redis is not in use.
+    """
+    client = await get_client()
+    if client is None:
+        return None
+    deleted = 0
+    batch: list[bytes] = []
+    try:
+        async for key in client.scan_iter(match=f"{NAMESPACE}*", count=500):
+            batch.append(key)
+            if len(batch) >= 500:
+                deleted += int(await client.delete(*batch))
+                batch = []
+        if batch:
+            deleted += int(await client.delete(*batch))
+    except Exception as exc:
+        log.warning("cache clear failed (%s)", exc)
+        await reset()
+    return deleted
+
+
 async def put(key: str, value: dict[str, Any], ttl_s: int) -> None:
     client = await get_client()
     if client is None:

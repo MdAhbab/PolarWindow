@@ -579,6 +579,7 @@ dependencies = [
     { name = "orjson" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
+    { name = "pyjwt" },
     { name = "pyproj" },
     { name = "redis" },
     { name = "scipy" },
@@ -618,6 +619,7 @@ requires-dist = [
     { name = "orjson", specifier = "==3.10.13" },
     { name = "pydantic", specifier = "==2.13.5" },
     { name = "pydantic-settings", specifier = "==2.7.0" },
+    { name = "pyjwt", specifier = ">=2.10" },
     { name = "pyproj", specifier = "==3.7.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = "==8.3.4" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = "==0.25.0" },
@@ -720,6 +722,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/86/41/19b62b99e7530cfa1d6ccd16199afd9289a12929bef1a03aa4382b22e683/pydantic_settings-2.7.0.tar.gz", hash = "sha256:ac4bfd4a36831a48dbf8b2d9325425b549a0a6f18cea118436d728eb4f1c4d66", size = 79743, upload-time = "2024-12-13T09:41:11.477Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f9/00/57b4540deb5c3a39ba689bb519a4e03124b24ab8589e618be4aac2c769bd/pydantic_settings-2.7.0-py3-none-any.whl", hash = "sha256:e00c05d5fa6cbbb227c84bd7487c5c1065084119b750df7c8c1a554aed236eb5", size = 29549, upload-time = "2024-12-13T09:41:09.54Z" },
+]
+
+[[package]]
+name = "pyjwt"
+version = "2.15.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/02/a5/5197bfd06417837ac079921c66fa6393f1dea3557272a263cebfef69e432/pyjwt-2.15.0.tar.gz", hash = "sha256:b11c5f9791d7bf51c2b39a81ed669f6b2dbbd669df2942f6c60167e9e3d1abe4", size = 120513, upload-time = "2026-09-23T16:56:00.689Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e8/55/40e45bf052ee8ee12a4dfd785519660f8effa7b065442b91646ec6828619/pyjwt-2.15.0-py3-none-any.whl", hash = "sha256:7a3742debf6b879e912dbb9819ceec1594be812452b78c5f2e2dfc56564954f8", size = 33680, upload-time = "2026-09-23T16:55:59.241Z" },
 ]
 
 [[package]]

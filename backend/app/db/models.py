@@ -342,3 +342,21 @@ class MissionPayload(Base):
     mission: Mapped[Mission] = relationship(back_populates="payloads")
 
     __table_args__ = (Index("ix_payload_types", "instrument_types", postgresql_using="gin"),)
+
+
+class AppSetting(Base):
+    """A setting the project manager changes from the dashboard, by name.
+
+    One row per setting, the value as JSON. Only what must survive a restart
+    and apply to everyone lives here: today, the AI assistant's switch and its
+    model order. Everything else stays in environment settings.
+    """
+
+    __tablename__ = "app_settings"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    updated_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )

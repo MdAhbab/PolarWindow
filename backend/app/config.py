@@ -135,6 +135,17 @@ class Settings(BaseSettings):
     #: itself. Longer than a cold compute, shorter than a user's patience.
     singleflight_wait_s: float = 5.0
 
+    # --- sign-in -----------------------------------------------------------
+    #: Signs session tokens (HS256). Empty means a random secret per process:
+    #: tokens then stop working when the API restarts, and the dashboard signs
+    #: in again on its own. Set it anywhere more than one process serves.
+    jwt_secret: str = ""
+    jwt_ttl_s: int = 12 * 3600
+    #: The one-click sign-in the landing page uses: a project manager's token
+    #: with no user name or password. Right for a judged demo, wrong anywhere
+    #: real, so it can be turned off.
+    demo_sign_in: bool = True
+
     # --- agents ------------------------------------------------------------
     gemini_api_key: str = ""
     #: Models to try, in order. A run moves to the next one when a model is

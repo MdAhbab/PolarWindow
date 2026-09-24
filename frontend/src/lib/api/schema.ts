@@ -317,6 +317,151 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/demo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign in as the project manager
+         * @description A project manager's session, with no user name or password.
+         *
+         *     For a judged demo: the landing page's "Open the dashboard" button calls
+         *     this. Turned off with `PW_DEMO_SIGN_IN=false`, when it answers 403.
+         */
+        post: operations["demo_sign_in_api_v1_auth_demo_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Who this session belongs to */
+        get: operations["me_api_v1_auth_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Everything the Settings panel shows */
+        get: operations["read_api_v1_settings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/settings/ai": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Turn the AI on or off and order its models */
+        put: operations["save_ai_api_v1_settings_ai_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/settings/ai/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Back to the configured defaults */
+        post: operations["reset_ai_api_v1_settings_ai_reset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/settings/ai/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Try skipped models again now
+         * @description Forget every model's cooldown, e.g. after the key's quota was raised.
+         */
+        post: operations["retry_models_api_v1_settings_ai_retry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/settings/agent-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Clear the AI activity log */
+        delete: operations["clear_run_log_api_v1_settings_agent_runs_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/settings/cache": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Clear cached results */
+        delete: operations["clear_cache_api_v1_settings_cache_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -486,6 +631,43 @@ export interface components {
             grounded: boolean;
             /** Notes */
             notes: string[];
+        };
+        /** AiSettingsIn */
+        AiSettingsIn: {
+            /** Enabled */
+            enabled: boolean;
+            /** Models */
+            models: string[];
+            /** Models Light */
+            models_light: string[];
+        };
+        /** AiSettingsOut */
+        AiSettingsOut: {
+            /**
+             * Enabled
+             * @description False: every AI panel answers from the measurements.
+             */
+            enabled: boolean;
+            /**
+             * Configured
+             * @description A model API key is set and the server is not offline. Without it the switch has nothing to turn on.
+             */
+            configured: boolean;
+            /**
+             * Customised
+             * @description False while the configured defaults apply.
+             */
+            customised: boolean;
+            /**
+             * Models
+             * @description The main list, in the order tried.
+             */
+            models: components["schemas"]["ModelState"][];
+            /**
+             * Models Light
+             * @description The list for short explanations, in the order tried.
+             */
+            models_light: components["schemas"]["ModelState"][];
         };
         /**
          * Arc
@@ -694,6 +876,18 @@ export interface components {
             items: components["schemas"]["CalendarBucket"][];
             meta: components["schemas"]["Meta"];
         };
+        /** Cleared */
+        Cleared: {
+            /** What */
+            what: string;
+            /**
+             * Removed
+             * @description How many records went; null when there was no store.
+             */
+            removed: number | null;
+            /** Message */
+            message: string;
+        };
         /** CompareItem */
         CompareItem: {
             /** Site Id */
@@ -818,6 +1012,22 @@ export interface components {
             open_start: boolean;
             /** Open End */
             open_end: boolean;
+        };
+        /** Counts */
+        Counts: {
+            /** Missions */
+            missions: number;
+            /** Candidate Sites */
+            candidate_sites: number;
+            /** Mission Targets */
+            mission_targets: number;
+            /** Agent Runs */
+            agent_runs: number;
+            /**
+             * Cached Results
+             * @description Null when the cache is not in use.
+             */
+            cached_results: number | null;
         };
         /** DemHealth */
         DemHealth: {
@@ -1214,6 +1424,23 @@ export interface components {
             /** Feature Id */
             feature_id?: number | null;
         };
+        /** ModelState */
+        ModelState: {
+            /** Model */
+            model: string;
+            /** Ready */
+            ready: boolean;
+            /**
+             * Skipped Until
+             * @description When a skipped model is tried again; null when it is ready.
+             */
+            skipped_until: string | null;
+            /**
+             * Why
+             * @description Why it is being skipped, in words.
+             */
+            why: string | null;
+        };
         /** Payload */
         Payload: {
             /** Id */
@@ -1326,6 +1553,42 @@ export interface components {
             ephemeris: string;
             /** Frame */
             frame: string;
+        };
+        /** SessionOut */
+        SessionOut: {
+            /** Subject */
+            subject: string;
+            /**
+             * Role
+             * @constant
+             */
+            role: "project_manager";
+            /**
+             * Role Name
+             * @description The role as the screen names it.
+             */
+            role_name: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * Token
+             * @description A JWT (HS256). Send it as `Authorization: Bearer <token>`.
+             */
+            token: string;
+            /**
+             * Token Type
+             * @default bearer
+             * @constant
+             */
+            token_type: "bearer";
+        };
+        /** SettingsOut */
+        SettingsOut: {
+            ai: components["schemas"]["AiSettingsOut"];
+            system: components["schemas"]["SystemOut"];
         };
         /** SiteBrief */
         SiteBrief: {
@@ -1521,6 +1784,29 @@ export interface components {
             /** Note */
             note: string;
         };
+        /** SystemOut */
+        SystemOut: {
+            /**
+             * Status
+             * @description ok, degraded or down, as /healthz reports it.
+             */
+            status: string;
+            /**
+             * Moon Data
+             * @description The south-polar elevation model is present.
+             */
+            moon_data: boolean;
+            /**
+             * Sun Earth Data
+             * @description The ephemeris files are loaded.
+             */
+            sun_earth_data: boolean;
+            /** Database */
+            database: boolean;
+            /** Cache */
+            cache: boolean;
+            counts: components["schemas"]["Counts"];
+        };
         /** TargetSite */
         TargetSite: {
             /** Id */
@@ -1652,6 +1938,29 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /**
+         * Who
+         * @description Who a session belongs to.
+         */
+        Who: {
+            /** Subject */
+            subject: string;
+            /**
+             * Role
+             * @constant
+             */
+            role: "project_manager";
+            /**
+             * Role Name
+             * @description The role as the screen names it.
+             */
+            role_name: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
         };
         /** WindowsResponse */
         WindowsResponse: {
@@ -2327,6 +2636,179 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    demo_sign_in_api_v1_auth_demo_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionOut"];
+                };
+            };
+        };
+    };
+    me_api_v1_auth_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Who"];
+                };
+            };
+        };
+    };
+    read_api_v1_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+        };
+    };
+    save_ai_api_v1_settings_ai_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AiSettingsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_ai_api_v1_settings_ai_reset_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+        };
+    };
+    retry_models_api_v1_settings_ai_retry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+        };
+    };
+    clear_run_log_api_v1_settings_agent_runs_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Cleared"];
+                };
+            };
+        };
+    };
+    clear_cache_api_v1_settings_cache_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Cleared"];
                 };
             };
         };

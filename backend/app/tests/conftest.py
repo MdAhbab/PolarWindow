@@ -287,8 +287,8 @@ async def fresh_engine() -> AsyncIterator[None]:
 
 
 @pytest.fixture
-async def client() -> AsyncIterator:
-    """An ASGI client against the real app. No uvicorn, so tests stay fast."""
+async def anon_client() -> AsyncIterator:
+    """An ASGI client against the real app, with no session. No uvicorn, so tests stay fast."""
     import httpx
 
     from app.main import create_app
@@ -300,6 +300,16 @@ async def client() -> AsyncIterator:
         app.router.lifespan_context(app),
     ):
         yield c
+
+
+@pytest.fixture
+async def client(anon_client) -> AsyncIterator:
+    """The same client, signed in as the project manager, as the dashboard always is."""
+    from app.services import auth_service
+
+    token, _ = auth_service.issue_demo()
+    anon_client.headers["Authorization"] = f"Bearer {token}"
+    yield anon_client
 
 
 GEMINI_URL = r"https://generativelanguage\.googleapis\.com/.*:generateContent"

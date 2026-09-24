@@ -146,6 +146,10 @@ class SiteRepository:
         rows = list((await self._s.execute(stmt)).scalars().all())
         return [_to_record(r) for r in rows], total
 
+    async def count_by_kind(self) -> dict[str, int]:
+        stmt = select(Site.kind, func.count()).group_by(Site.kind)
+        return {str(k): int(n) for k, n in (await self._s.execute(stmt)).all()}
+
     async def all_ids(self) -> list[str]:
         stmt = select(Site.id).where(Site.is_active.is_(True)).order_by(Site.code)
         return list((await self._s.execute(stmt)).scalars().all())

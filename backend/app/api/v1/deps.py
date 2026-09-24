@@ -13,10 +13,12 @@ from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
 
 from fastapi import Depends, HTTPException, Query
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.config import Settings, get_settings
 from app.core.kernels import KernelError
 from app.db.session import get_session
+from app.services import auth_service
 from app.services.geometry_service import StepOutOfRange, WindowTooLong
 from app.services.mission_service import MissionNotFound
 from app.services.site_service import MaskNotBuilt, SiteNotFound
@@ -41,9 +43,11 @@ def problem(
     *,
     retryable: bool = False,
     action: str | None = None,
+    headers: dict[str, str] | None = None,
 ) -> HTTPException:
     return HTTPException(
         status_code=status,
+        headers=headers,
         detail={
             "type": f"{ERROR_BASE}/{type_}",
             "title": title,
@@ -155,3 +159,59 @@ def window_params(
     if end.tzinfo is None:
         end = end.replace(tzinfo=UTC)
     return start, end, step
+
+
+# ---------------------------------------------------------------------------
+# Sign-in
+# ---------------------------------------------------------------------------
+
+_bearer = HTTPBearer(
+    auto_error=False,
+    description="A session token from POST /auth/demo, sent as `Authorization: Bearer <token>`.",
+)
+
+
+async def signed_in(
+    creds: HTTPAuthorizationCredentials | None = Depends(_bearer),
+) -> auth_service.Claims:
+    """The caller's session. 401 when there is none or it has ended."""
+    challenge = {"WWW-Authenticate": "Bearer"}
+    if creds is None:
+        raise problem(
+            401,
+            "not-signed-in",
+            "Sign in first",
+            "This action needs a session token, and the request did not carry one.",
+            "Everything you can read without signing in still works: the missions, "
+            "the map and every number.",
+            action="Open the dashboard from the home page",
+            headers=challenge,
+        )
+    try:
+        return auth_service.verify(creds.credentials)
+    except auth_service.InvalidToken as exc:
+        raise problem(
+            401,
+            "session-ended",
+            "Your session has ended",
+            f"The session token was not accepted ({exc}).",
+            "Nothing you were looking at has changed. Signing in again restores it.",
+            retryable=True,
+            action="Sign in again",
+            headers=challenge,
+        ) from exc
+
+
+async def project_manager(
+    claims: auth_service.Claims = Depends(signed_in),
+) -> auth_service.Claims:
+    """The caller, who must be the project manager."""
+    if claims.role != auth_service.ROLE_MANAGER:
+        raise problem(
+            403,
+            "not-allowed",
+            "Only the project manager can do this",
+            f"This session's role is '{claims.role}'.",
+            "Reading is unaffected.",
+        )
+    return claims

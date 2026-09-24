@@ -22,6 +22,9 @@ import json
 import logging
 import re
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from datetime import time as dt_time
@@ -126,10 +129,72 @@ class ModelUnavailable(RuntimeError):
 #: When each model may be tried again, in `time.monotonic()` seconds. Kept in
 #: the process: after a restart the first request finds out again, once.
 _cooldown_until: dict[str, float] = {}
+#: Why each model is being skipped, for the settings screen.
+_cooldown_why: dict[str, str] = {}
 
 
-def _cool(model: str, seconds: float) -> None:
+def _cool(model: str, seconds: float, why: str = "") -> None:
     _cooldown_until[model] = max(_cooldown_until.get(model, 0.0), time.monotonic() + seconds)
+    if why:
+        _cooldown_why[model] = why
+
+
+def model_states(models: tuple[str, ...]) -> list[dict[str, Any]]:
+    """Each model in a chain: ready, or skipped until when and why."""
+    now_mono = time.monotonic()
+    now = datetime.now(UTC)
+    out: list[dict[str, Any]] = []
+    for m in models:
+        left = _cooldown_until.get(m, 0.0) - now_mono
+        out.append(
+            {
+                "model": m,
+                "ready": left <= 0,
+                "skipped_until": now + timedelta(seconds=left) if left > 0 else None,
+                "why": _cooldown_why.get(m) if left > 0 else None,
+            }
+        )
+    return out
+
+
+@dataclass(frozen=True, slots=True)
+class AgentRuntime:
+    """What the project manager's settings change without a restart.
+
+    Set per request by the route, from the stored settings, so every process
+    serving the API follows the same switch.
+    """
+
+    enabled: bool = True
+    #: The model chains in the order the settings give; None means the defaults.
+    models: tuple[str, ...] | None = None
+    models_light: tuple[str, ...] | None = None
+
+
+_DEFAULT_RUNTIME = AgentRuntime()
+_runtime: ContextVar[AgentRuntime | None] = ContextVar("agent_runtime", default=None)
+
+
+def _current() -> AgentRuntime:
+    return _runtime.get() or _DEFAULT_RUNTIME
+
+
+@contextmanager
+def agent_runtime(rt: AgentRuntime) -> Iterator[None]:
+    token = _runtime.set(rt)
+    try:
+        yield
+    finally:
+        _runtime.reset(token)
+
+
+def model_chain(light: bool = False) -> tuple[str, ...]:
+    """The chain to try: the settings' order when one is stored, else the defaults."""
+    s = get_settings()
+    rt = _current()
+    if light:
+        return rt.models_light or s.agent_models_light
+    return rt.models or s.agent_models
 
 
 def _usable(models: list[str]) -> list[str]:
@@ -138,8 +203,9 @@ def _usable(models: list[str]) -> list[str]:
 
 
 def reset_model_cooldowns() -> None:
-    """Forget every cooldown: for tests, and after a key's quota is raised."""
+    """Forget every cooldown: for tests, after a key's quota is raised, and from Settings."""
     _cooldown_until.clear()
+    _cooldown_why.clear()
 
 
 def _seconds_to_daily_reset(now: datetime | None = None) -> float:
@@ -491,7 +557,7 @@ async def run_agent(
     model was told, or the guard is measuring the wrong thing.
     """
     s = get_settings()
-    models = list(spec.models or s.agent_models)
+    models = list(spec.models or model_chain())
     model = models[0]
     skipped: list[dict[str, Any]] = []
     max_rounds = spec.max_rounds or s.agent_max_rounds
@@ -591,6 +657,16 @@ async def run_agent(
     # a conversation begun on one model cannot be continued on another. A
     # model over its quota fails on its first request, so moving on costs one
     # round trip, and it is skipped until its quota resets.
+    if not _current().enabled:
+        return await finish(
+            fallback(
+                AgentStatus.DEGRADED,
+                "The AI assistant is turned off in Settings, so this summary is generated "
+                "directly from the measurements.",
+                "The AI assistant is turned off.",
+            )
+        )
+
     response: dict[str, Any] | None = None
     try:
         for model in _usable(models):
@@ -777,7 +853,7 @@ async def run_agent(
                 )
 
             except ModelUnavailable as exc:
-                _cool(exc.model, exc.cooldown_s)
+                _cool(exc.model, exc.cooldown_s, exc.why)
                 log.warning("%s: %s; trying the next model", spec.name, exc)
                 skipped.append({"kind": "model_unavailable", "model": exc.model, "detail": exc.why})
                 continue

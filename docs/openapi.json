@@ -1175,7 +1175,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/agents/advise": {
@@ -1216,7 +1221,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/agents/brief": {
@@ -1257,7 +1267,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/agents/ask": {
@@ -1298,7 +1313,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/agents/runs": {
@@ -1361,6 +1381,231 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/auth/demo": {
+      "post": {
+        "tags": [
+          "sign-in"
+        ],
+        "summary": "Sign in as the project manager",
+        "description": "A project manager's session, with no user name or password.\n\nFor a judged demo: the landing page's \"Open the dashboard\" button calls\nthis. Turned off with `PW_DEMO_SIGN_IN=false`, when it answers 403.",
+        "operationId": "demo_sign_in_api_v1_auth_demo_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": [
+          "sign-in"
+        ],
+        "summary": "Who this session belongs to",
+        "operationId": "me_api_v1_auth_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Who"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/settings": {
+      "get": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Everything the Settings panel shows",
+        "operationId": "read_api_v1_settings_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/settings/ai": {
+      "put": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Turn the AI on or off and order its models",
+        "operationId": "save_ai_api_v1_settings_ai_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiSettingsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/settings/ai/reset": {
+      "post": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Back to the configured defaults",
+        "operationId": "reset_ai_api_v1_settings_ai_reset_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/settings/ai/retry": {
+      "post": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Try skipped models again now",
+        "description": "Forget every model's cooldown, e.g. after the key's quota was raised.",
+        "operationId": "retry_models_api_v1_settings_ai_retry_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/settings/agent-runs": {
+      "delete": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Clear the AI activity log",
+        "operationId": "clear_run_log_api_v1_settings_agent_runs_delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cleared"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/settings/cache": {
+      "delete": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Clear cached results",
+        "operationId": "clear_cache_api_v1_settings_cache_delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cleared"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/healthz": {
@@ -1734,6 +1979,85 @@
           "notes"
         ],
         "title": "AgentUncertainty"
+      },
+      "AiSettingsIn": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "models": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Models"
+          },
+          "models_light": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Models Light"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "enabled",
+          "models",
+          "models_light"
+        ],
+        "title": "AiSettingsIn"
+      },
+      "AiSettingsOut": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "False: every AI panel answers from the measurements."
+          },
+          "configured": {
+            "type": "boolean",
+            "title": "Configured",
+            "description": "A model API key is set and the server is not offline. Without it the switch has nothing to turn on."
+          },
+          "customised": {
+            "type": "boolean",
+            "title": "Customised",
+            "description": "False while the configured defaults apply."
+          },
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/ModelState"
+            },
+            "type": "array",
+            "title": "Models",
+            "description": "The main list, in the order tried."
+          },
+          "models_light": {
+            "items": {
+              "$ref": "#/components/schemas/ModelState"
+            },
+            "type": "array",
+            "title": "Models Light",
+            "description": "The list for short explanations, in the order tried."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "enabled",
+          "configured",
+          "customised",
+          "models",
+          "models_light"
+        ],
+        "title": "AiSettingsOut"
       },
       "Arc": {
         "properties": {
@@ -2193,6 +2517,38 @@
         "title": "CalendarResponse",
         "description": "Sun and Earth by day or by month, for choosing dates (contract v2)."
       },
+      "Cleared": {
+        "properties": {
+          "what": {
+            "type": "string",
+            "title": "What"
+          },
+          "removed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Removed",
+            "description": "How many records went; null when there was no store."
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "what",
+          "removed",
+          "message"
+        ],
+        "title": "Cleared"
+      },
       "CompareItem": {
         "properties": {
           "site_id": {
@@ -2472,6 +2828,48 @@
           "open_end"
         ],
         "title": "CompoundEvent"
+      },
+      "Counts": {
+        "properties": {
+          "missions": {
+            "type": "integer",
+            "title": "Missions"
+          },
+          "candidate_sites": {
+            "type": "integer",
+            "title": "Candidate Sites"
+          },
+          "mission_targets": {
+            "type": "integer",
+            "title": "Mission Targets"
+          },
+          "agent_runs": {
+            "type": "integer",
+            "title": "Agent Runs"
+          },
+          "cached_results": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cached Results",
+            "description": "Null when the cache is not in use."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "missions",
+          "candidate_sites",
+          "mission_targets",
+          "agent_runs",
+          "cached_results"
+        ],
+        "title": "Counts"
       },
       "DemHealth": {
         "properties": {
@@ -3646,6 +4044,52 @@
         ],
         "title": "MissionTarget"
       },
+      "ModelState": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          },
+          "skipped_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped Until",
+            "description": "When a skipped model is tried again; null when it is ready."
+          },
+          "why": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Why",
+            "description": "Why it is being skipped, in words."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "model",
+          "ready",
+          "skipped_until",
+          "why"
+        ],
+        "title": "ModelState"
+      },
       "Payload": {
         "properties": {
           "id": {
@@ -3901,6 +4345,67 @@
         ],
         "title": "Resolution",
         "description": "What this answer was computed at."
+      },
+      "SessionOut": {
+        "properties": {
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "role": {
+            "type": "string",
+            "const": "project_manager",
+            "title": "Role"
+          },
+          "role_name": {
+            "type": "string",
+            "title": "Role Name",
+            "description": "The role as the screen names it."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token",
+            "description": "A JWT (HS256). Send it as `Authorization: Bearer <token>`."
+          },
+          "token_type": {
+            "type": "string",
+            "const": "bearer",
+            "title": "Token Type",
+            "default": "bearer"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "subject",
+          "role",
+          "role_name",
+          "expires_at",
+          "token"
+        ],
+        "title": "SessionOut"
+      },
+      "SettingsOut": {
+        "properties": {
+          "ai": {
+            "$ref": "#/components/schemas/AiSettingsOut"
+          },
+          "system": {
+            "$ref": "#/components/schemas/SystemOut"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ai",
+          "system"
+        ],
+        "title": "SettingsOut"
       },
       "SiteBrief": {
         "properties": {
@@ -4345,6 +4850,47 @@
         ],
         "title": "SurfaceWindow"
       },
+      "SystemOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "ok, degraded or down, as /healthz reports it."
+          },
+          "moon_data": {
+            "type": "boolean",
+            "title": "Moon Data",
+            "description": "The south-polar elevation model is present."
+          },
+          "sun_earth_data": {
+            "type": "boolean",
+            "title": "Sun Earth Data",
+            "description": "The ephemeris files are loaded."
+          },
+          "database": {
+            "type": "boolean",
+            "title": "Database"
+          },
+          "cache": {
+            "type": "boolean",
+            "title": "Cache"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/Counts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "moon_data",
+          "sun_earth_data",
+          "database",
+          "cache",
+          "counts"
+        ],
+        "title": "SystemOut"
+      },
       "TargetSite": {
         "properties": {
           "id": {
@@ -4647,6 +5193,39 @@
         ],
         "title": "ValidationError"
       },
+      "Who": {
+        "properties": {
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "role": {
+            "type": "string",
+            "const": "project_manager",
+            "title": "Role"
+          },
+          "role_name": {
+            "type": "string",
+            "title": "Role Name",
+            "description": "The role as the screen names it."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "subject",
+          "role",
+          "role_name",
+          "expires_at"
+        ],
+        "title": "Who",
+        "description": "Who a session belongs to."
+      },
       "WindowsResponse": {
         "properties": {
           "site_id": {
@@ -4697,6 +5276,13 @@
           "meta"
         ],
         "title": "WindowsResponse"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "description": "A session token from POST /auth/demo, sent as `Authorization: Bearer <token>`.",
+        "scheme": "bearer"
       }
     }
   }

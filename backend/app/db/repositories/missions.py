@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -167,6 +167,9 @@ class MissionRepository:
         stmt = stmt.order_by(Mission.sort_at.is_(None), Mission.sort_at, Mission.name)
         rows = (await self._s.execute(stmt)).scalars().all()
         return [_record(r) for r in rows]
+
+    async def count(self) -> int:
+        return int((await self._s.execute(select(func.count()).select_from(Mission))).scalar_one())
 
     async def get(self, mission_id: str) -> MissionRecord | None:
         stmt = (

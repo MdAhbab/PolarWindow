@@ -153,12 +153,22 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=list(s.cors_origins),
         allow_credentials=False,
-        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["*"],
         expose_headers=["X-Tile-Source", "X-Tile-Note", "ETag"],
     )
 
-    from app.api.v1.routes import agents, compare, health, missions, sites, tiles, windows
+    from app.api.v1.routes import (
+        agents,
+        auth,
+        compare,
+        health,
+        missions,
+        settings,
+        sites,
+        tiles,
+        windows,
+    )
 
     app.include_router(health.router, prefix=s.api_prefix)
     app.include_router(sites.router, prefix=s.api_prefix)
@@ -167,6 +177,8 @@ def create_app() -> FastAPI:
     app.include_router(compare.router, prefix=s.api_prefix)
     app.include_router(tiles.router, prefix=s.api_prefix)
     app.include_router(agents.router, prefix=s.api_prefix)
+    app.include_router(auth.router, prefix=s.api_prefix)
+    app.include_router(settings.router, prefix=s.api_prefix)
 
     # /healthz is also mounted unprefixed: container health checks and load
     # balancers look there, and they should not need to know the API version.

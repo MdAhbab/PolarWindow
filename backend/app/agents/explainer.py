@@ -12,10 +12,9 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import Any
 
-from app.agents.base import AgentOutcome, AgentSpec, run_agent
+from app.agents.base import AgentOutcome, AgentSpec, model_chain, run_agent
 from app.agents.schemas import SiteExplanation
 from app.agents.tools import Session
-from app.config import get_settings
 
 SYSTEM = """\
 You explain what a candidate lunar landing site is like to live and work at.
@@ -80,7 +79,7 @@ async def explain(
     # The light model is enough here: this is one paragraph from given facts,
     # with no search and no ranking. Using the larger model would cost latency
     # in the demo's most-clicked action for no gain in quality.
-    spec = replace(SPEC, models=get_settings().agent_models_light)
+    spec = replace(SPEC, models=model_chain(light=True))
     outcome = await run_agent(
         session,
         spec,

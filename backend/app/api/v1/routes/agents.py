@@ -13,7 +13,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Query
 
-from app.agents.base import AgentOutcome
+from app.agents.base import AgentOutcome, AgentRuntime, agent_runtime
 from app.api.v1 import deps
 from app.api.v1.schemas.agents import (
     AdviseRequest,
@@ -24,8 +24,19 @@ from app.api.v1.schemas.agents import (
     ExplainRequest,
 )
 from app.config import ENGINE_VERSION, Settings
+from app.services import settings_service
 
 router = APIRouter(prefix="/agents", tags=["agents"])
+
+#: The four AI panels cost model quota, so they need a session. The run log is
+#: a record anyone may read, as before.
+signed_in = [Depends(deps.project_manager)]
+
+
+async def _runtime(session: Any) -> AgentRuntime:
+    """The project manager's AI settings, applied to this one request."""
+    ai = await settings_service.ai_settings(session)
+    return AgentRuntime(enabled=ai.enabled, models=ai.models, models_light=ai.models_light)
 
 
 def _iso(dt: Any) -> str | None:
@@ -95,7 +106,9 @@ def agent_meta(s: Settings, model: str | None = None) -> dict[str, Any]:
     }
 
 
-@router.post("/explain", response_model=AgentResponse, summary="A1 Site Explainer")
+@router.post(
+    "/explain", response_model=AgentResponse, dependencies=signed_in, summary="A1 Site Explainer"
+)
 async def explain(
     body: ExplainRequest,
     session: Any = Depends(deps.db),
@@ -104,13 +117,16 @@ async def explain(
     from app.agents.explainer import explain as run
 
     try:
-        outcome = await run(session, body.site_id, _iso(body.start), _iso(body.end))
+        with agent_runtime(await _runtime(session)):
+            outcome = await run(session, body.site_id, _iso(body.start), _iso(body.end))
     except Exception as exc:
         raise deps.to_http(exc) from exc
     return _envelope(outcome, s)
 
 
-@router.post("/advise", response_model=AgentResponse, summary="A2 Trade-off Advisor")
+@router.post(
+    "/advise", response_model=AgentResponse, dependencies=signed_in, summary="A2 Trade-off Advisor"
+)
 async def advise(
     body: AdviseRequest,
     session: Any = Depends(deps.db),
@@ -119,13 +135,16 @@ async def advise(
     from app.agents.advisor import advise as run
 
     try:
-        outcome = await run(session, body.requirement, _iso(body.start), _iso(body.end))
+        with agent_runtime(await _runtime(session)):
+            outcome = await run(session, body.requirement, _iso(body.start), _iso(body.end))
     except Exception as exc:
         raise deps.to_http(exc) from exc
     return _envelope(outcome, s)
 
 
-@router.post("/brief", response_model=AgentResponse, summary="A3 Audience Writer")
+@router.post(
+    "/brief", response_model=AgentResponse, dependencies=signed_in, summary="A3 Audience Writer"
+)
 async def write_brief(
     body: BriefRequest,
     session: Any = Depends(deps.db),
@@ -134,13 +153,16 @@ async def write_brief(
     from app.agents.writer import brief as run
 
     try:
-        outcome = await run(session, body.site_id, _iso(body.start), _iso(body.end))
+        with agent_runtime(await _runtime(session)):
+            outcome = await run(session, body.site_id, _iso(body.start), _iso(body.end))
     except Exception as exc:
         raise deps.to_http(exc) from exc
     return _envelope(outcome, s)
 
 
-@router.post("/ask", response_model=AgentResponse, summary="A4 Question Answerer")
+@router.post(
+    "/ask", response_model=AgentResponse, dependencies=signed_in, summary="A4 Question Answerer"
+)
 async def ask(
     body: AskRequest,
     session: Any = Depends(deps.db),
@@ -149,7 +171,8 @@ async def ask(
     from app.agents.asker import ask as run
 
     try:
-        outcome = await run(session, body.question)
+        with agent_runtime(await _runtime(session)):
+            outcome = await run(session, body.question)
     except Exception as exc:
         raise deps.to_http(exc) from exc
     return _envelope(outcome, s)

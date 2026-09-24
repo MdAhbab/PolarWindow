@@ -27,6 +27,7 @@ dependencies = [
     "zstandard==0.23.0",
     # --- ai -----------------------------------------------------------------
     "google-genai==2.25.0",
+    "pyjwt>=2.10",
 ]
 
 [project.optional-dependencies]
