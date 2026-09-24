@@ -1,6 +1,10 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react'
+import type React from 'react'
 import { useReducedMotion } from '../hooks/useMotion'
 import { Icon } from './Icon'
+
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])'
 
 /**
  * A right-side modal sheet: a native `<dialog>` opened with `showModal()`.
@@ -62,16 +66,36 @@ export function Sheet({
     return () => d.removeEventListener('close', onClosed)
   }, [])
 
+  // The native modal makes the page inert, but Tab can still walk out into
+  // the browser's own controls; wrap it at both ends so focus stays here.
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDialogElement>) => {
+    if (e.key !== 'Tab' || !ref.current) return
+    const focusable = [...ref.current.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
+      (el) => el.offsetParent !== null || el === document.activeElement,
+    )
+    if (!focusable.length) return
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault()
+      last.focus()
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault()
+      first.focus()
+    }
+  }
+
   return (
     <dialog
       ref={ref}
       aria-modal="true"
       aria-labelledby={titleId}
+      onKeyDown={onKeyDown}
       onClick={(e) => {
         // A click on the backdrop lands on the dialog element itself.
         if (e.target === ref.current) ref.current?.close()
       }}
-      className={`fixed inset-y-0 right-0 left-auto m-0 h-full max-h-none w-full max-w-none border-0 border-l border-line-strong bg-raised p-0 text-ink backdrop:bg-canvas/80 ${
+      className={`fixed inset-y-0 right-0 left-auto m-0 h-full max-h-none w-full max-w-none overflow-hidden border-0 border-l border-line-strong bg-raised p-0 text-ink backdrop:bg-canvas/80 ${
         wide ? 'md:w-[480px]' : 'md:w-[400px]'
       } ${reduced ? '' : 'pw-sheet-in'}`}
     >
@@ -84,7 +108,7 @@ export function Sheet({
             ref={closeRef}
             type="button"
             onClick={() => ref.current?.close()}
-            aria-label={`Close ${title.toLowerCase()}`}
+            aria-label={`Close: ${title}`}
             className="inline-flex size-12 items-center justify-center rounded-control border border-line-strong text-ink hover:bg-inset"
           >
             <Icon name="close" size={18} strokeWidth={1.8} />

@@ -132,21 +132,29 @@ export function ErrorPanel({
 export function UncertaintyNote({
   children,
   className = '',
+  title = 'How wrong could this be',
+  hatchKey = true,
 }: {
   children: ReactNode
   className?: string
+  /** The note's heading; the default speaks about the geometry's margins. */
+  title?: string
+  /** The −45° hatch key, for notes about values drawn on a chart. */
+  hatchKey?: boolean
 }) {
   return (
     <Panel className={`flex flex-col gap-2.5 border-dashed border-uncertain p-5 ${className}`}>
       <div className="flex items-center gap-2 text-[12px] font-semibold tracking-[0.12em] text-ink-2 uppercase">
         <Icon name="uncertain" size={14} strokeWidth={2.2} />
-        How wrong could this be
+        {title}
       </div>
       <div className="text-[13px] leading-5 text-ink-2">{children}</div>
-      <div className="flex items-center gap-2.5">
-        <span className="hatch-uncertain h-3.5 w-16 border border-line" aria-hidden="true" />
-        <span className="text-[12px] text-ink-3">drawn at every arc edge, in every view</span>
-      </div>
+      {hatchKey && (
+        <div className="flex items-center gap-2.5">
+          <span className="hatch-uncertain h-3.5 w-16 border border-line" aria-hidden="true" />
+          <span className="text-[12px] text-ink-3">drawn at every arc edge, in every view</span>
+        </div>
+      )}
     </Panel>
   )
 }

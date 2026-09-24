@@ -35,6 +35,12 @@ interface Agent {
 const GUARD_COPY =
   "The AI's answer included a number we couldn't trace to a measurement, so we replaced it with a summary built from the measurements."
 const DEGRADED_COPY = "The AI didn't respond, so this summary was built directly from the measurements."
+const NO_MODEL_COPY =
+  'No AI model is configured on this server, so this summary was built directly from the measurements. Every number in it still comes from a tool result.'
+
+/** The server says no model key is configured (`meta.agents_configured`). */
+const notConfigured = (r: AgentDTO): boolean =>
+  (r.meta as { agents_configured?: unknown } | undefined)?.agents_configured === false
 
 function modelOf(r: AgentDTO): string {
   const m = (r.meta as { model?: unknown } | undefined)?.model
@@ -65,6 +71,18 @@ function AskBody({ result }: { result: Record<string, unknown> }) {
   const answer = str(result.answer)
   const read = str(result.interpreted_as)
   const rows = Array.isArray(result.rows) ? (result.rows as { site_id: string; values?: Record<string, number> }[]) : []
+  if (!answer && rows.length === 0) {
+    // Nothing was looked up (the question needs the model to become tool
+    // calls), so say that, rather than "this lists the measurements" over an
+    // empty list.
+    return (
+      <p className="max-w-[68ch] text-[15px] leading-6 text-ink">
+        Without the AI, a question in your own words can’t be turned into measurements, so nothing was looked
+        up and no number is claimed. The mission list, its filters and each mission’s page answer the same
+        questions directly.
+      </p>
+    )
+  }
   return (
     <div className="flex flex-col gap-3">
       {answer && <p className="max-w-[68ch] text-[15px] leading-6 text-ink">{answer}</p>}
@@ -336,9 +354,13 @@ export function AgentCard({
     <Panel className="flex flex-col gap-4 p-5" as="section">
       <p className="font-mono text-[12px] text-ink-3">{statusLine(r)}</p>
       {replaced && (
-        <UncertaintyNote>
-          {r.run_status === 'guard_rejected' ? GUARD_COPY : DEGRADED_COPY}
-          {r.reason && r.run_status !== 'guard_rejected' ? (
+        <UncertaintyNote title="Built from the measurements" hatchKey={false}>
+          {r.run_status === 'guard_rejected'
+            ? GUARD_COPY
+            : notConfigured(r)
+              ? NO_MODEL_COPY
+              : DEGRADED_COPY}
+          {r.reason && r.run_status !== 'guard_rejected' && !notConfigured(r) ? (
             <span className="mt-1 block text-ink-3">{r.reason}</span>
           ) : null}
         </UncertaintyNote>
