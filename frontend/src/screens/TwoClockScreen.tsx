@@ -46,6 +46,15 @@ export function TwoClockScreen() {
   const byTerrain =
     worst?.blockedByElDeg !== undefined && worst.blockedByElDeg > TERRAIN_BLOCKER_MIN_EL_DEG
   const ringSize = face === 'public' ? 460 : 540
+  // The night's margin in the Simple sentence too: a timed edge gives
+  // "give or take", an untimeable one says so, and a smooth Moon claims none.
+  const nightMargin = !worst
+    ? ''
+    : worst.grazing
+      ? ', though its start and end can’t be timed precisely'
+      : terrainModelled && !worstOpen && (worst.startToleranceH !== undefined || worst.endToleranceH !== undefined)
+        ? `, give or take ${worst.toleranceH < 1 ? 'less than an hour' : `${Math.round(worst.toleranceH)} hours`}`
+        : ''
   const blackout = metrics?.earth.longestDownArc
   const blackoutOpen = Boolean(metrics?.earth.longestDownOpen)
   const blackoutByTerrain =
@@ -99,8 +108,8 @@ export function TwoClockScreen() {
             <div className="flex max-w-[520px] flex-col items-center gap-4 text-center">
               <p className="text-[17px] leading-7 text-ink text-pretty">
                 {byTerrain
-                  ? `At this spot on the Moon, one ridge ${bearing(worst.blockedByBearingDeg ?? 0)} of here switches off the sunlight for ${humanDuration(worst.hours, 'public', worstOpen)}.`
-                  : `At this spot on the Moon, the Sun dips below the horizon for ${humanDuration(worst.hours, 'public', worstOpen)}.`}{' '}
+                  ? `At this spot on the Moon, one ridge ${bearing(worst.blockedByBearingDeg ?? 0)} of here switches off the sunlight for ${humanDuration(worst.hours, 'public', worstOpen)}${nightMargin}.`
+                  : `At this spot on the Moon, the Sun dips below the horizon for ${humanDuration(worst.hours, 'public', worstOpen)}${nightMargin}.`}{' '}
                 {worstOpen ? 'This window cuts the night short, so the real one is longer. ' : ''}A lander
                 has to survive that on batteries alone.
               </p>
