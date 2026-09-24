@@ -64,7 +64,7 @@ export function Ribbon({
             )}${a.openStart ? ' · began before the window' : ''}${a.openEnd ? ' · continues after it' : ''}`}
           >
             {showLabels && !a.up && w > 4 && (
-              <span className="flex h-full items-center justify-center text-[11px] font-semibold text-ink">
+              <span className="flex h-full items-center justify-center text-tag font-semibold text-ink">
                 {Math.round(a.hours)}
               </span>
             )}

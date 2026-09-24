@@ -59,6 +59,53 @@
 
   --color-focus: #a6e4f1; /* 13.4:1 */
 
+  /* Type scale, by role. Font size only: each keeps the line height it sits
+     in unless a leading token sets one. */
+  --text-micro: 10px; /* the smallest caps labels, beside a figure */
+  --text-tag: 11px; /* uppercase tags, table headers, tab labels */
+  --text-caption: 12px; /* captions, notes, section labels */
+  --text-small: 13px; /* secondary text */
+  --text-body: 14px; /* body text */
+  --text-control: 15px; /* buttons, list titles */
+  --text-lede: 16px; /* lead paragraphs */
+  --text-title: 17px; /* panel titles */
+  --text-title-lg: 18px;
+  --text-large: 19px; /* story text, the unit beside a key number */
+  --text-subhead: 20px;
+  --text-figure-sm: 22px; /* small figures */
+  --text-heading: 24px; /* screen headings */
+  --text-heading-lg: 28px; /* a mission's name */
+  --text-figure: 30px; /* key numbers, small */
+  --text-display-sm: 32px;
+  --text-display: 40px;
+  --text-figure-md: 44px; /* key numbers, medium */
+  --text-figure-lg: 64px; /* key numbers, large */
+
+  --leading-caption-tight: 17px;
+  --leading-caption: 18px;
+  --leading-code: 19px;
+  --leading-figure: 30px;
+  --leading-figure-md: 42px;
+  --leading-display: 46px;
+  --leading-figure-lg: 58px;
+  --leading-figure-lg-tight: 60px;
+
+  --tracking-figure: -0.025em; /* large numbers */
+  --tracking-figure-sm: -0.02em;
+  --tracking-display: -0.015em;
+  --tracking-heading: -0.01em;
+  --tracking-title: -0.005em;
+  --tracking-caps-sm: 0.08em; /* uppercase labels, by size */
+  --tracking-caps-md: 0.1em;
+  --tracking-caps: 0.12em;
+  --tracking-caps-lg: 0.14em;
+  --tracking-caps-xl: 0.18em;
+  --tracking-wordmark: 0.2em;
+
+  --shadow-raised: 0 8px 24px rgba(0, 0, 0, 0.45); /* a raised panel, a sheet, the captions */
+  --shadow-page: 0 8px 24px rgba(0, 0, 0, 0.35); /* the printable report page */
+  --shadow-tab: inset 0 -2px 0 var(--color-sun); /* the current view in the navigation */
+
   --radius-*: initial;
   --radius-none: 0px;
   --radius-control: 2px;

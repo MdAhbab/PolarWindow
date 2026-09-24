@@ -107,15 +107,15 @@ export function MissionDetailScreen() {
     <div className="grid grow gap-6 p-4 lg:p-6 xl:grid-cols-12 xl:grid-rows-[auto_1fr] xl:items-start">
       {/* 1–3: header, status, dates. */}
       <div className="flex min-w-0 flex-col gap-4 xl:col-span-5 xl:col-start-1 xl:row-start-1">
-        <Link to="/missions" className="inline-flex h-11 items-center text-[14px] font-semibold">
+        <Link to="/missions" className="inline-flex h-11 items-center text-body font-semibold">
           ← All CLPS missions
         </Link>
         <header className="flex flex-col gap-1.5">
-          <h1 className="text-[28px] leading-9 font-semibold tracking-[-0.01em]">
+          <h1 className="text-heading-lg leading-9 font-semibold tracking-heading">
             {m.name}
             {vehicle && <span className="font-normal text-ink-2"> · {vehicle}</span>}
           </h1>
-          <p className="text-[14px] leading-6 text-ink-2">
+          <p className="text-body leading-6 text-ink-2">
             {m.provider ?? (
               <>
                 Provider {u}
@@ -138,16 +138,16 @@ export function MissionDetailScreen() {
 
         <Panel as="section" className="flex flex-col gap-2 p-5">
           <SectionLabel>Status</SectionLabel>
-          <div className="text-[18px] font-semibold text-ink">
+          <div className="text-title-lg font-semibold text-ink">
             <span aria-hidden="true">{STATUS_GLYPH[m.status]} </span>
             {STATUS_LABEL[m.status]}
           </div>
-          {m.outcomeNote && <p className="text-[14px] leading-6 text-ink-2">{m.outcomeNote}</p>}
+          {m.outcomeNote && <p className="text-body leading-6 text-ink-2">{m.outcomeNote}</p>}
         </Panel>
 
         <Panel as="section" className="flex flex-col gap-3 p-5">
           <SectionLabel>Dates</SectionLabel>
-          <dl className="grid grid-cols-1 gap-x-4 text-[14px] sm:grid-cols-[max-content_1fr] sm:gap-y-2">
+          <dl className="grid grid-cols-1 gap-x-4 text-body sm:grid-cols-[max-content_1fr] sm:gap-y-2">
             <Row term="Launch">{m.launch ? <DateText date={m.launch} /> : u}</Row>
             <Row term="Landing">{m.landing ? <DateText date={m.landing} /> : u}</Row>
             <Row term="End of mission">{m.endOfMission ? <DateText date={m.endOfMission} /> : u}</Row>
@@ -186,10 +186,10 @@ export function MissionDetailScreen() {
         <Panel as="section" className="flex flex-col gap-3 p-5">
           <SectionLabel>Target</SectionLabel>
           {m.target ? (
-            <dl className="grid grid-cols-1 gap-x-4 text-[14px] sm:grid-cols-[max-content_1fr] sm:gap-y-2">
+            <dl className="grid grid-cols-1 gap-x-4 text-body sm:grid-cols-[max-content_1fr] sm:gap-y-2">
               <Row term="Name">{m.target.name}</Row>
               <Row term="Coordinates">
-                <span className="font-mono text-[13px]">{coords(m.target.latDeg, m.target.lonDeg)}</span>
+                <span className="font-mono text-small">{coords(m.target.latDeg, m.target.lonDeg)}</span>
               </Row>
               <Row term="Kind">{coordinateKindWords(m.target.coordinateKind, m.targetName)}</Row>
               <Row term="Landing ellipse">{m.ellipseRing ? 'published; drawn on the Map' : u}</Row>
@@ -198,7 +198,7 @@ export function MissionDetailScreen() {
               </Row>
             </dl>
           ) : (
-            <dl className="grid grid-cols-1 gap-x-4 text-[14px] sm:grid-cols-[max-content_1fr] sm:gap-y-2">
+            <dl className="grid grid-cols-1 gap-x-4 text-body sm:grid-cols-[max-content_1fr] sm:gap-y-2">
               <Row term="Destination">{m.targetName ?? u}</Row>
               <Row term="Coordinates">
                 {u}
@@ -213,11 +213,11 @@ export function MissionDetailScreen() {
           <SectionLabel>Sources</SectionLabel>
           <ul className="flex flex-col gap-3">
             {m.sources.map((s) => (
-              <li key={s.url} className="flex flex-col gap-0.5 text-[14px] leading-5">
+              <li key={s.url} className="flex flex-col gap-0.5 text-body leading-5">
                 <a href={s.url} target="_blank" rel="noreferrer">
                   {s.title}
                 </a>
-                <span className="text-[12px] text-ink-3">
+                <span className="text-caption text-ink-3">
                   {s.publisher} · accessed {isoDateWords(s.accessed)}
                 </span>
               </li>
@@ -228,7 +228,7 @@ export function MissionDetailScreen() {
               <SectionLabel as="h3" className="mt-2">
                 Notes on the sources
               </SectionLabel>
-              <ul className="flex list-disc flex-col gap-1.5 pl-5 text-[13px] leading-5 text-ink-2">
+              <ul className="flex list-disc flex-col gap-1.5 pl-5 text-small leading-5 text-ink-2">
                 {m.notes.map((n, i) => (
                   <li key={i}>{n}</li>
                 ))}
@@ -237,7 +237,7 @@ export function MissionDetailScreen() {
           )}
         </Panel>
 
-        <p className="font-mono text-[12px] text-ink-3">
+        <p className="font-mono text-caption text-ink-3">
           Record version {m.dataVersion}
           {asOf ? ` · sources last read ${asOf}` : ''}
         </p>
@@ -278,12 +278,12 @@ function Payloads({ mission: m, asOf }: { mission: MissionDetail; asOf: string |
     <Panel as="section" className="flex flex-col gap-3 p-5">
       <SectionLabel>Payload manifest</SectionLabel>
       {incomplete && (
-        <p className="text-[13px] leading-5 text-uncertain">
+        <p className="text-small leading-5 text-uncertain">
           Known to be incomplete: NASA counts more payloads than it names. Only the named ones are listed.
         </p>
       )}
       {m.payloads.length === 0 ? (
-        <p className="text-[14px] text-ink-2">
+        <p className="text-body text-ink-2">
           No payload is named in the sources. <Unconfirmed asOf={asOf} />
         </p>
       ) : (
@@ -300,7 +300,7 @@ function Payloads({ mission: m, asOf }: { mission: MissionDetail; asOf: string |
                     <th
                       key={h}
                       scope="col"
-                      className="px-2 py-2 text-[11px] font-semibold tracking-[0.08em] text-ink-3 uppercase"
+                      className="px-2 py-2 text-tag font-semibold tracking-caps-sm text-ink-3 uppercase"
                     >
                       {h}
                     </th>
@@ -310,7 +310,7 @@ function Payloads({ mission: m, asOf }: { mission: MissionDetail; asOf: string |
               <tbody>
                 {m.payloads.map((p) => (
                   <tr key={p.id} className="border-t border-line align-top">
-                    <th scope="row" className="px-2 py-2.5 text-[13px] font-semibold text-ink">
+                    <th scope="row" className="px-2 py-2.5 text-small font-semibold text-ink">
                       {name(p)}
                       {p.unconfirmed && (
                         <span className="block font-normal">
@@ -318,12 +318,12 @@ function Payloads({ mission: m, asOf }: { mission: MissionDetail; asOf: string |
                         </span>
                       )}
                     </th>
-                    <td className="px-2 py-2.5 text-[13px] text-ink-2">{p.organisation ?? <Unconfirmed asOf={asOf} />}</td>
-                    <td className="px-2 py-2.5 text-[13px] text-ink-2">
+                    <td className="px-2 py-2.5 text-small text-ink-2">{p.organisation ?? <Unconfirmed asOf={asOf} />}</td>
+                    <td className="px-2 py-2.5 text-small text-ink-2">
                       {p.instrumentTypes.map((t) => INSTRUMENT_LABEL[t]).join(', ')}
                     </td>
-                    <td className="px-2 py-2.5 text-[13px] leading-5 text-ink-2">{p.purpose}</td>
-                    <td className="px-2 py-2.5 text-[13px] wrap-anywhere">
+                    <td className="px-2 py-2.5 text-small leading-5 text-ink-2">{p.purpose}</td>
+                    <td className="px-2 py-2.5 text-small wrap-anywhere">
                       <SourceLink url={p.sourceUrl} sources={m.sources} what={p.acronym ?? p.name} />
                     </td>
                   </tr>
@@ -335,9 +335,9 @@ function Payloads({ mission: m, asOf }: { mission: MissionDetail; asOf: string |
           <ul className="flex flex-col gap-3 md:hidden">
             {m.payloads.map((p) => (
               <li key={p.id} className="border-t border-line pt-3">
-                <h3 className="text-[14px] font-semibold text-ink">{name(p)}</h3>
+                <h3 className="text-body font-semibold text-ink">{name(p)}</h3>
                 {p.unconfirmed && <Unconfirmed asOf={asOf} />}
-                <dl className="mt-1.5 grid grid-cols-1 gap-x-3 text-[13px] sm:grid-cols-[max-content_1fr] sm:gap-y-1">
+                <dl className="mt-1.5 grid grid-cols-1 gap-x-3 text-small sm:grid-cols-[max-content_1fr] sm:gap-y-1">
                   <Row term="Organisation">{p.organisation ?? <Unconfirmed asOf={asOf} />}</Row>
                   <Row term="Measures">{p.instrumentTypes.map((t) => INSTRUMENT_LABEL[t]).join(', ')}</Row>
                   <Row term="Purpose">{p.purpose}</Row>
@@ -388,8 +388,8 @@ function SurfaceWindowLine({ mission: m }: { mission: MissionDetail }) {
   }
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-[13px] font-medium text-ink-3">Surface window</span>
-      <p className="text-[15px] leading-6 text-ink">{line}</p>
+      <span className="text-small font-medium text-ink-3">Surface window</span>
+      <p className="text-control leading-6 text-ink">{line}</p>
     </div>
   )
 }
@@ -422,8 +422,8 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
     <div className="flex flex-col gap-4">
       <Panel className="flex flex-col gap-3 p-5">
         <div className="flex flex-col gap-0.5">
-          <span className="text-[17px] font-semibold text-ink">{site.name}</span>
-          <span className="font-mono text-[12px] text-ink-3">
+          <span className="text-title font-semibold text-ink">{site.name}</span>
+          <span className="font-mono text-caption text-ink-3">
             {coords(site.latDeg, site.lonDeg)} ·{' '}
             {site.elevM !== null ? `elev ${site.elevM.toLocaleString()} m` : 'height not modelled'}
           </span>
@@ -467,7 +467,7 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
         <Panel className="flex flex-col gap-3 p-5">
           <DateSlider compact />
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-semibold tracking-[0.1em] text-sun uppercase">Sun over the window</span>
+            <span className="text-tag font-semibold tracking-caps-md text-sun uppercase">Sun over the window</span>
             <Ribbon
               arcs={metrics.sun.arcs}
               windowStartH={metrics.windowStartH}
@@ -478,7 +478,7 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-semibold tracking-[0.1em] text-earth uppercase">Time it can call home</span>
+            <span className="text-tag font-semibold tracking-caps-md text-earth uppercase">Time it can call home</span>
             <Ribbon
               arcs={metrics.earth.arcs}
               windowStartH={metrics.windowStartH}
@@ -523,7 +523,7 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
             Hand-over report
           </Button>
         </div>
-        <p id="nearest-note" className="text-[12px] text-ink-3">
+        <p id="nearest-note" className="text-caption text-ink-3">
           Compare uses this target and the three candidate sites nearest by distance:{' '}
           {nearest.map((s) => `${s.code} ${s.name}`).join(', ')}.
         </p>

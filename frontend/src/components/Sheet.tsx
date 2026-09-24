@@ -101,7 +101,7 @@ export function Sheet({
     >
       <div className="flex h-full flex-col">
         <div className="flex shrink-0 items-center gap-3 border-b border-line px-5 py-2">
-          <h2 id={titleId} className="grow text-[17px] font-semibold">
+          <h2 id={titleId} className="grow text-title font-semibold">
             {title}
           </h2>
           <button

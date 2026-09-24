@@ -81,10 +81,10 @@ export function KeyNumberTile({
       ? // The four stay together as a 2×2 on a phone; at 64 px a three-digit
         // value is wider than its tile below 640 px, so it steps down to the
         // md size there rather than overflowing (WCAG 1.4.10).
-        'text-[44px] leading-[42px] sm:text-[64px] sm:leading-[58px]'
+        'text-figure-md leading-figure-md sm:text-figure-lg sm:leading-figure-lg'
       : size === 'md'
-        ? 'text-[44px] leading-[42px]'
-        : 'text-[30px] leading-[30px]'
+        ? 'text-figure-md leading-figure-md'
+        : 'text-figure leading-figure'
 
   const border =
     tone === 'alert'
@@ -98,7 +98,7 @@ export function KeyNumberTile({
       {/* Two lines tall even when the label fits on one, so the four values
           sit on one baseline when a neighbour's label wraps. */}
       <div
-        className={`flex min-h-8 items-start gap-2 text-[12px] font-semibold tracking-[0.12em] uppercase ${
+        className={`flex min-h-8 items-start gap-2 text-caption font-semibold tracking-caps uppercase ${
           tone === 'alert' ? 'text-alert' : state === 'uncertain' ? 'text-ink-2' : 'text-ink-3'
         }`}
       >
@@ -112,7 +112,7 @@ export function KeyNumberTile({
         <span>{label}</span>
       </div>
       {expert && expert !== label && (
-        <div className="-mt-1.5 text-[12px] leading-4 text-ink-3">{expert}</div>
+        <div className="-mt-1.5 text-caption leading-4 text-ink-3">{expert}</div>
       )}
 
       {shown && <span className="sr-only">{said}</span>}
@@ -124,20 +124,20 @@ export function KeyNumberTile({
         aria-hidden={shown ? 'true' : undefined}
       >
         {state === 'blank' ? (
-          <span className={`font-semibold tracking-[-0.025em] text-line-strong ${numberClass}`}>—</span>
+          <span className={`font-semibold tracking-figure text-line-strong ${numberClass}`}>—</span>
         ) : state === 'computing' ? (
-          <span className={`font-semibold tracking-[-0.025em] text-line-strong ${numberClass}`}>——</span>
+          <span className={`font-semibold tracking-figure text-line-strong ${numberClass}`}>——</span>
         ) : (
-          <span className={`font-semibold tracking-[-0.025em] tnum ${numberClass} ${TONE_TEXT[tone]}`}>
+          <span className={`font-semibold tracking-figure tnum ${numberClass} ${TONE_TEXT[tone]}`}>
             {bound(open)}
             {Math.round(rolled)}
           </span>
         )}
         <span className="flex items-baseline gap-2">
           {toleranceH !== undefined && state !== 'blank' && state !== 'computing' && (
-            <span className="text-[20px] text-uncertain tnum">{plusMinus(toleranceH)}</span>
+            <span className="text-subhead text-uncertain tnum">{plusMinus(toleranceH)}</span>
           )}
-          <span className="text-[19px] text-ink-2">{unit}</span>
+          <span className="text-large text-ink-2">{unit}</span>
         </span>
       </div>
 
@@ -152,7 +152,7 @@ export function KeyNumberTile({
         )}
       </div>
 
-      {footnote && <div className="text-[12px] text-ink-3">{footnote}</div>}
+      {footnote && <div className="text-caption text-ink-3">{footnote}</div>}
     </div>
   )
 }

@@ -110,17 +110,17 @@ export function ReportScreen() {
 
       <article
         data-theme="light"
-        className="w-full max-w-[816px] bg-canvas p-5 text-ink shadow-[0_8px_24px_rgba(0,0,0,0.35)] sm:p-10"
+        className="w-full max-w-[816px] bg-canvas p-5 text-ink shadow-page sm:p-10"
         style={{ minHeight: 1056 }}
       >
         <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b-2 border-ink pb-3">
           <div className="flex items-center gap-3">
             <Mark size={30} />
-            <span className="text-[17px] font-semibold tracking-[0.2em]">
+            <span className="text-title font-semibold tracking-wordmark">
               POLAR<span className="font-normal text-sun">&nbsp;WINDOW</span>
             </span>
           </div>
-          <div className="font-mono text-[13px] leading-5 text-ink-2 sm:text-right">
+          <div className="font-mono text-small leading-5 text-ink-2 sm:text-right">
             Landing site comparison
             <br />
             generated {new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC
@@ -129,10 +129,10 @@ export function ReportScreen() {
 
         <div className="mt-5 flex flex-wrap items-start justify-between gap-5 sm:flex-nowrap">
           <div className="flex flex-col gap-2">
-            <h1 className="text-[30px] leading-9 font-semibold tracking-[-0.015em] text-balance">
+            <h1 className="text-figure leading-9 font-semibold tracking-display text-balance">
               {compareIds.length} candidates, one {Math.round(windowHours)} h window
             </h1>
-            <p className="text-[16px] leading-6 text-ink-2">
+            <p className="text-lede leading-6 text-ink-2">
               {shortDate(msFromModelH(windowStartH))} → {shortDate(msFromModelH(windowStartH + windowHours))} · survival limit{' '}
               {SURVIVAL_LIMIT_H} h of continuous darkness
             </p>
@@ -144,8 +144,8 @@ export function ReportScreen() {
           {/* Magenta means over the survival limit and nothing else, so the
               provenance stamp uses the uncertain edge, like the header badge. */}
           <div className="shrink-0 border-2 border-uncertain p-2 text-center" title={stamp.title}>
-            <div className="text-[14px] font-bold tracking-[0.1em] text-ink uppercase">{stamp.label}</div>
-            <div className="text-[12px] text-ink-3">derived values · not flight values</div>
+            <div className="text-body font-bold tracking-caps-md text-ink uppercase">{stamp.label}</div>
+            <div className="text-caption text-ink-3">derived values · not flight values</div>
           </div>
         </div>
 
@@ -160,18 +160,18 @@ export function ReportScreen() {
               <div key={id} className={`border bg-panel p-3.5 ${over ? 'border-2 border-alert' : 'border-line-strong'}`}>
                 <div className="mb-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 border-b border-line pb-2">
                   <span
-                    className={`text-[20px] font-bold ${
+                    className={`text-subhead font-bold ${
                       rank === null ? 'text-uncertain' : label?.kind === 'best' ? 'text-ink' : 'text-ink-3'
                     }`}
                   >
                     {rank ?? (itemOf[id] ? `${itemOf[id].rank_range[0]}–${itemOf[id].rank_range[1]}` : i + 1)}
                   </span>
-                  <span className="text-[15px] font-semibold">
+                  <span className="text-control font-semibold">
                     {s.code} — {s.name.split(',')[0]}
                   </span>
                   {label && (
                     <span
-                      className={`w-full text-[12px] ${label.tone === 'uncertain' ? 'text-uncertain' : 'text-ink-3'}`}
+                      className={`w-full text-caption ${label.tone === 'uncertain' ? 'text-uncertain' : 'text-ink-3'}`}
                       title={label.title}
                     >
                       {label.text}
@@ -196,14 +196,14 @@ export function ReportScreen() {
         </div>
 
         <div className="mt-5 flex flex-col gap-2.5">
-          <div className="text-[13px] font-semibold tracking-[0.1em] text-ink-3 uppercase">
+          <div className="text-small font-semibold tracking-caps-md text-ink-3 uppercase">
             Figure 1 — sunlight over the window. Solid = above the local skyline; hatched = blocked.
           </div>
           {order.map((id) => {
             const m = metrics[id]
             return (
               <div key={id} className="flex items-center gap-3">
-                <span className="w-5 shrink-0 text-[16px] font-bold">{siteById(id).code}</span>
+                <span className="w-5 shrink-0 text-lede font-bold">{siteById(id).code}</span>
                 <div className="grow">
                   <Ribbon
                     arcs={m.sun.arcs}
@@ -214,13 +214,13 @@ export function ReportScreen() {
                     alertOverH={SURVIVAL_LIMIT_H}
                   />
                 </div>
-                <span className="w-14 shrink-0 text-right text-[14px] text-ink-2">
+                <span className="w-14 shrink-0 text-right text-body text-ink-2">
                   {percent(m.sun.fractionUp)}
                 </span>
               </div>
             )
           })}
-          <p className="text-[13px] leading-5 text-ink-2">
+          <p className="text-small leading-5 text-ink-2">
             Totals do not decide this. The magenta hatch marks a site’s single longest night where it runs
             past the {SURVIVAL_LIMIT_H} h limit, and that is the number a battery has to survive. “≥” marks a
             night the window cuts short: the real one is longer.
@@ -228,10 +228,10 @@ export function ReportScreen() {
         </div>
 
         <div className="mt-5 border border-line-strong bg-panel p-4">
-          <div className="mb-1.5 text-[13px] font-semibold tracking-[0.1em] text-ink-3 uppercase">
+          <div className="mb-1.5 text-small font-semibold tracking-caps-md text-ink-3 uppercase">
             Recommendation
           </div>
-          <p className="text-[16px] leading-6">
+          <p className="text-lede leading-6">
             {survivors.length === 0 ? (
               <>
                 No candidate in this set survives its longest night on stored energy alone. The binding
@@ -254,10 +254,10 @@ export function ReportScreen() {
 
         <div className="mt-4 flex flex-col gap-4 sm:flex-row">
           <div className="grow border border-line-strong bg-panel p-4">
-            <div className="mb-1.5 text-[13px] font-semibold tracking-[0.1em] text-ink-3 uppercase">
+            <div className="mb-1.5 text-small font-semibold tracking-caps-md text-ink-3 uppercase">
               Autonomy required — site {siteById(best).code}
             </div>
-            <p className="text-[16px] leading-6">
+            <p className="text-lede leading-6">
               Worst compound event {hoursWithUnit(bestPacket.worstCompoundH, 0, bestPacket.worstCompoundOpen)}{' '}
               with neither sunlight nor an Earth link. With a {Math.round(bestPacket.marginFraction * 100)}%
               margin: <strong>{hoursWithUnit(bestPacket.requiredAutonomyH)}</strong> of command buffer,
@@ -266,10 +266,10 @@ export function ReportScreen() {
             </p>
           </div>
           <div className="shrink-0 border border-line-strong bg-panel p-4 sm:w-60">
-            <div className="mb-1.5 text-[13px] font-semibold tracking-[0.1em] text-ink-3 uppercase">
+            <div className="mb-1.5 text-small font-semibold tracking-caps-md text-ink-3 uppercase">
               Uncertainty
             </div>
-            <p className="text-[16px] leading-6">
+            <p className="text-lede leading-6">
               {metrics[best].sun.longestDownArc?.grazing
                 ? 'The longest night has a crossing too shallow to time; its length stands, its edges do not.'
                 : `The longest night’s edges carry ${edgeMargin(metrics[best].sun.longestDownArc, terrainOf(best))} from the elevation model’s vertical accuracy.`}
@@ -278,13 +278,13 @@ export function ReportScreen() {
         </div>
 
         <footer className="mt-6 flex flex-wrap justify-between gap-5 border-t border-line-strong pt-2.5">
-          <p className="font-mono text-[12px] leading-[18px] text-ink-2">
+          <p className="font-mono text-caption leading-caption text-ink-2">
             <SourcesLine meta={reportMeta} />
             <br />
             Every figure is an estimate computed by this build from those inputs. Not an official
             product of any space agency.
           </p>
-          <span className="shrink-0 font-mono text-[12px] text-ink-2">page 1 of 1</span>
+          <span className="shrink-0 font-mono text-caption text-ink-2">page 1 of 1</span>
         </footer>
       </article>
 
@@ -298,8 +298,8 @@ export function ReportScreen() {
 function Figure({ label, value, tone }: { label: string; value: string; tone: string }) {
   return (
     <div className="mb-2">
-      <div className="text-[12px] font-semibold tracking-[0.08em] text-ink-3 uppercase">{label}</div>
-      <div className={`text-[24px] font-semibold tnum ${tone}`}>{value}</div>
+      <div className="text-caption font-semibold tracking-caps-sm text-ink-3 uppercase">{label}</div>
+      <div className={`text-heading font-semibold tnum ${tone}`}>{value}</div>
     </div>
   )
 }

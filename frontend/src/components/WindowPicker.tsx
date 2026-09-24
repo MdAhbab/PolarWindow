@@ -85,7 +85,7 @@ export function WindowPicker({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
         <div className="flex flex-col gap-2">
-          <label htmlFor={`${id}-start`} className="text-[13px] font-medium text-ink">
+          <label htmlFor={`${id}-start`} className="text-small font-medium text-ink">
             Start (UTC)
           </label>
           <div className="flex h-12 items-center rounded-control border border-line-strong bg-panel px-3.5 focus-within:border-focus">
@@ -99,12 +99,12 @@ export function WindowPicker({
                 const ms = Date.parse(`${e.target.value}T00:00:00Z`)
                 if (!Number.isNaN(ms)) setWindow(modelHFromMs(ms), windowHours)
               }}
-              className="bg-transparent text-[14px] text-ink outline-none"
+              className="bg-transparent text-body text-ink outline-none"
             />
           </div>
         </div>
         <div className="flex min-w-0 max-w-full flex-col gap-2">
-          <span id={`${id}-dur`} className="text-[13px] font-medium text-ink">
+          <span id={`${id}-dur`} className="text-small font-medium text-ink">
             Duration
           </span>
           <Segmented<Duration | ''>
@@ -116,7 +116,7 @@ export function WindowPicker({
         </div>
       </div>
 
-      <p aria-live="polite" className="text-[14px] text-ink">
+      <p aria-live="polite" className="text-body text-ink">
         <span className="sr-only">Window set to </span>
         {windowLine(startMs, windowHours)}
       </p>
@@ -205,10 +205,10 @@ function MonthStrip({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <span id={labelId} className="text-[13px] font-medium text-ink">
+        <span id={labelId} className="text-small font-medium text-ink">
           Months from {monthWords(anchor)}: pick one to use it as the window
         </span>
-        <span className="flex items-center gap-3 text-[12px] text-ink-3" aria-hidden="true">
+        <span className="flex items-center gap-3 text-caption text-ink-3" aria-hidden="true">
           <span className="flex items-center gap-1.5">
             <span className="h-2.5 w-1.5 bg-sun-fill" /> sunlight
           </span>
@@ -265,7 +265,7 @@ function MonthStrip({
                     <span className="hatch-uncertain absolute inset-x-0 bottom-0 h-1.5" aria-hidden="true" />
                   )}
                 </div>
-                <span className="text-center text-[11px] leading-4 font-semibold text-ink-2">
+                <span className="text-center text-tag leading-4 font-semibold text-ink-2">
                   {MONTH_SHORT[d.getUTCMonth()]}
                   {showYear && <span className="block font-normal text-ink-3">{d.getUTCFullYear()}</span>}
                 </span>
@@ -277,7 +277,7 @@ function MonthStrip({
 
       {cal.error && !cal.data ? (
         <div className="flex flex-wrap items-center gap-3">
-          <p className="text-[13px] text-ink-2">
+          <p className="text-small text-ink-2">
             {(cal.error as { title?: string }).title ?? 'The month strip could not load'}.{' '}
             {(cal.error as { stillWorks?: string }).stillWorks ?? ''}
           </p>
@@ -286,7 +286,7 @@ function MonthStrip({
           </Button>
         </div>
       ) : cal.isPending ? (
-        <p role="status" className="text-[12px] text-ink-3">
+        <p role="status" className="text-caption text-ink-3">
           Reading twelve months of Sun and Earth for this site…
         </p>
       ) : null}

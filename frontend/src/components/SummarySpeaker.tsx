@@ -143,7 +143,7 @@ export function Speaker({ summary, what, resetKey }: { summary: Summary | null; 
           aria-pressed={speaking}
           aria-describedby={transcriptId}
           aria-keyshortcuts="Alt+S"
-          className="inline-flex h-11 min-w-11 items-center gap-2 rounded-control border border-line-strong px-4 text-[15px] font-medium text-ink hover:bg-inset"
+          className="inline-flex h-11 min-w-11 items-center gap-2 rounded-control border border-line-strong px-4 text-control font-medium text-ink hover:bg-inset"
         >
           <Icon name="speaker" size={18} strokeWidth={2} />
           {/* Both words share one grid cell, so the button keeps the wider
@@ -162,14 +162,14 @@ export function Speaker({ summary, what, resetKey }: { summary: Summary | null; 
           onClick={() => setShowText((v) => !v)}
           aria-expanded={showText}
           aria-controls={transcriptId}
-          className="h-11 px-2 text-[15px] text-ink-2 underline-offset-4 hover:underline"
+          className="h-11 px-2 text-control text-ink-2 underline-offset-4 hover:underline"
         >
           {showText ? 'Hide text' : 'Read it'}
         </button>
       </div>
 
       {/* Always in the DOM so aria-describedby resolves; shown only on request. */}
-      <p id={transcriptId} className={showText ? 'max-w-[62ch] text-[15px] leading-6 text-ink-2' : 'sr-only'}>
+      <p id={transcriptId} className={showText ? 'max-w-[62ch] text-control leading-6 text-ink-2' : 'sr-only'}>
         {summary.sentences.join(' ')}
       </p>
 
@@ -180,15 +180,15 @@ export function Speaker({ summary, what, resetKey }: { summary: Summary | null; 
         <div
           role="region"
           aria-label="Summary playing"
-          className="fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 mx-auto flex max-w-2xl items-center gap-4 border border-line-strong bg-raised p-4 shadow-[0_8px_24px_rgba(0,0,0,0.45)] lg:bottom-4"
+          className="fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 mx-auto flex max-w-2xl items-center gap-4 border border-line-strong bg-raised p-4 shadow-raised lg:bottom-4"
         >
-          <p aria-hidden="true" className="grow text-[17px] leading-7 text-ink">
+          <p aria-hidden="true" className="grow text-title leading-7 text-ink">
             {summary.sentences[Math.max(current, 0)]}
           </p>
           <button
             type="button"
             onClick={stop}
-            className="h-11 shrink-0 rounded-control border border-line-strong px-4 text-[15px] font-medium text-ink hover:bg-inset"
+            className="h-11 shrink-0 rounded-control border border-line-strong px-4 text-control font-medium text-ink hover:bg-inset"
           >
             Stop
           </button>

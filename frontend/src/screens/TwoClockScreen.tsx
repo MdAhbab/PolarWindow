@@ -64,8 +64,8 @@ export function TwoClockScreen() {
     <div className="flex grow flex-col">
       <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-line px-4 py-4 lg:px-6">
         <div className="flex min-w-[260px] flex-col gap-1">
-          <h1 className="text-[24px] font-semibold tracking-[-0.005em]">{site.name}</h1>
-          <div className="font-mono text-[12px] text-ink-3">
+          <h1 className="text-heading font-semibold tracking-title">{site.name}</h1>
+          <div className="font-mono text-caption text-ink-3">
             {coords(site.latDeg, site.lonDeg)} ·{' '}
             {site.elevM !== null ? `elev ${site.elevM.toLocaleString()} m` : 'height not modelled'}
           </div>
@@ -106,7 +106,7 @@ export function TwoClockScreen() {
 
           {face === 'public' && metrics && worst && !view.error ? (
             <div className="flex max-w-[520px] flex-col items-center gap-4 text-center">
-              <p className="text-[17px] leading-7 text-ink text-pretty">
+              <p className="text-title leading-7 text-ink text-pretty">
                 {byTerrain
                   ? `At this spot on the Moon, one ridge ${bearing(worst.blockedByBearingDeg ?? 0)} of here switches off the sunlight for ${humanDuration(worst.hours, 'public', worstOpen)}${nightMargin}.`
                   : `At this spot on the Moon, the Sun dips below the horizon for ${humanDuration(worst.hours, 'public', worstOpen)}${nightMargin}.`}{' '}
@@ -115,26 +115,26 @@ export function TwoClockScreen() {
               </p>
               <Link
                 to="/story"
-                className="inline-flex h-12 items-center rounded-control bg-sun-fill px-6 text-[15px] font-semibold text-on-sun no-underline"
+                className="inline-flex h-12 items-center rounded-control bg-sun-fill px-6 text-control font-semibold text-on-sun no-underline"
               >
                 Why is that?
               </Link>
             </div>
           ) : face === 'public' && metrics && !worst && !view.error ? (
-            <p className="max-w-[520px] text-center text-[17px] leading-7 text-ink text-pretty">
+            <p className="max-w-[520px] text-center text-title leading-7 text-ink text-pretty">
               In this window the Sun never sets here: the whole stretch is daylight. Choose a longer window
               below to see this spot’s nights.
             </p>
           ) : null}
 
           <div className="flex w-full flex-wrap gap-x-6 gap-y-1">
-            <Link to="/horizon" className="inline-flex h-11 items-center text-[14px] font-semibold">
+            <Link to="/horizon" className="inline-flex h-11 items-center text-body font-semibold">
               See the skyline →
             </Link>
-            <Link to="/blackout" className="inline-flex h-11 items-center text-[14px] font-semibold">
+            <Link to="/blackout" className="inline-flex h-11 items-center text-body font-semibold">
               Plan around the blackouts →
             </Link>
-            <Link to="/report" className="inline-flex h-11 items-center text-[14px] font-semibold">
+            <Link to="/report" className="inline-flex h-11 items-center text-body font-semibold">
               Hand-over report →
             </Link>
           </div>
@@ -163,7 +163,7 @@ export function TwoClockScreen() {
                 <>
                   <div className="flex gap-2.5">
                     <div className="w-[3px] shrink-0 bg-sun-fill" />
-                    <p className="text-[13px] leading-5 text-ink">
+                    <p className="text-small leading-5 text-ink">
                       {byTerrain ? (
                         <>
                           The {hoursWithUnit(worst.hours, 0, worstOpen)} gap is terrain at bearing{' '}
@@ -187,7 +187,7 @@ export function TwoClockScreen() {
                   </div>
                   <div className="flex gap-2.5">
                     <div className="w-[3px] shrink-0 bg-earth-fill" />
-                    <p className="text-[13px] leading-5 text-ink">
+                    <p className="text-small leading-5 text-ink">
                       {!blackout ? (
                         'Earth stays above this site’s skyline for the whole window.'
                       ) : blackoutByTerrain ? (
@@ -206,26 +206,26 @@ export function TwoClockScreen() {
                       )}
                     </p>
                   </div>
-                  <Link to="/horizon" className="text-[13px] font-semibold">
+                  <Link to="/horizon" className="text-small font-semibold">
                     See it on the horizon profile →
                   </Link>
                 </>
               ) : view.error ? (
-                <p className="text-[13px] text-ink-2">Not available: the numbers for this window did not load.</p>
+                <p className="text-small text-ink-2">Not available: the numbers for this window did not load.</p>
               ) : metrics ? (
                 // A window with no dark stretch at all is an answer, not a
                 // pending state: nothing blocks the Sun in it.
-                <p className="text-[13px] leading-5 text-ink">
+                <p className="text-small leading-5 text-ink">
                   The Sun stays above this site’s skyline for the whole window, so nothing blocks it here.
                   Choose a longer window to find its nights.
                 </p>
               ) : (
-                <p className="text-[13px] text-ink-3">Computing the skyline…</p>
+                <p className="text-small text-ink-3">Computing the skyline…</p>
               )}
             </Panel>
 
             <details className="group border border-line bg-panel">
-              <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-5 text-[15px] font-medium text-ink">
+              <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-5 text-control font-medium text-ink">
                 How sure is this? · Sources · Table
                 <span aria-hidden="true" className="text-ink-3 transition-transform group-open:rotate-90">
                   ›
@@ -262,7 +262,7 @@ export function TwoClockScreen() {
                 <Icon name="table" size={16} strokeWidth={1.7} />
                 {showTable ? 'Hide the arc table' : `Read the ${metrics ? metrics.sun.arcs.length + metrics.earth.arcs.length : ''} arcs as a table`}
               </Button>
-              <p className="text-[12px] leading-[18px] text-ink-3">
+              <p className="text-caption leading-caption text-ink-3">
                 Press T anywhere. Each arc announces its start, end, length and what blocks it.
               </p>
             </Panel>
@@ -320,9 +320,9 @@ function KeyItem({
     <div className="flex min-w-[160px] flex-col gap-2">
       <div className="flex items-center gap-2.5">
         {swatch}
-        <span className={`text-[13px] font-semibold tracking-[0.12em] uppercase ${tone}`}>{title}</span>
+        <span className={`text-small font-semibold tracking-caps uppercase ${tone}`}>{title}</span>
       </div>
-      {children && <p className="text-[13px] leading-5 text-ink-2">{children}</p>}
+      {children && <p className="text-small leading-5 text-ink-2">{children}</p>}
     </div>
   )
 }

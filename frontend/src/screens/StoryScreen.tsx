@@ -60,14 +60,14 @@ export function StoryScreen() {
     <div className="mx-auto flex w-full max-w-[1100px] grow flex-col gap-6 px-4 py-6 lg:px-8">
       <div className="flex items-end justify-between gap-6 border-b border-line pb-4">
         <div className="flex flex-col gap-2">
-          <div className="text-[13px] font-semibold tracking-[0.14em] text-ink-3 uppercase">
+          <div className="text-small font-semibold tracking-caps-lg text-ink-3 uppercase">
             Why is the Moon’s south pole hard?
           </div>
-          <h1 className="text-[32px] leading-10 font-semibold tracking-[-0.015em] lg:text-[40px] lg:leading-[46px]">
+          <h1 className="text-display-sm leading-10 font-semibold tracking-display lg:text-display lg:leading-display">
             {p.title}
           </h1>
         </div>
-        <Link to="/missions" className="hidden h-12 shrink-0 items-center text-[14px] font-semibold sm:inline-flex">
+        <Link to="/missions" className="hidden h-12 shrink-0 items-center text-body font-semibold sm:inline-flex">
           Skip to the missions →
         </Link>
       </div>
@@ -81,10 +81,10 @@ export function StoryScreen() {
       <div className="flex grow flex-col items-center gap-8 lg:flex-row lg:gap-14">
         <div className="w-full max-w-[560px] shrink-0 border border-line bg-panel p-6">{p.art}</div>
         <div className="flex flex-col gap-5">
-          <div className="text-[12px] font-semibold tracking-[0.14em] text-sun uppercase">{p.kicker} of four</div>
-          <p className="max-w-[520px] text-[19px] leading-8 text-ink text-pretty">{p.body}</p>
+          <div className="text-caption font-semibold tracking-caps-lg text-sun uppercase">{p.kicker} of four</div>
+          <p className="max-w-[520px] text-large leading-8 text-ink text-pretty">{p.body}</p>
           {step === panels.length - 1 && (
-            <p className="max-w-[520px] text-[16px] leading-7 text-ink-2">
+            <p className="max-w-[520px] text-lede leading-7 text-ink-2">
               Which is why where you land matters down to about 500 metres — and why this tool refuses to
               give a site a single score.
             </p>
@@ -103,7 +103,7 @@ export function StoryScreen() {
         ) : (
           <Link
             to="/missions"
-            className="inline-flex h-12 grow items-center justify-center rounded-control bg-sun-fill px-6 text-[15px] font-semibold text-on-sun no-underline sm:grow-0"
+            className="inline-flex h-12 grow items-center justify-center rounded-control bg-sun-fill px-6 text-control font-semibold text-on-sun no-underline sm:grow-0"
           >
             Browse CLPS missions
           </Link>

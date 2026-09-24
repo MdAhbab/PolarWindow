@@ -54,10 +54,10 @@ export function DateSlider({ compact = false }: { compact?: boolean }) {
   return (
     <div className="flex grow flex-col gap-2">
       <div className="flex items-baseline justify-between gap-4">
-        <label htmlFor="pw-date" className="text-[12px] font-semibold tracking-[0.12em] text-ink-3 uppercase">
+        <label htmlFor="pw-date" className="text-caption font-semibold tracking-caps text-ink-3 uppercase">
           Window — {lunarDay ? `one lunar day, ${Math.round(windowHours)} h` : spanWords(windowHours)}
         </label>
-        <span className="text-right font-mono text-[12px] text-ink-2">
+        <span className="text-right font-mono text-caption text-ink-2">
           {shortDate(msFromModelH(windowStartH))} → {shortDate(msFromModelH(windowStartH + windowHours))}
           <span className="text-ink"> · {now}</span>
         </span>

@@ -52,8 +52,8 @@ export function BlackoutScreen() {
     <div className="flex grow flex-col">
       <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-line px-4 py-4 lg:px-6">
         <div className="flex min-w-[260px] flex-col gap-1">
-          <h1 className="text-[24px] font-semibold">Blackout planner — {site.code}</h1>
-          <div className="font-mono text-[12px] text-ink-3">
+          <h1 className="text-heading font-semibold">Blackout planner — {site.code}</h1>
+          <div className="font-mono text-caption text-ink-3">
             {Math.round(metrics.windowHours)} h · {blackouts.length} blackouts ·{' '}
             {metrics.sun.arcs.filter((a) => !a.up).length} dark periods
           </div>
@@ -75,7 +75,7 @@ export function BlackoutScreen() {
           <Panel className="flex flex-col">
             <div className="flex items-center gap-4 border-b border-line px-4 py-3">
               <SectionLabel>The mission window, hour by hour</SectionLabel>
-              <span className="ml-auto font-mono text-[11px] text-ink-3">
+              <span className="ml-auto font-mono text-tag text-ink-3">
                 {Math.round(metrics.windowHours)} h
               </span>
             </div>
@@ -87,7 +87,7 @@ export function BlackoutScreen() {
           <Panel className="flex flex-col">
             <div className="flex items-center gap-4 border-b border-line px-4 py-3">
               <SectionLabel>Blackout ledger</SectionLabel>
-              <span className="ml-auto text-[12px] text-ink-3">sorted by length</span>
+              <span className="ml-auto text-caption text-ink-3">sorted by length</span>
             </div>
             <ScrollRegion label="Blackout ledger, scrolls sideways">
               <table className="w-full min-w-[720px] border-collapse text-left">
@@ -101,7 +101,7 @@ export function BlackoutScreen() {
                       <th
                         key={h}
                         scope="col"
-                        className={`px-4 py-3 text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase ${
+                        className={`px-4 py-3 text-tag font-semibold tracking-caps-md text-ink-3 uppercase ${
                           h === 'Length' ? 'text-right' : ''
                         }`}
                       >
@@ -113,7 +113,7 @@ export function BlackoutScreen() {
                 <tbody>
                   {blackouts.length === 0 && (
                     <tr className="border-t border-line">
-                      <td colSpan={5} className="px-4 py-4 text-[14px] text-ink-2">
+                      <td colSpan={5} className="px-4 py-4 text-body text-ink-2">
                         No blackouts: Earth stayed above the skyline for the whole window.
                       </td>
                     </tr>
@@ -124,17 +124,17 @@ export function BlackoutScreen() {
                     const overlaps = metrics.compound.some((c) => c.startH < a.endH && c.endH > a.startH && c.hours >= 0.25)
                     return (
                       <tr key={i} className={`border-t border-line ${overlaps ? 'bg-alert-wash' : ''}`}>
-                        <td className="px-4 py-3 font-mono text-[13px] text-ink-3">B{i + 1}</td>
-                        <td className="px-4 py-3 font-mono text-[13px] text-ink">
+                        <td className="px-4 py-3 font-mono text-small text-ink-3">B{i + 1}</td>
+                        <td className="px-4 py-3 font-mono text-small text-ink">
                           {a.openStart ? `before ${when(a.startH)}` : when(a.startH)}
                         </td>
-                        <td className="px-4 py-3 font-mono text-[13px] text-ink">
+                        <td className="px-4 py-3 font-mono text-small text-ink">
                           {a.openEnd ? `after ${when(a.endH)}` : when(a.endH)}
                         </td>
-                        <td className="px-4 py-3 text-right text-[15px] font-semibold tnum">
+                        <td className="px-4 py-3 text-right text-control font-semibold tnum">
                           {hoursWithUnit(a.hours, 0, a.openStart || a.openEnd)}
                         </td>
-                        <td className="px-4 py-3 text-[13px]">
+                        <td className="px-4 py-3 text-small">
                           {overlaps ? (
                             <span className="flex items-center gap-2 font-semibold text-alert">
                               <Icon name="alert" size={14} strokeWidth={2.4} />
@@ -155,11 +155,11 @@ export function BlackoutScreen() {
 
         <aside className="flex w-full shrink-0 flex-col border border-line-strong bg-raised lg:w-[400px]">
           <div className="flex flex-col gap-1.5 border-b border-line-strong p-5">
-            <div className="text-[12px] font-semibold tracking-[0.14em] text-ink-3 uppercase">
+            <div className="text-caption font-semibold tracking-caps-lg text-ink-3 uppercase">
               Autonomy packet
             </div>
-            <div className="text-[20px] font-semibold">What the lander runs alone on</div>
-            <p className="text-[13px] leading-5 text-ink-2">
+            <div className="text-subhead font-semibold">What the lander runs alone on</div>
+            <p className="text-small leading-5 text-ink-2">
               {noCompound ? (
                 'Sunlight and an Earth link are never lost together in this window, so nothing has to run alone; the battery still carries the longest night.'
               ) : (
@@ -176,13 +176,13 @@ export function BlackoutScreen() {
           </div>
 
           <div className="flex items-baseline gap-3 border-b border-line p-5">
-            <span className="text-[64px] leading-[60px] font-semibold tracking-[-0.025em] tnum">
+            <span className="text-figure-lg leading-figure-lg-tight font-semibold tracking-figure tnum">
               {bound(packet.worstCompoundOpen)}
               {Math.round(packet.requiredAutonomyH)}
             </span>
             <div className="flex flex-col">
-              <span className="text-[16px] text-ink-2">h of full autonomy</span>
-              <span className="text-[12px] text-ink-3">
+              <span className="text-lede text-ink-2">h of full autonomy</span>
+              <span className="text-caption text-ink-3">
                 {noCompound
                   ? 'no compound event'
                   : `${hoursWithUnit(packet.worstCompoundH, 0, packet.worstCompoundOpen)} event + ${marginPct}%`}
@@ -226,7 +226,7 @@ export function BlackoutScreen() {
 
           <div className="mt-auto flex flex-col gap-2.5 border-t border-line-strong p-5">
             {metrics.sun.longestDownH > SURVIVAL_LIMIT_H && (
-              <p className="flex items-start gap-2 text-[13px] leading-5 text-alert">
+              <p className="flex items-start gap-2 text-small leading-5 text-alert">
                 <Icon name="alert" size={16} strokeWidth={2.2} className="mt-0.5 shrink-0" />
                 No packet saves this site: the night alone is{' '}
                 {Math.round(metrics.sun.longestDownH - SURVIVAL_LIMIT_H)} h past the {SURVIVAL_LIMIT_H} h
@@ -243,7 +243,7 @@ export function BlackoutScreen() {
             <Button onClick={() => download(`${site.id}-${stamp}-windows.txt`, spiceWindows(exportSite))}>
               Export SPICE interval lists
             </Button>
-            <p className="text-[12px] leading-[18px] text-ink-3">
+            <p className="text-caption leading-caption text-ink-3">
               Both files are built from the same arcs as the timeline and the ledger, with their margins and
               provenance. The SPICE file lists each lit, contact and dark-and-silent interval in UTC, ready for{' '}
               <span className="font-mono">str2et</span> and <span className="font-mono">wninsd</span>.
@@ -282,10 +282,10 @@ function PacketRow({
         ) : null}
       </div>
       <div className="flex grow flex-col gap-0.5">
-        <div className={`text-[14px] font-semibold ${alert ? 'text-alert' : ''}`}>{title}</div>
-        <div className="text-[13px] leading-5 text-ink-2">{detail}</div>
+        <div className={`text-body font-semibold ${alert ? 'text-alert' : ''}`}>{title}</div>
+        <div className="text-small leading-5 text-ink-2">{detail}</div>
       </div>
-      <div className={`shrink-0 font-mono text-[13px] ${alert ? 'text-alert' : 'text-ink'}`}>{value}</div>
+      <div className={`shrink-0 font-mono text-small ${alert ? 'text-alert' : 'text-ink'}`}>{value}</div>
     </div>
   )
 }

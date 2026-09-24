@@ -20,7 +20,7 @@ export function Sources({ meta, className = '' }: { meta: Meta | undefined; clas
     return (
       <Panel className={`flex flex-col gap-2 p-5 ${className}`}>
         <SectionLabel>Sources</SectionLabel>
-        <p className="text-[11px] leading-[17px] text-ink-3">
+        <p className="text-tag leading-caption-tight text-ink-3">
           Not yet known — the figures on this screen have not finished computing.
         </p>
       </Panel>
@@ -31,7 +31,7 @@ export function Sources({ meta, className = '' }: { meta: Meta | undefined; clas
   return (
     <Panel className={`flex flex-col gap-2 p-5 ${className}`}>
       <SectionLabel>Sources</SectionLabel>
-      <p className="font-mono text-[11px] leading-[18px] text-ink-2">
+      <p className="font-mono text-tag leading-caption text-ink-2">
         Elevation: {r.demProduct} at {r.demResolutionM.toFixed(0)} m
         <br />
         Ephemeris: {r.ephemeris}
@@ -39,7 +39,7 @@ export function Sources({ meta, className = '' }: { meta: Meta | undefined; clas
         Horizon mask: {r.azimuthCount} az × {(r.maxRangeM / 1000).toFixed(0)} km · sampled every{' '}
         {(r.timeStepS / 60).toFixed(0)} min
       </p>
-      <p className="text-[11px] leading-[17px] text-ink-3">
+      <p className="text-tag leading-caption-tight text-ink-3">
         Vertical accuracy ±{u.demVerticalErrorM.toFixed(0)} m.
         {u.partialCoverage
           ? ` Terrain covers ${(u.coverage * 100).toFixed(0)}% of the sampled bearings, so this site is modelled with gaps.`

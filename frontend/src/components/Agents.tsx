@@ -64,7 +64,7 @@ const asSent = (v: unknown): string => (typeof v === 'number' ? String(v) : Stri
 
 function ExplainBody({ result }: { result: Record<string, unknown> }) {
   const p = str(result.paragraph)
-  return p ? <p className="max-w-[68ch] text-[15px] leading-6 text-ink">{p}</p> : null
+  return p ? <p className="max-w-[68ch] text-control leading-6 text-ink">{p}</p> : null
 }
 
 function AskBody({ result }: { result: Record<string, unknown> }) {
@@ -76,7 +76,7 @@ function AskBody({ result }: { result: Record<string, unknown> }) {
     // calls), so say that, rather than "this lists the measurements" over an
     // empty list.
     return (
-      <p className="max-w-[68ch] text-[15px] leading-6 text-ink">
+      <p className="max-w-[68ch] text-control leading-6 text-ink">
         Without the AI, a question in your own words can’t be turned into measurements, so nothing was looked
         up and no number is claimed. The mission list, its filters and each mission’s page answer the same
         questions directly.
@@ -85,9 +85,9 @@ function AskBody({ result }: { result: Record<string, unknown> }) {
   }
   return (
     <div className="flex flex-col gap-3">
-      {answer && <p className="max-w-[68ch] text-[15px] leading-6 text-ink">{answer}</p>}
+      {answer && <p className="max-w-[68ch] text-control leading-6 text-ink">{answer}</p>}
       {read && (
-        <p className="text-[13px] leading-5 text-ink-2">
+        <p className="text-small leading-5 text-ink-2">
           <span className="font-semibold text-ink">Read as: </span>
           {read}
         </p>
@@ -95,10 +95,10 @@ function AskBody({ result }: { result: Record<string, unknown> }) {
       {rows.length > 0 && (
         <ul className="flex flex-col gap-1.5">
           {rows.map((row, i) => (
-            <li key={`${row.site_id}-${i}`} className="text-[13px] leading-5 text-ink">
+            <li key={`${row.site_id}-${i}`} className="text-small leading-5 text-ink">
               <span className="font-semibold">{siteName(row.site_id)}</span>
               {row.values && Object.keys(row.values).length > 0 && (
-                <span className="font-mono text-[12px] text-ink-2">
+                <span className="font-mono text-caption text-ink-2">
                   {' '}
                   {Object.entries(row.values)
                     .map(([k, v]) => `${k} ${asSent(v)}`)
@@ -135,27 +135,27 @@ function AdviseBody({ result }: { result: Record<string, unknown> }) {
   return (
     <div className="flex flex-col gap-3">
       {summary && (
-        <p className="text-[13px] leading-5 text-ink-2">
+        <p className="text-small leading-5 text-ink-2">
           <span className="font-semibold text-ink">Requirement read as: </span>
           {summary}
         </p>
       )}
       {result.any_satisfies !== true && none && (
-        <p className="max-w-[68ch] text-[15px] leading-6 text-ink">{none}</p>
+        <p className="max-w-[68ch] text-control leading-6 text-ink">{none}</p>
       )}
       {ranked.length > 0 && (
         <ol className="flex flex-col gap-3">
           {ranked.map((r) => (
             <li key={r.site_id} className="flex flex-col gap-1 border-t border-line pt-3">
-              <span className="text-[14px] font-semibold text-ink">
+              <span className="text-body font-semibold text-ink">
                 {asSent(r.rank)}. {siteName(r.site_id)} ·{' '}
                 {r.satisfies_all ? 'meets every part' : 'does not meet every part'}
               </span>
-              <span className="text-[13px] leading-5 text-ink-2">{r.why}</span>
+              <span className="text-small leading-5 text-ink-2">{r.why}</span>
               {r.checks?.length > 0 && (
                 <ul className="flex flex-col gap-0.5">
                   {r.checks.map((c, i) => (
-                    <li key={i} className="text-[12px] leading-[18px] text-ink-2">
+                    <li key={i} className="text-caption leading-caption text-ink-2">
                       {c.satisfied ? 'Met' : 'Not met'}: {c.requirement}
                       {c.observed_value !== null && c.observed_value !== undefined && (
                         <span className="font-mono">
@@ -198,12 +198,12 @@ function BriefBody({ result }: { result: Record<string, unknown> }) {
           <SectionLabel as="h3">{label}</SectionLabel>
           {d ? (
             <>
-              <div className="text-[15px] font-semibold text-ink">{d.title}</div>
-              <p className="text-[14px] leading-6 text-ink">{d.body}</p>
-              {d.caveat && <p className="text-[12px] leading-[18px] text-ink-3">Caveat: {d.caveat}</p>}
+              <div className="text-control font-semibold text-ink">{d.title}</div>
+              <p className="text-body leading-6 text-ink">{d.body}</p>
+              {d.caveat && <p className="text-caption leading-caption text-ink-3">Caveat: {d.caveat}</p>}
             </>
           ) : (
-            <p className="text-[13px] text-ink-2">This document was not written.</p>
+            <p className="text-small text-ink-2">This document was not written.</p>
           )}
         </Panel>
       ))}
@@ -230,7 +230,7 @@ function NumbersUsed({ items }: { items: ProvenanceItemDTO[] }) {
     return (
       <div className="flex flex-col gap-1.5">
         <SectionLabel as="h3">Numbers used</SectionLabel>
-        <p className="text-[13px] text-ink-2">This answer contains no numbers.</p>
+        <p className="text-small text-ink-2">This answer contains no numbers.</p>
       </div>
     )
   }
@@ -249,7 +249,7 @@ function NumbersUsed({ items }: { items: ProvenanceItemDTO[] }) {
                 <th
                   key={h}
                   scope="col"
-                  className="px-3 py-2 text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase"
+                  className="px-3 py-2 text-tag font-semibold tracking-caps-md text-ink-3 uppercase"
                 >
                   {h}
                 </th>
@@ -259,9 +259,9 @@ function NumbersUsed({ items }: { items: ProvenanceItemDTO[] }) {
           <tbody>
             {items.map((p, i) => (
               <tr key={i} className="border-t border-line align-top">
-                <td className="px-3 py-2 text-[12px] leading-[18px] text-ink-2">…{p.claim}…</td>
-                <td className="px-3 py-2 font-mono text-[12px] text-ink tnum">{asSent(p.value)}</td>
-                <td className="px-3 py-2 font-mono text-[12px] text-ink-2">
+                <td className="px-3 py-2 text-caption leading-caption text-ink-2">…{p.claim}…</td>
+                <td className="px-3 py-2 font-mono text-caption text-ink tnum">{asSent(p.value)}</td>
+                <td className="px-3 py-2 font-mono text-caption text-ink-2">
                   {p.tool} · {p.field}
                 </td>
               </tr>
@@ -296,7 +296,7 @@ export function AgentCard({
   if (agent.isPending) {
     return (
       <Panel className="flex flex-wrap items-center justify-between gap-3 p-4">
-        <p role="status" className="font-mono text-[12px] text-ink-3">
+        <p role="status" className="font-mono text-caption text-ink-3">
           Asking… checking every number against the measurements
         </p>
         <Button onClick={agent.cancel}>Cancel</Button>
@@ -330,10 +330,10 @@ export function AgentCard({
   if (r.status === 'insufficient_data') {
     return (
       <Panel className="flex flex-col gap-4 p-5" as="section">
-        <p className="font-mono text-[12px] text-ink-3">{statusLine(r)}</p>
+        <p className="font-mono text-caption text-ink-3">{statusLine(r)}</p>
         <div className="flex flex-col gap-2">
-          <div className="text-[18px] font-semibold text-ink">Not enough data to answer</div>
-          <p className="max-w-[60ch] text-[14px] leading-6 text-ink-2">{r.reason ?? ''}</p>
+          <div className="text-title-lg font-semibold text-ink">Not enough data to answer</div>
+          <p className="max-w-[60ch] text-body leading-6 text-ink-2">{r.reason ?? ''}</p>
         </div>
         <div className="flex flex-wrap gap-3">
           {onRephrase && (
@@ -352,7 +352,7 @@ export function AgentCard({
   const replaced = r.status === 'degraded'
   return (
     <Panel className="flex flex-col gap-4 p-5" as="section">
-      <p className="font-mono text-[12px] text-ink-3">{statusLine(r)}</p>
+      <p className="font-mono text-caption text-ink-3">{statusLine(r)}</p>
       {replaced && (
         <UncertaintyNote title="Built from the measurements" hatchKey={false}>
           {r.run_status === 'guard_rejected'
@@ -368,7 +368,7 @@ export function AgentCard({
       {result ? (
         <ResultBody kind={kind} result={result} />
       ) : (
-        <p className="text-[14px] text-ink-2">{r.reason ?? 'No summary could be built for this request.'}</p>
+        <p className="text-body text-ink-2">{r.reason ?? 'No summary could be built for this request.'}</p>
       )}
       <NumbersUsed items={r.provenance ?? []} />
       {howButton}
@@ -396,7 +396,7 @@ function PromptField({
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={id} className="text-[13px] font-medium text-ink">
+      <label htmlFor={id} className="text-small font-medium text-ink">
         {label}
       </label>
       <textarea
@@ -413,7 +413,7 @@ function PromptField({
             onSubmit()
           }
         }}
-        className="min-h-12 w-full resize-y rounded-control border border-line-strong bg-panel px-3.5 py-3 text-[14px] outline-none placeholder:text-ink-3 focus:border-focus"
+        className="min-h-12 w-full resize-y rounded-control border border-line-strong bg-panel px-3.5 py-3 text-body outline-none placeholder:text-ink-3 focus:border-focus"
       />
     </div>
   )
@@ -529,14 +529,14 @@ export function ExplainPanel({
 
   return (
     <details className="group border border-line bg-panel">
-      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-5 py-2 text-[15px] font-medium text-ink">
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-5 py-2 text-control font-medium text-ink">
         {summary}
         <span aria-hidden="true" className="text-ink-3 transition-transform group-open:rotate-90">
           ›
         </span>
       </summary>
       <div className="flex flex-col gap-4 px-5 pb-5">
-        <p className="text-[13px] leading-5 text-ink-2">
+        <p className="text-small leading-5 text-ink-2">
           A plain paragraph about this site over the window on screen, written from its measurements. Every
           number in it is checked against those measurements before it is shown.
         </p>
@@ -563,7 +563,7 @@ export function BriefPanel({ siteId, start, end }: { siteId: string; start: stri
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
           <SectionLabel>Briefs for {name}</SectionLabel>
-          <p className="text-[13px] leading-5 text-ink-2">
+          <p className="text-small leading-5 text-ink-2">
             A planner memo, a lesson plan and a public explainer, written together so they cannot disagree
             about a number.
           </p>

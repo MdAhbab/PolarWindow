@@ -114,9 +114,9 @@ export function AppShell({ children }: { children: ReactNode }) {
               key={n.to}
               to={n.to}
               className={({ isActive }) =>
-                `inline-flex h-12 shrink-0 items-center gap-2 px-3 text-[14px] font-medium whitespace-nowrap no-underline ${
+                `inline-flex h-12 shrink-0 items-center gap-2 px-3 text-body font-medium whitespace-nowrap no-underline ${
                   isActive
-                    ? 'font-semibold text-ink shadow-[inset_0_-2px_0_var(--color-sun)]'
+                    ? 'font-semibold text-ink shadow-tab'
                     : 'text-ink-2 hover:text-ink'
                 }`
               }
@@ -130,7 +130,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Below lg: logo and the two sheet buttons on the first line, the
             provenance badge and the faces on the second. */}
         <div className="order-3 flex w-full flex-wrap items-center gap-x-3 gap-y-2 lg:order-none lg:ml-auto lg:w-auto lg:justify-end">
-          <Link to="/story" className="hidden h-12 items-center text-[14px] font-semibold lg:inline-flex">
+          <Link to="/story" className="hidden h-12 items-center text-body font-semibold lg:inline-flex">
             Start here
           </Link>
           {/* Once, at every width (U12): the one element that says how much to
@@ -144,7 +144,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             type="button"
             aria-pressed={theme === 'light'}
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="hidden h-12 rounded-control border border-line-strong px-3 text-[13px] font-semibold text-ink hover:bg-inset xl:inline-flex xl:items-center"
+            className="hidden h-12 rounded-control border border-line-strong px-3 text-small font-semibold text-ink hover:bg-inset xl:inline-flex xl:items-center"
             aria-label={theme === 'dark' ? 'Switch to the light theme' : 'Switch to the dark theme'}
             title="Both themes pass contrast. The light one is for print and projection."
           >
@@ -154,7 +154,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             type="button"
             aria-pressed={motion === 'reduced'}
             onClick={() => setMotion(motion === 'full' ? 'reduced' : 'full')}
-            className="hidden h-12 rounded-control border border-line-strong px-3 text-[13px] font-semibold text-ink hover:bg-inset xl:inline-flex xl:items-center"
+            className="hidden h-12 rounded-control border border-line-strong px-3 text-small font-semibold text-ink hover:bg-inset xl:inline-flex xl:items-center"
             aria-label={motion === 'full' ? 'Reduce motion' : 'Turn motion back on'}
             title="Every animation has a named static fallback."
           >
@@ -188,7 +188,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main id="pw-main" tabIndex={-1} className="flex grow flex-col pb-16 outline-none lg:pb-0">
         {children}
         {/* U13: one line per screen instead of "≈" before every value. */}
-        <p className="border-t border-line px-4 py-3 text-[12px] leading-[18px] text-ink-3 lg:px-6">{ESTIMATES}</p>
+        <p className="border-t border-line px-4 py-3 text-caption leading-caption text-ink-3 lg:px-6">{ESTIMATES}</p>
       </main>
 
       {/* U3: fixed to the bottom on a phone, all five tabs, clear of the home
@@ -209,7 +209,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             }
           >
             <Icon name={n.icon} size={22} strokeWidth={1.7} />
-            <span className="text-[11px] font-semibold">{n.label}</span>
+            <span className="text-tag font-semibold">{n.label}</span>
           </NavLink>
         ))}
       </nav>

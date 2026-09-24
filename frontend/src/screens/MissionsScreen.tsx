@@ -198,13 +198,13 @@ export function MissionsScreen() {
     <div className="flex grow flex-col">
       <header className="flex flex-col gap-2 border-b border-line px-4 py-4 lg:px-6">
         <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-          <h1 className="text-[24px] font-semibold tracking-[-0.005em]">CLPS missions</h1>
-          <p aria-live="polite" className="text-[14px] text-ink-2">
+          <h1 className="text-heading font-semibold tracking-title">CLPS missions</h1>
+          <p aria-live="polite" className="text-body text-ink-2">
             <span className="sr-only">Showing </span>
             {count}
           </p>
         </div>
-        <p className="max-w-3xl text-[14px] leading-6 text-ink-2">
+        <p className="max-w-3xl text-body leading-6 text-ink-2">
           Every NASA Commercial Lunar Payload Services delivery: where it went or will go, when, what it
           carries and how it went. Open one to see what the Sun and Earth do at its target.
         </p>
@@ -212,7 +212,7 @@ export function MissionsScreen() {
 
       <div role="group" aria-label="Filters" className="flex flex-col gap-3 border-b border-line px-4 py-3 lg:px-6">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <span className="text-[13px] font-medium text-ink">Status</span>
+          <span className="text-small font-medium text-ink">Status</span>
           <Segmented label="Status" options={STATUS_OPTIONS} value={status} onChange={setStatus} />
         </div>
         <FilterRow label="Instruments carried (any of)">
@@ -321,7 +321,7 @@ export function MissionsScreen() {
               <SectionLabel as="h3" id="missions-inset-h">
                 South-polar inset · 80°S to the pole
               </SectionLabel>
-              <span className="ml-auto text-[12px] text-ink-3">
+              <span className="ml-auto text-caption text-ink-3">
                 {polarCount} target{polarCount === 1 ? '' : 's'} inside 80°S
               </span>
             </div>
@@ -366,7 +366,7 @@ export function MissionsScreen() {
 function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
-      <span className="shrink-0 text-[13px] font-medium text-ink">{label}</span>
+      <span className="shrink-0 text-small font-medium text-ink">{label}</span>
       {/* Scrolls sideways on a phone rather than wrapping into a wall of chips. */}
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0">
         {children}
@@ -401,13 +401,13 @@ function MissionRow({
       }`}
     >
       <span className="flex items-baseline justify-between gap-3">
-        <span className="text-[15px] font-semibold text-ink">{m.name}</span>
-        <span className="shrink-0 text-[13px] text-ink-2" title={STATUS_LABEL[m.status]}>
+        <span className="text-control font-semibold text-ink">{m.name}</span>
+        <span className="shrink-0 text-small text-ink-2" title={STATUS_LABEL[m.status]}>
           <span aria-hidden="true">{STATUS_GLYPH[m.status]} </span>
           {STATUS_LABEL[m.status]}
         </span>
       </span>
-      <span className="text-[13px] leading-5 text-ink-2">
+      <span className="text-small leading-5 text-ink-2">
         {m.provider ?? <Unconfirmed />} ·{' '}
         {d ? (
           <>
@@ -420,11 +420,11 @@ function MissionRow({
           </>
         )}
       </span>
-      <span className="text-[12px] leading-[18px] text-ink-3">
+      <span className="text-caption leading-caption text-ink-3">
         {m.payloadTypes.length ? m.payloadTypes.map((t) => INSTRUMENT_LABEL[t]).join(' · ') : 'Payloads unconfirmed'}
       </span>
       {m.unconfirmedFields.length > 0 && (
-        <span className="text-[12px] text-uncertain">Some details unconfirmed</span>
+        <span className="text-caption text-uncertain">Some details unconfirmed</span>
       )}
     </Link>
   )
@@ -432,7 +432,7 @@ function MissionRow({
 
 function PinLegend() {
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line px-4 py-3 text-[12px] text-ink">
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line px-4 py-3 text-caption text-ink">
       <span className="flex items-center gap-2">
         <svg width="14" height="14" viewBox="-7 -7 14 14" aria-hidden="true">
           <rect x="-4" y="-4" width="8" height="8" transform="rotate(45)" fill="var(--color-panel)" stroke="var(--color-ink)" strokeWidth="1.5" />

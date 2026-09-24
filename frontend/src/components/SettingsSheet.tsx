@@ -65,7 +65,7 @@ export function SettingsSheet() {
           <Link
             to="/story"
             onClick={() => s.setOpen(false)}
-            className="inline-flex h-12 items-center text-[15px] font-semibold"
+            className="inline-flex h-12 items-center text-control font-semibold"
           >
             Start here: why the pole is hard →
           </Link>
@@ -78,9 +78,9 @@ export function SettingsSheet() {
 function Setting({ label, note, children }: { label: string; note: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="text-[15px] font-semibold text-ink">{label}</h3>
+      <h3 className="text-control font-semibold text-ink">{label}</h3>
       {children}
-      <p className="text-[12px] leading-[18px] text-ink-3">{note}</p>
+      <p className="text-caption leading-caption text-ink-3">{note}</p>
     </div>
   )
 }

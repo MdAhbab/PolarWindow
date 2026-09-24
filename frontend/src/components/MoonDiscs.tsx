@@ -129,8 +129,8 @@ function Disc({
         )}
       </div>
       <figcaption className="flex flex-col items-center gap-0.5 text-center">
-        <span className="text-[13px] font-semibold text-ink">{title}</span>
-        {caption && <span className="text-[12px] text-ink-2">{caption}</span>}
+        <span className="text-small font-semibold text-ink">{title}</span>
+        {caption && <span className="text-caption text-ink-2">{caption}</span>}
       </figcaption>
     </figure>
   )
@@ -164,7 +164,7 @@ export function MoonDiscs({
           onPole={onPole}
         />
       </div>
-      <p className="text-center text-[12px] text-ink-3">Schematic globe; positions from published coordinates.</p>
+      <p className="text-center text-caption text-ink-3">Schematic globe; positions from published coordinates.</p>
     </div>
   )
 }

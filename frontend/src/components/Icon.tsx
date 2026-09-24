@@ -182,7 +182,7 @@ export function Mark({ size = 26, className = '' }: { size?: number; className?:
 
 export function Wordmark({ className = '' }: { className?: string }) {
   return (
-    <span className={`text-[14px] font-semibold tracking-[0.18em] ${className}`}>
+    <span className={`text-body font-semibold tracking-caps-xl ${className}`}>
       POLAR<span className="font-normal text-sun">&nbsp;WINDOW</span>
     </span>
   )

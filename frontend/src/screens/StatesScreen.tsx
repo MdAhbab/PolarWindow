@@ -23,9 +23,9 @@ export function StatesScreen() {
       <header className="flex flex-wrap items-end justify-between gap-6 border-b border-line pb-5">
         <div className="flex flex-col gap-2">
           <SectionLabel>Empty, loading, error, uncertain</SectionLabel>
-          <h1 className="text-[32px] font-semibold tracking-[-0.01em]">Measured, not asserted</h1>
+          <h1 className="text-display-sm font-semibold tracking-heading">Measured, not asserted</h1>
         </div>
-        <p className="max-w-[420px] text-right text-[14px] leading-6 text-ink-2">
+        <p className="max-w-[420px] text-right text-body leading-6 text-ink-2">
           No state is allowed to be a shrug. Each one says what it knows, what it does not, and what you can
           do next.
         </p>
@@ -163,15 +163,15 @@ export function StatesScreen() {
 function Head({ kind, note, tone = 'text-ink-3' }: { kind: string; note: string; tone?: string }) {
   return (
     <div className="flex items-baseline gap-2.5 border-b border-line px-5 py-3.5">
-      <span className={`text-[12px] font-semibold tracking-[0.12em] uppercase ${tone}`}>{kind}</span>
-      <span className="text-[13px] text-ink-3">{note}</span>
+      <span className={`text-caption font-semibold tracking-caps uppercase ${tone}`}>{kind}</span>
+      <span className="text-small text-ink-3">{note}</span>
     </div>
   )
 }
 
 function Rule({ children }: { children: React.ReactNode }) {
   return (
-    <p className="border-t border-line px-5 py-3.5 text-[13px] leading-5 text-ink-2">
+    <p className="border-t border-line px-5 py-3.5 text-small leading-5 text-ink-2">
       <strong className="font-semibold text-ink">Rule:</strong> {children}
     </p>
   )

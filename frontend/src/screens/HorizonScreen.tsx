@@ -50,8 +50,8 @@ export function HorizonScreen() {
     <div className="flex grow flex-col">
       <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-line px-4 py-4 lg:px-6">
         <div className="flex min-w-[260px] flex-col gap-1">
-          <h1 className="text-[24px] font-semibold">Standing at {site.code}, looking out</h1>
-          <div className="font-mono text-[12px] text-ink-3">
+          <h1 className="text-heading font-semibold">Standing at {site.code}, looking out</h1>
+          <div className="font-mono text-caption text-ink-3">
             {coords(site.latDeg, site.lonDeg)} · horizon mask{' '}
             {view.meta ? `${view.meta.resolution.azimuthCount} az × ${(view.meta.resolution.maxRangeM / 1000).toFixed(0)} km` : '…'}
           </div>
@@ -70,7 +70,7 @@ export function HorizonScreen() {
           <Panel className="flex flex-col">
             <div className="flex items-center gap-4 border-b border-line px-4 py-3">
               <SectionLabel>Local skyline — elevation above the flat horizon, by bearing</SectionLabel>
-              <span className="ml-auto font-mono text-[11px] text-ink-3">
+              <span className="ml-auto font-mono text-tag text-ink-3">
                 peak {degrees(metrics.mask.maxElDeg, 2)} at {bearing(metrics.mask.maxElBearingDeg)}
               </span>
             </div>
@@ -87,8 +87,8 @@ export function HorizonScreen() {
           </Panel>
 
           <Panel className="flex flex-col gap-3 p-5">
-            <h2 className="text-[17px] font-semibold">Why the dashed line matters</h2>
-            <p className="max-w-3xl text-[14px] leading-6 text-ink-2">
+            <h2 className="text-title font-semibold">Why the dashed line matters</h2>
+            <p className="max-w-3xl text-body leading-6 text-ink-2">
               {terrainModelled ? (
                 <>
                   The dashed line is level, 0°: where a globe-only tool puts the horizon. The grey silhouette is
@@ -112,27 +112,27 @@ export function HorizonScreen() {
             <SectionLabel>The feature that costs you</SectionLabel>
             {byTerrain ? (
               <>
-                <div className="text-[20px] font-semibold">
+                <div className="text-subhead font-semibold">
                   Skyline at {bearing(blockAz)} {compass(blockAz)}
                 </div>
-                <div className="font-mono text-[12px] leading-5 text-ink-2">
+                <div className="font-mono text-caption leading-5 text-ink-2">
                   elevation {degrees(elDeg, 2)}
                   <br />
                   range {Math.round(rangeM).toLocaleString()} m
                 </div>
               </>
             ) : (
-              <div className="text-[20px] font-semibold">
+              <div className="text-subhead font-semibold">
                 {worst ? 'None: the horizon itself' : 'None in this window'}
               </div>
             )}
             {worst && (
               <div className="flex items-baseline gap-2 border-t border-line pt-3">
-                <span className="text-[40px] leading-10 font-semibold tracking-[-0.02em] tnum">
+                <span className="text-display leading-10 font-semibold tracking-figure-sm tnum">
                   {bound(metrics.sun.longestDownOpen)}
                   {Math.round(worst.hours)}
                 </span>
-                <span className="text-[14px] text-ink-2">
+                <span className="text-body text-ink-2">
                   h of darkness in this window{metrics.sun.longestDownOpen ? ', cut short by its edge' : ''}
                 </span>
               </div>
@@ -159,7 +159,7 @@ export function HorizonScreen() {
 
           <Panel className="flex flex-col gap-2 p-5">
             <SectionLabel>Read it in one line</SectionLabel>
-            <p className="text-[14px] leading-6 text-ink-2">
+            <p className="text-body leading-6 text-ink-2">
               {!worst
                 ? 'The Sun clears the skyline at every bearing in this window. Nothing here blocks it.'
                 : byTerrain
@@ -175,7 +175,7 @@ export function HorizonScreen() {
 
 function Legend({ swatch, children }: { swatch: string; children: React.ReactNode }) {
   return (
-    <span className="flex items-center gap-2 text-[12px] text-ink">
+    <span className="flex items-center gap-2 text-caption text-ink">
       <span className={swatch} aria-hidden="true" />
       {children}
     </span>

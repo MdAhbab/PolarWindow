@@ -39,7 +39,7 @@ export function EducatorGuide({
     <Panel className="flex flex-col gap-4 p-5" as="section">
       <div className="flex items-baseline justify-between gap-4">
         <SectionLabel>Guided walk-through</SectionLabel>
-        <span className="font-mono text-[12px] text-ink-2">
+        <span className="font-mono text-caption text-ink-2">
           step {i + 1} of {steps.length}
         </span>
       </div>
@@ -52,13 +52,13 @@ export function EducatorGuide({
       {/* Announced when the step changes, so a screen-reader user hears the
           new step rather than only the new button label. */}
       <div aria-live="polite" className="flex flex-col gap-3">
-        <h2 className="text-[18px] leading-6 font-semibold">{step.title}</h2>
-        <p className="text-[14px] leading-6 text-ink">{step.body}</p>
+        <h2 className="text-title-lg leading-6 font-semibold">{step.title}</h2>
+        <p className="text-body leading-6 text-ink">{step.body}</p>
         <div className="flex flex-col gap-1 border-l-[3px] border-earth-fill pl-3">
-          <span className="text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase">Ask the class</span>
-          <p className="text-[14px] leading-6 text-ink-2">{step.ask}</p>
+          <span className="text-tag font-semibold tracking-caps-md text-ink-3 uppercase">Ask the class</span>
+          <p className="text-body leading-6 text-ink-2">{step.ask}</p>
         </div>
-        <p className="text-[12px] leading-[18px] text-ink-3">{step.caveat}</p>
+        <p className="text-caption leading-caption text-ink-3">{step.caveat}</p>
       </div>
 
       <div className="flex gap-3 border-t border-line pt-4">

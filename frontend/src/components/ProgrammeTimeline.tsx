@@ -261,7 +261,7 @@ export function ProgrammeTimeline({
         </svg>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[12px] text-ink-2">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-caption text-ink-2">
         <span className="flex items-center gap-2">
           <span className="h-3.5 w-0.5 bg-ink" aria-hidden="true" /> date known to the day
         </span>
@@ -273,7 +273,7 @@ export function ProgrammeTimeline({
       </div>
 
       {undated.length > 0 && (
-        <p className="text-[13px] leading-5 text-ink-2">
+        <p className="text-small leading-5 text-ink-2">
           Not on the timeline, because no landing or launch date is published:{' '}
           {undated.map((m) => m.name).join(', ')}.
         </p>
@@ -291,7 +291,7 @@ export function ProgrammeTimeline({
                   <th
                     key={h}
                     scope="col"
-                    className="px-4 py-3 text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase"
+                    className="px-4 py-3 text-tag font-semibold tracking-caps-md text-ink-3 uppercase"
                   >
                     {h}
                   </th>
@@ -303,11 +303,11 @@ export function ProgrammeTimeline({
                 const d = missionDate(m)
                 return (
                   <tr key={m.id} className="border-t border-line">
-                    <th scope="row" className="px-4 py-2.5 text-[13px] font-semibold text-ink">
+                    <th scope="row" className="px-4 py-2.5 text-small font-semibold text-ink">
                       {m.name}
                     </th>
-                    <td className="px-4 py-2.5 text-[13px] text-ink-2">{m.provider ?? <Unconfirmed />}</td>
-                    <td className="px-4 py-2.5 text-[13px] text-ink-2">
+                    <td className="px-4 py-2.5 text-small text-ink-2">{m.provider ?? <Unconfirmed />}</td>
+                    <td className="px-4 py-2.5 text-small text-ink-2">
                       {d ? (
                         <span title={publishedTitle(d.date)}>
                           {`${d.which === 'launch' ? 'Launch: ' : ''}${publishedWords(d.date)}`}
@@ -316,7 +316,7 @@ export function ProgrammeTimeline({
                         <Unconfirmed />
                       )}
                     </td>
-                    <td className="px-4 py-2.5 text-[13px] text-ink-2">
+                    <td className="px-4 py-2.5 text-small text-ink-2">
                       <span aria-hidden="true">{STATUS_GLYPH[m.status]} </span>
                       {STATUS_LABEL[m.status]}
                     </td>

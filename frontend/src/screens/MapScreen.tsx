@@ -154,7 +154,7 @@ export function MapScreen() {
                 <Chip selected={nearPsr} onClick={() => setNearPsr((v) => !v)} tone="neutral">
                   Beside a shadowed floor
                 </Chip>
-                <p className="text-[12px] leading-[17px] text-ink-3">
+                <p className="text-caption leading-caption-tight text-ink-3">
                   Sites on the rim of a named polar crater, next to its permanently shadowed floor.
                 </p>
               </div>
@@ -162,7 +162,7 @@ export function MapScreen() {
                 <Chip selected={showMissions} onClick={() => setShowMissions((v) => !v)} tone="neutral">
                   Mission targets
                 </Chip>
-                <p className="text-[12px] leading-[17px] text-ink-3">
+                <p className="text-caption leading-caption-tight text-ink-3">
                   Adds the CLPS targets inside 80°S as diamonds. Choose one to see its numbers here.
                 </p>
               </div>
@@ -171,7 +171,7 @@ export function MapScreen() {
             <Panel className="flex grow flex-col">
               <div className="flex items-baseline justify-between border-b border-line px-4 py-3">
                 <SectionLabel>Matching sites</SectionLabel>
-                  <span className="text-[12px] text-ink-2" aria-live="polite">
+                  <span className="text-caption text-ink-2" aria-live="polite">
                   {matches.length} of {candidates.length}
                 </span>
               </div>
@@ -212,10 +212,10 @@ export function MapScreen() {
                         active ? 'bg-inset' : 'hover:bg-inset'
                       }`}
                     >
-                      <span className="text-[14px] font-semibold text-ink">
+                      <span className="text-body font-semibold text-ink">
                         {s.code} — {s.name}
                       </span>
-                      <span className="font-mono text-[11px] text-ink-3">
+                      <span className="font-mono text-tag text-ink-3">
                         {m
                           ? `sun ${percent(m.sun.fractionUp)} · call home ${percent(m.earth.fractionUp)} · night `
                           : 'computing…'}
@@ -237,7 +237,7 @@ export function MapScreen() {
         <section className="flex grow flex-col border border-line bg-panel">
           <div className="flex items-center gap-4 border-b border-line px-4 py-3">
             <SectionLabel>South polar stereographic · 80°S to the pole</SectionLabel>
-            <span className="ml-auto text-[12px] text-ink-3">relief from LOLA; shadow on a smooth Moon</span>
+            <span className="ml-auto text-caption text-ink-3">relief from LOLA; shadow on a smooth Moon</span>
           </div>
 
           <div className="flex grow items-start justify-center p-3">
@@ -259,7 +259,7 @@ export function MapScreen() {
             <LegendSwatch className="bg-terrain-mid">Relief: LOLA hillshade, 80 m</LegendSwatch>
             <LegendSwatch className="bg-psr">Sun down at this instant, smooth Moon</LegendSwatch>
             <LegendSwatch className="hatch-uncertain">Shadow-line margin</LegendSwatch>
-            <p className="ml-auto max-w-[360px] text-right text-[12px] leading-[17px] text-ink-3">
+            <p className="ml-auto max-w-[360px] text-right text-caption leading-caption-tight text-ink-3">
               The shadow line is where the Sun sets on a smooth Moon, from the same SPICE Sun as every number.
               Ridges and craters are not shaded here; each site’s own skyline decides its numbers.
             </p>
@@ -274,21 +274,21 @@ export function MapScreen() {
           ) : (
             <Panel elevated className="flex flex-col">
               <div className="flex items-start gap-3 border-b border-line p-4">
-                <span className="inline-flex size-7 shrink-0 items-center justify-center bg-sun-fill text-[14px] font-bold text-on-sun">
+                <span className="inline-flex size-7 shrink-0 items-center justify-center bg-sun-fill text-body font-bold text-on-sun">
                   {site.code}
                 </span>
                 <div className="flex min-w-0 flex-col gap-0.5">
-                  <div className="text-[17px] font-semibold">{site.name}</div>
-                  <div className="font-mono text-[11px] text-ink-3">{coords(site.latDeg, site.lonDeg)}</div>
+                  <div className="text-title font-semibold">{site.name}</div>
+                  <div className="font-mono text-tag text-ink-3">{coords(site.latDeg, site.lonDeg)}</div>
                 </div>
               </div>
               <div className="p-4">
                 <KeyNumberRow metrics={focused} face={face} size="sm" columns={2} />
               </div>
               <div className="flex flex-col gap-2.5 border-t border-line p-4">
-                <p className="text-[13px] leading-5 text-ink-2">{site.note}</p>
+                <p className="text-small leading-5 text-ink-2">{site.note}</p>
                 {missionsHere.length > 0 && (
-                  <p className="text-[13px] leading-5 text-ink-2">
+                  <p className="text-small leading-5 text-ink-2">
                     CLPS {missionsHere.length === 1 ? 'mission' : 'missions'} aiming here:{' '}
                     {missionsHere.map((m, i) => (
                       <span key={m.id}>
@@ -300,7 +300,7 @@ export function MapScreen() {
                 )}
                 <Link
                   to="/clocks"
-                  className="inline-flex h-12 items-center justify-center rounded-control bg-sun-fill text-[15px] font-semibold text-on-sun no-underline"
+                  className="inline-flex h-12 items-center justify-center rounded-control bg-sun-fill text-control font-semibold text-on-sun no-underline"
                 >
                   Open in Site view
                 </Link>
@@ -317,7 +317,7 @@ export function MapScreen() {
 
           <Panel className="mt-auto flex flex-col gap-2 p-4">
             <SectionLabel>Keyboard</SectionLabel>
-            <p className="font-mono text-[11px] leading-[19px] text-ink-2">
+            <p className="font-mono text-tag leading-code text-ink-2">
               [ ] step the date by 6 h
               <br />
               ⇧[ ⇧] step by one day
@@ -326,7 +326,7 @@ export function MapScreen() {
               <br />
               T read the current chart as a table
             </p>
-            <p className="text-[12px] leading-[18px] text-ink-3">Single-key shortcuts can be turned off in Settings.</p>
+            <p className="text-caption leading-caption text-ink-3">Single-key shortcuts can be turned off in Settings.</p>
           </Panel>
         </aside>
       </div>
@@ -336,7 +336,7 @@ export function MapScreen() {
 
 function LegendSwatch({ children, className }: { children: React.ReactNode; className: string }) {
   return (
-    <span className="flex items-center gap-2 text-[12px] text-ink">
+    <span className="flex items-center gap-2 text-caption text-ink">
       <span className={`h-3 w-5.5 ${className}`} aria-hidden="true" />
       {children}
     </span>
@@ -371,7 +371,7 @@ function Slider({
   const pct = max > min ? ((value - min) / (max - min)) * 100 : 100
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={id} className="text-[13px] font-medium text-ink">
+      <label htmlFor={id} className="text-small font-medium text-ink">
         {label} <span className="font-mono text-sun">{display}</span>
       </label>
       <div className="relative flex h-12 items-center">

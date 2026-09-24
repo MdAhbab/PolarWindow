@@ -21,8 +21,8 @@ export function EmptyState({
   return (
     <div className="flex flex-col items-center justify-center gap-4 px-8 py-16 text-center">
       <Icon name="filter" size={44} strokeWidth={1.4} className="text-terrain-mid" />
-      <div className="text-[20px] font-semibold text-ink">{title}</div>
-      <div className="max-w-[460px] text-[14px] leading-6 text-ink-2">{detail}</div>
+      <div className="text-subhead font-semibold text-ink">{title}</div>
+      <div className="max-w-[460px] text-body leading-6 text-ink-2">{detail}</div>
       <div className="flex flex-wrap justify-center gap-3">
         {primary && (
           <Button variant="primary" onClick={primary.onClick}>
@@ -61,7 +61,7 @@ export function LoadingPanel({
     <Panel className="flex flex-col gap-4 p-6">
       <div className="flex items-baseline justify-between gap-3">
         <SectionLabel>{title}</SectionLabel>
-        <span className="font-mono text-[12px] text-ink">
+        <span className="font-mono text-caption text-ink">
           {done} / {total} {unit}
         </span>
       </div>
@@ -75,7 +75,7 @@ export function LoadingPanel({
       >
         <div className="bg-terrain-high transition-[width] duration-200" style={{ width: `${pct}%` }} />
       </div>
-      <p className="text-[13px] leading-5 text-ink-2">
+      <p className="text-small leading-5 text-ink-2">
         {note ??
           'Each site’s skyline was ray-cast once, ahead of time, against its elevation model. What is happening now is the fast part: the Sun’s and Earth’s paths for this window, checked against that skyline. Each site appears as soon as its own answer arrives.'}
       </p>
@@ -102,13 +102,13 @@ export function ErrorPanel({
       <div className="flex items-start gap-3">
         <Icon name="alert" size={26} strokeWidth={2} className="shrink-0 text-alert" />
         <div className="flex flex-col gap-1.5">
-          <div className="text-[18px] font-semibold text-ink">{title}</div>
-          <div className="text-[14px] leading-6 text-ink-2">{detail}</div>
+          <div className="text-title-lg font-semibold text-ink">{title}</div>
+          <div className="text-body leading-6 text-ink-2">{detail}</div>
         </div>
       </div>
       <Panel className="flex flex-col gap-1.5 p-4">
         <SectionLabel>What still works</SectionLabel>
-        <div className="text-[13px] leading-5 text-ink-2">{stillWorks}</div>
+        <div className="text-small leading-5 text-ink-2">{stillWorks}</div>
       </Panel>
       {(onRetry || action) && (
         <div className="flex flex-wrap gap-3">
@@ -144,15 +144,15 @@ export function UncertaintyNote({
 }) {
   return (
     <Panel className={`flex flex-col gap-2.5 border-dashed border-uncertain p-5 ${className}`}>
-      <div className="flex items-center gap-2 text-[12px] font-semibold tracking-[0.12em] text-ink-2 uppercase">
+      <div className="flex items-center gap-2 text-caption font-semibold tracking-caps text-ink-2 uppercase">
         <Icon name="uncertain" size={14} strokeWidth={2.2} />
         {title}
       </div>
-      <div className="text-[13px] leading-5 text-ink-2">{children}</div>
+      <div className="text-small leading-5 text-ink-2">{children}</div>
       {hatchKey && (
         <div className="flex items-center gap-2.5">
           <span className="hatch-uncertain h-3.5 w-16 border border-line" aria-hidden="true" />
-          <span className="text-[12px] text-ink-3">drawn at every arc edge, in every view</span>
+          <span className="text-caption text-ink-3">drawn at every arc edge, in every view</span>
         </div>
       )}
     </Panel>

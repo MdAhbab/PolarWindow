@@ -44,7 +44,7 @@ export function Button({
       'border border-line-strong text-ink hover:bg-inset hover:border-ink-3 active:bg-panel disabled:border-line disabled:text-ink-3',
     ghost: 'text-ink-2 hover:bg-inset hover:text-ink active:bg-line disabled:text-line-strong',
   }
-  const sizes = { md: 'h-12 px-4 text-[15px]', sm: 'h-12 px-3 text-[14px]' }
+  const sizes = { md: 'h-12 px-4 text-control', sm: 'h-12 px-3 text-body' }
   return (
     <button
       ref={buttonRef}
@@ -118,7 +118,7 @@ export function Chip({
       type="button"
       aria-pressed={!!selected}
       onClick={onClick}
-      className={`inline-flex h-12 shrink-0 items-center gap-2 rounded-control border px-4 text-[14px] font-semibold whitespace-nowrap transition-colors ${
+      className={`inline-flex h-12 shrink-0 items-center gap-2 rounded-control border px-4 text-body font-semibold whitespace-nowrap transition-colors ${
         selected ? on : 'border-line-strong text-ink-2 hover:bg-inset'
       }`}
     >
@@ -143,7 +143,7 @@ export function Panel({
     <As
       className={
         elevated
-          ? `border border-line-strong bg-raised shadow-[0_8px_24px_rgba(0,0,0,0.45)] ${className}`
+          ? `border border-line-strong bg-raised shadow-raised ${className}`
           : `border border-line bg-panel ${className}`
       }
     >
@@ -170,7 +170,7 @@ export function SectionLabel({
   id?: string
 }) {
   return (
-    <As id={id} className={`text-[12px] font-semibold tracking-[0.12em] text-ink-3 uppercase ${className}`}>
+    <As id={id} className={`text-caption font-semibold tracking-caps text-ink-3 uppercase ${className}`}>
       {children}
     </As>
   )
@@ -248,7 +248,7 @@ export function SampleDataBadge({ provenance = 'measured', note }: { provenance?
     <span
       role="status"
       aria-label={`Data provenance: ${copy.label}. ${title}`}
-      className="inline-flex h-7 items-center gap-2 border border-uncertain px-2.5 text-[11px] font-semibold tracking-[0.12em] text-ink-2 uppercase"
+      className="inline-flex h-7 items-center gap-2 border border-uncertain px-2.5 text-tag font-semibold tracking-caps text-ink-2 uppercase"
       title={title}
     >
       <Icon name="uncertain" size={12} strokeWidth={2.4} aria-hidden="true" />
@@ -280,7 +280,7 @@ export function SearchField({
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="min-w-0 grow bg-transparent text-[14px] outline-none placeholder:text-ink-3"
+        className="min-w-0 grow bg-transparent text-body outline-none placeholder:text-ink-3"
       />
     </div>
   )
@@ -308,7 +308,7 @@ export function Segmented<T extends string>({
             type="button"
             aria-pressed={value === o.value}
             onClick={() => onChange(o.value)}
-            className={`h-11 shrink-0 rounded-pill px-4 text-[13px] font-semibold whitespace-nowrap transition-colors ${
+            className={`h-11 shrink-0 rounded-pill px-4 text-small font-semibold whitespace-nowrap transition-colors ${
               value === o.value ? 'bg-ink text-canvas' : 'text-ink-2 hover:text-ink'
             }`}
           >
@@ -327,7 +327,7 @@ export function Segmented<T extends string>({
           type="button"
           aria-pressed={value === o.value}
           onClick={() => onChange(o.value)}
-          className={`h-12 shrink-0 px-4 text-[13px] font-semibold whitespace-nowrap transition-colors ${
+          className={`h-12 shrink-0 px-4 text-small font-semibold whitespace-nowrap transition-colors ${
             i > 0 ? 'border-l border-line-strong' : ''
           } ${value === o.value ? 'bg-ink text-canvas' : 'text-ink-2 hover:bg-inset hover:text-ink'}`}
         >

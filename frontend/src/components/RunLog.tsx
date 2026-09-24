@@ -22,20 +22,20 @@ export function RunLogDrawer() {
   return (
     <Sheet open={open} onClose={closeRunLog} title="AI activity log" wide>
       <div className="flex flex-col gap-4 p-5">
-        <p className="text-[13px] leading-5 text-ink-2">
+        <p className="text-small leading-5 text-ink-2">
           Each run of the site agents: which tools they called, with what, and whether any number in the
           answer failed the check against those tools’ results.
         </p>
         {runs.isPending ? (
-          <p role="status" className="font-mono text-[12px] text-ink-3">
+          <p role="status" className="font-mono text-caption text-ink-3">
             Loading the run log…
           </p>
         ) : runs.error ? (
           <ProblemPanel error={runs.error} fallbackTitle="Cannot load the run log" onRetry={() => void runs.refetch()} />
         ) : !runs.data?.items.length ? (
           <div className="flex flex-col gap-2 border border-line bg-panel p-5">
-            <div className="text-[17px] font-semibold text-ink">No AI runs yet.</div>
-            <p className="text-[14px] leading-6 text-ink-2">Ask a question to see how the answer is built.</p>
+            <div className="text-title font-semibold text-ink">No AI runs yet.</div>
+            <p className="text-body leading-6 text-ink-2">Ask a question to see how the answer is built.</p>
           </div>
         ) : (
           <RunTable runs={runs.data.items} focusId={runId} />
@@ -94,7 +94,7 @@ function RunTable({ runs, focusId }: { runs: AgentRunDTO[]; focusId: string | nu
               <th
                 key={h}
                 scope="col"
-                className="px-3 py-2 text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase"
+                className="px-3 py-2 text-tag font-semibold tracking-caps-md text-ink-3 uppercase"
               >
                 {h}
               </th>
@@ -117,20 +117,20 @@ function RunTable({ runs, focusId }: { runs: AgentRunDTO[]; focusId: string | nu
                       aria-expanded={isOpen}
                       aria-controls={`run-${r.id}`}
                       onClick={() => toggle(r.id)}
-                      className="-mx-2 flex min-h-11 items-start gap-2 px-2 py-1 text-left text-[13px] font-semibold text-ink hover:bg-inset"
+                      className="-mx-2 flex min-h-11 items-start gap-2 px-2 py-1 text-left text-small font-semibold text-ink hover:bg-inset"
                     >
                       <span aria-hidden="true" className={`text-ink-3 ${isOpen ? 'rotate-90' : ''}`}>
                         ›
                       </span>
                       <span className="flex flex-col">
                         <span>{r.agent}</span>
-                        <span className="font-mono text-[11px] font-normal whitespace-nowrap text-ink-3">{r.model}</span>
-                        <span className="text-[11px] font-normal text-ink-3">{timeWords(r.created_at)}</span>
+                        <span className="font-mono text-tag font-normal whitespace-nowrap text-ink-3">{r.model}</span>
+                        <span className="text-tag font-normal text-ink-3">{timeWords(r.created_at)}</span>
                       </span>
                     </button>
                   </td>
-                  <td className="px-3 py-2 text-[13px] text-ink-2">{STATUS_WORDS[r.status] ?? r.status}</td>
-                  <td className="px-3 py-2 font-mono text-[12px] leading-5 whitespace-nowrap text-ink-2 tnum">
+                  <td className="px-3 py-2 text-small text-ink-2">{STATUS_WORDS[r.status] ?? r.status}</td>
+                  <td className="px-3 py-2 font-mono text-caption leading-5 whitespace-nowrap text-ink-2 tnum">
                     {r.latency_ms} ms
                     <br />
                     {r.prompt_tokens} / {r.completion_tokens} tokens
@@ -174,10 +174,10 @@ function RunDetail({ run }: { run: AgentRunDTO }) {
       {guards.length > 0 && (
         <ul className="flex flex-col gap-1">
           {guards.map((g, i) => (
-            <li key={i} className="text-[13px] leading-5 font-semibold text-ink">
+            <li key={i} className="text-small leading-5 font-semibold text-ink">
               {guardLine(g)}
               {g.detail && g.kind === 'ungrounded_number' && (
-                <span className="block text-[12px] font-normal text-ink-2">{g.detail}</span>
+                <span className="block text-caption font-normal text-ink-2">{g.detail}</span>
               )}
             </li>
           ))}
@@ -185,14 +185,14 @@ function RunDetail({ run }: { run: AgentRunDTO }) {
       )}
       <SectionLabel as="h3">Tool calls</SectionLabel>
       {run.tool_calls.length === 0 ? (
-        <p className="text-[13px] text-ink-2">No tools were called in this run.</p>
+        <p className="text-small text-ink-2">No tools were called in this run.</p>
       ) : (
         <table className="w-full border-collapse text-left">
           <caption className="sr-only">Tool calls in this run, in order.</caption>
           <thead>
             <tr>
               {['#', 'Tool', 'Arguments', 'Latency', 'Error'].map((h) => (
-                <th key={h} scope="col" className="py-1.5 pr-3 text-[11px] font-semibold tracking-[0.1em] text-ink-3 uppercase">
+                <th key={h} scope="col" className="py-1.5 pr-3 text-tag font-semibold tracking-caps-md text-ink-3 uppercase">
                   {h}
                 </th>
               ))}
@@ -215,23 +215,23 @@ function ToolRow({ call }: { call: ToolCallDTO }) {
   const long = args.length > 120
   return (
     <tr className="border-t border-line align-top">
-      <td className="py-1.5 pr-3 font-mono text-[12px] text-ink-3 tnum">{call.seq}</td>
-      <td className="py-1.5 pr-3 font-mono text-[12px] text-ink">{call.tool}</td>
+      <td className="py-1.5 pr-3 font-mono text-caption text-ink-3 tnum">{call.seq}</td>
+      <td className="py-1.5 pr-3 font-mono text-caption text-ink">{call.tool}</td>
       <td className="max-w-[220px] py-1.5 pr-3">
-        <span className={`font-mono text-[12px] break-all text-ink-2 ${all ? '' : 'line-clamp-3'}`}>{args}</span>
+        <span className={`font-mono text-caption break-all text-ink-2 ${all ? '' : 'line-clamp-3'}`}>{args}</span>
         {long && (
           <button
             type="button"
             onClick={() => setAll((v) => !v)}
             aria-expanded={all}
-            className="min-h-11 text-[12px] font-semibold text-ink underline underline-offset-2"
+            className="min-h-11 text-caption font-semibold text-ink underline underline-offset-2"
           >
             {all ? 'Show less' : 'Show all'}
           </button>
         )}
       </td>
-      <td className="py-1.5 pr-3 font-mono text-[12px] whitespace-nowrap text-ink-2 tnum">{call.latency_ms} ms</td>
-      <td className="py-1.5 text-[12px] text-ink-2">{call.error ?? 'none'}</td>
+      <td className="py-1.5 pr-3 font-mono text-caption whitespace-nowrap text-ink-2 tnum">{call.latency_ms} ms</td>
+      <td className="py-1.5 text-caption text-ink-2">{call.error ?? 'none'}</td>
     </tr>
   )
 }

@@ -272,7 +272,7 @@ export function CompareScreen() {
       </p>
 
       {(seeded || unavailable.length > 0 || ranking.error) && (
-        <div className="flex flex-col gap-1 border-b border-line px-4 py-3 text-[13px] leading-5 text-ink-2 lg:px-6">
+        <div className="flex flex-col gap-1 border-b border-line px-4 py-3 text-small leading-5 text-ink-2 lg:px-6">
           {seeded && (
             <p>
               Seeded from {seeded.name}: its target and the three candidate sites nearest to it by distance.
@@ -342,7 +342,7 @@ export function CompareScreen() {
 
       <footer className="flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-line bg-panel px-4 py-5 lg:px-6">
         <SectionLabel className="shrink-0">The trade-off, stated</SectionLabel>
-        <p className="max-w-4xl text-[15px] leading-6 text-ink">
+        <p className="max-w-4xl text-control leading-6 text-ink">
           Ranked by {termLabel(rankBy, face).label.toLowerCase()},{' '}
           {!leads ? (
             <>
@@ -370,7 +370,7 @@ export function CompareScreen() {
             'Every candidate here survives its longest night, so the choice is genuinely about what the payload needs.'
           )}
         </p>
-        <span className="ml-auto font-mono text-[12px] text-ink-3">
+        <span className="ml-auto font-mono text-caption text-ink-3">
           {compute.status === 'ready' ? `order: ${orderLabel}` : 'computing…'}
         </span>
       </footer>
@@ -415,7 +415,7 @@ function CompareCard({
       <div className="flex items-start gap-3 border-b border-line p-4">
         {rank !== null ? (
           <span
-            className={`inline-flex size-7 shrink-0 items-center justify-center text-[14px] font-bold ${
+            className={`inline-flex size-7 shrink-0 items-center justify-center text-body font-bold ${
               leading ? 'bg-ink text-canvas' : 'bg-line-strong text-ink'
             }`}
             aria-label={`Rank ${rank}`}
@@ -426,7 +426,7 @@ function CompareCard({
           // No place can be stated: the badge carries the range the server
           // gives, in the uncertain ink and dashed edge, never a number alone.
           <span
-            className="inline-flex h-7 min-w-7 shrink-0 items-center justify-center border border-dashed border-uncertain px-1 text-[12px] font-bold text-uncertain"
+            className="inline-flex h-7 min-w-7 shrink-0 items-center justify-center border border-dashed border-uncertain px-1 text-caption font-bold text-uncertain"
             aria-label={label?.title ?? 'Rank not stated'}
             title={label?.title}
           >
@@ -434,23 +434,23 @@ function CompareCard({
           </span>
         )}
         <div className="flex min-w-0 flex-col gap-0.5">
-          <div className="text-[17px] font-semibold">
+          <div className="text-title font-semibold">
             {site.code} — {site.name}
           </div>
           {label && (
             <div
-              className={`text-[13px] font-semibold ${label.tone === 'uncertain' ? 'text-uncertain' : 'text-ink'}`}
+              className={`text-small font-semibold ${label.tone === 'uncertain' ? 'text-uncertain' : 'text-ink'}`}
               title={label.title}
             >
               {label.text}
               {label.title && <span className="sr-only"> ({label.title})</span>}
             </div>
           )}
-          {tied && <div className="text-[12px] text-ink-2">tied — the data cannot separate these</div>}
-          <div className="font-mono text-[11px] text-ink-3">{coords(site.latDeg, site.lonDeg)}</div>
+          {tied && <div className="text-caption text-ink-2">tied — the data cannot separate these</div>}
+          <div className="font-mono text-tag text-ink-3">{coords(site.latDeg, site.lonDeg)}</div>
         </div>
         {over && (
-          <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 bg-alert-deep px-2 py-1 text-[11px] font-semibold tracking-[0.08em] text-alert uppercase">
+          <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 bg-alert-deep px-2 py-1 text-tag font-semibold tracking-caps-sm text-alert uppercase">
             <Icon name="alert" size={12} strokeWidth={2.4} />
             Over limit
           </span>
@@ -487,7 +487,7 @@ function CompareCard({
 
       <div className="flex flex-col gap-3 p-4">
         <div className="flex flex-col gap-1.5">
-          <span className="text-[11px] font-semibold tracking-[0.1em] text-sun uppercase">Sun over the window</span>
+          <span className="text-tag font-semibold tracking-caps-md text-sun uppercase">Sun over the window</span>
           <Ribbon
             arcs={metrics.sun.arcs}
             windowStartH={metrics.windowStartH}
@@ -498,7 +498,7 @@ function CompareCard({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <span className="text-[11px] font-semibold tracking-[0.1em] text-earth uppercase">Time it can call home</span>
+          <span className="text-tag font-semibold tracking-caps-md text-earth uppercase">Time it can call home</span>
           <Ribbon
             arcs={metrics.earth.arcs}
             windowStartH={metrics.windowStartH}
@@ -510,7 +510,7 @@ function CompareCard({
       </div>
 
       <div className="mt-auto border-t border-line bg-raised p-4">
-        <p className="text-[14px] leading-6 text-ink">
+        <p className="text-body leading-6 text-ink">
           {over
             ? `${metrics.sun.longestDownOpen ? 'At least ' : ''}${Math.round(metrics.sun.longestDownH - SURVIVAL_LIMIT_H)} h over the limit in a single block. ${site.note}`
             : metrics.sun.longestDownOpen
@@ -535,8 +535,8 @@ function Mini({
 }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] font-semibold tracking-[0.08em] text-ink-3 uppercase">{label}</span>
-      <span className={`text-[22px] leading-6 font-semibold tnum ${tone}`}>
+      <span className="text-micro font-semibold tracking-caps-sm text-ink-3 uppercase">{label}</span>
+      <span className={`text-figure-sm leading-6 font-semibold tnum ${tone}`}>
         {bound(open)}
         {Math.round(value)}
       </span>
