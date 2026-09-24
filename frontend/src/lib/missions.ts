@@ -1,12 +1,13 @@
 import type {
   CoordinateKind,
+  MissionSource,
   InstrumentType,
   Mission,
   MissionStatus,
   PublishedDate,
 } from './api/adapters'
 import type { Site } from './types'
-import { precisionWords } from './format'
+import { dateWords, shortDate } from './format'
 
 /**
  * The words the mission surfaces use for the API's enums.
@@ -99,9 +100,35 @@ export function coordinateKindWords(kind: CoordinateKind, featureName?: string |
   }
 }
 
-/** A published date in words, with how precisely it is known: "late 2027 (to the year)". */
-export function publishedWords(d: PublishedDate): string {
-  return `${d.asPublished} (${precisionWords(d.precision)})`
+/** A source's own phrase, without the editorial brackets it carries ("[CST]"). */
+export function cleanPhrase(s: string): string {
+  return s.replace(/[[\]]/g, '').replace(/\s+/g, ' ').trim()
+}
+
+const hhmm = (ms: number) => {
+  const d = new Date(ms)
+  return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} UTC`
+}
+
+/**
+ * A published date as the screen shows it.
+ *
+ * Known to the minute or the day, the date itself is written in words: "6 Mar
+ * 2025, 17:30 UTC", "22 Feb 2024" (`long` spells the month, for accessible
+ * names). Known only to the month, quarter or year, there is no date to write,
+ * so the source's own phrase is shown with how precisely it is known: "late
+ * 2027 (known to the year)". The phrase never carries its square brackets.
+ */
+export function publishedWords(d: PublishedDate, long = false): string {
+  const day = long ? dateWords : shortDate
+  if (d.precision === 'minute') return `${day(d.startMs)}, ${hhmm(d.startMs)}`
+  if (d.precision === 'day') return day(d.startMs)
+  return `${cleanPhrase(d.asPublished)} (known to the ${d.precision})`
+}
+
+/** The tooltip for a date written in words: the phrase as the source published it. */
+export function publishedTitle(d: PublishedDate): string | undefined {
+  return d.precision === 'minute' || d.precision === 'day' ? `As published: ${cleanPhrase(d.asPublished)}` : undefined
 }
 
 /**
@@ -126,7 +153,7 @@ export function missionDateWords(m: Mission): string {
       : m.status === 'planned' || m.status === 'in_transit'
         ? 'launch'
         : 'launched'
-  return `${verb} ${publishedWords(d.date)}`
+  return `${verb} ${publishedWords(d.date, true)}`
 }
 
 /**
@@ -179,4 +206,31 @@ export function nearestCandidates(
     .sort((a, b) => a.d - b.d || a.s.id.localeCompare(b.s.id))
     .slice(0, n)
     .map((x) => x.s)
+}
+
+const baseDomain = (url: string): string | null => {
+  try {
+    return new URL(url).hostname.split('.').slice(-2).join('.')
+  } catch {
+    return null
+  }
+}
+
+/**
+ * The name a source link carries: its publisher, never "link" (§10.3). A
+ * payload's page is often not itself in the mission's source list
+ * (science.nasa.gov beside www.nasa.gov), so a source on the same domain
+ * names it; failing that, the host name does.
+ */
+export function publisherFor(url: string, sources: MissionSource[]): string {
+  const exact = sources.find((s) => s.url === url)
+  if (exact) return exact.publisher
+  const base = baseDomain(url)
+  const same = base ? sources.find((s) => baseDomain(s.url) === base) : undefined
+  if (same) return same.publisher
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return url
+  }
 }

@@ -2,7 +2,15 @@ import { describe, expect, it } from 'vitest'
 import { adaptMission } from './api/adapters'
 import type { MissionListDTO } from './api/client'
 import listFixture from './api/__fixtures__/missions.list.json'
-import { centralAngle, missionAccessibleName, missionDate, nearestCandidates } from './missions'
+import {
+  centralAngle,
+  missionAccessibleName,
+  missionDate,
+  nearestCandidates,
+  publishedTitle,
+  publishedWords,
+  publisherFor,
+} from './missions'
 import { windowParamsFor, stepForHours } from './mission'
 import { hasVisited, markVisited } from './firstVisit'
 import type { Site } from './types'
@@ -47,7 +55,7 @@ describe('nearestCandidates ("nearest by distance")', () => {
 describe('mission list words', () => {
   it('names a row in the handoff order, with precision in words', () => {
     expect(missionAccessibleName(mission('blue-moon-mk1-viper'))).toMatch(
-      /^VIPER delivery \(Blue Moon MK1\), Blue Origin, landing late 2027 \(to the year\), Planned, carries /,
+      /^VIPER delivery \(Blue Moon MK1\), Blue Origin, landing late 2027 \(known to the year\), Planned, carries /,
     )
   })
 
@@ -98,5 +106,47 @@ describe('first visit (U1)', () => {
     }
     expect(hasVisited(broken)).toBe(true)
     expect(() => markVisited(broken)).not.toThrow()
+  })
+})
+
+describe('published dates on screen', () => {
+  it('writes a date known to the minute in words, and keeps the phrase for the tooltip only', () => {
+    const d = mission('im-2').landing!
+    expect(publishedWords(d)).toBe('6 Mar 2025, 17:30 UTC')
+    expect(publishedWords(d, true)).toBe('6 March 2025, 17:30 UTC')
+    expect(publishedTitle(d)).toBe('As published: approximately 11:30 a.m. CST March 6, 2025')
+  })
+
+  it('writes a date known to the day without a time', () => {
+    const d = mission('peregrine-m1').launch!
+    expect(publishedWords(d)).toBe('8 Jan 2024')
+  })
+
+  it('shows a coarse date as the source phrase with its precision', () => {
+    const d = mission('blue-moon-mk1-viper').landing!
+    expect(publishedWords(d)).toBe('late 2027 (known to the year)')
+    expect(publishedTitle(d)).toBeUndefined()
+  })
+
+  it('never shows square brackets', () => {
+    for (const m of list.items.map(adaptMission)) {
+      for (const d of [m.launch, m.landing]) {
+        if (!d) continue
+        expect(publishedWords(d)).not.toMatch(/[[\]]/)
+        expect(publishedTitle(d) ?? '').not.toMatch(/[[\]]/)
+      }
+    }
+  })
+})
+
+describe('source link names', () => {
+  const sources = [
+    { url: 'https://www.nasa.gov/a', title: 'A', publisher: 'NASA', accessed: '2026-09-23' },
+    { url: 'https://lroc.im-ldi.com/images/1408', title: 'B', publisher: 'LROC / Arizona State University', accessed: '2026-09-23' },
+  ]
+  it('names a link by its publisher, matching on the domain when the page itself is not listed', () => {
+    expect(publisherFor('https://lroc.im-ldi.com/images/1408', sources)).toBe('LROC / Arizona State University')
+    expect(publisherFor('https://science.nasa.gov/x', sources)).toBe('NASA')
+    expect(publisherFor('https://www.example.org/y', sources)).toBe('example.org')
   })
 })

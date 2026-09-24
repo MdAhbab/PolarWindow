@@ -5,7 +5,7 @@ import { useMission as useStore, windowFromInstants } from '../lib/store'
 import { useMission as useMissionQuery } from '../lib/api/queries'
 import { useWindowParams } from '../lib/mission'
 import { useSiteView } from '../lib/api/queries'
-import { latestAccessed, type MissionDetail, type MissionSource } from '../lib/api/adapters'
+import { latestAccessed, type MissionDetail, type MissionSource, type PublishedDate } from '../lib/api/adapters'
 import { getSites, hasSite, siteById } from '../lib/sites'
 import {
   INSTRUMENT_LABEL,
@@ -13,7 +13,9 @@ import {
   STATUS_LABEL,
   coordinateKindWords,
   nearestCandidates,
+  publishedTitle,
   publishedWords,
+  publisherFor,
 } from '../lib/missions'
 import { coords, dateTimeWords, isoDateWords } from '../lib/format'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
@@ -146,9 +148,9 @@ export function MissionDetailScreen() {
         <Panel as="section" className="flex flex-col gap-3 p-5">
           <SectionLabel>Dates</SectionLabel>
           <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 text-[14px]">
-            <Row term="Launch">{m.launch ? publishedWords(m.launch) : u}</Row>
-            <Row term="Landing">{m.landing ? publishedWords(m.landing) : u}</Row>
-            <Row term="End of mission">{m.endOfMission ? publishedWords(m.endOfMission) : u}</Row>
+            <Row term="Launch">{m.launch ? <DateText date={m.launch} /> : u}</Row>
+            <Row term="Landing">{m.landing ? <DateText date={m.landing} /> : u}</Row>
+            <Row term="End of mission">{m.endOfMission ? <DateText date={m.endOfMission} /> : u}</Row>
             <Row term="Planned time on the surface">
               {m.plannedSurfaceDays !== null ? `${m.plannedSurfaceDays} days` : u}
             </Row>
@@ -244,6 +246,11 @@ export function MissionDetailScreen() {
   )
 }
 
+/** A published date in words; the source's own phrase is its tooltip. */
+function DateText({ date }: { date: PublishedDate }) {
+  return <span title={publishedTitle(date)}>{publishedWords(date)}</span>
+}
+
 function Row({ term, children }: { term: string; children: ReactNode }) {
   return (
     <>
@@ -255,20 +262,12 @@ function Row({ term, children }: { term: string; children: ReactNode }) {
 
 /** A source link whose text is the publisher, never "link". */
 function SourceLink({ url, sources, what }: { url: string; sources: MissionSource[]; what: string }) {
-  const publisher = sources.find((s) => s.url === url)?.publisher ?? hostOf(url)
+  const publisher = publisherFor(url, sources)
   return (
     <a href={url} target="_blank" rel="noreferrer" aria-label={`${publisher}, source for ${what}`}>
       {publisher}
     </a>
   )
-}
-
-function hostOf(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, '')
-  } catch {
-    return url
-  }
 }
 
 function Payloads({ mission: m, asOf }: { mission: MissionDetail; asOf: string | null }) {

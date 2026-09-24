@@ -5,6 +5,7 @@ import {
   STATUS_LABEL,
   missionDate,
   missionDateWords,
+  publishedTitle,
   publishedWords,
 } from '../lib/missions'
 import { Icon } from './Icon'
@@ -308,7 +309,9 @@ export function ProgrammeTimeline({
                     <td className="px-4 py-2.5 text-[13px] text-ink-2">{m.provider ?? <Unconfirmed />}</td>
                     <td className="px-4 py-2.5 text-[13px] text-ink-2">
                       {d ? (
-                        `${d.which === 'launch' ? 'Launch: ' : ''}${publishedWords(d.date)}`
+                        <span title={publishedTitle(d.date)}>
+                          {`${d.which === 'launch' ? 'Launch: ' : ''}${publishedWords(d.date)}`}
+                        </span>
                       ) : (
                         <Unconfirmed />
                       )}
