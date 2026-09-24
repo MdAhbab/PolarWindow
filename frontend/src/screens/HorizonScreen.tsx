@@ -37,11 +37,14 @@ export function HorizonScreen() {
   const blockIdx = Math.round((blockAz / 360) * metrics.mask.elDeg.length) % metrics.mask.elDeg.length
   const rangeM = metrics.mask.rangeM[blockIdx]
   const elDeg = metrics.mask.elDeg[blockIdx]
-  const heightM = Math.tan((elDeg * Math.PI) / 180) * rangeM
-
-  // How many whole degrees of bearing sit above the Sun's highest elevation.
+  // Where terrain is modelled the skyline is the terrain's own silhouette, even
+  // where it lies below level, so the bearing the Sun set on names a real
+  // feature. On a smooth Moon there is none to name.
+  const byTerrain = terrainModelled && worst?.blockedByBearingDeg !== undefined
+  // The highest the Sun gets in this window: one of the API's own samples.
   const sunMax = metrics.sun.samples.reduce((m, s) => Math.max(m, s.elDeg), -90)
-  const blockedBearings = Array.from(metrics.mask.elDeg).filter((e) => e > sunMax).length
+  const hemisphere = site.latDeg < 0 ? 'S' : 'N'
+  const nightWords = worst ? hoursWithUnit(worst.hours, 0, metrics.sun.longestDownOpen) : ''
 
   return (
     <div className="flex grow flex-col">
@@ -75,7 +78,7 @@ export function HorizonScreen() {
               <HorizonProfile metrics={metrics} cursorH={cursorH} className="min-w-[860px]" />
             </div>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line px-4 py-3">
-              <Legend swatch="h-[3px] w-5 bg-sun-fill">Sun over one lunar day</Legend>
+              <Legend swatch="h-[3px] w-5 bg-sun-fill">Sun over this window</Legend>
               <Legend swatch="h-[3px] w-5 bg-earth-fill">Earth libration loop</Legend>
               <Legend swatch="h-2.5 w-5 bg-terrain-low border-t-2 border-terrain-high">Terrain skyline</Legend>
               <Legend swatch="h-3 w-5 hatch-blocked">Sun behind terrain</Legend>
@@ -86,12 +89,20 @@ export function HorizonScreen() {
           <Panel className="flex flex-col gap-3 p-5">
             <h2 className="text-[17px] font-semibold">Why the dashed line matters</h2>
             <p className="max-w-3xl text-[14px] leading-6 text-ink-2">
-              The dashed line is where the horizon would be on a smooth Moon. Everything between it and the
-              grey silhouette is rock that a globe-only calculation ignores — and at{' '}
-              {Math.abs(site.latDeg).toFixed(1)}°S the Sun spends its entire day inside that band, never
-              climbing above {degrees(sunMax, 2)}. Out of 360 bearings,{' '}
-              <strong className="text-ink">{blockedBearings}</strong> have terrain standing higher than the
-              Sun ever gets.
+              {terrainModelled ? (
+                <>
+                  The dashed line is level, 0°: where a globe-only tool puts the horizon. The grey silhouette is
+                  the terrain’s real skyline, and at {Math.abs(site.latDeg).toFixed(1)}°{hemisphere} the Sun never
+                  climbs above {degrees(sunMax, 2)} in this window, so that skyline, not level, decides when it
+                  sets.
+                </>
+              ) : (
+                <>
+                  Outside the polar terrain model the skyline is a smooth Moon, so the silhouette and the dashed
+                  line are the same line: every sunset here is the Sun going below a flat horizon. In this window
+                  the Sun climbs to {degrees(sunMax, 2)}.
+                </>
+              )}
             </p>
           </Panel>
         </div>
@@ -99,15 +110,22 @@ export function HorizonScreen() {
         <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-[320px]">
           <Panel elevated className="flex flex-col gap-3 p-5">
             <SectionLabel>The feature that costs you</SectionLabel>
-            <div className="text-[20px] font-semibold">
-              Skyline at {bearing(blockAz)} {compass(blockAz)}
-            </div>
-            <div className="font-mono text-[12px] leading-5 text-ink-2">
-              elevation {degrees(elDeg, 2)}
-              <br />
-              range {Math.round(rangeM).toLocaleString()} m<br />
-              rise {Math.round(heightM)} m above the site plane
-            </div>
+            {byTerrain ? (
+              <>
+                <div className="text-[20px] font-semibold">
+                  Skyline at {bearing(blockAz)} {compass(blockAz)}
+                </div>
+                <div className="font-mono text-[12px] leading-5 text-ink-2">
+                  elevation {degrees(elDeg, 2)}
+                  <br />
+                  range {Math.round(rangeM).toLocaleString()} m
+                </div>
+              </>
+            ) : (
+              <div className="text-[20px] font-semibold">
+                {worst ? 'None: the horizon itself' : 'None in this window'}
+              </div>
+            )}
             {worst && (
               <div className="flex items-baseline gap-2 border-t border-line pt-3">
                 <span className="text-[40px] leading-10 font-semibold tracking-[-0.02em] tnum">
@@ -121,24 +139,32 @@ export function HorizonScreen() {
             )}
           </Panel>
 
-          <UncertaintyNote>
-            The hatched band on the silhouette is the skyline’s own error at each bearing: the elevation
-            model’s vertical error ({view.meta ? `up to ±${view.meta.uncertainty.demVerticalErrorM} m` : 'a few metres'})
-            seen from the range of that bearing’s blocker, so it is wide for a near ridge and thin for a far
-            one. Where the Sun path runs inside it the crossing time is uncertain by{' '}
-            <span className="font-mono text-earth-soft">
-              {worst?.grazing ? 'more than can be timed (grazing)' : edgeMargin(worst, terrainModelled)}
-            </span>
-            .
+          <UncertaintyNote hatchKey={terrainModelled}>
+            {terrainModelled ? (
+              <>
+                The hatched band on the silhouette is the skyline’s own error at each bearing: the elevation
+                model’s vertical error (
+                {view.meta ? `up to ±${view.meta.uncertainty.demVerticalErrorM} m` : 'a few metres'}) seen from
+                the range of that bearing’s blocker, so it is wide for a near ridge and thin for a far one. Where
+                the Sun path runs inside it the crossing time is uncertain by{' '}
+                <span className="font-mono text-earth-soft">
+                  {worst?.grazing ? 'more than can be timed (grazing)' : edgeMargin(worst, terrainModelled)}
+                </span>
+                .
+              </>
+            ) : (
+              'No elevation model covers this site, so its skyline has no stated error and the crossing times carry no margin. Real hills could only block more.'
+            )}
           </UncertaintyNote>
 
           <Panel className="flex flex-col gap-2 p-5">
             <SectionLabel>Read it in one line</SectionLabel>
             <p className="text-[14px] leading-6 text-ink-2">
-              {worst
-                ? `The Sun clears every bearing except a stretch near ${compass(blockAz)}. It crosses into
-                   that shadow once a month and stays there ${hoursWithUnit(worst.hours, 0, metrics.sun.longestDownOpen)}.`
-                : 'The Sun clears the skyline at every bearing in this window. Nothing here blocks it.'}
+              {!worst
+                ? 'The Sun clears the skyline at every bearing in this window. Nothing here blocks it.'
+                : byTerrain
+                  ? `The Sun clears every bearing except a stretch near ${compass(blockAz)}. It crosses into that shadow and stays there ${nightWords}.`
+                  : `The Sun sets below the horizon itself here, for ${nightWords} in this window; no ridge is responsible.`}
             </p>
           </Panel>
         </aside>
