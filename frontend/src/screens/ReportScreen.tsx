@@ -13,7 +13,7 @@ import { Mark } from '../components/Icon'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
 import { rankLabel } from '../lib/rank'
 import { comparisonCsv, download } from '../lib/export'
-import { edgeMargin, hoursWithUnit, msFromModelH, percent, shortDate } from '../lib/format'
+import { TERM, edgeMargin, hoursWithUnit, msFromModelH, percent, shortDate } from '../lib/format'
 
 /**
  * S6 — the one page a planner can hand over.
@@ -178,15 +178,15 @@ export function ReportScreen() {
                     </span>
                   )}
                 </div>
-                <Figure label="Sunlight" value={hoursWithUnit(m.sun.upHours)} tone="text-sun" />
-                <Figure label="Earth contact" value={hoursWithUnit(m.earth.upHours)} tone="text-earth" />
+                <Figure label={TERM.sunHours.public} value={hoursWithUnit(m.sun.upHours)} tone="text-sun" />
+                <Figure label={TERM.earthHours.public} value={hoursWithUnit(m.earth.upHours)} tone="text-earth" />
                 <Figure
-                  label={over ? 'Longest dark gap ▲' : 'Longest dark gap'}
+                  label={over ? `${TERM.longestDark.public} ▲` : TERM.longestDark.public}
                   value={hoursWithUnit(m.sun.longestDownH, 0, m.sun.longestDownOpen)}
                   tone={over ? 'text-alert' : 'text-ink'}
                 />
                 <Figure
-                  label="Longest RF blackout"
+                  label={TERM.longestBlackout.public}
                   value={hoursWithUnit(m.earth.longestDownH, 0, m.earth.longestDownOpen)}
                   tone="text-ink"
                 />

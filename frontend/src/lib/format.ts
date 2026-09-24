@@ -1,15 +1,11 @@
 import type { Face } from './types'
 
 /**
- * The approximation mark. It is no longer printed before every value (U13):
- * seven per screen was noise, and at 375 px it pushed the 64 px numbers
- * against the tile edge. Instead each screen carries one line, `ESTIMATES`,
- * and the marks that make a real claim stay: "≥" for a lower bound and "±"
- * for a timing margin.
+ * The one line per screen that replaces the "≈" once printed before every
+ * value (U13): seven per screen was noise, and at 375 px it pushed the 64 px
+ * numbers against the tile edge. The marks that make a real claim stay: "≥"
+ * for a lower bound and "±" for a timing margin.
  */
-export const APPROX = '≈'
-
-/** The one line per screen that replaces the per-value "≈" (U13). */
 export const ESTIMATES =
   'All figures are estimates from the lunar elevation model and the ephemeris, not flight values. “≥” marks a value the window cut short; “±” is its timing margin.'
 

@@ -79,7 +79,7 @@ export function buildSiteSummary(s: SummaryInput): Summary {
 
   out.push(`${s.siteName}, at ${lat}. Over ${spanWords(s.windowHours)}${when ? ` from ${when}` : ''}:`)
   out.push(`Sunlight ${round(s.sunUpH)} hours, ${pct(s.sunFraction)} of the time.`)
-  out.push(`Earth in view ${round(s.earthUpH)} hours, ${pct(s.earthFraction)}.`)
+  out.push(`It can call home for ${round(s.earthUpH)} hours, ${pct(s.earthFraction)}.`)
 
   // No gap at all is a measurement too, and says so plainly rather than as
   // "about 0 hours, 120 hours inside the limit".
@@ -104,9 +104,9 @@ export function buildSiteSummary(s: SummaryInput): Summary {
   }
 
   if (s.silenceH <= 0 && !s.silenceOpen) {
-    out.push('Earth stayed in view the whole time.')
+    out.push('It can call home the whole time.')
   } else {
-    let silence = `Longest silence with Earth: ${duration(s.silenceH, s.silenceOpen, s.silenceToleranceH, s.silenceGrazing)}.`
+    let silence = `Longest time it can't call home: ${duration(s.silenceH, s.silenceOpen, s.silenceToleranceH, s.silenceGrazing)}.`
     if (s.silenceOpen) silence += ' The real one is longer.'
     out.push(silence)
   }

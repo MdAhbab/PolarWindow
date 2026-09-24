@@ -5,6 +5,7 @@ import { EmptyState, ErrorPanel, LoadingPanel, UncertaintyNote } from '../compon
 import { KeyNumberTile } from '../components/KeyNumbers'
 import { Panel, SectionLabel, Button } from '../components/ui'
 import { ArcTable } from '../components/ArcTable'
+import { TERM } from '../lib/format'
 
 /**
  * S8 — the four states that decide whether anyone trusts this, live rather
@@ -77,7 +78,7 @@ export function StatesScreen() {
                   every number that does not depend on Earth is still live.
                 </>
               }
-              stillWorks="Sunlight, the dark gap, the map, the horizon profile, and compare on the Sun metrics. Earth contact and RF blackout go blank — not zero."
+              stillWorks="Sunlight, the dark gap, the map, the horizon profile, and compare on the Sun metrics. The time it can call home, and the longest time it can’t, go blank — not zero."
             />
             <div className="mt-4 flex gap-3">
               <Button
@@ -89,7 +90,7 @@ export function StatesScreen() {
             </div>
             <div className="mt-4 grid grid-cols-2 gap-4">
               <KeyNumberTile
-                label="Earth contact"
+                label={TERM.earthHours.public}
                 value={metrics?.earth.upHours ?? 0}
                 tone="earth"
                 size="sm"
@@ -98,7 +99,7 @@ export function StatesScreen() {
                 footnote={earthEphemerisDown ? 'blank, not zero' : undefined}
               />
               <KeyNumberTile
-                label="Sunlight"
+                label={TERM.sunHours.public}
                 value={metrics?.sun.upHours ?? 0}
                 tone="sun"
                 size="sm"

@@ -344,7 +344,7 @@ function describe(m: SiteMetrics): string {
   const terrain =
     dark?.blockedByElDeg !== undefined && dark.blockedByElDeg > TERRAIN_BLOCKER_MIN_EL_DEG
   return (
-    `Two clock rings over ${Math.round(m.windowHours)} hours. ` +
+    `Sun and Earth rings over ${Math.round(m.windowHours)} hours. ` +
     `Outer amber ring: the Sun is above the local skyline for about ${Math.round(m.sun.upHours)} hours ` +
     `in ${m.sun.arcs.filter((a) => a.up).length} stretches. ` +
     `Inner cyan ring: Earth is above it for about ${Math.round(m.earth.upHours)} hours. ` +

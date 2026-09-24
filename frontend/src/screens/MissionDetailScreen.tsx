@@ -478,7 +478,7 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-semibold tracking-[0.1em] text-earth uppercase">Earth contact</span>
+            <span className="text-[11px] font-semibold tracking-[0.1em] text-earth uppercase">Time it can call home</span>
             <Ribbon
               arcs={metrics.earth.arcs}
               windowStartH={metrics.windowStartH}
