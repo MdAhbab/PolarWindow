@@ -1,0 +1,1102 @@
+{
+ "captured_at": "2026-09-24T08:05:24.710Z",
+ "api_base": "http://localhost:8000/api/v1",
+ "entries": {
+  "GET /healthz": {
+   "file": "r/0001.json",
+   "status": 200
+  },
+  "GET /sites?kind=all&limit=100": {
+   "file": "r/0002.json",
+   "status": 200
+  },
+  "GET /sites/connecting-ridge/metrics?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0003.json",
+   "status": 200
+  },
+  "GET /sites/connecting-ridge/windows?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0004.json",
+   "status": 200
+  },
+  "GET /sites/connecting-ridge/timeline?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0005.json",
+   "status": 200
+  },
+  "GET /sites/connecting-ridge/horizon?step_deg=1": {
+   "file": "r/0006.json",
+   "status": 200
+  },
+  "GET /missions": {
+   "file": "r/0007.json",
+   "status": 200
+  },
+  "GET /sites/de-gerlache-kocher-massif/metrics?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0008.json",
+   "status": 200
+  },
+  "GET /sites/peak-near-shackleton/metrics?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0009.json",
+   "status": 200
+  },
+  "GET /sites/de-gerlache-rim/metrics?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0010.json",
+   "status": 200
+  },
+  "GET /sites/shackleton-rim/metrics?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0011.json",
+   "status": 200
+  },
+  "GET /sites/malapert-massif/metrics?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0012.json",
+   "status": 200
+  },
+  "GET /sites/haworth-rim/metrics?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0013.json",
+   "status": 200
+  },
+  "GET /sites/nobile-rim-2/metrics?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0014.json",
+   "status": 200
+  },
+  "GET /sites/faustini-rim/metrics?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0015.json",
+   "status": 200
+  },
+  "GET /sites/shoemaker-rim/metrics?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0016.json",
+   "status": 200
+  },
+  "GET /sites/nobile-rim-1/metrics?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0017.json",
+   "status": 200
+  },
+  "GET /sites/amundsen-rim/metrics?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0018.json",
+   "status": 200
+  },
+  "GET /sites/leibnitz-beta-plateau/metrics?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0019.json",
+   "status": 200
+  },
+  "GET /sites/sverdrup-rim/metrics?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0020.json",
+   "status": 200
+  },
+  "GET /sites/cabeus-rim/metrics?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0021.json",
+   "status": 200
+  },
+  "GET /sites/shackleton-rim/windows?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0022.json",
+   "status": 200
+  },
+  "GET /sites/peak-near-shackleton/windows?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0023.json",
+   "status": 200
+  },
+  "GET /sites/de-gerlache-rim/windows?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0024.json",
+   "status": 200
+  },
+  "GET /sites/shoemaker-rim/windows?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0025.json",
+   "status": 200
+  },
+  "GET /sites/haworth-rim/windows?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0026.json",
+   "status": 200
+  },
+  "GET /sites/de-gerlache-kocher-massif/windows?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0027.json",
+   "status": 200
+  },
+  "GET /sites/malapert-massif/windows?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0028.json",
+   "status": 200
+  },
+  "GET /sites/faustini-rim/windows?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0029.json",
+   "status": 200
+  },
+  "GET /sites/nobile-rim-1/windows?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0030.json",
+   "status": 200
+  },
+  "GET /sites/nobile-rim-2/windows?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0031.json",
+   "status": 200
+  },
+  "GET /sites/leibnitz-beta-plateau/windows?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0032.json",
+   "status": 200
+  },
+  "GET /sites/amundsen-rim/windows?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0033.json",
+   "status": 200
+  },
+  "GET /sites/sverdrup-rim/windows?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0034.json",
+   "status": 200
+  },
+  "GET /sites/shackleton-rim/horizon?step_deg=1": {
+   "file": "r/0035.json",
+   "status": 200
+  },
+  "GET /sites/cabeus-rim/windows?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0036.json",
+   "status": 200
+  },
+  "GET /sites/de-gerlache-kocher-massif/horizon?step_deg=1": {
+   "file": "r/0037.json",
+   "status": 200
+  },
+  "GET /sites/peak-near-shackleton/horizon?step_deg=1": {
+   "file": "r/0038.json",
+   "status": 200
+  },
+  "GET /sites/de-gerlache-rim/horizon?step_deg=1": {
+   "file": "r/0039.json",
+   "status": 200
+  },
+  "GET /sites/haworth-rim/horizon?step_deg=1": {
+   "file": "r/0040.json",
+   "status": 200
+  },
+  "GET /sites/nobile-rim-1/horizon?step_deg=1": {
+   "file": "r/0041.json",
+   "status": 200
+  },
+  "GET /sites/shoemaker-rim/horizon?step_deg=1": {
+   "file": "r/0042.json",
+   "status": 200
+  },
+  "GET /sites/faustini-rim/horizon?step_deg=1": {
+   "file": "r/0043.json",
+   "status": 200
+  },
+  "GET /sites/malapert-massif/horizon?step_deg=1": {
+   "file": "r/0044.json",
+   "status": 200
+  },
+  "GET /sites/nobile-rim-2/horizon?step_deg=1": {
+   "file": "r/0045.json",
+   "status": 200
+  },
+  "GET /sites/amundsen-rim/horizon?step_deg=1": {
+   "file": "r/0046.json",
+   "status": 200
+  },
+  "GET /sites/sverdrup-rim/horizon?step_deg=1": {
+   "file": "r/0047.json",
+   "status": 200
+  },
+  "GET /sites/leibnitz-beta-plateau/horizon?step_deg=1": {
+   "file": "r/0048.json",
+   "status": 200
+  },
+  "GET /sites/cabeus-rim/horizon?step_deg=1": {
+   "file": "r/0049.json",
+   "status": 200
+  },
+  "GET /sites/connecting-ridge/calendar?start=2027-03-01T00%3A00%3A00Z&end=2028-03-01T00%3A00%3A00Z&bucket=month": {
+   "file": "r/0050.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"connecting-ridge\",\"malapert-massif\",\"faustini-rim\"],\"start\":\"2027-03-14T00:00:00Z\",\"end\":\"2027-04-12T12:45:00Z\",\"step_s\":900,\"rank_by\":\"longest_dark_s\"}": {
+   "file": "r/0051.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"connecting-ridge\",\"de-gerlache-rim\",\"malapert-massif\"],\"start\":\"2027-03-14T00:00:00Z\",\"end\":\"2027-04-12T12:45:00Z\",\"step_s\":900,\"rank_by\":\"sunlit_s\"}": {
+   "file": "r/0052.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"connecting-ridge\",\"malapert-massif\",\"faustini-rim\"],\"start\":\"2027-03-14T00:00:00Z\",\"end\":\"2027-04-12T12:45:00Z\",\"step_s\":900,\"rank_by\":\"sunlit_s\"}": {
+   "file": "r/0053.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"connecting-ridge\",\"de-gerlache-rim\",\"malapert-massif\"],\"start\":\"2027-03-14T00:00:00Z\",\"end\":\"2027-04-12T12:45:00Z\",\"step_s\":900,\"rank_by\":\"earth_contact_s\"}": {
+   "file": "r/0054.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"connecting-ridge\",\"malapert-massif\",\"faustini-rim\"],\"start\":\"2027-03-14T00:00:00Z\",\"end\":\"2027-04-12T12:45:00Z\",\"step_s\":900,\"rank_by\":\"earth_contact_s\"}": {
+   "file": "r/0055.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"connecting-ridge\",\"de-gerlache-rim\",\"malapert-massif\"],\"start\":\"2027-03-14T00:00:00Z\",\"end\":\"2027-04-12T12:45:00Z\",\"step_s\":900,\"rank_by\":\"longest_dark_s\"}": {
+   "file": "r/0056.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"connecting-ridge\",\"de-gerlache-rim\",\"malapert-massif\"],\"start\":\"2027-03-14T00:00:00Z\",\"end\":\"2027-04-12T12:45:00Z\",\"step_s\":900,\"rank_by\":\"longest_blackout_s\"}": {
+   "file": "r/0057.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"connecting-ridge\",\"malapert-massif\",\"faustini-rim\"],\"start\":\"2027-03-14T00:00:00Z\",\"end\":\"2027-04-12T12:45:00Z\",\"step_s\":900,\"rank_by\":\"longest_blackout_s\"}": {
+   "file": "r/0058.json",
+   "status": 200
+  },
+  "GET /missions/peregrine-m1": {
+   "file": "r/0059.json",
+   "status": 200
+  },
+  "GET /sites/feature-sinus-viscositatis/calendar?start=2027-03-01T00%3A00%3A00Z&end=2028-03-01T00%3A00%3A00Z&bucket=month": {
+   "file": "r/0060.json",
+   "status": 200
+  },
+  "GET /sites/feature-sinus-viscositatis/metrics?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0061.json",
+   "status": 200
+  },
+  "GET /sites/feature-sinus-viscositatis/windows?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0062.json",
+   "status": 200
+  },
+  "GET /sites/feature-sinus-viscositatis/horizon?step_deg=1": {
+   "file": "r/0063.json",
+   "status": 200
+  },
+  "GET /sites/feature-sinus-viscositatis/timeline?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0064.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"feature-sinus-viscositatis\",\"cabeus-rim\",\"malapert-massif\",\"haworth-rim\"],\"start\":\"2027-03-14T00:00:00Z\",\"end\":\"2027-04-12T12:45:00Z\",\"step_s\":900,\"rank_by\":\"longest_dark_s\"}": {
+   "file": "r/0065.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"feature-sinus-viscositatis\",\"cabeus-rim\",\"malapert-massif\",\"haworth-rim\"],\"start\":\"2027-03-14T00:00:00Z\",\"end\":\"2027-04-12T12:45:00Z\",\"step_s\":900,\"rank_by\":\"sunlit_s\"}": {
+   "file": "r/0066.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"feature-sinus-viscositatis\",\"cabeus-rim\",\"malapert-massif\",\"haworth-rim\"],\"start\":\"2027-03-14T00:00:00Z\",\"end\":\"2027-04-12T12:45:00Z\",\"step_s\":900,\"rank_by\":\"earth_contact_s\"}": {
+   "file": "r/0067.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"feature-sinus-viscositatis\",\"cabeus-rim\",\"malapert-massif\",\"haworth-rim\"],\"start\":\"2027-03-14T00:00:00Z\",\"end\":\"2027-04-12T12:45:00Z\",\"step_s\":900,\"rank_by\":\"longest_blackout_s\"}": {
+   "file": "r/0068.json",
+   "status": 200
+  },
+  "GET /missions/im-1": {
+   "file": "r/0069.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-1/calendar?start=2027-03-01T00%3A00%3A00Z&end=2028-03-01T00%3A00%3A00Z&bucket=month": {
+   "file": "r/0070.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-1/windows?start=2024-02-22T00%3A00%3A00Z&end=2024-03-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0071.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-1/metrics?start=2024-02-22T00%3A00%3A00Z&end=2024-03-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0072.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-1/horizon?step_deg=1": {
+   "file": "r/0073.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-1/calendar?start=2024-02-01T00%3A00%3A00Z&end=2025-02-01T00%3A00%3A00Z&bucket=month": {
+   "file": "r/0074.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-1/timeline?start=2024-02-22T00%3A00%3A00Z&end=2024-03-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0075.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"connecting-ridge\",\"malapert-massif\",\"faustini-rim\"],\"start\":\"2024-02-22T00:00:00Z\",\"end\":\"2024-03-01T00:00:00Z\",\"step_s\":900,\"rank_by\":\"longest_dark_s\"}": {
+   "file": "r/0076.json",
+   "status": 200
+  },
+  "GET /sites/faustini-rim/metrics?start=2024-02-22T00%3A00%3A00Z&end=2024-03-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0077.json",
+   "status": 200
+  },
+  "GET /sites/faustini-rim/windows?start=2024-02-22T00%3A00%3A00Z&end=2024-03-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0078.json",
+   "status": 200
+  },
+  "GET /sites/connecting-ridge/windows?start=2024-02-22T00%3A00%3A00Z&end=2024-03-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0079.json",
+   "status": 200
+  },
+  "GET /sites/malapert-massif/windows?start=2024-02-22T00%3A00%3A00Z&end=2024-03-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0080.json",
+   "status": 200
+  },
+  "GET /sites/malapert-massif/metrics?start=2024-02-22T00%3A00%3A00Z&end=2024-03-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0081.json",
+   "status": 200
+  },
+  "GET /sites/connecting-ridge/metrics?start=2024-02-22T00%3A00%3A00Z&end=2024-03-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0082.json",
+   "status": 200
+  },
+  "GET /sites/nobile-rim-2/windows?start=2024-02-22T00%3A00%3A00Z&end=2024-03-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0083.json",
+   "status": 200
+  },
+  "GET /sites/nobile-rim-2/metrics?start=2024-02-22T00%3A00%3A00Z&end=2024-03-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0084.json",
+   "status": 200
+  },
+  "GET /sites/leibnitz-beta-plateau/windows?start=2024-02-22T00%3A00%3A00Z&end=2024-03-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0085.json",
+   "status": 200
+  },
+  "GET /sites/leibnitz-beta-plateau/metrics?start=2024-02-22T00%3A00%3A00Z&end=2024-03-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0086.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"mission-im-1\",\"malapert-massif\",\"nobile-rim-2\",\"leibnitz-beta-plateau\"],\"start\":\"2024-02-22T00:00:00Z\",\"end\":\"2024-03-01T00:00:00Z\",\"step_s\":900,\"rank_by\":\"longest_dark_s\"}": {
+   "file": "r/0087.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"mission-im-1\",\"malapert-massif\",\"nobile-rim-2\",\"leibnitz-beta-plateau\"],\"start\":\"2024-02-22T00:00:00Z\",\"end\":\"2024-03-01T00:00:00Z\",\"step_s\":900,\"rank_by\":\"sunlit_s\"}": {
+   "file": "r/0088.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"mission-im-1\",\"malapert-massif\",\"nobile-rim-2\",\"leibnitz-beta-plateau\"],\"start\":\"2024-02-22T00:00:00Z\",\"end\":\"2024-03-01T00:00:00Z\",\"step_s\":900,\"rank_by\":\"earth_contact_s\"}": {
+   "file": "r/0089.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"mission-im-1\",\"malapert-massif\",\"nobile-rim-2\",\"leibnitz-beta-plateau\"],\"start\":\"2024-02-22T00:00:00Z\",\"end\":\"2024-03-01T00:00:00Z\",\"step_s\":900,\"rank_by\":\"longest_blackout_s\"}": {
+   "file": "r/0090.json",
+   "status": 200
+  },
+  "GET /missions/blue-ghost-m1": {
+   "file": "r/0091.json",
+   "status": 200
+  },
+  "GET /sites/mission-blue-ghost-m1/calendar?start=2027-03-01T00%3A00%3A00Z&end=2028-03-01T00%3A00%3A00Z&bucket=month": {
+   "file": "r/0092.json",
+   "status": 200
+  },
+  "GET /sites/mission-blue-ghost-m1/metrics?start=2025-03-02T08%3A30%3A00Z&end=2025-03-17T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0093.json",
+   "status": 200
+  },
+  "GET /sites/mission-blue-ghost-m1/windows?start=2025-03-02T08%3A30%3A00Z&end=2025-03-17T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0094.json",
+   "status": 200
+  },
+  "GET /sites/mission-blue-ghost-m1/horizon?step_deg=1": {
+   "file": "r/0095.json",
+   "status": 200
+  },
+  "GET /sites/mission-blue-ghost-m1/calendar?start=2025-03-01T00%3A00%3A00Z&end=2026-03-01T00%3A00%3A00Z&bucket=month": {
+   "file": "r/0096.json",
+   "status": 200
+  },
+  "GET /sites/mission-blue-ghost-m1/timeline?start=2025-03-02T08%3A30%3A00Z&end=2025-03-17T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0097.json",
+   "status": 200
+  },
+  "GET /sites/faustini-rim/metrics?start=2025-03-02T08%3A30%3A00Z&end=2025-03-17T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0098.json",
+   "status": 200
+  },
+  "GET /sites/connecting-ridge/metrics?start=2025-03-02T08%3A30%3A00Z&end=2025-03-17T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0099.json",
+   "status": 200
+  },
+  "GET /sites/malapert-massif/windows?start=2025-03-02T08%3A30%3A00Z&end=2025-03-17T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0100.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"connecting-ridge\",\"malapert-massif\",\"faustini-rim\"],\"start\":\"2025-03-02T08:30:00Z\",\"end\":\"2025-03-17T00:00:00Z\",\"step_s\":900,\"rank_by\":\"longest_dark_s\"}": {
+   "file": "r/0101.json",
+   "status": 200
+  },
+  "GET /sites/connecting-ridge/windows?start=2025-03-02T08%3A30%3A00Z&end=2025-03-17T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0102.json",
+   "status": 200
+  },
+  "GET /sites/malapert-massif/metrics?start=2025-03-02T08%3A30%3A00Z&end=2025-03-17T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0103.json",
+   "status": 200
+  },
+  "GET /sites/faustini-rim/windows?start=2025-03-02T08%3A30%3A00Z&end=2025-03-17T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0104.json",
+   "status": 200
+  },
+  "GET /sites/amundsen-rim/windows?start=2025-03-02T08%3A30%3A00Z&end=2025-03-17T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0105.json",
+   "status": 200
+  },
+  "GET /sites/amundsen-rim/metrics?start=2025-03-02T08%3A30%3A00Z&end=2025-03-17T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0106.json",
+   "status": 200
+  },
+  "GET /sites/leibnitz-beta-plateau/windows?start=2025-03-02T08%3A30%3A00Z&end=2025-03-17T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0107.json",
+   "status": 200
+  },
+  "GET /sites/leibnitz-beta-plateau/metrics?start=2025-03-02T08%3A30%3A00Z&end=2025-03-17T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0108.json",
+   "status": 200
+  },
+  "GET /sites/nobile-rim-1/windows?start=2025-03-02T08%3A30%3A00Z&end=2025-03-17T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0109.json",
+   "status": 200
+  },
+  "GET /sites/nobile-rim-1/metrics?start=2025-03-02T08%3A30%3A00Z&end=2025-03-17T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0110.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"mission-blue-ghost-m1\",\"amundsen-rim\",\"nobile-rim-1\",\"leibnitz-beta-plateau\"],\"start\":\"2025-03-02T08:30:00Z\",\"end\":\"2025-03-17T00:00:00Z\",\"step_s\":900,\"rank_by\":\"longest_dark_s\"}": {
+   "file": "r/0111.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"mission-blue-ghost-m1\",\"amundsen-rim\",\"nobile-rim-1\",\"leibnitz-beta-plateau\"],\"start\":\"2025-03-02T08:30:00Z\",\"end\":\"2025-03-17T00:00:00Z\",\"step_s\":900,\"rank_by\":\"sunlit_s\"}": {
+   "file": "r/0112.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"mission-blue-ghost-m1\",\"amundsen-rim\",\"nobile-rim-1\",\"leibnitz-beta-plateau\"],\"start\":\"2025-03-02T08:30:00Z\",\"end\":\"2025-03-17T00:00:00Z\",\"step_s\":900,\"rank_by\":\"earth_contact_s\"}": {
+   "file": "r/0113.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"mission-blue-ghost-m1\",\"amundsen-rim\",\"nobile-rim-1\",\"leibnitz-beta-plateau\"],\"start\":\"2025-03-02T08:30:00Z\",\"end\":\"2025-03-17T00:00:00Z\",\"step_s\":900,\"rank_by\":\"longest_blackout_s\"}": {
+   "file": "r/0114.json",
+   "status": 200
+  },
+  "GET /missions/im-2": {
+   "file": "r/0115.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/calendar?start=2027-03-01T00%3A00%3A00Z&end=2028-03-01T00%3A00%3A00Z&bucket=month": {
+   "file": "r/0116.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/calendar?start=2025-03-01T00%3A00%3A00Z&end=2026-03-01T00%3A00%3A00Z&bucket=month": {
+   "file": "r/0117.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/windows?start=2025-03-06T17%3A30%3A00Z&end=2025-03-07T06%3A15%3A00Z&step_s=900": {
+   "file": "r/0118.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/metrics?start=2025-03-06T17%3A30%3A00Z&end=2025-03-07T06%3A15%3A00Z&step_s=900": {
+   "file": "r/0119.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/horizon?step_deg=1": {
+   "file": "r/0120.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/timeline?start=2025-03-06T17%3A30%3A00Z&end=2025-03-07T06%3A15%3A00Z&step_s=900": {
+   "file": "r/0121.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"connecting-ridge\",\"malapert-massif\",\"faustini-rim\"],\"start\":\"2025-03-06T17:30:00Z\",\"end\":\"2025-03-07T06:15:00Z\",\"step_s\":900,\"rank_by\":\"longest_dark_s\"}": {
+   "file": "r/0122.json",
+   "status": 200
+  },
+  "GET /sites/connecting-ridge/windows?start=2025-03-06T17%3A30%3A00Z&end=2025-03-07T06%3A15%3A00Z&step_s=900": {
+   "file": "r/0123.json",
+   "status": 200
+  },
+  "GET /sites/connecting-ridge/metrics?start=2025-03-06T17%3A30%3A00Z&end=2025-03-07T06%3A15%3A00Z&step_s=900": {
+   "file": "r/0124.json",
+   "status": 200
+  },
+  "GET /sites/faustini-rim/metrics?start=2025-03-06T17%3A30%3A00Z&end=2025-03-07T06%3A15%3A00Z&step_s=900": {
+   "file": "r/0125.json",
+   "status": 200
+  },
+  "GET /sites/malapert-massif/metrics?start=2025-03-06T17%3A30%3A00Z&end=2025-03-07T06%3A15%3A00Z&step_s=900": {
+   "file": "r/0126.json",
+   "status": 200
+  },
+  "GET /sites/malapert-massif/windows?start=2025-03-06T17%3A30%3A00Z&end=2025-03-07T06%3A15%3A00Z&step_s=900": {
+   "file": "r/0127.json",
+   "status": 200
+  },
+  "GET /sites/faustini-rim/windows?start=2025-03-06T17%3A30%3A00Z&end=2025-03-07T06%3A15%3A00Z&step_s=900": {
+   "file": "r/0128.json",
+   "status": 200
+  },
+  "GET /sites/leibnitz-beta-plateau/metrics?start=2025-03-06T17%3A30%3A00Z&end=2025-03-07T06%3A15%3A00Z&step_s=900": {
+   "file": "r/0129.json",
+   "status": 200
+  },
+  "GET /sites/nobile-rim-2/metrics?start=2025-03-06T17%3A30%3A00Z&end=2025-03-07T06%3A15%3A00Z&step_s=900": {
+   "file": "r/0130.json",
+   "status": 200
+  },
+  "GET /sites/nobile-rim-1/metrics?start=2025-03-06T17%3A30%3A00Z&end=2025-03-07T06%3A15%3A00Z&step_s=900": {
+   "file": "r/0131.json",
+   "status": 200
+  },
+  "GET /sites/nobile-rim-2/windows?start=2025-03-06T17%3A30%3A00Z&end=2025-03-07T06%3A15%3A00Z&step_s=900": {
+   "file": "r/0132.json",
+   "status": 200
+  },
+  "GET /sites/nobile-rim-1/windows?start=2025-03-06T17%3A30%3A00Z&end=2025-03-07T06%3A15%3A00Z&step_s=900": {
+   "file": "r/0133.json",
+   "status": 200
+  },
+  "GET /sites/leibnitz-beta-plateau/windows?start=2025-03-06T17%3A30%3A00Z&end=2025-03-07T06%3A15%3A00Z&step_s=900": {
+   "file": "r/0134.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"mission-im-2\",\"leibnitz-beta-plateau\",\"nobile-rim-2\",\"nobile-rim-1\"],\"start\":\"2025-03-06T17:30:00Z\",\"end\":\"2025-03-07T06:15:00Z\",\"step_s\":900,\"rank_by\":\"longest_dark_s\"}": {
+   "file": "r/0135.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"mission-im-2\",\"leibnitz-beta-plateau\",\"nobile-rim-2\",\"nobile-rim-1\"],\"start\":\"2025-03-06T17:30:00Z\",\"end\":\"2025-03-07T06:15:00Z\",\"step_s\":900,\"rank_by\":\"sunlit_s\"}": {
+   "file": "r/0136.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"mission-im-2\",\"leibnitz-beta-plateau\",\"nobile-rim-2\",\"nobile-rim-1\"],\"start\":\"2025-03-06T17:30:00Z\",\"end\":\"2025-03-07T06:15:00Z\",\"step_s\":900,\"rank_by\":\"earth_contact_s\"}": {
+   "file": "r/0137.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"mission-im-2\",\"leibnitz-beta-plateau\",\"nobile-rim-2\",\"nobile-rim-1\"],\"start\":\"2025-03-06T17:30:00Z\",\"end\":\"2025-03-07T06:15:00Z\",\"step_s\":900,\"rank_by\":\"longest_blackout_s\"}": {
+   "file": "r/0138.json",
+   "status": 200
+  },
+  "GET /missions/griffin-1": {
+   "file": "r/0139.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/calendar?start=2027-03-01T00%3A00%3A00Z&end=2028-03-01T00%3A00%3A00Z&bucket=month": {
+   "file": "r/0140.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/windows?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0141.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/metrics?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0142.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/horizon?step_deg=1": {
+   "file": "r/0143.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/timeline?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0144.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"feature-mons-mouton\",\"leibnitz-beta-plateau\",\"nobile-rim-1\",\"nobile-rim-2\"],\"start\":\"2027-03-14T00:00:00Z\",\"end\":\"2027-04-12T12:45:00Z\",\"step_s\":900,\"rank_by\":\"longest_dark_s\"}": {
+   "file": "r/0145.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"feature-mons-mouton\",\"leibnitz-beta-plateau\",\"nobile-rim-1\",\"nobile-rim-2\"],\"start\":\"2027-03-14T00:00:00Z\",\"end\":\"2027-04-12T12:45:00Z\",\"step_s\":900,\"rank_by\":\"sunlit_s\"}": {
+   "file": "r/0146.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"feature-mons-mouton\",\"leibnitz-beta-plateau\",\"nobile-rim-1\",\"nobile-rim-2\"],\"start\":\"2027-03-14T00:00:00Z\",\"end\":\"2027-04-12T12:45:00Z\",\"step_s\":900,\"rank_by\":\"earth_contact_s\"}": {
+   "file": "r/0147.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"feature-mons-mouton\",\"leibnitz-beta-plateau\",\"nobile-rim-1\",\"nobile-rim-2\"],\"start\":\"2027-03-14T00:00:00Z\",\"end\":\"2027-04-12T12:45:00Z\",\"step_s\":900,\"rank_by\":\"longest_blackout_s\"}": {
+   "file": "r/0148.json",
+   "status": 200
+  },
+  "GET /missions/im-3": {
+   "file": "r/0149.json",
+   "status": 200
+  },
+  "GET /sites/feature-reiner-gamma/calendar?start=2027-03-01T00%3A00%3A00Z&end=2028-03-01T00%3A00%3A00Z&bucket=month": {
+   "file": "r/0150.json",
+   "status": 200
+  },
+  "GET /sites/feature-reiner-gamma/calendar?start=2026-01-01T00%3A00%3A00Z&end=2027-01-01T00%3A00%3A00Z&bucket=month": {
+   "file": "r/0151.json",
+   "status": 200
+  },
+  "GET /sites/feature-reiner-gamma/windows?start=2026-01-01T00%3A00%3A00Z&end=2026-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0152.json",
+   "status": 200
+  },
+  "GET /sites/feature-reiner-gamma/metrics?start=2026-01-01T00%3A00%3A00Z&end=2026-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0153.json",
+   "status": 200
+  },
+  "GET /sites/feature-reiner-gamma/horizon?step_deg=1": {
+   "file": "r/0154.json",
+   "status": 200
+  },
+  "GET /sites/feature-reiner-gamma/timeline?start=2026-01-01T00%3A00%3A00Z&end=2026-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0155.json",
+   "status": 200
+  },
+  "GET /sites/connecting-ridge/metrics?start=2026-01-01T00%3A00%3A00Z&end=2026-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0156.json",
+   "status": 200
+  },
+  "GET /sites/faustini-rim/metrics?start=2026-01-01T00%3A00%3A00Z&end=2026-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0157.json",
+   "status": 200
+  },
+  "GET /sites/connecting-ridge/windows?start=2026-01-01T00%3A00%3A00Z&end=2026-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0158.json",
+   "status": 200
+  },
+  "GET /sites/malapert-massif/metrics?start=2026-01-01T00%3A00%3A00Z&end=2026-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0159.json",
+   "status": 200
+  },
+  "GET /sites/malapert-massif/windows?start=2026-01-01T00%3A00%3A00Z&end=2026-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0160.json",
+   "status": 200
+  },
+  "GET /sites/faustini-rim/windows?start=2026-01-01T00%3A00%3A00Z&end=2026-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0161.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"connecting-ridge\",\"malapert-massif\",\"faustini-rim\"],\"start\":\"2026-01-01T00:00:00Z\",\"end\":\"2026-01-31T00:00:00Z\",\"step_s\":900,\"rank_by\":\"longest_dark_s\"}": {
+   "file": "r/0162.json",
+   "status": 200
+  },
+  "GET /sites/cabeus-rim/windows?start=2026-01-01T00%3A00%3A00Z&end=2026-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0163.json",
+   "status": 200
+  },
+  "GET /sites/cabeus-rim/metrics?start=2026-01-01T00%3A00%3A00Z&end=2026-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0164.json",
+   "status": 200
+  },
+  "GET /sites/haworth-rim/windows?start=2026-01-01T00%3A00%3A00Z&end=2026-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0165.json",
+   "status": 200
+  },
+  "GET /sites/haworth-rim/metrics?start=2026-01-01T00%3A00%3A00Z&end=2026-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0166.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"feature-reiner-gamma\",\"cabeus-rim\",\"haworth-rim\",\"malapert-massif\"],\"start\":\"2026-01-01T00:00:00Z\",\"end\":\"2026-01-31T00:00:00Z\",\"step_s\":900,\"rank_by\":\"longest_dark_s\"}": {
+   "file": "r/0167.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"feature-reiner-gamma\",\"cabeus-rim\",\"haworth-rim\",\"malapert-massif\"],\"start\":\"2026-01-01T00:00:00Z\",\"end\":\"2026-01-31T00:00:00Z\",\"step_s\":900,\"rank_by\":\"sunlit_s\"}": {
+   "file": "r/0168.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"feature-reiner-gamma\",\"cabeus-rim\",\"haworth-rim\",\"malapert-massif\"],\"start\":\"2026-01-01T00:00:00Z\",\"end\":\"2026-01-31T00:00:00Z\",\"step_s\":900,\"rank_by\":\"earth_contact_s\"}": {
+   "file": "r/0169.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"feature-reiner-gamma\",\"cabeus-rim\",\"haworth-rim\",\"malapert-massif\"],\"start\":\"2026-01-01T00:00:00Z\",\"end\":\"2026-01-31T00:00:00Z\",\"step_s\":900,\"rank_by\":\"longest_blackout_s\"}": {
+   "file": "r/0170.json",
+   "status": 200
+  },
+  "GET /missions/blue-moon-mk1-viper": {
+   "file": "r/0171.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/calendar?start=2027-01-01T00%3A00%3A00Z&end=2028-01-01T00%3A00%3A00Z&bucket=month": {
+   "file": "r/0172.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/windows?start=2027-01-01T00%3A00%3A00Z&end=2027-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0173.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/metrics?start=2027-01-01T00%3A00%3A00Z&end=2027-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0174.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/timeline?start=2027-01-01T00%3A00%3A00Z&end=2027-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0175.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"connecting-ridge\",\"malapert-massif\",\"faustini-rim\"],\"start\":\"2027-01-01T00:00:00Z\",\"end\":\"2027-01-31T00:00:00Z\",\"step_s\":900,\"rank_by\":\"longest_dark_s\"}": {
+   "file": "r/0176.json",
+   "status": 200
+  },
+  "GET /sites/faustini-rim/metrics?start=2027-01-01T00%3A00%3A00Z&end=2027-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0177.json",
+   "status": 200
+  },
+  "GET /sites/faustini-rim/windows?start=2027-01-01T00%3A00%3A00Z&end=2027-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0178.json",
+   "status": 200
+  },
+  "GET /sites/malapert-massif/metrics?start=2027-01-01T00%3A00%3A00Z&end=2027-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0179.json",
+   "status": 200
+  },
+  "GET /sites/connecting-ridge/windows?start=2027-01-01T00%3A00%3A00Z&end=2027-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0180.json",
+   "status": 200
+  },
+  "GET /sites/connecting-ridge/metrics?start=2027-01-01T00%3A00%3A00Z&end=2027-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0181.json",
+   "status": 200
+  },
+  "GET /sites/malapert-massif/windows?start=2027-01-01T00%3A00%3A00Z&end=2027-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0182.json",
+   "status": 200
+  },
+  "GET /sites/nobile-rim-2/metrics?start=2027-01-01T00%3A00%3A00Z&end=2027-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0183.json",
+   "status": 200
+  },
+  "GET /sites/nobile-rim-2/windows?start=2027-01-01T00%3A00%3A00Z&end=2027-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0184.json",
+   "status": 200
+  },
+  "GET /sites/nobile-rim-1/metrics?start=2027-01-01T00%3A00%3A00Z&end=2027-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0185.json",
+   "status": 200
+  },
+  "GET /sites/nobile-rim-1/windows?start=2027-01-01T00%3A00%3A00Z&end=2027-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0186.json",
+   "status": 200
+  },
+  "GET /sites/leibnitz-beta-plateau/windows?start=2027-01-01T00%3A00%3A00Z&end=2027-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0187.json",
+   "status": 200
+  },
+  "GET /sites/leibnitz-beta-plateau/metrics?start=2027-01-01T00%3A00%3A00Z&end=2027-01-31T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0188.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"feature-mons-mouton\",\"leibnitz-beta-plateau\",\"nobile-rim-1\",\"nobile-rim-2\"],\"start\":\"2027-01-01T00:00:00Z\",\"end\":\"2027-01-31T00:00:00Z\",\"step_s\":900,\"rank_by\":\"longest_dark_s\"}": {
+   "file": "r/0189.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"feature-mons-mouton\",\"leibnitz-beta-plateau\",\"nobile-rim-1\",\"nobile-rim-2\"],\"start\":\"2027-01-01T00:00:00Z\",\"end\":\"2027-01-31T00:00:00Z\",\"step_s\":900,\"rank_by\":\"sunlit_s\"}": {
+   "file": "r/0190.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"feature-mons-mouton\",\"leibnitz-beta-plateau\",\"nobile-rim-1\",\"nobile-rim-2\"],\"start\":\"2027-01-01T00:00:00Z\",\"end\":\"2027-01-31T00:00:00Z\",\"step_s\":900,\"rank_by\":\"earth_contact_s\"}": {
+   "file": "r/0191.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"feature-mons-mouton\",\"leibnitz-beta-plateau\",\"nobile-rim-1\",\"nobile-rim-2\"],\"start\":\"2027-01-01T00:00:00Z\",\"end\":\"2027-01-31T00:00:00Z\",\"step_s\":900,\"rank_by\":\"longest_blackout_s\"}": {
+   "file": "r/0192.json",
+   "status": 200
+  },
+  "GET /missions/moon-base-2028-astrobotic-a": {
+   "file": "r/0193.json",
+   "status": 200
+  },
+  "GET /missions/moon-base-2028-astrobotic-b": {
+   "file": "r/0194.json",
+   "status": 200
+  },
+  "GET /missions/moon-base-2028-firefly": {
+   "file": "r/0195.json",
+   "status": 200
+  },
+  "GET /missions/moon-base-2028-intuitive-machines": {
+   "file": "r/0196.json",
+   "status": 200
+  },
+  "GET /missions/blue-ghost-m2": {
+   "file": "r/0197.json",
+   "status": 200
+  },
+  "GET /missions/blue-ghost-m3": {
+   "file": "r/0198.json",
+   "status": 200
+  },
+  "GET /missions/blue-ghost-m4": {
+   "file": "r/0199.json",
+   "status": 200
+  },
+  "GET /missions/blue-moon-mk1-endurance": {
+   "file": "r/0200.json",
+   "status": 200
+  },
+  "GET /missions/apex-1": {
+   "file": "r/0201.json",
+   "status": 200
+  },
+  "GET /sites/feature-schrodinger/calendar?start=2027-03-01T00%3A00%3A00Z&end=2028-03-01T00%3A00%3A00Z&bucket=month": {
+   "file": "r/0202.json",
+   "status": 200
+  },
+  "GET /sites/feature-schrodinger/windows?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0203.json",
+   "status": 200
+  },
+  "GET /sites/feature-schrodinger/metrics?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0204.json",
+   "status": 200
+  },
+  "GET /sites/feature-schrodinger/horizon?step_deg=1": {
+   "file": "r/0205.json",
+   "status": 200
+  },
+  "GET /sites/feature-schrodinger/timeline?start=2027-03-14T00%3A00%3A00Z&end=2027-04-12T12%3A45%3A00Z&step_s=900": {
+   "file": "r/0206.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"feature-schrodinger\",\"amundsen-rim\",\"faustini-rim\",\"sverdrup-rim\"],\"start\":\"2027-03-14T00:00:00Z\",\"end\":\"2027-04-12T12:45:00Z\",\"step_s\":900,\"rank_by\":\"longest_dark_s\"}": {
+   "file": "r/0207.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"feature-schrodinger\",\"amundsen-rim\",\"faustini-rim\",\"sverdrup-rim\"],\"start\":\"2027-03-14T00:00:00Z\",\"end\":\"2027-04-12T12:45:00Z\",\"step_s\":900,\"rank_by\":\"sunlit_s\"}": {
+   "file": "r/0208.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"feature-schrodinger\",\"amundsen-rim\",\"faustini-rim\",\"sverdrup-rim\"],\"start\":\"2027-03-14T00:00:00Z\",\"end\":\"2027-04-12T12:45:00Z\",\"step_s\":900,\"rank_by\":\"earth_contact_s\"}": {
+   "file": "r/0209.json",
+   "status": 200
+  },
+  "POST /compare {\"site_ids\":[\"feature-schrodinger\",\"amundsen-rim\",\"faustini-rim\",\"sverdrup-rim\"],\"start\":\"2027-03-14T00:00:00Z\",\"end\":\"2027-04-12T12:45:00Z\",\"step_s\":900,\"rank_by\":\"longest_blackout_s\"}": {
+   "file": "r/0210.json",
+   "status": 200
+  },
+  "GET /missions/cs-8": {
+   "file": "r/0211.json",
+   "status": 200
+  },
+  "GET /missions/ct-4": {
+   "file": "r/0212.json",
+   "status": 200
+  },
+  "GET /missions/cx-2": {
+   "file": "r/0213.json",
+   "status": 200
+  },
+  "GET /missions/im-4": {
+   "file": "r/0214.json",
+   "status": 200
+  },
+  "GET /missions/nope": {
+   "file": "r/0215.json",
+   "status": 404
+  },
+  "GET /sites/mission-im-2/metrics?start=2025-03-01T00%3A00%3A00Z&end=2025-04-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0216.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/windows?start=2025-03-01T00%3A00%3A00Z&end=2025-04-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0217.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/metrics?start=2025-04-01T00%3A00%3A00Z&end=2025-05-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0218.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/windows?start=2025-04-01T00%3A00%3A00Z&end=2025-05-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0219.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/metrics?start=2025-05-01T00%3A00%3A00Z&end=2025-06-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0220.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/windows?start=2025-05-01T00%3A00%3A00Z&end=2025-06-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0221.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/metrics?start=2025-06-01T00%3A00%3A00Z&end=2025-07-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0222.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/windows?start=2025-06-01T00%3A00%3A00Z&end=2025-07-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0223.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/windows?start=2025-07-01T00%3A00%3A00Z&end=2025-08-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0224.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/metrics?start=2025-07-01T00%3A00%3A00Z&end=2025-08-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0225.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/metrics?start=2025-08-01T00%3A00%3A00Z&end=2025-09-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0226.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/windows?start=2025-08-01T00%3A00%3A00Z&end=2025-09-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0227.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/windows?start=2025-09-01T00%3A00%3A00Z&end=2025-10-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0228.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/metrics?start=2025-09-01T00%3A00%3A00Z&end=2025-10-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0229.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/windows?start=2025-10-01T00%3A00%3A00Z&end=2025-11-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0230.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/metrics?start=2025-10-01T00%3A00%3A00Z&end=2025-11-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0231.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/metrics?start=2025-11-01T00%3A00%3A00Z&end=2025-12-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0232.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/windows?start=2025-11-01T00%3A00%3A00Z&end=2025-12-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0233.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/metrics?start=2025-12-01T00%3A00%3A00Z&end=2026-01-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0234.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/windows?start=2025-12-01T00%3A00%3A00Z&end=2026-01-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0235.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/metrics?start=2026-01-01T00%3A00%3A00Z&end=2026-02-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0236.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/windows?start=2026-01-01T00%3A00%3A00Z&end=2026-02-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0237.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/metrics?start=2026-02-01T00%3A00%3A00Z&end=2026-03-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0238.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/windows?start=2026-02-01T00%3A00%3A00Z&end=2026-03-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0239.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/timeline?start=2026-02-01T00%3A00%3A00Z&end=2026-03-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0240.json",
+   "status": 200
+  },
+  "GET /sites/mission-im-2/calendar?start=2026-02-01T00%3A00%3A00Z&end=2027-02-01T00%3A00%3A00Z&bucket=month": {
+   "file": "r/0241.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/metrics?start=2027-01-01T00%3A00%3A00Z&end=2027-02-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0242.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/windows?start=2027-01-01T00%3A00%3A00Z&end=2027-02-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0243.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/metrics?start=2027-02-01T00%3A00%3A00Z&end=2027-03-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0244.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/windows?start=2027-02-01T00%3A00%3A00Z&end=2027-03-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0245.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/metrics?start=2027-03-01T00%3A00%3A00Z&end=2027-04-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0246.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/windows?start=2027-03-01T00%3A00%3A00Z&end=2027-04-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0247.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/metrics?start=2027-04-01T00%3A00%3A00Z&end=2027-05-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0248.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/windows?start=2027-04-01T00%3A00%3A00Z&end=2027-05-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0249.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/metrics?start=2027-05-01T00%3A00%3A00Z&end=2027-06-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0250.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/windows?start=2027-05-01T00%3A00%3A00Z&end=2027-06-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0251.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/metrics?start=2027-06-01T00%3A00%3A00Z&end=2027-07-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0252.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/windows?start=2027-06-01T00%3A00%3A00Z&end=2027-07-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0253.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/metrics?start=2027-07-01T00%3A00%3A00Z&end=2027-08-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0254.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/windows?start=2027-07-01T00%3A00%3A00Z&end=2027-08-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0255.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/metrics?start=2027-08-01T00%3A00%3A00Z&end=2027-09-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0256.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/windows?start=2027-08-01T00%3A00%3A00Z&end=2027-09-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0257.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/metrics?start=2027-09-01T00%3A00%3A00Z&end=2027-10-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0258.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/windows?start=2027-09-01T00%3A00%3A00Z&end=2027-10-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0259.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/metrics?start=2027-10-01T00%3A00%3A00Z&end=2027-11-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0260.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/windows?start=2027-10-01T00%3A00%3A00Z&end=2027-11-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0261.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/windows?start=2027-11-01T00%3A00%3A00Z&end=2027-12-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0262.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/metrics?start=2027-11-01T00%3A00%3A00Z&end=2027-12-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0263.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/metrics?start=2027-12-01T00%3A00%3A00Z&end=2028-01-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0264.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/windows?start=2027-12-01T00%3A00%3A00Z&end=2028-01-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0265.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/timeline?start=2027-12-01T00%3A00%3A00Z&end=2028-01-01T00%3A00%3A00Z&step_s=900": {
+   "file": "r/0266.json",
+   "status": 200
+  },
+  "GET /sites/feature-mons-mouton/calendar?start=2027-12-01T00%3A00%3A00Z&end=2028-12-01T00%3A00%3A00Z&bucket=month": {
+   "file": "r/0267.json",
+   "status": 200
+  },
+  "POST /agents/ask {\"question\":\"Which south-polar CLPS targets carry volatiles instruments, and what is their longest night?\"}": {
+   "file": "r/0268.json",
+   "status": 200
+  },
+  "GET /agents/runs?limit=50": {
+   "file": "r/0269.json",
+   "status": 200
+  },
+  "POST /agents/explain {\"site_id\":\"mission-im-2\",\"start\":\"2025-03-06T17:30:00Z\",\"end\":\"2025-03-07T06:15:00Z\"}": {
+   "file": "r/0270.json",
+   "status": 200
+  },
+  "POST /agents/explain {\"site_id\":\"mission-blue-ghost-m1\",\"start\":\"2025-03-02T08:30:00Z\",\"end\":\"2025-03-17T00:00:00Z\"}": {
+   "file": "r/0271.json",
+   "status": 200
+  },
+  "POST /agents/explain {\"site_id\":\"feature-mons-mouton\",\"start\":\"2027-01-01T00:00:00Z\",\"end\":\"2027-01-31T00:00:00Z\"}": {
+   "file": "r/0272.json",
+   "status": 200
+  },
+  "POST /agents/advise {\"requirement\":\"200 W solar and at least 4 hours of Earth contact per day\",\"start\":\"2027-03-14T00:00:00Z\",\"end\":\"2027-04-12T12:45:00Z\"}": {
+   "file": "r/0273.json",
+   "status": 200
+  },
+  "POST /agents/brief {\"site_id\":\"connecting-ridge\",\"start\":\"2027-03-14T00:00:00Z\",\"end\":\"2027-04-12T12:45:00Z\"}": {
+   "file": "r/0274.json",
+   "status": 200
+  }
+ }
+}

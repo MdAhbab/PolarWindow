@@ -211,7 +211,7 @@ export function Unconfirmed({ asOf, className = '' }: { asOf?: string | null; cl
  * The visual treatment is unchanged in all three: same box, same hairline, same
  * uncertain icon. Only the word and the tooltip differ.
  */
-export type Provenance = 'measured' | 'partial' | 'unavailable'
+export type Provenance = 'measured' | 'partial' | 'unavailable' | 'snapshot'
 
 export const PROVENANCE_COPY: Record<Provenance, { label: string; title: string }> = {
   measured: {
@@ -224,6 +224,11 @@ export const PROVENANCE_COPY: Record<Provenance, { label: string; title: string 
     title:
       'Some inputs are missing, so parts of this screen are computed from less than the full model. Affected values say so where they appear.',
   },
+  snapshot: {
+    label: 'Cached snapshot',
+    title:
+      'The live service is not answering, so these are saved answers from it, shown exactly as it gave them. Views that were not saved say so.',
+  },
   unavailable: {
     label: 'No data',
     title:
@@ -231,8 +236,9 @@ export const PROVENANCE_COPY: Record<Provenance, { label: string; title: string 
   },
 }
 
-export function SampleDataBadge({ provenance = 'measured' }: { provenance?: Provenance }) {
+export function SampleDataBadge({ provenance = 'measured', note }: { provenance?: Provenance; note?: string }) {
   const copy = PROVENANCE_COPY[provenance]
+  const title = note ? `${copy.title} ${note}` : copy.title
   return (
     // role="status" rather than a bare span: this is the one element on screen
     // that says how much to trust everything else, and it changes when the
@@ -241,9 +247,9 @@ export function SampleDataBadge({ provenance = 'measured' }: { provenance?: Prov
     // screen reader heard the explanation and never heard the word.
     <span
       role="status"
-      aria-label={`Data provenance: ${copy.label}. ${copy.title}`}
+      aria-label={`Data provenance: ${copy.label}. ${title}`}
       className="inline-flex h-7 items-center gap-2 border border-uncertain px-2.5 text-[11px] font-semibold tracking-[0.12em] text-ink-2 uppercase"
-      title={copy.title}
+      title={title}
     >
       <Icon name="uncertain" size={12} strokeWidth={2.4} aria-hidden="true" />
       {copy.label}

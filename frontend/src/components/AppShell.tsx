@@ -10,7 +10,8 @@ import { IconButton, SampleDataBadge, Segmented, SvgDefs } from './ui'
 import { RunLogDrawer } from './RunLog'
 import { SettingsSheet } from './SettingsSheet'
 import type { Face } from '../lib/types'
-import { ESTIMATES } from '../lib/format'
+import { ESTIMATES, isoDateWords } from '../lib/format'
+import { snapshotCapturedAt } from '../lib/api/snapshot'
 
 /**
  * The five tabs (§10.1), in order. Horizon is reached from Site ("See the
@@ -71,6 +72,7 @@ export const FACES: { value: Face; label: string }[] = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const provenance = useProvenance()
+  const capturedAt = snapshotCapturedAt()
   // Selectors, not the whole store: during M1 the cursor changes sixty times a
   // second, and a whole-store subscription re-rendered the shell on each one.
   const { face, setFace, theme, setTheme, motion, setMotion, openRunLog, settingsOpen, setSettingsOpen } =
@@ -133,7 +135,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Link>
           {/* Once, at every width (U12): the one element that says how much to
               trust everything else. */}
-          <SampleDataBadge provenance={provenance} />
+          <SampleDataBadge
+            provenance={provenance}
+            note={provenance === 'snapshot' && capturedAt ? `Saved ${isoDateWords(capturedAt)}.` : undefined}
+          />
           <Segmented options={FACES} value={face} onChange={setFace} label="Detail" pill />
           <button
             type="button"

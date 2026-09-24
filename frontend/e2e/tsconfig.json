@@ -1,8 +1,18 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["node"]
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "node"
+    ]
   },
-  "include": [".", "../playwright.config.ts"]
+  "include": [
+    ".",
+    "../playwright.config.ts",
+    "../scripts"
+  ]
 }

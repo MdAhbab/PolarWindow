@@ -11,6 +11,7 @@
  * a failure lives with the code that knows what failed.
  */
 import type { components, paths } from './schema'
+import { DATA_MODE, SnapshotMiss, fromSnapshot, isSnapshotActive, markLive, snapshotTileUrl } from './snapshot'
 
 export type Schemas = components['schemas']
 export type SiteListDTO = Schemas['SiteList']
@@ -128,11 +129,15 @@ async function request<T>(
   path: string,
   { signal, query, body }: { signal?: AbortSignal; query?: Query; body?: unknown } = {},
 ): Promise<T> {
+  const method = body ? 'POST' : 'GET'
+  const pathAndQuery = `${path}${qs(query)}`
+  // A snapshot build never calls the network: the saved answers are the data.
+  if (DATA_MODE === 'snapshot') return fromSaved<T>(method, pathAndQuery, body)
   let res: Response
   try {
-    res = await fetch(`${API_BASE}${path}${qs(query)}`, {
+    res = await fetch(`${API_BASE}${pathAndQuery}`, {
       signal,
-      method: body ? 'POST' : 'GET',
+      method,
       headers: body ? { 'content-type': 'application/json' } : undefined,
       body: body ? JSON.stringify(body) : undefined,
     })
@@ -140,8 +145,16 @@ async function request<T>(
     // An abort is the caller superseding itself, not a failure. Rethrow it so
     // TanStack Query drops the result quietly instead of showing an error.
     if (cause instanceof DOMException && cause.name === 'AbortError') throw cause
-    throw new ApiUnreachable(cause)
+    // The service is unreachable: answer from the offline copy where it has
+    // this request, and say so in the badge; otherwise the error stands.
+    try {
+      return await fromSaved<T>(method, pathAndQuery, body)
+    } catch (miss) {
+      if (miss instanceof SnapshotMiss) throw new ApiUnreachable(cause)
+      throw miss
+    }
   }
+  markLive()
   if (!res.ok) {
     let parsed: unknown = null
     try {
@@ -152,6 +165,37 @@ async function request<T>(
     throw new ApiError(res.status, parsed)
   }
   return (await res.json()) as T
+}
+
+/** A saved answer, returned exactly as received; a saved error is still an error. */
+async function fromSaved<T>(method: 'GET' | 'POST', pathAndQuery: string, body: unknown): Promise<T> {
+  let saved: { status: number; json: unknown }
+  try {
+    saved = await fromSnapshot(method, pathAndQuery, body)
+  } catch (e) {
+    if (e instanceof SnapshotMiss && DATA_MODE === 'snapshot') throw new NotInSnapshot()
+    throw e
+  }
+  if (saved.status >= 400) throw new ApiError(saved.status, saved.json)
+  return saved.json as T
+}
+
+/** A view the offline copy does not hold. Says what does work, like any error here. */
+export class NotInSnapshot extends ApiError {
+  constructor() {
+    super(404, {
+      detail: {
+        title: 'Not in this offline copy',
+        detail: 'This build carries saved answers from the live service, and this view was not among them.',
+        ui: {
+          still_works:
+            'The demo path is saved: every mission and its page, the sites and dates they open, Compare and the AI log. Other dates and sites need the live service.',
+          retryable: false,
+        },
+      },
+    })
+    this.name = 'NotInSnapshot'
+  }
 }
 
 /** ISO 8601 UTC, which is what every endpoint takes. */
@@ -211,5 +255,5 @@ export const api = {
     request<AgentRunListDTO>('/agents/runs', { query: { limit }, signal }),
 
   tileUrl: (layer: 'hillshade' | 'illumination' | 'psr', z: number, x: number, y: number) =>
-    `${API_BASE}/tiles/${layer}/${z}/${x}/${y}.png`,
+    isSnapshotActive() ? snapshotTileUrl(layer, z, x, y) : `${API_BASE}/tiles/${layer}/${z}/${x}/${y}.png`,
 }

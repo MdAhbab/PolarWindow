@@ -1,0 +1,1 @@
+{"detail":{"type":"https://polar-window.dev/errors/mission-not-found","title":"That mission isn't in the list","status":404,"detail":"'nope' is not a CLPS mission in this dataset.","ui":{"still_works":"All other missions are available.","retryable":false,"action":"Back to missions"}}}

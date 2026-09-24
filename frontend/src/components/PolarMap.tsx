@@ -1,6 +1,7 @@
 import { useId, useMemo, useState } from 'react'
 import { getCandidates } from '../lib/sites'
 import { api } from '../lib/api/client'
+import { useSnapshotActive } from '../lib/api/snapshot'
 import type { Site } from '../lib/types'
 import type { SubPoint } from '../lib/subSolar'
 import { Segmented } from './ui'
@@ -259,7 +260,9 @@ export function PolarMap({
   const clipId = useId()
   const [view, setView] = useState<View>('region')
   const p = useMemo(() => projection(view), [view])
-  const tiles = useMemo(() => tilesFor(p), [p])
+  // Tiles come from the offline copy while it is in use.
+  const saved = useSnapshotActive()
+  const tiles = useMemo(() => tilesFor(p), [p, saved])
   const [failed, setFailed] = useState<ReadonlySet<string>>(() => new Set())
   const { dark, term } = useMemo(() => (sun ? shadowPaths(sun, p) : { dark: null, term: null }), [sun, p])
 
@@ -328,7 +331,7 @@ export function PolarMap({
                 projection as the pins. A tile that fails to load leaves the
                 plain ground colour, never a broken-image mark. */}
             {tiles
-              .filter((t) => !failed.has(t.key))
+              .filter((t) => !failed.has(t.href))
               .map((t) => (
                 <image
                   key={t.key}
@@ -339,7 +342,7 @@ export function PolarMap({
                   width={t.size + 0.5}
                   height={t.size + 0.5}
                   preserveAspectRatio="none"
-                  onError={() => setFailed((f) => new Set(f).add(t.key))}
+                  onError={() => setFailed((f) => new Set(f).add(t.href))}
                 />
               ))}
 

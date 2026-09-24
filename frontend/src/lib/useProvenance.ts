@@ -1,4 +1,5 @@
 import { useHealth } from './api/queries'
+import { useSnapshotActive } from './api/snapshot'
 import type { Provenance } from '../components/ui'
 
 /**
@@ -10,6 +11,8 @@ import type { Provenance } from '../components/ui'
  */
 export function useProvenance(): Provenance {
   const { data, isPending, error } = useHealth()
+  // Saved answers are on screen: that is the first thing to know about them.
+  if (useSnapshotActive()) return 'snapshot'
   if (isPending || error || !data) return 'partial'
   const kernels = Boolean(data.kernels?.loaded)
   const dem = Boolean(data.dem?.regional_present)
