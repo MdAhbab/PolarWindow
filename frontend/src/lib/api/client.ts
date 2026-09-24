@@ -76,7 +76,9 @@ export class ApiUnreachable extends ApiError {
     super(0, {
       detail: {
         title: 'Cannot reach the service that does the calculations',
-        detail: String(cause),
+        // The browser's own message ("TypeError: Failed to fetch") says nothing
+        // a reader can act on; where the service should be does.
+        detail: `Nothing answered at ${serviceHost()}. The service may be stopped, still starting, or blocked by the network.`,
         ui: {
           still_works:
             'Nothing has been calculated incorrectly — there is simply nothing to calculate with. The interface, the terrain map and anything already on screen are unaffected.',
@@ -86,6 +88,15 @@ export class ApiUnreachable extends ApiError {
       },
     })
     this.name = 'ApiUnreachable'
+    this.cause = cause
+  }
+}
+
+function serviceHost(): string {
+  try {
+    return new URL(API_BASE).host
+  } catch {
+    return API_BASE
   }
 }
 

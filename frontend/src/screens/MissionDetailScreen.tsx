@@ -147,7 +147,7 @@ export function MissionDetailScreen() {
 
         <Panel as="section" className="flex flex-col gap-3 p-5">
           <SectionLabel>Dates</SectionLabel>
-          <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 text-[14px]">
+          <dl className="grid grid-cols-1 gap-x-4 text-[14px] sm:grid-cols-[max-content_1fr] sm:gap-y-2">
             <Row term="Launch">{m.launch ? <DateText date={m.launch} /> : u}</Row>
             <Row term="Landing">{m.landing ? <DateText date={m.landing} /> : u}</Row>
             <Row term="End of mission">{m.endOfMission ? <DateText date={m.endOfMission} /> : u}</Row>
@@ -186,7 +186,7 @@ export function MissionDetailScreen() {
         <Panel as="section" className="flex flex-col gap-3 p-5">
           <SectionLabel>Target</SectionLabel>
           {m.target ? (
-            <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 text-[14px]">
+            <dl className="grid grid-cols-1 gap-x-4 text-[14px] sm:grid-cols-[max-content_1fr] sm:gap-y-2">
               <Row term="Name">{m.target.name}</Row>
               <Row term="Coordinates">
                 <span className="font-mono text-[13px]">{coords(m.target.latDeg, m.target.lonDeg)}</span>
@@ -198,7 +198,7 @@ export function MissionDetailScreen() {
               </Row>
             </dl>
           ) : (
-            <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 text-[14px]">
+            <dl className="grid grid-cols-1 gap-x-4 text-[14px] sm:grid-cols-[max-content_1fr] sm:gap-y-2">
               <Row term="Destination">{m.targetName ?? u}</Row>
               <Row term="Coordinates">
                 {u}
@@ -251,10 +251,11 @@ function DateText({ date }: { date: PublishedDate }) {
   return <span title={publishedTitle(date)}>{publishedWords(date)}</span>
 }
 
+/** A term and its value: side by side from 640 px, stacked below it so a date is not squeezed into a column. */
 function Row({ term, children }: { term: string; children: ReactNode }) {
   return (
     <>
-      <dt className="text-ink-3">{term}</dt>
+      <dt className="mt-2 text-ink-3 first:mt-0 sm:mt-0">{term}</dt>
       <dd className="min-w-0 text-ink">{children}</dd>
     </>
   )
@@ -336,7 +337,7 @@ function Payloads({ mission: m, asOf }: { mission: MissionDetail; asOf: string |
               <li key={p.id} className="border-t border-line pt-3">
                 <h3 className="text-[14px] font-semibold text-ink">{name(p)}</h3>
                 {p.unconfirmed && <Unconfirmed asOf={asOf} />}
-                <dl className="mt-1.5 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-[13px]">
+                <dl className="mt-1.5 grid grid-cols-1 gap-x-3 text-[13px] sm:grid-cols-[max-content_1fr] sm:gap-y-1">
                   <Row term="Organisation">{p.organisation ?? <Unconfirmed asOf={asOf} />}</Row>
                   <Row term="Measures">{p.instrumentTypes.map((t) => INSTRUMENT_LABEL[t]).join(', ')}</Row>
                   <Row term="Purpose">{p.purpose}</Row>
