@@ -132,7 +132,7 @@ export function HorizonProfile({
         FLAT HORIZON 0° — what a tool that ignores terrain draws
       </text>
 
-      {/* the bearings that cost the longest gap */}
+      {/* the bearings that cost the longest night */}
       {worst && blockAz !== undefined && (
         <rect
           x={xOf(blockAz) - 26}
@@ -240,7 +240,7 @@ function describe(m: SiteMetrics): string {
     `${bearing(m.mask.maxElBearingDeg)}. The Sun's path over one lunar day is drawn against it. ` +
     (w
       ? `It passes behind terrain near bearing ${bearing(w.blockedByBearingDeg ?? 0)}, which is the ` +
-        `${Math.round(w.hours)} hour dark gap.`
-      : 'It clears the skyline at every bearing in this window.')
+        `${Math.round(w.hours)} hour night.`
+      : 'It clears the skyline at every bearing on these dates.')
   )
 }

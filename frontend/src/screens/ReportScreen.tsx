@@ -13,7 +13,7 @@ import { Mark } from '../components/Icon'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
 import { rankLabel } from '../lib/rank'
 import { comparisonCsv, download } from '../lib/export'
-import { TERM, edgeMargin, hoursWithUnit, msFromModelH, percent, shortDate } from '../lib/format'
+import { TERM, edgeMargin, hoursWithUnit, msFromModelH, percent, shortDate, spanWords } from '../lib/format'
 
 /**
  * S6 — the one page a planner can hand over.
@@ -91,13 +91,13 @@ export function ReportScreen() {
   return (
     <div className="flex grow flex-col items-center gap-4 bg-inset p-4 lg:p-8">
       <div className="flex w-full max-w-[816px] flex-wrap items-center justify-between gap-3">
-        <SectionLabel>Export — one page, Letter, light theme</SectionLabel>
+        <SectionLabel>Printable report · one page</SectionLabel>
         <div className="flex flex-wrap gap-3">
           <Button
             onClick={() =>
               download(
                 `comparison-${new Date().toISOString().slice(0, 10)}.csv`,
-                comparisonCsv(exportRows, 'longest dark gap'),
+                comparisonCsv(exportRows, 'longest night'),
                 'text/csv',
               )
             }
@@ -130,7 +130,7 @@ export function ReportScreen() {
         <div className="mt-5 flex flex-wrap items-start justify-between gap-5 sm:flex-nowrap">
           <div className="flex flex-col gap-2">
             <h1 className="text-figure leading-9 font-semibold tracking-display text-balance">
-              {compareIds.length} candidates, one {Math.round(windowHours)} h window
+              {compareIds.length} candidate sites, {spanWords(windowHours)}
             </h1>
             <p className="text-lede leading-6 text-ink-2">
               {shortDate(msFromModelH(windowStartH))} → {shortDate(msFromModelH(windowStartH + windowHours))} · battery limit{' '}
@@ -164,7 +164,7 @@ export function ReportScreen() {
                       rank === null ? 'text-uncertain' : label?.kind === 'best' ? 'text-ink' : 'text-ink-3'
                     }`}
                   >
-                    {rank ?? (itemOf[id] ? `${itemOf[id].rank_range[0]}–${itemOf[id].rank_range[1]}` : i + 1)}
+                    {rank ?? (itemOf[id] ? '–' : i + 1)}
                   </span>
                   <span className="text-control font-semibold">
                     {s.code} — {s.name.split(',')[0]}
@@ -174,19 +174,19 @@ export function ReportScreen() {
                       className={`w-full text-caption ${label.tone === 'uncertain' ? 'text-uncertain' : 'text-ink-3'}`}
                       title={label.title}
                     >
-                      {label.text}
+                      {label.kind === 'unranked' ? `Too close to call${label.title ? `: ${label.title}` : ''}` : label.text}
                     </span>
                   )}
                 </div>
-                <Figure label={TERM.sunHours.public} value={hoursWithUnit(m.sun.upHours)} tone="text-sun" />
-                <Figure label={TERM.earthHours.public} value={hoursWithUnit(m.earth.upHours)} tone="text-earth" />
+                <Figure label={TERM.sunHours.label} value={hoursWithUnit(m.sun.upHours)} tone="text-sun" />
+                <Figure label={TERM.earthHours.label} value={hoursWithUnit(m.earth.upHours)} tone="text-earth" />
                 <Figure
-                  label={over ? `${TERM.longestDark.public} ▲` : TERM.longestDark.public}
+                  label={over ? `${TERM.longestDark.label} ▲` : TERM.longestDark.label}
                   value={hoursWithUnit(m.sun.longestDownH, 0, m.sun.longestDownOpen)}
                   tone={over ? 'text-alert' : 'text-ink'}
                 />
                 <Figure
-                  label={TERM.longestBlackout.public}
+                  label={TERM.longestBlackout.label}
                   value={hoursWithUnit(m.earth.longestDownH, 0, m.earth.longestDownOpen)}
                   tone="text-ink"
                 />
@@ -197,7 +197,7 @@ export function ReportScreen() {
 
         <div className="mt-5 flex flex-col gap-2.5">
           <div className="text-small font-semibold tracking-caps-md text-ink-3 uppercase">
-            Figure 1 — sunlight over the window. Solid = above the local skyline; hatched = blocked.
+            Sunlight over these dates (solid: Sun up; hatched: blocked)
           </div>
           {order.map((id) => {
             const m = metrics[id]

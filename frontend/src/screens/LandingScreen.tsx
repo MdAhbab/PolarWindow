@@ -250,7 +250,7 @@ export default function LandingScreen() {
             </h2>
           </Section>
           {IDEAS.map((idea, i) => (
-            <Section key={idea.id} className="min-h-[80vh] justify-center">
+            <Section key={idea.id} className="min-h-[65vh] justify-center">
               <article data-reveal className="flex max-w-lg flex-col gap-4 border border-line bg-canvas/85 p-6 backdrop-blur-sm">
                 <p className="text-caption font-semibold tracking-caps-lg text-ink-3 uppercase">
                   {i + 1} of {IDEAS.length}
@@ -291,10 +291,6 @@ export default function LandingScreen() {
         <Section className="min-h-[70vh] justify-center">
           <div data-reveal className="flex max-w-xl flex-col gap-5">
             <h2 className="text-heading-lg leading-9 font-semibold tracking-heading">Open the dashboard</h2>
-            <p className="text-lede leading-7 text-ink-2">
-              A short guide along the bottom of the screen shows you each feature once. You can close it and bring it back
-              from Guide at the top.
-            </p>
             <div>
               <EnterButton />
             </div>

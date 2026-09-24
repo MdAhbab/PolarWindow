@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { expectNoSeriousAxe, returningVisitor, watchConsole } from './helpers'
+import { expectNoSeriousAxe, openRow, returningVisitor, watchConsole } from './helpers'
 
 /**
  * The degraded path: the service cannot be reached, so the app answers from
@@ -16,6 +16,7 @@ test('API unreachable: saved answers, the Saved copy badge, and a degraded agent
   const badge = page.getByRole('status', { name: /^Data source: Saved copy/ })
   await expect(badge).toBeVisible()
   await expect(badge).toHaveText('Saved copy')
+  await page.getByRole('button', { name: 'Instruments' }).click()
   await page.getByRole('button', { name: 'Volatiles' }).click()
   await expect(page.locator('[aria-live="polite"]').filter({ hasText: 'missions' }).first()).toHaveText(
     'Showing 5 of 20 missions',
@@ -27,14 +28,15 @@ test('API unreachable: saved answers, the Saved copy badge, and a degraded agent
   await expect(page.locator('main')).toContainText('100% of the time')
 
   await page.getByRole('link', { name: 'Missions' }).first().click()
-  await page.getByRole('button', { name: 'Ask about missions' }).click()
+  await openRow(page, 'Ask about missions and sites')
   await page.getByLabel('Your question').fill('Which targets carry volatiles instruments?')
   await page.getByRole('button', { name: 'Ask', exact: true }).click()
-  await expect(page.getByText('Summary from measurements (no AI)')).toBeVisible()
+  await expect(page.getByText(/^Summary from measurements \(no AI\)/)).toBeVisible()
   await expect(page.getByText('Built from the measurements')).toBeVisible()
 
   // A request the copy does not hold is still the real error, never a guess.
-  await page.goto('/clocks')
+  await page.goto('/site')
+  await openRow(page, 'Change the dates')
   await page.getByLabel('Start (UTC)').fill('2031-06-01')
   await expect(page.locator('main')).toContainText('Cannot reach the service that does the calculations')
   await expect(page.getByRole('progressbar')).toHaveCount(0)

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useId, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { useMission as useStore } from '../lib/store'
@@ -25,7 +25,8 @@ import { PolarMap, POLAR_MAP_EDGE_LAT, type MissionPin } from '../components/Pol
 import { ProgrammeTimeline } from '../components/ProgrammeTimeline'
 import { AskPanel } from '../components/Agents'
 import { EmptyState, LoadingPanel, ProblemPanel } from '../components/States'
-import { Chip, Panel, SectionLabel, Segmented, Unconfirmed } from '../components/ui'
+import { Button, Chip, Disclosure, Panel, SectionLabel, Segmented, Unconfirmed } from '../components/ui'
+import { Icon } from '../components/Icon'
 
 /**
  * S9 — every CLPS delivery at a glance (§10.2), and the new home.
@@ -52,6 +53,9 @@ export function MissionsScreen() {
   const status: StatusFilter = statusParam === 'flown' || statusParam === 'upcoming' ? statusParam : 'all'
   const provider = params.get('provider') ?? ''
   const [last, setLast] = useState<LastFilter | null>(null)
+  const [showTypes, setShowTypes] = useState(types.length > 0)
+  const [mapView, setMapView] = useState<'pole' | 'moon'>('pole')
+  const filterId = useId()
 
   const list = useMissions({
     payloadType: types,
@@ -194,9 +198,11 @@ export function MissionsScreen() {
     onBlur: () => setHover(null),
   })
 
+  const activeFilters = types.length + (provider ? 1 : 0) + (status !== 'all' ? 1 : 0)
+
   return (
     <div className="flex grow flex-col">
-      <header className="flex flex-col gap-2 border-b border-line px-4 py-4 lg:px-6">
+      <header className="flex flex-col gap-1 border-b border-line px-4 py-4 lg:px-6">
         <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
           <h1 className="text-heading font-semibold tracking-title">CLPS missions</h1>
           <p aria-live="polite" className="text-body text-ink-2">
@@ -204,52 +210,87 @@ export function MissionsScreen() {
             {count}
           </p>
         </div>
-        <p className="max-w-3xl text-body leading-6 text-ink-2">
-          Every NASA Commercial Lunar Payload Services delivery: where it went or will go, when, what it
-          carries and how it went. Open one to see what the Sun and Earth do at its target.
+        <p className="text-body leading-6 text-ink-2">
+          Every NASA CLPS delivery to the Moon, flown and planned. Open one to see the Sun and Earth at its landing
+          spot.
         </p>
       </header>
 
-      <div role="group" aria-label="Filters" data-guide="missions-filters" className="flex flex-col gap-3 border-b border-line px-4 py-3 lg:px-6">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <span className="text-small font-medium text-ink">Status</span>
+      <div
+        role="group"
+        aria-label="Filters"
+        data-guide="missions-filters"
+        className="flex flex-col gap-3 border-b border-line px-4 py-3 lg:px-6"
+      >
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <Segmented label="Status" options={STATUS_OPTIONS} value={status} onChange={setStatus} />
+          <Button
+            onClick={() => setShowTypes((v) => !v)}
+            expanded={showTypes}
+            controls={`${filterId}-types`}
+          >
+            Instruments{types.length ? ` · ${types.length}` : ''}
+            <Icon name="chevron" size={16} strokeWidth={2} className={`transition-transform ${showTypes ? 'rotate-180' : ''}`} />
+          </Button>
+          {providers.length > 0 && (
+            <>
+              <label htmlFor={`${filterId}-provider`} className="sr-only">
+                Provider
+              </label>
+              <select
+                id={`${filterId}-provider`}
+                value={provider}
+                onChange={(e) => {
+                  const v = e.target.value
+                  update((p) => (v ? p.set('provider', v) : p.delete('provider')), v ? { kind: 'provider' } : null)
+                }}
+                className={`h-12 max-w-full rounded-control border bg-canvas px-3 text-small font-semibold hover:border-ink-3 ${
+                  provider ? 'border-ink text-ink' : 'border-line-strong text-ink-2'
+                }`}
+              >
+                <option value="">Any provider</option>
+                {providers.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
+          {/* The empty list has its own "Clear filters"; one is enough. */}
+          {activeFilters > 0 && shown.length > 0 && (
+            <Button variant="ghost" size="sm" onClick={clearAll}>
+              Clear filters
+            </Button>
+          )}
         </div>
-        <FilterRow label="Instruments carried (any of)">
+        <div
+          id={`${filterId}-types`}
+          hidden={!showTypes}
+          className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0"
+        >
+          <span className="sr-only">Instruments carried, any of:</span>
           {INSTRUMENT_TYPES.map((t) => (
             <Chip key={t} tone="neutral" selected={types.includes(t)} onClick={() => toggleType(t)}>
               {INSTRUMENT_LABEL[t]}
             </Chip>
           ))}
-        </FilterRow>
-        {providers.length > 0 && (
-          <FilterRow label="Provider">
-            {providers.map((p) => (
-              <Chip key={p} tone="neutral" selected={provider === p} onClick={() => toggleProvider(p)}>
-                {p}
-              </Chip>
-            ))}
-          </FilterRow>
-        )}
+        </div>
       </div>
 
-      <div className="grid gap-6 p-4 lg:p-6 xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+      <div className="grid gap-6 p-4 lg:p-6 xl:grid-cols-[minmax(0,6fr)_minmax(0,5fr)]">
         {/* The list comes first in the DOM: it is the primary accessible path
-            and, on a phone, the fastest answer. From 768 px up the Moon view
-            is drawn first (left at ≥ 1280), as the handoff lays it out. */}
+            and, on a phone, the fastest answer. From 768 px up the map is
+            drawn first (left at ≥ 1280). */}
         <section
           aria-labelledby="missions-list-h"
           className="flex min-w-0 flex-col gap-3 md:order-2 xl:order-none xl:col-start-2 xl:row-start-1"
         >
-          <SectionLabel id="missions-list-h">Missions</SectionLabel>
+          <h2 id="missions-list-h" className="sr-only">
+            Missions
+          </h2>
           {list.isPending ? (
-            <LoadingPanel
-              done={0}
-              total={1}
-              title="Loading CLPS missions"
-              unit="lists"
-              note="The mission records are compiled from NASA pages, LROC images and the IAU Gazetteer, and stored with the service; nothing is fetched from those sites while you wait."
-            />
+            <LoadingPanel done={0} total={1} title="Loading CLPS missions" unit="lists" />
           ) : list.error && !list.data ? (
             <ProblemPanel error={list.error} fallbackTitle="Cannot load the missions" onRetry={() => void list.refetch()} />
           ) : shown.length === 0 ? (
@@ -266,13 +307,13 @@ export function MissionsScreen() {
               />
             </Panel>
           ) : (
-            <Panel className={`flex flex-col xl:max-h-[820px] xl:overflow-y-auto ${list.isPlaceholderData ? 'opacity-70' : ''}`}>
+            <Panel className={`relative flex flex-col xl:max-h-[640px] xl:overflow-y-auto ${list.isPlaceholderData ? 'opacity-70' : ''}`}>
               {LIST_GROUPS.map((g) => {
                 const ms = shown.filter((m) => g.statuses.includes(m.status))
                 if (!ms.length) return null
                 return (
                   <div key={g.id} className="flex flex-col">
-                    <SectionLabel as="h3" className="border-b border-line bg-inset px-4 py-2">
+                    <SectionLabel as="h3" className="sticky top-0 z-10 border-b border-line bg-inset px-4 py-2">
                       {g.label} · {ms.length}
                     </SectionLabel>
                     <ul>
@@ -299,77 +340,78 @@ export function MissionsScreen() {
 
         <section
           aria-labelledby="missions-map-h"
-          className="flex min-w-0 flex-col gap-4 md:order-1 xl:order-none xl:col-start-1 xl:row-start-1"
+          className="flex min-w-0 flex-col md:order-1 xl:order-none xl:col-start-1 xl:row-start-1"
         >
-          <SectionLabel id="missions-map-h">Where they went, or will go</SectionLabel>
-          <Panel className="flex flex-col gap-4 p-4">
-            <MoonDiscs
-              missions={list.isPending ? [] : shown}
-              highlight={highlight}
-              earthNeverRisesOnFarSide={earthNeverRises}
-              onPole={focusInset}
-            />
-          </Panel>
           <div
             ref={insetRef}
             tabIndex={-1}
-            role="group"
-            aria-labelledby="missions-inset-h"
             className="flex flex-col border border-line bg-panel outline-none focus-visible:outline-2"
           >
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line px-4 py-3">
-              <SectionLabel as="h3" id="missions-inset-h">
-                Close-up of the south pole · 80°S to the pole
-              </SectionLabel>
-              <span className="ml-auto text-caption text-ink-3">
-                {polarCount} target{polarCount === 1 ? '' : 's'} inside 80°S
-              </span>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line px-4 py-2">
+              <h2 id="missions-map-h" className="text-control font-semibold text-ink">
+                Where they land
+              </h2>
+              <div className="ml-auto">
+                <Segmented
+                  label="Map"
+                  options={[
+                    { value: 'pole', label: 'South pole' },
+                    { value: 'moon', label: 'Whole Moon' },
+                  ]}
+                  value={mapView}
+                  onChange={setMapView}
+                  pill
+                />
+              </div>
             </div>
-            <div className="flex justify-center p-3">
-              <PolarMap
-                sun={sun}
-                selectedSiteId=""
-                size={440}
-                missionPins={pins}
-                siteMarks="dots"
-                onMissionPin={(keys) => {
-                  const ids = keys.flatMap(idsForPin)
-                  setPicked(ids)
-                  rowRefs.current.get(ids[0])?.focus()
-                }}
-                onMissionHover={(keys) => setHover(keys ? keys.flatMap(idsForPin) : null)}
-              />
-            </div>
-            <PinLegend />
+            {mapView === 'pole' ? (
+              <>
+                <div className="flex justify-center p-3">
+                  <PolarMap
+                    sun={sun}
+                    selectedSiteId=""
+                    size={420}
+                    missionPins={pins}
+                    siteMarks="dots"
+                    onMissionPin={(keys) => {
+                      const ids = keys.flatMap(idsForPin)
+                      setPicked(ids)
+                      rowRefs.current.get(ids[0])?.focus()
+                    }}
+                    onMissionHover={(keys) => setHover(keys ? keys.flatMap(idsForPin) : null)}
+                  />
+                </div>
+                <PinLegend polarCount={polarCount} />
+              </>
+            ) : (
+              <div className="p-4">
+                <MoonDiscs
+                  missions={list.isPending ? [] : shown}
+                  highlight={highlight}
+                  earthNeverRisesOnFarSide={earthNeverRises}
+                  onPole={() => {
+                    setMapView('pole')
+                    focusInset()
+                  }}
+                />
+              </div>
+            )}
           </div>
         </section>
       </div>
 
-      <section className="px-4 pb-6 lg:px-6" aria-label="Timeline">
-        <ProgrammeTimeline
-          missions={shown}
-          highlight={highlight}
-          onHover={(id) => setHover(id ? [id] : null)}
-          showTable={tableOpen}
-          onToggleTable={toggleTable}
-          nowMs={Date.now()}
-        />
-      </section>
-
-      <div className="flex flex-col px-4 pb-8 lg:px-6">
+      <div className="flex flex-col gap-3 px-4 pb-8 lg:px-6">
+        <Disclosure title="Timeline" meta="every dated mission, by provider">
+          <ProgrammeTimeline
+            missions={shown}
+            highlight={highlight}
+            onHover={(id) => setHover(id ? [id] : null)}
+            showTable={tableOpen}
+            onToggleTable={toggleTable}
+            nowMs={Date.now()}
+          />
+        </Disclosure>
         <AskPanel />
-      </div>
-    </div>
-  )
-}
-
-function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
-      <span className="shrink-0 text-small font-medium text-ink">{label}</span>
-      {/* Scrolls sideways on a phone rather than wrapping into a wall of chips. */}
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0">
-        {children}
       </div>
     </div>
   )
@@ -423,36 +465,38 @@ function MissionRow({
       <span className="text-caption leading-caption text-ink-3">
         {m.payloadTypes.length ? m.payloadTypes.map((t) => INSTRUMENT_LABEL[t]).join(' · ') : 'Payloads unconfirmed'}
       </span>
-      {m.unconfirmedFields.length > 0 && (
-        <span className="text-caption text-uncertain">Some details unconfirmed</span>
-      )}
     </Link>
   )
 }
 
-function PinLegend() {
+function PinLegend({ polarCount }: { polarCount: number }) {
+  const diamond = (dashed: boolean) => (
+    <svg width="12" height="12" viewBox="-7 -7 14 14" aria-hidden="true">
+      <rect
+        x="-4"
+        y="-4"
+        width="8"
+        height="8"
+        transform="rotate(45)"
+        fill="var(--color-panel)"
+        stroke="var(--color-ink)"
+        strokeWidth="1.5"
+        strokeDasharray={dashed ? '2 1.5' : undefined}
+      />
+    </svg>
+  )
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line px-4 py-3 text-caption text-ink">
-      <span className="flex items-center gap-2">
-        <svg width="14" height="14" viewBox="-7 -7 14 14" aria-hidden="true">
-          <rect x="-4" y="-4" width="8" height="8" transform="rotate(45)" fill="var(--color-panel)" stroke="var(--color-ink)" strokeWidth="1.5" />
-        </svg>
-        Solid diamond: where a lander came to rest
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line px-4 py-2.5 text-caption text-ink-2">
+      <span>
+        {polarCount} target{polarCount === 1 ? '' : 's'} south of 80°S:
       </span>
-      <span className="flex items-center gap-2">
-        <svg width="14" height="14" viewBox="-7 -7 14 14" aria-hidden="true">
-          <rect x="-4" y="-4" width="8" height="8" transform="rotate(45)" fill="var(--color-panel)" stroke="var(--color-ink)" strokeWidth="1.5" strokeDasharray="2 1.5" />
-        </svg>
-        Dashed diamond: a planned target or a feature centre, not a landing point
-      </span>
-      <span className="flex items-center gap-2">
-        <svg width="12" height="12" viewBox="-6 -6 12 12" aria-hidden="true">
+      <span className="flex items-center gap-1.5">{diamond(false)} where a lander came to rest</span>
+      <span className="flex items-center gap-1.5">{diamond(true)} planned target</span>
+      <span className="flex items-center gap-1.5">
+        <svg width="10" height="10" viewBox="-6 -6 12 12" aria-hidden="true">
           <circle r="4.5" fill="var(--color-ink-2)" stroke="var(--color-canvas)" strokeWidth="1.5" />
         </svg>
-        Dot: a candidate site, named on the <Link to="/map">Map</Link>
-      </span>
-      <span className="flex items-center gap-2">
-        <span className="font-semibold">×2</span> two targets drawn close together
+        candidate site, named on the <Link to="/map">Map</Link>
       </span>
     </div>
   )

@@ -1,5 +1,5 @@
 import type { Meta } from '../lib/api/adapters'
-import { Panel, SectionLabel } from './ui'
+import { SectionLabel } from './ui'
 
 /**
  * What these numbers were computed from — read from the response, never typed in.
@@ -18,35 +18,31 @@ import { Panel, SectionLabel } from './ui'
 export function Sources({ meta, className = '' }: { meta: Meta | undefined; className?: string }) {
   if (!meta) {
     return (
-      <Panel className={`flex flex-col gap-2 p-5 ${className}`}>
-        <SectionLabel>Sources</SectionLabel>
-        <p className="text-tag leading-caption-tight text-ink-3">
-          Not yet known — the figures on this screen have not finished computing.
-        </p>
-      </Panel>
+      <div className={`flex flex-col gap-1.5 ${className}`}>
+        <SectionLabel as="h3">Sources</SectionLabel>
+        <p className="text-small text-ink-3">Not known yet: the numbers on this screen are still being worked out.</p>
+      </div>
     )
   }
   const r = meta.resolution
   const u = meta.uncertainty
   return (
-    <Panel className={`flex flex-col gap-2 p-5 ${className}`}>
-      <SectionLabel>Sources</SectionLabel>
-      <p className="font-mono text-tag leading-caption text-ink-2">
-        Elevation: {r.demProduct} at {r.demResolutionM.toFixed(0)} m
-        <br />
-        Ephemeris: {r.ephemeris}
-        <br />
-        Horizon mask: {r.azimuthCount} az × {(r.maxRangeM / 1000).toFixed(0)} km · sampled every{' '}
-        {(r.timeStepS / 60).toFixed(0)} min
-      </p>
-      <p className="text-tag leading-caption-tight text-ink-3">
-        Vertical accuracy ±{u.demVerticalErrorM.toFixed(0)} m.
-        {u.partialCoverage
-          ? ` Terrain covers ${(u.coverage * 100).toFixed(0)}% of the sampled bearings, so this site is modelled with gaps.`
-          : ' Terrain covers every sampled bearing.'}{' '}
-        Not an official product of any space agency.
-      </p>
-    </Panel>
+    <div className={`flex flex-col gap-1.5 ${className}`}>
+      <SectionLabel as="h3">Sources</SectionLabel>
+      <ul className="flex flex-col gap-1 text-small leading-5 text-ink-2">
+        <li>
+          Terrain: {r.demProduct}, {r.demResolutionM.toFixed(0)} m detail, heights within ±
+          {u.demVerticalErrorM.toFixed(0)} m.
+          {u.partialCoverage ? ` It covers ${(u.coverage * 100).toFixed(0)}% of the directions around this spot.` : ''}
+        </li>
+        <li>Sun and Earth positions: NASA’s SPICE tools, {r.ephemeris.toUpperCase()}.</li>
+        <li>
+          Skyline: {r.azimuthCount.toLocaleString()} directions out to {(r.maxRangeM / 1000).toFixed(0)} km; times
+          every {(r.timeStepS / 60).toFixed(0)} minutes.
+        </li>
+      </ul>
+      <p className="text-caption text-ink-3">Not an official product of any space agency.</p>
+    </div>
   )
 }
 
@@ -56,8 +52,8 @@ export function SourcesLine({ meta }: { meta: Meta | undefined }) {
   const r = meta.resolution
   return (
     <>
-      Elevation: {r.demProduct} at {r.demResolutionM.toFixed(0)} m · Ephemeris: {r.ephemeris} · mask{' '}
-      {r.azimuthCount} az × {(r.maxRangeM / 1000).toFixed(0)} km
+      Terrain: {r.demProduct} at {r.demResolutionM.toFixed(0)} m · Sun and Earth positions (SPICE): {r.ephemeris.toUpperCase()} · skyline{' '}
+      {r.azimuthCount} directions out to {(r.maxRangeM / 1000).toFixed(0)} km
     </>
   )
 }

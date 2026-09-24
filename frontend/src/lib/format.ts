@@ -1,4 +1,3 @@
-import type { Face } from './types'
 
 /**
  * The one line per screen that replaces the "≈" once printed before every
@@ -7,7 +6,7 @@ import type { Face } from './types'
  * for a lower bound and "±" for a timing margin.
  */
 export const ESTIMATES =
-  'All figures are estimates from a terrain map of the Moon and calculated Sun and Earth positions, not readings from a lander. “≥” means the chosen dates cut the value short, so the real one is longer; “±” is how far the timing could be off.'
+  'Estimates from a terrain map and calculated Sun and Earth positions, not lander readings. “≥” means the dates cut the value short; “±” is how far the timing could be off.'
 
 /**
  * A value the window cut short. The night (or blackout) began before the window
@@ -190,48 +189,33 @@ export function isoDateWords(iso: string): string {
 }
 
 /**
- * The public face says units in words. Same fact, different vocabulary —
- * simplifying the words never simplifies the claim.
+ * What each of the four numbers is called, what it means in one sentence, and
+ * the professional term where there is one. The plain name is the only label
+ * on screen; the meaning and the other name open from the number itself.
  */
-export function humanDuration(h: number, face: Face, open?: boolean): string {
-  if (face !== 'public') return hoursWithUnit(h, 0, open)
-  const days = h / 24
-  const lead = open ? 'at least ' : 'about '
-  if (days < 1.5) return `${lead}${Math.round(h)} hours`
-  return `${lead}${days.toFixed(days < 10 ? 1 : 0)} days`
-}
-
-/**
- * The label a number carries (U14): the plain words by default, on every
- * face, and the expert term as a second line in Expert only. One
- * concept, one name, wherever it appears.
- */
-export function termLabel(key: string, face: Face): { label: string; expert?: string } {
-  const t = TERM[key]
-  return { label: t.public, expert: face === 'planner' ? t.planner : undefined }
-}
-
-export const TERM: Record<string, Record<Face, string>> = {
+export const TERM: Record<string, { label: string; means: string; also?: string }> = {
   sunHours: {
-    planner: 'Sunlit hours',
-    educator: 'Time in sunlight',
-    public: 'Time in sunlight',
+    label: 'Time in sunlight',
+    means: 'Hours the Sun is above this spot’s own skyline on the chosen dates: the time the solar panels can charge.',
   },
   earthHours: {
-    planner: 'Direct-to-Earth (DTE) contact',
-    educator: 'Time in contact with Earth',
-    public: 'Time in contact with Earth',
+    label: 'Time in contact with Earth',
+    means: 'Hours Earth is above the skyline, so the lander can radio home directly.',
+    also: 'Direct-to-Earth (DTE) contact',
   },
   longestDark: {
-    planner: 'Longest unbroken darkness',
-    educator: 'Longest night',
-    public: 'Longest night',
+    label: 'Longest night',
+    means: 'The longest single stretch without sunlight. The lander lives on its batteries until the Sun returns.',
   },
   longestBlackout: {
-    planner: 'Longest radio (RF) blackout',
-    educator: 'Longest time without contact',
-    public: 'Longest time without contact',
+    label: 'Longest time without contact',
+    means: 'The longest single stretch with Earth out of sight. The lander has to work alone until Earth rises again.',
+    also: 'radio (RF) blackout',
   },
+}
+
+export function termLabel(key: string): { label: string; means: string; also?: string } {
+  return TERM[key]
 }
 
 /**

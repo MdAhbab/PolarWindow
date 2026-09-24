@@ -9,7 +9,7 @@ import {
   publishedWords,
 } from '../lib/missions'
 import { Icon } from './Icon'
-import { Button, SectionLabel, Unconfirmed } from './ui'
+import { Button, Unconfirmed } from './ui'
 
 /**
  * The programme timeline (§10.2), in the Ribbon idiom: one lane per provider,
@@ -140,8 +140,7 @@ export function ProgrammeTimeline({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <SectionLabel>Timeline</SectionLabel>
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <Button size="sm" onClick={onToggleTable} expanded={showTable} controls={`${regionId}-table`}>
           <Icon name="table" size={16} strokeWidth={1.7} />
           {showTable ? 'Hide the timeline table' : 'Read the timeline as a table'}

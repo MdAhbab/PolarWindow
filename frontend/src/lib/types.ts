@@ -1,7 +1,5 @@
 export type Body = 'sun' | 'earth'
 
-export type Face = 'planner' | 'educator' | 'public'
-
 export type MetricKey = 'sunHours' | 'earthHours' | 'longestDark' | 'longestBlackout'
 
 export interface Site {

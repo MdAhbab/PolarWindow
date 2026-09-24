@@ -8,7 +8,6 @@ import { CompareScreen } from './screens/CompareScreen'
 import { HorizonScreen } from './screens/HorizonScreen'
 import { BlackoutScreen } from './screens/BlackoutScreen'
 import { ReportScreen } from './screens/ReportScreen'
-import { StatesScreen } from './screens/StatesScreen'
 import { MissionsScreen } from './screens/MissionsScreen'
 import { MissionDetailScreen } from './screens/MissionDetailScreen'
 import { useMission } from './lib/store'
@@ -152,12 +151,15 @@ function Dashboard() {
         <Route path="/missions" element={<MissionsScreen />} />
         <Route path="/missions/:id" element={<MissionDetailScreen />} />
         <Route path="/map" element={<MapScreen />} />
-        <Route path="/clocks" element={<TwoClockScreen />} />
+        <Route path="/site" element={<TwoClockScreen />} />
         <Route path="/compare" element={<CompareScreen />} />
-        <Route path="/horizon" element={<HorizonScreen />} />
-        <Route path="/blackout" element={<BlackoutScreen />} />
+        <Route path="/skyline" element={<HorizonScreen />} />
+        <Route path="/plan" element={<BlackoutScreen />} />
         <Route path="/report" element={<ReportScreen />} />
-        <Route path="/states" element={<StatesScreen />} />
+        {/* The old addresses, so a saved link still lands on its page. */}
+        <Route path="/clocks" element={<Navigate to="/site" replace />} />
+        <Route path="/horizon" element={<Navigate to="/skyline" replace />} />
+        <Route path="/blackout" element={<Navigate to="/plan" replace />} />
         <Route path="*" element={<Navigate to="/missions" replace />} />
       </Routes>
     </AppShell>

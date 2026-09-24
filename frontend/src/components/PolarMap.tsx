@@ -516,33 +516,6 @@ export function PolarMap({
             </g>
           ))}
 
-          <g aria-hidden="true">
-            <rect x="452" y="30" width="228" height="44" fill="var(--color-canvas)" fillOpacity="0.85" />
-            <text
-              x="566"
-              y="48"
-              textAnchor="middle"
-              fontFamily="var(--font-sans)"
-              fontSize="12"
-              fontWeight="600"
-              letterSpacing="1.2"
-              fill="var(--color-ink-2)"
-            >
-              TERRAIN: LOLA
-            </text>
-            <text
-              x="566"
-              y="65"
-              textAnchor="middle"
-              fontFamily="var(--font-sans)"
-              fontSize="12"
-              fontWeight="600"
-              letterSpacing="1.2"
-              fill="var(--color-ink-2)"
-            >
-              SHADOW: HILLS NOT COUNTED
-            </text>
-          </g>
         </svg>
 
         {/* Real buttons over the pins. An SVG cannot hold a <button>, so the

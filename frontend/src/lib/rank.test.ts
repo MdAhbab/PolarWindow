@@ -31,21 +31,21 @@ describe('rankLabel', () => {
     expect(l.text).not.toMatch(/best/)
   })
 
-  it('says "cut short, can\'t rank" for a null rank on a censored value, with the range as its title', () => {
+  it('says "too close to call" for a null rank on a censored value, with the reason and the range', () => {
     const l = rankLabel({ ...base, rank: null, rankRange: [1, 3], censored: true })
-    expect(l).toMatchObject({ kind: 'unranked', text: "cut short, can't rank", tone: 'uncertain' })
+    expect(l).toMatchObject({ kind: 'unranked', text: 'too close to call', why: 'the chosen dates cut its value short', tone: 'uncertain' })
     expect(l.title).toBe('could be 1st–3rd')
   })
 
   it('names an untimeable edge rather than calling it cut short', () => {
     const l = rankLabel({ ...base, rank: null, rankRange: [1, 4], grazing: true })
-    expect(l.text).toBe("edge can't be timed, can't rank")
+    expect(l.why).toBe('a start or end is too shallow to time')
     expect(l.title).toBe('could be 1st–4th')
   })
 
   it('names what a measured site cannot be ordered against', () => {
     const l = rankLabel({ ...base, rank: null, rankRange: [1, 2], incomparableWith: ['D', 'I'] })
-    expect(l.text).toBe("can't rank against D and I")
+    expect(l.why).toBe('the margins can’t separate it from D and I')
     expect(l.tone).toBe('uncertain')
   })
 

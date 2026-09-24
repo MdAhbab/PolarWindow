@@ -128,34 +128,44 @@ export function ErrorPanel({
   )
 }
 
-/** The margin is never behind a tooltip. */
+/**
+ * A caveat, said once where it applies: a hairline in the uncertain ink and a
+ * sentence, not a box competing with the numbers. The margin is never behind a
+ * tooltip.
+ */
 export function UncertaintyNote({
   children,
   className = '',
-  title = 'How wrong could this be',
-  hatchKey = true,
+  title,
+  hatchKey = false,
 }: {
   children: ReactNode
   className?: string
-  /** The note's heading; the default speaks about the geometry's margins. */
+  /** A short lead-in, in bold, before the sentence. */
   title?: string
-  /** The −45° hatch key, for notes about values drawn on a chart. */
+  /** The −45° hatch key, for notes about a band drawn on the chart beside them. */
   hatchKey?: boolean
 }) {
   return (
-    <Panel className={`flex flex-col gap-2.5 border-dashed border-uncertain p-5 ${className}`}>
-      <div className="flex items-center gap-2 text-caption font-semibold tracking-caps text-ink-2 uppercase">
-        <Icon name="uncertain" size={14} strokeWidth={2.2} />
-        {title}
-      </div>
-      <div className="text-small leading-5 text-ink-2">{children}</div>
-      {hatchKey && (
-        <div className="flex items-center gap-2.5">
-          <span className="hatch-uncertain h-3.5 w-16 border border-line" aria-hidden="true" />
-          <span className="text-caption text-ink-3">drawn at every arc edge, in every view</span>
+    <div className={`flex gap-2.5 border-l-2 border-uncertain py-0.5 pl-3 ${className}`}>
+      <Icon name="uncertain" size={14} strokeWidth={2.2} className="mt-[3px] shrink-0 text-ink-3" />
+      <div className="flex flex-col gap-1.5 text-small leading-5 text-ink-2">
+        <div>
+          {title && (
+            <>
+              <span className="font-semibold text-ink">{title}</span>.{' '}
+            </>
+          )}
+          {children}
         </div>
-      )}
-    </Panel>
+        {hatchKey && (
+          <div className="flex items-center gap-2.5">
+            <span className="hatch-uncertain h-3 w-10 border border-line" aria-hidden="true" />
+            <span className="text-caption text-ink-3">hatched: how far off it could be</span>
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
 

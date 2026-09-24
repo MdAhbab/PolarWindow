@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { expectNoSeriousAxe, returningVisitor, watchConsole } from './helpers'
+import { expectNoSeriousAxe, openRow, returningVisitor, watchConsole } from './helpers'
 
 const ROUTES = [
   '/',
@@ -8,34 +8,53 @@ const ROUTES = [
   '/missions/blue-ghost-m1',
   '/missions/cs-8',
   '/map',
-  '/clocks',
+  '/site',
   '/compare',
-  '/horizon',
-  '/blackout',
+  '/skyline',
+  '/plan',
   '/report',
 ]
 
 for (const theme of ['dark', 'light'] as const) {
-  for (const face of ['public', 'planner'] as const) {
-    test(`axe: every route, ${theme} theme, ${face === 'public' ? 'Simple' : 'Expert'}`, async ({ page, context }) => {
-      await returningVisitor(context, face, { theme })
-      const problems = watchConsole(page)
-      for (const r of ROUTES) {
-        await page.goto(r)
-        await expect(page.getByRole('heading', { level: 1 }).or(page.getByRole('heading', { level: 2 })).first()).toBeVisible()
-        await page.waitForLoadState('networkidle')
-        await expectNoSeriousAxe(page, `${r} (${theme}, ${face})`)
-      }
-      expect(problems).toEqual([])
-    })
-  }
+  test(`axe: every route, ${theme} theme`, async ({ page, context }) => {
+    await returningVisitor(context, { theme })
+    const problems = watchConsole(page)
+    for (const r of ROUTES) {
+      await page.goto(r)
+      await expect(page.getByRole('heading', { level: 1 }).or(page.getByRole('heading', { level: 2 })).first()).toBeAttached()
+      await page.waitForLoadState('networkidle')
+      await expectNoSeriousAxe(page, `${r} (${theme})`)
+    }
+    expect(problems).toEqual([])
+  })
 }
+
+test('every closed row opens, and axe passes with them open', async ({ page, context }) => {
+  await returningVisitor(context)
+  for (const r of ['/missions/im-2', '/site', '/skyline', '/plan']) {
+    await page.goto(r)
+    await page.waitForLoadState('networkidle')
+    for (const s of await page.locator('main summary').all()) await s.click()
+    await expectNoSeriousAxe(page, `${r} with every row open`)
+  }
+})
+
+test('a number says what it means when its label is pressed', async ({ page, context }) => {
+  await returningVisitor(context)
+  await page.goto('/site')
+  const label = page.getByRole('button', { name: /^Time in contact with Earth/ })
+  await expect(label).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.getByText('Also called Direct-to-Earth (DTE) contact.')).toBeHidden()
+  await label.click()
+  await expect(label).toHaveAttribute('aria-expanded', 'true')
+  await expect(page.getByText('Also called Direct-to-Earth (DTE) contact.')).toBeVisible()
+})
 
 test('axe and the fixed tab bar on a phone', async ({ page, context }) => {
   await returningVisitor(context)
   await page.setViewportSize({ width: 375, height: 812 })
   const tabs = page.getByRole('navigation', { name: 'Views' }).last()
-  for (const r of ['/missions?type=volatiles', '/missions/im-2', '/clocks', '/compare']) {
+  for (const r of ['/missions?type=volatiles', '/missions/im-2', '/site', '/compare']) {
     await page.goto(r)
     await page.waitForLoadState('networkidle')
     await expect(tabs.getByRole('link')).toHaveCount(5)
@@ -44,7 +63,7 @@ test('axe and the fixed tab bar on a phone', async ({ page, context }) => {
   }
   // The last line of the page is never under the tab bar.
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
-  const footer = page.getByText('All figures are estimates', { exact: false })
+  const footer = page.getByText('Estimates from a terrain map', { exact: false })
   const [f, t] = await Promise.all([footer.boundingBox(), tabs.boundingBox()])
   expect(f!.y + f!.height).toBeLessThanOrEqual(t!.y + 1)
 
@@ -63,6 +82,7 @@ test('mission filters live in the URL; the back button undoes a chip', async ({ 
   await returningVisitor(context)
   await page.goto('/missions')
   const count = page.locator('[aria-live="polite"]').filter({ hasText: 'missions' }).first()
+  await page.getByRole('button', { name: 'Instruments' }).click()
   await page.getByRole('button', { name: 'Volatiles' }).click()
   await page.getByRole('button', { name: 'Upcoming' }).click()
   await expect(page).toHaveURL(/type=volatiles.*status=upcoming|status=upcoming.*type=volatiles/)
@@ -94,6 +114,7 @@ test('the timeline has a table twin, by button and by T; the shortcut can be swi
   await returningVisitor(context)
   await page.goto('/missions')
   const table = page.getByRole('table', { name: /Every mission shown/ })
+  await openRow(page, 'Timeline')
   await page.getByRole('button', { name: 'Read the timeline as a table' }).click()
   await expect(table).toBeVisible()
   await expect(table.getByRole('row')).toHaveCount(21)
@@ -115,6 +136,7 @@ test('the timeline has a table twin, by button and by T; the shortcut can be swi
   await expect(table).toBeVisible()
   // …and the choice is remembered.
   await page.reload()
+  await openRow(page, 'Timeline')
   await page.getByRole('button', { name: 'Read the timeline as a table' }).click()
   await page.keyboard.press('t')
   await expect(page.getByRole('table', { name: /Every mission shown/ })).toBeVisible()
@@ -129,8 +151,8 @@ test('an unknown mission is a 404 panel with a way back', async ({ page, context
 })
 
 test('reduced motion swaps play for step buttons, decided in code', async ({ page, context }) => {
-  await returningVisitor(context, 'planner', { motion: 'reduced' })
-  await page.goto('/clocks')
+  await returningVisitor(context, { motion: 'reduced' })
+  await page.goto('/site')
   await expect(page.getByRole('button', { name: 'Play through the dates' })).toBeDisabled()
   await expect(page.getByRole('button', { name: 'Step forward six hours' })).toBeVisible()
   const slider = page.getByRole('slider')

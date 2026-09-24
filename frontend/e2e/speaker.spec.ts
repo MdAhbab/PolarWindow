@@ -26,7 +26,7 @@ async function stubSpeech(context: BrowserContext) {
 }
 
 for (const where of [
-  { path: '/clocks', name: /summary of this site/ },
+  { path: '/site', name: /summary of this site/ },
   { path: '/missions/im-2', name: /summary of this site/ },
   { path: '/compare?sites=connecting-ridge,de-gerlache-rim,malapert-massif&rank=night', name: /summary of this comparison/ },
 ]) {
@@ -82,7 +82,7 @@ test('without speech synthesis, Listen opens the transcript', async ({ page, con
   await context.addInitScript(() => {
     delete (window as unknown as { speechSynthesis?: unknown }).speechSynthesis
   })
-  await page.goto('/clocks')
+  await page.goto('/site')
   await page.getByRole('button', { name: /summary of this site/ }).click()
   await expect(page.getByRole('button', { name: 'Hide text' })).toBeVisible()
   await expect(page.locator('main')).toContainText('These are planning estimates, not official values.')

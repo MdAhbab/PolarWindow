@@ -1,7 +1,8 @@
+import { useId, useState } from 'react'
 import { useCountUp } from '../hooks/useCountUp'
 import { bound, hoursSpoken, percent, plusMinus, termLabel } from '../lib/format'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
-import type { Arc, Face, SiteMetrics } from '../lib/types'
+import type { Arc, SiteMetrics } from '../lib/types'
 import { Icon } from './Icon'
 
 export type Tone = 'sun' | 'earth' | 'neutral' | 'alert'
@@ -24,6 +25,10 @@ const TONE_BAR: Record<Tone, string> = {
  * The key-number tile. Nothing sits within 96 px of the value but its own
  * label and unit, and the bar under it repeats the number as a length so the
  * figure is never carried by colour alone.
+ *
+ * With `means`, the label is a button: pressing it says in one sentence what
+ * the number is, and its professional name where it has one. The tile itself
+ * stays short until someone asks.
  */
 export function KeyNumberTile({
   label,
@@ -38,11 +43,21 @@ export function KeyNumberTile({
   icon,
   open = false,
   spoken,
-  expert,
+  means,
+  also,
+  inRow = false,
 }: {
   label: string
-  /** The expert term, shown as a second line in Expert (U14). */
-  expert?: string
+  /**
+   * Laid out by `KeyNumberRow`: the tile's label, value, bar and notes share
+   * rows with its neighbours (subgrid), so a label that wraps to three lines
+   * does not push its value below the others.
+   */
+  inRow?: boolean
+  /** One sentence on what the number is, opened from the label. */
+  means?: string
+  /** The professional term for the same thing, shown with `means`. */
+  also?: string
   value: number
   unit?: string
   tone?: Tone
@@ -61,6 +76,8 @@ export function KeyNumberTile({
   // NaN while there is no value: the first real value is set directly, and
   // the roll (M4) only ever runs between two real values, never from zero.
   const rolled = useCountUp(shown ? value : Number.NaN)
+  const [explained, setExplained] = useState(false)
+  const explainId = useId()
   // One sentence with the final value, its unit and its margin. The visible
   // figure rolls through intermediate values (M4) and its ± sits in a separate
   // element, so reading the visuals aloud announced "±17.1" with no unit.
@@ -94,7 +111,11 @@ export function KeyNumberTile({
         : 'border-line'
 
   return (
-    <div className={`flex flex-col gap-2 border bg-panel px-5 py-5 ${border}`}>
+    <div
+      className={`border bg-panel px-5 py-5 ${border} ${
+        inRow ? 'row-span-6 grid grid-rows-subgrid content-start gap-y-2' : 'flex flex-col gap-2'
+      }`}
+    >
       {/* Two lines tall even when the label fits on one, so the four values
           sit on one baseline when a neighbour's label wraps. */}
       <div
@@ -109,11 +130,22 @@ export function KeyNumberTile({
         ) : icon ? (
           <Icon name={icon} size={14} strokeWidth={2} />
         ) : null}
-        <span>{label}</span>
+        {means ? (
+          <button
+            type="button"
+            aria-expanded={explained}
+            aria-controls={explainId}
+            onClick={() => setExplained((v) => !v)}
+            className="-my-2 -mr-2 flex grow cursor-pointer items-start justify-between gap-2 py-2 pr-2 text-left uppercase hover:text-ink"
+          >
+            <span>{label}</span>
+            <Icon name="info" size={14} strokeWidth={2} className="mt-px shrink-0 opacity-70" />
+            <span className="sr-only">{explained ? ', hide what this means' : ', what this means'}</span>
+          </button>
+        ) : (
+          <span>{label}</span>
+        )}
       </div>
-      {expert && expert !== label && (
-        <div className="-mt-1.5 text-caption leading-4 text-ink-3">{expert}</div>
-      )}
 
       {shown && <span className="sr-only">{said}</span>}
       {/* Wraps rather than overflows: at `sm` in the map's two-column rail the
@@ -152,7 +184,13 @@ export function KeyNumberTile({
         )}
       </div>
 
-      {footnote && <div className="text-caption text-ink-3">{footnote}</div>}
+      {footnote ? <div className="text-caption text-ink-3">{footnote}</div> : inRow ? <div /> : null}
+      {means && (
+        <p id={explainId} hidden={!explained} className="border-t border-line pt-2 text-small leading-5 text-ink-2">
+          {means}
+          {also && <span className="block pt-1 text-ink-3">Also called {also}.</span>}
+        </p>
+      )}
     </div>
   )
 }
@@ -168,13 +206,11 @@ function hasTimedEdge(arc: Arc | undefined): boolean {
  */
 export function KeyNumberRow({
   metrics,
-  face,
   size = 'lg',
   columns = 4,
   uncertain = false,
 }: {
   metrics?: SiteMetrics
-  face: Face
   size?: 'lg' | 'md' | 'sm'
   columns?: 2 | 4
   /**
@@ -216,29 +252,20 @@ export function KeyNumberRow({
   const noBlackout = Boolean(metrics) && !rfArc
 
   const grid = columns === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-2'
-  const short = columns === 2
-  // U14: plain words by default; Expert adds the expert term.
   const t = {
-    sun: termLabel('sunHours', face),
-    earth: termLabel('earthHours', face),
-    dark: termLabel('longestDark', face),
-    rf: termLabel('longestBlackout', face),
+    sun: termLabel('sunHours'),
+    earth: termLabel('earthHours'),
+    dark: termLabel('longestDark'),
+    rf: termLabel('longestBlackout'),
   }
-  const L = {
-    sun: short ? 'Time in sunlight' : t.sun.label,
-    earth: short ? 'Time in contact with Earth' : t.earth.label,
-    dark: short ? 'Longest night' : t.dark.label,
-    rf: short ? 'Longest time without contact' : t.rf.label,
-  }
-  const X = short
-    ? { sun: undefined, earth: undefined, dark: undefined, rf: undefined }
-    : { sun: t.sun.expert, earth: t.earth.expert, dark: t.dark.expert, rf: t.rf.expert }
 
   return (
     <div className={`grid gap-4 ${grid}`}>
       <KeyNumberTile
-        label={L.sun}
-        expert={X.sun}
+        label={t.sun.label}
+        means={t.sun.means}
+        also={t.sun.also}
+        inRow
         value={sunH}
         tone="sun"
         icon="sun"
@@ -248,8 +275,10 @@ export function KeyNumberRow({
         footnote={metrics ? `${percent(sunFrac)} of the time` : 'measuring the skyline'}
       />
       <KeyNumberTile
-        label={L.earth}
-        expert={X.earth}
+        label={t.earth.label}
+        means={t.earth.means}
+        also={t.earth.also}
+        inRow
         value={earthH}
         tone="earth"
         icon="earth"
@@ -259,8 +288,10 @@ export function KeyNumberRow({
         footnote={metrics ? `${percent(earthFrac)} of the time` : undefined}
       />
       <KeyNumberTile
-        label={L.dark}
-        expert={X.dark}
+        label={t.dark.label}
+        means={t.dark.means}
+        also={t.dark.also}
+        inRow
         value={dark}
         tone={overLimit ? 'alert' : 'neutral'}
         size={size}
@@ -281,8 +312,10 @@ export function KeyNumberRow({
         }
       />
       <KeyNumberTile
-        label={L.rf}
-        expert={X.rf}
+        label={t.rf.label}
+        means={t.rf.means}
+        also={t.rf.also}
+        inRow
         value={rf}
         tone="neutral"
         size={size}

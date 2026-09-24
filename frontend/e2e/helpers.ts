@@ -16,24 +16,23 @@ export async function demoSession(context: BrowserContext) {
 }
 
 /**
- * Signed in, on a known detail level, with the guide closed: a returning
- * project manager. Only on the first load, so a reload sees what the test
- * chose since. `guide: true` leaves the guide as a first visit finds it (open).
+ * Signed in, with the guide closed: a returning project manager. Only on the
+ * first load, so a reload sees what the test chose since. `guide: true` leaves
+ * the guide as a first visit finds it (open).
  */
 export async function returningVisitor(
   context: BrowserContext,
-  face: 'public' | 'educator' | 'planner' = 'public',
   { theme = 'dark', motion = 'full', guide = false }: { theme?: 'dark' | 'light'; motion?: 'full' | 'reduced'; guide?: boolean } = {},
 ) {
   const session = await demoSession(context)
   await context.addInitScript(
-    ([f, t, m, g, sess]) => {
+    ([t, m, g, sess]) => {
       if (localStorage.getItem('pw-session')) return
       localStorage.setItem('pw-session', JSON.stringify(sess))
-      localStorage.setItem('pw-prefs', JSON.stringify({ face: f, theme: t, motion: m, shortcuts: true }))
+      localStorage.setItem('pw-prefs', JSON.stringify({ theme: t, motion: m, shortcuts: true }))
       if (!g) localStorage.setItem('pw-guide', JSON.stringify({ open: false, step: 0 }))
     },
-    [face, theme, motion, guide, session] as const,
+    [theme, motion, guide, session] as const,
   )
 }
 
@@ -68,4 +67,11 @@ export async function goClient(page: Page, path: string) {
     history.pushState({}, '', p)
     dispatchEvent(new PopStateEvent('popstate'))
   }, path)
+}
+
+/** Open a closed row (a `<details>`) by the words on it. */
+export async function openRow(page: Page, title: string | RegExp) {
+  const summary = page.locator('summary', { hasText: title }).first()
+  const details = summary.locator('xpath=..')
+  if ((await details.getAttribute('open')) === null) await summary.click()
 }

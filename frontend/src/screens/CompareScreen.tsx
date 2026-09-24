@@ -10,7 +10,6 @@ import type { CompareItemDTO } from '../lib/api/client'
 import { rankLabel, type RankLabel } from '../lib/rank'
 import { DateSlider } from '../components/DateSlider'
 import { Ribbon } from '../components/Ribbon'
-import { KeyNumberTile } from '../components/KeyNumbers'
 import { LoadingPanel, ProblemPanel } from '../components/States'
 import { AdvisePanel } from '../components/Agents'
 import { Speaker } from '../components/SummarySpeaker'
@@ -19,7 +18,7 @@ import { Panel, SectionLabel, Segmented } from '../components/ui'
 import { Icon } from '../components/Icon'
 import { useReducedMotion } from '../hooks/useMotion'
 import { metricValue, SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
-import { bound, coords, hoursWithUnit, termLabel } from '../lib/format'
+import { bound, hoursWithUnit, termLabel } from '../lib/format'
 import type { MetricKey, SiteMetrics } from '../lib/types'
 
 const GAP = 24
@@ -106,16 +105,15 @@ function useIsWide() {
  * worth seeing.
  */
 export function CompareScreen() {
-  const { compareIds, rankBy, setRankBy, face, cursorH } = useMission(
+  const { compareIds, rankBy, setRankBy, cursorH } = useMission(
     useShallow((s) => ({
       compareIds: s.compareIds,
       rankBy: s.rankBy,
       setRankBy: s.setRankBy,
-      face: s.face,
       cursorH: s.cursorH,
     })),
   )
-  const { map: metrics, done, total, isPending, error } = useSiteMetricsMap(compareIds)
+  const { map: metrics, done, total, error } = useSiteMetricsMap(compareIds)
   const w = useWindowParams()
   const ranking = useCompare(compareIds, w, API_METRIC[rankBy])
   const [params, setParams] = useSearchParams()
@@ -123,7 +121,6 @@ export function CompareScreen() {
   useCompareUrl(params, setParams, compareIds, rankBy, setRankBy)
   const fromMission = useMissions({}).data?.items.find((m) => m.id === fromId)
   const seeded = fromMission?.siteId && compareIds[0] === fromMission.siteId ? fromMission : undefined
-  const compute = { status: isPending ? 'running' : 'ready', done, total } as const
   const reduced = useReducedMotion()
   const wide = useIsWide()
   const ref = useRef<HTMLDivElement>(null)
@@ -228,7 +225,7 @@ export function CompareScreen() {
   // come from it, never from the client's own order.
   const spoken = ranking.data
     ? buildComparisonSummary({
-        rankedBy: termLabel(rankBy, face).label,
+        rankedBy: termLabel(rankBy).label,
         windowStartIso: w.start,
         windowHours: metrics[order[0]].windowHours,
         survivalLimitH: SURVIVAL_LIMIT_H,
@@ -261,15 +258,32 @@ export function CompareScreen() {
       <div className="flex flex-wrap items-end gap-x-8 gap-y-4 border-b border-line px-4 py-4 lg:px-6">
         <DateSlider />
         <div data-guide="rank-by" className="flex min-w-0 max-w-full flex-col gap-2">
-          <SectionLabel as="div">Rank by</SectionLabel>
-          <Segmented options={RANKS} value={rankBy} onChange={setRankBy} label="Rank by" />
+          <label htmlFor="pw-rank" className="text-caption font-semibold tracking-caps text-ink-3 uppercase xl:hidden">
+            Rank by
+          </label>
+          <select
+            id="pw-rank"
+            value={rankBy}
+            onChange={(e) => setRankBy(e.target.value as MetricKey)}
+            className="h-12 rounded-control border border-line-strong bg-canvas px-3 text-control text-ink xl:hidden"
+          >
+            {RANKS.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+          <div className="hidden flex-col gap-2 xl:flex">
+            <SectionLabel as="div">Rank by</SectionLabel>
+            <Segmented options={RANKS} value={rankBy} onChange={setRankBy} label="Rank by" />
+          </div>
         </div>
         <AddSite compareIds={compareIds} />
         <Speaker summary={spoken} what="this comparison" resetKey={`${compareIds.join('|')}|${rankBy}|${w.start}`} />
       </div>
 
       <p aria-live="polite" className="sr-only">
-        Now ranked by {termLabel(rankBy, face).label}: {orderLabel}.{tieSentence ? ` ${tieSentence}.` : ''}
+        Now ranked by {termLabel(rankBy).label}: {orderLabel}.{tieSentence ? ` ${tieSentence}.` : ''}
       </p>
 
       {(seeded || unavailable.length > 0 || ranking.error) && (
@@ -341,39 +355,32 @@ export function CompareScreen() {
         )}
       </div>
 
-      <footer className="flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-line bg-panel px-4 py-5 lg:px-6">
-        <SectionLabel className="shrink-0">The trade-off, stated</SectionLabel>
+      <footer className="border-t border-line bg-panel px-4 py-4 lg:px-6">
         <p className="max-w-4xl text-control leading-6 text-ink">
-          Ranked by {termLabel(rankBy, face).label.toLowerCase()},{' '}
           {!leads ? (
-            <>
-              no site can be called first: {bestLabel ? 'a value cut short by the chosen dates, or an edge that cannot be timed, overlaps the others' : 'the ranking has not arrived'}.{' '}
-            </>
+            <>No clear leader on {termLabel(rankBy).label.toLowerCase()}{bestLabel ? '' : ' yet'}.</>
           ) : tiedWith[best]?.length ? (
             <>
-              <strong>{[best, ...tiedWith[best]].map(code).join(' and ')}</strong> share the lead — the data
-              cannot separate them.{' '}
+              <strong>{[best, ...tiedWith[best]].map((id) => siteById(id).name).join(' and ')}</strong> share the lead on{' '}
+              {termLabel(rankBy).label.toLowerCase()}.
             </>
           ) : (
             <>
-              <strong>{code(best)}</strong> leads.{' '}
+              <strong>{siteById(best).name}</strong> leads on {termLabel(rankBy).label.toLowerCase()}.
             </>
-          )}
+          )}{' '}
           {disqualified.length > 0 ? (
             <>
-              {disqualified.map(code).join(' and ')}{' '}
-              {disqualified.length > 1 ? 'are' : 'is'} out on the night alone on these dates:{' '}
-              <span className="text-alert">over the {SURVIVAL_LIMIT_H} h battery limit</span>. Nights change
-              through the year, so other dates can change that; the months under “Change the dates” on the Site
-              page show how.
+              <span className="text-alert">
+                {disqualified.map((id) => siteById(id).name).join(', ').replace(/, ([^,]*)$/, ' and $1')}{' '}
+                {disqualified.length > 1 ? 'run' : 'runs'} past the {SURVIVAL_LIMIT_H} h battery limit
+              </span>{' '}
+              on these dates; other months can change that.
             </>
           ) : (
-            'Every candidate here survives its longest night, so the choice is genuinely about what the payload needs.'
+            'Every site here stays inside the battery limit, so the choice comes down to what the payload needs.'
           )}
         </p>
-        <span className="ml-auto font-mono text-caption text-ink-3">
-          {compute.status === 'ready' ? `order: ${orderLabel}` : 'computing…'}
-        </span>
       </footer>
 
       <div className="px-4 py-6 lg:px-6">
@@ -401,97 +408,90 @@ function CompareCard({
   rankBy: MetricKey
 }) {
   const site = siteById(siteId)
-  const face = useMission((s) => s.face)
   const over = metrics.sun.longestDownH > SURVIVAL_LIMIT_H
   const rank = item?.rank ?? null
-  const tied = Boolean(item?.tied)
   const leading = label?.kind === 'best' || (label?.kind === 'joint' && rank === 1)
-  const range = item?.rank_range ?? []
+  const [why, setWhy] = useState(false)
+  const whyId = useId()
+  const margin = SURVIVAL_LIMIT_H - metrics.sun.longestDownH
+  const cells = [
+    ['sunHours', 'Sunlight', metrics.sun.upHours, false, 'text-sun'],
+    ['earthHours', 'Contact with Earth', metrics.earth.upHours, false, 'text-earth'],
+    ['longestDark', 'Longest night', metrics.sun.longestDownH, Boolean(metrics.sun.longestDownOpen), over ? 'text-alert' : 'text-ink'],
+    ['longestBlackout', 'Without contact', metrics.earth.longestDownH, Boolean(metrics.earth.longestDownOpen), 'text-ink'],
+  ] as const
 
   return (
-    <Panel
-      className={`flex flex-col ${over ? 'border-alert' : leading ? 'border-ink' : ''}`}
-      as="section"
-    >
+    <Panel className={`flex flex-col ${over ? 'border-alert!' : leading ? 'border-ink!' : ''}`} as="section">
       <div className="flex items-start gap-3 border-b border-line p-4">
-        {rank !== null ? (
-          <span
-            className={`inline-flex size-7 shrink-0 items-center justify-center text-body font-bold ${
-              leading ? 'bg-ink text-canvas' : 'bg-line-strong text-ink'
-            }`}
-            aria-label={`Rank ${rank}`}
-          >
-            {rank}
-          </span>
-        ) : (
-          // No place can be stated: the badge carries the range the server
-          // gives, in the uncertain ink and dashed edge, never a number alone.
-          <span
-            className="inline-flex h-7 min-w-7 shrink-0 items-center justify-center border border-dashed border-uncertain px-1 text-caption font-bold text-uncertain"
-            aria-label={label?.title ?? 'Rank not stated'}
-            title={label?.title}
-          >
-            {range.length === 2 ? `${range[0]}–${range[1]}` : '?'}
-          </span>
-        )}
+        <span
+          className={`inline-flex size-7 shrink-0 items-center justify-center text-body font-bold ${
+            rank === null
+              ? 'border border-dashed border-uncertain text-uncertain'
+              : leading
+                ? 'bg-ink text-canvas'
+                : 'bg-line-strong text-ink'
+          }`}
+          aria-label={rank === null ? 'No place stated' : `Rank ${rank}`}
+        >
+          {rank ?? '–'}
+        </span>
         <div className="flex min-w-0 flex-col gap-0.5">
-          <div className="text-title font-semibold">
-            {site.code} — {site.name}
-          </div>
-          {label && (
-            <div
-              className={`text-small font-semibold ${label.tone === 'uncertain' ? 'text-uncertain' : 'text-ink'}`}
-              title={label.title}
-            >
-              {label.text}
-              {label.title && <span className="sr-only"> ({label.title})</span>}
-            </div>
-          )}
-          {tied && <div className="text-caption text-ink-2">tied — the data cannot separate these</div>}
-          <div className="font-mono text-tag text-ink-3">{coords(site.latDeg, site.lonDeg)}</div>
+          <h2 className="text-title font-semibold">
+            <span className="mr-1.5 font-mono text-body text-ink-3">{site.code}</span>
+            {site.name}
+          </h2>
+          {label &&
+            (label.kind === 'unranked' ? (
+              <>
+                <button
+                  type="button"
+                  aria-expanded={why}
+                  aria-controls={whyId}
+                  onClick={() => setWhy((v) => !v)}
+                  className="flex min-h-8 items-center gap-1 self-start text-small font-semibold text-uncertain hover:text-ink"
+                >
+                  Too close to call
+                  <Icon name="info" size={14} strokeWidth={2} />
+                </button>
+                <p id={whyId} hidden={!why} className="text-caption leading-caption text-ink-2">
+                  {label.why ? `Because ${label.why}` : 'No place can be stated'}
+                  {label.title ? `; it ${label.title}.` : '.'}
+                </p>
+              </>
+            ) : (
+              <div className="text-small font-semibold text-ink">
+                {label.kind === 'joint' ? `${label.text}: the data can’t separate them` : label.text}
+              </div>
+            ))}
         </div>
-        <div className="ml-auto flex shrink-0 items-start gap-1">
-          {over && (
-            <span className="inline-flex items-center gap-1.5 bg-alert-deep px-2 py-1 text-tag font-semibold tracking-caps-sm text-alert uppercase">
-              <Icon name="alert" size={12} strokeWidth={2.4} />
-              Over limit
-            </span>
-          )}
+        <div className="ml-auto shrink-0">
           <RemoveSite siteId={siteId} name={site.name} />
         </div>
       </div>
 
-      <div className="p-4">
-        <KeyNumberTile
-          label={`${termLabel(rankBy, face).label}${label?.kind === 'best' ? ' · best' : ''}`}
-          expert={termLabel(rankBy, face).expert}
-          value={metricValue(metrics, rankBy)}
-          open={isOpen(metrics, rankBy)}
-          tone={rankBy === 'sunHours' ? 'sun' : rankBy === 'earthHours' ? 'earth' : over ? 'alert' : 'neutral'}
-          size="md"
-          fraction={
-            rankBy === 'longestDark'
-              ? metrics.sun.longestDownH / SURVIVAL_LIMIT_H
-              : metricValue(metrics, rankBy) / metrics.windowHours
-          }
-        />
-      </div>
+      <dl className="grid grid-cols-2 gap-2 p-4">
+        {cells.map(([key, name, value, open, tone]) => (
+          <div
+            key={key}
+            className={`flex flex-col gap-0.5 px-3 py-2 ${key === rankBy ? 'bg-inset shadow-[inset_0_-2px_0_var(--color-ink-3)]' : ''}`}
+          >
+            <dt className="text-caption text-ink-3">
+              {name}
+              {key === rankBy && <span className="sr-only"> (ranked by this)</span>}
+            </dt>
+            <dd className={`text-figure-sm leading-7 font-semibold tnum ${tone}`}>
+              {bound(open)}
+              {Math.round(value)}
+              <span className="ml-1 text-body font-normal text-ink-3">h</span>
+            </dd>
+          </div>
+        ))}
+      </dl>
 
-      <div className="grid grid-cols-2 gap-x-4 gap-y-3 px-4">
-        <Mini label="Sunlight, h" value={metrics.sun.upHours} tone="text-sun" />
-        <Mini label="Contact, h" value={metrics.earth.upHours} tone="text-earth" />
-        <Mini
-          label="Longest night, h"
-          value={metrics.sun.longestDownH}
-          open={metrics.sun.longestDownOpen}
-          tone={over ? 'text-alert' : 'text-ink'}
-        />
-        <Mini label="Without contact, h" value={metrics.earth.longestDownH} open={metrics.earth.longestDownOpen} tone="text-ink" />
-      </div>
-
-      <div className="flex flex-col gap-3 p-4">
+      <div className="flex flex-col gap-3 px-4 pb-4">
         <div className="flex flex-col gap-1.5">
-          <span className="text-tag font-semibold tracking-caps-md text-sun uppercase">Sunlight over these dates</span>
+          <span className="text-caption font-semibold text-sun">Sunlight over these dates</span>
           <Ribbon
             arcs={metrics.sun.arcs}
             windowStartH={metrics.windowStartH}
@@ -502,7 +502,7 @@ function CompareCard({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <span className="text-tag font-semibold tracking-caps-md text-earth uppercase">Contact with Earth over these dates</span>
+          <span className="text-caption font-semibold text-earth">Contact with Earth over these dates</span>
           <Ribbon
             arcs={metrics.earth.arcs}
             windowStartH={metrics.windowStartH}
@@ -513,38 +513,17 @@ function CompareCard({
         </div>
       </div>
 
-      <div className="mt-auto border-t border-line bg-raised p-4">
-        <p className="text-body leading-6 text-ink">
+      <div className="mt-auto flex flex-col gap-1 border-t border-line p-4">
+        <p className={`text-small font-semibold ${over ? 'text-alert' : 'text-ink'}`}>
           {over
-            ? `${metrics.sun.longestDownOpen ? 'At least ' : ''}${Math.round(metrics.sun.longestDownH - SURVIVAL_LIMIT_H)} h over the limit in a single block. ${site.note}`
+            ? `${metrics.sun.longestDownOpen ? 'At least ' : ''}${Math.round(-margin)} h past the ${SURVIVAL_LIMIT_H} h battery limit`
             : metrics.sun.longestDownOpen
-              ? `At most ${hoursWithUnit(SURVIVAL_LIMIT_H - metrics.sun.longestDownH)} of margin: the window cuts this night short. ${site.note}`
-              : `${hoursWithUnit(SURVIVAL_LIMIT_H - metrics.sun.longestDownH)} of margin on the night. ${site.note}`}
+              ? `At most ${hoursWithUnit(margin)} inside the battery limit: these dates cut the night short`
+              : `${hoursWithUnit(margin)} inside the ${SURVIVAL_LIMIT_H} h battery limit`}
         </p>
+        <p className="text-small leading-5 text-ink-2">{site.note}</p>
       </div>
     </Panel>
-  )
-}
-
-function Mini({
-  label,
-  value,
-  tone,
-  open,
-}: {
-  label: string
-  value: number
-  tone: string
-  open?: boolean
-}) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-micro font-semibold tracking-caps-sm text-ink-3 uppercase">{label}</span>
-      <span className={`text-figure-sm leading-6 font-semibold tnum ${tone}`}>
-        {bound(open)}
-        {Math.round(value)}
-      </span>
-    </div>
   )
 }
 

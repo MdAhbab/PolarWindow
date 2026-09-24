@@ -349,11 +349,11 @@ function describe(m: SiteMetrics): string {
     `in ${m.sun.arcs.filter((a) => a.up).length} stretches. ` +
     `Inner cyan ring: Earth is above it for about ${Math.round(m.earth.upHours)} hours. ` +
     (dark
-      ? `The longest dark gap is ${hoursSpoken(dark.hours, m.sun.longestDownOpen)}` +
-        (m.sun.longestDownOpen ? ', cut short by the edge of the window' : '') +
+      ? `The longest night is ${hoursSpoken(dark.hours, m.sun.longestDownOpen)}` +
+        (m.sun.longestDownOpen ? ', cut short by the chosen dates' : '') +
         (terrain
-          ? `, caused by terrain at bearing ${bearing(dark.blockedByBearingDeg ?? 0)}.`
+          ? `, caused by a ridge at bearing ${bearing(dark.blockedByBearingDeg ?? 0)}.`
           : ', with the Sun below the horizon rather than behind a ridge.')
-      : 'There is no dark gap in this window.')
+      : 'The Sun does not set on these dates.')
   )
 }

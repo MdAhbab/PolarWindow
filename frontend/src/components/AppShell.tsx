@@ -6,12 +6,11 @@ import { useKeyboardMap } from '../hooks/useKeyboard'
 import { useReducedMotion } from '../hooks/useMotion'
 import { Icon, Mark, Wordmark } from './Icon'
 import { useProvenance } from '../lib/useProvenance'
-import { IconButton, SampleDataBadge, Segmented, SvgDefs } from './ui'
+import { IconButton, SampleDataBadge, SvgDefs } from './ui'
 import { RunLogDrawer } from './RunLog'
 import { SettingsSheet } from './SettingsSheet'
 import { GuideBar } from './GuideBar'
 import { useGuide } from '../lib/guide'
-import type { Face } from '../lib/types'
 import { ESTIMATES, isoDateWords } from '../lib/format'
 import { snapshotCapturedAt } from '../lib/api/snapshot'
 
@@ -23,20 +22,19 @@ import { snapshotCapturedAt } from '../lib/api/snapshot'
 const NAV = [
   { to: '/missions', label: 'Missions', icon: 'pin' as const },
   { to: '/map', label: 'Map', icon: 'layers' as const },
-  { to: '/clocks', label: 'Site', icon: 'clocks' as const },
+  { to: '/site', label: 'Site', icon: 'clocks' as const },
   { to: '/compare', label: 'Compare', icon: 'compare' as const },
-  { to: '/blackout', label: 'Plan', icon: 'gap' as const },
+  { to: '/plan', label: 'Plan', icon: 'gap' as const },
 ]
 
 const TITLES: Record<string, string> = {
   '/missions': 'CLPS missions',
   '/map': 'Map',
-  '/clocks': 'Site',
+  '/site': 'Site',
   '/compare': 'Compare',
-  '/horizon': 'Skyline',
-  '/blackout': 'Plan for time without contact',
+  '/skyline': 'Skyline',
+  '/plan': 'Plan for time without contact',
   '/report': 'Printable report',
-  '/states': 'Screen states',
 }
 
 /**
@@ -62,26 +60,13 @@ function useRouteFocus() {
   }, [pathname])
 }
 
-/**
- * How much detail, not who you are (U15): people choose by task, not by job
- * title. The three faces underneath are unchanged; Simple is the default.
- */
-export const FACES: { value: Face; label: string }[] = [
-  { value: 'public', label: 'Simple' },
-  { value: 'educator', label: 'Explain' },
-  { value: 'planner', label: 'Expert' },
-]
-
 export function AppShell({ children }: { children: ReactNode }) {
   const provenance = useProvenance()
   const capturedAt = snapshotCapturedAt()
   // Selectors, not the whole store: during M1 the cursor changes sixty times a
   // second, and a whole-store subscription re-rendered the shell on each one.
-  const { face, setFace, openRunLog, settingsOpen, setSettingsOpen } = useMission(
+  const { settingsOpen, setSettingsOpen } = useMission(
     useShallow((s) => ({
-      face: s.face,
-      setFace: s.setFace,
-      openRunLog: s.openRunLog,
       settingsOpen: s.settingsOpen,
       setSettingsOpen: s.setSettingsOpen,
     })),
@@ -126,20 +111,17 @@ export function AppShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        {/* Below lg: logo and the two sheet buttons on the first line, the
-            provenance badge and the faces on the second. */}
-        <div className="order-3 flex w-full flex-wrap items-center gap-x-3 gap-y-2 lg:order-none lg:ml-auto lg:w-auto lg:justify-end">
-          {/* Once, at every width (U12): the one element that says how much to
-              trust everything else. */}
-          <SampleDataBadge
-            provenance={provenance}
-            note={provenance === 'snapshot' && capturedAt ? `Saved ${isoDateWords(capturedAt)}.` : undefined}
-          />
-          <div data-guide="detail">
-            <Segmented options={FACES} value={face} onChange={setFace} label="Detail" pill />
+        {/* Said only when it matters: live measurements are the normal case,
+            so the badge appears for partial data, a saved copy or no data. */}
+        {provenance !== 'measured' && (
+          <div className="order-3 w-full lg:order-none lg:ml-auto lg:w-auto">
+            <SampleDataBadge
+              provenance={provenance}
+              note={provenance === 'snapshot' && capturedAt ? `Saved ${isoDateWords(capturedAt)}.` : undefined}
+            />
           </div>
-        </div>
-        <div className="ml-auto flex items-center gap-2 lg:ml-0">
+        )}
+        <div className={`ml-auto flex items-center gap-2 ${provenance !== 'measured' ? 'lg:ml-0' : ''}`}>
           <button
             type="button"
             aria-pressed={guideOpen}
@@ -151,17 +133,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             Guide
           </button>
           <IconButton
-            name="log"
-            label="AI activity log"
-            haspopup="dialog"
-            onClick={(e) => {
-              e.currentTarget.focus()
-              openRunLog(null)
-            }}
-          />
-          <IconButton
             name="settings"
             label="Settings"
+            guide="settings"
             haspopup="dialog"
             expanded={settingsOpen}
             onClick={(e) => {

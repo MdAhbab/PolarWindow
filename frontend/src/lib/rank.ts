@@ -30,6 +30,8 @@ export interface RankLabel {
   text: string
   /** Tooltip and accessible description; for an unranked site, the range. */
   title?: string
+  /** For an unranked site, why no place can be stated, in words. */
+  why?: string
   /** `uncertain` renders in `text-uncertain`: a margin we admit to. */
   tone: 'ink' | 'uncertain'
 }
@@ -58,10 +60,13 @@ export function rangeWords(range: readonly number[]): string | undefined {
 export function rankLabel(f: RankFacts): RankLabel {
   if (f.rank === null) {
     const title = rangeWords(f.rankRange)
-    if (f.censored) return { kind: 'unranked', text: "cut short, can't rank", title, tone: 'uncertain' }
-    if (f.grazing) return { kind: 'unranked', text: "edge can't be timed, can't rank", title, tone: 'uncertain' }
-    const others = f.incomparableWith?.length ? ` against ${f.incomparableWith.join(' and ')}` : ''
-    return { kind: 'unranked', text: `can't rank${others}`, title, tone: 'uncertain' }
+    // One label for every reason, so the card stays short; the reason and the
+    // places it could take are said when the label is opened.
+    const text = 'too close to call'
+    if (f.censored) return { kind: 'unranked', text, title, why: 'the chosen dates cut its value short', tone: 'uncertain' }
+    if (f.grazing) return { kind: 'unranked', text, title, why: 'a start or end is too shallow to time', tone: 'uncertain' }
+    const others = f.incomparableWith?.length ? ` from ${f.incomparableWith.join(' and ')}` : ''
+    return { kind: 'unranked', text, title, why: `the margins can’t separate it${others}`, tone: 'uncertain' }
   }
   if (f.tied) return { kind: 'joint', text: `joint ${ordinal(f.rank)}`, tone: 'ink' }
   if (f.rank === 1) {

@@ -108,6 +108,7 @@ const PATHS: Record<string, JSX.Element> = {
   ),
   back: <path d="M15 5 L8 12 L15 19" />,
   check: <path d="M4 12 L10 18 L20 6" />,
+  chevron: <path d="M6 9 L12 15 L18 9" />,
   close: <path d="M6 6 L18 18 M18 6 L6 18" />,
   settings: (
     <>

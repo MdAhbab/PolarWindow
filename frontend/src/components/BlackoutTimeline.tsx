@@ -1,5 +1,5 @@
 import type { SiteMetrics } from '../lib/types'
-import { hoursWithUnit } from '../lib/format'
+import { hoursWithUnit, msFromModelH } from '../lib/format'
 import { crossingBands } from '../lib/bands'
 import { useReducedMotion } from '../hooks/useMotion'
 
@@ -151,7 +151,7 @@ export function BlackoutTimeline({
       />
 
       <line x1={X0} y1="262" x2={X1} y2="262" stroke="var(--color-line-strong)" strokeWidth="1.5" />
-      <g fill="var(--color-ink-3)" fontFamily="var(--font-mono)" fontSize="11" textAnchor="middle">
+      <g fill="var(--color-ink-3)" fontFamily="var(--font-sans)" fontSize="12" textAnchor="middle">
         {[0, 0.25, 0.5, 0.75, 1].map((f) => (
           <g key={f}>
             <line
@@ -163,11 +163,21 @@ export function BlackoutTimeline({
               strokeWidth="1.5"
             />
             <text x={X0 + f * (X1 - X0)} y="286">
-              h{Math.round(f * win)}
+              {axisDate(metrics.windowStartH + f * win, win)}
             </text>
           </g>
         ))}
       </g>
     </svg>
   )
+}
+
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+/** A tick as a date ("21 Mar"), with the time of day when the dates span only a few days. */
+function axisDate(tH: number, windowHours: number): string {
+  const d = new Date(msFromModelH(tH))
+  const day = `${d.getUTCDate()} ${MON[d.getUTCMonth()]}`
+  if (windowHours > 72) return day
+  return `${day} ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`
 }

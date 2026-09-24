@@ -38,7 +38,7 @@ const idle = { isIdle: false, isPending: false, isError: false, error: null, can
 describe('AgentCard', () => {
   it('ok: the answer as text, the numbers used, and the way to the run log', () => {
     renderApp(<AgentCard kind="explain" agent={{ ...idle, data: answer({}) }} />)
-    expect(screen.getByText('AI answer · gemini-3.8-flash · 3.2 s')).toBeTruthy()
+    expect(screen.getByText(/^AI answer · gemini-3\.8-flash · 3\.2 s · \d+ numbers, each checked/)).toBeTruthy()
     expect(screen.getByText('Connecting Ridge is sunlit for 574.4 hours.')).toBeTruthy()
     const cell = screen.getByText('Site numbers · time in sunlight (seconds)')
     expect(cell.closest('tr')?.textContent).toContain('574.4')
@@ -68,7 +68,7 @@ describe('AgentCard', () => {
   it('degraded with no model configured: a first-class summary, not an error', () => {
     const data = answer({ status: 'degraded', run_status: 'degraded', reason: 'not configured', meta: meta(false) } as unknown as Partial<AgentDTO>)
     renderApp(<AgentCard kind="explain" agent={{ ...idle, data }} />)
-    expect(screen.getByText('Summary from measurements (no AI)')).toBeTruthy()
+    expect(screen.getByText(/^Summary from measurements \(no AI\)/)).toBeTruthy()
     expect(screen.getByText(/No AI model is set up on this server/)).toBeTruthy()
     expect(screen.getByText('Connecting Ridge is sunlit for 574.4 hours.')).toBeTruthy()
     expect(screen.queryByText('What still works')).toBeNull()
@@ -84,14 +84,14 @@ describe('AgentCard', () => {
   it('guard rejected: says a number could not be traced, then the measurements', () => {
     const data = answer({ status: 'degraded', run_status: 'guard_rejected' } as Partial<AgentDTO>)
     renderApp(<AgentCard kind="explain" agent={{ ...idle, data }} />)
-    expect(screen.getByText('Summary from measurements (AI answer replaced)')).toBeTruthy()
+    expect(screen.getByText(/^Summary from measurements \(AI answer replaced\)/)).toBeTruthy()
     expect(screen.getByText(/included a number we couldn't trace to a measurement/)).toBeTruthy()
   })
 
   it('loading: says what is being checked, and Cancel aborts', () => {
     const cancel = vi.fn()
     renderApp(<AgentCard kind="ask" agent={{ ...idle, isPending: true, cancel }} />)
-    expect(screen.getByRole('status').textContent).toBe('Asking… checking every number against the measurements')
+    expect(screen.getByRole('status').textContent).toBe('Writing… every number is checked against the measurements')
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(cancel).toHaveBeenCalled()
   })

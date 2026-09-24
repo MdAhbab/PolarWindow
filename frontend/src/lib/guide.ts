@@ -37,10 +37,10 @@ export const GUIDE_STEPS: GuideStep[] = [
   },
   {
     id: 'site',
-    path: '/clocks',
+    path: '/site',
     target: 'rings',
     title: 'Read one site in detail',
-    body: 'The outer ring is sunlight and the inner ring is contact with Earth, over the chosen dates. Gaps in a ring are when hills or the horizon block it.',
+    body: 'The outer ring is sunlight and the inner ring is contact with Earth, over the chosen dates. Gaps are when hills or the horizon block them. The rows beside it open more detail.',
   },
   {
     id: 'compare',
@@ -51,7 +51,7 @@ export const GUIDE_STEPS: GuideStep[] = [
   },
   {
     id: 'plan',
-    path: '/blackout',
+    path: '/plan',
     target: 'plan-list',
     title: 'Plan for time without contact',
     body: 'Every stretch when the lander can’t reach Earth, longest first, and what it must handle alone. Download the list as a spreadsheet for your team.',
@@ -68,21 +68,21 @@ export const GUIDE_STEPS: GuideStep[] = [
     path: '/missions/im-2',
     target: 'dates',
     title: 'Try other dates',
-    body: 'Pick a month to move the dates. Its two bars show how much sunlight and Earth contact that month has, so a better month stands out.',
+    body: 'Open “Change the dates” and pick a month. Its two bars show how much sunlight and Earth contact that month has, so a better month stands out.',
   },
   {
     id: 'helpers',
     path: '/missions/im-2',
     target: 'listen',
     title: 'Listen, or ask the AI',
-    body: 'Listen reads a short summary aloud. The AI panels answer in words, and every number they use is checked against the measurements; the log shows each step.',
+    body: 'Listen reads a short summary aloud. The AI rows answer in words when opened, and every number they use is checked against the measurements.',
   },
   {
     id: 'settings',
     path: '/missions/im-2',
-    target: 'detail',
-    title: 'Choose the detail, and manage the project',
-    body: 'Simple, Explain and Expert change how much is shown, never the numbers. Settings holds the display options and the project controls: the AI, its log and saved results.',
+    target: 'settings',
+    title: 'Settings and the project',
+    body: 'Tap any number’s label to see what it means. Settings holds the display options and the project controls: the AI, its activity log and saved results.',
   },
 ]
 

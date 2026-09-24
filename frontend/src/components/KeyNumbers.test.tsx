@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest'
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { KeyNumberRow } from './KeyNumbers'
 import { adaptHorizon, adaptSite } from '../lib/api/adapters'
 import type { MetricsDTO, WindowsDTO } from '../lib/api/client'
@@ -45,13 +45,13 @@ const tile = (label: RegExp) => screen.getByText(label).closest('div.border') as
 
 describe('KeyNumberRow', () => {
   it('shows the computing state, never zeros, before the numbers arrive', () => {
-    render(<KeyNumberRow metrics={undefined} face="public" />)
+    render(<KeyNumberRow metrics={undefined} />)
     expect(screen.getAllByText('——')).toHaveLength(4)
     expect(screen.queryByText('0')).toBeNull()
   })
 
   it('shows the four numbers in order, with the night over the limit and its margin', () => {
-    render(<KeyNumberRow metrics={real()} face="public" />)
+    render(<KeyNumberRow metrics={real()} />)
     const labels = screen.getAllByText(/^(Time in sunlight|Time in contact with Earth|Longest night|Longest time without contact)$/)
     expect(labels.map((l) => l.textContent)).toEqual([
       'Time in sunlight',
@@ -66,15 +66,20 @@ describe('KeyNumberRow', () => {
     expect(within(night).getByText(/about 122 hours, plus or minus 17.1 hours/)).toBeTruthy()
   })
 
-  it('adds the expert term only in Expert', () => {
-    const { rerender } = render(<KeyNumberRow metrics={real()} face="public" />)
-    expect(screen.queryByText('Direct-to-Earth (DTE) contact')).toBeNull()
-    rerender(<KeyNumberRow metrics={real()} face="planner" />)
-    expect(screen.getByText('Direct-to-Earth (DTE) contact')).toBeTruthy()
+  it('says what a number means, and its professional name, only when its label is pressed', () => {
+    render(<KeyNumberRow metrics={real()} />)
+    const means = screen.getByText(/so the lander can radio home directly/)
+    expect(means.closest('p')?.hidden).toBe(true)
+    const button = screen.getByRole('button', { name: /Time in contact with Earth/ })
+    expect(button.getAttribute('aria-expanded')).toBe('false')
+    fireEvent.click(button)
+    expect(button.getAttribute('aria-expanded')).toBe('true')
+    expect(means.closest('p')?.hidden).toBe(false)
+    expect(screen.getByText('Also called Direct-to-Earth (DTE) contact.')).toBeTruthy()
   })
 
   it('says plainly when there is no night and no blackout: no ±, no margin arithmetic', () => {
-    render(<KeyNumberRow metrics={allDay()} face="public" />)
+    render(<KeyNumberRow metrics={allDay()} />)
     expect(screen.queryByText(/±/)).toBeNull()
     expect(screen.getByText('The Sun did not set on these dates')).toBeTruthy()
     expect(screen.getByText('Earth stayed in view on all of these dates')).toBeTruthy()
@@ -82,7 +87,7 @@ describe('KeyNumberRow', () => {
   })
 
   it('keeps the numbers but drops the ± on a smooth-Moon skyline (uncertain, not hidden)', () => {
-    render(<KeyNumberRow metrics={real()} face="public" uncertain />)
+    render(<KeyNumberRow metrics={real()} uncertain />)
     expect(within(tile(/^Longest night$/)).getByText('122')).toBeTruthy()
     expect(screen.queryByText(/±/)).toBeNull()
     expect(screen.getAllByText(/, uncertain$/)).toHaveLength(4)
@@ -91,7 +96,7 @@ describe('KeyNumberRow', () => {
   it('marks a night the window cut short as at least its value', () => {
     const m = real()
     const cut = { ...m, sun: { ...m.sun, longestDownOpen: true } }
-    render(<KeyNumberRow metrics={cut} face="public" />)
+    render(<KeyNumberRow metrics={cut} />)
     const night = tile(/^Longest night$/)
     expect(within(night).getByText(/≥/)).toBeTruthy()
     expect(within(night).getByText(/at least 122 hours/)).toBeTruthy()

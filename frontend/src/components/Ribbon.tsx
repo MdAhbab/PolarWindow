@@ -106,7 +106,7 @@ function describeRibbon(arcs: Arc[], tone: 'sun' | 'earth'): string {
   const down = arcs.filter((a) => !a.up)
   const worst = down.reduce<Arc | undefined>((m, a) => (!m || a.hours > m.hours ? a : m), undefined)
   const cut = worst && (worst.openStart || worst.openEnd)
-  return `${body} above the local skyline in ${up.length} stretches, below it in ${down.length}; the longest gap is ${
+  return `${body} above the local skyline in ${up.length} stretches, below it in ${down.length}; the longest time below is ${
     cut ? 'at least' : 'about'
-  } ${Math.round(worst?.hours ?? 0)} hours${cut ? ', cut short by the edge of the window' : ''}.`
+  } ${Math.round(worst?.hours ?? 0)} hours${cut ? ', cut short by the chosen dates' : ''}.`
 }

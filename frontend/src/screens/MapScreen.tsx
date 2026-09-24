@@ -8,9 +8,8 @@ import { getCandidates, siteById } from '../lib/sites'
 import { useMissions } from '../lib/api/queries'
 import { PolarMap, type MissionPin } from '../components/PolarMap'
 import { DateSlider } from '../components/DateSlider'
-import { KeyNumberRow } from '../components/KeyNumbers'
 import { EmptyState, LoadingPanel, ProblemPanel } from '../components/States'
-import { Button, Chip, Panel, SearchField, SectionLabel } from '../components/ui'
+import { Button, Chip, Disclosure, Panel, SearchField, SectionLabel } from '../components/ui'
 import { bound, coords, percent } from '../lib/format'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
 import { coordinateKindWords } from '../lib/missions'
@@ -19,14 +18,13 @@ import type { SiteMetrics } from '../lib/types'
 
 /** S1 — where you start: pick a site, see the terminator sweep across the pole. */
 export function MapScreen() {
-  const { siteId, setSite, cursorH, windowStartH, face, compareIds } = useMission(
+  const { siteId, setSite, cursorH, windowStartH, compareIds } = useMission(
     useShallow((s) => ({
       compareIds: s.compareIds,
       siteId: s.siteId,
       setSite: s.setSite,
       cursorH: s.cursorH,
       windowStartH: s.windowStartH,
-      face: s.face,
     })),
   )
   // The candidates only: mission targets are a separate, optional layer.
@@ -84,7 +82,7 @@ export function MapScreen() {
     minSun > 0 && matches.length === 0
       ? `sunlight at least ${minSun}%`
       : Number.isFinite(maxDark)
-        ? `longest dark gap under ${maxDark} h`
+        ? `longest night under ${maxDark} h`
         : nearPsr
           ? 'beside a shadowed floor'
           : `the search “${query}”`
@@ -111,6 +109,8 @@ export function MapScreen() {
   }, [showMissions, missions.data, siteId])
   const missionsHere = (missions.data?.items ?? []).filter((m) => m.siteId === siteId)
 
+  const filtersOn = (minSun > 0 ? 1 : 0) + (Number.isFinite(maxDark) ? 1 : 0) + (nearPsr ? 1 : 0) + (showMissions ? 1 : 0)
+
   return (
     <div className="flex grow flex-col">
       <h1 className="sr-only">Map of the south pole and its candidate sites</h1>
@@ -118,14 +118,13 @@ export function MapScreen() {
         <DateSlider />
       </div>
 
-      <div className="flex grow flex-col gap-4 p-4 lg:flex-row lg:gap-6 lg:p-6">
-        {/* Search and filters at every detail level: finding a site is not an expert task. */}
-        <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-[260px]" aria-label="Search and filters">
+      <div className="flex grow flex-col gap-4 p-4 lg:flex-row lg:items-start lg:gap-6 lg:p-6">
+        {/* On a phone the map comes first and the chosen site's numbers right
+            under it, so a tap on a pin shows its answer without scrolling. */}
+        <aside className="order-3 flex w-full shrink-0 flex-col gap-3 lg:order-none lg:w-[280px]" aria-label="Search and filters">
           <SearchField value={query} onChange={setQuery} />
 
-          <Panel className="flex flex-col gap-5 p-4">
-            <SectionLabel>Filters</SectionLabel>
-
+          <Disclosure title="Filters" meta={filtersOn ? `${filtersOn} on` : undefined}>
             <Slider
               id="f-sun"
               label="Sunlight at least"
@@ -149,29 +148,20 @@ export function MapScreen() {
               onChange={(v) => setMaxDark(v >= darkMax ? Infinity : v)}
               tone="bg-terrain-high"
             />
-
-            <div className="flex flex-wrap gap-2 border-t border-line pt-4">
+            <div className="flex flex-wrap gap-2">
               <Chip selected={nearPsr} onClick={() => setNearPsr((v) => !v)} tone="neutral">
-                Beside a shadowed floor
+                Beside a shadowed crater
               </Chip>
-              <p className="text-caption leading-caption-tight text-ink-3">
-                Sites on the rim of a named polar crater, next to its permanently shadowed floor.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2 border-t border-line pt-4">
               <Chip selected={showMissions} onClick={() => setShowMissions((v) => !v)} tone="neutral">
-                Mission landing spots
+                Show mission landing spots
               </Chip>
-              <p className="text-caption leading-caption-tight text-ink-3">
-                Adds CLPS missions’ landing spots inside 80°S as diamonds. Choose one to see its numbers here.
-              </p>
             </div>
-          </Panel>
+          </Disclosure>
 
-          <Panel className="flex grow flex-col">
-            <div className="flex items-baseline justify-between border-b border-line px-4 py-3">
-              <SectionLabel>Matching sites</SectionLabel>
-                <span className="text-caption text-ink-2" aria-live="polite">
+          <Panel className="relative flex flex-col lg:max-h-[560px] lg:overflow-y-auto">
+            <div className="sticky top-0 z-10 flex items-baseline justify-between border-b border-line bg-panel px-4 py-3">
+              <SectionLabel>Sites</SectionLabel>
+              <span className="text-caption text-ink-2" aria-live="polite">
                 {matches.length} of {candidates.length}
               </span>
             </div>
@@ -180,7 +170,7 @@ export function MapScreen() {
                 title="No site clears every filter"
                 detail={
                   <>
-                    {candidates.length} sites checked. The binding one is <strong className="text-ink">{binding}</strong>.
+                    {candidates.length} sites checked. The one ruling them out is <strong className="text-ink">{binding}</strong>.
                   </>
                 }
                 primary={
@@ -208,22 +198,28 @@ export function MapScreen() {
                     type="button"
                     onClick={() => setSite(s.id)}
                     aria-current={active ? 'true' : undefined}
-                    className={`flex flex-col gap-1 border-b border-line px-4 py-3 text-left last:border-b-0 ${
-                      active ? 'bg-inset' : 'hover:bg-inset'
+                    className={`flex flex-col gap-0.5 border-b border-line px-4 py-2.5 text-left last:border-b-0 ${
+                      active ? 'bg-inset shadow-[inset_3px_0_0_var(--color-ink)]' : 'hover:bg-inset'
                     }`}
                   >
-                    <span className="text-body font-semibold text-ink">
-                      {s.code} — {s.name}
+                    <span className="flex items-baseline gap-2 text-body font-semibold text-ink">
+                      <span className="w-4 shrink-0 font-mono text-caption text-ink-3" aria-hidden="true">
+                        {s.code}
+                      </span>
+                      {s.name}
                     </span>
-                    <span className="font-mono text-tag text-ink-3">
-                      {m
-                        ? `sunlight ${percent(m.sun.fractionUp)} · contact ${percent(m.earth.fractionUp)} · night `
-                        : 'computing…'}
-                      {m && (
-                        <span className={m.sun.longestDownH > SURVIVAL_LIMIT_H ? 'text-alert' : ''}>
-                          {bound(m.sun.longestDownOpen)}
-                          {Math.round(m.sun.longestDownH)} h
-                        </span>
+                    <span className="pl-6 text-caption text-ink-3 tnum">
+                      {m ? (
+                        <>
+                          <span className="text-sun">{percent(m.sun.fractionUp)}</span> sun ·{' '}
+                          <span className="text-earth">{percent(m.earth.fractionUp)}</span> contact · night{' '}
+                          <span className={m.sun.longestDownH > SURVIVAL_LIMIT_H ? 'text-alert' : 'text-ink-2'}>
+                            {bound(m.sun.longestDownOpen)}
+                            {Math.round(m.sun.longestDownH)} h
+                          </span>
+                        </>
+                      ) : (
+                        'working out…'
                       )}
                     </span>
                   </button>
@@ -233,13 +229,13 @@ export function MapScreen() {
           </Panel>
         </aside>
 
-        <section data-guide="map" className="flex grow flex-col border border-line bg-panel">
-          <div className="flex items-center gap-4 border-b border-line px-4 py-3">
-            <SectionLabel>The south pole from above · 80°S to the pole</SectionLabel>
-            <span className="ml-auto text-caption text-ink-3">terrain from LOLA; shadow ignores hills</span>
+        <section data-guide="map" className="order-1 flex min-w-0 grow flex-col border border-line bg-panel lg:order-none">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line px-4 py-3">
+            <h2 className="text-control font-semibold text-ink">The south pole from above</h2>
+            <span className="text-caption text-ink-3">80°S to the pole · choose a site</span>
           </div>
 
-          <div className="flex grow items-start justify-center p-3">
+          <div className="flex items-start justify-center p-3">
             <PolarMap
               sun={sun}
               selectedSiteId={siteId}
@@ -254,36 +250,28 @@ export function MapScreen() {
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line px-4 py-3">
-            <LegendSwatch className="bg-terrain-mid">Terrain: laser-altimeter map (LOLA), 80 m detail</LegendSwatch>
-            <LegendSwatch className="bg-psr">Sun below the horizon at this moment, ignoring hills</LegendSwatch>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-line px-4 py-3">
+            <LegendSwatch className="bg-terrain-mid">Terrain (LOLA, 80 m)</LegendSwatch>
+            <LegendSwatch className="bg-psr">In shadow now, if the ground were flat</LegendSwatch>
             <LegendSwatch className="hatch-uncertain">Shadow-line margin</LegendSwatch>
-            <p className="ml-auto max-w-[360px] text-right text-caption leading-caption-tight text-ink-3">
-              The shadow line is where the Sun sets if the ground were flat, using the same Sun positions (SPICE) as every number.
-              Ridges and craters are not shaded here; each site’s own skyline decides its numbers.
-            </p>
           </div>
         </section>
 
-        <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-[320px]">
+        <aside className="order-2 flex w-full shrink-0 flex-col gap-4 lg:order-none lg:w-[300px]">
           {error && !focused ? (
             <ProblemPanel error={error} fallbackTitle="Cannot compute this site" />
           ) : compute.status === 'running' && !focused ? (
             <LoadingPanel done={done} total={total} />
           ) : (
             <Panel elevated className="flex flex-col">
-              <div className="flex items-start gap-3 border-b border-line p-4">
-                <span className="inline-flex size-7 shrink-0 items-center justify-center bg-sun-fill text-body font-bold text-on-sun">
-                  {site.code}
-                </span>
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <div className="text-title font-semibold">{site.name}</div>
-                  <div className="font-mono text-tag text-ink-3">{coords(site.latDeg, site.lonDeg)}</div>
+              <div className="flex flex-col gap-0.5 border-b border-line p-4">
+                <div className="text-title font-semibold">
+                  <span className="mr-2 font-mono text-body text-ink-3">{site.code}</span>
+                  {site.name}
                 </div>
+                <div className="font-mono text-tag text-ink-3">{coords(site.latDeg, site.lonDeg)}</div>
               </div>
-              <div className="p-4">
-                <KeyNumberRow metrics={focused} face={face} size="sm" columns={2} />
-              </div>
+              <SiteNumbers metrics={focused} />
               <div className="flex flex-col gap-2.5 border-t border-line p-4">
                 <p className="text-small leading-5 text-ink-2">{site.note}</p>
                 {missionsHere.length > 0 && (
@@ -298,8 +286,8 @@ export function MapScreen() {
                   </p>
                 )}
                 <Link
-                  to="/clocks"
-                  className="inline-flex h-12 items-center justify-center rounded-control bg-sun-fill text-control font-semibold text-on-sun no-underline"
+                  to="/site"
+                  className="inline-flex h-12 items-center justify-center rounded-control bg-ink text-control font-semibold text-canvas no-underline hover:bg-ink-2"
                 >
                   Open the site page
                 </Link>
@@ -308,22 +296,63 @@ export function MapScreen() {
                   disabled={inCompare && compareCount <= 2}
                   title={inCompare && compareCount <= 2 ? 'A comparison needs at least two sites' : undefined}
                 >
-                  {inCompare ? `Remove from Compare (${compareCount} there now)` : `Add to Compare (${compareCount} there now)`}
+                  {inCompare ? '✓ In Compare' : 'Add to Compare'}
                 </Button>
               </div>
             </Panel>
           )}
-
         </aside>
       </div>
     </div>
   )
 }
 
+/**
+ * The four numbers as label and value rows: the rail is too narrow for the
+ * tiles, whose long labels wrapped onto four lines there.
+ */
+function SiteNumbers({ metrics: m }: { metrics: SiteMetrics | undefined }) {
+  if (!m) return <p className="p-4 text-small text-ink-3">Working out the numbers…</p>
+  const over = m.sun.longestDownH > SURVIVAL_LIMIT_H
+  const rows: { label: string; value: string; extra?: string; tone: string }[] = [
+    { label: 'Time in sunlight', value: `${Math.round(m.sun.upHours)} h`, extra: percent(m.sun.fractionUp), tone: 'text-sun' },
+    {
+      label: 'Time in contact with Earth',
+      value: `${Math.round(m.earth.upHours)} h`,
+      extra: percent(m.earth.fractionUp),
+      tone: 'text-earth',
+    },
+    {
+      label: 'Longest night',
+      value: m.sun.longestDownArc ? `${bound(m.sun.longestDownOpen)}${Math.round(m.sun.longestDownH)} h` : 'none',
+      extra: over ? `over the ${SURVIVAL_LIMIT_H} h battery limit` : undefined,
+      tone: over ? 'text-alert' : 'text-ink',
+    },
+    {
+      label: 'Longest time without contact',
+      value: m.earth.longestDownArc ? `${bound(m.earth.longestDownOpen)}${Math.round(m.earth.longestDownH)} h` : 'none',
+      tone: 'text-ink',
+    },
+  ]
+  return (
+    <dl className="flex flex-col px-4 py-2">
+      {rows.map((r) => (
+        <div key={r.label} className="flex items-baseline justify-between gap-3 border-b border-line py-2 last:border-b-0">
+          <dt className="text-small text-ink-2">{r.label}</dt>
+          <dd className="flex flex-col items-end text-right">
+            <span className={`text-title font-semibold tnum ${r.tone}`}>{r.value}</span>
+            {r.extra && <span className="text-caption text-ink-3">{r.extra}</span>}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
 function LegendSwatch({ children, className }: { children: React.ReactNode; className: string }) {
   return (
     <span className="flex items-center gap-2 text-caption text-ink">
-      <span className={`h-3 w-5.5 ${className}`} aria-hidden="true" />
+      <span className={`h-3 w-5.5 border border-line-strong ${className}`} aria-hidden="true" />
       {children}
     </span>
   )

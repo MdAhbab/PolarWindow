@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { expectNoSeriousAxe, returningVisitor, watchConsole } from './helpers'
+import { expectNoSeriousAxe, openRow, returningVisitor, watchConsole } from './helpers'
 
 /**
  * The video's path (report-work demo script, beats 1–8), end to end, with
@@ -56,6 +56,7 @@ test('settings: the project controls, behind a confirm step', async ({ page, con
   const sheet = page.getByRole('dialog', { name: 'Settings' })
   await expect(sheet).toContainText('Signed in as Project manager')
   await expect(sheet.getByRole('group', { name: 'AI assistant' })).toBeVisible()
+  await openRow(page, 'System status')
   await expect(sheet.getByText('Moon terrain map')).toBeVisible()
   await expectNoSeriousAxe(page, 'the Settings sheet')
   // A destructive action asks first, and "Keep them" leaves everything as it was.
@@ -77,6 +78,7 @@ test('demo path: volatiles → IM-2 → shift the date → compare → ask → r
   const count = page.locator('[aria-live="polite"]').filter({ hasText: 'missions' }).first()
   await expect(count).toHaveText('Showing 20 of 20 missions')
   await expectNoSeriousAxe(page, '/missions')
+  await page.getByRole('button', { name: 'Instruments' }).click()
   await page.getByRole('button', { name: 'Volatiles' }).click()
   await expect(page).toHaveURL(/type=volatiles/)
   await expect(count).toHaveText('Showing 5 of 20 missions')
@@ -113,6 +115,7 @@ test('demo path: volatiles → IM-2 → shift the date → compare → ask → r
     await new Promise((r) => setTimeout(r, 300))
     await route.continue().catch(() => {})
   })
+  await openRow(page, 'Change the dates')
   const months = page.getByRole('option')
   for (const i of [2, 3, 4, 5, 6]) await months.nth(i).click()
   await expect(page.locator('.opacity-70').first()).toBeVisible()
@@ -141,10 +144,11 @@ test('demo path: volatiles → IM-2 → shift the date → compare → ask → r
 
   // Beat 6: ask, then the run log.
   await page.getByRole('link', { name: 'Missions' }).first().click()
-  await page.getByRole('button', { name: 'Ask about missions' }).click()
+  await openRow(page, 'Ask about missions and sites')
   await page.getByLabel('Your question').fill('Which south-polar CLPS targets carry volatiles instruments, and what is their longest night?')
   await page.getByRole('button', { name: 'Ask', exact: true }).click()
-  await expect(page.getByText('Summary from measurements (no AI)')).toBeVisible()
+  await expect(page.getByText(/^Summary from measurements \(no AI\)/)).toBeVisible()
+  await openRow(page, /numbers, each checked/)
   const how = page.getByRole('button', { name: 'How the AI got this' })
   await how.click()
   const log = page.getByRole('dialog', { name: 'AI activity log' })
@@ -163,14 +167,15 @@ test('beats 4 and 7: VIPER month strip and the far side', async ({ page, context
   const problems = watchConsole(page)
   await page.goto('/missions/blue-moon-mk1-viper')
   await expect(page.locator('main')).toContainText('Landing known only to the year; choose a date below')
+  await openRow(page, 'Change the dates')
   await expect(page.getByRole('option', { name: /^April 2027: sunlight 8 percent/ })).toBeVisible()
   await expect(page.getByRole('option', { name: /^November 2027: sunlight 41 percent/ })).toBeVisible()
   await expect(page.locator('main')).toContainText('centre of Mons Mouton, not a landing point')
 
   await page.goto('/missions/apex-1')
   const main = page.locator('main')
-  await expect(main).toContainText('There is no terrain data outside 80°S')
-  await expect(main).toContainText('Numbers are for the centre of Schrödinger')
+  await expect(main).toContainText('No terrain data outside 80°S')
+  await expect(main).toContainText('For the centre of Schrödinger')
   // Earth contact is zero on the far side: a measurement, shown as 0.
   const earth = main.locator('div.border.bg-panel', { hasText: 'Time in contact with Earth' }).first()
   await expect(earth).toContainText('about 0 hours')

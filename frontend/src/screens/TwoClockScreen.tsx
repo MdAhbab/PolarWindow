@@ -5,327 +5,251 @@ import { useFocusedMetrics, useFocusedView } from '../lib/mission'
 import { Sources } from '../components/Sources'
 import { siteById } from '../lib/sites'
 import { DateSlider } from '../components/DateSlider'
-import { SitePicker } from '../components/SitePicker'
+import { SiteTitle } from '../components/SitePicker'
 import { TERRAIN_BLOCKER_MIN_EL_DEG, TwoClockRings } from '../components/TwoClockRings'
-import { EducatorGuide } from '../components/EducatorGuide'
 import { KeyNumberRow } from '../components/KeyNumbers'
 import { ArcTable } from '../components/ArcTable'
 import { ProblemPanel, UncertaintyNote } from '../components/States'
-import { Button, Panel, SectionLabel } from '../components/ui'
+import { Button, Disclosure } from '../components/ui'
 import { Icon } from '../components/Icon'
 import { WindowPicker } from '../components/WindowPicker'
 import { SummarySpeaker } from '../components/SummarySpeaker'
 import { ExplainPanel } from '../components/Agents'
 import { useWindowParams } from '../lib/mission'
-import { bearing, compassWords, coords, degrees, edgeMargin, hoursWithUnit, humanDuration } from '../lib/format'
+import { bearing, compassWords, coords, degrees, edgeMargin, hoursWithUnit, msFromModelH, windowLine } from '../lib/format'
+import type { SiteMetrics } from '../lib/types'
+import type { Meta } from '../lib/api/adapters'
 
 /**
- * S2, "Site" in the navigation — the signature screen.
+ * S2, "Site" in the navigation: one site over the chosen dates.
  *
- * Answer first (U2): the four numbers sit above the ring, and the ring
- * explains them. The planner rail is one panel plus a single disclosure for
- * how sure, where from and the table, instead of four panels competing.
+ * Answer first: the four numbers, then the ring that shows when they happen.
+ * Everything else (what blocks the Sun, how sure the numbers are, other
+ * dates, a written description) is one closed row each, opened on request.
  */
 export function TwoClockScreen() {
   const view = useFocusedView()
   const w = useWindowParams()
-  const { siteId, cursorH, face, showTable, toggleTable } = useMission(
+  const { siteId, cursorH, windowStartH, windowHours, showTable } = useMission(
     useShallow((s) => ({
       siteId: s.siteId,
       cursorH: s.cursorH,
-      face: s.face,
+      windowStartH: s.windowStartH,
+      windowHours: s.windowHours,
       showTable: s.tableOpen,
-      toggleTable: s.toggleTable,
     })),
   )
   const metrics = useFocusedMetrics()
   const site = siteById(siteId)
   const terrainModelled = view.meta?.uncertainty.terrainModelled ?? site.terrainModelled
 
-  const worst = metrics?.sun.longestDownArc
-  const worstOpen = Boolean(metrics?.sun.longestDownOpen)
-  const byTerrain =
-    worst?.blockedByElDeg !== undefined && worst.blockedByElDeg > TERRAIN_BLOCKER_MIN_EL_DEG
-  const ringSize = face === 'public' ? 460 : 540
-  // The night's margin in the Simple sentence too: a timed edge gives
-  // "give or take", an untimeable one says so, and a smooth Moon claims none.
-  const nightMargin = !worst
-    ? ''
-    : worst.grazing
-      ? ', though its start and end can’t be timed precisely'
-      : terrainModelled && !worstOpen && (worst.startToleranceH !== undefined || worst.endToleranceH !== undefined)
-        ? `, give or take ${worst.toleranceH < 1 ? 'less than an hour' : `${Math.round(worst.toleranceH)} hours`}`
-        : ''
-  const blackout = metrics?.earth.longestDownArc
-  const blackoutOpen = Boolean(metrics?.earth.longestDownOpen)
-  const blackoutByTerrain =
-    blackout?.blockedByElDeg !== undefined && blackout.blockedByElDeg > TERRAIN_BLOCKER_MIN_EL_DEG
-
   return (
     <div className="flex grow flex-col">
       <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-line px-4 py-4 lg:px-6">
-        <div className="flex min-w-[260px] flex-col gap-1">
-          <h1 className="text-heading font-semibold tracking-title">{site.name}</h1>
-          <div className="font-mono text-caption text-ink-3">
-            {coords(site.latDeg, site.lonDeg)} ·{' '}
-            {site.elevM !== null ? `height ${site.elevM.toLocaleString()} m` : 'height not known'}
-          </div>
-          <div data-guide="listen">
-            <SummarySpeaker view={view} />
+        <div className="flex min-w-0 flex-col gap-1">
+          <SiteTitle />
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <span className="font-mono text-caption text-ink-3">
+              {coords(site.latDeg, site.lonDeg)} ·{' '}
+              {site.elevM !== null ? `height ${site.elevM.toLocaleString()} m` : 'height not known'}
+            </span>
           </div>
         </div>
-        <SitePicker />
-        <DateSlider />
+        <div className="basis-full lg:basis-0 lg:grow">
+          <DateSlider />
+        </div>
       </div>
 
-      <div className="flex grow flex-col gap-6 p-4 lg:flex-row lg:p-6">
-        <div className="flex min-w-0 grow flex-col items-center gap-6">
-          {!terrainModelled && (
-            <UncertaintyNote className="w-full">
-              There is no terrain data outside 80°S, so the Sun and Earth are worked out as if the ground were flat. Real hills could block more.
-            </UncertaintyNote>
-          )}
-          {view.error ? (
-            <div className="w-full max-w-2xl">
-              <ProblemPanel error={view.error} fallbackTitle="Cannot compute this site" onRetry={view.refetch} />
+      <div className="flex grow flex-col gap-6 p-4 lg:p-6">
+        {!terrainModelled && (
+          <UncertaintyNote>
+            No terrain data outside 80°S, so the Sun and Earth are worked out as if the ground were flat. Real hills
+            could block more.
+          </UncertaintyNote>
+        )}
+        {view.error ? (
+          <div className="w-full max-w-2xl">
+            <ProblemPanel error={view.error} fallbackTitle="Cannot compute this site" onRetry={view.refetch} />
+          </div>
+        ) : (
+          <KeyNumberRow metrics={metrics} uncertain={!terrainModelled} />
+        )}
+
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]">
+          {metrics && !view.error ? (
+            <div data-guide="rings" className="flex min-w-0 flex-col items-center gap-5">
+              <TwoClockRings metrics={metrics} cursorH={cursorH} maxSize={480} />
+              <RingKey />
             </div>
           ) : (
-            // The same four numbers, in the same place, on every face: the one
-            // anchor a user learns once. Simple explains them below the ring.
-            <div className="w-full">
-              <KeyNumberRow metrics={metrics} face={face} uncertain={!terrainModelled} />
-            </div>
+            <div />
           )}
-          {metrics && !view.error ? (
-            <div data-guide="rings" className="flex w-full flex-col items-center gap-6 xl:flex-row xl:justify-center">
-              <TwoClockRings
-                metrics={metrics}
-                cursorH={cursorH}
-                maxSize={ringSize}
-              />
-              {face !== 'public' && <RingKey />}
-            </div>
-          ) : null}
 
-          {face === 'public' && metrics && worst && !view.error ? (
-            <div className="flex max-w-[520px] flex-col items-center gap-4 text-center">
-              <p className="text-title leading-7 text-ink text-pretty">
-                {byTerrain
-                  ? `At this spot on the Moon, one ridge to the ${compassWords(worst.blockedByBearingDeg ?? 0)} switches off the sunlight for ${humanDuration(worst.hours, 'public', worstOpen)}${nightMargin}.`
-                  : `At this spot on the Moon, the Sun dips below the horizon for ${humanDuration(worst.hours, 'public', worstOpen)}${nightMargin}.`}{' '}
-                {worstOpen ? 'These dates cut the night short, so the real one is longer. ' : ''}A lander
-                has to survive that on batteries alone.
-              </p>
-              <Link
-                to="/#why"
-                className="inline-flex h-12 items-center rounded-control bg-sun-fill px-6 text-control font-semibold text-on-sun no-underline"
-              >
-                Why is that?
+          <div className="flex min-w-0 flex-col gap-3">
+            <div data-guide="listen">
+              <SummarySpeaker view={view} />
+            </div>
+            <Disclosure title="What blocks the Sun and Earth here?">
+              <Blockers metrics={metrics} failed={Boolean(view.error)} />
+            </Disclosure>
+            <Disclosure
+              title="Change the dates"
+              meta={windowLine(msFromModelH(windowStartH), windowHours)}
+            >
+              <WindowPicker siteId={siteId} />
+            </Disclosure>
+            <Disclosure title="How sure is this?" meta="margins, sources, table">
+              <HowSure metrics={metrics} meta={view.meta} terrainModelled={terrainModelled} />
+            </Disclosure>
+            <ExplainPanel siteId={siteId} start={w.start} end={w.end} />
+            <div className="flex flex-wrap gap-x-6 gap-y-1 pt-1">
+              <Link to="/skyline" className="inline-flex h-11 items-center text-body font-semibold">
+                See the skyline →
+              </Link>
+              <Link to="/plan" className="inline-flex h-11 items-center text-body font-semibold">
+                Plan for time without contact →
+              </Link>
+              <Link to="/report" className="inline-flex h-11 items-center text-body font-semibold">
+                Printable report →
               </Link>
             </div>
-          ) : face === 'public' && metrics && !worst && !view.error ? (
-            <p className="max-w-[520px] text-center text-title leading-7 text-ink text-pretty">
-              On these dates the Sun never sets here: the whole stretch is daylight. Choose longer dates
-              below to see this spot’s nights.
-            </p>
-          ) : null}
-
-          <div className="flex w-full flex-wrap gap-x-6 gap-y-1">
-            <Link to="/horizon" className="inline-flex h-11 items-center text-body font-semibold">
-              See the skyline →
-            </Link>
-            <Link to="/blackout" className="inline-flex h-11 items-center text-body font-semibold">
-              Plan for time without contact →
-            </Link>
-            <Link to="/report" className="inline-flex h-11 items-center text-body font-semibold">
-              Printable report →
-            </Link>
           </div>
-
-          <Panel className="flex w-full flex-col gap-3 p-5">
-            <SectionLabel>Change the dates</SectionLabel>
-            <WindowPicker siteId={siteId} />
-          </Panel>
-
-          <div className="w-full">
-            <ExplainPanel siteId={siteId} start={w.start} end={w.end} />
-          </div>
-
-          {showTable && metrics && (
-            <div className="w-full">
-              <ArcTable metrics={metrics} />
-            </div>
-          )}
         </div>
 
-        {face === 'planner' && (
-          <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-[320px]">
-            <Panel className="flex flex-col gap-3 p-5">
-              <SectionLabel>What blocks what</SectionLabel>
-              {metrics && worst ? (
-                <>
-                  <div className="flex gap-2.5">
-                    <div className="w-[3px] shrink-0 bg-sun-fill" />
-                    <p className="text-small leading-5 text-ink">
-                      {byTerrain ? (
-                        <>
-                          The {hoursWithUnit(worst.hours, 0, worstOpen)} night is terrain at bearing{' '}
-                          {bearing(worst.blockedByBearingDeg ?? 0)}, standing{' '}
-                          {degrees(worst.blockedByElDeg ?? 0, 2)} above the flat horizon —{' '}
-                          {Math.round(
-                            metrics.mask.rangeM[
-                              Math.round(worst.blockedByBearingDeg ?? 0) % metrics.mask.rangeM.length
-                            ],
-                          ).toLocaleString()}{' '}
-                          m away.
-                        </>
-                      ) : (
-                        <>
-                          The {hoursWithUnit(worst.hours, 0, worstOpen)} night is the Sun below the horizon, not
-                          a ridge: no terrain stands above level along its path.
-                        </>
-                      )}
-                      {worstOpen ? ' These dates cut it short, so the night itself is longer.' : ''}
-                    </p>
-                  </div>
-                  <div className="flex gap-2.5">
-                    <div className="w-[3px] shrink-0 bg-earth-fill" />
-                    <p className="text-small leading-5 text-ink">
-                      {!blackout ? (
-                        'Earth stays above this site’s skyline on all of these dates.'
-                      ) : blackoutByTerrain ? (
-                        <>
-                          The {hoursWithUnit(blackout.hours, 0, blackoutOpen)} without contact is terrain at bearing{' '}
-                          {bearing(blackout.blockedByBearingDeg ?? 0)}, standing{' '}
-                          {degrees(blackout.blockedByElDeg ?? 0, 2)} above the flat horizon: Earth sinks low with
-                          the Moon’s wobble (libration) and a ridge finishes the job.
-                        </>
-                      ) : (
-                        <>
-                          The {hoursWithUnit(blackout.hours, 0, blackoutOpen)} without contact is Earth below the
-                          horizon itself, as the Moon’s wobble (libration) carries it down; no ridge stands above level
-                          along its path.
-                        </>
-                      )}
-                    </p>
-                  </div>
-                  <Link to="/horizon" className="text-small font-semibold">
-                    See it on the skyline →
-                  </Link>
-                </>
-              ) : view.error ? (
-                <p className="text-small text-ink-2">Not available: the numbers for these dates did not load.</p>
-              ) : metrics ? (
-                // A window with no dark stretch at all is an answer, not a
-                // pending state: nothing blocks the Sun in it.
-                <p className="text-small leading-5 text-ink">
-                  The Sun stays above this site’s skyline on all of these dates, so nothing blocks it here.
-                  Choose longer dates to find its nights.
-                </p>
-              ) : (
-                <p className="text-small text-ink-3">Computing the skyline…</p>
-              )}
-            </Panel>
-
-            <details className="group border border-line bg-panel">
-              <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-5 text-control font-medium text-ink">
-                How sure is this? · Sources · Table
-                <span aria-hidden="true" className="text-ink-3 transition-transform group-open:rotate-90">
-                  ›
-                </span>
-              </summary>
-              <div className="flex flex-col gap-4 p-4 pt-0">
-            {metrics && view.meta && (
-              <UncertaintyNote>
-                {terrainModelled
-                  ? `Terrain heights carry up to ±${view.meta.uncertainty.demVerticalErrorM} m of vertical error.`
-                  : 'There is no terrain data here, so the skyline is a flat horizon; real hills could block more.'}
-                {worst?.grazing ? (
-                  <>
-                    {' '}The longest gap starts or ends with the Sun only skimming the skyline, too shallow
-                    to time, so it is marked <span className="font-mono text-ink">grazing</span> rather than
-                    given a false precision.
-                  </>
-                ) : (
-                  <>
-                    {' '}The longest gap carries{' '}
-                    <span className="font-mono text-ink">{edgeMargin(worst, terrainModelled)}</span>{' '}
-                    here, counting the uncertainty at both of its ends.
-                  </>
-                )}
-                {view.meta.uncertainty.partialCoverage && view.meta.uncertainty.terrainModelled
-                  ? ` Terrain data covers only ${(view.meta.uncertainty.coverage * 100).toFixed(0)}% of the directions around this site; the rest assume flat ground, so these numbers are likely too hopeful.`
-                  : ''}
-              </UncertaintyNote>
-            )}
-
-            <Panel className="flex flex-col gap-3 p-5">
-              <SectionLabel>Every chart is also a table</SectionLabel>
-              <Button onClick={toggleTable}>
-                <Icon name="table" size={16} strokeWidth={1.7} />
-                {showTable ? 'Hide the table' : `Show the ${metrics ? metrics.sun.arcs.length + metrics.earth.arcs.length : ''} stretches as a table`}
-              </Button>
-              <p className="text-caption leading-caption text-ink-3">
-                Press T anywhere. Each row gives a stretch’s start, end, length and what blocks it.
-              </p>
-            </Panel>
-
-            <Sources meta={view.meta} />
-              </div>
-            </details>
-          </aside>
-        )}
-
-        {face === 'educator' && metrics && (
-          <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-[360px]">
-            <EducatorGuide siteName={site.name} metrics={metrics} meta={view.meta} />
-          </aside>
-        )}
+        {showTable && metrics && <ArcTable metrics={metrics} />}
       </div>
     </div>
+  )
+}
+
+/** What causes the longest night and the longest time without contact: a ridge, or the horizon itself. */
+function Blockers({ metrics, failed }: { metrics: SiteMetrics | undefined; failed: boolean }) {
+  if (failed) return <p className="text-small text-ink-2">Not available: the numbers for these dates did not load.</p>
+  if (!metrics) return <p className="text-small text-ink-3">Working out the skyline…</p>
+  const worst = metrics.sun.longestDownArc
+  const worstOpen = Boolean(metrics.sun.longestDownOpen)
+  const byTerrain = worst?.blockedByElDeg !== undefined && worst.blockedByElDeg > TERRAIN_BLOCKER_MIN_EL_DEG
+  const blackout = metrics.earth.longestDownArc
+  const blackoutOpen = Boolean(metrics.earth.longestDownOpen)
+  const blackoutByTerrain =
+    blackout?.blockedByElDeg !== undefined && blackout.blockedByElDeg > TERRAIN_BLOCKER_MIN_EL_DEG
+  const distance = (az: number) =>
+    Math.round(metrics.mask.rangeM[Math.round(az) % metrics.mask.rangeM.length]).toLocaleString()
+
+  return (
+    <>
+      <div className="flex gap-2.5">
+        <div className="w-[3px] shrink-0 bg-sun-fill" />
+        <p className="text-small leading-5 text-ink">
+          {!worst ? (
+            'The Sun stays above this site’s skyline on all of these dates. Choose longer dates to find its nights.'
+          ) : byTerrain ? (
+            <>
+              The {hoursWithUnit(worst.hours, 0, worstOpen)} night comes from a ridge to the{' '}
+              {compassWords(worst.blockedByBearingDeg ?? 0)} ({bearing(worst.blockedByBearingDeg ?? 0)}),{' '}
+              {degrees(worst.blockedByElDeg ?? 0, 2)} above level and {distance(worst.blockedByBearingDeg ?? 0)} m
+              away.
+            </>
+          ) : (
+            <>
+              The {hoursWithUnit(worst.hours, 0, worstOpen)} night is the Sun going below the horizon itself; no
+              ridge is involved.
+            </>
+          )}
+          {worst && worstOpen ? ' These dates cut it short, so the night itself is longer.' : ''}
+        </p>
+      </div>
+      <div className="flex gap-2.5">
+        <div className="w-[3px] shrink-0 bg-earth-fill" />
+        <p className="text-small leading-5 text-ink">
+          {!blackout ? (
+            'Earth stays above this site’s skyline on all of these dates.'
+          ) : blackoutByTerrain ? (
+            <>
+              The {hoursWithUnit(blackout.hours, 0, blackoutOpen)} without contact comes from a ridge to the{' '}
+              {compassWords(blackout.blockedByBearingDeg ?? 0)} ({bearing(blackout.blockedByBearingDeg ?? 0)}), once
+              the Moon’s wobble (libration) carries Earth low.
+            </>
+          ) : (
+            <>
+              The {hoursWithUnit(blackout.hours, 0, blackoutOpen)} without contact is Earth going below the horizon
+              itself, as the Moon’s wobble (libration) carries it down.
+            </>
+          )}
+        </p>
+      </div>
+      <Link to="/skyline" className="self-start text-small font-semibold">
+        See it on the skyline →
+      </Link>
+    </>
+  )
+}
+
+function HowSure({
+  metrics,
+  meta,
+  terrainModelled,
+}: {
+  metrics: SiteMetrics | undefined
+  meta: Meta | undefined
+  terrainModelled: boolean
+}) {
+  const toggleTable = useMission((s) => s.toggleTable)
+  const showTable = useMission((s) => s.tableOpen)
+  const worst = metrics?.sun.longestDownArc
+  return (
+    <>
+      {metrics && meta && (
+        <p className="text-small leading-5 text-ink-2">
+          {terrainModelled
+            ? `Terrain heights can be off by up to ±${meta.uncertainty.demVerticalErrorM} m. `
+            : 'No terrain data here, so the skyline is a flat horizon; real hills could block more. '}
+          {worst?.grazing ? (
+            'The longest night starts or ends with the Sun only skimming the skyline, too shallow to time precisely.'
+          ) : (
+            <>
+              The longest night has <span className="font-semibold text-ink">{edgeMargin(worst, terrainModelled)}</span>,
+              counting both of its ends.
+            </>
+          )}
+          {meta.uncertainty.partialCoverage && meta.uncertainty.terrainModelled
+            ? ` Terrain covers only ${(meta.uncertainty.coverage * 100).toFixed(0)}% of the directions around this site; the rest assume flat ground, so these numbers are likely too hopeful.`
+            : ''}
+        </p>
+      )}
+      <Sources meta={meta} />
+      <div className="flex flex-wrap items-center gap-3">
+        <Button size="sm" onClick={toggleTable} expanded={showTable}>
+          <Icon name="table" size={16} strokeWidth={1.7} />
+          {showTable
+            ? 'Hide the table'
+            : `Show every stretch as a table${metrics ? ` (${metrics.sun.arcs.length + metrics.earth.arcs.length})` : ''}`}
+        </Button>
+        <span className="text-caption text-ink-3">or press T</span>
+      </div>
+    </>
   )
 }
 
 function RingKey() {
   return (
-    <div className="flex w-full flex-row flex-wrap gap-6 xl:w-[210px] xl:flex-col">
-      <KeyItem swatch={<span className="h-3.5 w-6 bg-sun-fill" />} title="Outer ring — Sun" tone="text-sun">
-        Filled where the Sun is above this site’s own horizon.
-      </KeyItem>
-      <KeyItem swatch={<span className="h-3.5 w-6 bg-earth-fill" />} title="Inner ring — Earth" tone="text-earth">
-        Filled where Earth is above it.
-      </KeyItem>
-      <KeyItem
-        swatch={<span className="hatch-blocked h-3.5 w-6" />}
-        title="Blocked"
-        tone="text-ink-2"
-      >
-        Below the horizon, or behind terrain.
-      </KeyItem>
-      <KeyItem swatch={<span className="h-[3px] w-6 bg-alert" />} title="Longest night" tone="text-alert" />
-      <KeyItem swatch={<span className="h-[3px] w-6 bg-ink" />} title="Now" tone="text-ink" />
-    </div>
+    <ul className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-caption text-ink-2">
+      <KeyItem swatch={<span className="h-3 w-5 bg-sun-fill" />}>Outer ring: Sun up</KeyItem>
+      <KeyItem swatch={<span className="h-3 w-5 bg-earth-fill" />}>Inner ring: Earth up</KeyItem>
+      <KeyItem swatch={<span className="hatch-blocked h-3 w-5" />}>Blocked</KeyItem>
+      <KeyItem swatch={<span className="h-[3px] w-5 bg-alert" />}>Longest night</KeyItem>
+      <KeyItem swatch={<span className="h-[3px] w-5 bg-ink" />}>Now</KeyItem>
+    </ul>
   )
 }
 
-function KeyItem({
-  swatch,
-  title,
-  tone,
-  children,
-}: {
-  swatch: React.ReactNode
-  title: string
-  tone: string
-  children?: React.ReactNode
-}) {
+function KeyItem({ swatch, children }: { swatch: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="flex min-w-[160px] flex-col gap-2">
-      <div className="flex items-center gap-2.5">
+    <li className="flex items-center gap-2">
+      <span aria-hidden="true" className="flex">
         {swatch}
-        <span className={`text-small font-semibold tracking-caps uppercase ${tone}`}>{title}</span>
-      </div>
-      {children && <p className="text-small leading-5 text-ink-2">{children}</p>}
-    </div>
+      </span>
+      {children}
+    </li>
   )
 }

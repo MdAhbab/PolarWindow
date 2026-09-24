@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { useMission as useStore, windowFromInstants } from '../lib/store'
@@ -17,7 +17,7 @@ import {
   publishedWords,
   publisherFor,
 } from '../lib/missions'
-import { coords, dateTimeWords, isoDateWords } from '../lib/format'
+import { coords, dateTimeWords, isoDateWords, msFromModelH, windowLine } from '../lib/format'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
 import { DateSlider } from '../components/DateSlider'
 import { KeyNumberRow } from '../components/KeyNumbers'
@@ -26,7 +26,7 @@ import { WindowPicker } from '../components/WindowPicker'
 import { ExplainPanel } from '../components/Agents'
 import { SummarySpeaker } from '../components/SummarySpeaker'
 import { EmptyState, LoadingPanel, ProblemPanel, UncertaintyNote } from '../components/States'
-import { Button, Panel, SectionLabel, Unconfirmed } from '../components/ui'
+import { Button, Disclosure, Panel, SectionLabel, Unconfirmed } from '../components/ui'
 import { ApiError } from '../lib/api/client'
 
 /**
@@ -116,45 +116,18 @@ export function MissionDetailScreen() {
             {vehicle && <span className="font-normal text-ink-2"> · {vehicle}</span>}
           </h1>
           <p className="text-body leading-6 text-ink-2">
-            {m.provider ?? (
-              <>
-                Provider {u}
-              </>
-            )}{' '}
-            · {m.lander ?? (
-              <>
-                lander {u}
-              </>
-            )}{' '}
-            · NASA task order {m.taskOrder ?? u}
-            {!vehicle && (
-              <>
-                {' '}
-                · vehicle name {u}
-              </>
-            )}
+            {[m.provider, m.lander, m.taskOrder ? `NASA task order ${m.taskOrder}` : null].filter(Boolean).join(' · ') ||
+              'Provider not published'}
           </p>
         </header>
 
-        <Panel as="section" className="flex flex-col gap-2 p-5">
-          <SectionLabel>Status</SectionLabel>
+        <Panel className="flex flex-col gap-3 p-5">
           <div className="text-title-lg font-semibold text-ink">
             <span aria-hidden="true">{STATUS_GLYPH[m.status]} </span>
             {STATUS_LABEL[m.status]}
           </div>
-          {m.outcomeNote && <p className="text-body leading-6 text-ink-2">{m.outcomeNote}</p>}
-        </Panel>
-
-        <Panel as="section" className="flex flex-col gap-3 p-5">
-          <SectionLabel>Dates</SectionLabel>
-          <dl className="grid grid-cols-1 gap-x-4 text-body sm:grid-cols-[max-content_1fr] sm:gap-y-2">
-            <Row term="Launch">{m.launch ? <DateText date={m.launch} /> : u}</Row>
-            <Row term="Landing">{m.landing ? <DateText date={m.landing} /> : u}</Row>
-            <Row term="End of mission">{m.endOfMission ? <DateText date={m.endOfMission} /> : u}</Row>
-            <Row term="Planned time on the surface">
-              {m.plannedSurfaceDays !== null ? `${m.plannedSurfaceDays} days` : u}
-            </Row>
-          </dl>
+          {m.outcomeNote && <OutcomeNote note={m.outcomeNote} />}
+          <MissionDates mission={m} />
         </Panel>
       </div>
 
@@ -182,36 +155,30 @@ export function MissionDetailScreen() {
         )}
       </section>
 
-      {/* 4–7: target, payloads, sources, version. */}
-      <div className="flex min-w-0 flex-col gap-4 xl:col-span-5 xl:col-start-1 xl:row-start-2">
-        <Panel as="section" className="flex flex-col gap-3 p-5">
-          <SectionLabel>Target</SectionLabel>
+      {/* 4–7: target, payloads, sources: each one row, opened on request. */}
+      <div className="flex min-w-0 flex-col gap-3 xl:col-span-5 xl:col-start-1 xl:row-start-2">
+        <Disclosure title="Target" meta={m.target?.name ?? m.targetName ?? 'not published'}>
           {m.target ? (
             <dl className="grid grid-cols-1 gap-x-4 text-body sm:grid-cols-[max-content_1fr] sm:gap-y-2">
-              <Row term="Name">{m.target.name}</Row>
               <Row term="Coordinates">
                 <span className="font-mono text-small">{coords(m.target.latDeg, m.target.lonDeg)}</span>
               </Row>
               <Row term="Kind">{coordinateKindWords(m.target.coordinateKind, m.targetName)}</Row>
-              <Row term="Landing area (ellipse)">{m.ellipseRing ? 'published; drawn on the Map' : u}</Row>
+              <Row term="Landing area">{m.ellipseRing ? 'published; drawn on the Map' : u}</Row>
               <Row term="Source">
                 <SourceLink url={m.target.sourceUrl} sources={m.sources} what="the coordinates" />
               </Row>
             </dl>
           ) : (
-            <dl className="grid grid-cols-1 gap-x-4 text-body sm:grid-cols-[max-content_1fr] sm:gap-y-2">
-              <Row term="Destination">{m.targetName ?? u}</Row>
-              <Row term="Coordinates">
-                {u}
-              </Row>
-            </dl>
+            <p className="text-body text-ink-2">
+              No coordinates are published{m.targetName ? ` for “${m.targetName}”` : ''}. {u}
+            </p>
           )}
-        </Panel>
+        </Disclosure>
 
         <Payloads mission={m} asOf={asOf} />
 
-        <Panel as="section" className="flex flex-col gap-3 p-5">
-          <SectionLabel>Sources</SectionLabel>
+        <Disclosure title="Sources" meta={`${m.sources.length}${asOf ? `, last read ${asOf}` : ''}`}>
           <ul className="flex flex-col gap-3">
             {m.sources.map((s) => (
               <li key={s.url} className="flex flex-col gap-0.5 text-body leading-5">
@@ -236,13 +203,62 @@ export function MissionDetailScreen() {
               </ul>
             </>
           )}
-        </Panel>
-
-        <p className="font-mono text-caption text-ink-3">
-          Record version {m.dataVersion}
-          {asOf ? ` · sources last read ${asOf}` : ''}
-        </p>
+          <p className="font-mono text-caption text-ink-3">Record version {m.dataVersion}</p>
+        </Disclosure>
       </div>
+    </div>
+  )
+}
+
+/** How it went: three lines, and the rest on request. */
+function OutcomeNote({ note }: { note: string }) {
+  const [more, setMore] = useState(false)
+  const long = note.length > 200
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <p className={`text-body leading-6 text-ink-2 ${long && !more ? 'line-clamp-3' : ''}`}>{note}</p>
+      {long && (
+        <button
+          type="button"
+          aria-expanded={more}
+          onClick={() => setMore((v) => !v)}
+          className="min-h-8 text-small font-semibold text-ink hover:underline"
+        >
+          {more ? 'Show less' : 'Show more'}
+        </button>
+      )}
+    </div>
+  )
+}
+
+/**
+ * The dates that are published, and one line naming the ones that are not,
+ * instead of a table of "Unconfirmed".
+ */
+function MissionDates({ mission: m }: { mission: MissionDetail }) {
+  const known: [string, ReactNode][] = []
+  const missing: string[] = []
+  const add = (term: string, value: ReactNode | null) => (value === null ? missing.push(term.toLowerCase()) : known.push([term, value]))
+  add('Launch', m.launch ? <DateText date={m.launch} /> : null)
+  add('Landing', m.landing ? <DateText date={m.landing} /> : null)
+  add('End of mission', m.endOfMission ? <DateText date={m.endOfMission} /> : null)
+  add('Planned time on the surface', m.plannedSurfaceDays !== null ? `${m.plannedSurfaceDays} days` : null)
+  return (
+    <div className="flex flex-col gap-2 border-t border-line pt-3">
+      {known.length > 0 && (
+        <dl className="grid grid-cols-1 gap-x-4 text-body sm:grid-cols-[max-content_1fr] sm:gap-y-1.5">
+          {known.map(([term, value]) => (
+            <Row key={term} term={term}>
+              {value}
+            </Row>
+          ))}
+        </dl>
+      )}
+      {missing.length > 0 && (
+        <p className="text-small text-ink-3">
+          Not published: {missing.join(', ')}.
+        </p>
+      )}
     </div>
   )
 }
@@ -276,8 +292,10 @@ function Payloads({ mission: m, asOf }: { mission: MissionDetail; asOf: string |
   const incomplete = m.unconfirmedFields.includes('payloads')
   const name = (p: MissionDetail['payloads'][number]) => (p.acronym ? `${p.name} (${p.acronym})` : p.name)
   return (
-    <Panel as="section" className="flex flex-col gap-3 p-5">
-      <SectionLabel>What it carries</SectionLabel>
+    <Disclosure
+      title="What it carries"
+      meta={`${m.payloads.length} payload${m.payloads.length === 1 ? '' : 's'}${incomplete ? ', list incomplete' : ''}`}
+    >
       {incomplete && (
         <p className="text-small leading-5 text-uncertain">
           Known to be incomplete: NASA counts more payloads than it names. Only the named ones are listed.
@@ -351,7 +369,7 @@ function Payloads({ mission: m, asOf }: { mission: MissionDetail; asOf: string |
           </ul>
         </>
       )}
-    </Panel>
+    </Disclosure>
   )
 }
 
@@ -399,8 +417,8 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
   const navigate = useNavigate()
   const w = useWindowParams()
   const view = useSiteView(siteId, w, false)
-  const { face, cursorH, setSite } = useStore(
-    useShallow((s) => ({ face: s.face, cursorH: s.cursorH, setSite: s.setSite })),
+  const { cursorH, setSite, windowStartH, windowHours } = useStore(
+    useShallow((s) => ({ cursorH: s.cursorH, setSite: s.setSite, windowStartH: s.windowStartH, windowHours: s.windowHours })),
   )
   const site = siteById(siteId)
   const metrics = view.data?.metrics
@@ -435,25 +453,20 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
         </div>
       </Panel>
 
-      {(!terrainModelled || featureCentre || meta?.uncertainty.partialCoverage) && (
+      {featureCentre && (
         <UncertaintyNote>
-          {!terrainModelled && (
-            <span className="block">
-              There is no terrain data outside 80°S, so the Sun and Earth are worked out as if the ground were flat. Real hills could block more.
-            </span>
-          )}
-          {featureCentre && (
-            <span className="mt-1 block">
-              Numbers are for the centre of {m.targetName ?? 'the named feature'}; the landing point is not
-              published.
-            </span>
-          )}
-          {terrainModelled && meta?.uncertainty.partialCoverage && (
-            <span className="mt-1 block">
-              Terrain data covers only {Math.round(meta.uncertainty.coverage * 100)}% of the directions around
-              this spot; the rest assume flat ground, so these numbers are likely too hopeful.
-            </span>
-          )}
+          For the centre of {m.targetName ?? 'the named feature'}; the landing point isn’t published.
+        </UncertaintyNote>
+      )}
+      {!terrainModelled && (
+        <UncertaintyNote>
+          No terrain data outside 80°S, so this is worked out as if the ground were flat. Real hills could block more.
+        </UncertaintyNote>
+      )}
+      {terrainModelled && meta?.uncertainty.partialCoverage && (
+        <UncertaintyNote>
+          Terrain data covers only {Math.round(meta.uncertainty.coverage * 100)}% of the directions around this spot,
+          so these numbers are likely too hopeful.
         </UncertaintyNote>
       )}
 
@@ -461,7 +474,7 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
         <ProblemPanel error={view.error} fallbackTitle="Cannot compute this target" onRetry={view.refetch} />
       ) : (
         <div className={view.isFetching && metrics ? 'opacity-70 transition-opacity' : ''}>
-          <KeyNumberRow metrics={metrics} face={face} uncertain={!terrainModelled} />
+          <KeyNumberRow metrics={metrics} uncertain={!terrainModelled} />
         </div>
       )}
 
@@ -492,17 +505,16 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
         </Panel>
       )}
 
-      <Panel guide="dates" className="flex flex-col gap-3 p-5">
-        <SectionLabel as="h3">Change the dates</SectionLabel>
+      <Disclosure guide="dates" title="Change the dates" meta={windowLine(msFromModelH(windowStartH), windowHours)}>
         <WindowPicker siteId={siteId} missionWindow={missionWindow} />
-      </Panel>
+      </Disclosure>
 
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap gap-3">
           <Button
             onClick={() => {
               setSite(siteId)
-              navigate('/clocks')
+              navigate('/site')
             }}
           >
             Open the site page
@@ -526,8 +538,7 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
           </Button>
         </div>
         <p id="nearest-note" className="text-caption text-ink-3">
-          Compare uses this target and the three candidate sites nearest by distance:{' '}
-          {nearest.map((s) => `${s.code} ${s.name}`).join(', ')}.
+          Compare adds the three nearest candidate sites: {nearest.map((s) => s.name).join(', ')}.
         </p>
       </div>
 

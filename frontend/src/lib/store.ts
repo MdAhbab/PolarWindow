@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Face, MetricKey } from './types'
+import type { MetricKey } from './types'
 import { readPrefs, writePrefs } from './prefs'
 
 /**
@@ -41,7 +41,6 @@ interface MissionState {
   windowHours: number
   /** Where the cursor sits inside the window, hours from windowStartH. */
   cursorH: number
-  face: Face
   theme: Theme
   motion: Motion
   rankBy: MetricKey
@@ -49,7 +48,7 @@ interface MissionState {
   /** The chart on screen is being read as its table twin (the T key). */
   tableOpen: boolean
   /**
-   * Single-key shortcuts (T, 1/2/3, [ ], Space) are on. WCAG 2.1.4 requires
+   * Single-key shortcuts (T, [ ], Space) are on. WCAG 2.1.4 requires
    * that bare-letter shortcuts can be turned off: voice-control users trigger
    * them by accident. Default on; the switch is in the settings sheet (U8).
    */
@@ -63,7 +62,6 @@ interface MissionState {
   setCursor: (h: number) => void
   nudgeCursor: (h: number) => void
   setWindow: (startH: number, hours: number) => void
-  setFace: (f: Face) => void
   setTheme: (t: Theme) => void
   setMotion: (m: Motion) => void
   setRankBy: (k: MetricKey) => void
@@ -97,9 +95,9 @@ if (typeof document !== 'undefined') {
   document.documentElement.setAttribute('data-motion', saved.motion)
 }
 
-/** Keep the four remembered choices in step with the store. */
-function remember(s: Pick<MissionState, 'face' | 'theme' | 'motion' | 'shortcuts'>) {
-  writePrefs({ face: s.face, theme: s.theme, motion: s.motion, shortcuts: s.shortcuts })
+/** Keep the three remembered choices in step with the store. */
+function remember(s: Pick<MissionState, 'theme' | 'motion' | 'shortcuts'>) {
+  writePrefs({ theme: s.theme, motion: s.motion, shortcuts: s.shortcuts })
 }
 
 export const useMission = create<MissionState>((set, get) => ({
@@ -108,8 +106,6 @@ export const useMission = create<MissionState>((set, get) => ({
   windowStartH: 0,
   windowHours: SYNODIC_HOURS,
   cursorH: SYNODIC_HOURS * 0.42,
-  // New visitors start on Simple (U15); a returning visitor keeps their choice.
-  face: saved.face,
   theme: saved.theme,
   motion: saved.motion,
   rankBy: 'longestDark',
@@ -145,11 +141,6 @@ export const useMission = create<MissionState>((set, get) => ({
     // play stops, rather than the cursor landing at some arbitrary hour the
     // previous window happened to be showing.
     set({ windowStartH: startH, windowHours: h, cursorH: 0, playing: false })
-  },
-
-  setFace: (face) => {
-    set({ face })
-    remember(get())
   },
 
   setTheme: (theme) => {

@@ -4,7 +4,7 @@ import type { AgentDTO, ProvenanceItemDTO } from '../lib/api/client'
 import { useAgent, type AgentKind } from '../lib/api/queries'
 import { useMission } from '../lib/store'
 import { hasSite, siteById } from '../lib/sites'
-import { Button, Panel, ScrollRegion, SectionLabel } from './ui'
+import { Button, Disclosure, Panel, ScrollRegion, SectionLabel } from './ui'
 import { Icon } from './Icon'
 import { fieldWords, toolWords } from '../lib/fieldWords'
 import { ProblemPanel, UncertaintyNote } from './States'
@@ -48,7 +48,7 @@ function modelOf(r: AgentDTO): string {
   return typeof m === 'string' && m ? m : 'model not reported'
 }
 
-/** The mono status line at the top of the card. */
+/** Who wrote the answer, shown with the numbers it used. */
 export function statusLine(r: AgentDTO): string {
   if (r.status === 'ok') return `AI answer · ${modelOf(r)} · ${(r.latency_ms / 1000).toFixed(1)} s`
   if (r.status === 'insufficient_data') return `AI answer · ${modelOf(r)} · not enough data`
@@ -179,35 +179,23 @@ function AdviseBody({ result }: { result: Record<string, unknown> }) {
 }
 
 interface Doc {
-  audience: string
   title: string
   body: string
   caveat: string
 }
 
-/** Brief (A3): three documents from one generation, so they cannot disagree. */
+/**
+ * Brief (A3): the memo. The service writes it together with two other
+ * versions for other readers; one stakeholder reads this one.
+ */
 function BriefBody({ result }: { result: Record<string, unknown> }) {
-  const docs: [string, Doc | null][] = [
-    ['Planner memo', (result.planner_memo as Doc) ?? null],
-    ['Lesson plan', (result.lesson_plan as Doc) ?? null],
-    ['Public explainer', (result.public_explainer as Doc) ?? null],
-  ]
+  const d = (result.planner_memo as Doc) ?? null
+  if (!d) return <p className="text-small text-ink-2">The memo was not written.</p>
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
-      {docs.map(([label, d]) => (
-        <Panel key={label} as="section" className="flex flex-col gap-2 p-4">
-          <SectionLabel as="h3">{label}</SectionLabel>
-          {d ? (
-            <>
-              <div className="text-control font-semibold text-ink">{d.title}</div>
-              <p className="text-body leading-6 text-ink">{d.body}</p>
-              {d.caveat && <p className="text-caption leading-caption text-ink-3">Caveat: {d.caveat}</p>}
-            </>
-          ) : (
-            <p className="text-small text-ink-2">This document was not written.</p>
-          )}
-        </Panel>
-      ))}
+    <div className="flex max-w-[72ch] flex-col gap-2">
+      <div className="text-control font-semibold text-ink">{d.title}</div>
+      <p className="text-body leading-6 text-ink">{d.body}</p>
+      {d.caveat && <p className="text-caption leading-caption text-ink-3">Caveat: {d.caveat}</p>}
     </div>
   )
 }
@@ -297,8 +285,8 @@ export function AgentCard({
   if (agent.isPending) {
     return (
       <Panel className="flex flex-wrap items-center justify-between gap-3 p-4">
-        <p role="status" className="font-mono text-caption text-ink-3">
-          Asking… checking every number against the measurements
+        <p role="status" className="text-small text-ink-3">
+          Writing… every number is checked against the measurements
         </p>
         <Button onClick={agent.cancel}>Cancel</Button>
       </Panel>
@@ -331,7 +319,6 @@ export function AgentCard({
   if (r.status === 'insufficient_data') {
     return (
       <Panel className="flex flex-col gap-4 p-5" as="section">
-        <p className="font-mono text-caption text-ink-3">{statusLine(r)}</p>
         <div className="flex flex-col gap-2">
           <div className="text-title-lg font-semibold text-ink">Not enough data to answer</div>
           <p className="max-w-[60ch] text-body leading-6 text-ink-2">{r.reason ?? ''}</p>
@@ -353,7 +340,6 @@ export function AgentCard({
   const replaced = r.status === 'degraded'
   return (
     <Panel className="flex flex-col gap-4 p-5" as="section">
-      <p className="font-mono text-caption text-ink-3">{statusLine(r)}</p>
       {replaced && (
         <UncertaintyNote title="Built from the measurements" hatchKey={false}>
           {r.run_status === 'guard_rejected'
@@ -371,8 +357,18 @@ export function AgentCard({
       ) : (
         <p className="text-body text-ink-2">{r.reason ?? 'No summary could be built for this request.'}</p>
       )}
-      <NumbersUsed items={r.provenance ?? []} />
-      {howButton}
+      <details className="group border-t border-line pt-3">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-small text-ink-2 hover:text-ink [&::-webkit-details-marker]:hidden">
+          <span>
+            {statusLine(r)} · {(r.provenance ?? []).length} numbers, each checked against the measurements
+          </span>
+          <Icon name="chevron" size={16} strokeWidth={2} className="shrink-0 text-ink-3 transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="flex flex-col gap-3 pt-2">
+          <NumbersUsed items={r.provenance ?? []} />
+          {howButton}
+        </div>
+      </details>
     </Panel>
   )
 }
@@ -420,9 +416,8 @@ function PromptField({
   )
 }
 
-/** A4 — Ask, on Missions. Collapsed by default into one button. */
+/** A4 — Ask, on Missions: a closed row until someone wants it. */
 export function AskPanel() {
-  const [open, setOpen] = useState(false)
   const [q, setQ] = useState('')
   const field = useRef<HTMLTextAreaElement>(null)
   const id = useId()
@@ -431,27 +426,8 @@ export function AskPanel() {
     if (!q.trim() || agent.isPending) return
     agent.mutate({ question: q.trim() })
   }
-
-  useEffect(() => {
-    if (open) field.current?.focus()
-  }, [open])
-
-  if (!open) {
-    return (
-      <Button onClick={() => setOpen(true)} expanded={false} controls={`${id}-panel`} className="self-start">
-        <Icon name="search" size={16} strokeWidth={1.8} />
-        Ask about missions
-      </Button>
-    )
-  }
   return (
-    <Panel as="section" className="flex flex-col gap-4 p-5">
-      <div id={`${id}-panel`} className="flex items-center justify-between gap-3">
-        <SectionLabel>Ask about missions and sites</SectionLabel>
-        <Button variant="ghost" size="sm" onClick={() => setOpen(false)} expanded>
-          Close
-        </Button>
-      </div>
+    <Disclosure title="Ask about missions and sites" onOpen={() => field.current?.focus()}>
       <PromptField
         id={`${id}-q`}
         label="Your question"
@@ -466,17 +442,12 @@ export function AskPanel() {
           Ask
         </Button>
       </div>
-      <AgentCard
-        kind="ask"
-        agent={agent}
-        onRephrase={() => field.current?.focus()}
-        onRetry={submit}
-      />
-    </Panel>
+      <AgentCard kind="ask" agent={agent} onRephrase={() => field.current?.focus()} onRetry={submit} />
+    </Disclosure>
   )
 }
 
-/** A2 — Advise, on Compare. */
+/** A2 — Advise, on Compare: a closed row until someone wants it. */
 export function AdvisePanel({ start, end }: { start: string; end: string }) {
   const [req, setReq] = useState('')
   const field = useRef<HTMLTextAreaElement>(null)
@@ -487,8 +458,7 @@ export function AdvisePanel({ start, end }: { start: string; end: string }) {
     agent.mutate({ requirement: req.trim(), start, end })
   }
   return (
-    <Panel as="section" className="flex flex-col gap-4 p-5">
-      <SectionLabel>Find sites that meet a requirement</SectionLabel>
+    <Disclosure title="Find sites that meet a requirement" onOpen={() => field.current?.focus()}>
       <PromptField
         id={`${id}-req`}
         label="The requirement, in your own words"
@@ -504,7 +474,7 @@ export function AdvisePanel({ start, end }: { start: string; end: string }) {
         </Button>
       </div>
       <AgentCard kind="advise" agent={agent} onRephrase={() => field.current?.focus()} onRetry={submit} />
-    </Panel>
+    </Disclosure>
   )
 }
 
@@ -528,31 +498,27 @@ export function ExplainPanel({
   // not sit under the new numbers.
   useEffect(() => cancel(), [siteId, start, end, cancel])
 
+  // Opening the row is the request: the description is written then, not
+  // after a second click inside.
   return (
-    <details className="group border border-line bg-panel">
-      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-5 py-2 text-control font-medium text-ink">
-        {summary}
-        <span aria-hidden="true" className="text-ink-3 transition-transform group-open:rotate-90">
-          ›
-        </span>
-      </summary>
-      <div className="flex flex-col gap-4 px-5 pb-5">
-        <p className="text-small leading-5 text-ink-2">
-          A plain paragraph about this site over the window on screen, written from its measurements. Every
-          number in it is checked against those measurements before it is shown.
-        </p>
+    <Disclosure
+      title={summary}
+      onOpen={() => {
+        if (agent.isIdle) ask()
+      }}
+    >
+      {/* After the dates or the site change, the old answer is gone: ask again. */}
+      {agent.isIdle && (
         <div>
-          <Button onClick={ask} disabled={agent.isPending}>
-            Describe this site
-          </Button>
+          <Button onClick={ask}>Describe it for these dates</Button>
         </div>
-        <AgentCard kind="explain" agent={agent} onRetry={ask} />
-      </div>
-    </details>
+      )}
+      <AgentCard kind="explain" agent={agent} onRetry={ask} />
+    </Disclosure>
   )
 }
 
-/** A3 — Brief, on Report: three cards from one generation. */
+/** A3 — Brief, on Report: a summary memo for the team, written on request. */
 export function BriefPanel({ siteId, start, end }: { siteId: string; start: string; end: string }) {
   const agent = useAgent('brief', [siteId])
   const { cancel } = agent
@@ -562,15 +528,9 @@ export function BriefPanel({ siteId, start, end }: { siteId: string; start: stri
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <SectionLabel>Briefs for {name}</SectionLabel>
-          <p className="text-small leading-5 text-ink-2">
-            A planner memo, a lesson plan and a public explainer, written together so they cannot disagree
-            about a number.
-          </p>
-        </div>
+        <SectionLabel>Summary memo for {name}</SectionLabel>
         <Button onClick={write} disabled={agent.isPending}>
-          Write the three briefs
+          Write a summary memo
         </Button>
       </div>
       <AgentCard kind="brief" agent={agent} onRetry={write} />

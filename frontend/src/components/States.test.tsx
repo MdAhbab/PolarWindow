@@ -48,6 +48,6 @@ describe('UncertaintyNote', () => {
       </UncertaintyNote>,
     )
     expect(screen.getByText('Built from the measurements')).toBeTruthy()
-    expect(screen.queryByText(/drawn at every arc edge/)).toBeNull()
+    expect(screen.queryByText(/how far off it could be/)).toBeNull()
   })
 })

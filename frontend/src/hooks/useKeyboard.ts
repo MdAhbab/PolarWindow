@@ -10,7 +10,6 @@ const ACTIVATES_ON_SPACE = new Set(['BUTTON', 'A', 'SUMMARY'])
  * and nothing fires while the caret is in a field.
  *
  *   [ ]        step the date by 6 h        ⇧[ ⇧]  by one day
- *   1 2 3      Simple, Explain, Expert (the order they are drawn in)
  *   T          read the chart on screen as its table
  *   Space      play / pause the window (M1), unless reduced motion is on
  *
@@ -39,15 +38,6 @@ export function useKeyboardMap({ reducedMotion }: { reducedMotion: boolean }) {
         case ']':
         case '}':
           s.nudgeCursor(e.shiftKey ? 24 : 6)
-          break
-        case '1':
-          s.setFace('public')
-          break
-        case '2':
-          s.setFace('educator')
-          break
-        case '3':
-          s.setFace('planner')
           break
         case ' ':
           // Space already means "press" on a focused control; do not steal it.

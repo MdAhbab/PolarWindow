@@ -65,7 +65,7 @@ export function SettingsSheet() {
           </Setting>
           <Setting
             label="Keyboard shortcuts"
-            note="Single keys: T shows a chart as a table, 1 2 3 choose Simple, Explain or Expert, [ and ] move the time, Space plays. Turn them off if you use voice control or they get in the way."
+            note="Single keys: T shows a chart as a table, [ and ] move the time, Space plays. Turn them off if you use voice control or they get in the way."
           >
             <Segmented
               label="Keyboard shortcuts"
@@ -147,6 +147,8 @@ function ProjectGroup({ open, onSignedOut }: { open: boolean; onSignedOut: () =>
 
 function ProjectControls({ data }: { data: SettingsDTO }) {
   const act = useSettingsActions()
+  const setSettingsOpen = useMission((m) => m.setSettingsOpen)
+  const openRunLog = useMission((m) => m.openRunLog)
   const { ai, system } = data
   const c = system.counts
   const working = (ok: boolean, yes = 'Working', no = 'Not working') => (ok ? yes : no)
@@ -159,22 +161,6 @@ function ProjectControls({ data }: { data: SettingsDTO }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <Setting label="System" note="Checked when this panel opens.">
-        <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 text-small leading-5">
-          <Row term="Moon terrain map" value={working(system.moon_data, 'Loaded', 'Missing')} />
-          <Row term="Sun and Earth positions" value={working(system.sun_earth_data, 'Loaded', 'Missing')} />
-          <Row term="Database" value={working(system.database)} />
-          <Row
-            term="Saved results (cache)"
-            value={c.cached_results === null ? 'Not in use' : `${c.cached_results} saved`}
-          />
-          <Row term="Missions" value={String(c.missions)} />
-          <Row term="Candidate sites" value={String(c.candidate_sites)} />
-          <Row term="Mission landing spots" value={String(c.mission_targets)} />
-          <Row term="AI activity log" value={`${c.agent_runs} runs`} />
-        </dl>
-      </Setting>
-
       <Setting
         label="AI assistant"
         note={
@@ -194,33 +180,67 @@ function ProjectControls({ data }: { data: SettingsDTO }) {
         />
       </Setting>
 
-      <ModelOrder
-        title="Models, tried in this order"
-        note="If a model has used up its quota or is unavailable, the next one answers. Move a model to change the order."
-        models={ai.models}
-        onMove={(order) => save(ai.enabled, order, ids(ai.models_light))}
-        busy={act.saveAi.isPending}
-      />
-      <details className="flex flex-col gap-3">
+      <Setting label="AI activity log" note={`${c.agent_runs} runs: every question, the steps taken and the numbers checked.`}>
+        <div>
+          <Button
+            size="sm"
+            onClick={() => {
+              setSettingsOpen(false)
+              openRunLog(null)
+            }}
+          >
+            Open the log
+          </Button>
+        </div>
+      </Setting>
+
+      <details className="group flex flex-col gap-3">
         <summary className="inline-flex h-12 cursor-pointer items-center text-control font-semibold text-ink">
-          Order for short descriptions
+          Model order
         </summary>
-        <ModelOrder
-          title="Models for short descriptions"
-          note="“Describe this site” writes one paragraph, so the lightest models go first."
-          models={ai.models_light}
-          onMove={(order) => save(ai.enabled, ids(ai.models), order)}
-          busy={act.saveAi.isPending}
-        />
+        <div className="flex flex-col gap-5">
+          <ModelOrder
+            title="Models, tried in this order"
+            note="If a model has used up its quota or is unavailable, the next one answers. Move a model to change the order."
+            models={ai.models}
+            onMove={(order) => save(ai.enabled, order, ids(ai.models_light))}
+            busy={act.saveAi.isPending}
+          />
+          <ModelOrder
+            title="Models for short descriptions"
+            note="“What is it like at this site?” writes one paragraph, so the lightest models go first."
+            models={ai.models_light}
+            onMove={(order) => save(ai.enabled, ids(ai.models), order)}
+            busy={act.saveAi.isPending}
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => act.retryModels.mutate()} disabled={act.retryModels.isPending}>
+              Try skipped models now
+            </Button>
+            <Button size="sm" onClick={() => act.resetAi.mutate()} disabled={!ai.customised || act.resetAi.isPending}>
+              Reset the AI settings
+            </Button>
+          </div>
+        </div>
       </details>
-      <div className="flex flex-wrap gap-2">
-        <Button size="sm" onClick={() => act.retryModels.mutate()} disabled={act.retryModels.isPending}>
-          Try skipped models now
-        </Button>
-        <Button size="sm" onClick={() => act.resetAi.mutate()} disabled={!ai.customised || act.resetAi.isPending}>
-          Reset the AI settings
-        </Button>
-      </div>
+
+      <details className="group flex flex-col gap-3">
+        <summary className="inline-flex h-12 cursor-pointer items-center text-control font-semibold text-ink">
+          System status
+        </summary>
+        <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 text-small leading-5">
+          <Row term="Moon terrain map" value={working(system.moon_data, 'Loaded', 'Missing')} />
+          <Row term="Sun and Earth positions" value={working(system.sun_earth_data, 'Loaded', 'Missing')} />
+          <Row term="Database" value={working(system.database)} />
+          <Row
+            term="Saved results (cache)"
+            value={c.cached_results === null ? 'Not in use' : `${c.cached_results} saved`}
+          />
+          <Row term="Missions" value={String(c.missions)} />
+          <Row term="Candidate sites" value={String(c.candidate_sites)} />
+          <Row term="Mission landing spots" value={String(c.mission_targets)} />
+        </dl>
+      </details>
 
       <Setting label="Clean up" note="These apply to everyone using this server.">
         <div className="flex flex-col gap-4">

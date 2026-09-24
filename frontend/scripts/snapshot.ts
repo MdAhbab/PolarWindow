@@ -103,7 +103,7 @@ async function main() {
   await record(page)
 
   // The candidate sites at the default window, on every screen.
-  for (const path of ['/', '/missions', '/map', '/clocks', '/horizon', '/blackout', '/report', '/compare']) {
+  for (const path of ['/', '/missions', '/map', '/site', '/skyline', '/plan', '/report', '/compare']) {
     await visit(page, path)
   }
   await page.goto(`${APP}/map`)
@@ -123,7 +123,7 @@ async function main() {
     if (!m.site_id) continue
     await page.getByRole('button', { name: 'Open the site page' }).click()
     await settle(page)
-    for (const path of ['/horizon', '/blackout', '/report', '/missions']) {
+    for (const path of ['/skyline', '/plan', '/report', '/missions']) {
       await page.evaluate((p) => {
         history.pushState({}, '', p)
         dispatchEvent(new PopStateEvent('popstate'))

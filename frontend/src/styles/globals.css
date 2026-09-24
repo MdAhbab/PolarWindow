@@ -116,7 +116,8 @@
    The two hues are darkened here: amber and cyan at their dark-theme
    values sit at 1.8:1 on light stock, which fails the 3:1 a
    non-text graphical object needs. These pass. */
-:root[data-theme='light'] {
+:root[data-theme='light'],
+[data-theme='light'] {
   --color-canvas: #f2f1ed;
   --color-panel: #ffffff;
   --color-raised: #ffffff;

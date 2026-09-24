@@ -39,7 +39,9 @@ export function Button({
 }) {
   const variants = {
     primary:
-      'bg-sun-fill text-on-sun hover:bg-sun-soft active:brightness-90 disabled:bg-inset disabled:text-ink-3',
+      // Ink, not amber: amber means sunlight in every chart, so a button in it
+      // read as part of the data.
+      'bg-ink text-canvas hover:bg-ink-2 active:brightness-90 disabled:bg-inset disabled:text-ink-3',
     secondary:
       'border border-line-strong text-ink hover:bg-inset hover:border-ink-3 active:bg-panel disabled:border-line disabled:text-ink-3',
     ghost: 'text-ink-2 hover:bg-inset hover:text-ink active:bg-line disabled:text-line-strong',
@@ -70,9 +72,12 @@ export function IconButton({
   className = '',
   expanded,
   haspopup,
+  guide,
 }: {
   name: Parameters<typeof Icon>[0]['name']
   label: string
+  /** Where the guide bar can point (`data-guide`). */
+  guide?: string
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void
   pressed?: boolean
   className?: string
@@ -87,6 +92,7 @@ export function IconButton({
       aria-pressed={pressed}
       aria-expanded={expanded}
       aria-haspopup={haspopup}
+      data-guide={guide}
       onClick={onClick}
       className={`inline-flex size-12 items-center justify-center rounded-control border border-line-strong text-ink hover:bg-inset ${className}`}
     >
@@ -153,6 +159,48 @@ export function Panel({
     >
       {children}
     </As>
+  )
+}
+
+/**
+ * Detail on request: a closed row that opens in place. Every "more about this"
+ * on every screen is one of these, so the pattern is learned once. `onOpen`
+ * runs the first time it opens (an AI answer is asked for then, not on a
+ * second click inside).
+ */
+export function Disclosure({
+  title,
+  meta,
+  children,
+  guide,
+  onOpen,
+  className = '',
+}: {
+  title: ReactNode
+  /** A short value beside the title, readable without opening it. */
+  meta?: ReactNode
+  children: ReactNode
+  guide?: string
+  onOpen?: () => void
+  className?: string
+}) {
+  return (
+    <details
+      data-guide={guide}
+      className={`group border border-line bg-panel ${className}`}
+      onToggle={(e) => {
+        if ((e.currentTarget as HTMLDetailsElement).open) onOpen?.()
+      }}
+    >
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-5 py-2.5 text-control font-medium text-ink hover:bg-inset [&::-webkit-details-marker]:hidden">
+        <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
+          <span>{title}</span>
+          {meta && <span className="text-small font-normal text-ink-3">{meta}</span>}
+        </span>
+        <Icon name="chevron" size={16} strokeWidth={2} className="shrink-0 text-ink-3 transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="flex flex-col gap-4 px-5 pt-1 pb-5">{children}</div>
+    </details>
   )
 }
 

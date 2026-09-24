@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { useMission, windowFromInstants } from '../lib/store'
+import { SYNODIC_HOURS, useMission, windowFromInstants } from '../lib/store'
 import { useCalendar } from '../lib/api/queries'
 import type { CalendarBucket } from '../lib/api/adapters'
 import { modelHFromMs, monthWords, msFromModelH, windowLine } from '../lib/format'
@@ -29,7 +29,7 @@ const addMonths = (ms: number, n: number) => {
 const isoZ = (ms: number) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z')
 const dayInput = (ms: number) => new Date(ms).toISOString().slice(0, 10)
 
-type Duration = 'mission' | '14' | '30' | '90' | '365'
+type Duration = 'mission' | 'lunar' | '14' | '90' | '365'
 
 export function WindowPicker({
   siteId,
@@ -51,8 +51,8 @@ export function WindowPicker({
 
   const durations: { value: Duration; label: string }[] = [
     ...(missionWindow ? [{ value: 'mission' as const, label: 'Mission' }] : []),
+    { value: 'lunar', label: '1 lunar day' },
     { value: '14', label: '14 days' },
-    { value: '30', label: '30 days' },
     { value: '90', label: '90 days' },
     { value: '365', label: '1 year' },
   ]
@@ -64,7 +64,8 @@ export function WindowPicker({
       Math.abs(windowHours - (missionWindow.endMs - missionWindow.startMs) / 3_600_000) < 0.02
     )
       return 'mission'
-    for (const d of ['14', '30', '90', '365'] as const) {
+    if (Math.abs(windowHours - SYNODIC_HOURS) < 1) return 'lunar'
+    for (const d of ['14', '90', '365'] as const) {
       if (Math.abs(windowHours - Number(d) * 24) < 0.01) return d
     }
     return ''
@@ -78,7 +79,7 @@ export function WindowPicker({
   const onDuration = (d: Duration | '') => {
     if (d === '') return
     if (d === 'mission' && missionWindow) setSpan(missionWindow.startMs, missionWindow.endMs)
-    else setWindow(windowStartH, Number(d) * 24)
+    else setWindow(windowStartH, d === 'lunar' ? SYNODIC_HOURS : Number(d) * 24)
   }
 
   return (
