@@ -37,6 +37,7 @@ export function BlackoutScreen() {
   const terrainModelled = view.meta?.uncertainty.terrainModelled ?? site.terrainModelled
 
   const marginPct = Math.round(packet.marginFraction * 100)
+  const noCompound = packet.worstCompoundH < 0.25 && !packet.worstCompoundOpen
   const origin = metrics.windowStartIso ? Date.parse(metrics.windowStartIso) : msFromModelH(0)
   const when = (h: number) => humanStamp(origin, h)
   const exportSite = { id: site.id, name: site.name, metrics, meta: view.meta, autonomy: packet }
@@ -110,12 +111,19 @@ export function BlackoutScreen() {
                   </tr>
                 </thead>
                 <tbody>
+                  {blackouts.length === 0 && (
+                    <tr className="border-t border-line">
+                      <td colSpan={5} className="px-4 py-4 text-[14px] text-ink-2">
+                        No blackouts: Earth stayed above the skyline for the whole window.
+                      </td>
+                    </tr>
+                  )}
                   {blackouts.map((a, i) => {
-                    const overlap = metrics.compound
-                      .filter((c) => c.startH < a.endH && c.endH > a.startH)
-                      .reduce((s, c) => s + c.hours, 0)
+                    // Whether a dark-and-silent stretch (from the API) falls inside
+                    // this blackout; the ledger says so without adding up hours.
+                    const overlaps = metrics.compound.some((c) => c.startH < a.endH && c.endH > a.startH && c.hours >= 0.25)
                     return (
-                      <tr key={i} className={`border-t border-line ${overlap > 0 ? 'bg-alert-wash' : ''}`}>
+                      <tr key={i} className={`border-t border-line ${overlaps ? 'bg-alert-wash' : ''}`}>
                         <td className="px-4 py-3 font-mono text-[13px] text-ink-3">B{i + 1}</td>
                         <td className="px-4 py-3 font-mono text-[13px] text-ink">
                           {a.openStart ? `before ${when(a.startH)}` : when(a.startH)}
@@ -127,10 +135,10 @@ export function BlackoutScreen() {
                           {hoursWithUnit(a.hours, 0, a.openStart || a.openEnd)}
                         </td>
                         <td className="px-4 py-3 text-[13px]">
-                          {overlap > 0.25 ? (
+                          {overlaps ? (
                             <span className="flex items-center gap-2 font-semibold text-alert">
                               <Icon name="alert" size={14} strokeWidth={2.4} />
-                              yes — {Math.round(overlap)} h of it is also dark
+                              yes — part of it is also dark
                             </span>
                           ) : (
                             <span className="text-ink-2">no — solar power available throughout</span>
@@ -147,16 +155,23 @@ export function BlackoutScreen() {
 
         <aside className="flex w-full shrink-0 flex-col border border-line-strong bg-raised lg:w-[400px]">
           <div className="flex flex-col gap-1.5 border-b border-line-strong p-5">
-            <div className="text-[12px] font-semibold tracking-[0.14em] text-sun uppercase">
+            <div className="text-[12px] font-semibold tracking-[0.14em] text-ink-3 uppercase">
               Autonomy packet
             </div>
             <div className="text-[20px] font-semibold">What the lander runs alone on</div>
             <p className="text-[13px] leading-5 text-ink-2">
-              Sized for the worst compound event:{' '}
-              <strong className="text-ink">{hoursWithUnit(packet.worstCompoundH, 0, packet.worstCompoundOpen)}</strong>{' '}
-              with neither sunlight nor an Earth link
-              {worstCompound ? `, starting h${Math.round(worstCompound.startH)}` : ''}, plus a {marginPct}%
-              margin.
+              {noCompound ? (
+                'Sunlight and an Earth link are never lost together in this window, so nothing has to run alone; the battery still carries the longest night.'
+              ) : (
+                <>
+                  Sized for the worst compound event:{' '}
+                  <strong className="text-ink">
+                    {hoursWithUnit(packet.worstCompoundH, 0, packet.worstCompoundOpen)}
+                  </strong>{' '}
+                  with neither sunlight nor an Earth link
+                  {worstCompound ? `, starting ${when(worstCompound.startH)}` : ''}, plus a {marginPct}% margin.
+                </>
+              )}
             </p>
           </div>
 
@@ -168,7 +183,9 @@ export function BlackoutScreen() {
             <div className="flex flex-col">
               <span className="text-[16px] text-ink-2">h of full autonomy</span>
               <span className="text-[12px] text-ink-3">
-                {hoursWithUnit(packet.worstCompoundH, 0, packet.worstCompoundOpen)} event + {marginPct}%
+                {noCompound
+                  ? 'no compound event'
+                  : `${hoursWithUnit(packet.worstCompoundH, 0, packet.worstCompoundOpen)} event + ${marginPct}%`}
               </span>
             </div>
           </div>
@@ -182,8 +199,8 @@ export function BlackoutScreen() {
           <PacketRow
             done
             title="Onboard storage"
-            detail={`${hoursWithUnit(packet.requiredAutonomyH)} of science and housekeeping at [YOUR DATA RATE], held until the next pass.`}
-            value="[Gb]"
+            detail={`${hoursWithUnit(packet.requiredAutonomyH)} of science and housekeeping at the payload’s own data rate, held until the next pass.`}
+            value="per payload"
           />
           <PacketRow
             alert={metrics.sun.longestDownH > SURVIVAL_LIMIT_H}
@@ -204,7 +221,7 @@ export function BlackoutScreen() {
           <PacketRow
             title="Decisions delegated"
             detail="Anything time-critical inside the window: target selection, abort thresholds, thermal shedding order."
-            value="todo"
+            value="to plan"
           />
 
           <div className="mt-auto flex flex-col gap-2.5 border-t border-line-strong p-5">
@@ -255,13 +272,13 @@ function PacketRow({
     <div className={`flex gap-3.5 border-b border-line p-4 ${alert ? 'bg-alert-wash' : ''}`}>
       <div
         className={`mt-0.5 flex size-5 shrink-0 items-center justify-center border ${
-          alert ? 'border-alert' : done ? 'border-earth' : 'border-line-strong'
+          alert ? 'border-alert' : done ? 'border-ink' : 'border-line-strong'
         }`}
       >
         {alert ? (
           <Icon name="alert" size={12} strokeWidth={3} className="text-alert" />
         ) : done ? (
-          <Icon name="check" size={12} strokeWidth={3.2} className="text-earth" />
+          <Icon name="check" size={12} strokeWidth={3.2} className="text-ink" />
         ) : null}
       </div>
       <div className="flex grow flex-col gap-0.5">

@@ -325,11 +325,10 @@ export function CompareScreen() {
           {disqualified.length > 0 ? (
             <>
               {disqualified.map(code).join(' and ')}{' '}
-              {disqualified.length > 1 ? 'are' : 'is'} out on the night alone —{' '}
-              <span className="text-alert">
-                over the {SURVIVAL_LIMIT_H} h survival limit
-              </span>
-              , and no launch date changes that, because the gap is terrain and latitude, not timing.
+              {disqualified.length > 1 ? 'are' : 'is'} out on the night alone in this window:{' '}
+              <span className="text-alert">over the {SURVIVAL_LIMIT_H} h survival limit</span>. Nights change
+              through the year, so a different date can change that; the month strip on the Site screen shows
+              how.
             </>
           ) : (
             'Every candidate here survives its longest night, so the choice is genuinely about what the payload needs.'
