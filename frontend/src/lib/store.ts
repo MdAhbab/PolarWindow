@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { Face, MetricKey } from './types'
+import { readPrefs, writePrefs } from './prefs'
 
 /**
  * UI state only.
@@ -90,19 +91,31 @@ export function windowFromInstants(startMs: number, endMs: number): { startH: nu
 
 export const DEFAULT_COMPARE = ['connecting-ridge', 'malapert-massif', 'faustini-rim']
 
+const saved = readPrefs()
+if (typeof document !== 'undefined') {
+  document.documentElement.setAttribute('data-theme', saved.theme)
+  document.documentElement.setAttribute('data-motion', saved.motion)
+}
+
+/** Keep the four remembered choices in step with the store. */
+function remember(s: Pick<MissionState, 'face' | 'theme' | 'motion' | 'shortcuts'>) {
+  writePrefs({ face: s.face, theme: s.theme, motion: s.motion, shortcuts: s.shortcuts })
+}
+
 export const useMission = create<MissionState>((set, get) => ({
   siteId: 'connecting-ridge',
   compareIds: DEFAULT_COMPARE,
   windowStartH: 0,
   windowHours: SYNODIC_HOURS,
   cursorH: SYNODIC_HOURS * 0.42,
-  face: 'planner',
-  theme: 'dark',
-  motion: 'full',
+  // New visitors start on Simple (U15); a returning visitor keeps their choice.
+  face: saved.face,
+  theme: saved.theme,
+  motion: saved.motion,
   rankBy: 'longestDark',
   playing: false,
   tableOpen: false,
-  shortcuts: true,
+  shortcuts: saved.shortcuts,
   runLog: { open: false, runId: null },
   settingsOpen: false,
 
@@ -134,22 +147,30 @@ export const useMission = create<MissionState>((set, get) => ({
     set({ windowStartH: startH, windowHours: h, cursorH: 0, playing: false })
   },
 
-  setFace: (face) => set({ face }),
+  setFace: (face) => {
+    set({ face })
+    remember(get())
+  },
 
   setTheme: (theme) => {
     document.documentElement.setAttribute('data-theme', theme)
     set({ theme })
+    remember(get())
   },
 
   setMotion: (motion) => {
     document.documentElement.setAttribute('data-motion', motion === 'reduced' ? 'reduced' : 'full')
     set({ motion })
+    remember(get())
   },
 
   setRankBy: (rankBy) => set({ rankBy }),
   setPlaying: (playing) => set({ playing }),
   toggleTable: () => set((s) => ({ tableOpen: !s.tableOpen })),
-  setShortcuts: (shortcuts) => set({ shortcuts }),
+  setShortcuts: (shortcuts) => {
+    set({ shortcuts })
+    remember(get())
+  },
   openRunLog: (runId = null) => set({ runLog: { open: true, runId } }),
   closeRunLog: () => set((s) => ({ runLog: { open: false, runId: s.runLog.runId } })),
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),

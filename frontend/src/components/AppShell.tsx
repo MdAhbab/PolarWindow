@@ -59,10 +59,14 @@ function useRouteFocus() {
   }, [pathname])
 }
 
-const FACES: { value: Face; label: string }[] = [
-  { value: 'planner', label: 'Planner' },
-  { value: 'educator', label: 'Educator' },
-  { value: 'public', label: 'Public' },
+/**
+ * How much detail, not who you are (U15): people choose by task, not by job
+ * title. The three faces underneath are unchanged; Simple is the default.
+ */
+export const FACES: { value: Face; label: string }[] = [
+  { value: 'public', label: 'Simple' },
+  { value: 'educator', label: 'Explain' },
+  { value: 'planner', label: 'Expert' },
 ]
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -130,12 +134,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           {/* Once, at every width (U12): the one element that says how much to
               trust everything else. */}
           <SampleDataBadge provenance={provenance} />
-          <Segmented options={FACES} value={face} onChange={setFace} label="Audience" pill />
+          <Segmented options={FACES} value={face} onChange={setFace} label="Detail" pill />
           <button
             type="button"
             aria-pressed={theme === 'light'}
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="hidden h-12 rounded-control border border-line-strong px-3 text-[13px] font-semibold text-ink hover:bg-inset lg:inline-flex lg:items-center"
+            className="hidden h-12 rounded-control border border-line-strong px-3 text-[13px] font-semibold text-ink hover:bg-inset xl:inline-flex xl:items-center"
             aria-label={theme === 'dark' ? 'Switch to the light theme' : 'Switch to the dark theme'}
             title="Both themes pass contrast. The light one is for print and projection."
           >
@@ -145,7 +149,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             type="button"
             aria-pressed={motion === 'reduced'}
             onClick={() => setMotion(motion === 'full' ? 'reduced' : 'full')}
-            className="hidden h-12 rounded-control border border-line-strong px-3 text-[13px] font-semibold text-ink hover:bg-inset lg:inline-flex lg:items-center"
+            className="hidden h-12 rounded-control border border-line-strong px-3 text-[13px] font-semibold text-ink hover:bg-inset xl:inline-flex xl:items-center"
             aria-label={motion === 'full' ? 'Reduce motion' : 'Turn motion back on'}
             title="Every animation has a named static fallback."
           >

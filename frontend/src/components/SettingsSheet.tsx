@@ -49,7 +49,7 @@ export function SettingsSheet() {
         </Setting>
         <Setting
           label="Keyboard shortcuts"
-          note="Single keys: T reads the chart as a table, 1 2 3 switch the face, [ and ] step the date, Space plays. Turn them off if you use voice control or they get in the way."
+          note="Single keys: T reads the chart as a table, 1 2 3 choose Simple, Explain or Expert, [ and ] step the date, Space plays. Turn them off if you use voice control or they get in the way."
         >
           <Segmented
             label="Keyboard shortcuts"
