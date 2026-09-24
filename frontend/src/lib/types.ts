@@ -115,11 +115,3 @@ export interface SiteMetrics {
   /** The window's opening instant, ISO 8601 UTC, as the server quantised it. */
   windowStartIso?: string
 }
-
-export interface MissionWindow {
-  /** Hours from the model epoch at which the window opens. */
-  startH: number
-  hours: number
-  /** Calendar date the window opens, for display only. */
-  startISO: string
-}

@@ -156,15 +156,6 @@ export function useSites(filters: SiteFilters = {}) {
   })
 }
 
-export function useSiteDetail(siteId: string | undefined) {
-  return useQuery({
-    queryKey: keys.site(siteId),
-    enabled: Boolean(siteId),
-    staleTime: FIVE_MIN,
-    queryFn: ({ signal }) => api.site(siteId as string, signal),
-  })
-}
-
 // ---------------------------------------------------------------------------
 // Horizon — fetched once per session and never again
 // ---------------------------------------------------------------------------

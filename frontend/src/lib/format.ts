@@ -179,23 +179,6 @@ export function isoDateWords(iso: string): string {
   return Number.isNaN(ms) ? iso : dateWords(ms)
 }
 
-/** Hours from the model epoch to a UTC stamp, ISO-like. Exports and logs only (U10). */
-export function clockUTC(tH: number): string {
-  const d = new Date(MODEL_EPOCH + tH * 3600_000)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:00Z`
-}
-
-export function shortDateUTC(tH: number): string {
-  const d = new Date(MODEL_EPOCH + tH * 3600_000)
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  return `${d.getUTCDate()} ${months[d.getUTCMonth()]}`
-}
-
-export function dayOf(tH: number, windowStartH: number): number {
-  return Math.floor((tH - windowStartH) / 24)
-}
-
 /**
  * The public face says units in words. Same fact, different vocabulary —
  * simplifying the words never simplifies the claim.

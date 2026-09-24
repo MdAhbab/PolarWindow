@@ -13,7 +13,6 @@ import { MODEL_EPOCH_MS, useMission, DEFAULT_STEP_S } from './store'
 import {
   useCompare,
   useHealth,
-  useManySiteMetrics,
   useSites,
   useSiteView,
   useTimeline,
@@ -23,7 +22,6 @@ import { hasSite, siteById } from './sites'
 import { msFromModelH } from './format'
 import { subSolarAt, type SubPoint } from './subSolar'
 import { adaptAutonomy, quantiseWindow, toHours, type Meta } from './api/adapters'
-import type { MetricsDTO } from './api/client'
 
 /**
  * The current window, in the form the API takes, snapped exactly as the
@@ -71,12 +69,6 @@ export function useFocusedMetrics(): SiteMetrics | undefined {
   return useSiteView(siteId, w, true).data?.metrics
 }
 
-/** Metrics for one site, arcs only. */
-export function useMetricsFor(siteId: string): SiteMetrics | undefined {
-  const w = useWindowParams()
-  return useSiteView(siteId, w, false).data?.metrics
-}
-
 /** The focused site's full view, including `meta` for the uncertainty state. */
 export function useFocusedView() {
   const siteId = useMission((s) => s.siteId)
@@ -100,35 +92,6 @@ export function useSubSolar(atH: number): SubPoint | null {
     const site = siteById(siteId)
     return subSolarAt(data, site.latDeg, site.lonDeg, msFromModelH(atH))
   }, [data, siteId, atH])
-}
-
-export interface ComputeState {
-  status: 'idle' | 'running' | 'ready' | 'error'
-  done: number
-  total: number
-  error?: string
-}
-
-/**
- * Progress across a set of sites, in the shape `LoadingPanel` already draws.
- *
- * Derived from query state rather than pushed into a store, so it cannot drift
- * from what is actually in flight.
- */
-export function useComputeState(siteIds: string[]): ComputeState {
-  const w = useWindowParams()
-  const { done, total, isPending, error } = useManySiteMetrics(siteIds, w)
-  if (error) {
-    return { status: 'error', done, total, error: String((error as Error).message ?? error) }
-  }
-  if (isPending) return { status: 'running', done, total }
-  return { status: 'ready', done: total, total }
-}
-
-/** The four numbers for several sites at once, keyed by site id. */
-export function useMetricsMap(siteIds: string[]): Record<string, MetricsDTO> {
-  const w = useWindowParams()
-  return useManySiteMetrics(siteIds, w).byId
 }
 
 export { useSites, useCompare, useHealth, adaptAutonomy, toHours }

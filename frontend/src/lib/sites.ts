@@ -28,15 +28,6 @@ export function getSites(): Site[] {
   return registry
 }
 
-export const SITES: Site[] = new Proxy([] as Site[], {
-  get(_t, prop, receiver) {
-    return Reflect.get(registry, prop, receiver)
-  },
-  has: (_t, prop) => Reflect.has(registry, prop),
-  ownKeys: () => Reflect.ownKeys(registry),
-  getOwnPropertyDescriptor: (_t, prop) => Reflect.getOwnPropertyDescriptor(registry, prop),
-})
-
 export function siteById(id: string): Site {
   const s = byId[id]
   if (!s) {

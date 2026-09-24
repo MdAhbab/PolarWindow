@@ -82,13 +82,6 @@ export function isInstrumentType(v: string): v is InstrumentType {
   return v in INSTRUMENT_LABEL
 }
 
-export const REGION_LABEL: Record<string, string> = {
-  south_polar: 'South polar',
-  nearside: 'Near side',
-  farside: 'Far side',
-  polar_other: 'Polar, other',
-}
-
 export function coordinateKindWords(kind: CoordinateKind, featureName?: string | null): string {
   switch (kind) {
     case 'actual_landing':
