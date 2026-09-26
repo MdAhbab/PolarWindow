@@ -23,6 +23,8 @@ def test_downloadable_datasets_have_an_address() -> None:
             assert all(u.startswith("https://") for u in d.urls), d.id
         if d.method == "cmr":
             assert d.cmr_collection and d.needs_key, d.id
+        if d.method == "s3_prefix":
+            assert d.s3_prefix and d.s3_suffix, d.id
 
 
 def test_catalogue_links_point_at_data_nasa_gov() -> None:

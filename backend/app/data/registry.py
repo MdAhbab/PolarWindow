@@ -37,8 +37,10 @@ TIERS: Final[tuple[Tier, ...]] = ("core", "lifecycle", "validation", "bulk")
 #: path for every SPICE file); ``file`` through ``data.download``; ``lola_*``
 #: through the LOLA reader, which knows the product layout; ``seed`` is built
 #: locally from other datasets; ``cmr`` lists a NASA Earthdata collection's
-#: files through the Common Metadata Repository and fetches each one.
-Method = Literal["kernel", "file", "lola_regional", "lola_fine", "seed", "cmr"]
+#: files through the Common Metadata Repository and fetches each one;
+#: ``s3_prefix`` lists a public S3 bucket prefix (NASA's HelioCloud mirror)
+#: and fetches every object ending in ``s3_suffix``.
+Method = Literal["kernel", "file", "lola_regional", "lola_fine", "seed", "cmr", "s3_prefix"]
 
 DATA_NASA: Final[str] = "https://data.nasa.gov/dataset"
 NAIF_PDS_CLPS: Final[str] = (
@@ -70,6 +72,9 @@ class Dataset:
     needs_key: str | None = None
     #: For ``method="cmr"``: the Earthdata collection concept id.
     cmr_collection: str | None = None
+    #: For ``method="s3_prefix"``: object key prefix and the suffix to keep.
+    s3_prefix: str | None = None
+    s3_suffix: str | None = None
     #: False when the download address could not be reached to confirm it.
     #: The README says so next to the dataset rather than implying it works.
     address_confirmed: bool = True
@@ -103,6 +108,10 @@ def _kernel(spec: KernelSpec, tier: Tier) -> Dataset:
 _LOLA_PDS: Final[str] = (
     "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/img"
 )
+
+#: NASA's Heliophysics Data Resource Library on AWS (HelioCloud): a public,
+#: keyless mirror of SPDF/CDAWeb.
+HELIOCLOUD: Final[str] = "https://gov-nasa-hdrl-data1.s3.amazonaws.com"
 
 _GOLDSTONE: Final[str] = (
     "https://pds-geosciences.wustl.edu/lunar/gdscc-l-dss14_dss13_dss15_dss25-5-v1/lram_10xx/data"
@@ -287,21 +296,23 @@ _SPECIFIC: Final[tuple[Dataset, ...]] = (
     ),
     Dataset(
         id="spdf:omni2-hourly",
-        title="OMNI hourly solar wind, geomagnetic and solar indices, 1963 to date",
-        provider="NASA GSFC Space Physics Data Facility",
+        title="OMNI hourly solar wind, geomagnetic and solar indices (OMNI2_H0_MRG1HR), "
+        "1963 to date",
+        provider="NASA GSFC Space Physics Data Facility, via NASA HelioCloud on AWS",
         tier="lifecycle",
-        method="file",
-        urls=("https://spdf.gsfc.nasa.gov/pub/data/omni/low_res_omni/omni2_all_years.dat",),
-        dest="spaceweather/omni2_all_years.dat",
-        size_bytes=180_000_000,
+        method="s3_prefix",
+        urls=(HELIOCLOUD,),
+        dest="spaceweather/omni_hourly/",
+        size_bytes=190_000_000,
         used_for="Solar activity (F10.7, Ap) that sets air drag in Earth orbit, and the "
         "history of solar storms and proton events used to check radiation estimates.",
         licence="US government work (public domain)",
         catalogue=f"{DATA_NASA}/omni-hourly-data-set",
-        min_bytes=50_000_000,
-        # spdf.gsfc.nasa.gov refused connections on 2026-09-26 from both the
-        # shell and a browser; the path is the one data.nasa.gov lists.
-        address_confirmed=False,
+        # spdf.gsfc.nasa.gov, cdaweb and omniweb refused connections on 2026-09-26
+        # from here (shell and browser); NASA's HelioCloud bucket carries the same
+        # CDAWeb files and answered.
+        s3_prefix="spdf/cdaweb/data/omni/omni_cdaweb/hourly/",
+        s3_suffix=".cdf",
     ),
     Dataset(
         id="ghrc:ksc-field-mill",

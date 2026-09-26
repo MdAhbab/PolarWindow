@@ -75,7 +75,7 @@ def is_present(d: Dataset) -> bool | None:
         return fine.exists() and any(fine.glob("*.npz"))
     if d.method == "seed":
         return None
-    if d.method == "cmr":
+    if d.method in ("cmr", "s3_prefix"):
         p = _path(d)
         return p.exists() and any(p.iterdir())
     return download.verified(_target(d))
@@ -205,6 +205,48 @@ def _sync_cmr(d: Dataset) -> Outcome:
     return Outcome(d.id, "fetched" if fetched else "present", f"{fetched} new file(s)")
 
 
+def _sync_s3_prefix(d: Dataset) -> Outcome:
+    """Every object under a public S3 prefix (no account), resumable per file."""
+    import re
+
+    import httpx
+
+    assert d.s3_prefix is not None and d.urls
+    base = d.urls[0].rstrip("/")
+    dest = _path(d)
+    dest.mkdir(parents=True, exist_ok=True)
+    keys: list[tuple[str, int]] = []
+    token: str | None = None
+    with httpx.Client(timeout=60.0, headers={"User-Agent": download.USER_AGENT}) as s3:
+        while True:
+            params = {"list-type": "2", "prefix": d.s3_prefix, "max-keys": "1000"}
+            if token:
+                params["continuation-token"] = token
+            r = s3.get(base + "/", params=params)
+            r.raise_for_status()
+            body = r.text
+            for key, size in re.findall(r"<Key>([^<]+)</Key>.*?<Size>(\d+)</Size>", body, re.S):
+                if d.s3_suffix is None or key.endswith(d.s3_suffix):
+                    keys.append((key, int(size)))
+            m = re.search(r"<NextContinuationToken>([^<]+)</NextContinuationToken>", body)
+            if not m:
+                break
+            token = m.group(1)
+    if not keys:
+        raise download.DownloadFailed(f"no objects under {base}/{d.s3_prefix}")
+    fetched = 0
+    for key, size in keys:
+        target = download.Target(
+            urls=(f"{base}/{key}",), dest=dest / key.rsplit("/", 1)[-1], min_bytes=size
+        )
+        if not download.verified(target):
+            download.fetch(target)
+            fetched += 1
+    return Outcome(
+        d.id, "fetched" if fetched else "present", f"{fetched} of {len(keys)} file(s) new"
+    )
+
+
 _STEPS = {
     "kernel": _sync_kernel,
     "file": _sync_file,
@@ -212,6 +254,7 @@ _STEPS = {
     "lola_fine": None,  # built by the seed step, which knows the sites
     "seed": _sync_seed,
     "cmr": _sync_cmr,
+    "s3_prefix": _sync_s3_prefix,
 }
 
 
