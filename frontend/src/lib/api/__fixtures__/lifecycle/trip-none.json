@@ -1,0 +1,85 @@
+{
+ "data": {
+  "source": "none",
+  "none_reason": "No trajectory is published for this mission, and its launch date is not known.",
+  "start": "2027-01-01T00:00:00Z",
+  "end": "2027-01-01T00:00:00Z",
+  "samples": [],
+  "shadow": [],
+  "heard": [],
+  "numbers": {
+   "sunlight_h": {
+    "value": null,
+    "unit": "h",
+    "provenance": "computed",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": "No trajectory yet",
+    "source": null
+   },
+   "heard_h": {
+    "value": null,
+    "unit": "h",
+    "provenance": "computed",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": "No trajectory yet",
+    "source": null
+   },
+   "longest_shadow_h": {
+    "value": null,
+    "unit": "h",
+    "provenance": "computed",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": "No trajectory yet",
+    "source": null
+   },
+   "longest_unheard_h": {
+    "value": null,
+    "unit": "h",
+    "provenance": "computed",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": "No trajectory yet",
+    "source": null
+   }
+  },
+  "burns": [],
+  "moon_pull": {
+   "equal_pull_km": 38400,
+   "sphere_of_influence_km": 66100,
+   "t_equal_pull": null
+  },
+  "radiation": null
+ },
+ "meta": {
+  "computed_at": "2026-09-27T08:00:00Z",
+  "uncertainty": {
+   "kind": "composite",
+   "parts": []
+  },
+  "engines": {
+   "traj": "traj-1"
+  },
+  "sources": [],
+  "stale": false,
+  "compute_ms": 412.0
+ }
+}

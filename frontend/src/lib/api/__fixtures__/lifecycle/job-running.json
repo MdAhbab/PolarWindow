@@ -1,0 +1,7 @@
+{
+ "job_id": 41,
+ "status": "running",
+ "progress": 0.35,
+ "message": "Working out ground-station passes",
+ "poll_after_s": 2
+}

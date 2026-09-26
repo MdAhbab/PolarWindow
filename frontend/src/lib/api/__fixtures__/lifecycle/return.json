@@ -1,0 +1,110 @@
+{
+ "data": {
+  "booster": {
+   "landing": "droneship",
+   "zone": {
+    "lat_deg": 30.9,
+    "lon_deg": -74.9,
+    "pm_km": 12
+   },
+   "wave_height_m": {
+    "value": 1.8,
+    "unit": "m",
+    "provenance": "computed",
+    "pm": 0.4,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": null,
+    "source": null
+   },
+   "wind_m_s": {
+    "value": 9.5,
+    "unit": "m/s",
+    "provenance": "computed",
+    "pm": 2.1,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": null,
+    "source": null
+   },
+   "limits": {
+    "wave_height_m": {
+     "value": 2.5,
+     "unit": "m",
+     "provenance": "entered",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "A limit the team set.",
+     "missing_reason": null,
+     "source": "A. Rahman"
+    },
+    "wind_m_s": {
+     "value": 8.0,
+     "unit": "m/s",
+     "provenance": "entered",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "A limit the team set.",
+     "missing_reason": null,
+     "source": "A. Rahman"
+    }
+   },
+   "hazard_area_seen": true
+  },
+  "capsule": {
+   "applicable": false,
+   "reason": "This mission brings nothing back to Earth.",
+   "zone": null,
+   "wave_height_m": null,
+   "wind_m_s": null,
+   "daylight": null
+  }
+ },
+ "meta": {
+  "computed_at": "2026-09-27T08:00:00Z",
+  "uncertainty": {
+   "kind": "composite",
+   "parts": [
+    {
+     "source": "Zone position",
+     "note": "From the launch azimuth and the published downrange distance, \u00b112 km."
+    }
+   ]
+  },
+  "engines": {
+   "wx": "wx-1"
+  },
+  "sources": [
+   {
+    "name": "NOAA GFS-Wave",
+    "url": "https://registry.opendata.aws/noaa-gfs-bdp-pds/",
+    "issued_at": "2026-09-27T00:00:00Z",
+    "fetched_at": "2026-09-27T06:10:00Z",
+    "licence": "Public domain",
+    "snapshot_id": 1301
+   },
+   {
+    "name": "NDBC buoy 41010",
+    "url": "https://www.ndbc.noaa.gov/station_page.php?station=41010",
+    "issued_at": "2026-09-27T07:50:00Z",
+    "fetched_at": "2026-09-27T07:58:00Z",
+    "licence": "Public domain",
+    "snapshot_id": 1302
+   }
+  ],
+  "stale": false,
+  "compute_ms": 412.0
+ }
+}

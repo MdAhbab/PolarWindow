@@ -1,0 +1,369 @@
+{
+ "data": {
+  "nodes": [
+   {
+    "id": "lander",
+    "kind": "lander",
+    "name": "Athena",
+    "operator": "Intuitive Machines",
+    "status": "operating",
+    "orbit": null,
+    "launch_note": null
+   },
+   {
+    "id": "dss-14",
+    "kind": "station",
+    "name": "Goldstone 70 m",
+    "operator": "NASA DSN",
+    "status": "operating",
+    "orbit": null,
+    "launch_note": null
+   },
+   {
+    "id": "dss-43",
+    "kind": "station",
+    "name": "Canberra 70 m",
+    "operator": "NASA DSN",
+    "status": "operating",
+    "orbit": null,
+    "launch_note": null
+   },
+   {
+    "id": "dss-63",
+    "kind": "station",
+    "name": "Madrid 70 m",
+    "operator": "NASA DSN",
+    "status": "operating",
+    "orbit": null,
+    "launch_note": null
+   },
+   {
+    "id": "pathfinder",
+    "kind": "relay",
+    "name": "Lunar Pathfinder",
+    "operator": "ESA / SSTL",
+    "status": "not_launched",
+    "orbit": "planned",
+    "launch_note": "Planned on Blue Ghost M2, 2027"
+   }
+  ],
+  "links": [
+   {
+    "to": "dss-14",
+    "stretches": [
+     {
+      "start": "2025-03-06T19:30:00Z",
+      "end": "2025-03-07T03:30:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-07T19:30:00Z",
+      "end": "2025-03-08T03:30:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-08T19:30:00Z",
+      "end": "2025-03-09T03:30:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-09T19:30:00Z",
+      "end": "2025-03-10T03:30:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-10T19:30:00Z",
+      "end": "2025-03-11T03:30:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-11T19:30:00Z",
+      "end": "2025-03-12T03:30:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-12T19:30:00Z",
+      "end": "2025-03-13T03:30:00Z",
+      "open_start": false,
+      "open_end": false
+     }
+    ],
+    "data_rate_kbps": null,
+    "margin_db": null,
+    "from": "lander"
+   },
+   {
+    "to": "dss-43",
+    "stretches": [
+     {
+      "start": "2025-03-07T03:30:00Z",
+      "end": "2025-03-07T11:30:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-08T03:30:00Z",
+      "end": "2025-03-08T11:30:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-09T03:30:00Z",
+      "end": "2025-03-09T11:30:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-10T03:30:00Z",
+      "end": "2025-03-10T11:30:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-11T03:30:00Z",
+      "end": "2025-03-11T11:30:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-12T03:30:00Z",
+      "end": "2025-03-12T11:30:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-13T03:30:00Z",
+      "end": "2025-03-13T11:30:00Z",
+      "open_start": false,
+      "open_end": false
+     }
+    ],
+    "data_rate_kbps": null,
+    "margin_db": null,
+    "from": "lander"
+   },
+   {
+    "to": "dss-63",
+    "stretches": [
+     {
+      "start": "2025-03-07T11:30:00Z",
+      "end": "2025-03-07T18:30:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-08T11:30:00Z",
+      "end": "2025-03-08T18:30:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-09T11:30:00Z",
+      "end": "2025-03-09T18:30:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-10T11:30:00Z",
+      "end": "2025-03-10T18:30:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-11T11:30:00Z",
+      "end": "2025-03-11T18:30:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-12T11:30:00Z",
+      "end": "2025-03-12T18:30:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-13T11:30:00Z",
+      "end": "2025-03-13T17:30:00Z",
+      "open_start": false,
+      "open_end": true
+     }
+    ],
+    "data_rate_kbps": null,
+    "margin_db": null,
+    "from": "lander"
+   },
+   {
+    "to": "pathfinder",
+    "stretches": [],
+    "data_rate_kbps": null,
+    "margin_db": null,
+    "from": "lander"
+   }
+  ],
+  "numbers": {
+   "direct_h": {
+    "value": 168,
+    "unit": "h",
+    "provenance": "computed",
+    "pm": 0.2,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": null,
+    "source": null
+   },
+   "via_relay_h": {
+    "value": null,
+    "unit": "h",
+    "provenance": "computed",
+    "pm": null,
+    "lo": 12,
+    "hi": 31,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": null,
+    "source": null
+   },
+   "either_h": {
+    "value": null,
+    "unit": "h",
+    "provenance": "computed",
+    "pm": null,
+    "lo": 171,
+    "hi": 190,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": null,
+    "source": null
+   },
+   "station_hears_h": {
+    "value": 159,
+    "unit": "h",
+    "provenance": "computed",
+    "pm": 0.5,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": null,
+    "source": null
+   },
+   "longest_unheard_h": {
+    "value": 1.0,
+    "unit": "h",
+    "provenance": "computed",
+    "pm": 0.1,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": null,
+    "source": null
+   },
+   "longest_message_wait_min": {
+    "value": 61,
+    "unit": "min",
+    "provenance": "computed",
+    "pm": 2,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": null,
+    "source": null
+   },
+   "dark_and_unheard_h": {
+    "value": 0,
+    "unit": "h",
+    "provenance": "computed",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": "The lander was never dark and out of contact at once.",
+    "missing_reason": null,
+    "source": null
+   }
+  },
+  "relays": [
+   {
+    "id": "pathfinder",
+    "name": "Lunar Pathfinder",
+    "adds_h": {
+     "value": null,
+     "unit": "h",
+     "provenance": "computed",
+     "pm": null,
+     "lo": 12,
+     "hi": 31,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": null,
+     "missing_reason": null,
+     "source": null
+    },
+    "status": "Not launched: planned on Blue Ghost M2, 2027"
+   }
+  ],
+  "link_budget_note": "Line of sight only: the lander\u2019s radio power is not published.",
+  "bookings": [
+   {
+    "station": "dss-14",
+    "start": "2025-03-06T19:30:00Z",
+    "end": "2025-03-06T23:30:00Z",
+    "entered_by": "A. Rahman"
+   }
+  ]
+ },
+ "meta": {
+  "computed_at": "2026-09-27T08:00:00Z",
+  "uncertainty": {
+   "kind": "composite",
+   "parts": [
+    {
+     "source": "Relay orbit phase",
+     "note": "Lunar Pathfinder has no published phase, so its time is a range over every phase."
+    }
+   ]
+  },
+  "engines": {
+   "vis": "vis-2",
+   "net": "net-1",
+   "link": "link-1"
+  },
+  "sources": [
+   {
+    "name": "DSN 810-005, module 301 (station horizon masks)",
+    "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/",
+    "issued_at": null,
+    "fetched_at": null,
+    "licence": "Public domain",
+    "snapshot_id": null
+   },
+   {
+    "name": "NAIF DSN station kernels",
+    "url": "https://naif.jpl.nasa.gov/",
+    "issued_at": null,
+    "fetched_at": null,
+    "licence": "Public domain",
+    "snapshot_id": null
+   }
+  ],
+  "stale": false,
+  "compute_ms": 412.0
+ }
+}

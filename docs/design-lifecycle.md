@@ -124,13 +124,13 @@ line and a provenance line, and `QuantityTile` feeds it a `Quantity`
 
 | `Quantity` | Figure | Beside it | Bar under it |
 |---|---|---|---|
-| `pm` | `12` | `±2` in the uncertain ink, then the unit | solid to the value |
+| `pm` | `12` | `±2` in the uncertain ink, then the unit (`4.1° ±0.3°` for a unit written against the number); a margin from 1 to 3 keeps one decimal | solid to the value |
 | `lo`/`hi` | `3–7` | unit; the caller's footnote says "if it flies as planned" | solid to `lo`, −45° hatch from `lo` to `hi` |
 | `factor` | `4.1 × 10⁹` | `×/÷2` | solid |
 | `open` | `≥288` | as above | solid |
 | `no_margin_reason` | `12` | nothing | solid; footnote "No margin: {reason}" |
 | `value: null` | `—` in the line ink | unit | empty; footnote is the `missing_reason` |
-| time (`s since epoch`) | `01:32 UTC` with the date above | `±4 min` | none |
+| time (`s since epoch`) | `01:32`, with "27 Feb 2025 · UTC" above; known only to days, `8 Oct` with the year above | `±4 min`, `±3 days` | none |
 
 - The label is a button, as today: it opens what the number means, its
   professional name, and **where it comes from** (invariant 10):
@@ -164,7 +164,8 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   organisation, since when and by whom, evidence link, and a ladder of eight
   steps (not started … ready) filled up to its state. The ladder is a position
   in a fixed sequence, not a score, and carries no number. Blocked rows add
-  the magenta triangle, the word "Blocked" and the reason. Twin: the same
+  the triangle glyph, the word "Blocked" and the reason, in ink: magenta
+  stays reserved for "over a limit". Twin: the same
   rows as a table (item, kind, organisation, state, since, by, evidence,
   tests). A signed-in manager gets "Change" on each row.
 - **Rows:** Risks ({n}, {rising} rising) · Parts ({total}; {spares} spares) ·
@@ -190,7 +191,11 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
 - **Rows:** Weather rules for this opportunity (meta: "{n} rules; models
   disagree on {k}") · Official launch forecast · Team weather limits · Other
   launches from this range that day · Space weather now · Change the dates ·
-  How sure is this? · Where does this come from?
+  How sure is this? · Where does this come from? The landing rule the
+  calendar is worked back from is one line under the calendar, not a row.
+- **Official forecast** is quoted as issued: "{n}% chance the weather breaks
+  a launch rule", the 45th Weather Squadron's "probability of violating
+  weather constraints", with who entered it and the PDF.
 - **Weather rules** (`WeatherRuleTable`): rule rows × systems (GEFS, ECMWF
   ENS, AIFS ENS), each cell "{k} of {n} runs" with a small bar and its
   interval as a hatch; missing cells give their reason. A rule's class is in
@@ -245,9 +250,14 @@ into the hub header.
   Booked passes are outlined boxes labelled "booked". Twin: link, start, end,
   length, booked or not.
 - **Rows:** Relays (each with its launch status) · Booked ground-station
-  passes · Rover and lander line of sight · Radio link · More numbers ·
-  Download the contact plan (ION, CSV) · How sure is this? · Where does this
-  come from?
+  passes · Rover and lander line of sight · More numbers · Download the
+  contact plan (ION, CSV) · Change the dates (the same dates as Landing) ·
+  How sure is this? · Where does this come from? "Line of sight only: the
+  lander's radio power is not published" changes what every number means,
+  so it is a one-line note under the answer, not a row.
+- **Dates:** the hub sets the dates to the mission's time on the surface
+  when the mission is first opened, whichever step comes first, so Contact
+  and Landing always answer for the same dates.
 
 ### Return (`/return`, `GET /missions/{id}/return`)
 
@@ -258,7 +268,7 @@ into the hub header.
   on this mission." when not applicable.
 - **Numbers:** Waves at the booster landing zone · Wind at the booster
   landing zone · Waves at the splashdown zone · Wind at the splashdown zone
-  (the last two only with a capsule).
+  (the last two only with a capsule; without one the row has two tiles).
 - **Chart: against the team's limits.** One row per measure: the value as a
   bar with its ± hatched, the team's limit as an ink rule. Over the limit is
   magenta, a triangle and the words "{x} over the team's limit" (invariant 4).

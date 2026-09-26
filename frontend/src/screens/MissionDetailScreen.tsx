@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useMemo, useState, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { useMission as useStore, windowFromInstants } from '../lib/store'
-import { useMission as useMissionQuery } from '../lib/api/queries'
 import { useWindowParams } from '../lib/mission'
 import { useSiteView } from '../lib/api/queries'
 import { latestAccessed, type MissionDetail, type MissionSource, type PublishedDate } from '../lib/api/adapters'
@@ -25,102 +24,33 @@ import { Ribbon } from '../components/Ribbon'
 import { WindowPicker } from '../components/WindowPicker'
 import { ExplainPanel } from '../components/Agents'
 import { SummarySpeaker } from '../components/SummarySpeaker'
-import { EmptyState, LoadingPanel, ProblemPanel, UncertaintyNote } from '../components/States'
+import { EmptyState, ProblemPanel, UncertaintyNote } from '../components/States'
 import { Button, Disclosure, Panel, SectionLabel, Unconfirmed } from '../components/ui'
-import { ApiError } from '../lib/api/client'
 
 /**
- * S10 — one mission, fully sourced (§10.3), then the product's question: what
- * do the Sun and Earth do at this target over this mission's days?
+ * S10's body, now the hub's Landing section (design-lifecycle.md §4): one
+ * mission, fully sourced (§10.3), then the product's question: what do the
+ * Sun and Earth do at this target over this mission's days?
  *
  * Layout: at ≥ 1280 the record is the left 5/12 and "Sun & Earth" the sticky
- * right 7/12. Below that the answer follows the record's header block (status
- * and dates first, then the four numbers, then the payloads), which is also
- * the DOM order, so reading order and focus order agree at every width.
+ * right 7/12. Below that the answer follows the record's status and dates
+ * (then the four numbers, then the payloads), which is also the DOM order, so
+ * reading order and focus order agree at every width. The mission's name and
+ * the back link are the hub's header, above the six steps.
  */
-export function MissionDetailScreen() {
-  const { id } = useParams()
+export function LandingSection({ mission: m }: { mission: MissionDetail }) {
   const navigate = useNavigate()
-  const q = useMissionQuery(id)
-  const setWindow = useStore((s) => s.setWindow)
-  const applied = useRef<string | null>(null)
-  const m = q.data
-
-  // A mission sets the window to its surface window (system-design §10.6),
-  // once per mission, so a date the user then picks is not overwritten.
-  useEffect(() => {
-    if (!m || applied.current === m.id) return
-    applied.current = m.id
-    const w = initialWindow(m)
-    if (w) setWindow(w.startH, w.hours)
-  }, [m, setWindow])
-
-  useEffect(() => {
-    if (m) document.title = `${m.name} · POLAR WINDOW`
-  }, [m])
-
-  if (q.isPending) {
-    return (
-      <div className="grid gap-6 p-4 lg:p-6 xl:grid-cols-12">
-        <div className="flex flex-col gap-3 xl:col-span-5" aria-hidden="true">
-          {/* Static skeleton lines: motion is reserved for data. */}
-          <div className="h-8 w-2/3 bg-inset" />
-          <div className="h-4 w-1/2 bg-inset" />
-          <div className="h-24 w-full bg-inset" />
-          <div className="h-32 w-full bg-inset" />
-        </div>
-        <div className="xl:col-span-7">
-          <LoadingPanel
-            done={0}
-            total={1}
-            title="Loading the mission record"
-            unit="records"
-            note="The record, its payloads and its sources, then the Sun and Earth at its target."
-          />
-        </div>
-      </div>
-    )
-  }
-
-  if (q.error || !m) {
-    const notFound = q.error instanceof ApiError && q.error.status === 404
-    return (
-      <div className="mx-auto w-full max-w-2xl p-4 lg:p-8">
-        <ProblemPanel
-          error={q.error}
-          fallbackTitle="That mission isn't in the list"
-          onRetry={notFound ? undefined : () => void q.refetch()}
-          action={{ label: 'Back to missions', onClick: () => navigate('/missions') }}
-        />
-      </div>
-    )
-  }
 
   const asOf = (() => {
     const l = latestAccessed(m.sources)
     return l ? isoDateWords(l) : null
   })()
   const u = <Unconfirmed asOf={asOf} />
-  const vehicle = m.vehicleName
 
   return (
-    <div className="grid grow gap-6 p-4 lg:p-6 xl:grid-cols-12 xl:grid-rows-[auto_1fr] xl:items-start">
-      {/* 1–3: header, status, dates. */}
+    <div className="grid grow gap-6 xl:grid-cols-12 xl:grid-rows-[auto_1fr] xl:items-start">
+      {/* Status and dates. */}
       <div className="flex min-w-0 flex-col gap-4 xl:col-span-5 xl:col-start-1 xl:row-start-1">
-        <Link to="/missions" className="inline-flex h-11 items-center text-body font-semibold">
-          ← All CLPS missions
-        </Link>
-        <header className="flex flex-col gap-1.5">
-          <h1 className="text-heading-lg leading-9 font-semibold tracking-heading">
-            {m.name}
-            {vehicle && <span className="font-normal text-ink-2"> · {vehicle}</span>}
-          </h1>
-          <p className="text-body leading-6 text-ink-2">
-            {[m.provider, m.lander, m.taskOrder ? `NASA task order ${m.taskOrder}` : null].filter(Boolean).join(' · ') ||
-              'Provider not published'}
-          </p>
-        </header>
-
         <Panel className="flex flex-col gap-3 p-5">
           <div className="text-title-lg font-semibold text-ink">
             <span aria-hidden="true">{STATUS_GLYPH[m.status]} </span>
@@ -374,7 +304,7 @@ function Payloads({ mission: m, asOf }: { mission: MissionDetail; asOf: string |
 }
 
 /** The window a mission opens on: its surface window, else the span its landing date covers. */
-function initialWindow(m: MissionDetail): { startH: number; hours: number } | null {
+export function initialWindow(m: MissionDetail): { startH: number; hours: number } | null {
   const sw = m.surfaceWindow
   if (sw.startIso && sw.endIso) return windowFromInstants(Date.parse(sw.startIso), Date.parse(sw.endIso))
   if (m.landing && m.landing.precision !== 'day' && m.landing.precision !== 'minute') {

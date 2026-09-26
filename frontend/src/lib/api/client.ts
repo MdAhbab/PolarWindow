@@ -13,6 +13,29 @@
 import type { components, paths } from './schema'
 import { DATA_MODE, SnapshotMiss, fromSnapshot, isSnapshotActive, markLive, snapshotTileUrl } from './snapshot'
 import { currentToken, renewToken } from '../session'
+import type {
+  AuditEntryDTO,
+  ContactDTO,
+  FeedsDTO,
+  JobRefDTO,
+  LandingHistoryDTO,
+  LaunchCalendarDTO,
+  LaunchWeatherDTO,
+  LessonDTO,
+  ParameterDTO,
+  PartDTO,
+  PartImpactDTO,
+  ReadyDTO,
+  ReadyItemDTO,
+  ReturnDTO,
+  RiskDTO,
+  RiskScalesDTO,
+  RoverSightDTO,
+  SectionDTO,
+  SectionStatusDTO,
+  TripDTO,
+  UserDTO,
+} from './lifecycle'
 
 export type Schemas = components['schemas']
 export type SiteListDTO = Schemas['SiteList']
@@ -129,20 +152,38 @@ export function qs(params: Query | undefined): string {
   return s ? `?${s}` : ''
 }
 
-type Method = 'GET' | 'POST' | 'PUT' | 'DELETE'
+type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 /** The calls the server checks a session on: the AI panels (they cost quota) and the settings. */
 const SESSION_PATHS = /^\/(agents\/(explain|advise|brief|ask)$|settings|auth\/me)/
 
-async function request<T>(
+/**
+ * The project manager's writes (ADR-17): each needs a named session. Reads of
+ * the same paths stay public, so the token goes only on a write.
+ */
+const WRITE_PATHS =
+  /^\/(missions\/[^/]+\/(ready\/items|parts|risks|lessons\/[^/]+\/adopt|launch\/official-forecast|contact\/bookings|return\/limits)|ready\/items\/|parts\/|risks\/|vehicles\/[^/]+\/limits|feeds\/[^/]+\/refresh|parameters\/)/
+
+interface RequestOptions {
+  signal?: AbortSignal
+  query?: Query
+  body?: unknown
+  method?: Method
+}
+
+async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+  return (await requestWithStatus<T>(path, opts)).body
+}
+
+/**
+ * The answer and its HTTP status. A lifecycle section answers 202 with a job
+ * while it is being worked out, and the caller needs to tell that apart from
+ * the answer itself.
+ */
+async function requestWithStatus<T>(
   path: string,
-  {
-    signal,
-    query,
-    body,
-    method: asked,
-  }: { signal?: AbortSignal; query?: Query; body?: unknown; method?: Method } = {},
-): Promise<T> {
+  { signal, query, body, method: asked }: RequestOptions = {},
+): Promise<{ status: number; body: T }> {
   const method: Method = asked ?? (body ? 'POST' : 'GET')
   const pathAndQuery = `${path}${qs(query)}`
   // A snapshot build never calls the network: the saved answers are the data.
@@ -151,7 +192,7 @@ async function request<T>(
   // Only the calls that need a session carry it. Reading is public, and an
   // Authorization header on a read would make the browser ask permission
   // (a CORS preflight) before every slider step.
-  const needsSession = SESSION_PATHS.test(path)
+  const needsSession = SESSION_PATHS.test(path) || (method !== 'GET' && WRITE_PATHS.test(path))
   const send = (token: string | null) => {
     const headers: Record<string, string> = {}
     if (body) headers['content-type'] = 'application/json'
@@ -197,11 +238,11 @@ async function request<T>(
     }
     throw new ApiError(res.status, parsed)
   }
-  return (await res.json()) as T
+  return { status: res.status, body: (res.status === 204 ? null : await res.json()) as T }
 }
 
 /** A saved answer, returned exactly as received; a saved error is still an error. */
-async function fromSaved<T>(method: Method, pathAndQuery: string, body: unknown): Promise<T> {
+async function fromSaved<T>(method: Method, pathAndQuery: string, body: unknown): Promise<{ status: number; body: T }> {
   let saved: { status: number; json: unknown }
   try {
     saved = await fromSnapshot(method, pathAndQuery, body)
@@ -210,7 +251,7 @@ async function fromSaved<T>(method: Method, pathAndQuery: string, body: unknown)
     throw e
   }
   if (saved.status >= 400) throw new ApiError(saved.status, saved.json)
-  return saved.json as T
+  return { status: saved.status, body: saved.json as T }
 }
 
 /** A view the offline copy does not hold. Says what does work, like any error here. */
@@ -229,6 +270,17 @@ export class NotInSnapshot extends ApiError {
     })
     this.name = 'NotInSnapshot'
   }
+}
+
+const enc = encodeURIComponent
+
+/** A section's answer, or the job working it out (202, ADR-12). */
+export type SectionResult<T> = { kind: 'answer'; section: SectionDTO<T> } | { kind: 'job'; job: JobRefDTO }
+
+async function section<T>(path: string, query: Query | undefined, signal?: AbortSignal): Promise<SectionResult<T>> {
+  const r = await requestWithStatus<SectionDTO<T> | JobRefDTO>(path, { query, signal })
+  if (r.status === 202) return { kind: 'job', job: r.body as JobRefDTO }
+  return { kind: 'answer', section: r.body as SectionDTO<T> }
 }
 
 /** ISO 8601 UTC, which is what every endpoint takes. */
@@ -298,6 +350,102 @@ export const api = {
 
   agentRuns: (limit = 50, signal?: AbortSignal) =>
     request<AgentRunListDTO>('/agents/runs', { query: { limit }, signal }),
+
+  // -- the lifecycle sections (docs/lifecycle-api.md) ------------------------
+
+  sections: (missionId: string, signal?: AbortSignal) =>
+    request<SectionDTO<SectionStatusDTO[]>>(`/missions/${enc(missionId)}/sections`, { signal }),
+
+  ready: (missionId: string, signal?: AbortSignal) =>
+    section<ReadyDTO>(`/missions/${enc(missionId)}/ready`, undefined, signal),
+
+  launch: (missionId: string, q: Query, signal?: AbortSignal) =>
+    section<LaunchCalendarDTO>(`/missions/${enc(missionId)}/launch`, q, signal),
+
+  launchWeather: (missionId: string, opportunity: string, signal?: AbortSignal) =>
+    section<LaunchWeatherDTO>(`/missions/${enc(missionId)}/launch/weather`, { opportunity }, signal),
+
+  trip: (missionId: string, signal?: AbortSignal) => section<TripDTO>(`/missions/${enc(missionId)}/trip`, undefined, signal),
+
+  contact: (missionId: string, q: Query, signal?: AbortSignal) =>
+    section<ContactDTO>(`/missions/${enc(missionId)}/contact`, q, signal),
+
+  rover: (missionId: string, rover: string | undefined, signal?: AbortSignal) =>
+    request<SectionDTO<RoverSightDTO>>(`/missions/${enc(missionId)}/contact/rover`, { query: { rover }, signal }),
+
+  returnSection: (missionId: string, signal?: AbortSignal) =>
+    section<ReturnDTO>(`/missions/${enc(missionId)}/return`, undefined, signal),
+
+  job: (jobId: number, signal?: AbortSignal) => request<JobRefDTO>(`/jobs/${jobId}`, { signal }),
+
+  parts: (missionId: string, signal?: AbortSignal) =>
+    request<{ parts: PartDTO[] }>(`/missions/${enc(missionId)}/parts`, { signal }),
+
+  partImpact: (partId: string, signal?: AbortSignal) =>
+    request<PartImpactDTO>(`/parts/${enc(partId)}/impact`, { signal }),
+
+  riskScales: (signal?: AbortSignal) => request<RiskScalesDTO>('/risk-scales', { signal }),
+
+  landingHistory: (signal?: AbortSignal) => request<LandingHistoryDTO>('/landing-history', { signal }),
+
+  lessons: (missionId: string, signal?: AbortSignal) =>
+    request<LessonDTO[]>('/lessons', { query: { mission: missionId }, signal }),
+
+  itemHistory: (itemId: string, signal?: AbortSignal) =>
+    request<AuditEntryDTO[] | { entries: AuditEntryDTO[] }>(`/ready/items/${enc(itemId)}/history`, { signal }),
+
+  history: (entity: string, id: string, signal?: AbortSignal) =>
+    request<{ entries: AuditEntryDTO[] }>('/history', { query: { entity, id }, signal }),
+
+  feeds: (signal?: AbortSignal) => request<FeedsDTO>('/feeds', { signal }),
+
+  parameters: (signal?: AbortSignal) => request<{ parameters: ParameterDTO[] }>('/parameters', { signal }),
+
+  me: (signal?: AbortSignal) => request<{ user: UserDTO }>('/auth/me', { signal }),
+
+  // -- the project manager's writes (a named session) ------------------------
+
+  addReadyItem: (missionId: string, body: { kind: string; name: string; organisation: string | null }) =>
+    request<ReadyItemDTO>(`/missions/${enc(missionId)}/ready/items`, { body, method: 'POST' }),
+
+  moveReadyItem: (
+    itemId: string,
+    body: { state: string; date: string; evidence_url: string; note: string | null; blocked_reason?: string | null },
+  ) => request<ReadyItemDTO>(`/ready/items/${enc(itemId)}`, { body, method: 'PATCH' }),
+
+  addPart: (missionId: string, body: Omit<PartDTO, 'id' | 'changed_at' | 'changed_by'>) =>
+    request<PartDTO>(`/missions/${enc(missionId)}/parts`, { body, method: 'POST' }),
+
+  changePart: (partId: string, body: Partial<Omit<PartDTO, 'id' | 'changed_at' | 'changed_by'>>) =>
+    request<PartDTO>(`/parts/${enc(partId)}`, { body, method: 'PATCH' }),
+
+  addRisk: (missionId: string, body: Omit<RiskDTO, 'id'>) =>
+    request<RiskDTO>(`/missions/${enc(missionId)}/risks`, { body, method: 'POST' }),
+
+  changeRisk: (riskId: string, body: Partial<Omit<RiskDTO, 'id'>>) =>
+    request<RiskDTO>(`/risks/${enc(riskId)}`, { body, method: 'PATCH' }),
+
+  adoptLesson: (missionId: string, lessonId: string) =>
+    request<unknown>(`/missions/${enc(missionId)}/lessons/${enc(lessonId)}/adopt`, { method: 'POST' }),
+
+  officialForecast: (missionId: string, body: { probability_pct: number; concerns: string[]; pdf_url: string }) =>
+    request<unknown>(`/missions/${enc(missionId)}/launch/official-forecast`, { body, method: 'PUT' }),
+
+  vehicleLimits: (vehicleId: string, body: { limits: { rule_id: string; value: number; unit: string; note: string | null }[] }) =>
+    request<unknown>(`/vehicles/${enc(vehicleId)}/limits`, { body, method: 'PUT' }),
+
+  bookPass: (missionId: string, body: { station: string; start: string; end: string; note?: string | null }) =>
+    request<unknown>(`/missions/${enc(missionId)}/contact/bookings`, { body, method: 'POST' }),
+
+  returnLimits: (
+    missionId: string,
+    body: {
+      booster: { wave_height_m: number | null; wind_m_s: number | null }
+      capsule: { wave_height_m: number | null; wind_m_s: number | null }
+    },
+  ) => request<unknown>(`/missions/${enc(missionId)}/return/limits`, { body, method: 'PUT' }),
+
+  refreshFeed: (provider: string) => request<unknown>(`/feeds/${enc(provider)}/refresh`, { method: 'POST' }),
 
   tileUrl: (layer: 'hillshade' | 'illumination' | 'psr', z: number, x: number, y: number) =>
     isSnapshotActive() ? snapshotTileUrl(layer, z, x, y) : `${API_BASE}/tiles/${layer}/${z}/${x}/${y}.png`,

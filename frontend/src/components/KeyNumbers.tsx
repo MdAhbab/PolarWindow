@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import { useCountUp } from '../hooks/useCountUp'
 import { bound, hoursSpoken, percent, plusMinus, termLabel } from '../lib/format'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
@@ -46,6 +46,13 @@ export function KeyNumberTile({
   means,
   also,
   inRow = false,
+  display,
+  above,
+  margin,
+  range,
+  bar = true,
+  source,
+  age,
 }: {
   label: string
   /**
@@ -71,6 +78,23 @@ export function KeyNumberTile({
   open?: boolean
   /** What a screen reader hears for the value; defaults to a sentence from it. */
   spoken?: string
+  /**
+   * The figure, already written ("12–31", "00:16 UTC", "4.1 × 10⁹"). Drawn as
+   * it is, without the roll (M4), which only runs between two plain numbers.
+   */
+  display?: string
+  /** A short line above the figure: a launch time's date. */
+  above?: string
+  /** The margin, already written ("±2", "×/÷2", "±4 min"); replaces `toleranceH`. */
+  margin?: string
+  /** A range, as fractions of the bar: solid to `lo`, hatched from `lo` to `hi`. */
+  range?: { lo: number; hi: number }
+  /** No bar, for a value that is not an amount (a time of day). */
+  bar?: boolean
+  /** Where the number comes from (invariant 10), opened with `means` from the label. */
+  source?: ReactNode
+  /** How old a live number is (invariant 11), always on screen. */
+  age?: string
 }) {
   const shown = state === 'ready' || state === 'uncertain'
   // NaN while there is no value: the first real value is set directly, and
@@ -103,6 +127,7 @@ export function KeyNumberTile({
         ? 'text-figure-md leading-figure-md'
         : 'text-figure leading-figure'
 
+  const explains = Boolean(means || source)
   const border =
     tone === 'alert'
       ? 'border-alert'
@@ -130,7 +155,7 @@ export function KeyNumberTile({
         ) : icon ? (
           <Icon name={icon} size={14} strokeWidth={2} />
         ) : null}
-        {means ? (
+        {explains ? (
           <button
             type="button"
             aria-expanded={explained}
@@ -147,18 +172,23 @@ export function KeyNumberTile({
         )}
       </div>
 
-      {shown && <span className="sr-only">{said}</span>}
+      {(shown || (state === 'blank' && spoken)) && <span className="sr-only">{said}</span>}
       {/* Wraps rather than overflows: at `sm` in the map's two-column rail the
           value, its margin and the unit are wider than the tile. The margin and
           the unit wrap together, so a bare "h" never lands on its own line. */}
       <div
         className="flex flex-wrap items-baseline gap-x-2"
-        aria-hidden={shown ? 'true' : undefined}
+        aria-hidden={shown || (state === 'blank' && spoken) ? 'true' : undefined}
       >
+        {above && state !== 'blank' && state !== 'computing' && (
+          <span className="w-full text-small font-medium text-ink-2">{above}</span>
+        )}
         {state === 'blank' ? (
           <span className={`font-semibold tracking-figure text-line-strong ${numberClass}`}>—</span>
         ) : state === 'computing' ? (
           <span className={`font-semibold tracking-figure text-line-strong ${numberClass}`}>——</span>
+        ) : display !== undefined ? (
+          <span className={`font-semibold tracking-figure tnum ${numberClass} ${TONE_TEXT[tone]}`}>{display}</span>
         ) : (
           <span className={`font-semibold tracking-figure tnum ${numberClass} ${TONE_TEXT[tone]}`}>
             {bound(open)}
@@ -166,34 +196,62 @@ export function KeyNumberTile({
           </span>
         )}
         <span className="flex items-baseline gap-2">
-          {toleranceH !== undefined && state !== 'blank' && state !== 'computing' && (
-            <span className="text-subhead text-uncertain tnum">{plusMinus(toleranceH)}</span>
+          {margin !== undefined && state !== 'blank' && state !== 'computing' ? (
+            <span className="text-subhead text-uncertain tnum">{margin}</span>
+          ) : (
+            toleranceH !== undefined &&
+            state !== 'blank' &&
+            state !== 'computing' && <span className="text-subhead text-uncertain tnum">{plusMinus(toleranceH)}</span>
           )}
-          <span className="text-large text-ink-2">{unit}</span>
+          {unit && <span className="text-large text-ink-2">{unit}</span>}
         </span>
       </div>
 
-      <div className="flex h-1.5 bg-dark-fill">
-        {state === 'ready' || state === 'uncertain' ? (
-          <div
-            className={`${TONE_BAR[tone]} transition-[width] duration-[600ms]`}
-            style={{ width: `${Math.max(0, Math.min(100, (fraction ?? 0) * 100))}%` }}
-          />
-        ) : (
-          <div className="w-1/3 bg-line-strong" />
-        )}
-      </div>
+      {bar ? (
+        <div className="relative flex h-1.5 bg-dark-fill">
+          {state === 'ready' || state === 'uncertain' ? (
+            range ? (
+              <>
+                <div className={TONE_BAR[tone]} style={{ width: `${clampPct(range.lo)}%` }} />
+                <div
+                  className="hatch-uncertain border-y border-uncertain"
+                  style={{ width: `${Math.max(0, clampPct(range.hi) - clampPct(range.lo))}%` }}
+                />
+              </>
+            ) : (
+              <div
+                className={`${TONE_BAR[tone]} transition-[width] duration-[600ms]`}
+                style={{ width: `${clampPct(fraction ?? 0)}%` }}
+              />
+            )
+          ) : (
+            <div className="w-1/3 bg-line-strong" />
+          )}
+        </div>
+      ) : inRow ? (
+        <div />
+      ) : null}
 
-      {footnote ? <div className="text-caption text-ink-3">{footnote}</div> : inRow ? <div /> : null}
-      {means && (
+      {footnote || age ? (
+        <div className="flex flex-col gap-0.5 text-caption text-ink-3">
+          {footnote && <span>{footnote}</span>}
+          {age && <span className="text-ink-2">{age}</span>}
+        </div>
+      ) : inRow ? (
+        <div />
+      ) : null}
+      {explains && (
         <p id={explainId} hidden={!explained} className="border-t border-line pt-2 text-small leading-5 text-ink-2">
           {means}
           {also && <span className="block pt-1 text-ink-3">Also called {also}.</span>}
+          {source && <span className="block pt-1 text-ink-3">{source}</span>}
         </p>
       )}
     </div>
   )
 }
+
+const clampPct = (f: number) => Math.max(0, Math.min(100, f * 100))
 
 /** The gap has at least one edge that is a real crossing, so its ± means something. */
 function hasTimedEdge(arc: Arc | undefined): boolean {

@@ -214,6 +214,105 @@ export const TERM: Record<string, { label: string; means: string; also?: string 
   },
 }
 
+/**
+ * The lifecycle sections' key numbers, in the same form: the plain name on
+ * screen, the meaning and the professional name when the label is pressed.
+ */
+Object.assign(TERM, {
+  itemsReady: {
+    label: 'Items ready',
+    means: 'Items that have reached the last step, ready, out of every item entered for this mission. A count, not a score.',
+  },
+  blocked: {
+    label: 'Blocked',
+    means: 'Items that cannot move on until something outside them changes. Each one says why.',
+  },
+  nextMilestone: {
+    label: 'Next milestone',
+    means: 'The next review or delivery still to come, and how far its date could move.',
+  },
+  spares: {
+    label: 'Spare parts',
+    means: 'Flight spares still on hand to replace a part that is lost, damaged or fails.',
+  },
+  launchTime: {
+    label: 'Launch time',
+    means: 'When this launch opportunity opens, worked out from where the Moon will be and where the pad is.',
+    also: 'T-0',
+  },
+  flightTime: {
+    label: 'Flight time',
+    means: 'Days from launch to landing on this opportunity, including the wait in orbit around the Moon.',
+    also: 'time of flight',
+  },
+  sunAtLanding: {
+    label: 'Sun height at landing',
+    means: 'How high the Sun stands above the landing spot’s horizon at touchdown. A low Sun casts long shadows that hide hazards from the landing cameras.',
+    also: 'solar elevation angle',
+  },
+  sunlightAfterLanding: {
+    label: 'Sunlight after landing',
+    means: 'Hours of sunlight at the landing spot from touchdown until the Sun first sets.',
+  },
+  tripSunlight: {
+    label: 'Time in sunlight',
+    means: 'Hours of the trip with the Sun not hidden by Earth or the Moon: the time the solar panels can charge.',
+  },
+  tripHeard: {
+    label: 'Time a ground station can hear it',
+    means: 'Hours of the trip when at least one ground station has the spacecraft above its own horizon.',
+    also: 'ground-station coverage',
+  },
+  tripShadow: {
+    label: 'Longest time in shadow',
+    means: 'The longest single stretch in Earth’s or the Moon’s shadow, running on batteries.',
+    also: 'longest eclipse',
+  },
+  tripUnheard: {
+    label: 'Longest time without contact',
+    means: 'The longest single stretch of the trip that no ground station can hear.',
+    also: 'radio (RF) blackout',
+  },
+  stationHears: {
+    label: 'Time a ground station can hear the lander',
+    means: 'Hours when Earth is above the lander’s skyline and the Moon is above a ground station’s own horizon, both at once.',
+    also: 'view period',
+  },
+  viaRelay: {
+    label: 'Through a relay',
+    means: 'Extra hours a relay satellite could add. A range, because the relay has no published position in its orbit yet.',
+    also: 'relayed contact',
+  },
+  contactUnheard: {
+    label: 'Longest time without contact',
+    means: 'The longest single stretch with no way to reach Earth, directly or through a relay.',
+    also: 'radio (RF) blackout',
+  },
+  messageWait: {
+    label: 'Longest message wait',
+    means: 'The longest a message from the lander waits before some path can carry it to Earth.',
+    also: 'end-to-end latency',
+  },
+  boosterWaves: {
+    label: 'Waves at the booster landing zone',
+    means: 'Forecast wave height where the booster comes down, to set beside the team’s limit.',
+    also: 'significant wave height',
+  },
+  boosterWind: {
+    label: 'Wind at the booster landing zone',
+    means: 'Forecast wind speed where the booster comes down, to set beside the team’s limit.',
+  },
+  capsuleWaves: {
+    label: 'Waves at the splashdown zone',
+    means: 'Forecast wave height where a returning capsule comes down, to set beside the team’s limit.',
+    also: 'significant wave height',
+  },
+  capsuleWind: {
+    label: 'Wind at the splashdown zone',
+    means: 'Forecast wind speed where a returning capsule comes down, to set beside the team’s limit.',
+  },
+} satisfies Record<string, { label: string; means: string; also?: string }>)
+
 export function termLabel(key: string): { label: string; means: string; also?: string } {
   return TERM[key]
 }

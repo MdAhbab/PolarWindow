@@ -1,0 +1,66 @@
+{
+ "attempts": [
+  {
+   "mission": "Chang\u2019e 3",
+   "agency": "CNSA",
+   "date": "2013-12-14",
+   "outcome": "landed_working",
+   "cause": null,
+   "source_url": "https://www.cnsa.gov.cn/"
+  },
+  {
+   "mission": "Beresheet",
+   "agency": "SpaceIL",
+   "date": "2019-04-11",
+   "outcome": "failed",
+   "cause": "Main engine shut down after a command error",
+   "source_url": "https://www.spaceil.com/"
+  },
+  {
+   "mission": "Hakuto-R M1",
+   "agency": "ispace",
+   "date": "2023-04-25",
+   "outcome": "failed",
+   "cause": "Altimeter reading rejected after the crater rim",
+   "source_url": "https://ispace-inc.com/"
+  },
+  {
+   "mission": "SLIM",
+   "agency": "JAXA",
+   "date": "2024-01-19",
+   "outcome": "landed_tipped_or_partial",
+   "cause": "Lost an engine nozzle on descent",
+   "source_url": "https://global.jaxa.jp/"
+  },
+  {
+   "mission": "IM-1",
+   "agency": "Intuitive Machines",
+   "date": "2024-02-22",
+   "outcome": "landed_tipped_or_partial",
+   "cause": "Laser rangefinder safety switch left on",
+   "source_url": "https://www.nasa.gov/"
+  },
+  {
+   "mission": "Blue Ghost M1",
+   "agency": "Firefly",
+   "date": "2025-03-02",
+   "outcome": "landed_working",
+   "cause": null,
+   "source_url": "https://fireflyspace.com/"
+  },
+  {
+   "mission": "IM-2",
+   "agency": "Intuitive Machines",
+   "date": "2025-03-06",
+   "outcome": "landed_tipped_or_partial",
+   "cause": "Altimeter noise and a low Sun",
+   "source_url": "https://www.nasa.gov/"
+  }
+ ],
+ "counts": {
+  "attempts": 7,
+  "landed_working": 2,
+  "landed_tipped_or_partial": 3,
+  "failed": 2
+ }
+}

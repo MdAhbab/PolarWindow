@@ -38,13 +38,35 @@ const NAMES: Record<string, string> = {
   lat: 'latitude',
   lon: 'longitude',
   rank: 'rank',
+  sunlight: 'time in sunlight',
+  heard: 'time a ground station can hear it',
+  longest_shadow: 'longest time in shadow',
+  longest_unheard: 'longest time without contact',
+  station_hears: 'time a ground station can hear the lander',
+  via_relay: 'time through a relay',
+  either: 'time in contact either way',
+  direct: 'time in contact with Earth',
+  longest_message_wait: 'longest message wait',
+  dark_and_unheard: 'time dark and out of contact at once',
+  flight_days: 'flight time',
+  orbit_wait_days: 'wait in orbit around the Moon',
+  sun_elevation: 'Sun height',
+  sunlight_after: 'sunlight after landing',
+  wave_height: 'wave height',
+  wind: 'wind speed',
+  belt_hours: 'time in the radiation belts',
 }
 
 const UNITS: [RegExp, string][] = [
+  // Longest first: "wind_m_s" is a speed, not "wind m" in seconds.
+  [/_m_s$/, 'metres a second'],
   [/_s$/, 'seconds'],
   [/_deg$/, 'degrees'],
   [/_m$/, 'metres'],
   [/_h$/, 'hours'],
+  [/_min$/, 'minutes'],
+  [/_days$/, 'days'],
+  [/_km$/, 'kilometres'],
   [/_pct$/, 'percent'],
 ]
 

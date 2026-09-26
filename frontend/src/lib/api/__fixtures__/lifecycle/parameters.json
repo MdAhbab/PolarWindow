@@ -1,0 +1,24 @@
+{
+ "parameters": [
+  {
+   "id": "battery-limit",
+   "name": "Battery limit",
+   "value": {
+    "value": 120,
+    "unit": "h",
+    "provenance": "assumed",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": "A placeholder until a thermal model gives one.",
+    "missing_reason": null,
+    "source": null
+   },
+   "note": "Used to mark a night that runs over it.",
+   "changed_by": null,
+   "changed_at": null
+  }
+ ]
+}

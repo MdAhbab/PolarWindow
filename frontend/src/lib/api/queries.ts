@@ -113,7 +113,37 @@ export const keys = {
     ['compare', engineVersion, [...siteIds].sort(), ...windowKey(w), rankBy] as const,
   health: () => ['health'] as const,
   settings: () => ['settings'] as const,
+  /**
+   * The lifecycle sections. `sections` reports the engine versions (like
+   * `sites` reports `engine_version`), so it is not keyed on them; every
+   * section answer is, through `lifecycleEngineStamp()`, so a redeploy of the
+   * trajectory or contact engine is fetched again rather than served from the
+   * client cache.
+   */
+  sections: (missionId: string | undefined) => ['lifecycle', 'sections', missionId] as const,
+  lifecycle: (section: string, missionId: string | undefined, ...params: unknown[]) =>
+    ['lifecycle', section, lifecycleEngineStamp(), missionId, ...params] as const,
+  job: (jobId: number | undefined) => ['job', jobId] as const,
+  feeds: () => ['feeds'] as const,
+  parameters: () => ['parameters'] as const,
+  riskScales: () => ['riskScales'] as const,
+  landingHistory: () => ['landingHistory'] as const,
 }
+
+/**
+ * The engine versions the lifecycle answers depend on (`meta.engines`), as
+ * last reported by `/missions/{id}/sections`. One string, sorted, so the same
+ * versions always make the same key.
+ */
+let lifecycleEngines = 'unknown'
+export function setLifecycleEngines(engines: Record<string, string>): void {
+  const stamp = Object.keys(engines)
+    .sort()
+    .map((k) => `${k}=${engines[k]}`)
+    .join(',')
+  lifecycleEngines = stamp || 'none'
+}
+export const lifecycleEngineStamp = () => lifecycleEngines
 
 // ---------------------------------------------------------------------------
 // Sites

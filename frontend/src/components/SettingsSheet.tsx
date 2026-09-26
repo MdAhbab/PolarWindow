@@ -5,6 +5,7 @@ import { useMission } from '../lib/store'
 import { useSession } from '../lib/session'
 import { useGuide } from '../lib/guide'
 import { useProjectSettings, useSettingsActions } from '../lib/api/queries'
+import { DataSources, ParametersPanel, People, RiskScalePanel } from './lifecycle/ProjectPanels'
 import type { ApiError, ModelStateDTO, SettingsDTO } from '../lib/api/client'
 import { dateTimeWords } from '../lib/format'
 import { Sheet } from './Sheet'
@@ -115,7 +116,9 @@ function ProjectGroup({ open, onSignedOut }: { open: boolean; onSignedOut: () =>
       {session && (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-small leading-5 text-ink-2">
-            Signed in as <span className="font-semibold text-ink">{session.roleName}</span>
+            Signed in as <span className="font-semibold text-ink">{session.user?.name ?? session.roleName}</span>
+            {session.user?.team ? `, ${session.user.team}` : ''}
+            {session.user ? `, ${session.roleName.toLowerCase()}` : ''}
             {session.offline ? ' (offline copy)' : ''}. The session ends {dateTimeWords(session.expiresAt)}.
           </p>
           <Button
@@ -141,6 +144,10 @@ function ProjectGroup({ open, onSignedOut }: { open: boolean; onSignedOut: () =>
       ) : (
         <ProjectControls data={q.data} />
       )}
+      {live && <People />}
+      <DataSources enabled={open} live={live} />
+      <RiskScalePanel enabled={open} />
+      {live && <ParametersPanel enabled={open} />}
     </Group>
   )
 }

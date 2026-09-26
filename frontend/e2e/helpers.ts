@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, type BrowserContext, type Page } from '@playwright/test'
+import { serveLifecycleFixtures } from './lifecycleFixtures'
 
 const API = process.env.E2E_API_BASE ?? 'http://localhost:8000/api/v1'
 
@@ -25,6 +26,12 @@ export async function returningVisitor(
   { theme = 'dark', motion = 'full', guide = false }: { theme?: 'dark' | 'light'; motion?: 'full' | 'reduced'; guide?: boolean } = {},
 ) {
   const session = await demoSession(context)
+  // Every mission page asks for its six steps' summaries. Until the backend
+  // serves the lifecycle endpoints, a 404 from one of them is answered from
+  // the contract fixtures (and the live answer is used as soon as it exists),
+  // so the older tests are not failed by a request the backend does not yet
+  // answer.
+  await serveLifecycleFixtures(context, { live: true })
   await context.addInitScript(
     ([t, m, g, sess]) => {
       if (localStorage.getItem('pw-session')) return

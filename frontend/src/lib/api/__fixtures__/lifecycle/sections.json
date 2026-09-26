@@ -1,0 +1,59 @@
+{
+ "data": [
+  {
+   "section": "ready",
+   "state": "available",
+   "summary": "5 of 9 items ready; 1 blocked",
+   "as_of": "2026-09-26T15:10:00Z"
+  },
+  {
+   "section": "launch",
+   "state": "available",
+   "summary": "6 launch opportunities from 1 pad in these dates",
+   "as_of": "2026-09-27T08:00:00Z"
+  },
+  {
+   "section": "trip",
+   "state": "available",
+   "summary": "7.7 days as flown; longest time in shadow 1.2 h",
+   "as_of": "2026-09-27T08:00:00Z"
+  },
+  {
+   "section": "landing",
+   "state": "available",
+   "summary": "Sunlight 100% of the time on the surface",
+   "as_of": "2026-09-27T08:00:00Z"
+  },
+  {
+   "section": "contact",
+   "state": "computing",
+   "summary": "Working out ground-station passes",
+   "as_of": null
+  },
+  {
+   "section": "return",
+   "state": "not_applicable",
+   "summary": "No capsule returns; the booster was expended",
+   "as_of": null
+  }
+ ],
+ "meta": {
+  "computed_at": "2026-09-27T08:00:00Z",
+  "uncertainty": {
+   "kind": "composite",
+   "parts": []
+  },
+  "engines": {
+   "traj": "traj-1",
+   "ecl": "ecl-1",
+   "vis": "vis-2",
+   "net": "net-1",
+   "link": "link-1",
+   "wx": "wx-1",
+   "rad": "rad-1"
+  },
+  "sources": [],
+  "stale": false,
+  "compute_ms": 412.0
+ }
+}

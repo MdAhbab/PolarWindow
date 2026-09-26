@@ -1,0 +1,349 @@
+{
+ "data": {
+  "counts": {
+   "not_started": 1,
+   "in_build": 0,
+   "in_test": 1,
+   "test_passed": 0,
+   "delivered": 0,
+   "integrated": 1,
+   "verified_on_lander": 1,
+   "ready": 4,
+   "blocked": 1
+  },
+  "items": [
+   {
+    "id": "item-lander",
+    "kind": "lander",
+    "name": "Nova-C lander Athena",
+    "organisation": "Intuitive Machines",
+    "state": "ready",
+    "blocked_reason": null,
+    "changed_at": "2025-02-10T12:00:00Z",
+    "changed_by": "Demo project manager",
+    "evidence_url": "https://www.intuitivemachines.com/im-2",
+    "source": "public",
+    "tests": [
+     {
+      "kind": "vibration",
+      "result": "passed",
+      "report_url": null,
+      "date": "2024-11-02"
+     },
+     {
+      "kind": "thermal_vacuum",
+      "result": "passed",
+      "report_url": null,
+      "date": "2024-12-01"
+     }
+    ]
+   },
+   {
+    "id": "item-prime1",
+    "kind": "payload",
+    "name": "PRIME-1 drill and mass spectrometer",
+    "organisation": "NASA",
+    "state": "verified_on_lander",
+    "blocked_reason": null,
+    "changed_at": "2025-01-20T09:00:00Z",
+    "changed_by": "Demo project manager",
+    "evidence_url": null,
+    "source": "public",
+    "tests": []
+   },
+   {
+    "id": "item-micro-nova",
+    "kind": "rover",
+    "name": "Micro-Nova hopper Grace",
+    "organisation": "Intuitive Machines",
+    "state": "integrated",
+    "blocked_reason": null,
+    "changed_at": "2025-01-28T09:00:00Z",
+    "changed_by": "Demo project manager",
+    "evidence_url": null,
+    "source": "public",
+    "tests": []
+   },
+   {
+    "id": "item-mapp",
+    "kind": "rover",
+    "name": "MAPP rover",
+    "organisation": "Lunar Outpost",
+    "state": "in_test",
+    "blocked_reason": null,
+    "changed_at": "2026-09-20T09:00:00Z",
+    "changed_by": "A. Rahman",
+    "evidence_url": null,
+    "source": "entered",
+    "tests": [
+     {
+      "kind": "vibration",
+      "result": "passed",
+      "report_url": null,
+      "date": "2026-09-18"
+     },
+     {
+      "kind": "thermal_vacuum",
+      "result": "not_done",
+      "report_url": null,
+      "date": null
+     }
+    ]
+   },
+   {
+    "id": "item-lv",
+    "kind": "launch_vehicle",
+    "name": "Falcon 9",
+    "organisation": "SpaceX",
+    "state": "ready",
+    "blocked_reason": null,
+    "changed_at": "2025-02-20T09:00:00Z",
+    "changed_by": "Demo project manager",
+    "evidence_url": null,
+    "source": "public",
+    "tests": []
+   },
+   {
+    "id": "item-range",
+    "kind": "range",
+    "name": "Launch Complex 39A",
+    "organisation": "NASA Kennedy",
+    "state": "ready",
+    "blocked_reason": null,
+    "changed_at": "2025-02-20T09:00:00Z",
+    "changed_by": "Demo project manager",
+    "evidence_url": null,
+    "source": "public",
+    "tests": []
+   },
+   {
+    "id": "item-faa",
+    "kind": "licence",
+    "name": "FAA launch licence (Part 450)",
+    "organisation": "SpaceX",
+    "state": "blocked",
+    "blocked_reason": "Waiting on the updated debris analysis",
+    "changed_at": "2026-09-26T15:10:00Z",
+    "changed_by": "A. Rahman",
+    "evidence_url": "https://www.faa.gov/space/licenses",
+    "source": "entered",
+    "tests": []
+   },
+   {
+    "id": "item-dsn",
+    "kind": "ground_booking",
+    "name": "DSN passes for landing week",
+    "organisation": "NASA DSN",
+    "state": "not_started",
+    "blocked_reason": null,
+    "changed_at": null,
+    "changed_by": null,
+    "evidence_url": null,
+    "source": "entered",
+    "tests": []
+   },
+   {
+    "id": "item-ops",
+    "kind": "ops_team",
+    "name": "Mission operations team",
+    "organisation": "Intuitive Machines",
+    "state": "ready",
+    "blocked_reason": null,
+    "changed_at": "2025-02-15T09:00:00Z",
+    "changed_by": "Demo project manager",
+    "evidence_url": null,
+    "source": "public",
+    "tests": []
+   }
+  ],
+  "milestones": [
+   {
+    "id": "ms-preship",
+    "name": "Pre-ship review",
+    "date": {
+     "value": 1791417600,
+     "unit": "s since epoch",
+     "provenance": "entered",
+     "pm": 259200,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": null,
+     "missing_reason": null,
+     "source": "A. Rahman"
+    },
+    "done": false,
+    "source": null
+   },
+   {
+    "id": "ms-ldrr",
+    "name": "Lunar Delivery Readiness Review",
+    "date": {
+     "value": 1793232000,
+     "unit": "s since epoch",
+     "provenance": "entered",
+     "pm": 604800,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": null,
+     "missing_reason": null,
+     "source": "A. Rahman"
+    },
+    "done": false,
+    "source": null
+   },
+   {
+    "id": "ms-cdr",
+    "name": "Critical design review",
+    "date": {
+     "value": 1767225600,
+     "unit": "s since epoch",
+     "provenance": "entered",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "The review happened on this date.",
+     "missing_reason": null,
+     "source": "A. Rahman"
+    },
+    "done": true,
+    "source": null
+   }
+  ],
+  "risks": [
+   {
+    "id": "risk-1",
+    "title": "Laser rangefinder not enabled in flight configuration",
+    "cause": "Safety switch left in the ground position",
+    "consequence_text": "Landing without altitude data",
+    "scale_id": "gsfc-8005a",
+    "ratings": [
+     {
+      "category": "technical",
+      "likelihood": 2,
+      "consequence": 5
+     },
+     {
+      "category": "safety",
+      "likelihood": 2,
+      "consequence": 4
+     }
+    ],
+    "trend": "falling",
+    "owner": "GNC lead",
+    "mitigation": "Check the enable in the flight configuration before encapsulation",
+    "links": {
+     "readiness_items": [
+      "item-lander"
+     ],
+     "parts": [],
+     "lessons": [
+      "lesson-im1-lrf"
+     ]
+    }
+   },
+   {
+    "id": "risk-2",
+    "title": "Landing with the Sun low over the site",
+    "cause": "Launch slip moves landing towards dawn",
+    "consequence_text": "Long shadows hide hazards from the landing cameras",
+    "scale_id": "gsfc-8005a",
+    "ratings": [
+     {
+      "category": "technical",
+      "likelihood": 3,
+      "consequence": 4
+     },
+     {
+      "category": "schedule",
+      "likelihood": 3,
+      "consequence": 2
+     }
+    ],
+    "trend": "rising",
+    "owner": "Mission design",
+    "mitigation": "Keep a landing rule for Sun height",
+    "links": {
+     "readiness_items": [],
+     "parts": [],
+     "lessons": [
+      "lesson-im2-sun"
+     ]
+    }
+   },
+   {
+    "id": "risk-3",
+    "title": "FAA licence late",
+    "cause": "Debris analysis rework",
+    "consequence_text": "Launch date moves",
+    "scale_id": "gsfc-8005a",
+    "ratings": [
+     {
+      "category": "schedule",
+      "likelihood": 4,
+      "consequence": 3
+     },
+     {
+      "category": "cost",
+      "likelihood": 3,
+      "consequence": 2
+     }
+    ],
+    "trend": "steady",
+    "owner": "A. Rahman",
+    "mitigation": null,
+    "links": {
+     "readiness_items": [
+      "item-faa"
+     ],
+     "parts": [],
+     "lessons": []
+    }
+   }
+  ],
+  "parts": {
+   "total": 14,
+   "spares": 4,
+   "lost": 1,
+   "damaged": 0,
+   "failed": 0
+  },
+  "lessons_available": 6,
+  "lessons_adopted": 2
+ },
+ "meta": {
+  "computed_at": "2026-09-27T08:00:00Z",
+  "uncertainty": {
+   "kind": "composite",
+   "parts": []
+  },
+  "engines": {
+   "ready": "ready-1"
+  },
+  "sources": [
+   {
+    "name": "missions.json (public record)",
+    "url": null,
+    "issued_at": null,
+    "fetched_at": null,
+    "licence": null,
+    "snapshot_id": null
+   },
+   {
+    "name": "Entered by the project team",
+    "url": null,
+    "issued_at": null,
+    "fetched_at": null,
+    "licence": null,
+    "snapshot_id": null
+   }
+  ],
+  "stale": false,
+  "compute_ms": 412.0
+ }
+}

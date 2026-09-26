@@ -1,0 +1,1365 @@
+{
+ "data": {
+  "source": "flown",
+  "none_reason": null,
+  "start": "2025-02-27T00:16:00Z",
+  "end": "2025-03-06T17:04:00Z",
+  "samples": [
+   {
+    "t": "2025-02-27T00:16:00Z",
+    "earth_km": 6600,
+    "moon_km": 384400,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-27T01:25:18Z",
+    "earth_km": 10371,
+    "moon_km": 381291,
+    "light": "dark",
+    "heard": true
+   },
+   {
+    "t": "2025-02-27T02:34:36Z",
+    "earth_km": 14128,
+    "moon_km": 378188,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-27T03:43:54Z",
+    "earth_km": 17870,
+    "moon_km": 375090,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-27T04:53:12Z",
+    "earth_km": 21598,
+    "moon_km": 371999,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-27T06:02:30Z",
+    "earth_km": 25312,
+    "moon_km": 368914,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-27T07:11:48Z",
+    "earth_km": 29012,
+    "moon_km": 365834,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-27T08:21:06Z",
+    "earth_km": 32697,
+    "moon_km": 362761,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-27T09:30:24Z",
+    "earth_km": 36368,
+    "moon_km": 359694,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-27T10:39:42Z",
+    "earth_km": 40024,
+    "moon_km": 356632,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-27T11:49:00Z",
+    "earth_km": 43666,
+    "moon_km": 353577,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-27T12:58:18Z",
+    "earth_km": 47293,
+    "moon_km": 350528,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-27T14:07:36Z",
+    "earth_km": 50905,
+    "moon_km": 347485,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-27T15:16:54Z",
+    "earth_km": 54503,
+    "moon_km": 344449,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-27T16:26:12Z",
+    "earth_km": 58087,
+    "moon_km": 341418,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-27T17:35:30Z",
+    "earth_km": 61656,
+    "moon_km": 338394,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-27T18:44:48Z",
+    "earth_km": 65209,
+    "moon_km": 335376,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-27T19:54:06Z",
+    "earth_km": 68749,
+    "moon_km": 332364,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-27T21:03:24Z",
+    "earth_km": 72273,
+    "moon_km": 329359,
+    "light": "lit",
+    "heard": false
+   },
+   {
+    "t": "2025-02-27T22:12:42Z",
+    "earth_km": 75782,
+    "moon_km": 326360,
+    "light": "lit",
+    "heard": false
+   },
+   {
+    "t": "2025-02-27T23:22:00Z",
+    "earth_km": 79277,
+    "moon_km": 323367,
+    "light": "lit",
+    "heard": false
+   },
+   {
+    "t": "2025-02-28T00:31:18Z",
+    "earth_km": 82757,
+    "moon_km": 320381,
+    "light": "lit",
+    "heard": false
+   },
+   {
+    "t": "2025-02-28T01:40:36Z",
+    "earth_km": 86221,
+    "moon_km": 317402,
+    "light": "lit",
+    "heard": false
+   },
+   {
+    "t": "2025-02-28T02:49:54Z",
+    "earth_km": 89671,
+    "moon_km": 314428,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-28T03:59:12Z",
+    "earth_km": 93106,
+    "moon_km": 311462,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-28T05:08:30Z",
+    "earth_km": 96525,
+    "moon_km": 308502,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-28T06:17:48Z",
+    "earth_km": 99929,
+    "moon_km": 305548,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-28T07:27:06Z",
+    "earth_km": 103318,
+    "moon_km": 302601,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-28T08:36:24Z",
+    "earth_km": 106692,
+    "moon_km": 299661,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-28T09:45:42Z",
+    "earth_km": 110051,
+    "moon_km": 296728,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-28T10:55:00Z",
+    "earth_km": 113394,
+    "moon_km": 293801,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-28T12:04:18Z",
+    "earth_km": 116721,
+    "moon_km": 290881,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-28T13:13:36Z",
+    "earth_km": 120034,
+    "moon_km": 287968,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-28T14:22:54Z",
+    "earth_km": 123331,
+    "moon_km": 285061,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-28T15:32:12Z",
+    "earth_km": 126612,
+    "moon_km": 282162,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-28T16:41:30Z",
+    "earth_km": 129878,
+    "moon_km": 279269,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-28T17:50:48Z",
+    "earth_km": 133128,
+    "moon_km": 276384,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-28T19:00:06Z",
+    "earth_km": 136362,
+    "moon_km": 273505,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-28T20:09:24Z",
+    "earth_km": 139581,
+    "moon_km": 270634,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-28T21:18:42Z",
+    "earth_km": 142784,
+    "moon_km": 267769,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-28T22:28:00Z",
+    "earth_km": 145971,
+    "moon_km": 264912,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-02-28T23:37:18Z",
+    "earth_km": 149142,
+    "moon_km": 262062,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-01T00:46:36Z",
+    "earth_km": 152297,
+    "moon_km": 259219,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-01T01:55:54Z",
+    "earth_km": 155436,
+    "moon_km": 256383,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-01T03:05:12Z",
+    "earth_km": 158559,
+    "moon_km": 253555,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-01T04:14:30Z",
+    "earth_km": 161666,
+    "moon_km": 250733,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-01T05:23:48Z",
+    "earth_km": 164757,
+    "moon_km": 247920,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-01T06:33:06Z",
+    "earth_km": 167831,
+    "moon_km": 245114,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-01T07:42:24Z",
+    "earth_km": 170890,
+    "moon_km": 242315,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-01T08:51:42Z",
+    "earth_km": 173932,
+    "moon_km": 239523,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-01T10:01:00Z",
+    "earth_km": 176957,
+    "moon_km": 236740,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-01T11:10:18Z",
+    "earth_km": 179966,
+    "moon_km": 233964,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-01T12:19:36Z",
+    "earth_km": 182959,
+    "moon_km": 231195,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-01T13:28:54Z",
+    "earth_km": 185935,
+    "moon_km": 228434,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-01T14:38:12Z",
+    "earth_km": 188894,
+    "moon_km": 225681,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-01T15:47:30Z",
+    "earth_km": 191837,
+    "moon_km": 222936,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-01T16:56:48Z",
+    "earth_km": 194763,
+    "moon_km": 220199,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-01T18:06:06Z",
+    "earth_km": 197672,
+    "moon_km": 217469,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-01T19:15:24Z",
+    "earth_km": 200564,
+    "moon_km": 214748,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-01T20:24:42Z",
+    "earth_km": 203439,
+    "moon_km": 212035,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-01T21:34:00Z",
+    "earth_km": 206298,
+    "moon_km": 209329,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-01T22:43:18Z",
+    "earth_km": 209139,
+    "moon_km": 206632,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-01T23:52:36Z",
+    "earth_km": 211963,
+    "moon_km": 203943,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-02T01:01:54Z",
+    "earth_km": 214769,
+    "moon_km": 201262,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-02T02:11:12Z",
+    "earth_km": 217559,
+    "moon_km": 198590,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-02T03:20:30Z",
+    "earth_km": 220331,
+    "moon_km": 195926,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-02T04:29:48Z",
+    "earth_km": 223085,
+    "moon_km": 193270,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-02T05:39:06Z",
+    "earth_km": 225822,
+    "moon_km": 190623,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-02T06:48:24Z",
+    "earth_km": 228541,
+    "moon_km": 187985,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-02T07:57:42Z",
+    "earth_km": 231243,
+    "moon_km": 185355,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-02T09:07:00Z",
+    "earth_km": 233927,
+    "moon_km": 182734,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-02T10:16:18Z",
+    "earth_km": 236593,
+    "moon_km": 180121,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-02T11:25:36Z",
+    "earth_km": 239242,
+    "moon_km": 177517,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-02T12:34:54Z",
+    "earth_km": 241872,
+    "moon_km": 174923,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-02T13:44:12Z",
+    "earth_km": 244484,
+    "moon_km": 172337,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-02T14:53:30Z",
+    "earth_km": 247078,
+    "moon_km": 169760,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-02T16:02:48Z",
+    "earth_km": 249654,
+    "moon_km": 167193,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-02T17:12:06Z",
+    "earth_km": 252211,
+    "moon_km": 164634,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-02T18:21:24Z",
+    "earth_km": 254750,
+    "moon_km": 162085,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-02T19:30:42Z",
+    "earth_km": 257271,
+    "moon_km": 159545,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-02T20:40:00Z",
+    "earth_km": 259772,
+    "moon_km": 157015,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-02T21:49:18Z",
+    "earth_km": 262256,
+    "moon_km": 154494,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-02T22:58:36Z",
+    "earth_km": 264720,
+    "moon_km": 151983,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-03T00:07:54Z",
+    "earth_km": 267166,
+    "moon_km": 149481,
+    "light": "lit",
+    "heard": false
+   },
+   {
+    "t": "2025-03-03T01:17:12Z",
+    "earth_km": 269592,
+    "moon_km": 146989,
+    "light": "lit",
+    "heard": false
+   },
+   {
+    "t": "2025-03-03T02:26:30Z",
+    "earth_km": 272000,
+    "moon_km": 144508,
+    "light": "lit",
+    "heard": false
+   },
+   {
+    "t": "2025-03-03T03:35:48Z",
+    "earth_km": 274388,
+    "moon_km": 142036,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-03T04:45:06Z",
+    "earth_km": 276757,
+    "moon_km": 139574,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-03T05:54:24Z",
+    "earth_km": 279106,
+    "moon_km": 137122,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-03T07:03:42Z",
+    "earth_km": 281436,
+    "moon_km": 134680,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-03T08:13:00Z",
+    "earth_km": 283747,
+    "moon_km": 132249,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-03T09:22:18Z",
+    "earth_km": 286038,
+    "moon_km": 129828,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-03T10:31:36Z",
+    "earth_km": 288309,
+    "moon_km": 127418,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-03T11:40:54Z",
+    "earth_km": 290560,
+    "moon_km": 125019,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-03T12:50:12Z",
+    "earth_km": 292791,
+    "moon_km": 122630,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-03T13:59:30Z",
+    "earth_km": 295001,
+    "moon_km": 120252,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-03T15:08:48Z",
+    "earth_km": 297192,
+    "moon_km": 117885,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-03T16:18:06Z",
+    "earth_km": 299362,
+    "moon_km": 115529,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-03T17:27:24Z",
+    "earth_km": 301511,
+    "moon_km": 113185,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-03T18:36:42Z",
+    "earth_km": 303640,
+    "moon_km": 110852,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-03T19:46:00Z",
+    "earth_km": 305748,
+    "moon_km": 108530,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-03T20:55:18Z",
+    "earth_km": 307834,
+    "moon_km": 106220,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-03T22:04:36Z",
+    "earth_km": 309900,
+    "moon_km": 103922,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-03T23:13:54Z",
+    "earth_km": 311945,
+    "moon_km": 101635,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-04T00:23:12Z",
+    "earth_km": 313968,
+    "moon_km": 99361,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-04T01:32:30Z",
+    "earth_km": 315969,
+    "moon_km": 97099,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-04T02:41:48Z",
+    "earth_km": 317949,
+    "moon_km": 94849,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-04T03:51:06Z",
+    "earth_km": 319907,
+    "moon_km": 92612,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-04T05:00:24Z",
+    "earth_km": 321843,
+    "moon_km": 90388,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-04T06:09:42Z",
+    "earth_km": 323757,
+    "moon_km": 88176,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-04T07:19:00Z",
+    "earth_km": 325648,
+    "moon_km": 85977,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-04T08:28:18Z",
+    "earth_km": 327517,
+    "moon_km": 83792,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-04T09:37:36Z",
+    "earth_km": 329363,
+    "moon_km": 81620,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-04T10:46:54Z",
+    "earth_km": 331186,
+    "moon_km": 79462,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-04T11:56:12Z",
+    "earth_km": 332986,
+    "moon_km": 77317,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-04T13:05:30Z",
+    "earth_km": 334762,
+    "moon_km": 75187,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-04T14:14:48Z",
+    "earth_km": 336516,
+    "moon_km": 73071,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-04T15:24:06Z",
+    "earth_km": 338245,
+    "moon_km": 70969,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-04T16:33:24Z",
+    "earth_km": 339950,
+    "moon_km": 68882,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-04T17:42:42Z",
+    "earth_km": 341631,
+    "moon_km": 66809,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-04T18:52:00Z",
+    "earth_km": 343288,
+    "moon_km": 64752,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-04T20:01:18Z",
+    "earth_km": 344920,
+    "moon_km": 62711,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-04T21:10:36Z",
+    "earth_km": 346528,
+    "moon_km": 60685,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-04T22:19:54Z",
+    "earth_km": 348110,
+    "moon_km": 58675,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-04T23:29:12Z",
+    "earth_km": 349666,
+    "moon_km": 56682,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-05T00:38:30Z",
+    "earth_km": 351197,
+    "moon_km": 54705,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-05T01:47:48Z",
+    "earth_km": 352702,
+    "moon_km": 52745,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-05T02:57:06Z",
+    "earth_km": 354180,
+    "moon_km": 50802,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-05T04:06:24Z",
+    "earth_km": 355632,
+    "moon_km": 48878,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-05T05:15:42Z",
+    "earth_km": 357057,
+    "moon_km": 46971,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-05T06:25:00Z",
+    "earth_km": 358454,
+    "moon_km": 45082,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-05T07:34:18Z",
+    "earth_km": 359824,
+    "moon_km": 43213,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-05T08:43:36Z",
+    "earth_km": 361166,
+    "moon_km": 41363,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-05T09:52:54Z",
+    "earth_km": 362479,
+    "moon_km": 39533,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-05T11:02:12Z",
+    "earth_km": 363764,
+    "moon_km": 37723,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-05T12:11:30Z",
+    "earth_km": 365019,
+    "moon_km": 35934,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-05T13:20:48Z",
+    "earth_km": 366245,
+    "moon_km": 34166,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-05T14:30:06Z",
+    "earth_km": 367440,
+    "moon_km": 32421,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-05T15:39:24Z",
+    "earth_km": 368604,
+    "moon_km": 30698,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-05T16:48:42Z",
+    "earth_km": 369737,
+    "moon_km": 28999,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-05T17:58:00Z",
+    "earth_km": 370838,
+    "moon_km": 27324,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-05T19:07:18Z",
+    "earth_km": 371907,
+    "moon_km": 25675,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-05T20:16:36Z",
+    "earth_km": 372942,
+    "moon_km": 24051,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-05T21:25:54Z",
+    "earth_km": 373943,
+    "moon_km": 22454,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-05T22:35:12Z",
+    "earth_km": 374910,
+    "moon_km": 20886,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-05T23:44:30Z",
+    "earth_km": 375841,
+    "moon_km": 19346,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-06T00:53:48Z",
+    "earth_km": 376736,
+    "moon_km": 17838,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-06T02:03:06Z",
+    "earth_km": 377593,
+    "moon_km": 16362,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-06T03:12:24Z",
+    "earth_km": 378411,
+    "moon_km": 14919,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-06T04:21:42Z",
+    "earth_km": 379189,
+    "moon_km": 13513,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-06T05:31:00Z",
+    "earth_km": 379926,
+    "moon_km": 12145,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-06T06:40:18Z",
+    "earth_km": 380620,
+    "moon_km": 10818,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-06T07:49:36Z",
+    "earth_km": 381269,
+    "moon_km": 9534,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-06T08:58:54Z",
+    "earth_km": 381872,
+    "moon_km": 8299,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-06T10:08:12Z",
+    "earth_km": 382424,
+    "moon_km": 7115,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-06T11:17:30Z",
+    "earth_km": 382924,
+    "moon_km": 5991,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-06T12:26:48Z",
+    "earth_km": 383367,
+    "moon_km": 4933,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-06T13:36:06Z",
+    "earth_km": 383748,
+    "moon_km": 3952,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-06T14:45:24Z",
+    "earth_km": 384059,
+    "moon_km": 3068,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-06T15:54:42Z",
+    "earth_km": 384288,
+    "moon_km": 2313,
+    "light": "lit",
+    "heard": true
+   },
+   {
+    "t": "2025-03-06T17:04:00Z",
+    "earth_km": 384400,
+    "moon_km": 1800,
+    "light": "lit",
+    "heard": true
+   }
+  ],
+  "shadow": [
+   {
+    "start": "2025-02-27T00:46:00Z",
+    "end": "2025-02-27T01:58:00Z",
+    "open_start": false,
+    "open_end": false
+   }
+  ],
+  "heard": [
+   {
+    "start": "2025-02-27T00:16:00Z",
+    "end": "2025-02-27T20:16:00Z",
+    "open_start": false,
+    "open_end": false
+   },
+   {
+    "start": "2025-02-28T02:16:00Z",
+    "end": "2025-03-02T23:16:00Z",
+    "open_start": false,
+    "open_end": false
+   },
+   {
+    "start": "2025-03-03T03:16:00Z",
+    "end": "2025-03-06T17:04:00Z",
+    "open_start": false,
+    "open_end": false
+   }
+  ],
+  "numbers": {
+   "sunlight_h": {
+    "value": 183.6,
+    "unit": "h",
+    "provenance": "computed",
+    "pm": 0.1,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": null,
+    "source": null
+   },
+   "heard_h": {
+    "value": 174.8,
+    "unit": "h",
+    "provenance": "computed",
+    "pm": 0.5,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": null,
+    "source": null
+   },
+   "longest_shadow_h": {
+    "value": 1.2,
+    "unit": "h",
+    "provenance": "computed",
+    "pm": 0.02,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": null,
+    "source": null
+   },
+   "longest_unheard_h": {
+    "value": 6.0,
+    "unit": "h",
+    "provenance": "computed",
+    "pm": 0.1,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": null,
+    "source": null
+   }
+  },
+  "burns": [
+   {
+    "t": "2025-02-27T01:06:00Z",
+    "name": "Trans-lunar injection",
+    "dv_m_s": {
+     "value": 3150,
+     "unit": "m/s",
+     "provenance": "published",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "Published by the operator without a margin.",
+     "missing_reason": null,
+     "source": "https://www.intuitivemachines.com/"
+    }
+   },
+   {
+    "t": "2025-02-28T16:16:00Z",
+    "name": "Correction burn 1",
+    "dv_m_s": {
+     "value": 3.2,
+     "unit": "m/s",
+     "provenance": "computed",
+     "pm": 0.4,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": null,
+     "missing_reason": null,
+     "source": null
+    }
+   },
+   {
+    "t": "2025-03-03T12:16:00Z",
+    "name": "Lunar orbit insertion",
+    "dv_m_s": {
+     "value": 820,
+     "unit": "m/s",
+     "provenance": "computed",
+     "pm": 5,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": null,
+     "missing_reason": null,
+     "source": null
+    }
+   }
+  ],
+  "moon_pull": {
+   "equal_pull_km": 38400,
+   "sphere_of_influence_km": 66100,
+   "t_equal_pull": "2025-03-03T02:40:00Z"
+  },
+  "radiation": {
+   "belt_hours": {
+    "value": 3.1,
+    "unit": "h",
+    "provenance": "computed",
+    "pm": 0.3,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": null,
+    "source": null
+   },
+   "fluence_gt10mev": {
+    "value": 4100000000.0,
+    "unit": "cm^-2",
+    "provenance": "computed",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": 2,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": null,
+    "source": null
+   },
+   "gcr_dose_mgy_day": {
+    "value": 0.3,
+    "unit": "mGy/day",
+    "provenance": "computed",
+    "pm": 0.09,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": null,
+    "source": null
+   },
+   "screening_note": "Screening only: belt models AE8 and AP8, good to a factor of 2.",
+   "confirm_in": [
+    "SPENVIS",
+    "OLTARIS",
+    "CREME-MC"
+   ]
+  }
+ },
+ "meta": {
+  "computed_at": "2026-09-27T08:00:00Z",
+  "uncertainty": {
+   "kind": "composite",
+   "parts": [
+    {
+     "source": "Reconstructed trajectory",
+     "note": "As flown, from the operator\u2019s reconstruction; about 1 km."
+    },
+    {
+     "source": "Shadow edges",
+     "note": "Earth and Moon as spheres; the atmosphere shifts edges by up to a minute."
+    }
+   ]
+  },
+  "engines": {
+   "traj": "traj-1",
+   "ecl": "ecl-1",
+   "rad": "rad-1"
+  },
+  "sources": [
+   {
+    "name": "NAIF CLPS SPICE archive (IM-2 reconstruction)",
+    "url": "https://naif.jpl.nasa.gov/pub/naif/pds4/clps/",
+    "issued_at": null,
+    "fetched_at": null,
+    "licence": "Public domain",
+    "snapshot_id": null
+   },
+   {
+    "name": "NAIF DE440 planetary positions",
+    "url": "https://naif.jpl.nasa.gov/",
+    "issued_at": null,
+    "fetched_at": null,
+    "licence": "Public domain",
+    "snapshot_id": null
+   }
+  ],
+  "stale": false,
+  "compute_ms": 412.0
+ }
+}

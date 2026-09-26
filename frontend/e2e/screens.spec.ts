@@ -7,6 +7,13 @@ const ROUTES = [
   '/missions/im-2',
   '/missions/blue-ghost-m1',
   '/missions/cs-8',
+  // The six steps (contract fixtures where the backend does not answer yet).
+  '/missions/im-2/ready',
+  '/missions/im-2/launch',
+  '/missions/im-2/trip',
+  '/missions/im-2/landing',
+  '/missions/im-2/contact',
+  '/missions/im-2/return',
   '/map',
   '/site',
   '/compare',
@@ -31,7 +38,17 @@ for (const theme of ['dark', 'light'] as const) {
 
 test('every closed row opens, and axe passes with them open', async ({ page, context }) => {
   await returningVisitor(context)
-  for (const r of ['/missions/im-2', '/site', '/skyline', '/plan']) {
+  for (const r of [
+    '/missions/im-2',
+    '/missions/im-2/ready',
+    '/missions/im-2/launch',
+    '/missions/im-2/trip',
+    '/missions/im-2/contact',
+    '/missions/im-2/return',
+    '/site',
+    '/skyline',
+    '/plan',
+  ]) {
     await page.goto(r)
     await page.waitForLoadState('networkidle')
     for (const s of await page.locator('main summary').all()) await s.click()
@@ -54,7 +71,7 @@ test('axe and the fixed tab bar on a phone', async ({ page, context }) => {
   await returningVisitor(context)
   await page.setViewportSize({ width: 375, height: 812 })
   const tabs = page.getByRole('navigation', { name: 'Views' }).last()
-  for (const r of ['/missions?type=volatiles', '/missions/im-2', '/site', '/compare']) {
+  for (const r of ['/missions?type=volatiles', '/missions/im-2', '/missions/im-2/ready', '/missions/im-2/launch', '/site', '/compare']) {
     await page.goto(r)
     await page.waitForLoadState('networkidle')
     await expect(tabs.getByRole('link')).toHaveCount(5)

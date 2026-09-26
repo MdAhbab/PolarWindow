@@ -24,6 +24,19 @@ export interface Session {
   /** Epoch milliseconds. */
   expiresAt: number
   offline: boolean
+  /**
+   * Who is signed in (ADR-17). Every change they enter carries this name.
+   * Absent on a session from before named sign-in, and offline.
+   */
+  user?: { id: number; name: string; team: string | null }
+}
+
+/** The name the one-click sign-in gives when none is asked for (lifecycle-api.md). */
+export const DEMO_NAME = 'Demo project manager'
+
+/** A session whose changes would be recorded under a real person's name. */
+export function hasOwnName(s: Session | null): boolean {
+  return Boolean(s && !s.offline && s.user && s.user.name !== DEMO_NAME)
 }
 
 export const SESSION_KEY = 'pw-session'
@@ -36,7 +49,12 @@ function parse(raw: string | null): Session | null {
     const v = JSON.parse(raw) as Partial<Session>
     if (typeof v.expiresAt !== 'number' || typeof v.roleName !== 'string') return null
     if (v.token !== null && typeof v.token !== 'string') return null
-    return { token: v.token ?? null, roleName: v.roleName, expiresAt: v.expiresAt, offline: Boolean(v.offline) }
+    const u = v.user
+    const user =
+      u && typeof u.name === 'string' && typeof u.id === 'number'
+        ? { id: u.id, name: u.name, team: typeof u.team === 'string' ? u.team : null }
+        : undefined
+    return { token: v.token ?? null, roleName: v.roleName, expiresAt: v.expiresAt, offline: Boolean(v.offline), user }
   } catch {
     return null
   }
@@ -74,12 +92,29 @@ const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? 'http:
 /** Why signing in failed, in words the landing page can show as they are. */
 export class SignInFailed extends Error {}
 
-async function requestSession(): Promise<Session> {
+/** Who is signing in; nothing asked for gives the demo name. */
+export interface SignInAs {
+  name: string
+  team?: string | null
+}
+
+async function requestSession(as?: SignInAs): Promise<Session> {
   if (DATA_MODE === 'snapshot') return offlineSession()
   let res: Response
   try {
-    res = await fetch(`${API_BASE}/auth/demo`, { method: 'POST' })
+    res = await fetch(`${API_BASE}/auth/demo`, {
+      method: 'POST',
+      ...(as
+        ? {
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ name: as.name, ...(as.team ? { team: as.team } : {}) }),
+          }
+        : {}),
+    })
   } catch {
+    // Asked to sign in by name and nothing answered: saying so beats an
+    // offline session that could not record the name anyway.
+    if (as) throw new SignInFailed('Nothing answered, so the name could not be recorded. Try again when the service is running.')
     // No server answered: open the saved copy rather than a locked door.
     return offlineSession()
   }
@@ -93,25 +128,32 @@ async function requestSession(): Promise<Session> {
     }
     throw new SignInFailed(title)
   }
-  const body = (await res.json()) as { token: string; role_name: string; expires_at: string }
+  const body = (await res.json()) as {
+    token: string
+    role_name: string
+    expires_at: string
+    user?: { id: number; name: string; team: string | null }
+  }
   return {
     token: body.token,
     roleName: body.role_name,
     expiresAt: Date.parse(body.expires_at),
     offline: false,
+    user: body.user ? { id: body.user.id, name: body.user.name, team: body.user.team ?? null } : undefined,
   }
 }
 
 interface SessionState {
   session: Session | null
-  signIn: () => Promise<Session>
+  /** Without a name, the one-click demo session; with one, a named session (ADR-17). */
+  signIn: (as?: SignInAs) => Promise<Session>
   signOut: () => void
 }
 
 export const useSession = create<SessionState>((set) => ({
   session: read(),
-  signIn: async () => {
-    const s = await requestSession()
+  signIn: async (as) => {
+    const s = await requestSession(as)
     write(s)
     set({ session: s })
     return s
@@ -138,9 +180,11 @@ let renewing: Promise<string | null> | null = null
  * visitor back to the front page.
  */
 export function renewToken(): Promise<string | null> {
+  const user = useSession.getState().session?.user
+  const again = user && user.name !== DEMO_NAME ? { name: user.name, team: user.team } : undefined
   renewing ??= useSession
     .getState()
-    .signIn()
+    .signIn(again)
     .then((s) => s.token)
     .catch(() => {
       useSession.getState().signOut()

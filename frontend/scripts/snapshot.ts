@@ -53,6 +53,9 @@ async function record(page: Page) {
       }
       const key = keyOf(req.method(), url, req.postData())
       if (!key || entries[key] || !(res.headers()['content-type'] ?? '').includes('json')) return
+      // A section still being worked out (202) is not an answer; the copy
+      // keeps only finished ones, so it never shows a job it cannot follow.
+      if (res.status() === 202 || key.startsWith('GET /jobs/')) return
       const file = `r/${String(++n).padStart(4, '0')}.json`
       entries[key] = { file, status: res.status() }
       writeFileSync(join(OUT, file), JSON.stringify(await res.json()))
@@ -139,6 +142,13 @@ async function main() {
     }
   }
   await visit(page, '/missions/nope')
+
+  // Every mission's six steps (Landing is the mission page above). A step the
+  // service does not answer yet is saved as its error, which is what it said.
+  const STEPS = ['ready', 'launch', 'trip', 'contact', 'return']
+  for (const m of missions.items) {
+    for (const step of STEPS) await visit(page, `/missions/${m.id}/${step}`)
+  }
 
   // The demo's dates: every month for IM-2 and for the Mons Mouton missions.
   for (const id of ['im-2', 'blue-moon-mk1-viper']) {

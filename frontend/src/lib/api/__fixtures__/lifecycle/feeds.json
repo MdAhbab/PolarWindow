@@ -1,0 +1,48 @@
+{
+ "feeds": [
+  {
+   "provider": "NOAA SWPC",
+   "product": "Protons and X-rays",
+   "last_ok": "2026-09-27T07:59:00Z",
+   "age_s": 60,
+   "stale": false,
+   "next_run": "2026-09-27T08:05:00Z",
+   "errors": 0,
+   "licence": "Public domain",
+   "breaker": "closed"
+  },
+  {
+   "provider": "National Weather Service",
+   "product": "Hourly forecast at the pads",
+   "last_ok": "2026-09-27T07:55:00Z",
+   "age_s": 300,
+   "stale": false,
+   "next_run": "2026-09-27T09:00:00Z",
+   "errors": 0,
+   "licence": "Public domain",
+   "breaker": "closed"
+  },
+  {
+   "provider": "NOAA NDBC",
+   "product": "Buoy observations",
+   "last_ok": "2026-09-26T21:00:00Z",
+   "age_s": 39600,
+   "stale": true,
+   "next_run": "2026-09-27T08:10:00Z",
+   "errors": 3,
+   "licence": "Public domain",
+   "breaker": "half_open"
+  },
+  {
+   "provider": "DSN Now",
+   "product": "Antennas in use",
+   "last_ok": null,
+   "age_s": null,
+   "stale": true,
+   "next_run": "2026-09-27T08:02:00Z",
+   "errors": "Timed out after 20 s",
+   "licence": "Public domain",
+   "breaker": "open"
+  }
+ ]
+}

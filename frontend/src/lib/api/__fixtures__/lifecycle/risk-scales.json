@@ -1,0 +1,134 @@
+{
+ "default_id": "gsfc-8005a",
+ "scales": [
+  {
+   "id": "gsfc-8005a",
+   "name": "GSFC-HDBK-8005A (public default)",
+   "source_url": "https://standards.nasa.gov/",
+   "likelihood": [
+    {
+     "level": 1,
+     "words": "Very unlikely"
+    },
+    {
+     "level": 2,
+     "words": "Unlikely"
+    },
+    {
+     "level": 3,
+     "words": "About as likely as not"
+    },
+    {
+     "level": 4,
+     "words": "Likely"
+    },
+    {
+     "level": 5,
+     "words": "Very likely"
+    }
+   ],
+   "consequence": [
+    {
+     "category": "safety",
+     "levels": [
+      {
+       "level": 1,
+       "words": "Minimal"
+      },
+      {
+       "level": 2,
+       "words": "Minor"
+      },
+      {
+       "level": 3,
+       "words": "Moderate"
+      },
+      {
+       "level": 4,
+       "words": "Significant"
+      },
+      {
+       "level": 5,
+       "words": "Severe"
+      }
+     ]
+    },
+    {
+     "category": "technical",
+     "levels": [
+      {
+       "level": 1,
+       "words": "Minimal"
+      },
+      {
+       "level": 2,
+       "words": "Minor"
+      },
+      {
+       "level": 3,
+       "words": "Moderate"
+      },
+      {
+       "level": 4,
+       "words": "Significant"
+      },
+      {
+       "level": 5,
+       "words": "Severe"
+      }
+     ]
+    },
+    {
+     "category": "cost",
+     "levels": [
+      {
+       "level": 1,
+       "words": "Minimal"
+      },
+      {
+       "level": 2,
+       "words": "Minor"
+      },
+      {
+       "level": 3,
+       "words": "Moderate"
+      },
+      {
+       "level": 4,
+       "words": "Significant"
+      },
+      {
+       "level": 5,
+       "words": "Severe"
+      }
+     ]
+    },
+    {
+     "category": "schedule",
+     "levels": [
+      {
+       "level": 1,
+       "words": "Minimal"
+      },
+      {
+       "level": 2,
+       "words": "Minor"
+      },
+      {
+       "level": 3,
+       "words": "Moderate"
+      },
+      {
+       "level": 4,
+       "words": "Significant"
+      },
+      {
+       "level": 5,
+       "words": "Severe"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
