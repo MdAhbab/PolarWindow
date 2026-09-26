@@ -113,7 +113,9 @@ export function TripStrip({ trip, stretches }: { trip: TripDTO; stretches: TripS
   const axisY = lane2 + LANE_H + 8
   const height = axisY + AXIS_H
   const days = Math.floor(span / (24 * HOUR))
-  const dayStep = days > 14 ? 7 : days > 7 ? 2 : 1
+  // Labels at least 64 px apart, so "Day 1" never lands on the date.
+  const pxPerDay = ((width - LEFT - RIGHT) * 24 * HOUR) / span
+  const dayStep = Math.max(1, Math.ceil(64 / Math.max(1, pxPerDay)))
   const shadow = stretches.filter((s) => s.kind === 'shadow')
   const unheard = stretches.filter((s) => s.kind === 'unheard')
   const pull = trip.moon_pull.t_equal_pull ? Date.parse(trip.moon_pull.t_equal_pull) : null
@@ -231,7 +233,7 @@ export function TripStrip({ trip, stretches }: { trip: TripDTO; stretches: TripS
               <g key={d}>
                 <path d={`M${dx} ${axisY - 4} V${axisY}`} stroke="var(--color-line-strong)" strokeWidth="1" />
                 <text x={dx} y={axisY + 14} textAnchor={d === 0 ? 'start' : 'middle'} fontSize="11" fontFamily="var(--font-mono)" fill="var(--color-ink-3)">
-                  {d === 0 ? shortDate(t0) : `Day ${d}`}
+                  {d === 0 ? shortDate(t0).replace(/ \d{4}$/, '') : `Day ${d}`}
                 </text>
               </g>
             )

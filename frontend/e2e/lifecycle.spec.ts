@@ -190,7 +190,7 @@ test('settings (contract fixtures): data sources with their age, the risk scale,
   await expect(sheet).toContainText('4 feeds: 2 working, 1 out of date, 1 failing')
   await expect(sheet).toContainText('DSN Now')
   await expect(sheet).toContainText('Failing')
-  await expect(sheet).toContainText('Last good fetch 11 h ago')
+  await expect(sheet).toContainText('Data from 11 h ago')
   await sheet.locator('summary', { hasText: 'Risk scale' }).click()
   await expect(sheet).toContainText('never multiplied into a score')
   await sheet.locator('summary', { hasText: 'People' }).click()

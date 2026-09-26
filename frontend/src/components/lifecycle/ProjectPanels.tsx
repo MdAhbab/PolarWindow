@@ -4,7 +4,7 @@ import type { FeedDTO } from '../../lib/api/lifecycle'
 import { useFeeds, useLifecycleWrite, useParameters, useRiskScales } from '../../lib/api/lifecycleQueries'
 import { hasOwnName, useSession, SignInFailed } from '../../lib/session'
 import { dateTimeWords } from '../../lib/format'
-import { ageFromSeconds, hostWords, quantityText } from '../../lib/lifecycle/quantity'
+import { ageFromSeconds, ageWords, hostWords, quantityText } from '../../lib/lifecycle/quantity'
 import { Icon, type IconName } from '../Icon'
 import { Button } from '../ui'
 import { Field, TextInput } from './Forms'
@@ -94,7 +94,9 @@ function feedState(f: FeedDTO): { icon: IconName; words: string } {
   return { icon: 'dot', words: 'Working' }
 }
 
-function errorWords(e: FeedDTO['errors']): string | null {
+function errorWords(f: FeedDTO): string | null {
+  if (f.last_error) return f.last_error
+  const e = f.errors
   if (e === null || e === 0 || e === '') return null
   if (typeof e === 'number') return `${e} failed ${e === 1 ? 'try' : 'tries'} in a row`
   if (Array.isArray(e)) return e.length ? e[e.length - 1] : null
@@ -130,20 +132,24 @@ export function DataSources({ enabled, live }: { enabled: boolean; live: boolean
         <ul className="flex flex-col divide-y divide-line border-y border-line">
           {feeds.map((f) => {
             const st = feedState(f)
-            const err = errorWords(f.errors)
+            const err = errorWords(f)
             return (
               <li key={`${f.provider}-${f.product}`} className="flex flex-col gap-1 py-2.5">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                  <span className="text-small font-semibold text-ink">{f.provider}</span>
+                  <span className="text-small font-semibold text-ink">{f.provider_name ?? f.provider}</span>
                   <span className="flex items-center gap-1.5 text-small text-ink">
                     <Icon name={st.icon} size={14} strokeWidth={2} />
                     {st.words}
                   </span>
                 </div>
-                <span className="text-caption leading-caption text-ink-2">{f.product}</span>
+                <span className="text-caption leading-caption text-ink-2">
+                  {f.product}
+                  {f.location ? `, ${f.location}` : ''}
+                </span>
                 <span className="text-caption leading-caption text-ink-3">
                   {[
-                    f.last_ok ? `Last good fetch ${ageFromSeconds(f.age_s)}` : 'Never fetched',
+                    f.age_s !== null ? `Data from ${ageFromSeconds(f.age_s)}` : 'No data yet',
+                    f.last_ok ? `checked ${ageWords(Date.parse(f.last_ok))}` : null,
                     f.next_run ? `next ${dateTimeWords(Date.parse(f.next_run))}` : null,
                     f.licence ? `licence ${f.licence}` : null,
                   ]

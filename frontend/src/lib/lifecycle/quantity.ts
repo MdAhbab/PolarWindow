@@ -167,7 +167,11 @@ function dayMonth(ms: number): string {
  */
 function timeView(q: QuantityDTO): QuantityView {
   const base = { open: q.open, provenance: q.provenance, source: q.source, unit: '' }
-  const coarse = (q.pm ?? 0) >= 86400 || (q.lo !== null && q.hi !== null && q.hi - q.lo >= 2 * 86400)
+  // Known to a day or worse, or a bare date (midnight, no margin): the date is the figure.
+  const coarse =
+    (q.pm ?? 0) >= 86400 ||
+    (q.lo !== null && q.hi !== null && q.hi - q.lo >= 2 * 86400) ||
+    (q.pm === null && q.value !== null && q.value % 86400 === 0)
   const clock = (sec: number) => clockWords(sec).replace(' UTC', '')
   if (q.lo !== null && q.hi !== null && q.pm === null) {
     const lo = q.lo

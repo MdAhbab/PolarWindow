@@ -69,7 +69,7 @@ export function LaunchCalendar({
       <div className="flex min-w-[520px] flex-col" role="group" aria-label="Launch opportunities by day">
         {/* Hours of the day, UTC. */}
         <div className="flex pb-1" aria-hidden="true">
-          <div className="w-28 shrink-0" />
+          <div className="w-20 shrink-0 sm:w-28" />
           <div className="relative h-4 grow">
             {[0, 6, 12, 18, 24].map((h) => (
               <span
@@ -85,14 +85,14 @@ export function LaunchCalendar({
         {rows.map((r, i) =>
           r.kind === 'gap' ? (
             <div key={`gap${i}`} className="flex border-t border-line py-1.5">
-              <div className="w-28 shrink-0" />
+              <div className="w-20 shrink-0 sm:w-28" />
               <p className="text-caption text-ink-3">
                 No opportunity for {r.days} day{r.days === 1 ? '' : 's'}
               </p>
             </div>
           ) : (
             <div key={r.day} className="flex items-stretch border-t border-line">
-              <div className="flex w-28 shrink-0 items-center text-small font-medium text-ink-2">{dayLabel(r.day)}</div>
+              <div className="flex w-20 shrink-0 sm:w-28 items-center text-small font-medium text-ink-2">{dayLabel(r.day)}</div>
               <div className="relative h-14 grow">
                 {[6, 12, 18].map((h) => (
                   <span key={h} aria-hidden="true" className="absolute inset-y-0 w-px bg-line" style={{ left: `${(h / 24) * 100}%` }} />

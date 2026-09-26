@@ -397,12 +397,23 @@ export interface ReturnDTO {
 
 export interface FeedDTO {
   provider: string
+  /** The provider as people know it ("NOAA SWPC"); the backend adds it to the contract's shape. */
+  provider_name?: string
   product: string
+  /** The pad or buoy the product is for, if any. */
+  location?: string | null
+  /** When the product was last fetched or checked. */
   last_ok: string | null
+  /** The time the data itself refers to (model run, issue time, newest reading). */
+  data_time?: string | null
+  /** How old the data is, in seconds; null if there is none yet. */
   age_s: number | null
   stale: boolean
+  staleness_budget_s?: number
   next_run: string | null
+  /** Failed attempts in a row. */
   errors: number | string | string[] | null
+  last_error?: string | null
   licence: string | null
   breaker: 'closed' | 'open' | 'half_open'
 }
