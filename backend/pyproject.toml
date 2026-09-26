@@ -46,6 +46,7 @@ dev = [
 
 [project.scripts]
 polar-kernels = "app.core.kernels:main"
+polar-data = "app.data.sync:main"
 
 [build-system]
 requires = ["hatchling"]

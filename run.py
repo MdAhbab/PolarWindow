@@ -3,7 +3,11 @@
 
 Stops previous instances of frontend and backend, starts required local services
 (Postgres and Redis), installs all backend & frontend dependencies, and runs
-FastAPI (backend) and Vite (frontend) together.
+FastAPI (backend) and Vite (frontend) together. Once both answer, it downloads
+every dataset the app uses that is not already on disk (SPICE kernels, LOLA
+terrain, GRAIL gravity, flown CLPS trajectories and the rest; the list is
+backend/app/data/registry.py and the README's "Required data" section), then
+restarts the backend if the new data is something it loads at start-up.
 """
 
 from __future__ import annotations
@@ -267,98 +271,168 @@ def stream_process_output(proc: subprocess.Popen, prefix: str, color: str, stop_
         pass
 
 
-def run_stack(be_port: int = 8000, fe_port: int = 5173) -> None:
-    """Run backend and frontend processes simultaneously and handle termination."""
-    stop_event = threading.Event()
-    procs: list[subprocess.Popen] = []
+def wait_until_live(be_port: int, fe_port: int, timeout_s: float = 240.0) -> bool:
+    """True once the API answers /healthz (any status) and the frontend port is open."""
+    import urllib.error
+    import urllib.request
 
-    # Backend Command
-    be_cmd = ["uv", "run", "uvicorn", "app.main:app", "--reload", "--port", str(be_port)]
-    # Frontend Command
-    fe_cmd = ["npm", "run", "dev"]
+    deadline = time.time() + timeout_s
+    api_up = False
+    while time.time() < deadline:
+        if not api_up:
+            try:
+                urllib.request.urlopen(f"http://127.0.0.1:{be_port}/healthz", timeout=2)  # noqa: S310
+                api_up = True
+            except urllib.error.HTTPError:
+                api_up = True  # 503 "down" still means the process is serving
+            except OSError:
+                pass
+        if api_up and is_port_open(fe_port):
+            return True
+        time.sleep(1.0)
+    return False
 
-    log("RUN", CYAN, f"Starting Backend on http://localhost:{be_port} (Docs: http://localhost:{be_port}/api/v1/docs)...")
-    be_proc = subprocess.Popen(
-        be_cmd,
-        cwd=BE_DIR,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        bufsize=1,
-        preexec_fn=os.setsid,  # Run in distinct process group for clean subtree termination
-    )
-    procs.append(be_proc)
 
-    log("RUN", GREEN, f"Starting Frontend on http://localhost:{fe_port}...")
-    fe_proc = subprocess.Popen(
-        fe_cmd,
-        cwd=FE_DIR,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        bufsize=1,
-        preexec_fn=os.setsid,
-    )
-    procs.append(fe_proc)
+class Stack:
+    """The backend and frontend processes, with a backend restart for new data."""
 
-    # Start output streaming threads
-    be_thread = threading.Thread(
-        target=stream_process_output,
-        args=(be_proc, "BACKEND", CYAN, stop_event),
-        daemon=True,
-    )
-    fe_thread = threading.Thread(
-        target=stream_process_output,
-        args=(fe_proc, "FRONTEND", GREEN, stop_event),
-        daemon=True,
-    )
-    be_thread.start()
-    fe_thread.start()
+    def __init__(self, be_port: int, fe_port: int) -> None:
+        self.be_port = be_port
+        self.fe_port = fe_port
+        self.stop_event = threading.Event()
+        self.restarting = threading.Event()
+        self.procs: dict[str, subprocess.Popen] = {}
 
-    log("SYSTEM", BOLD, f"Both servers running! Press Ctrl+C to stop.")
+    def _spawn(self, name: str, cmd: list[str], cwd: Path, color: str) -> None:
+        proc = subprocess.Popen(
+            cmd,
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            preexec_fn=os.setsid,  # own process group, so the whole subtree stops together
+        )
+        self.procs[name] = proc
+        threading.Thread(
+            target=stream_process_output,
+            args=(proc, name.upper(), color, self.stop_event),
+            daemon=True,
+        ).start()
 
-    def shutdown(signum=None, frame=None):
-        if stop_event.is_set():
+    def start_backend(self) -> None:
+        log("RUN", CYAN, f"Starting Backend on http://localhost:{self.be_port} "
+            f"(Docs: http://localhost:{self.be_port}/api/v1/docs)...")
+        cmd = ["uv", "run", "uvicorn", "app.main:app", "--reload", "--port", str(self.be_port)]
+        self._spawn("backend", cmd, BE_DIR, CYAN)
+
+    def start_frontend(self) -> None:
+        log("RUN", GREEN, f"Starting Frontend on http://localhost:{self.fe_port}...")
+        cmd = ["npm", "run", "dev", "--", "--port", str(self.fe_port), "--strictPort"]
+        self._spawn("frontend", cmd, FE_DIR, GREEN)
+
+    def _stop(self, proc: subprocess.Popen) -> None:
+        if proc.poll() is not None:
             return
-        stop_event.set()
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+        except Exception:
+            try:
+                proc.terminate()
+            except Exception:
+                pass
+        deadline = time.time() + 3.0
+        while proc.poll() is None and time.time() < deadline:
+            time.sleep(0.1)
+        if proc.poll() is None:
+            try:
+                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            except Exception:
+                pass
+
+    def restart_backend(self, why: str) -> None:
+        self.restarting.set()
+        try:
+            log("DATA", YELLOW, f"Restarting the backend so it uses {why}...")
+            self._stop(self.procs["backend"])
+            self.start_backend()
+        finally:
+            self.restarting.clear()
+
+    def shutdown(self, signum=None, frame=None) -> None:
+        if self.stop_event.is_set():
+            return
+        self.stop_event.set()
         log("SYSTEM", YELLOW, "\nShutting down backend and frontend...")
-
-        for proc in procs:
-            if proc.poll() is None:
-                try:
-                    # Kill whole process group
-                    os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-                except Exception:
-                    try:
-                        proc.terminate()
-                    except Exception:
-                        pass
-
-        # Give processes up to 3 seconds to exit cleanly
-        start_time = time.time()
-        for proc in procs:
-            while proc.poll() is None and time.time() - start_time < 3.0:
-                time.sleep(0.1)
-            if proc.poll() is None:
-                try:
-                    os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-                except Exception:
-                    pass
-
+        for proc in self.procs.values():
+            self._stop(proc)
         log("SYSTEM", GREEN, "All servers stopped. Goodbye!")
         sys.exit(0)
 
-    signal.signal(signal.SIGINT, shutdown)
-    signal.signal(signal.SIGTERM, shutdown)
+    def monitor(self) -> None:
+        while not self.stop_event.is_set():
+            time.sleep(0.5)
+            if self.restarting.is_set():
+                continue
+            for name, proc in list(self.procs.items()):
+                ret = proc.poll()
+                if ret is not None and not self.stop_event.is_set() and not self.restarting.is_set():
+                    log("SYSTEM", RED, f"{name.title()} process exited with code {ret}")
+                    self.shutdown()
 
-    # Monitor processes
-    while not stop_event.is_set():
-        time.sleep(0.5)
-        for name, proc in [("Backend", be_proc), ("Frontend", fe_proc)]:
-            ret = proc.poll()
-            if ret is not None and not stop_event.is_set():
-                log("SYSTEM", RED, f"{name} process exited with code {ret}")
-                shutdown()
+
+def sync_data(stack: Stack, tiers: list[str]) -> None:
+    """Download every dataset the app uses, once the app is already usable.
+
+    Runs ``polar-data sync`` (backend/app/data/sync.py), which reads the list in
+    backend/app/data/registry.py -- the same list the README's "Required data"
+    section is generated from. Exit 10 means the API should reload new kernels,
+    terrain or seeded sites; the backend is restarted for it.
+    """
+    if not wait_until_live(stack.be_port, stack.fe_port):
+        log("DATA", RED, "The app did not come up within 4 minutes; skipping the data sync.")
+        return
+    log("DATA", CYAN, "App is live. Checking and downloading the datasets it uses "
+        "(see README 'Required data')...")
+    cmd = ["uv", "run", "polar-data", "sync"]
+    for t in tiers:
+        cmd += ["--tier", t]
+    proc = subprocess.Popen(
+        cmd, cwd=BE_DIR, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1
+    )
+    stream_process_output(proc, "DATA", YELLOW, stack.stop_event)
+    code = proc.wait()
+    if stack.stop_event.is_set():
+        return
+    if code == 0:
+        log("DATA", GREEN, "All datasets present.")
+    elif code == 10:
+        log("DATA", GREEN, "New data downloaded.")
+        stack.restart_backend("the new data")
+    else:
+        log("DATA", RED, "Some datasets could not be downloaded (listed above). "
+            "The app keeps working with what is present; re-run to resume.")
+
+
+def run_stack(
+    be_port: int = 8000,
+    fe_port: int = 5173,
+    *,
+    data: bool = True,
+    data_tiers: list[str] | None = None,
+) -> None:
+    """Run backend and frontend together; then fetch any missing data in the background."""
+    stack = Stack(be_port, fe_port)
+    stack.start_backend()
+    stack.start_frontend()
+    signal.signal(signal.SIGINT, stack.shutdown)
+    signal.signal(signal.SIGTERM, stack.shutdown)
+    log("SYSTEM", BOLD, "Both servers starting. Press Ctrl+C to stop.")
+    if data:
+        threading.Thread(target=sync_data, args=(stack, data_tiers or []), daemon=True).start()
+    else:
+        log("DATA", YELLOW, "Skipping the data sync (--no-data).")
+    stack.monitor()
 
 
 def main() -> None:
@@ -382,6 +456,18 @@ def main() -> None:
         default=5173,
         help="Frontend port (default: 5173)",
     )
+    parser.add_argument(
+        "--no-data",
+        action="store_true",
+        help="Do not check or download datasets after the app starts.",
+    )
+    parser.add_argument(
+        "--data-tier",
+        action="append",
+        choices=("core", "lifecycle", "validation", "bulk"),
+        help="Which datasets to sync (repeatable; default core, lifecycle, validation). "
+        "'bulk' needs PW_EARTHDATA_TOKEN.",
+    )
     args = parser.parse_args()
 
     print(f"{BOLD}{CYAN}=== POLAR WINDOW RUNNER ==={RESET}\n")
@@ -399,8 +485,14 @@ def main() -> None:
     else:
         log("INSTALL", YELLOW, "Skipping dependency installation (--skip-install).")
 
-    # 4. Run frontend and backend together
-    run_stack(be_port=args.backend_port, fe_port=args.frontend_port)
+    # 4. Run frontend and backend together; once both answer, download any
+    #    missing datasets in the background (README "Required data").
+    run_stack(
+        be_port=args.backend_port,
+        fe_port=args.frontend_port,
+        data=not args.no_data,
+        data_tiers=args.data_tier,
+    )
 
 
 if __name__ == "__main__":

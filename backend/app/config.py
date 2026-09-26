@@ -177,6 +177,20 @@ class Settings(BaseSettings):
     #: real, so it can be turned off.
     demo_sign_in: bool = True
 
+    # --- data providers -----------------------------------------------------
+    #: Free keys that make some downloads possible or faster. Every feature
+    #: works without them (ADR-8): a missing key skips that source and says so.
+    #:
+    #: NASA Earthdata Login token (urs.earthdata.nasa.gov, free). Needed only for
+    #: the bulk archives at the GHRC DAAC (KSC field mills, GLM thunder hours).
+    earthdata_token: str = ""
+    #: api.nasa.gov key (free). Without it DONKI answers on DEMO_KEY, which
+    #: allows 30 requests an hour.
+    nasa_api_key: str = "DEMO_KEY"
+    #: Contact line in the User-Agent the data providers see (NWS asks for one).
+    #: A project address, never a person's own email by default.
+    data_contact: str = "https://github.com/MdAhbab/PolarWindow"
+
     # --- agents ------------------------------------------------------------
     gemini_api_key: str = ""
     #: Models to try, in order. A run moves to the next one when a model is

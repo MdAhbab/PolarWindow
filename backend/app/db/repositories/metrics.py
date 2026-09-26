@@ -64,6 +64,13 @@ class WindowMetricsRepository:
         )
         await self._s.execute(stmt)
 
+    async def site_ids_with_rows(self, engine_version: str) -> set[str]:
+        """Sites that have at least one stored window for this engine version."""
+        stmt = select(SiteWindowMetrics.site_id).where(
+            SiteWindowMetrics.engine_version == engine_version
+        )
+        return set((await self._s.execute(stmt)).scalars().all())
+
     async def get_many(
         self,
         site_ids: list[str],

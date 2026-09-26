@@ -3,6 +3,15 @@
 data/kernels/
 data/dem/
 data/tiles/
+# Downloaded by `polar-data sync` (backend/app/data/registry.py); never committed.
+data/clps/
+data/gravity/
+data/dsn/
+data/validation/
+data/spaceweather/
+data/bulk/
+data/feeds/
+data/.sync-state.json
 data/sites.json
 
 # Local service state

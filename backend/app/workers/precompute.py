@@ -169,6 +169,25 @@ async def seed_sites() -> int:
     return n
 
 
+async def sites_needing_work() -> list[str]:
+    """Sites with no skyline or no reference numbers for this engine version.
+
+    What ``polar-data sync`` asks before running the worker, so a machine that
+    is already seeded pays one query at start-up rather than a full rebuild.
+    Seeds the site list first: a site added to ``sites.json`` or a new mission
+    target is work too.
+    """
+    try:
+        await seed_sites()
+        async with session_scope() as session:
+            sites, _ = await SiteRepository(session).list_sites(limit=500)
+            masked = await MaskRepository(session).existing_site_ids(ENGINE_VERSION)
+            measured = await WindowMetricsRepository(session).site_ids_with_rows(ENGINE_VERSION)
+    finally:
+        await dispose_engine()
+    return sorted(x.id for x in sites if x.id not in masked or x.id not in measured)
+
+
 async def precompute(
     *, only: list[str] | None = None, force: bool = False, skip_metrics: bool = False
 ) -> None:
