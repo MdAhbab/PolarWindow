@@ -251,3 +251,25 @@ that user. `GET /auth/me` returns the same `user`.
 ## Changes
 
 - 2026-09-27: v1.
+- 2026-09-27 (requested by the frontend; built against these meanwhile):
+  - Parts list: `GET /missions/{id}/parts` → `{parts: Part[]}`,
+    `Part {id, name, part_number: string | null, serial: string | null,
+    parent_item_id: string | null, status: "installed" | "spare" | "in_test" |
+    "damaged" | "failed" | "lost", location: string | null, changed_at: string | null,
+    changed_by: string | null}`. POST/PATCH take the same fields minus `id` and `changed_*`.
+  - Risk scales: `GET /risk-scales` → `{default_id: string, scales: {id, name,
+    source_url: string | null, likelihood: {level: number, words: string}[],
+    consequence: {category, levels: {level: number, words: string}[]}[]}[]}`.
+    POST/PATCH risks take `Risk` minus `id`.
+  - Change history for any entered record: `GET /history?entity=ready_item|part|risk|booking|forecast|limits&id=`
+    → `{entries: {at, by, before, after, note}[]}` (the readiness route may stay as an alias).
+  - Writes' bodies: `POST /missions/{id}/ready/items` `{kind, name, organisation}`;
+    `PUT /missions/{id}/launch/official-forecast` `{probability_pct, concerns: string[], pdf_url}`;
+    `PUT /vehicles/{id}/limits` `{limits: {rule_id, value, unit, note: string | null}[]}`;
+    `POST /missions/{id}/contact/bookings` `{station, start, end, note?}`.
+  - Sea limits for Return: `PUT /missions/{id}/return/limits`
+    `{booster: {wave_height_m, wind_m_s}, capsule: {wave_height_m, wind_m_s}}` (numbers or null).
+  - Lessons per mission: `GET /lessons?mission={id}` adds `adopted: boolean` to each lesson.
+  - Parameters: `GET /parameters` → `{parameters: {id, name, value: Quantity, note: string | null,
+    changed_by: string | null, changed_at: string | null}[]}`; `PUT /parameters/{id}` `{value, note}`.
+  - `Launch.vehicle_id` on `LaunchCalendar` (the vehicle whose limits apply), so the limits form knows where to write.
