@@ -86,3 +86,18 @@ def test_coverage_never_falls_below_nominal(p: float, n: int) -> None:
         if (s := share(k, n, checked=False)).lo <= p <= s.hi
     )
     assert coverage >= 0.95 - 1e-9
+
+
+def test_core_quantity_round_trips_through_the_api_model() -> None:
+    from dataclasses import asdict
+
+    from app.api.v1.schemas.common import QuantityOut
+
+    for q in (
+        Quantity(value=3.0, unit="h", provenance="computed", pm=0.5),
+        Quantity(value=4.0, unit="h", provenance="computed", lo=3.0, hi=7.0),
+        Quantity(value=10.0, unit="cm-2", provenance="computed", factor=2.0),
+        missing("dB", "the lander's radio power is not published"),
+    ):
+        out = QuantityOut(**asdict(q))
+        assert Quantity(**out.model_dump()) == q

@@ -5085,6 +5085,13 @@
       },
       "Uncertainty": {
         "properties": {
+          "kind": {
+            "type": "string",
+            "const": "terrain",
+            "title": "Kind",
+            "description": "Which uncertainty envelope this is (ADR-9). Surface answers are always `terrain`; lifecycle answers carry a `composite` envelope instead.",
+            "default": "terrain"
+          },
           "dem_vertical_error_m": {
             "type": "number",
             "title": "Dem Vertical Error M"

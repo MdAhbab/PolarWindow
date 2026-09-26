@@ -1893,6 +1893,13 @@ export interface components {
          * @description How wrong this could be, in the units the caller is reading.
          */
         Uncertainty: {
+            /**
+             * Kind
+             * @description Which uncertainty envelope this is (ADR-9). Surface answers are always `terrain`; lifecycle answers carry a `composite` envelope instead.
+             * @default terrain
+             * @constant
+             */
+            kind: "terrain";
             /** Dem Vertical Error M */
             dem_vertical_error_m: number;
             /** Dem Resolution M */
