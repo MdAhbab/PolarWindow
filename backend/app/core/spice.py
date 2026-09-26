@@ -39,7 +39,15 @@ import numpy.typing as npt
 import spiceypy as spice
 from scipy.interpolate import CubicSpline
 
-from app.core.kernels import METAKERNEL_NAME, KernelError, ensure, write_metakernel
+from app.core.kernels import (
+    LIFECYCLE_KERNELS,
+    METAKERNEL_NAME,
+    KernelError,
+    ensure,
+    loadable,
+    missing,
+    write_metakernel,
+)
 
 log = logging.getLogger(__name__)
 
@@ -97,6 +105,9 @@ class KernelState:
     directory: str = ""
     missing: list[str] = field(default_factory=list)
     error: str | None = None
+    #: Lifecycle kernels (GM, Earth orientation, stations) not on disk. The
+    #: surface engine works without them; the trip and station sections do not.
+    lifecycle_missing: list[str] = field(default_factory=list)
 
 
 _state = KernelState()
@@ -136,9 +147,10 @@ def load(directory: Path, *, allow_download: bool = False) -> KernelState:
         t0 = time.perf_counter()
         try:
             ensure(directory, allow_download=allow_download)
+            # Regenerated on every load: a lifecycle kernel fetched since the
+            # last start must be picked up, and one deleted must not be named.
+            write_metakernel(directory, loadable(directory))
             mk = directory / METAKERNEL_NAME
-            if not mk.exists():
-                write_metakernel(directory)
             spice.kclear()
             spice.furnsh(str(mk))
             count = int(spice.ktotal("ALL"))
@@ -154,13 +166,12 @@ def load(directory: Path, *, allow_download: bool = False) -> KernelState:
                 furnsh_ms=(time.perf_counter() - t0) * 1000.0,
                 directory=str(directory),
                 missing=[],
+                lifecycle_missing=missing(directory, LIFECYCLE_KERNELS),
             )
             log.info("SPICE: furnsh'd %d kernels in %.0f ms", count, _state.furnsh_ms)
         except KernelError as exc:
-            from app.core.kernels import missing as _missing
-
             _state = KernelState(
-                loaded=False, directory=str(directory), missing=_missing(directory), error=str(exc)
+                loaded=False, directory=str(directory), missing=missing(directory), error=str(exc)
             )
             raise
         return _state
@@ -310,6 +321,138 @@ def angular_radius_deg(body: Body, vectors: npt.NDArray[np.float64]) -> npt.NDAr
     r = R_SUN_M if body == "sun" else R_EARTH_M
     dist = np.linalg.norm(vectors, axis=1)
     return np.asarray(np.degrees(np.arcsin(np.clip(r / dist, -1.0, 1.0))), dtype=np.float64)
+
+
+# ---------------------------------------------------------------------------
+# General positions, rotations and constants (lifecycle engines)
+# ---------------------------------------------------------------------------
+#
+# The Sun/Earth helpers above fix the frame (MOON_ME), the observer (MOON) and
+# the aberration correction (LT+S) because the surface engine only ever asks one
+# question. The trip, launch and station engines ask many: a relay seen from a
+# site wants geometric positions in MOON_ME; a spacecraft propagated under
+# gravity wants J2000 states with no correction at all; a launch pad wants
+# ITRF93. Getting any of these wrong is silent, so none of them is defaulted --
+# every caller names its frame, its observer and its correction (ADR-11).
+
+Aberration = Literal["NONE", "LT", "LT+S", "CN", "CN+S", "XLT", "XLT+S", "XCN", "XCN+S"]
+
+#: Frames the lifecycle engines use, named once so a typo is a NameError.
+J2000: Final[str] = "J2000"
+MOON_PA: Final[str] = "MOON_PA"
+ITRF93: Final[str] = "ITRF93"
+
+
+def _require_lifecycle(names: tuple[str, ...]) -> None:
+    _require_loaded()
+    gone = [n for n in names if n in _state.lifecycle_missing]
+    if gone:
+        raise KernelError(
+            "This answer needs kernels that are not on disk: "
+            + ", ".join(gone)
+            + ". The surface numbers are unaffected.\n  fix: make kernels"
+        )
+
+
+def _spkezr_m(
+    target: str, ets: npt.NDArray[np.float64], frame: str, abcorr: Aberration, observer: str
+) -> npt.NDArray[np.float64]:
+    with _lock:
+        st, _lt = spice.spkezr(target, ets, frame, abcorr, observer)
+    return np.asarray(np.asarray(st, dtype=np.float64).reshape(-1, 6) * 1000.0, dtype=np.float64)
+
+
+def _spkpos_general_m(
+    target: str, ets: npt.NDArray[np.float64], frame: str, abcorr: Aberration, observer: str
+) -> npt.NDArray[np.float64]:
+    with _lock:
+        pos, _lt = spice.spkpos(target, ets, frame, abcorr, observer)
+    return np.asarray(np.asarray(pos, dtype=np.float64).reshape(-1, 3) * 1000.0, dtype=np.float64)
+
+
+def positions(
+    target: str,
+    observer: str,
+    frame: str,
+    abcorr: Aberration,
+    ets: npt.NDArray[np.float64],
+    *,
+    knot_s: float | None,
+) -> npt.NDArray[np.float64]:
+    """``(n, 3)`` position of ``target`` relative to ``observer`` in ``frame``, metres.
+
+    ``knot_s`` is required, not defaulted: hourly knots are exact to 1e-8 deg
+    for the Sun and Earth but catastrophically wrong for a spacecraft in a
+    two-hour lunar orbit. Pass ``None`` for anything that orbits quickly.
+    """
+    _require_loaded()
+    ets = np.asarray(ets, dtype=np.float64)
+    if knot_s is None or ets.size < 4:
+        return _spkpos_general_m(target, ets, frame, abcorr, observer)
+    span = float(ets[-1] - ets[0])
+    step = span / (ets.size - 1)
+    if step >= knot_s or span < 4.0 * knot_s:
+        return _spkpos_general_m(target, ets, frame, abcorr, observer)
+    n = int(np.ceil(span / knot_s))
+    knots = ets[0] - knot_s + knot_s * np.arange(n + 3, dtype=np.float64)
+    spline = CubicSpline(knots, _spkpos_general_m(target, knots, frame, abcorr, observer), axis=0)
+    return np.asarray(spline(ets), dtype=np.float64)
+
+
+def states(
+    target: str,
+    observer: str,
+    frame: str,
+    abcorr: Aberration,
+    ets: npt.NDArray[np.float64],
+) -> npt.NDArray[np.float64]:
+    """``(n, 6)`` state (m, m/s) of ``target`` relative to ``observer``. Always direct."""
+    _require_loaded()
+    return _spkezr_m(target, np.asarray(ets, dtype=np.float64), frame, abcorr, observer)
+
+
+def rotations(
+    from_frame: str, to_frame: str, ets: npt.NDArray[np.float64]
+) -> npt.NDArray[np.float64]:
+    """``(n, 3, 3)`` rotation matrices taking vectors in ``from_frame`` to ``to_frame``."""
+    _require_loaded()
+    ets = np.asarray(ets, dtype=np.float64)
+    out = np.empty((ets.size, 3, 3), dtype=np.float64)
+    with _lock:
+        for i, et in enumerate(ets):
+            out[i] = spice.pxform(from_frame, to_frame, float(et))
+    return out
+
+
+def gm_m3_s2(body: str) -> float:
+    """Gravitational parameter from ``gm_de440.tpc``, m^3/s^2."""
+    _require_lifecycle(("gm_de440.tpc",))
+    with _lock:
+        _dim, values = spice.bodvrd(body, "GM", 1)
+    return float(np.asarray(values, dtype=np.float64).ravel()[0]) * 1e9
+
+
+def radii_m(body: str) -> npt.NDArray[np.float64]:
+    """Triaxial radii from the PCK, metres."""
+    _require_loaded()
+    with _lock:
+        _dim, r = spice.bodvrd(body, "RADII", 3)
+    return np.asarray(r, dtype=np.float64).ravel() * 1000.0
+
+
+def et_to_utc(et: float, *, precision: int = 3) -> str:
+    """ISO-8601 UTC ("2026-09-26T12:00:00.000Z") for an ephemeris time."""
+    _require_loaded()
+    with _lock:
+        return str(spice.et2utc(float(et), "ISOC", precision)) + "Z"
+
+
+async def run_async(fn: Any, /, *args: Any, **kwargs: Any) -> Any:
+    """Run any function of this module on the one SPICE thread."""
+    import functools
+
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(_get_executor(), functools.partial(fn, *args, **kwargs))
 
 
 def describe() -> dict[str, Any]:

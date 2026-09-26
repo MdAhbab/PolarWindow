@@ -26,6 +26,37 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 #:        survival sized on the longest night; adjacent-run coalescing.
 ENGINE_VERSION = "hz-2/vis-2"
 
+#: One version per engine (ADR-13). The surface engine keeps ``ENGINE_VERSION``
+#: above so its cache keys, stored masks and goldens are untouched; every
+#: lifecycle answer instead names the engines it depends on (its *closure*), so
+#: a change to the trip propagator invalidates trip and contact answers and
+#: nothing else.
+#:
+#: traj: trip propagator and transfer design     ecl: shadow along the trip
+#: wx:   launch and recovery weather rules       rad: radiation screening
+#: link: link budget                              net: contact graph and routing
+#: los:  rover-to-lander line of sight
+ENGINES: dict[str, str] = {
+    "hz": "hz-2",
+    "vis": "vis-2",
+    "traj": "traj-1",
+    "ecl": "ecl-1",
+    "wx": "wx-1",
+    "rad": "rad-1",
+    "link": "link-1",
+    "net": "net-1",
+    "los": "los-1",
+}
+
+
+def engine_closure(*names: str) -> str:
+    """The versions an answer depends on, in a stable order: ``"traj-1+vis-2"``."""
+    unknown = [n for n in names if n not in ENGINES]
+    if unknown:
+        raise KeyError(f"unknown engine(s) {unknown}; known: {sorted(ENGINES)}")
+    return "+".join(ENGINES[n] for n in sorted(set(names)))
+
+
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 
 

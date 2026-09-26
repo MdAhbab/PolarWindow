@@ -28,6 +28,7 @@ Conventions, chosen once and held everywhere
 
 from __future__ import annotations
 
+import itertools
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Final
@@ -255,6 +256,112 @@ def intersect(a: list[Run], b: list[Run], *, value: bool = False) -> list[Run]:
         else:
             j += 1
     return out
+
+
+def complement(runs: list[Run]) -> list[Run]:
+    """The same partition with every value flipped.
+
+    "Time without contact" is the complement of "time in contact"; keeping the
+    flip here, rather than as ``not r.value`` scattered through callers, means
+    the partition property carries over untouched.
+    """
+    return [Run(value=not r.value, start=r.start, end=r.end) for r in runs]
+
+
+def clip(runs: list[Run], lo: float, hi: float) -> list[Run]:
+    """Restrict a partition to ``[lo, hi]``.
+
+    Runs that straddle an edge are cut at it; runs wholly outside are dropped.
+    The result is still a partition of ``[max(lo, first start), min(hi, last
+    end)]``, so ``covered_span`` and ``total`` stay exact after clipping.
+    """
+    if hi < lo:
+        raise ValueError(f"clip bounds reversed: {lo} > {hi}")
+    out: list[Run] = []
+    for r in runs:
+        s = max(r.start, lo)
+        e = min(r.end, hi)
+        if e - s > EPS_S:
+            out.append(Run(value=r.value, start=s, end=e))
+    return _coalesce(out)
+
+
+def from_runs_of(value_runs: list[Run], start: float, end: float, *, value: bool) -> list[Run]:
+    """A full partition of ``[start, end]`` from runs that all hold ``value``.
+
+    ``intersect`` returns only the stretches where both inputs hold a value;
+    the four-number machinery (``metrics.body_metrics``) wants the whole
+    alternating partition. This fills the gaps with ``not value``.
+    """
+    if end < start:
+        raise ValueError(f"span reversed: {start} > {end}")
+    out: list[Run] = []
+    cursor = start
+    for r in sorted(value_runs, key=lambda x: x.start):
+        if r.value != value:
+            raise ValueError("from_runs_of expects runs that all hold `value`")
+        s = max(r.start, cursor)
+        e = min(r.end, end)
+        if e - s <= EPS_S:
+            continue
+        if s - cursor > EPS_S:
+            out.append(Run(value=not value, start=cursor, end=s))
+        out.append(Run(value=value, start=s, end=e))
+        cursor = e
+    if end - cursor > EPS_S or not out:
+        out.append(Run(value=not value, start=cursor, end=end))
+    return _coalesce(out)
+
+
+def combine(a: list[Run], b: list[Run], op: Callable[[bool, bool], bool]) -> list[Run]:
+    """Pointwise ``op`` of two partitions, over the span both cover.
+
+    Boundaries are the union of both inputs' boundaries; between consecutive
+    boundaries each input holds one value, so ``op`` is evaluated once per
+    piece. Linear in the total run count. ``union`` and ``both`` are the two
+    uses: "in contact directly *or* through a relay" and "the station hears
+    the site *and* the Moon is above its mask".
+    """
+    if not a or not b:
+        return []
+    lo = max(a[0].start, b[0].start)
+    hi = min(a[-1].end, b[-1].end)
+    if hi - lo <= EPS_S:
+        return []
+    ca, cb = clip(a, lo, hi), clip(b, lo, hi)
+    edges = sorted({lo, hi, *(r.end for r in ca), *(r.end for r in cb)})
+    out: list[Run] = []
+    i = j = 0
+    for s, e in itertools.pairwise(edges):
+        if e - s <= EPS_S:
+            continue
+        mid = 0.5 * (s + e)
+        while i < len(ca) - 1 and ca[i].end <= mid:
+            i += 1
+        while j < len(cb) - 1 and cb[j].end <= mid:
+            j += 1
+        out.append(Run(value=bool(op(ca[i].value, cb[j].value)), start=s, end=e))
+    return _coalesce(out)
+
+
+def union(a: list[Run], b: list[Run]) -> list[Run]:
+    """True wherever either partition is true."""
+    return combine(a, b, lambda x, y: x or y)
+
+
+def both(a: list[Run], b: list[Run]) -> list[Run]:
+    """True wherever both partitions are true (a full partition, unlike ``intersect``)."""
+    return combine(a, b, lambda x, y: x and y)
+
+
+def any_of(parts: list[list[Run]]) -> list[Run]:
+    """``union`` over any number of partitions; empty in, empty out."""
+    if not parts:
+        return []
+    acc = parts[0]
+    for p in parts[1:]:
+        acc = union(acc, p)
+    return acc
 
 
 def contains(outer: list[Run], inner: Run, *, value: bool) -> bool:

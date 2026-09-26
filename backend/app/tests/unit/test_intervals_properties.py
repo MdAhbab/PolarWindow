@@ -300,3 +300,99 @@ def test_a_touch_inside_a_night_does_not_split_it() -> None:
     assert [r.value for r in runs] == [False]
     longest = intervals.longest(runs, False)
     assert longest is not None and longest.duration == pytest.approx(4500.0)
+
+
+# ---------------------------------------------------------------------------
+# union / both / complement / clip / from_runs_of
+# ---------------------------------------------------------------------------
+
+
+def _truth_at(runs: list[intervals.Run], t: float) -> bool:
+    for r in runs:
+        if r.start <= t < r.end:
+            return r.value
+    return runs[-1].value
+
+
+def _is_partition(runs: list[intervals.Run]) -> bool:
+    return all(
+        a.end == pytest.approx(b.start, abs=TOL) and a.value != b.value
+        for a, b in itertools.pairwise(runs)
+    )
+
+
+@given(bools, bools)
+@settings(max_examples=300)
+def test_union_and_both_match_pointwise_logic(a_vals: list[bool], b_vals: list[bool]) -> None:
+    assume(len(a_vals) >= 2 and len(b_vals) >= 2)
+    ta, ma = series(a_vals)
+    tb, mb = series(b_vals, step=0.7)
+    a = intervals.runs_from_margin(ta, ma)
+    b = intervals.runs_from_margin(tb, mb)
+    for combined, op in ((intervals.union(a, b), any), (intervals.both(a, b), all)):
+        assume(combined)
+        assert _is_partition(combined)
+        lo, hi = combined[0].start, combined[-1].end
+        assert lo == pytest.approx(max(a[0].start, b[0].start))
+        assert hi == pytest.approx(min(a[-1].end, b[-1].end))
+        for r in combined:
+            mid = 0.5 * (r.start + r.end)
+            assert r.value == op([_truth_at(a, mid), _truth_at(b, mid)])
+
+
+@given(bools)
+@settings(max_examples=200)
+def test_union_with_self_is_identity(values: list[bool]) -> None:
+    assume(len(values) >= 2)
+    t, m = series(values)
+    runs = intervals.runs_from_margin(t, m)
+    assert intervals.union(runs, runs) == runs
+    assert intervals.both(runs, runs) == runs
+
+
+@given(bools)
+@settings(max_examples=200)
+def test_complement_swaps_totals(values: list[bool]) -> None:
+    assume(len(values) >= 1)
+    t, m = series(values)
+    runs = intervals.runs_from_margin(t, m)
+    flipped = intervals.complement(runs)
+    assert intervals.total(flipped, True) == pytest.approx(intervals.total(runs, False))
+    assert intervals.complement(flipped) == runs
+
+
+@given(bools, st.floats(0.0, 300.0), st.floats(0.0, 300.0))
+@settings(max_examples=300)
+def test_clip_keeps_a_partition_inside_the_bounds(values: list[bool], x: float, y: float) -> None:
+    assume(len(values) >= 2)
+    lo, hi = min(x, y), max(x, y)
+    t, m = series(values)
+    runs = intervals.runs_from_margin(t, m)
+    clipped = intervals.clip(runs, lo, hi)
+    for r in clipped:
+        assert lo - TOL <= r.start and r.end <= hi + TOL
+    assert _is_partition(clipped)
+    expected = max(0.0, min(hi, float(t[-1])) - max(lo, float(t[0])))
+    assert intervals.covered_span(clipped) == pytest.approx(expected, abs=1e-5)
+
+
+@given(st.lists(st.tuples(st.booleans(), st.booleans()), min_size=2, max_size=300))
+@settings(max_examples=300)
+def test_from_runs_of_rebuilds_the_both_partition(pairs: list[tuple[bool, bool]]) -> None:
+    a_vals = [p[0] for p in pairs]
+    b_vals = [p[1] for p in pairs]
+    ta, ma = series(a_vals)
+    tb, mb = series(b_vals)
+    a = intervals.runs_from_margin(ta, ma)
+    b = intervals.runs_from_margin(tb, mb)
+    ours = intervals.from_runs_of(
+        intervals.intersect(a, b, value=True), float(ta[0]), float(ta[-1]), value=True
+    )
+    assert ours == intervals.both(a, b)
+
+
+def test_any_of_empty_and_single() -> None:
+    assert intervals.any_of([]) == []
+    t, m = series([True, False, True])
+    runs = intervals.runs_from_margin(t, m)
+    assert intervals.any_of([runs]) == runs

@@ -160,33 +160,26 @@ forbidden_modules = ["app.api", "app.workers"]
 [[tool.importlinter.contracts]]
 name = "core is pure: no I/O, no db, no web"
 type = "forbidden"
-source_modules = [
-    "app.core.horizon",
-    "app.core.intervals",
-    "app.core.metrics",
-    "app.core.projections",
-    "app.core.timeline",
-    "app.core.visibility",
-]
+# The whole package, so a new core module is covered the day it is written
+# rather than the day someone remembers to list it. core.kernels importing httpx
+# is the one documented exception: it fetches kernels at seed time and is never
+# called from a request path.
+source_modules = ["app.core"]
 forbidden_modules = [
-    "app.db", "app.services", "app.api", "app.agents", "app.data",
-    "httpx", "sqlalchemy", "redis", "fastapi",
+    "app.db", "app.services", "app.api", "app.agents", "app.data", "app.feeds",
+    "app.workers", "httpx", "sqlalchemy", "redis", "fastapi",
 ]
-# Direct imports only: core.spice legitimately imports core.kernels, which
-# imports httpx to fetch kernels at seed time. kernels.py is the one documented
-# exception to core's no-I/O rule and is never called from a request path.
+ignore_imports = ["app.core.kernels -> httpx"]
 allow_indirect_imports = true
 
 [[tool.importlinter.contracts]]
 name = "spiceypy is reachable only through core.spice"
 type = "forbidden"
 allow_indirect_imports = true
-source_modules = [
-    "app.api", "app.services", "app.db", "app.agents", "app.workers", "app.data",
-    "app.core.horizon", "app.core.intervals", "app.core.metrics", "app.core.visibility",
-    "app.core.timeline", "app.core.projections", "app.core.kernels",
-]
+source_modules = ["app"]
 forbidden_modules = ["spiceypy"]
+# The tests that pin the boundary itself may name the library they pin.
+ignore_imports = ["app.core.spice -> spiceypy", "app.tests.unit.test_spice -> spiceypy"]
 
 [[tool.importlinter.contracts]]
 name = "only the API layer imports fastapi"
