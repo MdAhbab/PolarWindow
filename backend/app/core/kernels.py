@@ -150,8 +150,8 @@ LIFECYCLE_KERNELS: tuple[KernelSpec, ...] = (
         url=f"{NAIF_GENERIC}/pck/earth_1962_260806_2126_combined.bpc",
         mirrors=(f"{NAIF_GENERIC}/pck/a_old_versions/earth_1962_260806_2126_combined.bpc",),
         kind="PCK",
-        min_bytes=1_000_000,
-        sha256=None,  # pinned once the download completes; see ADR-18
+        min_bytes=31_000_000,
+        sha256="cc87ad1a495cf598800ba403763d350f087ac0b97da9fec603278a3864c6a53e",
         why="Earth orientation (ITRF93): measured to 2026-08-06, predicted to "
         "2126. Without it launch pads and ground stations cannot be placed in "
         "space, so launch times and station view periods cannot be computed.",
