@@ -241,6 +241,13 @@ licence, breaker: "closed" | "open" | "half_open"}[]}` (Settings → Data source
 `GET /jobs/{job_id}` → `JobRef` (+ `assessment_id` when done).
 `/healthz` gains `feeds: {ok: number, stale: number, failing: number}` (degraded, never down).
 
+## Named sign-in (ADR-17)
+
+`POST /auth/demo` accepts an optional body `{name: string, team?: string}`
+(no body: name "Demo project manager"). The response adds
+`user: {id: number, name: string, team: string | null}`. Every write records
+that user. `GET /auth/me` returns the same `user`.
+
 ## Changes
 
 - 2026-09-27: v1.
