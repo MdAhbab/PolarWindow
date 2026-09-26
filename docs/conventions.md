@@ -106,7 +106,10 @@ data layer; services import no FastAPI; `spiceypy` is reachable only through
    `DEM_VERTICAL_ERROR_M`, both flagged as placeholders.
 2. **Every number carries its ±, or says why it cannot.** `crossingTolerance`
    returns `grazing: true` when the body crosses the skyline too shallowly to
-   time. Show the word, never a fake precision.
+   time. Show the word, never a fake precision. The margin may also be a range
+   ("3 to 7 hours through the relay, if it flies as planned") or a factor
+   (a radiation fluence good to a factor of 2). `core/quantity.py` refuses a
+   number with no margin and no reason (ADR-9).
 3. **Every value is an estimate, and says so once per screen** (the footer line,
    `format.ts` `ESTIMATES`); "≥" marks a value the dates cut short and "±" a
    timing margin. Every response carries `meta.uncertainty`, which is never
@@ -128,6 +131,16 @@ data layer; services import no FastAPI; `spiceypy` is reachable only through
 8. **Every animation has a named static fallback** and branches in code, not
    only in CSS — `useReducedMotion()` combines the OS setting with the in-app
    toggle.
+
+9. **No verdicts.** No go/no-go, "safe", readiness percentage, risk score,
+   likelihood-times-consequence product, or overall chance of launch. The
+   product shows the evidence rule by rule; people decide.
+10. **Every number says where it came from**: computed, published (with the
+    source), entered (by whom, when) or assumed. Shown on request.
+11. **Every live number shows its age.** Past its staleness budget it is
+    replaced by the reason there is no number (ADR-8).
+12. **Every probability states its sample** ("12 of 31 model runs") and
+    whether it has been checked against observations (ADR-14).
 
 ---
 
@@ -156,6 +169,18 @@ professional name of a key number is shown only when its label is pressed
 | Printable report | Hand-over report |
 | Saved copy | Cached snapshot |
 | landing spot | target, feature centre (say "centre of X, not a landing point") |
+| launch opportunity (on request: "Also called launch window") | launch window, the window |
+| chance the rule is broken | probability of violation, P(no-go) |
+| in Earth's shadow, in the Moon's shadow | eclipse, umbra |
+| time a ground station can hear the lander | DSN coverage, view period |
+| through a relay | via relay, relayed link |
+| message wait | latency, end-to-end delay |
+| if it flies as planned | nominal, notional |
+| ready, not ready, blocked | green, red, go, no-go |
+| part lost | attrition, write-off |
+| booster landing zone | droneship area, LZ |
+| splashdown zone | recovery area |
+| the trip | cruise, transit, trans-lunar phase |
 
 ## Motion
 

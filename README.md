@@ -239,7 +239,7 @@ Single-key shortcuts can be switched off in Settings (WCAG 2.1.4).
 |---|---|
 | `docs/report/report.pdf` | The judge report: what was built, measured results, limitations, questions |
 | `docs/system-design.md` | Architecture, data model, API design, performance |
-| `docs/adr/` | Seven decision records |
+| `docs/adr/` | Eighteen decision records (8 to 18 cover the launch, trip, contact, readiness and data work) |
 | `docs/api.md`, `docs/openapi.json` | The REST API |
 | `docs/data-sources.md` | Every dataset and where it comes from |
 | `docs/validation.md` | Hindcast of flown landers |
