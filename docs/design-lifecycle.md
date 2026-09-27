@@ -228,8 +228,9 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   "No data" and listed in the twin; a gap is never counted as out of contact.
 - **Rows:** Radiation on the way (screening only, and where to confirm) ·
   Burns ({n}, or "none listed" with `burns_note`) · Where the Moon's pull wins
-  (only when `moon_pull` is given) · Download the trip (OEM, SPICE SPK, CSV;
-  hidden until `/trip/export` is served) · How sure is this? · Where does this
+  (only when `moon_pull` is given) · Download the trip (flown trips only: CCSDS
+  OEM and CSV, one block per stretch NASA's reconstruction covers, said in the
+  row when there is more than one; SPK is not served) · How sure is this? · Where does this
   come from?
 - **No data:** `source: "none"` shows `none_reason`.
 

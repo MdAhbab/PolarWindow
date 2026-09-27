@@ -320,7 +320,9 @@ export interface TripDTO {
   end: string | null
   /** What part of the trip NASA's reconstruction covers; the numbers describe only that part. */
   coverage_note?: string | null
-  samples: { t: string; earth_km: number; moon_km: number; light: 'lit' | 'penumbral' | 'dark'; heard: boolean }[]
+  /** The stretches NASA's reconstruction covers (never open-ended); between two is a gap with no data. */
+  covered?: StretchDTO[]
+  samples:{ t: string; earth_km: number; moon_km: number; light: 'lit' | 'penumbral' | 'dark'; heard: boolean }[]
   shadow: StretchDTO[]
   heard: StretchDTO[]
   numbers: { sunlight_h: QuantityDTO; heard_h: QuantityDTO; longest_shadow_h: QuantityDTO; longest_unheard_h: QuantityDTO }

@@ -23,8 +23,11 @@ import { Disclosure } from '../../components/ui'
 
 const TERMS = ['tripSunlight', 'tripHeard', 'tripShadow', 'tripUnheard']
 const HOUR = 3_600_000
-/** `GET /missions/{id}/trip/export` is in the contract but answers 404 so far. */
-const TRIP_EXPORTS_SERVED = false
+/** The formats `GET /missions/{id}/trip/export` serves (SPICE SPK is not served). */
+const TRIP_EXPORTS = [
+  ['oem', 'CCSDS orbit file (OEM)'],
+  ['csv', 'Spreadsheet (CSV)'],
+] as const
 
 /**
  * Trip (design-lifecycle.md §4): the way from Earth to the Moon, with the
@@ -136,33 +139,43 @@ function TripAnswer({ trip, meta, missionId }: { trip: TripDTO; meta: LifecycleM
           )}
         </Disclosure>
         {trip.moon_pull && <MoonPullRow pull={trip.moon_pull} />}
-        {/* The exports are in the contract but not served yet; the row returns when they are. */}
-        {TRIP_EXPORTS_SERVED && <Disclosure title="Download the trip" meta="OEM, SPICE, spreadsheet">
-          <p className="text-small leading-5 text-ink-2">The trajectory in the formats flight software and analysts use.</p>
-          <ul className="flex flex-wrap gap-3">
-            {(
-              [
-                ['oem', 'CCSDS orbit file (OEM)'],
-                ['spk', 'SPICE kernel (SPK)'],
-                ['csv', 'Spreadsheet (CSV)'],
-              ] as const
-            ).map(([f, label]) => (
-              <li key={f}>
-                <a
-                  className="inline-flex h-12 items-center rounded-control border border-line-strong px-4 text-body font-semibold text-ink no-underline hover:bg-inset"
-                  href={`${API_BASE}/missions/${encodeURIComponent(missionId)}/trip/export?format=${f}`}
-                  download
-                >
-                  {label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </Disclosure>}
+        {/* Only a flown trip can be exported; a designed one answers 409 no-export. */}
+        {trip.source === 'flown' && <TripDownloads trip={trip} missionId={missionId} />}
         <HowSure meta={meta} />
         <SourcesRow meta={meta} />
       </Rows>
     </>
+  )
+}
+
+/**
+ * The flown trajectory as a file: one block per stretch NASA's reconstruction
+ * covers, nothing filled in across the gaps between them.
+ */
+function TripDownloads({ trip, missionId }: { trip: TripDTO; missionId: string }) {
+  const blocks = trip.covered?.length ?? 0
+  return (
+    <Disclosure title="Download the trip" meta="orbit file, spreadsheet">
+      <p className="text-small leading-5 text-ink-2">
+        The flown trajectory from NASA’s reconstruction, every 10 minutes, centred on Earth (EME2000 frame, km and km/s).
+        {blocks > 1
+          ? ` The reconstruction covers the trip in ${blocks} separate stretches, so the file has ${blocks} blocks; nothing is filled in across the gaps.`
+          : ''}
+      </p>
+      <ul className="flex flex-wrap gap-3">
+        {TRIP_EXPORTS.map(([f, label]) => (
+          <li key={f}>
+            <a
+              className="inline-flex h-12 items-center rounded-control border border-line-strong px-4 text-body font-semibold text-ink no-underline hover:bg-inset"
+              href={`${API_BASE}/missions/${encodeURIComponent(missionId)}/trip/export?format=${f}`}
+              download
+            >
+              {label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </Disclosure>
   )
 }
 

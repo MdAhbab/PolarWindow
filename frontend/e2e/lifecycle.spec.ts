@@ -261,9 +261,26 @@ test('trip and contact (live API): the flown trip with its gaps in the data, and
   await expect(main.getByRole('table').first()).toContainText('No data')
   await expectNoSeriousAxe(page, '/missions/im-1/trip (live) with its table open')
 
-  // A mission that has not flown says why there is no trip.
+  // The flown trajectory downloads, one block per stretch the reconstruction covers.
+  await page.locator('summary', { hasText: 'Download the trip' }).click()
+  await expect(main).toContainText(/covers the trip in \d+ separate stretches, so the file has \d+ blocks/)
+  const [csv] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('link', { name: 'Spreadsheet (CSV)' }).click(),
+  ])
+  expect(csv.suggestedFilename()).toBe('im-1-trip.csv')
+  const oemLink = page.getByRole('link', { name: 'CCSDS orbit file (OEM)' })
+  const oem = await page.request.get((await oemLink.getAttribute('href'))!)
+  expect(oem.status()).toBe(200)
+  const text = await oem.text()
+  expect(text.startsWith('CCSDS_OEM_VERS = 2.0')).toBe(true)
+  const blocks = Number((await main.textContent())!.match(/so the file has (\d+) blocks/)![1])
+  expect(text.match(/^META_START/gm)?.length).toBe(blocks)
+
+  // A mission that has not flown says why there is no trip, and offers nothing to download.
   await page.goto('/missions/griffin-1/trip')
   await expect(page.getByText('No trip to show yet')).toBeVisible({ timeout: 30_000 })
+  await expect(page.locator('summary', { hasText: 'Download the trip' })).toHaveCount(0)
 
   await page.goto('/missions/im-2/contact')
   await expect(page.locator('[data-guide="section-answer"]')).toContainText('A ground station can hear it', { timeout: 90_000 })
