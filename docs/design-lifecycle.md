@@ -212,7 +212,9 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   vehicle's list on each save, so every limit already entered is sent again.
 - **Official forecast** is quoted as issued: "{n}% chance the weather breaks
   a launch rule", the 45th Weather Squadron's "probability of violating
-  weather constraints", with who entered it and the PDF.
+  weather constraints", with who entered it and the PDF. One per mission,
+  the latest; a save answers with the forecast as stored, which the row shows
+  at once (the later-entered of it and the weather answer's `official`).
 - **Weather rules** (`WeatherRuleTable`): rule rows × systems (GEFS, ECMWF
   ENS, AIFS ENS), each cell "{k} of {n} runs" with a small bar and its
   interval as a hatch; missing cells give their reason. A rule's class is in

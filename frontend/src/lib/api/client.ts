@@ -32,6 +32,7 @@ import type {
   RiskScalesDTO,
   RoverSightDTO,
   SectionDTO,
+  StoredForecastDTO,
   SectionStatusDTO,
   TripDTO,
   UserDTO,
@@ -464,8 +465,9 @@ export const api = {
   adoptLesson: (missionId: string, lessonId: string) =>
     request<unknown>(`/missions/${enc(missionId)}/lessons/${enc(lessonId)}/adopt`, { method: 'POST' }),
 
+  /** Answers with the forecast as stored (who entered it, and when). */
   officialForecast: (missionId: string, body: { probability_pct: number; concerns: string[]; pdf_url: string }) =>
-    request<unknown>(`/missions/${enc(missionId)}/launch/official-forecast`, { body, method: 'PUT' }),
+    request<StoredForecastDTO>(`/missions/${enc(missionId)}/launch/official-forecast`, { body, method: 'PUT' }),
 
   vehicleLimits: (vehicleId: string, body: { limits: { rule_id: string; value: number; unit: string; note: string | null }[] }) =>
     request<unknown>(`/vehicles/${enc(vehicleId)}/limits`, { body, method: 'PUT' }),

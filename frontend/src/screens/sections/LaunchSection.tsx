@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../../lib/api/client'
 import type { MissionDetail } from '../../lib/api/adapters'
-import type { LaunchCalendarDTO, LaunchWeatherDTO, LifecycleMetaDTO, OpportunityDTO, QuantityDTO, RuleRowDTO } from '../../lib/api/lifecycle'
+import type { LaunchCalendarDTO, LaunchWeatherDTO, LifecycleMetaDTO, OfficialForecastDTO, OpportunityDTO, QuantityDTO, RuleRowDTO } from '../../lib/api/lifecycle'
 import { useHistory, useLifecycleWrite, useSection, useSectionStatus } from '../../lib/api/lifecycleQueries'
 import { dateTimeWords, dateWords } from '../../lib/format'
 import { ageWords, formatValue, hostWords, quantityText } from '../../lib/lifecycle/quantity'
@@ -335,6 +335,12 @@ function SpaceWeatherRow({ wx, meta }: { wx: LaunchWeatherDTO; meta: LifecycleMe
   )
 }
 
+/** The later-entered of two forecasts (the one a save answered with, and the one the weather answer carries). */
+export function newestForecast(a: OfficialForecastDTO | null, b: OfficialForecastDTO | null): OfficialForecastDTO | null {
+  if (!a || !b) return a ?? b
+  return Date.parse(b.entered_at) > Date.parse(a.entered_at) ? b : a
+}
+
 /**
  * The official launch forecast, entered by the project manager with its PDF
  * (ADR-14: attributed, never scraped). Quoted as issued; nothing is added.
@@ -342,9 +348,10 @@ function SpaceWeatherRow({ wx, meta }: { wx: LaunchWeatherDTO; meta: LifecycleMe
 function OfficialRow({ wx, missionId }: { wx: LaunchWeatherDTO | null; missionId: string }) {
   const canWrite = useCanWrite()
   const [open, setOpen] = useState(false)
-  const official = wx?.official ?? null
   const history = useHistory('forecast', open ? missionId : null)
   const write = useLifecycleWrite((b: { probability_pct: number; concerns: string[]; pdf_url: string }) => api.officialForecast(missionId, b))
+  // The save answers with the forecast as stored: shown at once, until the weather answer carries the same or a newer one.
+  const official = newestForecast(wx?.official ?? null, write.data ?? null)
   const [pct, setPct] = useState('')
   const [concerns, setConcerns] = useState('')
   const [pdf, setPdf] = useState('')

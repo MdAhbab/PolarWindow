@@ -309,6 +309,20 @@ export interface RuleRowDTO {
   climatology: { share: number; years: string; source: string } | null
 }
 
+/** The official launch forecast as the team entered it, quoted as issued. */
+export interface OfficialForecastDTO {
+  probability_pct: number
+  concerns: string[]
+  pdf_url: string
+  entered_by: string
+  entered_at: string
+}
+
+/** `PUT /launch/official-forecast` answers with the forecast as stored. */
+export interface StoredForecastDTO extends OfficialForecastDTO {
+  id: number
+}
+
 export interface LaunchWeatherDTO {
   t0: string
   /** Negative for a launch in the past. */
@@ -318,13 +332,7 @@ export interface LaunchWeatherDTO {
   /** One sentence on what is covered. */
   note: string
   rules: RuleRowDTO[]
-  official: {
-    probability_pct: number
-    concerns: string[]
-    pdf_url: string
-    entered_by: string
-    entered_at: string
-  } | null
+  official: OfficialForecastDTO | null
   space_weather_now: { kp: QuantityDTO; proton_10mev_pfu: QuantityDTO; xray_class: string | null; alerts: string[] }
   range_conflicts: { name: string; t0: string; pad: string }[]
   /** Where `range_conflicts` come from, or why they are not known. */
@@ -551,6 +559,8 @@ export type ContractChecks = [
   Fits<Present<S['LaunchCalendar']>, LaunchCalendarDTO>,
   Fits<Present<S['LaunchWeather']>, LaunchWeatherDTO>,
   Fits<Present<S['Return']>, ReturnDTO>,
+  Fits<Present<S['OfficialForecast']>, OfficialForecastDTO>,
+  Fits<Present<S['OfficialForecastOut']>, StoredForecastDTO>,
   // `counts` is typed as a plain map in the schema; its keys are checked in the fixture tests.
   Fits<Present<Omit<S['Ready'], 'counts'>>, Omit<ReadyDTO, 'counts'>>,
 ]

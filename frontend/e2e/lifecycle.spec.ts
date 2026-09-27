@@ -162,6 +162,41 @@ test('team weather limits (contract fixtures): an unpublished limit takes a unit
   await expectNoSeriousAxe(page, 'the team weather limits sheet')
 })
 
+test('official launch forecast (contract fixtures): a save shows the forecast as stored, not the one before', async ({ page, context }) => {
+  await returningVisitor(context)
+  await serveLifecycleFixtures(context)
+  let put: Record<string, unknown> | null = null
+  await context.route(/localhost:8000\/api\/v1\/missions\/im-2\/launch\/official-forecast$/, async (route) => {
+    if (route.request().method() === 'PUT') put = route.request().postDataJSON()
+    // The service answers with the forecast as stored; the weather fixture still carries the older one.
+    await fulfillWrite(route, { id: 9, ...put, entered_by: 'Nadia Karim', entered_at: new Date().toISOString() })
+  })
+  await page.goto('/missions/im-2/launch')
+  const summary = page.locator('summary', { hasText: 'Official launch forecast' })
+  const row = page.locator('details').filter({ has: summary })
+  await summary.click()
+  await expect(summary).toContainText('10%, entered by A. Rahman')
+  await row.getByRole('button', { name: 'Enter a newer forecast' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Official launch forecast' })
+  await sheet.getByLabel('Your name').fill('Nadia Karim')
+  await sheet.getByLabel('Chance the weather breaks a launch rule (%)').fill('150')
+  await sheet.getByLabel('Link to the forecast PDF').fill('ftp://example.test/l-1.pdf')
+  await sheet.getByRole('button', { name: 'Save' }).click()
+  await expect(sheet).toContainText('A whole percent from 0 to 100.')
+  await expect(sheet).toContainText('The web address of the forecast PDF.')
+  expect(put).toBeNull()
+  await sheet.getByLabel('Chance the weather breaks a launch rule (%)').fill('20')
+  await sheet.getByLabel('Main concerns').fill('Cumulus cloud rule, surface wind')
+  await sheet.getByLabel('Link to the forecast PDF').fill('https://example.test/l-1.pdf')
+  await sheet.getByRole('button', { name: 'Save' }).click()
+  await expect(sheet.getByText('Saved.')).toBeVisible()
+  expect(put).toEqual({ probability_pct: 20, concerns: ['Cumulus cloud rule', 'surface wind'], pdf_url: 'https://example.test/l-1.pdf' })
+  await sheet.getByRole('button', { name: 'Close' }).last().click()
+  await expect(summary).toContainText('20%, entered by Nadia Karim')
+  await expect(row).toContainText('20% chance the weather breaks a launch rule, in the official forecast; main concerns: cumulus cloud rule, surface wind.')
+  await expect(row.getByRole('link', { name: /the forecast as issued \(example\.test\)/ })).toHaveAttribute('href', 'https://example.test/l-1.pdf')
+})
+
 test('team sea limits (contract fixtures): the form starts from what is entered, and sends both parts', async ({ page, context }) => {
   await returningVisitor(context)
   await serveLifecycleFixtures(context)
@@ -471,4 +506,37 @@ test('return (live API): where each flown booster came down, and a planned one n
   await page.goto('/missions/apex-1/return')
   await expect(main).toContainText('Does not apply', { timeout: 30_000 })
   await expect(main).toContainText('This delivery was cancelled.')
+})
+
+
+test('official launch forecast (live API, writes): a signed-in save is stored, shown in the row, in its history and after a reload', async ({
+  page,
+  context,
+}) => {
+  // Every run adds a forecast to the mission for good (there is no way to remove one), so this runs only when asked.
+  test.skip(!process.env.E2E_LIVE_WRITES, 'Writes to the live database: set E2E_LIVE_WRITES=1, against a scratch database.')
+  test.setTimeout(90_000)
+  await returningVisitor(context)
+  const pct = 1 + Math.floor(Math.random() * 98)
+  await page.goto('/missions/peregrine-m1/launch')
+  await expect(page.locator('[data-guide="section-answer"]')).toContainText('It launched on', { timeout: 60_000 })
+  const summary = page.locator('summary', { hasText: 'Official launch forecast' })
+  await summary.click()
+  await page.getByRole('button', { name: /^Enter (the official|a newer) forecast$/ }).click()
+  const sheet = page.getByRole('dialog', { name: 'Official launch forecast' })
+  const name = sheet.getByLabel('Your name')
+  if (await name.isVisible()) await name.fill('End-to-end check')
+  await sheet.getByLabel('Chance the weather breaks a launch rule (%)').fill(String(pct))
+  await sheet.getByLabel('Main concerns').fill('End-to-end check')
+  await sheet.getByLabel('Link to the forecast PDF').fill('https://example.test/end-to-end-check.pdf')
+  await sheet.getByRole('button', { name: 'Save' }).click()
+  await expect(sheet.getByText('Saved.')).toBeVisible()
+  // Its history lists the change.
+  await expect(sheet.getByText('Change history')).toBeVisible()
+  await expect(sheet.locator('li').first()).toContainText('End-to-end check')
+  await sheet.getByRole('button', { name: 'Close' }).last().click()
+  await expect(summary).toContainText(`${pct}%, entered by End-to-end check`)
+  // The weather answer carries the stored forecast.
+  await page.reload()
+  await expect(page.locator('summary', { hasText: 'Official launch forecast' })).toContainText(`${pct}%, entered by End-to-end check`, { timeout: 60_000 })
 })
