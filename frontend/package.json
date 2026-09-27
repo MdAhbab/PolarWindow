@@ -15,6 +15,7 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "snapshot": "tsx scripts/snapshot.ts",
+    "screens": "tsx scripts/screens.ts",
     "build:snapshot": "tsc -b && VITE_DATA_MODE=snapshot vite build"
   },
   "dependencies": {

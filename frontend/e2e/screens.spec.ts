@@ -14,6 +14,13 @@ const ROUTES = [
   '/missions/im-2/landing',
   '/missions/im-2/contact',
   '/missions/im-2/return',
+  // The steps the service answers, for two more flown missions: IM-1's trip
+  // has gaps in NASA's reconstruction, and its contact is worked out on request.
+  '/missions/im-1/ready',
+  '/missions/im-1/trip',
+  '/missions/im-1/contact',
+  '/missions/blue-ghost-m1/trip',
+  '/missions/blue-ghost-m1/contact',
   '/map',
   '/site',
   '/compare',
@@ -32,6 +39,15 @@ for (const theme of ['dark', 'light'] as const) {
       await page.waitForLoadState('networkidle')
       await expectNoSeriousAxe(page, `${r} (${theme})`)
     }
+    // Settings with every project row open, a parameter's form and history among them.
+    await page.goto('/missions')
+    await page.getByRole('button', { name: 'Settings' }).click()
+    const sheet = page.getByRole('dialog', { name: 'Settings' })
+    await expect(sheet.locator('summary', { hasText: 'Parameters' })).toContainText(/\d of \d entered/)
+    for (const s of await sheet.locator('summary').all()) await s.click()
+    await sheet.getByRole('button', { name: /for Battery limit/ }).click()
+    await expect(sheet.getByText('Change history')).toBeVisible()
+    await expectNoSeriousAxe(page, `settings with every row open (${theme})`)
     expect(problems).toEqual([])
   })
 }
@@ -71,12 +87,25 @@ test('axe and the fixed tab bar on a phone', async ({ page, context }) => {
   await returningVisitor(context)
   await page.setViewportSize({ width: 375, height: 812 })
   const tabs = page.getByRole('navigation', { name: 'Views' }).last()
-  for (const r of ['/missions?type=volatiles', '/missions/im-2', '/missions/im-2/ready', '/missions/im-2/launch', '/site', '/compare']) {
+  for (const r of [
+    '/missions?type=volatiles',
+    '/missions/im-2',
+    '/missions/im-2/ready',
+    '/missions/im-2/launch',
+    '/missions/im-2/trip',
+    '/missions/im-2/contact',
+    '/missions/im-2/return',
+    '/missions/im-1/trip',
+    '/site',
+    '/compare',
+  ]) {
     await page.goto(r)
     await page.waitForLoadState('networkidle')
     await expect(tabs.getByRole('link')).toHaveCount(5)
     await expect(tabs).toHaveCSS('position', 'fixed')
     await expectNoSeriousAxe(page, `${r} at 375 px`)
+    // Nothing runs off the side: no sideways scroll on a phone.
+    expect(await page.evaluate(() => document.documentElement.scrollWidth), `${r} scrolls sideways at 375 px`).toBeLessThanOrEqual(375)
   }
   // The last line of the page is never under the tab bar.
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
@@ -93,6 +122,25 @@ test('axe and the fixed tab bar on a phone', async ({ page, context }) => {
   expect(g!.y + g!.height).toBeLessThanOrEqual(t2!.y + 1)
   expect(f2!.y + f2!.height).toBeLessThanOrEqual(g!.y + 1)
   await expectNoSeriousAxe(page, '/compare at 375 px with the guide open')
+})
+
+test('settings on a phone: every project row and a parameter form fit, with no sideways scroll', async ({ page, context }) => {
+  await returningVisitor(context)
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.goto('/missions')
+  await page.getByRole('button', { name: 'Settings' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Settings' })
+  await expect(sheet.locator('summary', { hasText: 'Parameters' })).toContainText(/\d of \d entered/)
+  for (const s of await sheet.locator('summary').all()) await s.click()
+  await sheet.getByRole('button', { name: /for Lowest Sun height/ }).click()
+  const value = sheet.getByLabel('Value, in degrees')
+  await expect(value).toBeVisible()
+  const box = await value.boundingBox()
+  expect(box!.x + box!.width).toBeLessThanOrEqual(375)
+  expect(box!.height).toBeGreaterThanOrEqual(44)
+  expect(await sheet.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375)
+  await expectNoSeriousAxe(page, 'settings at 375 px with every row open')
 })
 
 test('mission filters live in the URL; the back button undoes a chip', async ({ page, context }) => {
