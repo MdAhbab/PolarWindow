@@ -266,6 +266,24 @@ _SPECIFIC: Final[tuple[Dataset, ...]] = (
         min_bytes=1_000_000,
     ),
     Dataset(
+        id="dsn:810-005-301-masks",
+        title="DSN 810-005 module 301 Rev. O horizon mask spreadsheet (every antenna, every "
+        "degree of azimuth, effective 1 May 2024)",
+        provider="NASA JPL Deep Space Network",
+        tier="lifecycle",
+        method="file",
+        urls=(
+            "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
+        ),
+        dest="dsn/Horizon-Masks-Download-V2-301O.xlsx",
+        size_bytes=441_329,
+        used_for="The ground-station catalogue's receive masks: when each Deep Space Network "
+        "antenna can hear the Moon (python -m app.data.build_ground_stations).",
+        licence="US government work (public domain)",
+        sha256="2d85b0be77c1116c842346ce6a601e33944d0dd62fb3ffc575f4c3fd33fd0ec0",
+        min_bytes=400_000,
+    ),
+    Dataset(
         id="goldstone:south-pole-dem",
         title="Goldstone radar elevation model of the lunar south pole (~150 m)",
         provider="NASA JPL Goldstone Solar System Radar / PDS Geosciences",

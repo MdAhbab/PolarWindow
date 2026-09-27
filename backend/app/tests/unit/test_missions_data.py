@@ -106,3 +106,78 @@ def test_terrain_only_inside_the_polar_model(data: im.MissionFile) -> None:
         assert r["terrain_modelled"] == (r["lat_deg"] <= im.POLAR_DEM_EDGE_LAT_DEG)
         if not r["terrain_modelled"]:
             assert r["elev_m"] is None and r["slope_deg"] is None
+
+
+# --- schema v2 (ADR-10) ---------------------------------------------------------
+
+
+def _im2(**changes: Any) -> dict[str, Any]:
+    raw = json.loads(MISSIONS.read_text())
+    m = next(x for x in raw["missions"] if x["id"] == "im-2")
+    return {**m, **changes}
+
+
+def _validate(m: dict[str, Any]) -> None:
+    im.MissionIn.model_validate(m)
+
+
+def test_v2_every_lifecycle_fact_is_sourced_or_listed(data: im.MissionFile) -> None:
+    for m in data.missions:
+        for name in im.NULLABLE_FIELDS_V2:
+            value = getattr(m, name)
+            if value is None:
+                assert name in m.unconfirmed_fields, (m.id, name)
+            else:
+                assert m.field_sources[name].startswith("https://"), (m.id, name)
+
+
+def test_v2_flown_missions_carry_their_launch_instant(data: im.MissionFile) -> None:
+    flown = {m.id: m for m in data.missions if m.id in ("im-1", "im-2", "blue-ghost-m1")}
+    assert len(flown) == 3
+    for m in flown.values():
+        assert m.t0 is not None and m.t0.precision == "minute"
+        assert m.vehicle_id == "falcon-9" and m.pad_id == "ksc-lc-39a"
+
+
+def test_v2_a_value_without_a_source_is_refused() -> None:
+    m = _im2()
+    m["field_sources"] = {k: v for k, v in m["field_sources"].items() if k != "vehicle_id"}
+    with pytest.raises(ValueError, match="vehicle_id"):
+        _validate(m)
+
+
+def test_v2_a_null_that_is_not_listed_is_refused() -> None:
+    m = _im2(descent=None)
+    m["unconfirmed_fields"] = [f for f in m["unconfirmed_fields"] if f != "descent"]
+    with pytest.raises(ValueError, match="descent"):
+        _validate(m)
+
+
+def test_v2_a_launch_instant_must_be_to_the_minute() -> None:
+    m = _im2()
+    m["t0"] = {**m["t0"], "precision": "day"}
+    with pytest.raises(ValueError, match="minute"):
+        _validate(m)
+
+
+def test_v2_a_missing_nested_value_must_be_listed() -> None:
+    m = _im2(transfer={"type": "direct", "flight_days": None, "lunar_orbit_days": None})
+    m["unconfirmed_fields"] = [f for f in m["unconfirmed_fields"] if f != "transfer"]
+    m["field_sources"] = {**m["field_sources"], "transfer": m["sources"][0]["url"]}
+    with pytest.raises(ValueError, match="transfer.flight_days"):
+        _validate(m)
+
+
+def test_v2_catalogue_references_resolve(data: im.MissionFile) -> None:
+    assert im.catalogue_problems(data) == []
+    bad = im.MissionFile.model_validate(
+        {**json.loads(MISSIONS.read_text()), "missions": [_im2(pad_id="nowhere")]}
+    )
+    assert any("nowhere" in p for p in im.catalogue_problems(bad))
+
+
+def test_the_cancelled_apex_mission_has_its_sources(data: im.MissionFile) -> None:
+    apex = next(m for m in data.missions if m.id == "apex-1")
+    assert apex.status == "cancelled"
+    urls = {s.url for s in apex.sources}
+    assert any("ispace-inc.com" in u for u in urls) and any("spacenews.com" in u for u in urls)

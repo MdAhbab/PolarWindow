@@ -1,0 +1,533 @@
+{
+ "schema_version": 1,
+ "catalogue": "landing_attempts",
+ "compiled": "2026-09-27",
+ "about": "Every attempt to land on the Moon from 2013 (Chang'e 3) to September 2026 that reached the landing phase. Outcomes are taken from NASA's Lunar Reconnaissance Orbiter Camera pages, which imaged every site. Causes are the ones the operator published. These are counts of what happened; they are never turned into a chance of success. Peregrine is not here: it was lost before it could attempt a landing.",
+ "records": [
+  {
+   "id": "change-3",
+   "name": "Chang'e 3",
+   "mission": "Chang'e 3",
+   "agency": "CNSA",
+   "commercial": false,
+   "provider": null,
+   "date": "2013-12-14",
+   "outcome": "landed_working",
+   "cause": null,
+   "clps": false,
+   "mission_id": null,
+   "sources": [
+    {
+     "url": "https://lroc.im-ldi.com/images/637",
+     "title": "Chang'e 3 Lander and Rover From Above (LROC featured image, 30 December 2013)",
+     "publisher": "NASA LRO Camera team (NASA/GSFC/Arizona State University)",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "mission": "https://lroc.im-ldi.com/images/637",
+    "agency": "https://lroc.im-ldi.com/images/637",
+    "date": "https://lroc.im-ldi.com/images/637",
+    "outcome": "https://lroc.im-ldi.com/images/637",
+    "clps": "https://lroc.im-ldi.com/images/637",
+    "commercial": "https://lroc.im-ldi.com/images/637"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [],
+   "notes": []
+  },
+  {
+   "id": "change-4",
+   "name": "Chang'e 4",
+   "mission": "Chang'e 4",
+   "agency": "CNSA",
+   "commercial": false,
+   "provider": null,
+   "date": "2019-01-03",
+   "outcome": "landed_working",
+   "cause": null,
+   "clps": false,
+   "mission_id": null,
+   "sources": [
+    {
+     "url": "https://lroc.im-ldi.com/images/1168",
+     "title": "Keeps on Roving! (LROC featured image, 1 December 2020)",
+     "publisher": "NASA LRO Camera team (NASA/GSFC/Arizona State University)",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "mission": "https://lroc.im-ldi.com/images/1168",
+    "agency": "https://lroc.im-ldi.com/images/1168",
+    "date": "https://lroc.im-ldi.com/images/1168",
+    "outcome": "https://lroc.im-ldi.com/images/1168",
+    "clps": "https://lroc.im-ldi.com/images/1168",
+    "commercial": "https://lroc.im-ldi.com/images/1168"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [],
+   "notes": []
+  },
+  {
+   "id": "beresheet",
+   "name": "Beresheet",
+   "mission": "Beresheet",
+   "agency": "SpaceIL / Israel Aerospace Industries",
+   "commercial": true,
+   "provider": "SpaceIL and Israel Aerospace Industries",
+   "date": "2019-04-11",
+   "outcome": "failed",
+   "cause": null,
+   "clps": false,
+   "mission_id": null,
+   "sources": [
+    {
+     "url": "https://lroc.im-ldi.com/images/1101",
+     "title": "Beresheet Crash Site Spotted! (LROC featured image, 15 May 2019)",
+     "publisher": "NASA LRO Camera team (NASA/GSFC/Arizona State University)",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "mission": "https://lroc.im-ldi.com/images/1101",
+    "agency": "https://lroc.im-ldi.com/images/1101",
+    "date": "https://lroc.im-ldi.com/images/1101",
+    "outcome": "https://lroc.im-ldi.com/images/1101",
+    "clps": "https://lroc.im-ldi.com/images/1101",
+    "commercial": "https://lroc.im-ldi.com/images/1101",
+    "provider": "https://lroc.im-ldi.com/images/1101"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [
+    "cause"
+   ],
+   "notes": [
+    "The LROC page calls it 'not a successful soft landing' and shows the impact site; no cause is taken from it."
+   ]
+  },
+  {
+   "id": "chandrayaan-2-vikram",
+   "name": "Chandrayaan-2 Vikram lander",
+   "mission": "Chandrayaan-2 Vikram lander",
+   "agency": "ISRO",
+   "commercial": false,
+   "provider": null,
+   "date": "2019-09-06",
+   "outcome": "failed",
+   "cause": null,
+   "clps": false,
+   "mission_id": null,
+   "sources": [
+    {
+     "url": "https://lroc.im-ldi.com/images/1131",
+     "title": "Vikram Lander Found (LROC featured image, 2 December 2019)",
+     "publisher": "NASA LRO Camera team (NASA/GSFC/Arizona State University)",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "mission": "https://lroc.im-ldi.com/images/1131",
+    "agency": "https://lroc.im-ldi.com/images/1131",
+    "date": "https://lroc.im-ldi.com/images/1131",
+    "outcome": "https://lroc.im-ldi.com/images/1131",
+    "clps": "https://lroc.im-ldi.com/images/1131",
+    "commercial": "https://lroc.im-ldi.com/images/1131"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [
+    "cause"
+   ],
+   "notes": [
+    "ISRO lost contact shortly before the scheduled touchdown (7 September in India, 6 September in the United States); the date is the US date the LROC page gives."
+   ]
+  },
+  {
+   "id": "change-5",
+   "name": "Chang'e 5",
+   "mission": "Chang'e 5",
+   "agency": "CNSA",
+   "commercial": false,
+   "provider": null,
+   "date": "2020-12-01",
+   "outcome": "landed_working",
+   "cause": null,
+   "clps": false,
+   "mission_id": null,
+   "sources": [
+    {
+     "url": "https://lroc.im-ldi.com/images/1172",
+     "title": "First Look: Chang'e 5 (LROC featured image, 4 December 2020)",
+     "publisher": "NASA LRO Camera team (NASA/GSFC/Arizona State University)",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "mission": "https://lroc.im-ldi.com/images/1172",
+    "agency": "https://lroc.im-ldi.com/images/1172",
+    "date": "https://lroc.im-ldi.com/images/1172",
+    "outcome": "https://lroc.im-ldi.com/images/1172",
+    "clps": "https://lroc.im-ldi.com/images/1172",
+    "commercial": "https://lroc.im-ldi.com/images/1172"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [],
+   "notes": []
+  },
+  {
+   "id": "hakuto-r-m1",
+   "name": "HAKUTO-R Mission 1",
+   "mission": "HAKUTO-R Mission 1",
+   "agency": "ispace (Japan)",
+   "commercial": true,
+   "provider": "ispace",
+   "date": "2023-04-25",
+   "outcome": "failed",
+   "cause": "The lander's software rejected the altimeter's readings as faulty after it passed over a crater rim about 3 km high, underestimated its altitude and ran out of propellant before touchdown.",
+   "clps": false,
+   "mission_id": null,
+   "sources": [
+    {
+     "url": "https://lroc.im-ldi.com/images/1302",
+     "title": "Impact Site of the HAKUTO-R Mission 1 Lunar Lander (LROC featured image, 23 May 2023)",
+     "publisher": "NASA LRO Camera team (NASA/GSFC/Arizona State University)",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://ispace-inc.com/news-en/?p=4691",
+     "title": "ispace Announces Results of the HAKUTO-R Mission 1 Lunar Landing (26 May 2023)",
+     "publisher": "ispace",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "mission": "https://lroc.im-ldi.com/images/1302",
+    "agency": "https://lroc.im-ldi.com/images/1302",
+    "date": "https://lroc.im-ldi.com/images/1302",
+    "outcome": "https://lroc.im-ldi.com/images/1302",
+    "clps": "https://lroc.im-ldi.com/images/1302",
+    "commercial": "https://lroc.im-ldi.com/images/1302",
+    "provider": "https://lroc.im-ldi.com/images/1302",
+    "cause": "https://ispace-inc.com/news-en/?p=4691"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [],
+   "notes": []
+  },
+  {
+   "id": "luna-25",
+   "name": "Luna 25",
+   "mission": "Luna 25",
+   "agency": "Roscosmos",
+   "commercial": false,
+   "provider": null,
+   "date": "2023-08-19",
+   "outcome": "failed",
+   "cause": "An anomaly during a pre-landing manoeuvre sent the spacecraft into the rim of Pontecoulant G crater, about 400 km short of the intended landing point.",
+   "clps": false,
+   "mission_id": null,
+   "sources": [
+    {
+     "url": "https://lroc.im-ldi.com/images/1311",
+     "title": "Luna 25 Impact Crater (LROC featured image, 29 November 2023)",
+     "publisher": "NASA LRO Camera team (NASA/GSFC/Arizona State University)",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "mission": "https://lroc.im-ldi.com/images/1311",
+    "agency": "https://lroc.im-ldi.com/images/1311",
+    "date": "https://lroc.im-ldi.com/images/1311",
+    "outcome": "https://lroc.im-ldi.com/images/1311",
+    "clps": "https://lroc.im-ldi.com/images/1311",
+    "commercial": "https://lroc.im-ldi.com/images/1311",
+    "cause": "https://lroc.im-ldi.com/images/1311"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [],
+   "notes": [
+    "Luna 25 was lost during descent preparations rather than in the final landing burn; it is counted because it was a landing mission that struck the Moon."
+   ]
+  },
+  {
+   "id": "chandrayaan-3",
+   "name": "Chandrayaan-3",
+   "mission": "Chandrayaan-3",
+   "agency": "ISRO",
+   "commercial": false,
+   "provider": null,
+   "date": "2023-08-23",
+   "outcome": "landed_working",
+   "cause": null,
+   "clps": false,
+   "mission_id": null,
+   "sources": [
+    {
+     "url": "https://lroc.im-ldi.com/images/1314",
+     "title": "Chandrayaan-3 Landing Site (LROC featured image, 5 September 2023)",
+     "publisher": "NASA LRO Camera team (NASA/GSFC/Arizona State University)",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "mission": "https://lroc.im-ldi.com/images/1314",
+    "agency": "https://lroc.im-ldi.com/images/1314",
+    "date": "https://lroc.im-ldi.com/images/1314",
+    "outcome": "https://lroc.im-ldi.com/images/1314",
+    "clps": "https://lroc.im-ldi.com/images/1314",
+    "commercial": "https://lroc.im-ldi.com/images/1314"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [],
+   "notes": []
+  },
+  {
+   "id": "slim",
+   "name": "SLIM (Smart Lander for Investigating Moon)",
+   "mission": "SLIM (Smart Lander for Investigating Moon)",
+   "agency": "JAXA",
+   "commercial": false,
+   "provider": null,
+   "date": "2024-01-19",
+   "outcome": "landed_tipped_or_partial",
+   "cause": "At about 50 m altitude, just before the obstacle-avoidance manoeuvre, one of the two main engines most likely lost its thrust. SLIM reached the surface about 55 m east of its target with its solar cells facing west, so it could not make power at first.",
+   "clps": false,
+   "mission_id": null,
+   "sources": [
+    {
+     "url": "https://lroc.im-ldi.com/images/1358",
+     "title": "JAXA SLIM Landing (LROC featured image, 26 January 2024)",
+     "publisher": "NASA LRO Camera team (NASA/GSFC/Arizona State University)",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://global.jaxa.jp/press/2024/01/20240125-1_e.html",
+     "title": "Outcome for the Smart Lander for Investigating Moon (SLIM)'s Moon Landing (25 January 2024)",
+     "publisher": "JAXA",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "mission": "https://lroc.im-ldi.com/images/1358",
+    "agency": "https://lroc.im-ldi.com/images/1358",
+    "date": "https://lroc.im-ldi.com/images/1358",
+    "outcome": "https://lroc.im-ldi.com/images/1358",
+    "clps": "https://lroc.im-ldi.com/images/1358",
+    "commercial": "https://lroc.im-ldi.com/images/1358",
+    "cause": "https://global.jaxa.jp/press/2024/01/20240125-1_e.html"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [],
+   "notes": [
+    "The cause and the solar-cell direction are from JAXA's press release of 25 January 2024; the LROC page confirms where SLIM is."
+   ]
+  },
+  {
+   "id": "im-1",
+   "name": "IM-1 (Odysseus)",
+   "mission": "IM-1 (Odysseus)",
+   "agency": "NASA CLPS",
+   "commercial": true,
+   "provider": "Intuitive Machines",
+   "date": "2024-02-22",
+   "outcome": "landed_tipped_or_partial",
+   "cause": "The lander's own laser rangefinders could not be used because their safety-enable switch was not changed before launch; NASA's Navigation Doppler Lidar payload was used for the descent instead. NASA describes Odysseus as 'gently leaning into the lunar surface'; LROC shows it on terrain sloped at about 12 degrees.",
+   "clps": true,
+   "mission_id": "im-1",
+   "sources": [
+    {
+     "url": "https://lroc.im-ldi.com/images/1360",
+     "title": "Intuitive Machines IM-1 On The Moon! (LROC featured image, 26 February 2024)",
+     "publisher": "NASA LRO Camera team (NASA/GSFC/Arizona State University)",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://www.nasa.gov/missions/artemis/clps/nasa-collects-first-surface-science-in-decades-via-commercial-moon-mission/",
+     "title": "NASA Collects First Surface Science in Decades via Commercial Moon Mission (Mar 01, 2024)",
+     "publisher": "NASA",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://spaceq.ca/simple-error-could-have-resulted-in-intuitive-machines-mission-failure/",
+     "title": "Simple Error Could Have Resulted in Intuitive Machines Mission Failure (Marc Boucher, 25 February 2024)",
+     "publisher": "SpaceQ",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "mission": "https://lroc.im-ldi.com/images/1360",
+    "agency": "https://lroc.im-ldi.com/images/1360",
+    "date": "https://lroc.im-ldi.com/images/1360",
+    "outcome": "https://www.nasa.gov/missions/artemis/clps/nasa-collects-first-surface-science-in-decades-via-commercial-moon-mission/",
+    "clps": "https://lroc.im-ldi.com/images/1360",
+    "commercial": "https://lroc.im-ldi.com/images/1360",
+    "provider": "https://lroc.im-ldi.com/images/1360",
+    "mission_id": "https://www.nasa.gov/missions/artemis/clps/nasa-collects-first-surface-science-in-decades-via-commercial-moon-mission/",
+    "cause": "https://spaceq.ca/simple-error-could-have-resulted-in-intuitive-machines-mission-failure/"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [],
+   "notes": [
+    "The rangefinder account is the Intuitive Machines chief executive's, as reported by SpaceQ; the slope is from the LROC page."
+   ]
+  },
+  {
+   "id": "change-6",
+   "name": "Chang'e 6",
+   "mission": "Chang'e 6",
+   "agency": "CNSA",
+   "commercial": false,
+   "provider": null,
+   "date": "2024-06-01",
+   "outcome": "landed_working",
+   "cause": null,
+   "clps": false,
+   "mission_id": null,
+   "sources": [
+    {
+     "url": "https://lroc.im-ldi.com/images/1374",
+     "title": "First Look: Chang'e 6 (LROC featured image, 14 June 2024)",
+     "publisher": "NASA LRO Camera team (NASA/GSFC/Arizona State University)",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "mission": "https://lroc.im-ldi.com/images/1374",
+    "agency": "https://lroc.im-ldi.com/images/1374",
+    "date": "https://lroc.im-ldi.com/images/1374",
+    "outcome": "https://lroc.im-ldi.com/images/1374",
+    "clps": "https://lroc.im-ldi.com/images/1374",
+    "commercial": "https://lroc.im-ldi.com/images/1374"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [],
+   "notes": []
+  },
+  {
+   "id": "blue-ghost-m1",
+   "name": "Blue Ghost Mission 1",
+   "mission": "Blue Ghost Mission 1",
+   "agency": "NASA CLPS",
+   "commercial": true,
+   "provider": "Firefly Aerospace",
+   "date": "2025-03-02",
+   "outcome": "landed_working",
+   "cause": null,
+   "clps": true,
+   "mission_id": "blue-ghost-m1",
+   "sources": [
+    {
+     "url": "https://lroc.im-ldi.com/images/1407",
+     "title": "Blue Ghost Lunar Lander Seen From Above (LROC featured image, 7 March 2025)",
+     "publisher": "NASA LRO Camera team (NASA/GSFC/Arizona State University)",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://www.nasa.gov/news-release/touchdown-carrying-nasa-science-fireflys-blue-ghost-lands-on-moon/",
+     "title": "Touchdown! Carrying NASA Science, Firefly's Blue Ghost Lands on Moon (RELEASE 25-022, Mar 02, 2025)",
+     "publisher": "NASA",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "mission": "https://lroc.im-ldi.com/images/1407",
+    "agency": "https://lroc.im-ldi.com/images/1407",
+    "date": "https://lroc.im-ldi.com/images/1407",
+    "outcome": "https://lroc.im-ldi.com/images/1407",
+    "clps": "https://lroc.im-ldi.com/images/1407",
+    "commercial": "https://lroc.im-ldi.com/images/1407",
+    "provider": "https://www.nasa.gov/news-release/touchdown-carrying-nasa-science-fireflys-blue-ghost-lands-on-moon/",
+    "mission_id": "https://www.nasa.gov/news-release/touchdown-carrying-nasa-science-fireflys-blue-ghost-lands-on-moon/"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [],
+   "notes": []
+  },
+  {
+   "id": "im-2",
+   "name": "IM-2 (Athena)",
+   "mission": "IM-2 (Athena)",
+   "agency": "NASA CLPS",
+   "commercial": true,
+   "provider": "Intuitive Machines",
+   "date": "2025-03-06",
+   "outcome": "landed_tipped_or_partial",
+   "cause": "Athena hit the surface faster than intended and ended on its side in a 20 m crater. Intuitive Machines later named altimeter signal noise and distortion, and long shadows from the low Sun near the pole that confused its optical navigation.",
+   "clps": true,
+   "mission_id": "im-2",
+   "sources": [
+    {
+     "url": "https://lroc.im-ldi.com/images/1408",
+     "title": "IM-2 Athena Seen Obliquely (LROC featured image, 10 March 2025)",
+     "publisher": "NASA LRO Camera team (NASA/GSFC/Arizona State University)",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://www.nasa.gov/news-release/nasa-receives-some-data-before-intuitive-machines-ends-lunar-mission/",
+     "title": "NASA Receives Some Data Before Intuitive Machines Ends Lunar Mission (RELEASE 25-025, Mar 07, 2025)",
+     "publisher": "NASA",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://spacepolicyonline.com/news/im-2s-imperfect-landing-due-to-altimeter-interference-south-pole-lighting-conditions/",
+     "title": "IM-2's Imperfect Landing Due to Altimeter Interference, South Pole Lighting Conditions",
+     "publisher": "SpacePolicyOnline",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "mission": "https://lroc.im-ldi.com/images/1408",
+    "agency": "https://lroc.im-ldi.com/images/1408",
+    "date": "https://lroc.im-ldi.com/images/1408",
+    "outcome": "https://lroc.im-ldi.com/images/1408",
+    "clps": "https://lroc.im-ldi.com/images/1408",
+    "commercial": "https://lroc.im-ldi.com/images/1408",
+    "provider": "https://lroc.im-ldi.com/images/1408",
+    "mission_id": "https://www.nasa.gov/news-release/nasa-receives-some-data-before-intuitive-machines-ends-lunar-mission/",
+    "cause": "https://spacepolicyonline.com/news/im-2s-imperfect-landing-due-to-altimeter-interference-south-pole-lighting-conditions/"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [],
+   "notes": []
+  },
+  {
+   "id": "hakuto-r-m2",
+   "name": "HAKUTO-R Mission 2 (RESILIENCE)",
+   "mission": "HAKUTO-R Mission 2 (RESILIENCE)",
+   "agency": "ispace (Japan)",
+   "commercial": true,
+   "provider": "ispace",
+   "date": "2025-06-05",
+   "outcome": "failed",
+   "cause": "The laser rangefinder gave its first valid altitude below about 900 m instead of about 3 km, so the final braking came too late; ispace concluded the unit's performance had degraded in flight.",
+   "clps": false,
+   "mission_id": null,
+   "sources": [
+    {
+     "url": "https://lroc.im-ldi.com/images/1456",
+     "title": "ispace Mission 2 SMBC x HAKUTO-R Venture Moon Impact Site (LROC featured image, 20 June 2025)",
+     "publisher": "NASA LRO Camera team (NASA/GSFC/Arizona State University)",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://ispace-inc.com/news-en/?p=7671",
+     "title": "ispace Releases Technical Cause Analysis for HAKUTO-R Mission 2 (24 June 2025)",
+     "publisher": "ispace",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "mission": "https://lroc.im-ldi.com/images/1456",
+    "agency": "https://lroc.im-ldi.com/images/1456",
+    "date": "https://lroc.im-ldi.com/images/1456",
+    "outcome": "https://lroc.im-ldi.com/images/1456",
+    "clps": "https://lroc.im-ldi.com/images/1456",
+    "commercial": "https://lroc.im-ldi.com/images/1456",
+    "provider": "https://lroc.im-ldi.com/images/1456",
+    "cause": "https://ispace-inc.com/news-en/?p=7671"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [],
+   "notes": []
+  }
+ ]
+}

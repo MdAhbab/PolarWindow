@@ -1,0 +1,182 @@
+{
+ "schema_version": 1,
+ "catalogue": "lessons",
+ "compiled": "2026-09-27",
+ "about": "Lessons from lunar landing attempts whose operators published a cause, each turned into an optional checklist item a project can adopt into its readiness list. The wording of each checklist item is this project's; the facts behind it are the source's.",
+ "records": [
+  {
+   "id": "sensor-interlocks-in-flight-setting",
+   "name": "Sensor safety interlocks set for flight",
+   "text": "IM-1's laser rangefinders could not be used because their safety-enable switch was not changed before launch; only a NASA payload saved the descent.",
+   "from_mission": "IM-1 (Odysseus)",
+   "year": 2024,
+   "checklist_item": "Every landing sensor's safety interlock checked in its flight setting before the lander is closed out for launch.",
+   "applies_to": [
+    "lander"
+   ],
+   "sources": [
+    {
+     "url": "https://spaceq.ca/simple-error-could-have-resulted-in-intuitive-machines-mission-failure/",
+     "title": "Simple Error Could Have Resulted in Intuitive Machines Mission Failure (Marc Boucher, 25 February 2024)",
+     "publisher": "SpaceQ",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "text": "https://spaceq.ca/simple-error-could-have-resulted-in-intuitive-machines-mission-failure/",
+    "from_mission": "https://spaceq.ca/simple-error-could-have-resulted-in-intuitive-machines-mission-failure/",
+    "year": "https://spaceq.ca/simple-error-could-have-resulted-in-intuitive-machines-mission-failure/",
+    "checklist_item": "https://spaceq.ca/simple-error-could-have-resulted-in-intuitive-machines-mission-failure/",
+    "applies_to": "https://spaceq.ca/simple-error-could-have-resulted-in-intuitive-machines-mission-failure/"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [],
+   "notes": []
+  },
+  {
+   "id": "altimeters-tested-in-polar-light",
+   "name": "Altimeters and camera navigation tested in polar light",
+   "text": "IM-2 hit the surface too fast after its altimeters gave noisy readings and long shadows from the low Sun confused its camera navigation.",
+   "from_mission": "IM-2 (Athena)",
+   "year": 2025,
+   "checklist_item": "Descent altimeters and camera navigation tested against low-Sun, long-shadow terrain like the landing site, with a different kind of altimeter as a backup.",
+   "applies_to": [
+    "lander"
+   ],
+   "sources": [
+    {
+     "url": "https://spacepolicyonline.com/news/im-2s-imperfect-landing-due-to-altimeter-interference-south-pole-lighting-conditions/",
+     "title": "IM-2's Imperfect Landing Due to Altimeter Interference, South Pole Lighting Conditions",
+     "publisher": "SpacePolicyOnline",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "text": "https://spacepolicyonline.com/news/im-2s-imperfect-landing-due-to-altimeter-interference-south-pole-lighting-conditions/",
+    "from_mission": "https://spacepolicyonline.com/news/im-2s-imperfect-landing-due-to-altimeter-interference-south-pole-lighting-conditions/",
+    "year": "https://spacepolicyonline.com/news/im-2s-imperfect-landing-due-to-altimeter-interference-south-pole-lighting-conditions/",
+    "checklist_item": "https://spacepolicyonline.com/news/im-2s-imperfect-landing-due-to-altimeter-interference-south-pole-lighting-conditions/",
+    "applies_to": "https://spacepolicyonline.com/news/im-2s-imperfect-landing-due-to-altimeter-interference-south-pole-lighting-conditions/"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [],
+   "notes": []
+  },
+  {
+   "id": "altitude-filter-over-real-terrain",
+   "name": "Altitude filter flown over the real approach terrain",
+   "text": "HAKUTO-R Mission 1's software treated true altimeter readings as faulty after passing a crater rim about 3 km high, and ran out of propellant above the surface.",
+   "from_mission": "HAKUTO-R Mission 1",
+   "year": 2023,
+   "checklist_item": "Navigation software run in simulation over the real terrain of the planned approach, including crater rims and cliffs.",
+   "applies_to": [
+    "lander"
+   ],
+   "sources": [
+    {
+     "url": "https://ispace-inc.com/news-en/?p=4691",
+     "title": "ispace Announces Results of the HAKUTO-R Mission 1 Lunar Landing (26 May 2023)",
+     "publisher": "ispace",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "text": "https://ispace-inc.com/news-en/?p=4691",
+    "from_mission": "https://ispace-inc.com/news-en/?p=4691",
+    "year": "https://ispace-inc.com/news-en/?p=4691",
+    "checklist_item": "https://ispace-inc.com/news-en/?p=4691",
+    "applies_to": "https://ispace-inc.com/news-en/?p=4691"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [],
+   "notes": []
+  },
+  {
+   "id": "rangefinder-checked-in-flight",
+   "name": "Rangefinder checked in flight before descent",
+   "text": "HAKUTO-R Mission 2's laser rangefinder gave its first valid reading below about 900 m instead of about 3 km, so braking came too late; its performance had degraded in flight.",
+   "from_mission": "HAKUTO-R Mission 2 (RESILIENCE)",
+   "year": 2025,
+   "checklist_item": "Laser rangefinder performance checked in flight before descent, with a plan for a late first reading.",
+   "applies_to": [
+    "lander"
+   ],
+   "sources": [
+    {
+     "url": "https://ispace-inc.com/news-en/?p=7671",
+     "title": "ispace Releases Technical Cause Analysis for HAKUTO-R Mission 2 (24 June 2025)",
+     "publisher": "ispace",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "text": "https://ispace-inc.com/news-en/?p=7671",
+    "from_mission": "https://ispace-inc.com/news-en/?p=7671",
+    "year": "https://ispace-inc.com/news-en/?p=7671",
+    "checklist_item": "https://ispace-inc.com/news-en/?p=7671",
+    "applies_to": "https://ispace-inc.com/news-en/?p=7671"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [],
+   "notes": []
+  },
+  {
+   "id": "descent-with-one-engine-out",
+   "name": "Descent guidance tested with a main engine lost",
+   "text": "SLIM most likely lost the thrust of one of its two main engines at about 50 m altitude and still reached the surface 55 m from its target.",
+   "from_mission": "SLIM",
+   "year": 2024,
+   "checklist_item": "Descent guidance tested with one main engine lost at low altitude.",
+   "applies_to": [
+    "lander"
+   ],
+   "sources": [
+    {
+     "url": "https://global.jaxa.jp/press/2024/01/20240125-1_e.html",
+     "title": "Outcome for the Smart Lander for Investigating Moon (SLIM)'s Moon Landing (25 January 2024)",
+     "publisher": "JAXA",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "text": "https://global.jaxa.jp/press/2024/01/20240125-1_e.html",
+    "from_mission": "https://global.jaxa.jp/press/2024/01/20240125-1_e.html",
+    "year": "https://global.jaxa.jp/press/2024/01/20240125-1_e.html",
+    "checklist_item": "https://global.jaxa.jp/press/2024/01/20240125-1_e.html",
+    "applies_to": "https://global.jaxa.jp/press/2024/01/20240125-1_e.html"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [],
+   "notes": []
+  },
+  {
+   "id": "valves-leak-checked-after-vibration",
+   "name": "Pressure valves leak-checked after vibration",
+   "text": "Peregrine lost its landing when helium pressure control valve PCV2 failed to seal, most likely from vibration-initiated relaxation between threaded parts inside the valve.",
+   "from_mission": "Peregrine Mission One",
+   "year": 2024,
+   "checklist_item": "Propulsion pressure control valves leak-checked after vibration testing.",
+   "applies_to": [
+    "lander"
+   ],
+   "sources": [
+    {
+     "url": "https://www.astrobotic.com/wp-content/uploads/2024/08/PM1_Post-Mission-Report_Website.pdf",
+     "title": "Peregrine Mission 1 Post-Mission Report (August 2024)",
+     "publisher": "Astrobotic",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "text": "https://www.astrobotic.com/wp-content/uploads/2024/08/PM1_Post-Mission-Report_Website.pdf",
+    "from_mission": "https://www.astrobotic.com/wp-content/uploads/2024/08/PM1_Post-Mission-Report_Website.pdf",
+    "year": "https://www.astrobotic.com/wp-content/uploads/2024/08/PM1_Post-Mission-Report_Website.pdf",
+    "checklist_item": "https://www.astrobotic.com/wp-content/uploads/2024/08/PM1_Post-Mission-Report_Website.pdf",
+    "applies_to": "https://www.astrobotic.com/wp-content/uploads/2024/08/PM1_Post-Mission-Report_Website.pdf"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [],
+   "notes": []
+  }
+ ]
+}

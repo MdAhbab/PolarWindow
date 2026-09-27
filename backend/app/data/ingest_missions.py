@@ -86,8 +86,33 @@ NULLABLE_FIELDS: tuple[str, ...] = (
     "end_of_mission",
     "planned_surface_days",
 )
-#: "payloads" may also be listed: it means NASA counts more than it names.
-UNCONFIRMABLE = frozenset(NULLABLE_FIELDS) | {"payloads"}
+#: Schema v2 (ADR-10): the lifecycle facts. Each is null and listed, or
+#: carries its own source in ``field_sources``.
+NULLABLE_FIELDS_V2: tuple[str, ...] = (
+    "vehicle_id",
+    "pad_id",
+    "t0",
+    "transfer",
+    "descent",
+    "comms",
+    "spacecraft",
+    "returns",
+)
+#: Sub-fields of the v2 objects that may be null, listed as "transfer.flight_days".
+NESTED_NULLABLE: dict[str, tuple[str, ...]] = {
+    "transfer": ("flight_days", "lunar_orbit_days"),
+    "descent": ("sun_el_min_deg", "sun_el_max_deg", "earth_required"),
+    "comms": ("eirp_dbw", "gt_dbk"),
+    "spacecraft": ("mass_kg", "area_m2", "cr"),
+}
+#: "payloads" may also be listed: it means NASA counts more than it names;
+#: "rovers" likewise.
+UNCONFIRMABLE = (
+    frozenset(NULLABLE_FIELDS)
+    | frozenset(NULLABLE_FIELDS_V2)
+    | {"payloads", "rovers"}
+    | {f"{k}.{f}" for k, fs in NESTED_NULLABLE.items() for f in fs}
+)
 
 
 class MissionDataError(ValueError):
@@ -132,6 +157,39 @@ class EllipseIn(_Strict):
     source_url: str = Field(pattern=r"^https://\S+$")
 
 
+class TransferIn(_Strict):
+    type: Literal["direct", "phasing_loops", "low_energy", "unknown"]
+    flight_days: float | None = Field(default=None, gt=0)
+    lunar_orbit_days: float | None = Field(default=None, ge=0)
+
+
+class DescentIn(_Strict):
+    sun_el_min_deg: float | None = Field(default=None, ge=-5, le=90)
+    sun_el_max_deg: float | None = Field(default=None, ge=-5, le=90)
+    earth_required: bool | None = None
+
+
+class CommsIn(_Strict):
+    bands: list[str] = Field(default_factory=list)
+    eirp_dbw: float | None = None
+    gt_dbk: float | None = None
+    ground_stations: list[str] = Field(default_factory=list)
+    relays: list[str] = Field(default_factory=list)
+
+
+class SpacecraftIn(_Strict):
+    mass_kg: float | None = Field(default=None, gt=0)
+    area_m2: float | None = Field(default=None, gt=0)
+    cr: float | None = Field(default=None, ge=1.0, le=2.0)
+
+
+class RoverIn(_Strict):
+    id: str = Field(pattern=r"^[a-z0-9-]+/[a-z0-9-]+$")
+    name: str
+    organisation: str | None
+    source_url: str = Field(pattern=r"^https://\S+$")
+
+
 class PayloadIn(_Strict):
     id: str = Field(pattern=r"^[a-z0-9-]+/[a-z0-9-]+$")
     name: str
@@ -164,6 +222,19 @@ class MissionIn(_Strict):
     sources: list[SourceIn] = Field(min_length=1)
     unconfirmed_fields: list[str]
     notes: list[str] = Field(default_factory=list)
+    # --- schema v2 (ADR-10) ---------------------------------------------------
+    vehicle_id: str | None = None
+    pad_id: str | None = None
+    #: The published launch instant (T-0), to the minute or better.
+    t0: DateIn | None = None
+    transfer: TransferIn | None = None
+    descent: DescentIn | None = None
+    comms: CommsIn | None = None
+    spacecraft: SpacecraftIn | None = None
+    rovers: list[RoverIn] = Field(default_factory=list)
+    returns: Literal["none", "sample_capsule", "crew"] | None = None
+    #: v2 field -> the URL that states it (one of ``sources``).
+    field_sources: dict[str, str] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def _honest(self) -> MissionIn:
@@ -179,6 +250,31 @@ class MissionIn(_Strict):
                 raise ValueError(f"'{name}' is null but not listed in unconfirmed_fields")
             if value is not None and name in unconfirmed:
                 raise ValueError(f"'{name}' has a value but is listed as unconfirmed")
+        for name in NULLABLE_FIELDS_V2:
+            value = getattr(self, name)
+            if value is None and name not in unconfirmed:
+                raise ValueError(f"'{name}' is null but not listed in unconfirmed_fields")
+            if value is not None and name in unconfirmed:
+                raise ValueError(f"'{name}' has a value but is listed as unconfirmed")
+            if value is not None and name not in self.field_sources:
+                raise ValueError(f"'{name}' has a value but no entry in field_sources")
+            if value is not None and name in NESTED_NULLABLE:
+                for sub in NESTED_NULLABLE[name]:
+                    dotted = f"{name}.{sub}"
+                    if getattr(value, sub) is None and dotted not in unconfirmed:
+                        raise ValueError(f"'{dotted}' is null but not listed in unconfirmed_fields")
+                    if getattr(value, sub) is not None and dotted in unconfirmed:
+                        raise ValueError(f"'{dotted}' has a value but is listed as unconfirmed")
+        if self.t0 is not None and self.t0.precision != "minute":
+            raise ValueError("t0 is a launch instant: its precision must be 'minute'")
+        if self.rovers and "rovers" not in self.field_sources:
+            raise ValueError("'rovers' has entries but no entry in field_sources")
+        urls = {s.url for s in self.sources}
+        for f, url in self.field_sources.items():
+            if f not in (*NULLABLE_FIELDS_V2, "rovers"):
+                raise ValueError(f"field_sources names '{f}', which is not a v2 field")
+            if url not in urls:
+                raise ValueError(f"field_sources['{f}'] is not one of the mission's sources")
         ids = [p.id for p in self.payloads]
         if len(ids) != len(set(ids)):
             raise ValueError("payload ids are not unique")
@@ -189,7 +285,7 @@ class MissionIn(_Strict):
 
 
 class MissionFile(_Strict):
-    schema_version: Literal[1]
+    schema_version: Literal[1, 2]
     compiled: date
     about: str
     missions: list[MissionIn] = Field(min_length=1)
@@ -222,7 +318,7 @@ def load(path: Path) -> MissionFile:
     except (OSError, json.JSONDecodeError) as exc:
         raise MissionDataError(f"cannot read {path}: {exc}") from exc
     try:
-        return MissionFile.model_validate(raw)
+        mf = MissionFile.model_validate(raw)
     except ValidationError as exc:
         lines = []
         for err in exc.errors():
@@ -237,6 +333,42 @@ def load(path: Path) -> MissionFile:
         raise MissionDataError(
             f"{path} failed validation; nothing was loaded:\n" + "\n".join(lines)
         ) from exc
+    bad = catalogue_problems(mf)
+    if bad:
+        raise MissionDataError(
+            f"{path} names catalogue records that do not exist; nothing was loaded:\n"
+            + "\n".join(f"  {b}" for b in bad)
+        )
+    return mf
+
+
+def catalogue_problems(mf: MissionFile) -> list[str]:
+    """v2 references to pads, vehicles, stations and relays that the catalogues lack."""
+    from app.data import catalogues
+
+    out: list[str] = []
+    ids: dict[str, set[str] | None] = {}
+    for name in ("vehicles", "launch_sites", "ground_stations", "relays"):
+        try:
+            ids[name] = set(catalogues.load(name).ids())
+        except catalogues.CatalogueError:
+            ids[name] = None
+    for m in mf.missions:
+        checks: list[tuple[str, str]] = []
+        if m.vehicle_id:
+            checks.append(("vehicles", m.vehicle_id))
+        if m.pad_id:
+            checks.append(("launch_sites", m.pad_id))
+        if m.comms:
+            checks += [("ground_stations", g) for g in m.comms.ground_stations]
+            checks += [("relays", r) for r in m.comms.relays]
+        for cat, rid in checks:
+            known = ids[cat]
+            if known is None:
+                out.append(f"mission '{m.id}': catalogue {cat} is missing or invalid")
+            elif rid not in known:
+                out.append(f"mission '{m.id}': no {cat} record '{rid}'")
+    return out
 
 
 def data_version(m: MissionIn) -> str:
@@ -386,6 +518,23 @@ def mission_row(m: MissionIn) -> dict[str, Any]:
         "unconfirmed_fields": list(m.unconfirmed_fields),
         "notes": list(m.notes),
         "data_version": data_version(m),
+        "lifecycle": lifecycle_of(m),
+    }
+
+
+def lifecycle_of(m: MissionIn) -> dict[str, Any]:
+    """The v2 facts as stored: every field, with the URL that states it."""
+    return {
+        "vehicle_id": m.vehicle_id,
+        "pad_id": m.pad_id,
+        "t0": m.t0.model_dump(mode="json") if m.t0 else None,
+        "transfer": m.transfer.model_dump(mode="json") if m.transfer else None,
+        "descent": m.descent.model_dump(mode="json") if m.descent else None,
+        "comms": m.comms.model_dump(mode="json") if m.comms else None,
+        "spacecraft": m.spacecraft.model_dump(mode="json") if m.spacecraft else None,
+        "rovers": [r.model_dump(mode="json") for r in m.rovers],
+        "returns": m.returns,
+        "field_sources": dict(m.field_sources),
     }
 
 

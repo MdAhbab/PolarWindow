@@ -2735,6 +2735,63 @@
         ],
         "title": "Cleared"
       },
+      "Comms": {
+        "properties": {
+          "bands": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Bands"
+          },
+          "eirp_dbw": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eirp Dbw"
+          },
+          "gt_dbk": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gt Dbk"
+          },
+          "ground_stations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Ground Stations"
+          },
+          "relays": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Relays"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bands",
+          "eirp_dbw",
+          "gt_dbk",
+          "ground_stations",
+          "relays"
+        ],
+        "title": "Comms"
+      },
       "CompareItem": {
         "properties": {
           "site_id": {
@@ -3081,6 +3138,51 @@
           "product"
         ],
         "title": "DemHealth"
+      },
+      "Descent": {
+        "properties": {
+          "sun_el_min_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sun El Min Deg"
+          },
+          "sun_el_max_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sun El Max Deg"
+          },
+          "earth_required": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Earth Required"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sun_el_min_deg",
+          "sun_el_max_deg",
+          "earth_required"
+        ],
+        "title": "Descent"
       },
       "ExplainRequest": {
         "properties": {
@@ -4286,6 +4388,17 @@
               }
             ]
           },
+          "lifecycle": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MissionLifecycle"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Launch, trip, radio and return facts (schema v2)."
+          },
           "meta": {
             "$ref": "#/components/schemas/Meta"
           }
@@ -4324,6 +4437,154 @@
           "meta"
         ],
         "title": "MissionDetail"
+      },
+      "MissionLifecycle": {
+        "properties": {
+          "vehicle_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vehicle Id"
+          },
+          "vehicle_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vehicle Name",
+            "description": "The launch vehicle's name, from the catalogue."
+          },
+          "pad_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pad Id"
+          },
+          "pad_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pad Name"
+          },
+          "t0": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublishedDate"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The published launch instant."
+          },
+          "transfer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Transfer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "descent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Descent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "comms": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Comms"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "spacecraft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Spacecraft"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rovers": {
+            "items": {
+              "$ref": "#/components/schemas/Rover"
+            },
+            "type": "array",
+            "title": "Rovers"
+          },
+          "returns": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "sample_capsule",
+                  "crew"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Returns"
+          },
+          "field_sources": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Field Sources"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "vehicle_id",
+          "vehicle_name",
+          "pad_id",
+          "pad_name",
+          "t0",
+          "transfer",
+          "descent",
+          "comms",
+          "spacecraft",
+          "rovers",
+          "returns",
+          "field_sources"
+        ],
+        "title": "MissionLifecycle",
+        "description": "Schema v2 facts (ADR-10); each non-null field has its URL in ``field_sources``."
       },
       "MissionList": {
         "properties": {
@@ -4800,6 +5061,42 @@
         ],
         "title": "Resolution",
         "description": "What this answer was computed at."
+      },
+      "Rover": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "organisation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organisation"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "organisation",
+          "source_url"
+        ],
+        "title": "Rover"
       },
       "SessionOut": {
         "properties": {
@@ -5295,6 +5592,51 @@
         ],
         "title": "Source"
       },
+      "Spacecraft": {
+        "properties": {
+          "mass_kg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mass Kg"
+          },
+          "area_m2": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Area M2"
+          },
+          "cr": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cr"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mass_kg",
+          "area_m2",
+          "cr"
+        ],
+        "title": "Spacecraft"
+      },
       "SurfaceWindow": {
         "properties": {
           "start": {
@@ -5559,6 +5901,50 @@
         ],
         "title": "ToolCallView",
         "description": "One tool call, as shown in the demo's run log."
+      },
+      "Transfer": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "direct",
+              "phasing_loops",
+              "low_energy",
+              "unknown"
+            ],
+            "title": "Type"
+          },
+          "flight_days": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flight Days"
+          },
+          "lunar_orbit_days": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lunar Orbit Days"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "flight_days",
+          "lunar_orbit_days"
+        ],
+        "title": "Transfer"
       },
       "Unavailable": {
         "properties": {

@@ -312,6 +312,9 @@ class Mission(Base):
     unconfirmed_fields: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     notes: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     data_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    #: Schema v2 facts (ADR-10): vehicle, pad, T-0, transfer, descent, radio,
+    #: spacecraft, rovers, return, and the URL each came from.
+    lifecycle: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
@@ -579,4 +582,171 @@ class Job(Base):
             postgresql_where=text("status IN ('queued', 'running')"),
         ),
         Index("ix_jobs_claim", "status", "priority", "run_after"),
+    )
+
+
+# ---------------------------------------------------------------------------
+# The project manager's records (ADR-17). Every change also writes audit_log.
+# ---------------------------------------------------------------------------
+
+
+class ReadinessItem(Base):
+    """A readiness item as entered. Items prefilled from the mission record are
+    virtual until someone changes one; the first change stores it here."""
+
+    __tablename__ = "readiness_items"
+
+    id: Mapped[str] = mapped_column(String(160), primary_key=True)
+    mission_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    kind: Mapped[str] = mapped_column(String(24), nullable=False)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    organisation: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    state: Mapped[str] = mapped_column(String(24), nullable=False)
+    blocked_from: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    blocked_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    changed_on: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    changed_by: Mapped[str | None] = mapped_column(String(250), nullable=True)
+    evidence_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source: Mapped[str] = mapped_column(String(12), nullable=False)
+    tests: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    position: Mapped[int] = mapped_column(Integer, nullable=False, default=1000)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class Milestone(Base):
+    __tablename__ = "milestones"
+
+    id: Mapped[str] = mapped_column(String(160), primary_key=True)
+    mission_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    on_date: Mapped[str] = mapped_column(String(32), nullable=False)
+    done: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    source_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    entered_by: Mapped[str] = mapped_column(String(250), nullable=False)
+    entered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class Part(Base):
+    __tablename__ = "parts"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    mission_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    part_number: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    serial: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    parent_item_id: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    location: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    changed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    changed_by: Mapped[str] = mapped_column(String(250), nullable=False)
+
+
+class RiskRecord(Base):
+    __tablename__ = "risks"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    mission_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(300), nullable=False)
+    cause: Mapped[str] = mapped_column(Text, nullable=False)
+    consequence_text: Mapped[str] = mapped_column(Text, nullable=False)
+    scale_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    ratings: Mapped[list[Any]] = mapped_column(JSONB, nullable=False)
+    trend: Mapped[str] = mapped_column(String(12), nullable=False)
+    owner: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    mitigation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    links: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    changed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    changed_by: Mapped[str] = mapped_column(String(250), nullable=False)
+
+
+class LessonAdoption(Base):
+    __tablename__ = "lesson_adoptions"
+
+    mission_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    lesson_id: Mapped[str] = mapped_column(String(120), primary_key=True)
+    item_id: Mapped[str] = mapped_column(String(160), nullable=False)
+    adopted_by: Mapped[str] = mapped_column(String(250), nullable=False)
+    adopted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class PmParameter(Base):
+    """A value the project sets: a battery limit, the landing Sun band, a sea limit."""
+
+    __tablename__ = "pm_parameters"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[float] = mapped_column(Float, nullable=False)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    changed_by: Mapped[str] = mapped_column(String(250), nullable=False)
+    changed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class ContactBooking(Base):
+    __tablename__ = "contact_bookings"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    mission_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    station: Mapped[str] = mapped_column(String(64), nullable=False)
+    start: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    entered_by: Mapped[str] = mapped_column(String(250), nullable=False)
+    entered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class OfficialForecast(Base):
+    """The 45th Weather Squadron's (or another range's) forecast, entered with its PDF."""
+
+    __tablename__ = "official_forecasts"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    mission_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    probability_pct: Mapped[float] = mapped_column(Float, nullable=False)
+    concerns: Mapped[list[Any]] = mapped_column(JSONB, nullable=False)
+    pdf_url: Mapped[str] = mapped_column(Text, nullable=False)
+    entered_by: Mapped[str] = mapped_column(String(250), nullable=False)
+    entered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class VehicleLimit(Base):
+    """A weather limit the vehicle maker does not publish, entered by the team."""
+
+    __tablename__ = "vehicle_limits"
+
+    vehicle_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    rule_id: Mapped[str] = mapped_column(String(120), primary_key=True)
+    value: Mapped[float] = mapped_column(Float, nullable=False)
+    unit: Mapped[str] = mapped_column(String(24), nullable=False)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    entered_by: Mapped[str] = mapped_column(String(250), nullable=False)
+    entered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class ReturnLimits(Base):
+    __tablename__ = "return_limits"
+
+    mission_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    booster: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    capsule: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    entered_by: Mapped[str] = mapped_column(String(250), nullable=False)
+    entered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )

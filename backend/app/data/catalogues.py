@@ -75,9 +75,14 @@ class CitedRecord(_Strict):
     unconfirmed_fields: list[str] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
 
+    #: This project's own classification of a record (explained in the file's
+    #: ``about``), not a fact attributed to a source.
+    CLASSIFICATION: ClassVar[frozenset[str]] = frozenset()
+
     @model_validator(mode="after")
     def _honest(self) -> CitedRecord:
-        data = [f for f in type(self).model_fields if f not in self.IDENTITY]
+        skip = self.IDENTITY | self.CLASSIFICATION
+        data = [f for f in type(self).model_fields if f not in skip]
         urls = {s.url for s in self.sources}
         listed = set(self.unconfirmed_fields)
         named = set(self.field_sources) | set(self.assumed_fields) | listed
@@ -87,9 +92,12 @@ class CitedRecord(_Strict):
         both = set(self.field_sources) & set(self.assumed_fields)
         if both:
             raise ValueError(f"fields both published and assumed: {sorted(both)}")
+        na = self.not_applicable()
         for f in data:
             value = getattr(self, f)
             empty = value is None or value == [] or value == {}
+            if empty and f in na:
+                continue
             if empty and f not in listed:
                 raise ValueError(f"'{f}' is empty but not listed in unconfirmed_fields")
             if not empty and f in listed:
@@ -102,6 +110,10 @@ class CitedRecord(_Strict):
                     f"field_sources['{f}'] = {url} is not one of this record's sources"
                 )
         return self
+
+    def not_applicable(self) -> set[str]:
+        """Fields that are empty because they do not apply to this record (not unknown)."""
+        return set()
 
     def provenance(self, f: str) -> tuple[str, str | None]:
         """("published", url) | ("assumed", reason) | ("unconfirmed", None)."""
@@ -173,7 +185,18 @@ class GroundStation(CitedRecord):
 
 
 class Relay(CitedRecord):
+    #: ``relay``: meant to relay for landers. ``validation_only``: a real
+    #: orbiter used to check the pass calculation; never called a relay.
+    role: Literal["relay", "validation_only"]
     operator: str | None
+    #: NAIF id, for orbiters whose trajectory JPL Horizons serves.
+    naif_id: int | None
+
+    CLASSIFICATION: ClassVar[frozenset[str]] = frozenset({"role"})
+
+    def not_applicable(self) -> set[str]:
+        return {"naif_id"} if self.role == "relay" and self.status != "operating" else set()
+
     status: Literal["operating", "planned", "not_launched", "launched_not_operating"]
     launch_note: str | None
     #: Published nominal orbit (lunar, Moon-centred), if any.
@@ -199,12 +222,25 @@ class RecoveryZone(CitedRecord):
 class LandingAttempt(CitedRecord):
     mission: str
     agency: str
+    commercial: bool
+    #: The company that built and flew the lander, for commercial missions.
     provider: str | None
     date: date
     outcome: Literal["landed_working", "landed_tipped_or_partial", "failed"]
     cause: str | None
     clps: bool
+    #: This product's mission id, for CLPS missions in data/missions.json.
     mission_id: str | None
+
+    def not_applicable(self) -> set[str]:
+        na = set()
+        if self.outcome == "landed_working":
+            na.add("cause")
+        if not self.clps:
+            na.add("mission_id")
+        if not self.commercial:
+            na.add("provider")
+        return na
 
 
 class Lesson(CitedRecord):
