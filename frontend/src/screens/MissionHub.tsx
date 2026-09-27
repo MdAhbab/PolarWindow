@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { lazy, Suspense, useEffect, useRef } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useMission as useMissionQuery } from '../lib/api/queries'
 import { useSections } from '../lib/api/lifecycleQueries'
@@ -9,11 +9,16 @@ import { JourneyBar, SECTIONS } from '../components/lifecycle/JourneyBar'
 import { LoadingPanel, ProblemPanel } from '../components/States'
 import { LandingSection, initialWindow } from './MissionDetailScreen'
 import { useMission as useStore } from '../lib/store'
-import { ReadySection } from './sections/ReadySection'
-import { LaunchSection } from './sections/LaunchSection'
-import { TripSection } from './sections/TripSection'
-import { ContactSection } from './sections/ContactSection'
-import { ReturnSection } from './sections/ReturnSection'
+
+/**
+ * The five new steps load when first opened, so the mission list and Landing
+ * (the demo path) download none of their charts and forms.
+ */
+const ReadySection = lazy(() => import('./sections/ReadySection').then((m) => ({ default: m.ReadySection })))
+const LaunchSection = lazy(() => import('./sections/LaunchSection').then((m) => ({ default: m.LaunchSection })))
+const TripSection = lazy(() => import('./sections/TripSection').then((m) => ({ default: m.TripSection })))
+const ContactSection = lazy(() => import('./sections/ContactSection').then((m) => ({ default: m.ContactSection })))
+const ReturnSection = lazy(() => import('./sections/ReturnSection').then((m) => ({ default: m.ReturnSection })))
 
 const IDS = new Set<string>(SECTIONS.map((s) => s.id))
 
@@ -105,11 +110,13 @@ export function MissionHub() {
       />
       <div className="flex min-w-0 grow flex-col pt-1">
         {section === 'landing' && <LandingSection mission={m} />}
-        {section === 'ready' && <ReadySection mission={m} />}
-        {section === 'launch' && <LaunchSection mission={m} />}
-        {section === 'trip' && <TripSection mission={m} />}
-        {section === 'contact' && <ContactSection mission={m} />}
-        {section === 'return' && <ReturnSection mission={m} />}
+        <Suspense fallback={<div className="h-8 w-2/3 max-w-xl bg-inset" aria-hidden="true" />}>
+          {section === 'ready' && <ReadySection mission={m} />}
+          {section === 'launch' && <LaunchSection mission={m} />}
+          {section === 'trip' && <TripSection mission={m} />}
+          {section === 'contact' && <ContactSection mission={m} />}
+          {section === 'return' && <ReturnSection mission={m} />}
+        </Suspense>
       </div>
     </div>
   )
