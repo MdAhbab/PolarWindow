@@ -629,7 +629,10 @@ async def run(ctx: JobContext) -> HandlerResult:
             (
                 "Flight",
                 "Direct transfers of 3.5 to 6.5 days to a 100 km lunar orbit (assumed); the "
-                "Moon is a point mass during the design, which moves the arrival by metres.",
+                "Moon is a point mass during the design, which moves the arrival by metres. "
+                "Phasing loops (as Blue Ghost 1 flew) are designed only for the validation, "
+                "since no planned mission has published one; low-energy transfers are not "
+                "modelled.",
             ),
             (
                 "Landing times",
