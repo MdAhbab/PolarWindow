@@ -101,6 +101,8 @@ test-geo: ## Golden tests against the real kernels and DEM
 validate-trip: ## Propagator and shadows against NASA's reconstructed trajectories (prints the docs/validation.md table)
 	cd $(BE) && $(UV) run pytest app/tests/golden/test_propagate_vs_clps.py app/tests/golden/test_eclipse_vs_spice.py -q
 	cd $(BE) && $(UV) run python -m app.tests.golden.validate_trip
+	cd $(BE) && $(UV) run pytest app/tests/golden/test_launch_vs_clps.py -q
+	cd $(BE) && $(UV) run python -m app.tests.golden.validate_launch 2>/dev/null
 
 test-fe: ## Frontend units: the adapter, the cache keys, the exports
 	cd $(FE) && npm test --silent

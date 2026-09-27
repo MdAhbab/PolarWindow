@@ -116,3 +116,72 @@ over five orbits (under 1 mm), the J2 nodal drift against the textbook rate
 (within 2 %), forward-and-back in a 100 km lunar orbit with a lumpy field and
 sunlight pressure (under 1 m; measured 0.2–0.9 mm), and the same trip about
 the Earth and about the Moon (under 1 m).
+
+# Launch instants and direct transfers against the flown launches (plan D1, C2, D2)
+
+`make validate-trip` prints this table (`app/tests/golden/validate_launch.py`;
+the acceptance is pinned in `test_launch_vs_clps.py`). Each Falcon 9 lunar
+launch is predicted with its own flight left out of the vehicle's climb.
+
+| Mission | Published liftoff | From its TLI | Designed (due east) | Coast designed / flown | TLI speed designed / flown | Flight designed / flown |
+|---|---|---|---|---|---|---|
+| im-1 | 2024-02-15T06:05:37Z | +15 s | +9.8 min | 41.3 / 42.0 min | 3134 / 3135 m/s | 6.32 / 6.33 d |
+| blue-ghost-m1 | 2025-01-15T06:11:39Z | -11 s | phasing loops (C3) | 59.0 min | 3119 m/s | 29.78 d |
+| im-2 | 2025-02-27T00:16:30Z | -4 s | +43.8 min | 34.6 / 36.9 min | 3125 / 3126 m/s | 4.45 / 4.48 d |
+
+**How a climb is described.** From the first reconstructed state after TLI
+the trajectory is propagated back to its perigee, where TLI fired. That gives
+the TLI time and point, the parking orbit's radius (6,570 to 6,598 km for Falcon 9) and
+the *climb constant* `c`: the angle a climb falls behind a circular orbit that
+started at the pad at liftoff, `u(pad → TLI point) − n·(t_TLI − T0)`. For
+Falcon 9 it is −18.2° (IM-1), −17.5° (IM-2) and −17.1° (Blue Ghost), although
+the coasts differ (42, 37 and 59 min) and Blue Ghost's orbit was inclined 35°.
+Vulcan's one flight (Peregrine) gives −26.1° and cannot be checked against
+another.
+
+**From its TLI** (plan: 2 min for IM-1 and IM-2, 5 min for Blue Ghost). The
+liftoff solved from the flown TLI and the other two flights' mean `c` lands
+15, 4 and 11 s from the published one. One degree of `c` moves the liftoff by
+15.5 s, so the spread of `c` (1.1°) is what sets this. The plan's first
+formulation, the instant the pad crosses the flown orbit's plane, is ill
+conditioned for these launches: all three flew close to due east, so the pad
+grazes the plane (IM-1's orbit was inclined 0.04° more than the pad's
+latitude, IM-2's 0.10° *less*, which only a turn at TLI allows), and a few
+hundredths of a degree move the crossing by ten minutes or more.
+
+**Designed** (plan: the right day, and within 10 min). Given only the pad,
+the other flights' climb and NASA's arrival at the Moon (time, closest
+approach, inclination to the Moon's equator), the design assumes a due-east
+climb and corrects three things in the force model (Sun, Moon, Earth J2–J6;
+the Moon a point mass): the liftoff time, which turns the parking orbit's
+plane with the Earth; the coast, which moves the TLI point along it; and the
+speed TLI adds. It converges in 3–4 steps to under 0.1 km in the B-plane and
+1 s in time. The coast, TLI speed and flight time it needs agree with the
+flown ones (within 2.3 min, 2 m/s and 0.03 d), so the transfer itself is
+right; the liftoff is right to the day but lands 9.8 min (IM-1, inside the
+plan's 10 min) and 43.8 min (IM-2, outside it) after the real one. The
+difference is the climb's direction: a due-east climb is the assumption, and
+IM-2's orbit shows it did not fly exactly that. The calendar therefore gives
+a designed liftoff ± 44 min, the larger of the two misses, and says so.
+Keeping the TLI point fixed and steering with a sideways push at TLI instead
+was tried first and fails: for a transfer of nearly 180° the push barely
+moves the arrival, and the correction found answers about 100 to 190 m/s from the
+flown TLI.
+
+**Backed out from the landing** (plan D2: flown landings inside the
+landing rule; flown launch days inside the calendar). With no Sun-height band
+entered, the rule is: the Sun's centre above the skyline and rising, and the
+Earth up. IM-1's, IM-2's and Blue Ghost's landings all fall inside it
+(`test_launch.py`). Designing the calendar as if IM-1 and IM-2 had not flown
+(own flight left out of the climb, the other Nova-C's time in lunar orbit)
+puts a launch opportunity on each one's real launch day (`test_launch.py`).
+The lunar orbit's plane passing over the landing spot (plan L4) is not
+checked: near the poles the lighting decides.
+
+**Not yet done.** Phasing-loop transfers (Blue Ghost, C3) are not designed;
+correction burns and dispersions (C4) are not worked out; the vehicle's
+azimuth limits are not applied, because the design flies due east, inside
+the Eastern Range's assumed 35–120°. Coasts longer than any flown one are
+accepted up to 120 min and flagged: with the Moon south of the equator a
+due-east climb reaches the TLI point only after most of an orbit, and upper
+stage coast limits are not published.
