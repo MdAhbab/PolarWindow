@@ -228,3 +228,22 @@ async def test_sections_are_six_in_order_and_never_a_verdict(anon_client) -> Non
     im2 = (await anon_client.get(f"{API}/missions/im-2/sections")).json()["data"]
     assert im2[1]["state"] == "available" and "27 Feb 2025 00:16 UTC" in im2[1]["summary"]
     assert (await anon_client.get(f"{API}/missions/nope/sections")).status_code == 404
+
+
+async def test_a_section_with_a_stored_job_carries_its_time(anon_client) -> None:
+    from app.services import job_service
+
+    async with session_scope() as s:
+        await s.execute(text("DELETE FROM jobs WHERE kind = 'trip' AND mission_id = 'im-2'"))
+        await job_service.answer_or_enqueue(
+            s, kind="trip", closure="traj-1", params={"regression": 1}, mission_id="im-2"
+        )
+    try:
+        r = await anon_client.get(f"{API}/missions/im-2/sections")
+        assert r.status_code == 200, r.text
+        trip = {x["section"]: x for x in r.json()["data"]}["trip"]
+        assert trip["state"] in ("computing", "available")
+        assert isinstance(trip["as_of"], str) and trip["as_of"][:2] == "20"
+    finally:
+        async with session_scope() as s:
+            await s.execute(text("DELETE FROM jobs WHERE kind = 'trip' AND mission_id = 'im-2'"))

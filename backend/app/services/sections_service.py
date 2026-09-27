@@ -97,13 +97,13 @@ async def _stored(
     row = (
         await session.execute(
             text(
-                "SELECT status, coalesce(finished_at, created_at) AS t FROM jobs "
+                "SELECT status, coalesce(finished_at, created_at) AS last_at FROM jobs "
                 "WHERE kind = :k AND mission_id = :m ORDER BY id DESC LIMIT 1"
             ),
             {"k": kind, "m": mission_id},
         )
     ).one_or_none()
-    return None if row is None else (str(row.status), row.t)
+    return None if row is None else (str(row.status), row.last_at)
 
 
 async def sections(session: AsyncSession, mission_id: str) -> dict[str, Any]:
