@@ -10,7 +10,7 @@ FE    := frontend
 DATA  := data
 
 .DEFAULT_GOAL := help
-.PHONY: missions test-db help install kernels dem sites seed tiles services db-up migrate dev api worker \
+.PHONY: missions validate-trip test-db help install kernels dem sites seed tiles services db-up migrate dev api worker \
         compute feeds feeds-once catalogues \
         frontend test test-fast test-int test-geo lint fmt typecheck contracts \
         golden-update openapi codegen clean nuke check
@@ -97,6 +97,10 @@ test-int: ## Integration and agent tests
 
 test-geo: ## Golden tests against the real kernels and DEM
 	cd $(BE) && $(UV) run pytest app/tests/golden -q
+
+validate-trip: ## Propagator and shadows against NASA's reconstructed trajectories (prints the docs/validation.md table)
+	cd $(BE) && $(UV) run pytest app/tests/golden/test_propagate_vs_clps.py app/tests/golden/test_eclipse_vs_spice.py -q
+	cd $(BE) && $(UV) run python -m app.tests.golden.validate_trip
 
 test-fe: ## Frontend units: the adapter, the cache keys, the exports
 	cd $(FE) && npm test --silent

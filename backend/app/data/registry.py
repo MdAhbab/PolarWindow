@@ -251,6 +251,24 @@ _SPECIFIC: Final[tuple[Dataset, ...]] = (
         min_bytes=800_000,
     ),
     Dataset(
+        id="lro:spk_2025074_2025166",
+        title="LRO reconstructed orbit, March to June 2025 (LRO SPICE archive)",
+        provider="NASA JPL NAIF / PDS",
+        tier="validation",
+        method="file",
+        urls=(
+            "https://naif.jpl.nasa.gov/pub/naif/pds/data/lro-l-spice-6-v1.0/lrosp_1000/data/"
+            "spk/lrorg_2025074_2025166_v01.bsp",
+        ),
+        dest="validation/lro/lrorg_2025074_2025166_v01.bsp",
+        size_bytes=7_742_464,
+        sha256="f1b8fb3ff5a43c1582daa40dfc8615ae097302d9a724163ecef4da5bef2e33a0",
+        used_for="Checks the trip calculation in low lunar orbit against where the Lunar "
+        "Reconnaissance Orbiter actually flew.",
+        licence="US government work (public domain)",
+        min_bytes=7_000_000,
+    ),
+    Dataset(
         id="dsn:810-005-301",
         title="DSN Telecommunications Link Design Handbook 810-005, module 301 (coverage and "
         "geometry, antenna horizon masks)",

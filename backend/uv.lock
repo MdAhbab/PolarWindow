@@ -655,6 +655,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "pyjwt" },
+    { name = "pymsis" },
     { name = "pyproj" },
     { name = "redis" },
     { name = "scipy" },
@@ -700,6 +701,7 @@ requires-dist = [
     { name = "pydantic", specifier = "==2.13.5" },
     { name = "pydantic-settings", specifier = "==2.7.0" },
     { name = "pyjwt", specifier = ">=2.10" },
+    { name = "pymsis", specifier = "==0.13.0" },
     { name = "pyproj", specifier = "==3.7.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = "==8.3.4" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = "==0.25.0" },
@@ -812,6 +814,22 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/02/a5/5197bfd06417837ac079921c66fa6393f1dea3557272a263cebfef69e432/pyjwt-2.15.0.tar.gz", hash = "sha256:b11c5f9791d7bf51c2b39a81ed669f6b2dbbd669df2942f6c60167e9e3d1abe4", size = 120513, upload-time = "2026-09-23T16:56:00.689Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e8/55/40e45bf052ee8ee12a4dfd785519660f8effa7b065442b91646ec6828619/pyjwt-2.15.0-py3-none-any.whl", hash = "sha256:7a3742debf6b879e912dbb9819ceec1594be812452b78c5f2e2dfc56564954f8", size = 33680, upload-time = "2026-09-23T16:55:59.241Z" },
+]
+
+[[package]]
+name = "pymsis"
+version = "0.13.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/50/cc/87586c8e0d8ee3c90d92b4e86bbf7a5f5156f3f2ae3e44a13571fc497bf2/pymsis-0.13.0.tar.gz", hash = "sha256:8c3bd36fa188361a5caa92ae054e9f0a93b8a5de6935e201c312d9d0fdbbbe70", size = 141334, upload-time = "2026-09-08T23:21:56.069Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c5/8b/4c619a046eb85692acefa96240e9b29a665d069ccdc77dfaa590e07680e2/pymsis-0.13.0-cp312-cp312-macosx_15_0_arm64.whl", hash = "sha256:65b147ada4e39fe6e3c330ec12dc3341009cf26ef31c8486c48c53f4854fffb7", size = 988540, upload-time = "2026-09-08T23:21:10.821Z" },
+    { url = "https://files.pythonhosted.org/packages/90/2e/e655a07c4d6c156e9877de7ec9559f8cda9b40111b20af5776b3e7410596/pymsis-0.13.0-cp312-cp312-macosx_15_0_x86_64.whl", hash = "sha256:deeef31d1c7dcd942a56e05d2da393e7cb76be94152df7c038fcb8f02760f4a8", size = 1612959, upload-time = "2026-09-08T23:21:12.154Z" },
+    { url = "https://files.pythonhosted.org/packages/10/67/7520cbe532932ffa7e1bc57ecfcf45f530651f1afc1fb6b8465691a14d11/pymsis-0.13.0-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:3e7c7c169ec441e6920564e526dd4cf984f383b1e0672c3c4ad41cf4d2cf30b1", size = 737673, upload-time = "2026-09-08T23:21:13.558Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/37/d42cd57f947dcb3c7bbe7b0a2148b31ed37d832f000dd5b6a81ef34231f8/pymsis-0.13.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:f58eb21787ef9e9585d1987c5f494d4e9f83a96e2daa0b47f705d76628135925", size = 1313559, upload-time = "2026-09-08T23:21:15.236Z" },
+    { url = "https://files.pythonhosted.org/packages/8a/34/b93e802d0b365d69f7f5bf898ebb99cac6de9ebf488b57651467632f084c/pymsis-0.13.0-cp312-cp312-win_amd64.whl", hash = "sha256:1cb7b877b3d8ef7723f44ef14b4c07ed483eda5c27bbeebb0a9cd2535251c8d3", size = 1233933, upload-time = "2026-09-08T23:21:16.628Z" },
 ]
 
 [[package]]

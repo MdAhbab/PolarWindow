@@ -127,6 +127,18 @@ def _grad(
     return gx, gy, gz
 
 
+@njit(cache=True)  # type: ignore[misc]
+def nonspherical(
+    x: float, y: float, z: float, c: FloatArray, s: FloatArray, gm: float, radius: float, nmax: int
+) -> tuple[float, float, float]:
+    """The non-spherical part of the acceleration (m/s^2), body-fixed; callable from numba."""
+    if nmax < 2:
+        return 0.0, 0.0, 0.0
+    gx, gy, gz = _grad(x, y, z, c, s, radius, nmax, H_M)
+    k = gm / radius
+    return k * gx, k * gy, k * gz
+
+
 def acceleration(field: Field, r_bf: FloatArray, *, include_central: bool = True) -> FloatArray:
     """Gravitational acceleration (m/s^2) at a body-fixed position (m)."""
     x, y, z = (float(v) for v in r_bf)
