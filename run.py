@@ -25,6 +25,8 @@ from pathlib import Path
 # Base Paths
 ROOT_DIR = Path(__file__).resolve().parent
 BE_DIR = ROOT_DIR / "backend"
+#: Compute worker processes (each works out one job at a time).
+COMPUTE_WORKERS = int(os.environ.get("POLAR_COMPUTE_WORKERS", "2"))
 FE_DIR = ROOT_DIR / "frontend"
 LOCAL_DIR = ROOT_DIR / ".local"
 PGDATA_DIR = LOCAL_DIR / "pgdata"
@@ -329,8 +331,13 @@ class Stack:
         self._spawn("backend", cmd, BE_DIR, CYAN)
 
     def start_compute(self) -> None:
-        log("RUN", CYAN, "Starting the compute worker (trip, contact and launch answers)...")
-        self._spawn("compute", ["uv", "run", "python", "-m", "app.workers.compute"], BE_DIR, CYAN)
+        # Jobs are claimed with SKIP LOCKED, so workers never take the same one; two let a
+        # long launch calendar and a contact answer be worked out side by side.
+        log("RUN", CYAN, f"Starting {COMPUTE_WORKERS} compute workers "
+            "(trip, contact and launch answers)...")
+        for i in range(1, COMPUTE_WORKERS + 1):
+            self._spawn(f"compute-{i}", ["uv", "run", "python", "-m", "app.workers.compute"],
+                        BE_DIR, CYAN)
 
     def start_feeds(self) -> None:
         log("RUN", CYAN, "Starting the feeds worker (weather, space weather, DSN Now)...")
@@ -366,8 +373,10 @@ class Stack:
             log("DATA", YELLOW, f"Restarting the backend so it uses {why}...")
             self._stop(self.procs["backend"])
             self.start_backend()
-            if "compute" in self.procs:
-                self._stop(self.procs["compute"])
+            workers = [n for n in self.procs if n.startswith("compute")]
+            for n in workers:
+                self._stop(self.procs.pop(n))
+            if workers:
                 self.start_compute()
         finally:
             self.restarting.clear()

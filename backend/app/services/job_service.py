@@ -53,10 +53,18 @@ class Answer:
     job: dict[str, Any] | None
 
 
-def job_ref(job: JobRecord, now: datetime | None = None) -> dict[str, Any]:
-    """The contract's ``JobRef`` (+ ``assessment_id`` once done)."""
+def job_ref(
+    job: JobRecord, now: datetime | None = None, ahead: int | None = None
+) -> dict[str, Any]:
+    """The contract's ``JobRef`` (+ ``assessment_id`` once done). ``ahead``: queued jobs a
+    worker takes first, said in the message so a wait has a reason."""
     now = now or datetime.now(UTC)
     message = job.message
+    if job.status == "queued" and ahead:
+        message = (
+            f"Waiting for a compute worker; {ahead} "
+            f"{'answer is' if ahead == 1 else 'answers are'} being worked out first."
+        )
     if job.status == "queued" and (now - job.created_at).total_seconds() > STUCK_AFTER_S:
         message = (
             "Still waiting for a compute worker. If this does not change, the compute "
@@ -72,6 +80,23 @@ def job_ref(job: JobRecord, now: datetime | None = None) -> dict[str, Any]:
         "poll_after_s": POLL_AFTER_S.get(job.status, 3.0),
         "assessment_id": job.assessment_id,
     }
+
+
+async def _ahead(session: AsyncSession, job: JobRecord) -> int | None:
+    if job.status != "queued":
+        return None
+    from sqlalchemy import text
+
+    n = (
+        await session.execute(
+            text(
+                "SELECT count(*) FROM jobs WHERE status IN ('queued', 'running') AND id <> :id "
+                "AND (status = 'running' OR priority > :p OR (priority = :p AND id < :id))"
+            ),
+            {"id": job.id, "p": job.priority},
+        )
+    ).scalar_one()
+    return int(n)
 
 
 async def answer_or_enqueue(
@@ -104,14 +129,14 @@ async def answer_or_enqueue(
         requested_by=requested_by,
         priority=priority,
     )
-    return Answer(assessment=None, job=job_ref(job))
+    return Answer(assessment=None, job=job_ref(job, ahead=await _ahead(session, job)))
 
 
 async def get_job(session: AsyncSession, job_id: int) -> dict[str, Any]:
     job = await JobRepository(session).get(job_id)
     if job is None:
         raise JobNotFound(job_id)
-    return job_ref(job)
+    return job_ref(job, ahead=await _ahead(session, job))
 
 
 async def retry(session: AsyncSession, job_id: int, requested_by: int | None) -> dict[str, Any]:

@@ -388,3 +388,6 @@ that user. `GET /auth/me` returns the same `user`.
     and `entity=forecast&id={mission}`.
   - The feeds worker also records GEFS (`nomads/gefs_launch/{region}`) at the steps
     nearest each designed opportunity's `t0` within 16 days (at most 6 per run).
+- 2026-09-27 (backend, frontend's queue): a queued `JobRef.message` says how many answers
+  are being worked out before it ("Waiting for a compute worker; 2 answers are being worked
+  out first."). `run.py` starts two compute workers (`POLAR_COMPUTE_WORKERS` to change).

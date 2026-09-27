@@ -40,6 +40,9 @@ async def test_a_repeated_request_joins_the_job_already_queued() -> None:
     assert first["status"] == "queued"
     third = await _enqueue(params={"x": 2})
     assert third["job_id"] != first["job_id"]
+    # A wait says why: the first job is worked out before it.
+    assert "1 answer is being worked out first" in third["message"]
+    assert "first" not in first["message"]
 
 
 async def test_the_key_ignores_parameter_order() -> None:
