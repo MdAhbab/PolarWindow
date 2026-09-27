@@ -4,7 +4,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { API_BASE, api } from '../../lib/api/client'
 import type { MissionDetail } from '../../lib/api/adapters'
 import type { ContactDTO, LifecycleMetaDTO } from '../../lib/api/lifecycle'
-import { useHistory, useLifecycleWrite, useSection } from '../../lib/api/lifecycleQueries'
+import { useHistory, useLifecycleWrite, useSection, useSectionStatus } from '../../lib/api/lifecycleQueries'
 import { keys } from '../../lib/api/queries'
 import { useWindowParams } from '../../lib/mission'
 import { useMission as useStore } from '../../lib/store'
@@ -31,9 +31,10 @@ const TERMS = ['stationHears', 'viaRelay', 'contactUnheard', 'messageWait']
 export function ContactSection({ mission: m }: { mission: MissionDetail }) {
   const w = useWindowParams()
   const view = useSection<ContactDTO>('contact', m.id, (signal) => api.contact(m.id, { start: w.start, end: w.end }, signal), [w.start, w.end])
+  const status = useSectionStatus(m.id, 'contact')
   return (
     <SectionLayout question="How often can the lander talk to Earth?">
-      <SectionStates view={view} terms={TERMS}>
+      <SectionStates view={view} terms={TERMS} status={status}>
         {({ data, meta }) => <ContactAnswer contact={data} meta={meta} mission={m} start={Date.parse(w.start)} end={Date.parse(w.end)} />}
       </SectionStates>
     </SectionLayout>

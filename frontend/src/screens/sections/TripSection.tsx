@@ -2,7 +2,7 @@ import { api } from '../../lib/api/client'
 import { API_BASE } from '../../lib/api/client'
 import type { MissionDetail } from '../../lib/api/adapters'
 import type { TripDTO } from '../../lib/api/lifecycle'
-import { useSection } from '../../lib/api/lifecycleQueries'
+import { useSection, useSectionStatus } from '../../lib/api/lifecycleQueries'
 import { formatValue, quantityText } from '../../lib/lifecycle/quantity'
 import { dateTimeWords } from '../../lib/format'
 import { NumberRow, QuantityTile } from '../../components/lifecycle/QuantityTile'
@@ -29,9 +29,10 @@ const HOUR = 3_600_000
  */
 export function TripSection({ mission: m }: { mission: MissionDetail }) {
   const view = useSection<TripDTO>('trip', m.id, (signal) => api.trip(m.id, signal))
+  const status = useSectionStatus(m.id, 'trip')
   return (
     <SectionLayout question="What does the lander go through on the way?">
-      <SectionStates view={view} terms={TERMS}>
+      <SectionStates view={view} terms={TERMS} status={status}>
         {({ data: trip, meta }) =>
           trip.source === 'none' ? (
             <StatePanel

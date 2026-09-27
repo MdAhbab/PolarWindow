@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { api } from '../../lib/api/client'
 import type { MissionDetail } from '../../lib/api/adapters'
 import type { LaunchCalendarDTO, LaunchWeatherDTO, LifecycleMetaDTO, OpportunityDTO, RuleRowDTO } from '../../lib/api/lifecycle'
-import { useHistory, useLifecycleWrite, useSection } from '../../lib/api/lifecycleQueries'
+import { useHistory, useLifecycleWrite, useSection, useSectionStatus } from '../../lib/api/lifecycleQueries'
 import { dateTimeWords, dateWords } from '../../lib/format'
 import { ageWords, hostWords, quantityText } from '../../lib/lifecycle/quantity'
 import { NumberRow, QuantityTile } from '../../components/lifecycle/QuantityTile'
@@ -26,9 +26,10 @@ export function LaunchSection({ mission: m }: { mission: MissionDetail }) {
   const from = params.get('from') ?? undefined
   const to = params.get('to') ?? undefined
   const view = useSection<LaunchCalendarDTO>('launch', m.id, (signal) => api.launch(m.id, { from, to }, signal), [from ?? null, to ?? null])
+  const status = useSectionStatus(m.id, 'launch')
   return (
     <SectionLayout question="When and from where can it launch?">
-      <SectionStates view={view} terms={TERMS}>
+      <SectionStates view={view} terms={TERMS} status={status}>
         {({ data, meta }) =>
           data.opportunities.length ? (
             <LaunchAnswer cal={data} meta={meta} missionId={m.id} />

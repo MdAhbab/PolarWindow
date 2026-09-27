@@ -9,7 +9,7 @@ import {
   useParts,
   useRiskScales,
   useSection,
-  useSections,
+  useSectionStatus,
 } from '../../lib/api/lifecycleQueries'
 import { useSession } from '../../lib/session'
 import { hostWords, quantityText, quantityView } from '../../lib/lifecycle/quantity'
@@ -44,10 +44,10 @@ export function useCanWrite(): boolean {
  */
 export function ReadySection({ mission: m }: { mission: MissionDetail }) {
   const view = useSection<ReadyDTO>('ready', m.id, (signal) => api.ready(m.id, signal))
-  const status = useSections(m.id).data?.data.find((s) => s.section === 'ready')
+  const status = useSectionStatus(m.id, 'ready')
   return (
     <SectionLayout question="What is ready, and what is holding it up?">
-      <SectionStates view={view} terms={TERMS}>
+      <SectionStates view={view} terms={TERMS} status={status}>
         {({ data, meta }) => <ReadyAnswer ready={data} meta={meta} missionId={m.id} needsInput={status?.state === 'needs_input'} />}
       </SectionStates>
     </SectionLayout>

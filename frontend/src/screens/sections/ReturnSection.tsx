@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { api } from '../../lib/api/client'
 import type { MissionDetail } from '../../lib/api/adapters'
 import type { LifecycleMetaDTO, ReturnDTO, ZoneDTO } from '../../lib/api/lifecycle'
-import { useHistory, useLifecycleWrite, useSection } from '../../lib/api/lifecycleQueries'
+import { useHistory, useLifecycleWrite, useSection, useSectionStatus } from '../../lib/api/lifecycleQueries'
 import { ageWords, formatValue, quantityText } from '../../lib/lifecycle/quantity'
 import { NumberRow, QuantityTile } from '../../components/lifecycle/QuantityTile'
 import { Answer, ChartPanel, HowSure, Rows, SectionLayout, SectionStates, SourcesRow, StatePanel } from '../../components/lifecycle/Section'
@@ -33,9 +33,10 @@ function zoneWords(z: ZoneDTO): string {
  */
 export function ReturnSection({ mission: m }: { mission: MissionDetail }) {
   const view = useSection<ReturnDTO>('return', m.id, (signal) => api.returnSection(m.id, signal))
+  const status = useSectionStatus(m.id, 'return')
   return (
     <SectionLayout question="Where do the booster and any capsule come down, and what is the sea like there?">
-      <SectionStates view={view} terms={TERMS}>
+      <SectionStates view={view} terms={TERMS} status={status}>
         {({ data, meta }) => <ReturnAnswer ret={data} meta={meta} missionId={m.id} />}
       </SectionStates>
     </SectionLayout>

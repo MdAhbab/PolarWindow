@@ -145,6 +145,22 @@ describe('SectionStates: the same states on every section', () => {
     expect(screen.getByText('Landing works.')).toBeTruthy()
   })
 
+  it('a refusal its status explains is that state, not an error', async () => {
+    const { ApiError } = await import('../../lib/api/client')
+    render(
+      <SectionStates
+        view={{ status: 'error', error: new ApiError(404, { detail: { title: 'Not found' } }), retry: () => {} }}
+        terms={terms}
+        status={{ section: 'return', state: 'not_applicable', summary: 'No capsule returns; the booster was expended', as_of: null }}
+      >
+        {() => <p>never</p>}
+      </SectionStates>,
+    )
+    expect(screen.getByText('Does not apply')).toBeTruthy()
+    expect(screen.getByText('No capsule returns; the booster was expended')).toBeTruthy()
+    expect(screen.queryByText('Not found')).toBeNull()
+  })
+
   it('the answer', () => {
     show({ status: 'answer', section: trip, refreshing: false })
     expect(screen.getByText('answer for flown')).toBeTruthy()

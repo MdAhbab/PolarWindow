@@ -1,5 +1,7 @@
 import { useId, type ReactNode } from 'react'
-import type { JobRefDTO, LifecycleMetaDTO, SectionDTO } from '../../lib/api/lifecycle'
+import type { JobRefDTO, LifecycleMetaDTO, SectionDTO, SectionStatusDTO } from '../../lib/api/lifecycle'
+import { ApiError } from '../../lib/api/client'
+import { STATE_WORDS } from './JourneyBar'
 import type { SectionView } from '../../lib/api/lifecycleQueries'
 import { useMission } from '../../lib/store'
 import { dateTimeWords } from '../../lib/format'
@@ -76,15 +78,32 @@ export function PendingNumbers({ terms }: { terms: string[] }) {
 export function SectionStates<T>({
   view,
   terms,
+  status,
   children,
 }: {
   view: SectionView<T>
   /** The key numbers' terms, so their labels show while the answer comes. */
   terms: string[]
+  /** This step's own status, from the step bar: it names why there is no answer. */
+  status?: SectionStatusDTO
   children: (section: SectionDTO<T>) => ReactNode
 }) {
   if (view.status === 'answer') return <>{children(view.section)}</>
   if (view.status === 'error') {
+    // A refusal the step's status already explains (nothing entered yet, does
+    // not apply to this mission, no data) is that state, not a failure.
+    const refused = view.error instanceof ApiError && (view.error.status === 404 || view.error.status === 409)
+    if (refused && status && status.state !== 'available' && status.state !== 'computing') {
+      const w = STATE_WORDS[status.state]
+      return (
+        <StatePanel
+          icon={w.icon}
+          title={w.words}
+          detail={status.summary}
+          stillWorks="The other steps are unaffected; each answers on its own."
+        />
+      )
+    }
     return <ProblemPanel error={view.error} fallbackTitle="This section could not be loaded" onRetry={view.retry} />
   }
   return (

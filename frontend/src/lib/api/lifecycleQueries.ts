@@ -37,6 +37,11 @@ export function useSections(missionId: string | undefined) {
   })
 }
 
+/** One step's status from `/sections`, when the server gives it. */
+export function useSectionStatus(missionId: string | undefined, section: SectionId): SectionStatusDTO | undefined {
+  return useSections(missionId).data?.data.find((s) => s.section === section)
+}
+
 /** Where a section's answer stands. */
 export type SectionView<T> =
   | { status: 'pending' }
