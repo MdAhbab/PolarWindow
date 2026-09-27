@@ -280,6 +280,10 @@ describe('the charts’ arrays, shared with their tables', () => {
     expect(shadowAndContact({ ...n, longest_shadow_h: zero, longest_unheard_h: { ...zero, value: 0.12, open: true } })).toBe(
       'It is never in shadow; the longest time without contact is at least 0.12 h.',
     )
+    // With gaps in the data, it is said of the covered hours only.
+    expect(shadowAndContact({ ...n, longest_shadow_h: zero, longest_unheard_h: zero }, 30.1)).toBe(
+      'In the 30.1 hours NASA’s reconstruction covers, it is never in shadow, and a ground station can hear it the whole time.',
+    )
   })
 
   it('launch calendar: days with opportunities, and runs of empty days as one line', () => {

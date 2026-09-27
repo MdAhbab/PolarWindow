@@ -253,6 +253,8 @@ test('trip and contact (live API): the flown trip with its gaps in the data, and
   // The first visit may answer 202 while the trip is worked out; the answer follows.
   await expect(page.locator('[data-guide="section-answer"]')).toContainText('The trip takes', { timeout: 90_000 })
   await expect(main).toContainText('(as flown)')
+  // The answer speaks only for the hours the data covers.
+  await expect(page.locator('[data-guide="section-answer"]')).toContainText(/In the [\d.]+ hours NASA’s reconstruction covers, /)
   await expect(main).toContainText('separate stretches')
   await expect(main).toContainText('No data')
   await page.getByRole('button', { name: 'Read the chart as a table' }).click()

@@ -58,15 +58,20 @@ function longest(q: QuantityDTO): string {
   return q.open ? `at least ${quantityText({ ...q, open: false })}` : quantityText(q)
 }
 
-/** The answer's second sentence, with no zero-hour stretches in it. */
-export function shadowAndContact(n: TripDTO['numbers']): string {
+/**
+ * The answer's second sentence, with no zero-hour stretches in it. With gaps in
+ * the data (`coveredH` given), it is said of the hours the data covers only.
+ */
+export function shadowAndContact(n: TripDTO['numbers'], coveredH?: number): string {
   const neverDark = n.longest_shadow_h.value === 0
   const alwaysHeard = n.longest_unheard_h.value === 0
   const dark = neverDark ? 'It is never in shadow' : `The longest time in shadow is ${longest(n.longest_shadow_h)}`
   const heard = alwaysHeard
     ? 'a ground station can hear it the whole time'
     : `the longest time without contact is ${longest(n.longest_unheard_h)}`
-  return `${dark}${neverDark && !alwaysHeard ? ';' : ', and'} ${heard}.`
+  const said = `${dark}${neverDark && !alwaysHeard ? ';' : ', and'} ${heard}.`
+  if (coveredH == null) return said
+  return `In the ${formatValue(coveredH)} hours NASA’s reconstruction covers, ${said[0].toLowerCase()}${said.slice(1)}`
 }
 
 function TripAnswer({ trip, meta, missionId }: { trip: TripDTO; meta: LifecycleMetaDTO; missionId: string }) {
@@ -74,11 +79,12 @@ function TripAnswer({ trip, meta, missionId }: { trip: TripDTO; meta: LifecycleM
   const hours = (t1 - t0) / HOUR
   const stretches = tripStretches(trip)
   const gaps = stretches.some((r) => r.kind === 'nodata')
+  const coveredH = hours - stretches.filter((r) => r.kind === 'nodata').reduce((h, r) => h + (r.end - r.start) / HOUR, 0)
   const n = trip.numbers
   return (
     <>
       <Answer meta={meta}>
-        The trip takes {formatValue(hours / 24)} days ({trip.source === 'flown' ? 'as flown' : 'as designed'}). {shadowAndContact(n)}
+        The trip takes {formatValue(hours / 24)} days ({trip.source === 'flown' ? 'as flown' : 'as designed'}). {shadowAndContact(n, gaps ? coveredH : undefined)}
       </Answer>
       {/* Only when the data has gaps does the note change what the numbers mean. */}
       {gaps && trip.coverage_note && <UncertaintyNote className="-mt-3">{trip.coverage_note}</UncertaintyNote>}
