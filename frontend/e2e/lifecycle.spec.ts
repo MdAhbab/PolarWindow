@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { expectNoSeriousAxe, returningVisitor, watchConsole } from './helpers'
+import { API, expectNoSeriousAxe, returningVisitor, watchConsole } from './helpers'
 import { fulfillWrite, serveLifecycleFixtures } from './lifecycleFixtures'
 
 /**
@@ -340,6 +340,10 @@ test('trip and contact (live API): the flown trip with its gaps in the data, and
   await expect(main).toContainText('No data')
   await page.getByRole('button', { name: 'Read the chart as a table' }).click()
   await expect(main.getByRole('table').first()).toContainText('No data')
+  // One gap between each two stretches the service lists as covered, none guessed from the samples.
+  const covered = (await (await page.request.get(`${API}/missions/im-1/trip`)).json()).data.covered as unknown[]
+  expect(covered.length).toBeGreaterThan(1)
+  await expect(main.getByRole('table').first().getByRole('row').filter({ hasText: 'No data' })).toHaveCount(covered.length - 1)
   await expectNoSeriousAxe(page, '/missions/im-1/trip (live) with its table open')
 
   // The flown trajectory downloads, one block per stretch the reconstruction covers.

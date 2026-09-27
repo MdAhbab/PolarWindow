@@ -240,8 +240,8 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   the same time axis: sunlight (amber lit, −45° hatch partly shadowed, +45°
   hatch in shadow) and "a ground station can hear it" (cyan heard, +45° hatch
   not heard). Twin: every shadow and not-heard stretch (start, end, length)
-  and every burn. Gaps in the data (a sample step many times the usual one)
-  break both lines and leave both lanes empty with a dashed outline, keyed
+  and every burn. Gaps in the data (between the stretches the service lists
+  in `covered`; a seam under a second is not a gap) break both lines and leave both lanes empty with a dashed outline, keyed
   "No data" and listed in the twin; a gap is never counted as out of contact.
 - **Rows:** Radiation on the way (screening only, and where to confirm) ·
   Burns ({n}, or "none listed" with `burns_note`) · Where the Moon's pull wins

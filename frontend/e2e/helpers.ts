@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, type BrowserContext, type Page } from '@playwright/test'
 import { serveLifecycleFixtures } from './lifecycleFixtures'
 
-const API = process.env.E2E_API_BASE ?? 'http://localhost:8000/api/v1'
+export const API = process.env.E2E_API_BASE ?? 'http://localhost:8000/api/v1'
 
 /**
  * A project manager's session from the one-click sign-in, as the landing

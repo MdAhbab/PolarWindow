@@ -32,21 +32,45 @@ export function tripSpan(trip: TripDTO): { t0: number; t1: number } {
   return { t0, t1 }
 }
 
+/** Under a second is a rounding seam between two stretches, not a gap. */
+const SEAM_MS = 1000
+
 /**
- * The parts of the trip with no samples. NASA's reconstruction can come in
- * separate stretches (IM-1's does); inside each the samples are evenly spaced,
- * so a step many times the usual one is a gap in the data, not fast flight.
+ * The parts of the trip with data: the stretches NASA's reconstruction covers
+ * (`covered`, exact from the service), inside the trip's dates, with rounding
+ * seams closed. A trip that lists none (a designed one) is covered throughout.
+ */
+export function coveredParts(trip: TripDTO): [number, number][] {
+  const { t0, t1 } = tripSpan(trip)
+  if (!trip.covered?.length) return [[t0, t1]]
+  const parts = trip.covered
+    .map((c) => [Math.max(t0, Date.parse(c.start)), Math.min(t1, Date.parse(c.end))] as [number, number])
+    .filter(([a, b]) => b > a)
+    .sort((a, b) => a[0] - b[0])
+  const out: [number, number][] = []
+  for (const [a, b] of parts) {
+    const last = out[out.length - 1]
+    if (last && a - last[1] < SEAM_MS) last[1] = Math.max(last[1], b)
+    else out.push([a, b])
+  }
+  return out
+}
+
+/**
+ * The parts of the trip with no data: what the covered stretches leave out
+ * between the trip's dates. NASA's reconstruction can come in separate
+ * stretches (IM-1's does); the service lists them, so nothing is guessed from
+ * the spacing of the samples.
  */
 export function coverageGaps(trip: TripDTO): { start: number; end: number }[] {
-  const ts = trip.samples.map((x) => Date.parse(x.t))
-  if (ts.length < 3) return []
-  const steps = ts.slice(1).map((t, i) => t - ts[i])
-  const usual = [...steps].sort((a, b) => a - b)[Math.floor(steps.length / 2)]
-  const limit = Math.max(10 * usual, 30 * 60_000)
+  const { t0, t1 } = tripSpan(trip)
   const gaps: { start: number; end: number }[] = []
-  steps.forEach((step, i) => {
-    if (step > limit) gaps.push({ start: ts[i], end: ts[i + 1] })
-  })
+  let from = t0
+  for (const [a, b] of coveredParts(trip)) {
+    if (a - from >= SEAM_MS) gaps.push({ start: from, end: a })
+    from = Math.max(from, b)
+  }
+  if (t1 - from >= SEAM_MS) gaps.push({ start: from, end: t1 })
   return gaps
 }
 
@@ -66,22 +90,13 @@ export function tripStretches(trip: TripDTO): TripStretchRow[] {
     openEnd: x.open_end,
   })
   const shadow = trip.shadow.map(toRow('shadow'))
-  const gaps = coverageGaps(trip)
-  const nodata: TripStretchRow[] = gaps.map((g) => ({ kind: 'nodata', start: g.start, end: g.end, openStart: false, openEnd: false }))
-  // The parts with data, between the gaps.
-  const covered: [number, number][] = []
-  let from = t0
-  for (const g of gaps) {
-    covered.push([from, g.start])
-    from = g.end
-  }
-  covered.push([from, t1])
+  const nodata: TripStretchRow[] = coverageGaps(trip).map((g) => ({ kind: 'nodata', start: g.start, end: g.end, openStart: false, openEnd: false }))
+  const covered = coveredParts(trip)
   // Not heard = the gaps between heard stretches, inside each part with data.
   const heard = trip.heard.map((x) => [Date.parse(x.start), Date.parse(x.end)] as const).sort((a, b) => a[0] - b[0])
   const unheard: TripStretchRow[] = []
   const add = (a: number, b: number) => {
-    // Under a second is a rounding seam between two stretches, not a gap.
-    if (b - a >= 1000) unheard.push({ kind: 'unheard', start: a, end: b, openStart: a === t0, openEnd: b === t1 })
+    if (b - a >= SEAM_MS) unheard.push({ kind: 'unheard', start: a, end: b, openStart: a === t0, openEnd: b === t1 })
   }
   for (const [a, b] of covered) {
     let cursor = a
@@ -135,7 +150,8 @@ export function TripStrip({ trip, stretches }: { trip: TripDTO; stretches: TripS
   const { t0, t1 } = tripSpan(trip)
   const span = Math.max(1, t1 - t0)
   const gaps = stretches.filter((r) => r.kind === 'nodata')
-  const gapEnds = new Set(gaps.map((g) => g.end))
+  // A gap lies between two samples: the one before ends a stretch, the one after starts the next.
+  const across = (prev: number, t: number) => gaps.some((g) => g.start >= prev - SEAM_MS && g.end <= t + SEAM_MS)
   const x = (t: number) => LEFT + ((t - t0) / span) * (width - LEFT - RIGHT)
 
   const { maxKm, earthPath, moonPath, labelAt } = (() => {
@@ -146,7 +162,8 @@ export function TripStrip({ trip, stretches }: { trip: TripDTO; stretches: TripS
       trip.samples
         .map((s, i) => {
           const t = Date.parse(s.t)
-          return `${i && !gapEnds.has(t) ? 'L' : 'M'}${x(t).toFixed(1)} ${y(pick(s)).toFixed(1)}`
+          const line = i > 0 && !across(Date.parse(trip.samples[i - 1].t), t)
+          return `${line ? 'L' : 'M'}${x(t).toFixed(1)} ${y(pick(s)).toFixed(1)}`
         })
         .join(' ')
     // Label the two lines where they are furthest apart, away from the edges,

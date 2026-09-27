@@ -5,6 +5,7 @@
   "start": null,
   "end": null,
   "coverage_note": null,
+  "covered": [],
   "samples": [],
   "shadow": [],
   "heard": [],

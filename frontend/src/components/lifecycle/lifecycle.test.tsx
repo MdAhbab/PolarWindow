@@ -303,14 +303,44 @@ describe('the charts’ arrays, shared with their tables', () => {
         { start: iso(times[0]), end: iso(times[120]), open_start: true, open_end: true },
         { start: iso(times[121]), end: iso(times[241]), open_start: true, open_end: true },
       ],
+      // The service lists the stretches the reconstruction covers; the second starts a few microseconds late.
+      covered: [
+        { start: iso(times[0]), end: iso(times[120]), open_start: false, open_end: false },
+        { start: `${iso(times[121]).slice(0, -1)}020Z`, end: iso(times[241]), open_start: false, open_end: false },
+      ],
       burns: [],
     }
     expect(coverageGaps(gappy)).toEqual([{ start: times[120], end: times[121] }])
     const rows = tripStretches(gappy)
     expect(rows.map((r) => r.kind)).toEqual(['nodata'])
     expect((rows[0].end - rows[0].start) / 3_600_000).toBe(5)
-    // Evenly spaced samples have no gaps.
+    // One stretch covering the trip: no gaps.
     expect(coverageGaps(trip.data)).toEqual([])
+  })
+
+  it('trip gaps come from the covered stretches, not the spacing of the samples', () => {
+    const iso = (ms: number) => new Date(ms).toISOString()
+    const t0 = Date.parse(trip.data.start!)
+    const t1 = Date.parse(trip.data.end!)
+    const mid = t0 + (t1 - t0) / 2
+    const hour = 3_600_000
+    // Evenly spaced samples, but the reconstruction leaves out three hours in the middle and the last hour.
+    const covered = [
+      { start: iso(t0), end: iso(mid), open_start: false, open_end: false },
+      { start: iso(mid + 3 * hour), end: iso(t1 - hour), open_start: false, open_end: false },
+    ]
+    expect(coverageGaps({ ...trip.data, covered })).toEqual([
+      { start: mid, end: mid + 3 * hour },
+      { start: t1 - hour, end: t1 },
+    ])
+    // Two stretches that meet within a second are one: no gap at the seam.
+    const seam = [
+      { start: iso(t0), end: iso(mid), open_start: false, open_end: false },
+      { start: iso(mid + 400), end: iso(t1), open_start: false, open_end: false },
+    ]
+    expect(coverageGaps({ ...trip.data, covered: seam })).toEqual([])
+    // A trip that lists no covered stretches (a designed one) has no gaps.
+    expect(coverageGaps({ ...trip.data, covered: [] })).toEqual([])
   })
 
   it('trip answer: never in shadow, heard the whole time, and "at least" when the dates cut a stretch short', () => {
