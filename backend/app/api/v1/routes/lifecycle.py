@@ -18,7 +18,8 @@ from app.api.v1.schemas.contact import BookingIn, BookingOut, Contact
 from app.api.v1.schemas.jobs import JobRefOut
 from app.api.v1.schemas.ready import Section
 from app.api.v1.schemas.sections import SectionStatus
-from app.services import auth_service, contact_service, sections_service
+from app.api.v1.schemas.trip import Trip
+from app.services import auth_service, contact_service, sections_service, trip_service
 from app.services.mission_service import MissionNotFound
 
 router = APIRouter(tags=["mission sections"])
@@ -127,3 +128,19 @@ async def add_booking(
         )
     except Exception as exc:
         raise _contact_http(exc) from exc
+
+
+@router.get(
+    "/missions/{mission_id}/trip",
+    response_model=Section[Trip],
+    responses={202: {"model": JobRefOut, "description": "Being worked out; poll the job."}},
+    summary="The trip to the Moon: distance, shadow, when a station could see it",
+)
+async def trip(mission_id: str, session: Any = Depends(deps.db)) -> Any:
+    try:
+        code, body = await trip_service.trip(session, mission_id)
+    except Exception as exc:
+        raise deps.to_http(exc) from exc
+    if code == 202:
+        return JSONResponse(status_code=202, content=body)
+    return body

@@ -2056,6 +2056,58 @@
         }
       }
     },
+    "/api/v1/missions/{mission_id}/trip": {
+      "get": {
+        "tags": [
+          "mission sections"
+        ],
+        "summary": "The trip to the Moon: distance, shadow, when a station could see it",
+        "operationId": "trip_api_v1_missions__mission_id__trip_get",
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Section_Trip_"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Being worked out; poll the job.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRefOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/missions/{mission_id}/ready": {
       "get": {
         "tags": [
@@ -3997,6 +4049,30 @@
           "site_id"
         ],
         "title": "BriefRequest"
+      },
+      "Burn": {
+        "properties": {
+          "t": {
+            "type": "string",
+            "format": "date-time",
+            "title": "T"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "dv_m_s": {
+            "$ref": "#/components/schemas/QuantityOut"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "t",
+          "name",
+          "dv_m_s"
+        ],
+        "title": "Burn"
       },
       "CalendarBucket": {
         "properties": {
@@ -6829,6 +6905,40 @@
         ],
         "title": "ModelState"
       },
+      "MoonPull": {
+        "properties": {
+          "equal_pull_km": {
+            "type": "number",
+            "title": "Equal Pull Km",
+            "description": "From the Moon's centre, where the pulls are equal."
+          },
+          "sphere_of_influence_km": {
+            "type": "number",
+            "title": "Sphere Of Influence Km"
+          },
+          "t_equal_pull": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "T Equal Pull",
+            "description": "When the Moon's pull overtook Earth's."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "equal_pull_km",
+          "sphere_of_influence_km",
+          "t_equal_pull"
+        ],
+        "title": "MoonPull"
+      },
       "Node": {
         "properties": {
           "id": {
@@ -7685,6 +7795,40 @@
         ],
         "title": "QuantityOut",
         "description": "A number with its margin in exactly one form, or the reason it has none.\n\nMirrors `app/core/quantity.py`, which refuses to build a number that breaks\nthese rules; this model is how it reaches the wire."
+      },
+      "Radiation": {
+        "properties": {
+          "belt_hours": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "fluence_gt10mev": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "gcr_dose_mgy_day": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "screening_note": {
+            "type": "string",
+            "title": "Screening Note"
+          },
+          "confirm_in": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Confirm In"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "belt_hours",
+          "fluence_gt10mev",
+          "gcr_dose_mgy_day",
+          "screening_note",
+          "confirm_in"
+        ],
+        "title": "Radiation"
       },
       "Ready": {
         "properties": {
@@ -8619,6 +8763,23 @@
           "meta"
         ],
         "title": "Section[Ready]"
+      },
+      "Section_Trip_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Trip"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/LifecycleMeta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Section[Trip]"
       },
       "Section_list_SectionStatus__": {
         "properties": {
@@ -9705,6 +9866,213 @@
           "lunar_orbit_days"
         ],
         "title": "Transfer"
+      },
+      "Trip": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "flown",
+              "designed",
+              "none"
+            ],
+            "title": "Source"
+          },
+          "none_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "None Reason"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "coverage_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage Note"
+          },
+          "samples": {
+            "items": {
+              "$ref": "#/components/schemas/TripSample"
+            },
+            "type": "array",
+            "maxItems": 2000,
+            "title": "Samples"
+          },
+          "shadow": {
+            "items": {
+              "$ref": "#/components/schemas/StretchOut"
+            },
+            "type": "array",
+            "title": "Shadow"
+          },
+          "heard": {
+            "items": {
+              "$ref": "#/components/schemas/StretchOut"
+            },
+            "type": "array",
+            "title": "Heard"
+          },
+          "numbers": {
+            "$ref": "#/components/schemas/TripNumbers"
+          },
+          "burns": {
+            "items": {
+              "$ref": "#/components/schemas/Burn"
+            },
+            "type": "array",
+            "title": "Burns"
+          },
+          "burns_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Burns Note"
+          },
+          "moon_pull": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MoonPull"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "radiation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Radiation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source",
+          "none_reason",
+          "start",
+          "end",
+          "coverage_note",
+          "samples",
+          "shadow",
+          "heard",
+          "numbers",
+          "burns",
+          "burns_note",
+          "moon_pull",
+          "radiation"
+        ],
+        "title": "Trip"
+      },
+      "TripNumbers": {
+        "properties": {
+          "sunlight_h": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "heard_h": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Time a ground station could see the spacecraft."
+          },
+          "longest_shadow_h": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "longest_unheard_h": {
+            "$ref": "#/components/schemas/QuantityOut"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sunlight_h",
+          "heard_h",
+          "longest_shadow_h",
+          "longest_unheard_h"
+        ],
+        "title": "TripNumbers"
+      },
+      "TripSample": {
+        "properties": {
+          "t": {
+            "type": "string",
+            "format": "date-time",
+            "title": "T"
+          },
+          "earth_km": {
+            "type": "number",
+            "title": "Earth Km"
+          },
+          "moon_km": {
+            "type": "number",
+            "title": "Moon Km"
+          },
+          "light": {
+            "type": "string",
+            "enum": [
+              "lit",
+              "penumbral",
+              "dark"
+            ],
+            "title": "Light"
+          },
+          "heard": {
+            "type": "boolean",
+            "title": "Heard",
+            "description": "A DSN antenna could see the spacecraft (line of sight)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "t",
+          "earth_km",
+          "moon_km",
+          "light",
+          "heard"
+        ],
+        "title": "TripSample"
       },
       "Unavailable": {
         "properties": {

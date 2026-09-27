@@ -152,6 +152,7 @@ def load(directory: Path, *, allow_download: bool = False) -> KernelState:
             write_metakernel(directory, loadable(directory))
             mk = directory / METAKERNEL_NAME
             spice.kclear()
+            _extra.clear()
             spice.furnsh(str(mk))
             count = int(spice.ktotal("ALL"))
             if count == 0:
@@ -182,6 +183,7 @@ def unload() -> None:
     global _state
     with _lock:
         spice.kclear()
+        _extra.clear()
         _state = KernelState()
 
 
@@ -470,38 +472,47 @@ def station_look_angles(
 ) -> list[StationLook]:
     """Azimuth, elevation and range of a lunar surface point from each DSN station.
 
-    The station frames are NAIF's ``{station}_TOPO`` (x north, y west, z up,
-    from ``earth_topo_*.tf``); Earth orientation is ITRF93 from the dated
-    combined kernel. The Moon's apparent position (``LT+S``) is taken from
-    Earth's centre and the station's own offset is subtracted, which differs
-    from observing at the station by a few milliseconds of light time: far
-    below a DSN mask's 0.1 degree. The site vector is rotated from MOON_ME at
-    each epoch. One pass over the epochs for all stations; per epoch only the
-    two time-varying rotations are asked of CSPICE.
+    The Moon's apparent position (``LT+S``) is taken from Earth's centre and
+    the site vector is rotated from MOON_ME at each epoch; see
+    :func:`station_look_to` for the station part.
     """
     _require_lifecycle(STATION_KERNELS)
     ets = np.asarray(ets, dtype=np.float64)
-    site = np.asarray(site_me_m, dtype=np.float64).reshape(3) / 1000.0  # km, as CSPICE
-    n = ets.size
-    r_i2j = np.empty((n, 3, 3))
-    r_me2j = np.empty((n, 3, 3))
+    site = np.asarray(site_me_m, dtype=np.float64).reshape(3)
+    r_me2j = rotations("MOON_ME", "J2000", ets)
+    moon = positions("MOON", "EARTH", "J2000", "LT+S", ets, knot_s=None)
+    return station_look_to(stations, moon + np.einsum("nij,j->ni", r_me2j, site), ets)
+
+
+def station_look_to(
+    stations: list[str], target_geo_j2k_m: npt.NDArray[np.float64], ets: npt.NDArray[np.float64]
+) -> list[StationLook]:
+    """Azimuth, elevation and range from each DSN station of a target given geocentrically.
+
+    ``target_geo_j2k_m`` is the target's position from Earth's centre in J2000
+    (metres), one row per epoch. The station frames are NAIF's
+    ``{station}_TOPO`` (x north, y west, z up, from ``earth_topo_*.tf``); Earth
+    orientation is ITRF93 from the dated combined kernel. Observing from
+    Earth's centre and subtracting the station's offset differs from
+    observing at the station by milliseconds of light time: far below a DSN
+    mask's 0.1 degree. Per epoch only the ITRF93-to-J2000 rotation is asked
+    of CSPICE; the stations are fixed in ITRF93.
+    """
+    _require_lifecycle(STATION_KERNELS)
+    ets = np.asarray(ets, dtype=np.float64)
+    target = np.asarray(target_geo_j2k_m, dtype=np.float64).reshape(-1, 3) / 1000.0
+    r_i2j = rotations("ITRF93", "J2000", ets)
+    st_itrf = {}
+    r_topo = {}
     with _lock:
-        moon, _lt = spice.spkpos("MOON", ets, "J2000", "LT+S", "EARTH")
-        for i, et in enumerate(ets):
-            r_i2j[i] = spice.pxform("ITRF93", "J2000", float(et))
-            r_me2j[i] = spice.pxform("MOON_ME", "J2000", float(et))
-        st_itrf = {}
-        r_topo = {}
         for st in stations:
             p, _ = spice.spkpos(st, float(ets[0]), "ITRF93", "NONE", "EARTH")
             st_itrf[st] = np.asarray(p, dtype=np.float64)
             r_topo[st] = np.asarray(spice.pxform("ITRF93", f"{st}_TOPO", float(ets[0])))
-    moon = np.asarray(moon, dtype=np.float64).reshape(-1, 3)
-    target_j2k = moon + np.einsum("nij,j->ni", r_me2j, site)
     out = []
     for st in stations:
         st_j2k = np.einsum("nij,j->ni", r_i2j, st_itrf[st])
-        rel_j2k = target_j2k - st_j2k
+        rel_j2k = target - st_j2k
         rel_itrf = np.einsum("nji,nj->ni", r_i2j, rel_j2k)  # transpose: J2000 -> ITRF93
         v = rel_itrf @ r_topo[st].T
         rng = np.linalg.norm(v, axis=1)
@@ -509,6 +520,30 @@ def station_look_angles(
         az = np.mod(np.degrees(np.arctan2(-v[:, 1], v[:, 0])), 360.0)
         out.append(StationLook(station=st, az_deg=az, el_deg=el, range_m=rng * 1000.0))
     return out
+
+
+_extra: set[str] = set()
+
+
+def load_extra(paths: list[Path]) -> None:
+    """Furnsh extra kernels (a flown mission's trajectory) once each; idempotent."""
+    _require_loaded()
+    with _lock:
+        for p in paths:
+            key = str(Path(p).resolve())
+            if key in _extra:
+                continue
+            if not Path(p).exists():
+                raise KernelError(f"kernel not on disk: {p} (polar-data sync)")
+            spice.furnsh(key)
+            _extra.add(key)
+
+
+def coverage(spk: Path, naif_id: int) -> list[tuple[float, float]]:
+    """The time intervals (ET) an SPK file covers for one body."""
+    with _lock:
+        cov = spice.spkcov(str(spk), naif_id)
+        return [tuple(map(float, spice.wnfetd(cov, i))) for i in range(spice.wncard(cov))]  # type: ignore[misc]
 
 
 async def run_async(fn: Any, /, *args: Any, **kwargs: Any) -> Any:

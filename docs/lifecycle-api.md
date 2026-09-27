@@ -317,3 +317,10 @@ that user. `GET /auth/me` returns the same `user`.
     rate is not published; without it the answer is 422 saying so).
   - `POST /missions/{id}/contact/bookings` → the booking with `id`, `entered_by`, `entered_at`.
   - 409 `no-contact` when a mission has no landing spot or was cancelled.
+- 2026-09-27 (backend, Trip as built for flown missions):
+  - `Trip` adds `coverage_note` (NASA's reconstruction may cover the trip in separate
+    stretches, as IM-1's does; numbers then describe only those) and `burns_note`.
+    `burns` is empty: burns are not published with the reconstructions.
+  - `samples[].heard` and `heard_h` are line of sight to a DSN antenna above its mask.
+  - A mission that has not flown answers 200 with `source: "none"` and the reason;
+    a flown one answers 202 with a job the first time.

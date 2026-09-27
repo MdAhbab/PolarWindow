@@ -212,6 +212,7 @@ ignore_imports = [
     "app.core.spice -> spiceypy",
     "app.tests.unit.test_spice -> spiceypy",
     "app.tests.unit.test_contact_core -> spiceypy",
+    "app.tests.golden.test_eclipse_vs_spice -> spiceypy",
 ]
 
 [[tool.importlinter.contracts]]
