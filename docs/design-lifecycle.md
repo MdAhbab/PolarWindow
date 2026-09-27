@@ -212,8 +212,9 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   longest time in shadow is {h}, and the longest time without contact is {h}."
   A zero reads "It is never in shadow" / "a ground station can hear it the
   whole time"; a stretch the dates cut short reads "at least {h}". When NASA's
-  reconstruction has gaps (IM-1), `coverage_note` sits under the answer, since
-  the numbers then describe only the parts with data.
+  reconstruction has gaps (IM-1), the second sentence starts "In the {h} hours
+  NASA's reconstruction covers, …" and `coverage_note` sits under the answer,
+  since the numbers then describe only the parts with data.
 - **Numbers:** Time in sunlight · Time a ground station can hear it · Longest
   time in shadow · Longest time without contact.
 - **Chart: the trip strip** (schematic, no 3D). Top: distance to Earth and to
