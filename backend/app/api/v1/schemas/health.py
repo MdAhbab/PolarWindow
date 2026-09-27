@@ -31,6 +31,16 @@ class DemHealth(BaseModel):
     product: str
 
 
+class FeedHealth(BaseModel):
+    """Live data sources (ADR-8): a failing one makes the service degraded, never down."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    ok: int
+    stale: int = Field(description="Past their staleness budget, or no data yet.")
+    failing: int = Field(description="Last attempt failed, or paused after repeated failures.")
+
+
 class HealthResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -43,4 +53,5 @@ class HealthResponse(BaseModel):
     kernels: KernelHealth
     db: Literal["ok", "down"]
     redis: Literal["ok", "bypass"]
+    feeds: FeedHealth = Field(default_factory=lambda: FeedHealth(ok=0, stale=0, failing=0))
     dem: DemHealth

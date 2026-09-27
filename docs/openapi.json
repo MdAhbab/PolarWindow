@@ -1389,8 +1389,25 @@
           "sign-in"
         ],
         "summary": "Sign in as the project manager",
-        "description": "A project manager's session, with no user name or password.\n\nFor a judged demo: the landing page's \"Open the dashboard\" button calls\nthis. Turned off with `PW_DEMO_SIGN_IN=false`, when it answers 403.",
+        "description": "A named project manager's session, with no password.\n\nFor a judged demo: the landing page's \"Open the dashboard\" button calls\nthis, with the name the person typed or with no body, when the session is\nrecorded as \"Demo project manager\". Every change made with the session is\nrecorded against that name. Turned off with `PW_DEMO_SIGN_IN=false`, when\nit answers 403.",
         "operationId": "demo_sign_in_api_v1_auth_demo_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/SignInIn"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1398,6 +1415,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SessionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -1606,6 +1633,165 @@
             "HTTPBearer": []
           }
         ]
+      }
+    },
+    "/api/v1/jobs/{job_id}": {
+      "get": {
+        "tags": [
+          "jobs and data sources"
+        ],
+        "summary": "Where a heavy answer has got to",
+        "operationId": "get_job_api_v1_jobs__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRefOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/{job_id}/retry": {
+      "post": {
+        "tags": [
+          "jobs and data sources"
+        ],
+        "summary": "Work out a failed answer again",
+        "operationId": "retry_job_api_v1_jobs__job_id__retry_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRefOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/feeds": {
+      "get": {
+        "tags": [
+          "jobs and data sources"
+        ],
+        "summary": "Every live data source and its age",
+        "operationId": "list_feeds_api_v1_feeds_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedsOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/feeds/{provider}/refresh": {
+      "post": {
+        "tags": [
+          "jobs and data sources"
+        ],
+        "summary": "Ask the feeds worker to fetch a provider's products now",
+        "operationId": "refresh_api_v1_feeds__provider__refresh_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Provider"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefreshOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/healthz": {
@@ -2934,6 +3120,186 @@
         ],
         "title": "ExplainRequest"
       },
+      "FeedHealth": {
+        "properties": {
+          "ok": {
+            "type": "integer",
+            "title": "Ok"
+          },
+          "stale": {
+            "type": "integer",
+            "title": "Stale",
+            "description": "Past their staleness budget, or no data yet."
+          },
+          "failing": {
+            "type": "integer",
+            "title": "Failing",
+            "description": "Last attempt failed, or paused after repeated failures."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ok",
+          "stale",
+          "failing"
+        ],
+        "title": "FeedHealth",
+        "description": "Live data sources (ADR-8): a failing one makes the service degraded, never down."
+      },
+      "FeedOut": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "provider_name": {
+            "type": "string",
+            "title": "Provider Name"
+          },
+          "product": {
+            "type": "string",
+            "title": "Product"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location",
+            "description": "Pad or buoy the product is for, if any."
+          },
+          "last_ok": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Ok",
+            "description": "When the product was last fetched or checked."
+          },
+          "data_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Time",
+            "description": "The time the data itself refers to (model run, issue time, newest reading)."
+          },
+          "age_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age S",
+            "description": "How old the data is, seconds; null if none yet."
+          },
+          "stale": {
+            "type": "boolean",
+            "title": "Stale",
+            "description": "Past its staleness budget (or no data yet)."
+          },
+          "staleness_budget_s": {
+            "type": "integer",
+            "title": "Staleness Budget S"
+          },
+          "next_run": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Run"
+          },
+          "errors": {
+            "type": "integer",
+            "title": "Errors",
+            "description": "Failed attempts in a row."
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "licence": {
+            "type": "string",
+            "title": "Licence"
+          },
+          "breaker": {
+            "type": "string",
+            "enum": [
+              "closed",
+              "open",
+              "half_open"
+            ],
+            "title": "Breaker",
+            "description": "`open`: the provider failed repeatedly and is being left alone for a while."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider",
+          "provider_name",
+          "product",
+          "location",
+          "last_ok",
+          "data_time",
+          "age_s",
+          "stale",
+          "staleness_budget_s",
+          "next_run",
+          "errors",
+          "last_error",
+          "licence",
+          "breaker"
+        ],
+        "title": "FeedOut"
+      },
+      "FeedsOut": {
+        "properties": {
+          "feeds": {
+            "items": {
+              "$ref": "#/components/schemas/FeedOut"
+            },
+            "type": "array",
+            "title": "Feeds"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "feeds"
+        ],
+        "title": "FeedsOut"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2981,6 +3347,9 @@
               "bypass"
             ],
             "title": "Redis"
+          },
+          "feeds": {
+            "$ref": "#/components/schemas/FeedHealth"
           },
           "dem": {
             "$ref": "#/components/schemas/DemHealth"
@@ -3100,6 +3469,68 @@
           "computed_at"
         ],
         "title": "HorizonSummary"
+      },
+      "JobRefOut": {
+        "properties": {
+          "job_id": {
+            "type": "integer",
+            "title": "Job Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "done",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress",
+            "description": "0 to 1, when the job reports it."
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "One plain sentence about where the job is."
+          },
+          "poll_after_s": {
+            "type": "number",
+            "title": "Poll After S"
+          },
+          "assessment_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assessment Id",
+            "description": "The stored answer, once the job is done."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "job_id",
+          "status",
+          "progress",
+          "message",
+          "poll_after_s"
+        ],
+        "title": "JobRefOut",
+        "description": "A heavy answer being worked out. Poll ``GET /jobs/{job_id}`` after ``poll_after_s``."
       },
       "KernelHealth": {
         "properties": {
@@ -4293,6 +4724,30 @@
         ],
         "title": "PublishedDate"
       },
+      "RefreshOut": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "products": {
+            "type": "integer",
+            "title": "Products"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider",
+          "products",
+          "message"
+        ],
+        "title": "RefreshOut"
+      },
       "Resolution": {
         "properties": {
           "azimuth_deg": {
@@ -4367,6 +4822,17 @@
             "format": "date-time",
             "title": "Expires At"
           },
+          "user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The named person. Null for a session that can read but not change records (a token issued before names were asked for)."
+          },
           "token": {
             "type": "string",
             "title": "Token",
@@ -4406,6 +4872,36 @@
           "system"
         ],
         "title": "SettingsOut"
+      },
+      "SignInIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "description": "Recorded on every change."
+          },
+          "team": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "SignInIn",
+        "description": "Who is signing in. With no body, the name is \"Demo project manager\"."
       },
       "SiteBrief": {
         "properties": {
@@ -5167,6 +5663,37 @@
         "title": "Uncertainty",
         "description": "How wrong this could be, in the units the caller is reading."
       },
+      "UserOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "team": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "team"
+        ],
+        "title": "UserOut"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -5220,6 +5747,17 @@
             "type": "string",
             "format": "date-time",
             "title": "Expires At"
+          },
+          "user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The named person. Null for a session that can read but not change records (a token issued before names were asked for)."
           }
         },
         "additionalProperties": false,

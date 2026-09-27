@@ -167,6 +167,8 @@ def stop_previous_instances(be_port: int = 8000, fe_port: int = 5173) -> None:
     # Pattern matches
     pattern_pids: set[int] = set()
     pattern_pids.update(get_matching_pids("uvicorn app.main:app"))
+    pattern_pids.update(get_matching_pids("app.workers.compute"))
+    pattern_pids.update(get_matching_pids("app.workers.feeds"))
     pattern_pids.update(get_matching_pids("vite"))
 
     all_pids = port_pids | pattern_pids
@@ -326,6 +328,14 @@ class Stack:
         cmd = ["uv", "run", "uvicorn", "app.main:app", "--reload", "--port", str(self.be_port)]
         self._spawn("backend", cmd, BE_DIR, CYAN)
 
+    def start_compute(self) -> None:
+        log("RUN", CYAN, "Starting the compute worker (trip, contact and launch answers)...")
+        self._spawn("compute", ["uv", "run", "python", "-m", "app.workers.compute"], BE_DIR, CYAN)
+
+    def start_feeds(self) -> None:
+        log("RUN", CYAN, "Starting the feeds worker (weather, space weather, DSN Now)...")
+        self._spawn("feeds", ["uv", "run", "python", "-m", "app.workers.feeds"], BE_DIR, CYAN)
+
     def start_frontend(self) -> None:
         log("RUN", GREEN, f"Starting Frontend on http://localhost:{self.fe_port}...")
         cmd = ["npm", "run", "dev", "--", "--port", str(self.fe_port), "--strictPort"]
@@ -356,6 +366,9 @@ class Stack:
             log("DATA", YELLOW, f"Restarting the backend so it uses {why}...")
             self._stop(self.procs["backend"])
             self.start_backend()
+            if "compute" in self.procs:
+                self._stop(self.procs["compute"])
+                self.start_compute()
         finally:
             self.restarting.clear()
 
@@ -363,7 +376,7 @@ class Stack:
         if self.stop_event.is_set():
             return
         self.stop_event.set()
-        log("SYSTEM", YELLOW, "\nShutting down backend and frontend...")
+        log("SYSTEM", YELLOW, "\nShutting down the backend, the workers and the frontend...")
         for proc in self.procs.values():
             self._stop(proc)
         log("SYSTEM", GREEN, "All servers stopped. Goodbye!")
@@ -414,16 +427,31 @@ def sync_data(stack: Stack, tiers: list[str]) -> None:
             "The app keeps working with what is present; re-run to resume.")
 
 
+def migrate() -> None:
+    """Bring the database schema up to date (idempotent; new tables for new features)."""
+    log("DB", CYAN, "Applying database migrations...")
+    res = subprocess.run(["uv", "run", "alembic", "upgrade", "head"], cwd=BE_DIR, check=False)
+    if res.returncode != 0:
+        log("DB", RED, "Migrations failed; the app may miss newer tables (see the output above).")
+
+
 def run_stack(
     be_port: int = 8000,
     fe_port: int = 5173,
     *,
     data: bool = True,
     data_tiers: list[str] | None = None,
+    feeds: bool = True,
 ) -> None:
-    """Run backend and frontend together; then fetch any missing data in the background."""
+    """Run backend, workers and frontend together; then fetch any missing data in the background."""
     stack = Stack(be_port, fe_port)
+    migrate()
     stack.start_backend()
+    stack.start_compute()
+    if feeds:
+        stack.start_feeds()
+    else:
+        log("RUN", YELLOW, "Not starting the feeds worker (--no-feeds): live data stays as stored.")
     stack.start_frontend()
     signal.signal(signal.SIGINT, stack.shutdown)
     signal.signal(signal.SIGTERM, stack.shutdown)
@@ -462,6 +490,11 @@ def main() -> None:
         help="Do not check or download datasets after the app starts.",
     )
     parser.add_argument(
+        "--no-feeds",
+        action="store_true",
+        help="Do not start the feeds worker (no outbound fetches of weather or space weather).",
+    )
+    parser.add_argument(
         "--data-tier",
         action="append",
         choices=("core", "lifecycle", "validation", "bulk"),
@@ -492,6 +525,7 @@ def main() -> None:
         fe_port=args.frontend_port,
         data=not args.no_data,
         data_tiers=args.data_tier,
+        feeds=not args.no_feeds,
     )
 
 

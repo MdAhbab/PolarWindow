@@ -1,0 +1,582 @@
+{
+ "schema_version": 1,
+ "catalogue": "launch_sites",
+ "compiled": "2026-09-27",
+ "about": "Launch pads a CLPS lander (or a partner-agency lunar mission) may fly from. Coordinates are Launch Library 2's pad records; the Eastern Range azimuth limits are an assumption stated with its reason. Every other value is sourced or listed as unconfirmed.",
+ "records": [
+  {
+   "id": "ksc-lc-39a",
+   "name": "Launch Complex 39A",
+   "operator": "SpaceX",
+   "launch_range": "eastern",
+   "lat_deg": 28.60822681,
+   "lon_deg": -80.60428186,
+   "azimuth_min_deg": 35,
+   "azimuth_max_deg": 120,
+   "vehicles": [
+    "falcon-9",
+    "falcon-heavy"
+   ],
+   "status": "active",
+   "status_note": null,
+   "nws_forecast": true,
+   "ndbc_buoys": [
+    "41009",
+    "41010",
+    "41113"
+   ],
+   "ll2_pad_id": 87,
+   "ll2_location_id": 27,
+   "sources": [
+    {
+     "url": "https://ll.thespacedevs.com/2.3.0/pads/87/",
+     "title": "Launch Library 2 pad record: Launch Complex 39A",
+     "publisher": "The Space Devs (Launch Library 2)",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://www.ndbc.noaa.gov/station_page.php?station=41009",
+     "title": "NDBC station 41009: Canaveral 20 NM East of Cape Canaveral, FL",
+     "publisher": "NOAA National Data Buoy Center",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://www.ndbc.noaa.gov/station_page.php?station=41010",
+     "title": "NDBC station 41010: Canaveral East, 120 NM East of Cape Canaveral",
+     "publisher": "NOAA National Data Buoy Center",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://www.ndbc.noaa.gov/station_page.php?station=41113",
+     "title": "NDBC station 41113: Cape Canaveral Nearshore, FL",
+     "publisher": "NOAA National Data Buoy Center",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+     "title": "Launch Library 2: upcoming launches at Kennedy, Cape Canaveral and Vandenberg",
+     "publisher": "The Space Devs (Launch Library 2)",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://api.weather.gov/points/28.6082,-80.6043",
+     "title": "NWS API points lookup for this pad (forecast office and grid cell)",
+     "publisher": "NOAA National Weather Service",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "lat_deg": "https://ll.thespacedevs.com/2.3.0/pads/87/",
+    "lon_deg": "https://ll.thespacedevs.com/2.3.0/pads/87/",
+    "ll2_pad_id": "https://ll.thespacedevs.com/2.3.0/pads/87/",
+    "ll2_location_id": "https://ll.thespacedevs.com/2.3.0/pads/87/",
+    "launch_range": "https://ll.thespacedevs.com/2.3.0/pads/87/",
+    "vehicles": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+    "status": "https://ll.thespacedevs.com/2.3.0/pads/87/",
+    "nws_forecast": "https://api.weather.gov/points/28.6082,-80.6043",
+    "ndbc_buoys": "https://www.ndbc.noaa.gov/station_page.php?station=41009",
+    "operator": "https://ll.thespacedevs.com/2.3.0/pads/87/"
+   },
+   "assumed_fields": {
+    "azimuth_min_deg": {
+     "reason": "Eastern Range launch azimuths of 35 to 120 degrees are widely quoted (land overflight of the US east coast below 35, Cuba above 120); no range safety document stating them was found, so the limits are an assumption the team should confirm with the range.",
+     "url": "https://www.planetary.org/articles/3450"
+    },
+    "azimuth_max_deg": {
+     "reason": "Eastern Range launch azimuths of 35 to 120 degrees are widely quoted (land overflight of the US east coast below 35, Cuba above 120); no range safety document stating them was found, so the limits are an assumption the team should confirm with the range.",
+     "url": "https://www.planetary.org/articles/3450"
+    }
+   },
+   "unconfirmed_fields": [
+    "status_note"
+   ],
+   "notes": []
+  },
+  {
+   "id": "ccsfs-slc-40",
+   "name": "Space Launch Complex 40",
+   "operator": "SpaceX",
+   "launch_range": "eastern",
+   "lat_deg": 28.56194122,
+   "lon_deg": -80.57735736,
+   "azimuth_min_deg": 35,
+   "azimuth_max_deg": 120,
+   "vehicles": [
+    "falcon-9"
+   ],
+   "status": "active",
+   "status_note": null,
+   "nws_forecast": true,
+   "ndbc_buoys": [
+    "41009",
+    "41010",
+    "41113"
+   ],
+   "ll2_pad_id": 80,
+   "ll2_location_id": 12,
+   "sources": [
+    {
+     "url": "https://ll.thespacedevs.com/2.3.0/pads/80/",
+     "title": "Launch Library 2 pad record: Space Launch Complex 40",
+     "publisher": "The Space Devs (Launch Library 2)",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://www.ndbc.noaa.gov/station_page.php?station=41009",
+     "title": "NDBC station 41009: Canaveral 20 NM East of Cape Canaveral, FL",
+     "publisher": "NOAA National Data Buoy Center",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://www.ndbc.noaa.gov/station_page.php?station=41010",
+     "title": "NDBC station 41010: Canaveral East, 120 NM East of Cape Canaveral",
+     "publisher": "NOAA National Data Buoy Center",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://www.ndbc.noaa.gov/station_page.php?station=41113",
+     "title": "NDBC station 41113: Cape Canaveral Nearshore, FL",
+     "publisher": "NOAA National Data Buoy Center",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+     "title": "Launch Library 2: upcoming launches at Kennedy, Cape Canaveral and Vandenberg",
+     "publisher": "The Space Devs (Launch Library 2)",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://api.weather.gov/points/28.5619,-80.5774",
+     "title": "NWS API points lookup for this pad (forecast office and grid cell)",
+     "publisher": "NOAA National Weather Service",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "lat_deg": "https://ll.thespacedevs.com/2.3.0/pads/80/",
+    "lon_deg": "https://ll.thespacedevs.com/2.3.0/pads/80/",
+    "ll2_pad_id": "https://ll.thespacedevs.com/2.3.0/pads/80/",
+    "ll2_location_id": "https://ll.thespacedevs.com/2.3.0/pads/80/",
+    "launch_range": "https://ll.thespacedevs.com/2.3.0/pads/80/",
+    "vehicles": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+    "status": "https://ll.thespacedevs.com/2.3.0/pads/80/",
+    "nws_forecast": "https://api.weather.gov/points/28.5619,-80.5774",
+    "ndbc_buoys": "https://www.ndbc.noaa.gov/station_page.php?station=41009",
+    "operator": "https://ll.thespacedevs.com/2.3.0/pads/80/"
+   },
+   "assumed_fields": {
+    "azimuth_min_deg": {
+     "reason": "Eastern Range launch azimuths of 35 to 120 degrees are widely quoted (land overflight of the US east coast below 35, Cuba above 120); no range safety document stating them was found, so the limits are an assumption the team should confirm with the range.",
+     "url": "https://www.planetary.org/articles/3450"
+    },
+    "azimuth_max_deg": {
+     "reason": "Eastern Range launch azimuths of 35 to 120 degrees are widely quoted (land overflight of the US east coast below 35, Cuba above 120); no range safety document stating them was found, so the limits are an assumption the team should confirm with the range.",
+     "url": "https://www.planetary.org/articles/3450"
+    }
+   },
+   "unconfirmed_fields": [
+    "status_note"
+   ],
+   "notes": []
+  },
+  {
+   "id": "ccsfs-slc-41",
+   "name": "Space Launch Complex 41",
+   "operator": "United Launch Alliance",
+   "launch_range": "eastern",
+   "lat_deg": 28.58341025,
+   "lon_deg": -80.58303644,
+   "azimuth_min_deg": 35,
+   "azimuth_max_deg": 120,
+   "vehicles": [
+    "vulcan-centaur"
+   ],
+   "status": "active",
+   "status_note": null,
+   "nws_forecast": true,
+   "ndbc_buoys": [
+    "41009",
+    "41010",
+    "41113"
+   ],
+   "ll2_pad_id": 29,
+   "ll2_location_id": 12,
+   "sources": [
+    {
+     "url": "https://ll.thespacedevs.com/2.3.0/pads/29/",
+     "title": "Launch Library 2 pad record: Space Launch Complex 41",
+     "publisher": "The Space Devs (Launch Library 2)",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://www.ndbc.noaa.gov/station_page.php?station=41009",
+     "title": "NDBC station 41009: Canaveral 20 NM East of Cape Canaveral, FL",
+     "publisher": "NOAA National Data Buoy Center",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://www.ndbc.noaa.gov/station_page.php?station=41010",
+     "title": "NDBC station 41010: Canaveral East, 120 NM East of Cape Canaveral",
+     "publisher": "NOAA National Data Buoy Center",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://www.ndbc.noaa.gov/station_page.php?station=41113",
+     "title": "NDBC station 41113: Cape Canaveral Nearshore, FL",
+     "publisher": "NOAA National Data Buoy Center",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+     "title": "Launch Library 2: upcoming launches at Kennedy, Cape Canaveral and Vandenberg",
+     "publisher": "The Space Devs (Launch Library 2)",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://api.weather.gov/points/28.5834,-80.5830",
+     "title": "NWS API points lookup for this pad (forecast office and grid cell)",
+     "publisher": "NOAA National Weather Service",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "lat_deg": "https://ll.thespacedevs.com/2.3.0/pads/29/",
+    "lon_deg": "https://ll.thespacedevs.com/2.3.0/pads/29/",
+    "ll2_pad_id": "https://ll.thespacedevs.com/2.3.0/pads/29/",
+    "ll2_location_id": "https://ll.thespacedevs.com/2.3.0/pads/29/",
+    "launch_range": "https://ll.thespacedevs.com/2.3.0/pads/29/",
+    "vehicles": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+    "status": "https://ll.thespacedevs.com/2.3.0/pads/29/",
+    "nws_forecast": "https://api.weather.gov/points/28.5834,-80.5830",
+    "ndbc_buoys": "https://www.ndbc.noaa.gov/station_page.php?station=41009",
+    "operator": "https://ll.thespacedevs.com/2.3.0/pads/29/"
+   },
+   "assumed_fields": {
+    "azimuth_min_deg": {
+     "reason": "Eastern Range launch azimuths of 35 to 120 degrees are widely quoted (land overflight of the US east coast below 35, Cuba above 120); no range safety document stating them was found, so the limits are an assumption the team should confirm with the range.",
+     "url": "https://www.planetary.org/articles/3450"
+    },
+    "azimuth_max_deg": {
+     "reason": "Eastern Range launch azimuths of 35 to 120 degrees are widely quoted (land overflight of the US east coast below 35, Cuba above 120); no range safety document stating them was found, so the limits are an assumption the team should confirm with the range.",
+     "url": "https://www.planetary.org/articles/3450"
+    }
+   },
+   "unconfirmed_fields": [
+    "status_note"
+   ],
+   "notes": []
+  },
+  {
+   "id": "ccsfs-lc-36",
+   "name": "Launch Complex 36",
+   "operator": "Blue Origin",
+   "launch_range": "eastern",
+   "lat_deg": 28.4705556,
+   "lon_deg": -80.542194,
+   "azimuth_min_deg": 35,
+   "azimuth_max_deg": 120,
+   "vehicles": [
+    "new-glenn"
+   ],
+   "status": "damaged",
+   "status_note": "A New Glenn exploded on the pad during a static-fire test on 28 May 2026 (9 p.m. EDT); the transporter-erector and at least one lightning tower were destroyed. Repair status not confirmed here.",
+   "nws_forecast": true,
+   "ndbc_buoys": [
+    "41009",
+    "41010",
+    "41113"
+   ],
+   "ll2_pad_id": 121,
+   "ll2_location_id": 12,
+   "sources": [
+    {
+     "url": "https://ll.thespacedevs.com/2.3.0/pads/121/",
+     "title": "Launch Library 2 pad record: Launch Complex 36",
+     "publisher": "The Space Devs (Launch Library 2)",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://spaceflightnow.com/2026/05/29/blue-origins-new-glenn-rocket-explodes-during-prelaunch-testing-at-cape-canaveral/",
+     "title": "Blue Origin's New Glenn rocket explodes during prelaunch testing at Cape Canaveral (Will Robinson-Smith, 29 May 2026)",
+     "publisher": "Spaceflight Now",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://www.ndbc.noaa.gov/station_page.php?station=41009",
+     "title": "NDBC station 41009: Canaveral 20 NM East of Cape Canaveral, FL",
+     "publisher": "NOAA National Data Buoy Center",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://www.ndbc.noaa.gov/station_page.php?station=41010",
+     "title": "NDBC station 41010: Canaveral East, 120 NM East of Cape Canaveral",
+     "publisher": "NOAA National Data Buoy Center",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://www.ndbc.noaa.gov/station_page.php?station=41113",
+     "title": "NDBC station 41113: Cape Canaveral Nearshore, FL",
+     "publisher": "NOAA National Data Buoy Center",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+     "title": "Launch Library 2: upcoming launches at Kennedy, Cape Canaveral and Vandenberg",
+     "publisher": "The Space Devs (Launch Library 2)",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://api.weather.gov/points/28.4706,-80.5422",
+     "title": "NWS API points lookup for this pad (forecast office and grid cell)",
+     "publisher": "NOAA National Weather Service",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "lat_deg": "https://ll.thespacedevs.com/2.3.0/pads/121/",
+    "lon_deg": "https://ll.thespacedevs.com/2.3.0/pads/121/",
+    "ll2_pad_id": "https://ll.thespacedevs.com/2.3.0/pads/121/",
+    "ll2_location_id": "https://ll.thespacedevs.com/2.3.0/pads/121/",
+    "launch_range": "https://ll.thespacedevs.com/2.3.0/pads/121/",
+    "vehicles": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+    "status": "https://ll.thespacedevs.com/2.3.0/pads/121/",
+    "status_note": "https://spaceflightnow.com/2026/05/29/blue-origins-new-glenn-rocket-explodes-during-prelaunch-testing-at-cape-canaveral/",
+    "nws_forecast": "https://api.weather.gov/points/28.4706,-80.5422",
+    "ndbc_buoys": "https://www.ndbc.noaa.gov/station_page.php?station=41009",
+    "operator": "https://ll.thespacedevs.com/2.3.0/pads/121/"
+   },
+   "assumed_fields": {
+    "azimuth_min_deg": {
+     "reason": "Eastern Range launch azimuths of 35 to 120 degrees are widely quoted (land overflight of the US east coast below 35, Cuba above 120); no range safety document stating them was found, so the limits are an assumption the team should confirm with the range.",
+     "url": "https://www.planetary.org/articles/3450"
+    },
+    "azimuth_max_deg": {
+     "reason": "Eastern Range launch azimuths of 35 to 120 degrees are widely quoted (land overflight of the US east coast below 35, Cuba above 120); no range safety document stating them was found, so the limits are an assumption the team should confirm with the range.",
+     "url": "https://www.planetary.org/articles/3450"
+    }
+   },
+   "unconfirmed_fields": [],
+   "notes": [
+    "Launch Library 2 lists LC-36 as pads 36A and 36B with the same coordinate; pad 121 (36A) is used here."
+   ]
+  },
+  {
+   "id": "vsfb-slc-4e",
+   "name": "Space Launch Complex 4E",
+   "operator": "SpaceX",
+   "launch_range": "western",
+   "lat_deg": 34.632,
+   "lon_deg": -120.611,
+   "azimuth_min_deg": null,
+   "azimuth_max_deg": null,
+   "vehicles": [
+    "falcon-9"
+   ],
+   "status": "active",
+   "status_note": null,
+   "nws_forecast": true,
+   "ndbc_buoys": [
+    "46011",
+    "46054",
+    "46218"
+   ],
+   "ll2_pad_id": 16,
+   "ll2_location_id": 11,
+   "sources": [
+    {
+     "url": "https://ll.thespacedevs.com/2.3.0/pads/16/",
+     "title": "Launch Library 2 pad record: Space Launch Complex 4E",
+     "publisher": "The Space Devs (Launch Library 2)",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://www.ndbc.noaa.gov/station_page.php?station=46011",
+     "title": "NDBC station 46011: Santa Maria, 21 NM NW of Point Arguello, CA",
+     "publisher": "NOAA National Data Buoy Center",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://www.ndbc.noaa.gov/station_page.php?station=46054",
+     "title": "NDBC station 46054: West Santa Barbara, 38 NM West of Santa Barbara, CA",
+     "publisher": "NOAA National Data Buoy Center",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://www.ndbc.noaa.gov/station_page.php?station=46218",
+     "title": "NDBC station 46218: Harvest, CA",
+     "publisher": "NOAA National Data Buoy Center",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+     "title": "Launch Library 2: upcoming launches at Kennedy, Cape Canaveral and Vandenberg",
+     "publisher": "The Space Devs (Launch Library 2)",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://api.weather.gov/points/34.6320,-120.6110",
+     "title": "NWS API points lookup for this pad (forecast office and grid cell)",
+     "publisher": "NOAA National Weather Service",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "lat_deg": "https://ll.thespacedevs.com/2.3.0/pads/16/",
+    "lon_deg": "https://ll.thespacedevs.com/2.3.0/pads/16/",
+    "ll2_pad_id": "https://ll.thespacedevs.com/2.3.0/pads/16/",
+    "ll2_location_id": "https://ll.thespacedevs.com/2.3.0/pads/16/",
+    "launch_range": "https://ll.thespacedevs.com/2.3.0/pads/16/",
+    "vehicles": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+    "status": "https://ll.thespacedevs.com/2.3.0/pads/16/",
+    "nws_forecast": "https://api.weather.gov/points/34.6320,-120.6110",
+    "ndbc_buoys": "https://www.ndbc.noaa.gov/station_page.php?station=46011",
+    "operator": "https://ll.thespacedevs.com/2.3.0/pads/16/"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [
+    "azimuth_max_deg",
+    "azimuth_min_deg",
+    "status_note"
+   ],
+   "notes": []
+  },
+  {
+   "id": "tnsc-yoshinobu-lp1",
+   "name": "Yoshinobu Launch Complex LP-1",
+   "operator": null,
+   "launch_range": "tanegashima",
+   "lat_deg": 30.400813,
+   "lon_deg": 130.977748,
+   "azimuth_min_deg": null,
+   "azimuth_max_deg": null,
+   "vehicles": [],
+   "status": "active",
+   "status_note": null,
+   "nws_forecast": false,
+   "ndbc_buoys": [],
+   "ll2_pad_id": 41,
+   "ll2_location_id": 26,
+   "sources": [
+    {
+     "url": "https://ll.thespacedevs.com/2.3.0/pads/41/",
+     "title": "Launch Library 2 pad record: Yoshinobu Launch Complex LP-1",
+     "publisher": "The Space Devs (Launch Library 2)",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "lat_deg": "https://ll.thespacedevs.com/2.3.0/pads/41/",
+    "lon_deg": "https://ll.thespacedevs.com/2.3.0/pads/41/",
+    "ll2_pad_id": "https://ll.thespacedevs.com/2.3.0/pads/41/",
+    "ll2_location_id": "https://ll.thespacedevs.com/2.3.0/pads/41/",
+    "launch_range": "https://ll.thespacedevs.com/2.3.0/pads/41/",
+    "status": "https://ll.thespacedevs.com/2.3.0/pads/41/",
+    "nws_forecast": "https://ll.thespacedevs.com/2.3.0/pads/41/"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [
+    "azimuth_max_deg",
+    "azimuth_min_deg",
+    "ndbc_buoys",
+    "operator",
+    "status_note",
+    "vehicles"
+   ],
+   "notes": [
+    "Listed for completeness: no CLPS mission uses this pad. Weather comes from the global model runs only; the national forecast is linked, not read."
+   ]
+  },
+  {
+   "id": "sdsc-slp",
+   "name": "Satish Dhawan Space Centre Second Launch Pad",
+   "operator": null,
+   "launch_range": "sriharikota",
+   "lat_deg": 13.7199,
+   "lon_deg": 80.2304,
+   "azimuth_min_deg": null,
+   "azimuth_max_deg": null,
+   "vehicles": [],
+   "status": "active",
+   "status_note": null,
+   "nws_forecast": false,
+   "ndbc_buoys": [],
+   "ll2_pad_id": 82,
+   "ll2_location_id": 14,
+   "sources": [
+    {
+     "url": "https://ll.thespacedevs.com/2.3.0/pads/82/",
+     "title": "Launch Library 2 pad record: Satish Dhawan Space Centre Second Launch Pad",
+     "publisher": "The Space Devs (Launch Library 2)",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "lat_deg": "https://ll.thespacedevs.com/2.3.0/pads/82/",
+    "lon_deg": "https://ll.thespacedevs.com/2.3.0/pads/82/",
+    "ll2_pad_id": "https://ll.thespacedevs.com/2.3.0/pads/82/",
+    "ll2_location_id": "https://ll.thespacedevs.com/2.3.0/pads/82/",
+    "launch_range": "https://ll.thespacedevs.com/2.3.0/pads/82/",
+    "status": "https://ll.thespacedevs.com/2.3.0/pads/82/",
+    "nws_forecast": "https://ll.thespacedevs.com/2.3.0/pads/82/"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [
+    "azimuth_max_deg",
+    "azimuth_min_deg",
+    "ndbc_buoys",
+    "operator",
+    "status_note",
+    "vehicles"
+   ],
+   "notes": [
+    "Listed for completeness: no CLPS mission uses this pad. Weather comes from the global model runs only; the national forecast is linked, not read."
+   ]
+  },
+  {
+   "id": "wslc-lc101",
+   "name": "Wenchang Launch Complex 101",
+   "operator": null,
+   "launch_range": "wenchang",
+   "lat_deg": 19.614334,
+   "lon_deg": 110.951011,
+   "azimuth_min_deg": null,
+   "azimuth_max_deg": null,
+   "vehicles": [],
+   "status": "active",
+   "status_note": null,
+   "nws_forecast": false,
+   "ndbc_buoys": [],
+   "ll2_pad_id": 175,
+   "ll2_location_id": 8,
+   "sources": [
+    {
+     "url": "https://ll.thespacedevs.com/2.3.0/pads/175/",
+     "title": "Launch Library 2 pad record: Wenchang Launch Complex 101",
+     "publisher": "The Space Devs (Launch Library 2)",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "lat_deg": "https://ll.thespacedevs.com/2.3.0/pads/175/",
+    "lon_deg": "https://ll.thespacedevs.com/2.3.0/pads/175/",
+    "ll2_pad_id": "https://ll.thespacedevs.com/2.3.0/pads/175/",
+    "ll2_location_id": "https://ll.thespacedevs.com/2.3.0/pads/175/",
+    "launch_range": "https://ll.thespacedevs.com/2.3.0/pads/175/",
+    "status": "https://ll.thespacedevs.com/2.3.0/pads/175/",
+    "nws_forecast": "https://ll.thespacedevs.com/2.3.0/pads/175/"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [
+    "azimuth_max_deg",
+    "azimuth_min_deg",
+    "ndbc_buoys",
+    "operator",
+    "status_note",
+    "vehicles"
+   ],
+   "notes": [
+    "Listed for completeness: no CLPS mission uses this pad. Weather comes from the global model runs only; the national forecast is linked, not read."
+   ]
+  }
+ ]
+}

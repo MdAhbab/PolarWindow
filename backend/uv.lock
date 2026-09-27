@@ -69,6 +69,18 @@ wheels = [
 ]
 
 [[package]]
+name = "cdflib"
+version = "1.3.14"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/77/38/973a7420e18511c81747d06596e82687ee5475a417fd8a4398b5e9137060/cdflib-1.3.14.tar.gz", hash = "sha256:9332cdfb31e35f825676328acf818d1cf6ba355b75d021da11b28a4aab23a85a", size = 286816, upload-time = "2026-09-25T21:23:22.787Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ae/30/32deca2a9245a4881c15f3d4c61cb7d43b38ecf81f5c2802d8e15d83e81e/cdflib-1.3.14-py3-none-any.whl", hash = "sha256:ee80dc2af9afa0204055a9afa567c05a1719e74ea327bc64e638ecde82471cb4", size = 81111, upload-time = "2026-09-25T21:23:21.499Z" },
+]
+
+[[package]]
 name = "certifi"
 version = "2026.7.22"
 source = { registry = "https://pypi.org/simple" }
@@ -221,12 +233,62 @@ wheels = [
 ]
 
 [[package]]
+name = "defusedxml"
+version = "0.7.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/0f/d5/c66da9b79e5bdb124974bfe172b4daf3c984ebd9c2a06e2b8a4dc7331c72/defusedxml-0.7.1.tar.gz", hash = "sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69", size = 75520, upload-time = "2021-03-08T10:59:26.269Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/6c/aa3f2f849e01cb6a001cd8554a88d4c77c5c1a31c95bdf1cf9301e6d9ef4/defusedxml-0.7.1-py2.py3-none-any.whl", hash = "sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61", size = 25604, upload-time = "2021-03-08T10:59:24.45Z" },
+]
+
+[[package]]
 name = "distro"
 version = "1.9.0"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/fc/f8/98eea607f65de6527f8a2e8885fc8015d3e6f5775df186e443e0964a11c3/distro-1.9.0.tar.gz", hash = "sha256:2fa77c6fd8940f116ee1d6b94a2f90b13b5ea8d019b98bc8bafdcabcdd9bdbed", size = 60722, upload-time = "2023-12-24T09:54:32.31Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl", hash = "sha256:7bffd925d65168f85027d8da9af6bddab658135b840670a223589bc0c8ef02b2", size = 20277, upload-time = "2023-12-24T09:54:30.421Z" },
+]
+
+[[package]]
+name = "eccodes"
+version = "2.48.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "attrs" },
+    { name = "cffi" },
+    { name = "findlibs" },
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/04/37/4778efab858e247a30c01f00dfa84d4d9067c43425ece0250b7b6127c4e8/eccodes-2.48.0.tar.gz", hash = "sha256:7ea659eb15044f6ac809636ca1712cd026cdbfad5a189f4c55d86a8711ab1a9d", size = 2467700, upload-time = "2026-08-25T17:39:33.624Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3e/47/87399a674133f4c61031344e92e8041d5a04c78d5d2dcf41e171c1ce65cc/eccodes-2.48.0-cp312-cp312-win_amd64.whl", hash = "sha256:ae555c99abe13331d5f4a5dd4b4b6ca2ac39aefdc68037b7ebb623df16963778", size = 7599292, upload-time = "2026-08-25T17:38:54.914Z" },
+    { url = "https://files.pythonhosted.org/packages/1d/f8/8e28ab8e3d7d2881942e0c2c4538004e19c5349425e7f6dfd15259e37e51/eccodes-2.48.0-py3-none-any.whl", hash = "sha256:470eed1c5ba0aa9062a345ac0806cb887e5395263243b2d93c88e45002a035aa", size = 91621, upload-time = "2026-08-25T17:39:32.635Z" },
+]
+
+[[package]]
+name = "eccodeslib"
+version = "2.49.0.30"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "eckitlib" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/98/88/324a4cc61f21c8edc1d51fcef7c12ce1dec2ef6c61b2fe95d9095cbb517c/eccodeslib-2.49.0.30-cp312-cp312-macosx_15_0_arm64.whl", hash = "sha256:dcff25174c2107dbc0ad75f27340494e1c23e20be9d718daeda82c59e32025a2", size = 9130298, upload-time = "2026-09-22T15:30:00.934Z" },
+    { url = "https://files.pythonhosted.org/packages/e4/d7/9fa89e3a0bc763d52358de95052193019fe5c4173c00b7f35d218a8d850c/eccodeslib-2.49.0.30-cp312-cp312-macosx_15_0_x86_64.whl", hash = "sha256:821363a8f9d24626b7c77aa62d6389ccfeb37395767160a7bd8b5d273bd58b89", size = 8919659, upload-time = "2026-09-22T15:10:16.4Z" },
+    { url = "https://files.pythonhosted.org/packages/22/0e/21192510763d35924e1eb326b6e0bef110d660c352a2217ad1bd66fff4d9/eccodeslib-2.49.0.30-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:6dbd6701fee98a9a7ff62ce7708f628ebc00c0910c67aebd2ef639ea2a10dfa8", size = 9313350, upload-time = "2026-09-22T14:55:39.731Z" },
+    { url = "https://files.pythonhosted.org/packages/6f/0c/9a8b3c9e8ef2d9ff4527c5184f346db4626a14978e964a347561c651368e/eccodeslib-2.49.0.30-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:3af3dec6f4e5630dabc8cfa45346b38581ce5bd135944fc2b95d1040b75b5551", size = 9099266, upload-time = "2026-09-22T15:00:02.16Z" },
+]
+
+[[package]]
+name = "eckitlib"
+version = "2.3.0.30"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6e/b1/31217e96574d0dc00a7ad33c7e3ae1bb4b18e9c57e5921ddbe78a1dd52a5/eckitlib-2.3.0.30-cp312-cp312-macosx_15_0_arm64.whl", hash = "sha256:5e42276f074a613a068813dda6cc9fe346957e9f4839c1437dc06861239bfb2f", size = 6538694, upload-time = "2026-09-22T15:30:06.029Z" },
+    { url = "https://files.pythonhosted.org/packages/bf/9a/71f1cab65f851e6d83438fbb5fbc84edbcb7c01176b0473d1a3190ec3061/eckitlib-2.3.0.30-cp312-cp312-macosx_15_0_x86_64.whl", hash = "sha256:352045f65066369d539dcc4d8eb12ca6bc53edc09af4fbc6078409597efcf4f9", size = 6683917, upload-time = "2026-09-22T15:10:22.947Z" },
+    { url = "https://files.pythonhosted.org/packages/38/bd/4371a6f7b5be9a7f7fd7debae031c5e8203de172e1f9358f2d4e56651c4a/eckitlib-2.3.0.30-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:d0d9427957efabf90e89df854c027cafe741b9ce45985ab0fb19f675f4527aa7", size = 35166539, upload-time = "2026-09-22T14:55:45.436Z" },
+    { url = "https://files.pythonhosted.org/packages/20/08/bc24e84e0736751ba1b518496755f2f88c748af79bd6d7ad4e954a6dac1a/eckitlib-2.3.0.30-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:71b4059a56d8b35d682b05b0929e848e34750bb4c9e8d7198aa6d0049171c984", size = 35957853, upload-time = "2026-09-22T15:00:12.329Z" },
 ]
 
 [[package]]
@@ -241,6 +303,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/93/72/d83b98cd106541e8f5e5bfab8ef2974ab45a62e8a6c5b5e6940f26d2ed4b/fastapi-0.115.6.tar.gz", hash = "sha256:9ec46f7addc14ea472958a96aae5b5de65f39721a46aaf5705c480d9a8b76654", size = 301336, upload-time = "2024-12-03T22:46:01.629Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/52/b3/7e4df40e585df024fac2f80d1a2d579c854ac37109675db2b0cc22c0bb9e/fastapi-0.115.6-py3-none-any.whl", hash = "sha256:e9240b29e36fa8f4bb7290316988e90c381e5092e0cbe84e7818cc3713bcf305", size = 94843, upload-time = "2024-12-03T22:45:59.368Z" },
+]
+
+[[package]]
+name = "findlibs"
+version = "0.1.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/91/21/235e81c0e29a5aa84e5374d469723d508de63692049e80654b1b56d1c57e/findlibs-0.1.3.tar.gz", hash = "sha256:49bbe509c8b439ecd9c0d021c301aa9db643a2e6ab4e189a40b505ee4a49db62", size = 11335, upload-time = "2026-07-14T10:52:47.795Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d1/13/63305a756cb6e9408828961d4ff8542f3625d7cfb62289b19016216a9fa2/findlibs-0.1.3-py3-none-any.whl", hash = "sha256:9c14f8506cdcd37e38369259f8cd9aa3c002d58cd7c2beff4852bd205495c555", size = 10714, upload-time = "2026-07-14T10:52:46.902Z" },
 ]
 
 [[package]]
@@ -571,6 +642,10 @@ source = { editable = "." }
 dependencies = [
     { name = "alembic" },
     { name = "asyncpg" },
+    { name = "cdflib" },
+    { name = "defusedxml" },
+    { name = "eccodes" },
+    { name = "eccodeslib", marker = "sys_platform != 'win32'" },
     { name = "fastapi" },
     { name = "google-genai" },
     { name = "httpx" },
@@ -600,6 +675,7 @@ dev = [
     { name = "pytest-cov" },
     { name = "respx" },
     { name = "ruff" },
+    { name = "types-defusedxml" },
     { name = "types-redis" },
 ]
 
@@ -607,6 +683,10 @@ dev = [
 requires-dist = [
     { name = "alembic", specifier = "==1.14.0" },
     { name = "asyncpg", specifier = "==0.30.0" },
+    { name = "cdflib", specifier = "==1.3.14" },
+    { name = "defusedxml", specifier = "==0.7.1" },
+    { name = "eccodes", specifier = "==2.48.0" },
+    { name = "eccodeslib", marker = "sys_platform != 'win32'", specifier = "==2.49.0.30" },
     { name = "fastapi", specifier = "==0.115.6" },
     { name = "google-genai", specifier = "==2.25.0" },
     { name = "greenlet", marker = "extra == 'dev'", specifier = "==3.1.1" },
@@ -630,6 +710,7 @@ requires-dist = [
     { name = "scipy", specifier = "==1.14.1" },
     { name = "spiceypy", specifier = "==6.0.3" },
     { name = "sqlalchemy", specifier = "==2.0.36" },
+    { name = "types-defusedxml", marker = "extra == 'dev'", specifier = ">=0.7.0.20260504" },
     { name = "types-redis", marker = "extra == 'dev'", specifier = "==4.6.0.20241004" },
     { name = "uvicorn", extras = ["standard"], specifier = "==0.34.0" },
     { name = "zstandard", specifier = "==0.23.0" },
@@ -983,6 +1064,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/04/bb/dbb844365103e4dc6ea52cdae0946c3ca55a7b8587e6f351710d7ee5bb78/types_cffi-2.1.0.20260827.tar.gz", hash = "sha256:53d1604771ad4ff09a1a90d6f6980ab36bebb6c39476dcc5bbf4896fa510d736", size = 18150, upload-time = "2026-08-27T12:07:21.754Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0c/fc/690c243ddac627901f1448f5cb29ca3b5463774a00ac932862c60d7ce5cf/types_cffi-2.1.0.20260827-py3-none-any.whl", hash = "sha256:851b6ffa5b962c577a2330b98ac0b60c56c904d086726276946388f58a0cffaf", size = 20525, upload-time = "2026-08-27T12:07:20.836Z" },
+]
+
+[[package]]
+name = "types-defusedxml"
+version = "0.7.0.20260504"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/da/d2/4553c8fa9cdebfe1e84b950cf790a4d2376a97fa016e43f7c65323fa6c7d/types_defusedxml-0.7.0.20260504.tar.gz", hash = "sha256:2ab2828a3f97111ba1c16cee273ad4124a831fc9198c41bf8368ff6ea48ad300", size = 10729, upload-time = "2026-05-04T05:22:50.192Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bf/2d/8a4b5ba1d732b8bc691f0efbb1c6f77cb5f6f473b2afe181d83d910773c5/types_defusedxml-0.7.0.20260504-py3-none-any.whl", hash = "sha256:a959e3a0a43b93e464bd625d91ec9193a2703ddc10443bdd627792485fae0b10", size = 13467, upload-time = "2026-05-04T05:22:49.319Z" },
 ]
 
 [[package]]

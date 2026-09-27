@@ -273,3 +273,14 @@ that user. `GET /auth/me` returns the same `user`.
   - Parameters: `GET /parameters` → `{parameters: {id, name, value: Quantity, note: string | null,
     changed_by: string | null, changed_at: string | null}[]}`; `PUT /parameters/{id}` `{value, note}`.
   - `Launch.vehicle_id` on `LaunchCalendar` (the vehicle whose limits apply), so the limits form knows where to write.
+- 2026-09-27 (backend, as built):
+  - `GET /feeds` rows also carry `provider_name` (plain words), `location` (pad or
+    buoy id, or null), `data_time` (the time the data refers to: model run, issue
+    time or newest reading), `staleness_budget_s` and `last_error`. `age_s` is the
+    age of the data, not of the last fetch; `errors` is the number of failed
+    attempts in a row. `stale` is also true when nothing has been recorded yet.
+  - `POST /feeds/{provider}/refresh` → `{provider, products, message}`.
+  - `POST /jobs/{job_id}/retry` (named session) queues a failed job's key again.
+  - `/healthz` is `degraded` when a feed is failing; stale data alone does not
+    degrade it (each number already says its age).
+  - A write from a session without a name answers 403 with type `.../name-needed`.

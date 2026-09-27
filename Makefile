@@ -11,6 +11,7 @@ DATA  := data
 
 .DEFAULT_GOAL := help
 .PHONY: missions test-db help install kernels dem sites seed tiles services db-up migrate dev api worker \
+        compute feeds feeds-once catalogues \
         frontend test test-fast test-int test-geo lint fmt typecheck contracts \
         golden-update openapi codegen clean nuke check
 
@@ -64,6 +65,18 @@ api: ## Run the API with reload
 
 worker: ## Run the precompute worker once
 	cd $(BE) && $(UV) run python -m app.workers.precompute
+
+compute: ## Run the compute worker: trip, contact and launch answers (ADR-12)
+	cd $(BE) && $(UV) run python -m app.workers.compute
+
+feeds: ## Run the feeds worker: records weather, space weather and DSN Now (ADR-8)
+	cd $(BE) && $(UV) run python -m app.workers.feeds
+
+feeds-once: ## Fetch every due live product once, then exit
+	cd $(BE) && $(UV) run python -m app.workers.feeds --once
+
+catalogues: ## Validate the cited catalogues under data/catalogues
+	cd $(BE) && $(UV) run python -m app.data.catalogues
 
 frontend: ## Run the Vite dev server
 	cd $(FE) && npm run dev

@@ -1,0 +1,138 @@
+{
+ "schema_version": 1,
+ "catalogue": "vehicles",
+ "compiled": "2026-09-27",
+ "about": "Launch vehicles that carry CLPS landers. Weather limits are in weather_rules; a limit no vehicle maker publishes is entered by the team, never filled in here.",
+ "records": [
+  {
+   "id": "falcon-9",
+   "name": "Falcon 9 Block 5",
+   "provider": "SpaceX",
+   "booster_recovery": "droneship_or_land",
+   "pads": [
+    "ksc-lc-39a",
+    "ccsfs-slc-40",
+    "vsfb-slc-4e"
+   ],
+   "user_guide_url": null,
+   "window_kind": null,
+   "sources": [
+    {
+     "url": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+     "title": "Launch Library 2: upcoming launches at Kennedy, Cape Canaveral and Vandenberg (booster landing plans per launch)",
+     "publisher": "The Space Devs (Launch Library 2)",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "provider": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+    "pads": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+    "booster_recovery": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [
+    "user_guide_url",
+    "window_kind"
+   ],
+   "notes": [
+    "Launch Library 2 lists droneship (ASDS) and land (RTLS) booster landings for upcoming Falcon 9 flights."
+   ]
+  },
+  {
+   "id": "falcon-heavy",
+   "name": "Falcon Heavy",
+   "provider": "SpaceX",
+   "booster_recovery": "droneship_or_land",
+   "pads": [
+    "ksc-lc-39a"
+   ],
+   "user_guide_url": null,
+   "window_kind": null,
+   "sources": [
+    {
+     "url": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+     "title": "Launch Library 2: upcoming launches at Kennedy, Cape Canaveral and Vandenberg (booster landing plans per launch)",
+     "publisher": "The Space Devs (Launch Library 2)",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "provider": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+    "pads": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+    "booster_recovery": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [
+    "user_guide_url",
+    "window_kind"
+   ],
+   "notes": [
+    "For NROL-97 Launch Library 2 lists both side boosters landing on land and the centre core expended."
+   ]
+  },
+  {
+   "id": "vulcan-centaur",
+   "name": "Vulcan Centaur",
+   "provider": "United Launch Alliance",
+   "booster_recovery": null,
+   "pads": [
+    "ccsfs-slc-41"
+   ],
+   "user_guide_url": null,
+   "window_kind": null,
+   "sources": [
+    {
+     "url": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+     "title": "Launch Library 2: upcoming launches at Kennedy, Cape Canaveral and Vandenberg (booster landing plans per launch)",
+     "publisher": "The Space Devs (Launch Library 2)",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "provider": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+    "pads": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [
+    "booster_recovery",
+    "user_guide_url",
+    "window_kind"
+   ],
+   "notes": [
+    "Launch Library 2 lists no booster landing for Vulcan flights."
+   ]
+  },
+  {
+   "id": "new-glenn",
+   "name": "New Glenn",
+   "provider": "Blue Origin",
+   "booster_recovery": null,
+   "pads": [
+    "ccsfs-lc-36"
+   ],
+   "user_guide_url": null,
+   "window_kind": null,
+   "sources": [
+    {
+     "url": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+     "title": "Launch Library 2: upcoming launches at Kennedy, Cape Canaveral and Vandenberg (booster landing plans per launch)",
+     "publisher": "The Space Devs (Launch Library 2)",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "provider": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+    "pads": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [
+    "booster_recovery",
+    "user_guide_url",
+    "window_kind"
+   ],
+   "notes": [
+    "LC-36, New Glenn's only pad, was damaged on 28 May 2026 (see launch_sites)."
+   ]
+  }
+ ]
+}

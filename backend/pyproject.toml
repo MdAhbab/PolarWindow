@@ -28,6 +28,10 @@ dependencies = [
     # --- ai -----------------------------------------------------------------
     "google-genai==2.25.0",
     "pyjwt>=2.10",
+    "eccodes==2.48.0",
+    "eccodeslib==2.49.0.30 ; sys_platform != 'win32'",
+    "defusedxml==0.7.1",
+    "cdflib==1.3.14",
 ]
 
 [project.optional-dependencies]
@@ -42,6 +46,7 @@ dev = [
     "import-linter==2.1",
     "types-redis==4.6.0.20241004",
     "greenlet==3.1.1",
+    "types-defusedxml>=0.7.0.20260504",
 ]
 
 [project.scripts]
@@ -113,7 +118,10 @@ warn_return_any = false
 # These ship without type information. They are quarantined behind our own
 # typed wrappers (core/spice.py, core/projections.py, data/*), so the untyped
 # surface stays small and named.
-module = ["spiceypy.*", "numba.*", "scipy.*", "pyproj.*", "google.*", "zstandard.*"]
+module = [
+    "spiceypy.*", "numba.*", "scipy.*", "pyproj.*", "google.*", "zstandard.*", "asyncpg.*",
+    "eccodes.*", "cdflib.*", "spacepy.*",
+]
 ignore_missing_imports = true
 
 # ---------------------------------------------------------------------------
@@ -127,6 +135,10 @@ markers = [
     "requires_kernels: needs SPICE kernels on disk (skipped in test-fast)",
     "requires_dem: needs the LOLA DEM subset on disk",
     "requires_db: needs a live Postgres",
+    "requires_clps_spice: needs the NAIF CLPS trajectory kernels (data/clps)",
+    "requires_feed_fixtures: reads recorded feed responses (app/tests/fixtures/feeds)",
+    "requires_gravity: needs the GRAIL GRGM1200A gravity field (data/gravity)",
+    "slow: takes more than a few seconds; not in test-fast",
 ]
 filterwarnings = ["error::DeprecationWarning:app.*"]
 
@@ -168,10 +180,26 @@ type = "forbidden"
 source_modules = ["app.core"]
 forbidden_modules = [
     "app.db", "app.services", "app.api", "app.agents", "app.data", "app.feeds",
-    "app.workers", "httpx", "sqlalchemy", "redis", "fastapi",
+    "app.workers", "httpx", "sqlalchemy", "redis", "fastapi", "eccodes", "cdflib",
 ]
 ignore_imports = ["app.core.kernels -> httpx"]
 allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "only the feeds worker fetches: nothing in the API, services, agents, core or db imports app.feeds"
+type = "forbidden"
+# ADR-8: the API reads what the feeds worker stored and never touches the
+# network. app.workers and the tests are the only importers of app.feeds.
+source_modules = ["app.api", "app.services", "app.agents", "app.core", "app.db", "app.data"]
+forbidden_modules = ["app.feeds"]
+
+[[tool.importlinter.contracts]]
+name = "GRIB and NetCDF readers live only in app.feeds.parsers"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = ["app"]
+forbidden_modules = ["eccodes", "cfgrib", "h5netcdf", "netCDF4", "xarray"]
+ignore_imports = ["app.feeds.parsers.grib -> eccodes"]
 
 [[tool.importlinter.contracts]]
 name = "spiceypy is reachable only through core.spice"
