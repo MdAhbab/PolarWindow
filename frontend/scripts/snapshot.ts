@@ -70,6 +70,20 @@ async function settle(page: Page) {
   await page.waitForTimeout(400)
 }
 
+/**
+ * Wait out a step being worked out, so its answer is on screen (and recorded).
+ * One that never starts (no compute worker running) is left out, and said so.
+ */
+async function answered(page: Page, path: string) {
+  try {
+    // The step's progress panel (the step bar's "Working it out" is another step's).
+    await page.getByRole('progressbar', { name: 'Progress' }).waitFor({ state: 'detached', timeout: 300_000 })
+  } catch {
+    console.warn(`${path}: still being worked out after 5 minutes (queued behind others, or no compute worker running); not saved`)
+  }
+  await settle(page)
+}
+
 async function visit(page: Page, path: string) {
   await page.goto(`${APP}${path}`)
   await settle(page)
@@ -145,9 +159,14 @@ async function main() {
 
   // Every mission's six steps (Landing is the mission page above). A step the
   // service does not answer yet is saved as its error, which is what it said.
+  // A step still being worked out (202) is followed until its answer comes, so
+  // the copy holds the answer rather than nothing.
   const STEPS = ['ready', 'launch', 'trip', 'contact', 'return']
   for (const m of missions.items) {
-    for (const step of STEPS) await visit(page, `/missions/${m.id}/${step}`)
+    for (const step of STEPS) {
+      await visit(page, `/missions/${m.id}/${step}`)
+      await answered(page, `/missions/${m.id}/${step}`)
+    }
   }
 
   // The demo's dates: every month for IM-2 and for the Mons Mouton missions.
@@ -158,29 +177,31 @@ async function main() {
     await settle(page)
   }
 
-  // The agents, as the video asks them.
+  // The agents, as the video asks them. Each sits in a closed row; opening the
+  // site's row is itself the request.
   await visit(page, '/missions')
-  await page.getByRole('button', { name: 'Ask about missions' }).click()
+  await page.locator('summary', { hasText: 'Ask about missions and sites' }).click()
   await page
     .getByLabel('Your question')
     .fill('Which south-pole missions look for ice, and how long is their longest night?')
   await page.getByRole('button', { name: 'Ask', exact: true }).click()
-  await page.getByText('Summary from measurements').waitFor()
-  await page.getByRole('button', { name: 'AI activity log' }).click()
+  await page.getByText(/Summary from measurements|AI answer/).first().waitFor()
+  await page.locator('summary', { hasText: /numbers, each checked/ }).first().click()
+  await page.getByRole('button', { name: 'How the AI got this' }).first().click()
   await settle(page)
   await page.keyboard.press('Escape')
   for (const id of ['im-2', 'blue-ghost-m1', 'blue-moon-mk1-viper']) {
     await visit(page, `/missions/${id}`)
-    await page.getByText('What is it like at this site?').click()
-    await page.getByRole('button', { name: 'Describe this site' }).click()
+    await page.locator('summary', { hasText: 'What is it like at this site?' }).click()
     await page.getByText(/Summary from measurements|AI answer/).first().waitFor()
   }
   await visit(page, '/compare')
+  await page.locator('summary', { hasText: 'Find sites that meet a requirement' }).click()
   await page.getByLabel('The requirement, in your own words').fill('200 W solar and at least 4 hours of Earth contact per day')
   await page.getByRole('button', { name: 'Find sites' }).click()
   await page.getByText(/Summary from measurements|AI answer/).first().waitFor()
   await visit(page, '/report')
-  await page.getByRole('button', { name: 'Write the three briefs' }).click()
+  await page.getByRole('button', { name: 'Write a summary memo' }).click()
   await page.getByText(/Summary from measurements|AI answer/).first().waitFor()
   await settle(page)
 
