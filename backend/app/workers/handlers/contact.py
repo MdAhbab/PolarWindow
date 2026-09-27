@@ -34,6 +34,9 @@ H = 3600.0
 def _hours(
     runs_s: float, pm_s: float | None, *, open_: bool = False, no_margin: str | None = None
 ) -> dict[str, Any]:
+    if pm_s == 0.0 and no_margin is None:
+        no_margin = "No rise or set of Earth inside these dates, so no edge to time."
+        pm_s = None
     if pm_s is None:
         return lifecycle.q(
             Quantity(

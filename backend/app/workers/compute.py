@@ -270,13 +270,18 @@ def main() -> None:
     except KernelError as exc:
         log.error("SPICE kernels unavailable; jobs that need them will fail with this:\n%s", exc)
 
-    worker = Worker()
+    # Run as ``python -m``, this file is ``__main__``, and the handlers
+    # registered themselves in the importable ``app.workers.compute`` module:
+    # take the registry from there, not from this copy.
+    import app.workers.compute as registry
+
+    worker = Worker(handlers=registry.HANDLERS)
 
     async def run() -> None:
         loop = asyncio.get_running_loop()
         for sig in (signal.SIGINT, signal.SIGTERM):
             loop.add_signal_handler(sig, worker.stop)
-        log.info("compute worker %s: kinds %s", worker.owner, sorted(HANDLERS))
+        log.info("compute worker %s: kinds %s", worker.owner, sorted(worker.handlers))
         await worker.run_forever()
         from app.db.session import dispose_engine
 
