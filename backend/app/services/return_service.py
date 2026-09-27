@@ -9,20 +9,28 @@ from the Moon on the CLPS missions, so the capsule part says so.
 
 from __future__ import annotations
 
+import math
 from datetime import UTC, datetime
 from typing import Any
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.quantity import Quantity
 from app.data import catalogues
 from app.db.repositories.missions import MissionRecord, MissionRepository
 from app.db.repositories.pm import PmRepository
-from app.services import audit_service, lifecycle
+from app.services import audit_service, feed_service, lifecycle
 from app.services.auth_service import Claims
 from app.services.mission_service import MissionNotFound
 
 UNITS = {"wave_height_m": "m", "wind_m_s": "m/s"}
+R_EARTH_KM = 6371.0
+#: A GFS-Wave lattice point farther than this from the zone does not describe it.
+LATTICE_WITHIN_KM = 80.0
+#: A forecast step farther than this from the launch does not describe it.
+STEP_WITHIN_S = 1.5 * 3600
+REGION_OF_RANGE = catalogues.MODEL_REGION_OF_RANGE
 
 
 class BadRequest(ValueError):
@@ -54,6 +62,137 @@ def _limits(entered: dict[str, Any] | None, part: str) -> dict[str, Any]:
     return out
 
 
+def destination(lat_deg: float, lon_deg: float, az_deg: float, km: float) -> tuple[float, float]:
+    """The point ``km`` along a great circle from ``(lat, lon)`` at azimuth ``az`` (sphere)."""
+    p1, l1, th, d = (
+        math.radians(lat_deg),
+        math.radians(lon_deg),
+        math.radians(az_deg),
+        km / R_EARTH_KM,
+    )
+    p2 = math.asin(math.sin(p1) * math.cos(d) + math.cos(p1) * math.sin(d) * math.cos(th))
+    l2 = l1 + math.atan2(
+        math.sin(th) * math.sin(d) * math.cos(p1), math.cos(d) - math.sin(p1) * math.sin(p2)
+    )
+    return math.degrees(p2), (math.degrees(l2) + 540.0) % 360.0 - 180.0
+
+
+def distance_km(a: tuple[float, float], b: tuple[float, float]) -> float:
+    p1, p2 = math.radians(a[0]), math.radians(b[0])
+    dl = math.radians(b[1] - a[1])
+    c = math.sin(p1) * math.sin(p2) + math.cos(p1) * math.cos(p2) * math.cos(dl)
+    return R_EARTH_KM * math.acos(max(-1.0, min(1.0, c)))
+
+
+def sea_at(
+    values: dict[str, Any], zone: tuple[float, float], t0: datetime
+) -> tuple[dict[str, float], float, datetime] | None:
+    """GFS-Wave at the lattice point nearest ``zone`` and the step nearest ``t0``:
+    ``(fields, distance km, valid time)``, or None when neither is close enough."""
+    best: tuple[float, dict[str, Any]] | None = None
+    for pt in (values.get("points") or {}).values():
+        d = distance_km(zone, (float(pt["grid_point"][0]), float(pt["grid_point"][1])))
+        if best is None or d < best[0]:
+            best = (d, pt)
+    if best is None or best[0] > LATTICE_WITHIN_KM:
+        return None
+    steps = []
+    for lead in best[1]["leads"].values():
+        valid = lifecycle.parse_time(lead["valid"])
+        steps.append((abs((valid - t0).total_seconds()), valid, lead["members"].get("0") or {}))
+    if not steps:
+        return None
+    gap, valid, fields = min(steps, key=lambda x: x[0])
+    if gap > STEP_WITHIN_S:
+        return None
+    return fields, best[0], valid
+
+
+async def _next_opportunity(session: AsyncSession, mission_id: str) -> dict[str, Any] | None:
+    """The earliest designed launch opportunity still to come in the stored calendar."""
+    row = (
+        await session.execute(
+            text(
+                "SELECT result FROM assessments WHERE kind = 'launch' AND mission_id = :m "
+                "ORDER BY id DESC LIMIT 1"
+            ),
+            {"m": mission_id},
+        )
+    ).scalar()
+    now = datetime.now(UTC).timestamp()
+    ahead = [
+        o
+        for o in ((row or {}).get("data") or {}).get("opportunities") or []
+        if o.get("basis") == "designed" and (o.get("t0") or {}).get("value", 0) >= now
+    ]
+    return min(ahead, key=lambda o: o["t0"]["value"]) if ahead else None
+
+
+async def _droneship_sea(session: AsyncSession, m: MissionRecord) -> dict[str, Any] | None:
+    """The sea where a droneship would wait for the next opportunity, from GFS-Wave."""
+    opp = await _next_opportunity(session, m.id)
+    zones = [
+        z.downrange_km
+        for z in catalogues.load("recovery_zones").records
+        if z.kind == "booster_droneship" and z.downrange_km is not None
+    ]
+    if opp is None or not zones:
+        return None
+    site = catalogues.load("launch_sites").get(opp["pad_id"])
+    if site.lat_deg is None or site.lon_deg is None:
+        return None
+    az = (opp.get("azimuth_deg") or {}).get("value")
+    if az is None:
+        return None
+    km = max(zones)
+    zone = destination(site.lat_deg, site.lon_deg, float(az), km)
+    t0 = datetime.fromtimestamp(float(opp["t0"]["value"]), UTC)
+    when = f"{t0:%d %b %Y %H:%M} UTC"
+    where = (
+        f"{km:.0f} km along the launch direction ({az:.0f} degrees), where the droneships "
+        "waited for the flown CLPS launches"
+    )
+    region = REGION_OF_RANGE.get(site.launch_range, "")
+    latest = await feed_service.latest(session, "nomads", "gfswave", region)
+    values = latest.values
+    got = None if values is None else sea_at(values, zone, t0)
+    if got is None:
+        why = (
+            latest.missing_reason
+            if values is None
+            else f"GFS-Wave does not reach the next launch opportunity ({when}) yet."
+        )
+        return {"zone": zone, "note": f" Sea at {where}, for the next opportunity: {why}"}
+    fields, d_km, valid = got
+    assert latest.snapshot is not None and values is not None
+    how = (
+        f"One forecast (GFS-Wave, run of {values['run'][:16].replace('T', ' ')} UTC) for "
+        f"{valid:%d %b %H:%M} UTC, at its grid point {d_km:.0f} km from the zone; wind at 10 m. "
+        "Whether this booster lands on a droneship is not published."
+    )
+
+    def one(key: str, unit: str) -> dict[str, Any]:
+        v = fields.get(key)
+        if v is None:
+            return lifecycle.missing(unit, "GFS-Wave gave no value there.", provenance="published")
+        return lifecycle.q(
+            Quantity(
+                value=float(v),
+                unit=unit,
+                provenance="published",
+                no_margin_reason=how,
+                source=latest.snapshot.url,  # type: ignore[union-attr]
+            )
+        )
+
+    return {
+        "zone": zone,
+        "wave_height_m": one("wave_height_m", "m"),
+        "wind_m_s": one("wind_m_s", "m/s"),
+        "note": f" Sea shown at {where}, for the next opportunity ({when}).",
+    }
+
+
 def _zone_of(m: MissionRecord) -> Any | None:
     for z in catalogues.load("recovery_zones").records:
         if m.id in z.used_by:
@@ -76,7 +215,10 @@ def _flown_summary(names: dict[str, str]) -> str:
 
 
 def _booster(
-    m: MissionRecord, entered: dict[str, Any] | None, names: dict[str, str]
+    m: MissionRecord,
+    entered: dict[str, Any] | None,
+    names: dict[str, str],
+    sea: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     lc = m.lifecycle or {}
     vid = lc.get("vehicle_id")
@@ -119,21 +261,30 @@ def _booster(
     sea_missing = (
         past
         if flown
-        else "Wave forecasts (GFS-Wave) are not recorded yet, and no buoy is recorded near "
-        "the landing zone."
+        else "No droneship zone is worked out for this mission: no launch opportunity to "
+        "come is stored."
     )
+    wave = (
+        None if landing == "land" else lifecycle.missing("m", sea_missing, provenance="published")
+    )
+    wind = lifecycle.missing(
+        "m/s",
+        past if flown else "No droneship zone is worked out for this mission.",
+        provenance="published",
+    )
+    if sea is not None and not flown and landing not in ("land", "expended"):
+        lat, lon = sea["zone"]
+        zone = {"lat_deg": round(lat, 3), "lon_deg": round(lon, 3), "pm_km": None}
+        note += sea["note"]
+        why = sea["note"].split(": ", 1)[-1].strip()
+        wave = sea.get("wave_height_m") or lifecycle.missing("m", why, provenance="published")
+        wind = sea.get("wind_m_s") or lifecycle.missing("m/s", why, provenance="published")
     return {
         "landing": landing,
         "zone": zone,
         "note": note,
-        "wave_height_m": None
-        if landing == "land"
-        else lifecycle.missing("m", sea_missing, provenance="published"),
-        "wind_m_s": lifecycle.missing(
-            "m/s",
-            past if flown else "Wind forecasts at the landing zone are not worked out yet.",
-            provenance="published",
-        ),
+        "wave_height_m": wave,
+        "wind_m_s": wind,
         "limits": _limits(entered, "booster"),
         "hazard_area_seen": None,
     }
@@ -175,7 +326,9 @@ async def recovery(session: AsyncSession, mission_id: str) -> dict[str, Any]:
             names[mid] = r.name if r else mid
     cancelled = m.status in ("cancelled", "reassigned")
     data = {
-        "booster": None if cancelled else _booster(m, entered, names),
+        "booster": None
+        if cancelled
+        else _booster(m, entered, names, await _droneship_sea(session, m)),
         "capsule": None if cancelled else _capsule(m, entered),
     }
     return {

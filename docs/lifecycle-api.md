@@ -430,3 +430,14 @@ that user. `GET /auth/me` returns the same `user`.
     published one first; empty = no unit published, any unit taken) and `limit_note`
     (the team's note with an entered limit). A missing limit carries `units[0]` as its
     unit (was `""` for wind rules).
+- 2026-09-27 (backend, B0/B2 GFS-Wave):
+  - The feeds worker records `nomads/gfswave/florida`: GFS-Wave's latest run at 24 and 48 h
+    and at the steps nearest upcoming designed opportunities (at most 8), on a one-degree
+    lattice of its grid over the sea east of the Cape (26–32° N, 80–70° W): significant wave
+    height, main wave period, wind at 10 m.
+  - `Return.booster` for a mission still to fly whose booster may land on a droneship:
+    `zone` is the point 700 km (the flown CLPS droneship distance) along the next designed
+    opportunity's launch direction from its pad (`pm_km` null), and `wave_height_m` /
+    `wind_m_s` are GFS-Wave's one forecast there at the step nearest that liftoff (within
+    1.5 h, lattice point within 80 km), `provenance: "published"`, source the run's URL; the
+    `note` says where and for which opportunity. Otherwise they are missing with the reason.

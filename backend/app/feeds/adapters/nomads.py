@@ -1,4 +1,5 @@
-"""NOAA GEFS (31-run ensemble) and HRRR (3 km, one run) at the launch pads.
+"""NOAA GEFS (31-run ensemble) and HRRR (3 km, one run) at the launch pads, and GFS-Wave
+(one run, 0.25 degree) over the sea downrange of them.
 
 Fetched through NOMADS' GRIB filter, which cuts each file down to the
 variables and the few grid cells around the pads before sending it: about
@@ -10,7 +11,10 @@ and the variables, and the provider's archive holds the bytes.
 
 Variables (all SI): wind at 10 m and 80 m (u, v), gusts at the surface,
 temperature at 2 m, rain over the preceding 6 hours (GEFS) and total cloud
-cover (GEFS), convective available potential energy (CAPE).
+cover (GEFS), convective available potential energy (CAPE). GFS-Wave:
+significant wave height (wind waves and swell together), the period of the
+main waves and the wind speed at 10 m, on a one-degree lattice of its grid
+points over the sea where boosters come down (B2).
 """
 
 from __future__ import annotations
@@ -54,7 +58,17 @@ _SHORT = {
     ("tp", 0): "precip_mm",
     ("tcc", 0): "cloud_frac",
     ("cape", 0): "cape_j_kg",
+    ("swh", 1): "wave_height_m",
+    ("perpw", 1): "wave_period_s",
+    ("ws", 1): "wind_m_s",
 }
+#: GFS-Wave: every hour to 120 h, then every 3 hours to 384 h.
+WAVE_MAX_LEAD_H = 384
+WAVE_LEADS_H: tuple[int, ...] = (24, 48)
+MAX_WAVE_LEADS = 8
+#: The sea downrange of each region's pads: ``(south, north, west, east)`` in degrees.
+#: Eastern Range boosters land 550-700 km east of the Cape (Launch Library 2).
+WAVE_BOXES: dict[str, tuple[int, int, int, int]] = {"florida": (26, 32, -80, -70)}
 
 
 def _box(points: list[Point], pad_deg: float) -> dict[str, str]:
@@ -139,6 +153,86 @@ def gefs_lead(cycle: datetime, valid: datetime) -> int | None:
 
 
 LeadsFor = Callable[[datetime], Awaitable[list[int]]]
+
+
+def wave_lead(cycle: datetime, valid: datetime) -> int | None:
+    """The GFS-Wave output step nearest ``valid``: hourly to 120 h, 3-hourly to 384 h."""
+    h = (valid - cycle).total_seconds() / 3600.0
+    if h < 0 or h > WAVE_MAX_LEAD_H + 1.5:
+        return None
+    step = 1 if h <= 120 else 3
+    return min(WAVE_MAX_LEAD_H, int(round(h / step)) * step)
+
+
+def wave_points(region: str) -> list[Point]:
+    """One-degree lattice over the region's sea box; ids like ``w28n077w``."""
+    box = WAVE_BOXES.get(region)
+    if box is None:
+        return []
+    s, n, w, e = box
+    return [
+        (f"w{lat:02d}n{-lon:03d}w", float(lat), float(lon))
+        for lat in range(s, n + 1)
+        for lon in range(w, e + 1)
+    ]
+
+
+def _wave_fetch(region: str, wanted: Wanted | None, now: Callable[[], datetime]) -> Any:
+    """The latest GFS-Wave run at 24 and 48 h and at the steps nearest upcoming launches."""
+    s_, n_, w_, e_ = WAVE_BOXES[region]
+    box = {
+        "subregion": "",
+        "toplat": str(n_ + 1),
+        "bottomlat": str(s_ - 1),
+        "leftlon": str((w_ - 1) % 360),
+        "rightlon": str((e_ + 1) % 360),
+    }
+    url = f"{BASE}/filter_gfswave.pl"
+
+    def params(cycle: datetime, lead: int) -> dict[str, str]:
+        hh = f"{cycle.hour:02d}"
+        return {
+            "dir": f"/gfs.{cycle:%Y%m%d}/{hh}/wave/gridded",
+            "file": f"gfswave.t{hh}z.global.0p25.f{lead:03d}.grib2",
+            "var_HTSGW": "on",
+            "var_PERPW": "on",
+            "var_WIND": "on",
+            "lev_surface": "on",
+            **box,
+        }
+
+    async def fetch(client: httpx.AsyncClient, _e: str | None, _lm: str | None) -> http.Fetched:
+        t = now().astimezone(UTC)
+        latest = t.replace(hour=t.hour - t.hour % 6, minute=0, second=0, microsecond=0)
+        for back in range(0, 5):
+            cycle = latest - timedelta(hours=6 * back)
+            leads = set(WAVE_LEADS_H)
+            if wanted is not None:
+                found = [wave_lead(cycle, x) for x in await wanted(region)]
+                leads |= {x for x in found if x is not None}
+            order = sorted(leads)[:MAX_WAVE_LEADS]
+            if await _get_grib(client, url, params(cycle, max(order))) is None:
+                continue  # the run is not complete yet
+            bodies = []
+            for lead in order:
+                await asyncio.sleep(PAUSE_S)
+                body = await _get_grib(client, url, params(cycle, lead))
+                if body is not None:
+                    bodies.append(body)
+            return http.Fetched(
+                url=f"{url}?dir=/gfs.{cycle:%Y%m%d}/{cycle.hour:02d}/wave/gridded"
+                f"&lead={','.join(str(x) for x in order)}",
+                status=200,
+                body=b"".join(bodies),
+                etag=None,
+                last_modified=None,
+                content_type="application/x-grib2",
+                not_modified=False,
+                attempts=1,
+            )
+        raise http.FeedHttpError("no complete GFS-Wave run found in the last 30 hours")
+
+    return fetch
 
 
 def _gefs_fetch(points: list[Point], leads_for: LeadsFor, now: Callable[[], datetime]) -> Any:
@@ -321,6 +415,23 @@ def products(
                     custom_fetch=_gefs_fetch(pts, _fixed(lead), now),
                     keep_raw=False,
                     cost=2 * len(GEFS_MEMBERS) + 1,
+                )
+            )
+        if region in WAVE_BOXES:
+            out.append(
+                Product(
+                    provider="nomads",
+                    product="gfswave",
+                    location_key=region,
+                    url=f"{BASE}/filter_gfswave.pl",
+                    licence=LICENCE,
+                    parser_version="gfswave-1",
+                    interval_s=6 * 3600,
+                    staleness_s=18 * 3600,
+                    parse=parse_points(wave_points(region), "GFS-Wave", 1),
+                    custom_fetch=_wave_fetch(region, wanted, now),
+                    keep_raw=False,
+                    cost=MAX_WAVE_LEADS + 1,
                 )
             )
         if hrrr_regions is None or region in hrrr_regions:

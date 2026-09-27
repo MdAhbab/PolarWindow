@@ -220,6 +220,27 @@ def test_hrrr_subset_nearest_point() -> None:
     assert {"u10_m_s", "v10_m_s", "u80_m_s", "gust_m_s"} <= set(m)
 
 
+def test_gfswave_over_the_sea_downrange() -> None:
+    # Fetched 2026-09-27 (run of 2026-09-26 00 UTC, 24 h), the product's own box.
+    pts = nomads.wave_points("florida")
+    assert len(pts) == 7 * 11 and ("w28n077w", 28.0, -77.0) in pts
+    p = nomads.parse_points(pts, "GFS-Wave", 1)(raw("gfswave_florida_f024.grb2"))
+    sea = p.values["points"]["w28n077w"]["leads"]["24"]["members"]["0"]
+    assert 0.0 < sea["wave_height_m"] < 15.0 and 1.0 < sea["wave_period_s"] < 25.0
+    assert 0.0 <= sea["wind_m_s"] < 60.0
+    assert p.issued_at == datetime(2026, 9, 26, 0, tzinfo=UTC)
+    # Land cells carry no waves: next to Grand Bahama the nearest sea cell is used.
+    assert p.values["points"]["w27n078w"]["method"] == "nearest"
+    assert len(p.values["points"]) == len(pts)
+
+
+def test_wave_steps() -> None:
+    run = datetime(2026, 9, 26, 0, tzinfo=UTC)
+    assert nomads.wave_lead(run, datetime(2026, 9, 27, 5, 40, tzinfo=UTC)) == 30
+    assert nomads.wave_lead(run, datetime(2026, 10, 3, 1, tzinfo=UTC)) == 168  # 3-hourly
+    assert nomads.wave_lead(run, datetime(2026, 9, 25, tzinfo=UTC)) is None
+
+
 def test_grib_split_refuses_a_truncated_message() -> None:
     from app.feeds.parsers import grib
 
