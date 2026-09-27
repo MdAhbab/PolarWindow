@@ -17,6 +17,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     DateTime,
     Float,
@@ -29,6 +30,7 @@ from sqlalchemy import (
     UniqueConstraint,
     false,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -359,4 +361,222 @@ class AppSetting(Base):
     updated_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+# ---------------------------------------------------------------------------
+# Lifecycle foundations (ADR-8, ADR-12, ADR-17)
+# ---------------------------------------------------------------------------
+
+
+class User(Base):
+    """A named person who signs in (ADR-17). One role: the project manager.
+
+    ``name_key`` is the name and team, trimmed and lower-cased, so signing in
+    twice as "Ada Lovelace" of "Payloads" is the same person both times.
+    """
+
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    team: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    name_key: Mapped[str] = mapped_column(String(250), nullable=False, unique=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    last_seen_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class AuditEntry(Base):
+    """One change to a record a person entered: append-only and hash-chained.
+
+    ``seq``, ``prev_hash`` and ``hash`` are set by a database trigger, under a
+    lock, so the chain cannot fork however many writers there are. Another
+    trigger rejects UPDATE, DELETE and TRUNCATE. ``audit_verify()`` (SQL)
+    recomputes the chain with the same function the trigger uses.
+    """
+
+    __tablename__ = "audit_log"
+
+    seq: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
+    at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    actor: Mapped[str] = mapped_column(String(250), nullable=False)
+    action: Mapped[str] = mapped_column(String(48), nullable=False)
+    entity: Mapped[str] = mapped_column(String(48), nullable=False)
+    entity_id: Mapped[str] = mapped_column(String(160), nullable=False)
+    mission_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    before: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    after: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    request_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    prev_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    hash: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    __table_args__ = (Index("ix_audit_entity", "entity", "entity_id"),)
+
+
+class FeedSnapshot(Base):
+    """One fetch of one product from one provider, kept as fetched (ADR-8)."""
+
+    __tablename__ = "feed_snapshots"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    provider: Mapped[str] = mapped_column(String(32), nullable=False)
+    product: Mapped[str] = mapped_column(String(64), nullable=False)
+    location_key: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    issued_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    valid_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    valid_to: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    fetched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    url: Mapped[str] = mapped_column(Text, nullable=False)
+    http_status: Mapped[int] = mapped_column(Integer, nullable=False)
+    etag: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_modified: Mapped[str | None] = mapped_column(Text, nullable=True)
+    content_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    raw: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    raw_ref: Mapped[str | None] = mapped_column(Text, nullable=True)
+    raw_bytes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    parsed: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    parser_version: Mapped[str] = mapped_column(String(24), nullable=False)
+    licence: Mapped[str] = mapped_column(String(200), nullable=False)
+    #: ok | rejected
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    issues: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    of_record: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=false()
+    )
+
+    __table_args__ = (Index("ix_feed_latest", "provider", "product", "location_key", "fetched_at"),)
+
+
+class FeedHealth(Base):
+    """What the Data sources panel shows for one product at one place."""
+
+    __tablename__ = "feed_health"
+
+    provider: Mapped[str] = mapped_column(String(32), primary_key=True)
+    product: Mapped[str] = mapped_column(String(64), primary_key=True)
+    location_key: Mapped[str] = mapped_column(String(64), primary_key=True, default="")
+    licence: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    staleness_budget_s: Mapped[int] = mapped_column(Integer, nullable=False)
+    interval_s: Mapped[int] = mapped_column(Integer, nullable=False)
+    last_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_ok_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_snapshot_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    next_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    consecutive_errors: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class FeedLimit(Base):
+    """Per-provider circuit breaker and request budget, kept across restarts."""
+
+    __tablename__ = "feed_limits"
+
+    provider: Mapped[str] = mapped_column(String(32), primary_key=True)
+    #: closed | open | half_open
+    breaker: Mapped[str] = mapped_column(String(12), nullable=False, default="closed")
+    failures: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    opened_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    tokens: Mapped[float] = mapped_column(Float, nullable=False)
+    capacity: Mapped[float] = mapped_column(Float, nullable=False)
+    refill_per_s: Mapped[float] = mapped_column(Float, nullable=False)
+    tokens_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class Assessment(Base):
+    """One lifecycle answer and exactly what it was built from (ADR-12)."""
+
+    __tablename__ = "assessments"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    mission_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    params: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    params_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    closure: Mapped[str] = mapped_column(String(128), nullable=False)
+    result: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    code_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    of_record: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=false()
+    )
+    compute_ms: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (Index("ix_assessment_key", "kind", "params_hash", "closure", "created_at"),)
+
+
+class AssessmentInput(Base):
+    """One input an assessment used: a snapshot, a file version, an entry."""
+
+    __tablename__ = "assessment_inputs"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    assessment_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("assessments.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    #: feed_snapshot | catalogue | kernel_set | dataset | mission | terrain | entry | assessment
+    kind: Mapped[str] = mapped_column(String(24), nullable=False)
+    ref: Mapped[str] = mapped_column(String(200), nullable=False)
+    version: Mapped[str] = mapped_column(String(128), nullable=False, default="")
+    snapshot_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("feed_snapshots.id"), nullable=True, index=True
+    )
+
+
+class Job(Base):
+    """A piece of heavy work, leased by one compute worker at a time (ADR-12)."""
+
+    __tablename__ = "jobs"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    mission_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    params: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    params_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    closure: Mapped[str] = mapped_column(String(128), nullable=False)
+    #: queued | running | done | failed
+    status: Mapped[str] = mapped_column(String(12), nullable=False, default="queued")
+    priority: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+    run_after: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    lease_owner: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    progress: Mapped[float | None] = mapped_column(Float, nullable=True)
+    message: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    assessment_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("assessments.id", ondelete="SET NULL"), nullable=True
+    )
+    requested_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (
+        Index(
+            "uq_jobs_in_flight",
+            "kind",
+            "params_hash",
+            "closure",
+            unique=True,
+            postgresql_where=text("status IN ('queued', 'running')"),
+        ),
+        Index("ix_jobs_claim", "status", "priority", "run_after"),
     )

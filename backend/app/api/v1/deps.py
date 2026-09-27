@@ -215,3 +215,20 @@ async def project_manager(
             "Reading is unaffected.",
         )
     return claims
+
+
+async def named_manager(
+    claims: auth_service.Claims = Depends(project_manager),
+) -> auth_service.Claims:
+    """The project manager, signed in with a name: needed for every change (ADR-17)."""
+    if not claims.named:
+        raise problem(
+            403,
+            "name-needed",
+            "Sign in with your name to change this",
+            "Changes are recorded against the person who made them, and this session "
+            "has no name.",
+            "Everything can still be read.",
+            action="Sign in again with your name",
+        )
+    return claims

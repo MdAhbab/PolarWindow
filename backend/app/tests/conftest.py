@@ -304,11 +304,15 @@ async def anon_client() -> AsyncIterator:
 
 @pytest.fixture
 async def client(anon_client) -> AsyncIterator:
-    """The same client, signed in as the project manager, as the dashboard always is."""
-    from app.services import auth_service
+    """The same client, signed in with a name as the project manager (ADR-17).
 
-    token, _ = auth_service.issue_demo()
-    anon_client.headers["Authorization"] = f"Bearer {token}"
+    Signs in through the API, so the user row exists and every change the
+    test makes is recorded against "Test manager". Needs the database, like
+    every test that uses it.
+    """
+    r = await anon_client.post("/api/v1/auth/demo", json={"name": "Test manager", "team": "QA"})
+    assert r.status_code == 200, r.text
+    anon_client.headers["Authorization"] = f"Bearer {r.json()['token']}"
     yield anon_client
 
 

@@ -59,11 +59,11 @@ async def read(session: Any = Depends(deps.db)) -> dict[str, Any]:
 async def save_ai(
     body: AiSettingsIn,
     session: Any = Depends(deps.db),
-    who: auth_service.Claims = Depends(deps.project_manager),
+    who: auth_service.Claims = Depends(deps.named_manager),
 ) -> dict[str, Any]:
     try:
         await settings_service.save_ai_settings(
-            session, body.enabled, body.models, body.models_light, who.subject
+            session, body.enabled, body.models, body.models_light, who.actor[:64]
         )
     except settings_service.BadSetting as exc:
         raise deps.problem(
@@ -77,20 +77,35 @@ async def save_ai(
     return await _view(session)
 
 
-@router.post("/ai/reset", response_model=SettingsOut, summary="Back to the configured defaults")
+@router.post(
+    "/ai/reset",
+    response_model=SettingsOut,
+    summary="Back to the configured defaults",
+    dependencies=[Depends(deps.named_manager)],
+)
 async def reset_ai(session: Any = Depends(deps.db)) -> dict[str, Any]:
     await settings_service.reset_ai_settings(session)
     return await _view(session)
 
 
-@router.post("/ai/retry", response_model=SettingsOut, summary="Try skipped models again now")
+@router.post(
+    "/ai/retry",
+    response_model=SettingsOut,
+    summary="Try skipped models again now",
+    dependencies=[Depends(deps.named_manager)],
+)
 async def retry_models(session: Any = Depends(deps.db)) -> dict[str, Any]:
     """Forget every model's cooldown, e.g. after the key's quota was raised."""
     base.reset_model_cooldowns()
     return await _view(session)
 
 
-@router.delete("/agent-runs", response_model=Cleared, summary="Clear the AI activity log")
+@router.delete(
+    "/agent-runs",
+    response_model=Cleared,
+    summary="Clear the AI activity log",
+    dependencies=[Depends(deps.named_manager)],
+)
 async def clear_run_log(session: Any = Depends(deps.db)) -> dict[str, Any]:
     runs, calls = await settings_service.clear_run_log(session)
     return {
@@ -100,7 +115,12 @@ async def clear_run_log(session: Any = Depends(deps.db)) -> dict[str, Any]:
     }
 
 
-@router.delete("/cache", response_model=Cleared, summary="Clear cached results")
+@router.delete(
+    "/cache",
+    response_model=Cleared,
+    summary="Clear cached results",
+    dependencies=[Depends(deps.named_manager)],
+)
 async def clear_cache() -> dict[str, Any]:
     n = await settings_service.clear_cache()
     return {
