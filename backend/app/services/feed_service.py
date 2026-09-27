@@ -108,10 +108,8 @@ async def latest(
     budget = health.staleness_budget_s if health else None
     name = PROVIDER_NAMES.get(provider, provider)
     if snap is None:
-        reason = (
-            f"No data from {name} has been recorded yet"
-            + (f" (last error: {health.last_error})" if health and health.last_error else "")
-            + ". The feeds worker records it (make feeds)."
+        reason = f"No data from {name} has been recorded yet" + (
+            "; the last attempt to fetch it failed." if health and health.last_error else "."
         )
         return Latest(None, None, True, reason, budget)
     age = _age(snap, now)

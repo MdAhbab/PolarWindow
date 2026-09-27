@@ -17,7 +17,7 @@ from app.config import engine_closure, get_settings
 from app.core import oem, spice
 from app.data import catalogues, registry
 from app.db.repositories.missions import MissionRepository
-from app.services import ascent, job_service, lifecycle
+from app.services import ascent, job_service, launch_service, lifecycle
 from app.services.mission_service import MissionNotFound
 
 KIND = "trip"
@@ -48,6 +48,8 @@ def _none(reason: str) -> dict[str, Any]:
             },
             "burns": [],
             "burns_note": None,
+            "corrections": None,
+            "corrections_note": reason,
             "moon_pull": None,
             "radiation": None,
         },
@@ -74,8 +76,10 @@ async def trip(session: AsyncSession, mission_id: str) -> tuple[int, dict[str, A
             f"NASA's reconstructed trajectory ({ds.dest}) is not on this "
             "machine yet; it arrives with the data sync (polar-data sync)."
         )
+    flights, _ = await launch_service.reconstructed_flights(session)
     params = {
         "mission_id": m.id,
+        "flights": flights,
         "data_version": m.data_version,
         "spk": ds.dest,
         "dataset": ds.id,

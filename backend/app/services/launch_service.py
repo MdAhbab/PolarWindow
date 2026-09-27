@@ -151,7 +151,7 @@ def _none(
     }
 
 
-async def _flights(session: AsyncSession) -> tuple[list[list[str]], dict[str, str]]:
+async def reconstructed_flights(session: AsyncSession) -> tuple[list[list[str]], dict[str, str]]:
     """The reconstructed flights ``[mission, vehicle, pad, liftoff]`` and their names."""
     repo = MissionRepository(session)
     out, names = [], {}
@@ -180,7 +180,7 @@ async def launch(
     pad_id, vehicle_id, t0 = lc.get("pad_id"), lc.get("vehicle_id"), lc.get("t0")
     if m.status in ("cancelled", "reassigned"):
         return 200, _none(m, "This delivery was cancelled.", params, pad_id)
-    flights, names = await _flights(session)
+    flights, names = await reconstructed_flights(session)
     base: dict[str, Any] = {
         "names": names,
         "mission_id": m.id,

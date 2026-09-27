@@ -51,8 +51,10 @@ FORECAST_LEAD_S = 16 * DAY
 MAX_DESIGNS = 150
 #: Landing times tried in each allowed stretch: its start, then a day apart.
 LANDINGS_PER_WINDOW = 5
-#: Instants closer than this are one launch opportunity (the two a day are ~5 h apart).
-SAME_OPPORTUNITY_S = 3 * H
+#: A due-east climb's plane sweeps past the Moon's direction twice a sidereal day, once
+#: northward and once southward. Launches aimed at different landings move each instant
+#: by hours, so instants of the same sweep within half a day are one opportunity.
+SAME_OPPORTUNITY_S = 12 * H
 SITE_STEP_S = 1800
 
 
@@ -149,7 +151,8 @@ async def _flown(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, Any
         basis = "reconstructed"
         used = ", ".join(names.get(o, o) for o in others)
         note = (
-            f"Worked out from NASA's reconstructed trajectory: its TLI time and point, and "
+            f"Worked out from NASA's reconstructed trajectory: the time and place it left Earth "
+            f"for the Moon, and "
             f"the climb of this vehicle's other flights ({used}). It is "
             f"{abs(err):.0f} s {'after' if err > 0 else 'before'} the published liftoff; "
             f"the margin is the largest such difference over those flights."
@@ -174,8 +177,8 @@ async def _flown(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, Any
             days,
             "d",
             provenance="computed",
-            no_margin_reason="From TLI to the first close pass of the Moon in NASA's "
-            "reconstruction.",
+            no_margin_reason="From leaving Earth for the Moon to the first close pass of the "
+            "Moon in NASA's reconstruction.",
         )
         if landing:
             lt = lifecycle.published_date(landing, p["landing_source"])
@@ -230,25 +233,29 @@ async def _flown(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, Any
         "transfer": {"type": kind, "flight_days": flight, "orbit_wait_days": wait},
         "landing": land,
         "weather": "none",
+        "weather_note": "This launch has flown: the weather tab shows the rules and limits "
+        "that applied; the forecasts made before it were not kept.",
         "basis": basis,
         "note": note,
         "azimuth_deg": lifecycle.missing(
             "deg",
-            f"The climb's direction is not published; the orbit after TLI was inclined "
+            f"The climb's direction is not published; the orbit after leaving Earth for the Moon "
+            f"was inclined "
             f"{fl.inc_deg:.2f} degrees to the equator.",
         ),
         "dv_tli_m_s": _q(
             fl.dv_tli_m_s,
             "m/s",
             provenance="computed",
-            no_margin_reason="Speed after TLI minus the circular parking orbit's, from NASA's "
-            "reconstruction propagated back to TLI.",
+            no_margin_reason="Speed on leaving Earth for the Moon minus the speed in the circular "
+            "parking orbit, from NASA's reconstruction propagated back to that point.",
         ),
         "coast_min": _q(
             fl.tau_s / 60.0,
             "min",
             provenance="computed",
-            no_margin_reason="Published liftoff to the TLI found in the reconstruction.",
+            no_margin_reason="Published liftoff to leaving Earth for the Moon, as found in the "
+            "reconstruction.",
         ),
     }
     return [opp], None
@@ -276,17 +283,14 @@ def _wait(p: dict[str, Any], flights: dict[str, ascent.Flight]) -> tuple[float, 
         if len(same) == 1:
             return v, _q(v, "d", provenance="assumed", no_margin_reason=src, source=src)
         return v, _q(v, "d", provenance="assumed", lo=min(same), hi=max(same), source=src)
-    lo = min(waits.values()) if waits else 1.0
-    hi = max(waits.values()) if waits else 1.0
-    return 1.0, _q(
-        1.0,
-        "d",
-        provenance="assumed",
-        lo=min(1.0, lo),
-        hi=max(1.0, hi),
-        source=f"No lunar-orbit time is published for this lander; one day is assumed. "
-        f"Flown landers waited {lo:.1f} to {hi:.1f} days.",
+    flown = (
+        f" Flown landers waited from {min(waits.values()):.1f} to {max(waits.values()):.1f} "
+        "days, a choice each team made, so their spread is not a margin for this one."
+        if waits
+        else ""
     )
+    why = "No lunar-orbit time is published for this lander; one day is assumed." + flown
+    return 1.0, _q(1.0, "d", provenance="assumed", no_margin_reason=why, source=why)
 
 
 def _design_all(
@@ -397,6 +401,7 @@ def _design_landing(
         out.append(
             {
                 "t0": float(t0),
+                "northward": bool(gap(root + 60.0) > gap(root - 60.0)),
                 "coast_s": float(d.coast_s),
                 "long_coast": bool(d.coast_s > max(asc.coasts_s) + 300.0),
                 "flown_coasts": (float(min(asc.coasts_s)), float(max(asc.coasts_s))),
@@ -438,14 +443,18 @@ async def _designed(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, 
     now = datetime.now(UTC).timestamp()
     pad_name = launch_service.pads(p["pad_id"])[0]["name"]
     assumed_climb = asc_vehicle != p["vehicle_id"]
-    # One opportunity per launch instant: of the landings a launch that day reaches,
-    # the earliest (most sunlight after it).
+    # One opportunity per sweep of the climb plane past the Moon (at most two a sidereal
+    # day): of the landings a launch then reaches, the earliest (most sunlight after it).
     clusters: list[list[dict[str, Any]]] = []
-    for o in sorted(found, key=lambda x: x["t0"]):
-        if clusters and o["t0"] - clusters[-1][0]["t0"] < SAME_OPPORTUNITY_S:
-            clusters[-1].append(o)
-        else:
-            clusters.append([o])
+    for sweep in (True, False):
+        mine: list[list[dict[str, Any]]] = []
+        for o in sorted((x for x in found if x["northward"] is sweep), key=lambda x: x["t0"]):
+            if mine and o["t0"] - mine[-1][0]["t0"] < SAME_OPPORTUNITY_S:
+                mine[-1].append(o)
+            else:
+                mine.append([o])
+        clusters += mine
+    clusters.sort(key=lambda g: min(x["t0"] for x in g))
     opps: list[dict[str, Any]] = []
     for group in clusters:
         o = min(group, key=lambda x: (x["land_t"], x["flight_d"]))
@@ -460,7 +469,8 @@ async def _designed(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, 
         if o["long_coast"]:
             lo_c, hi_c = o["flown_coasts"]
             note += (
-                f" Its coast to TLI, {o['coast_s'] / 60:.0f} min, is longer than any flown one "
+                f" Its coast before leaving Earth for the Moon, {o['coast_s'] / 60:.0f} min, is "
+                f"longer than any flown one "
                 f"({lo_c / 60:.0f} to {hi_c / 60:.0f} min); whether the upper stage can coast "
                 "that long is not published."
             )
@@ -485,7 +495,9 @@ async def _designed(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, 
                         o["flight_d"],
                         "d",
                         provenance="computed",
-                        no_margin_reason="TLI to closest approach of the designed flight.",
+                        no_margin_reason="From leaving Earth for the Moon to the closest "
+                        "approach of the "
+                        "designed flight.",
                     ),
                     "orbit_wait_days": wait_q,
                 },
@@ -500,6 +512,7 @@ async def _designed(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, 
                     **_landing_numbers(tr, o["land_t"], None),
                 },
                 "weather": "forecast" if 0 <= o["t0"] - now <= FORECAST_LEAD_S else "none",
+                "weather_note": _weather_note(o["t0"] - now),
                 "basis": "designed",
                 "note": note,
                 "azimuth_deg": _q(
@@ -520,7 +533,8 @@ async def _designed(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, 
                     o["coast_s"] / 60.0,
                     "min",
                     provenance="computed",
-                    no_margin_reason="Liftoff to TLI of the designed flight.",
+                    no_margin_reason="Liftoff to leaving Earth for the Moon, in the designed "
+                    "flight.",
                 ),
             }
         )
@@ -530,6 +544,17 @@ async def _designed(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, 
             "direct transfer of 3.5 to 6.5 days."
         )
     return opps, None
+
+
+def _weather_note(lead_s: float) -> str:
+    if lead_s < 0:
+        return "This launch time has passed; the weather tab shows the rules and limits."
+    if lead_s <= FORECAST_LEAD_S:
+        return "Forecasts reach this launch: the weather tab shows what they say for each rule."
+    return (
+        "More than 16 days away: forecasts do not reach it yet and no climatology is built, "
+        "so the weather tab shows the rules and limits only."
+    )
 
 
 @handler("launch")
@@ -574,8 +599,9 @@ async def run(ctx: JobContext) -> HandlerResult:
         parts=[
             (
                 "Launch instant",
-                "A flown launch is worked out again from its TLI and the vehicle's other "
-                "flights (within seconds); a designed one assumes a due-east climb, which "
+                "A flown launch is worked out again from where it left Earth for the Moon "
+                "and the vehicle's other flights (within seconds); a designed one assumes a "
+                "due-east climb, which "
                 "put IM-1 10 minutes and IM-2 44 minutes after their real liftoffs.",
             ),
             (

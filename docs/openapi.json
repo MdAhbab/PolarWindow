@@ -2407,6 +2407,46 @@
       }
     },
     "/api/v1/vehicles/{vehicle_id}/limits": {
+      "get": {
+        "tags": [
+          "mission sections"
+        ],
+        "summary": "Weather limits the team entered for a vehicle, with their notes",
+        "operationId": "read_vehicle_limits_api_v1_vehicles__vehicle_id__limits_get",
+        "parameters": [
+          {
+            "name": "vehicle_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vehicle Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleLimits"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "put": {
         "tags": [
           "mission sections"
@@ -4038,6 +4078,25 @@
         ],
         "title": "AskRequest"
       },
+      "Assumption": {
+        "properties": {
+          "what": {
+            "type": "string",
+            "title": "What"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "what",
+          "value"
+        ],
+        "title": "Assumption"
+      },
       "Attempt": {
         "properties": {
           "mission": {
@@ -5365,6 +5424,105 @@
           "dark_and_unheard_h"
         ],
         "title": "ContactNumbers"
+      },
+      "CorrectionBurn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "t": {
+            "type": "string",
+            "format": "date-time",
+            "title": "T"
+          },
+          "p95_m_s": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "p99_m_s": {
+            "$ref": "#/components/schemas/QuantityOut"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "t",
+          "p95_m_s",
+          "p99_m_s"
+        ],
+        "title": "CorrectionBurn"
+      },
+      "Corrections": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Always says these sizes are a budget for assumed errors."
+          },
+          "burns": {
+            "items": {
+              "$ref": "#/components/schemas/CorrectionBurn"
+            },
+            "type": "array",
+            "title": "Burns"
+          },
+          "total_p95_m_s": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "total_p99_m_s": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "lo/hi: its 95 % interval (bootstrap)."
+          },
+          "linear_p99_m_s": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "The same total worked out linearly."
+          },
+          "arrival_altitude_km": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Median; lo/hi the 1st and 99th %."
+          },
+          "runs": {
+            "type": "integer",
+            "title": "Runs"
+          },
+          "missed": {
+            "type": "integer",
+            "title": "Missed",
+            "description": "Runs with no close pass of the Moon (counted, not hidden)."
+          },
+          "assumptions": {
+            "items": {
+              "$ref": "#/components/schemas/Assumption"
+            },
+            "type": "array",
+            "title": "Assumptions"
+          },
+          "plan_note": {
+            "type": "string",
+            "title": "Plan Note"
+          },
+          "flown_note": {
+            "type": "string",
+            "title": "Flown Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "label",
+          "burns",
+          "total_p95_m_s",
+          "total_p99_m_s",
+          "linear_p99_m_s",
+          "arrival_altitude_km",
+          "runs",
+          "missed",
+          "assumptions",
+          "plan_note",
+          "flown_note"
+        ],
+        "title": "Corrections"
       },
       "Counts": {
         "properties": {
@@ -8214,7 +8372,12 @@
               "climatology",
               "none"
             ],
-            "title": "Weather"
+            "title": "Weather",
+            "description": "What numbers the weather tab can show. With none it still shows the rules and limits; weather_note says why there are no numbers."
+          },
+          "weather_note": {
+            "type": "string",
+            "title": "Weather Note"
           },
           "basis": {
             "type": "string",
@@ -8254,6 +8417,7 @@
           "transfer",
           "landing",
           "weather",
+          "weather_note",
           "basis",
           "note",
           "azimuth_deg",
@@ -10063,6 +10227,26 @@
           "limit": {
             "$ref": "#/components/schemas/QuantityOut"
           },
+          "units": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Units",
+            "description": "Units a limit for this rule can be entered in, the published one first; empty when no unit is published (any unit is taken)."
+          },
+          "limit_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit Note",
+            "description": "The team's note with an entered limit."
+          },
           "per_system": {
             "items": {
               "$ref": "#/components/schemas/SystemShare"
@@ -10110,6 +10294,8 @@
           "source_url",
           "class",
           "limit",
+          "units",
+          "limit_note",
           "per_system",
           "one_forecast",
           "disagreement",
@@ -11660,6 +11846,28 @@
             ],
             "title": "Burns Note"
           },
+          "corrections": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Corrections"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "corrections_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrections Note",
+            "description": "Why there is no correction budget."
+          },
           "moon_pull": {
             "anyOf": [
               {
@@ -11696,6 +11904,8 @@
           "numbers",
           "burns",
           "burns_note",
+          "corrections",
+          "corrections_note",
           "moon_pull",
           "radiation"
         ],

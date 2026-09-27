@@ -65,8 +65,11 @@ async def test_a_flown_launch_shows_its_rules_and_why_no_forecast(anon_client) -
     gefs = wind["per_system"][0]
     assert gefs["system"] == "GEFS" and gefs["share"] is None and "past" in gefs["missing_reason"]
     assert rows["er-lightning"]["observed"]["state"] == "no_data"
-    assert rows["f9-upper-wind-shear"]["limit"]["value"] is None
+    shear = rows["f9-upper-wind-shear"]
+    assert shear["limit"]["value"] is None and shear["units"] == []
+    assert "any unit" in shear["limit"]["missing_reason"]
     assert "not known" in d["range_note"] or "Launch Library" in d["range_note"]
+    assert "HTTP" not in d["range_note"] and "make " not in d["range_note"]
 
 
 async def test_ensemble_share_and_one_forecast_at_a_launch_time(anon_client) -> None:
@@ -146,6 +149,11 @@ async def test_entries_are_recorded_and_show_up(client) -> None:
     assert d["official"]["probability_pct"] == 80
     wind = next(x for x in d["rules"] if x["id"] == "f9-wind-162ft")
     assert wind["limit"]["provenance"] == "entered" and wind["limit"]["unit"] == "kt"
+    assert wind["limit_note"] == "from the provider"
+    assert wind["units"][0] == "mph" and set(wind["units"]) == {"mph", "kt", "m/s", "km/h"}
+    got = (await client.get(f"{API}/vehicles/falcon-heavy/limits")).json()
+    assert got["limits"][0]["note"] == "from the provider"
+    assert (await client.get(f"{API}/vehicles/no-such-rocket/limits")).status_code == 404
     h = await client.get(f"{API}/history", params={"entity": "limits", "id": "falcon-heavy"})
     assert h.status_code == 200 and h.json()["entries"]
 

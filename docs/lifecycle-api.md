@@ -391,3 +391,42 @@ that user. `GET /auth/me` returns the same `user`.
 - 2026-09-27 (backend, frontend's queue): a queued `JobRef.message` says how many answers
   are being worked out before it ("Waiting for a compute worker; 2 answers are being worked
   out first."). `run.py` starts two compute workers (`POLAR_COMPUTE_WORKERS` to change).
+- 2026-09-27 (backend, C3/C4 and the frontend's queue; engines `traj-3`, `lw-2`):
+  - `Trip.burns` lists the burns found in NASA's reconstruction up to the arrival at the
+    Moon, each shown as one instant, named in plain words: "Burn near the highest point of
+    the orbit" / "... lowest point ...", "Leaving Earth for the Moon", "Correction 1", …,
+    "Entering lunar orbit". `dv_m_s` has no ± (its `no_margin_reason` says how far the
+    paths before and after the burn meet). `burns_note` says what is not seen (burns in a
+    gap of the reconstruction, burns in lunar orbit) and, for Peregrine, the steady push.
+  - `Trip` adds `corrections: Corrections | null` and `corrections_note: string | null`
+    (why there is none: not flown, did not reach the Moon, no plan):
+    ```ts
+    interface Corrections {
+      label: string;                 // "A budget for these assumed errors, not a prediction …"
+      burns: { name: string; t: string; p95_m_s: Quantity; p99_m_s: Quantity }[];  // three
+      total_p95_m_s: Quantity; total_p99_m_s: Quantity;  // p99 lo/hi = 95 % bootstrap interval
+      linear_p99_m_s: Quantity;      // the same worked out linearly (a check)
+      arrival_altitude_km: Quantity; // median, lo/hi = 1st and 99th percentile
+      runs: number; missed: number;  // runs with no close pass of the Moon, counted
+      assumptions: { what: string; value: string }[];   // every error is assumed
+      plan_note: string; flown_note: string;
+    }
+    ```
+  - `Opportunity` adds `weather_note: string`. `weather: "none"` means no forecast numbers;
+    the weather route still answers with the rules and limits for any opportunity
+    (flown, past, or beyond 16 days), and `weather_note` says which.
+  - Launch calendar: one opportunity per sweep of the climb plane past the Moon's
+    direction, which happens twice a sidereal day; instants of the same sweep within 12 h
+    (aimed at different landings) are one opportunity, the one reaching the earliest
+    landing. Two of any three opportunities in a row are at least 12 h apart; a calendar
+    day holds at most two except when one sweep's instant falls just after midnight and
+    the next day's just before the following midnight.
+  - Plain words: no "TLI" in notes or reasons ("leaving Earth for the Moon"). A feed with
+    no data says so without the fetch error; `range_note` has no developer text.
+  - The assumed lunar-orbit wait (a lander with no flown precedent) is 1 d with no range;
+    its `no_margin_reason` gives the flown landers' waits as a choice, not a spread.
+  - `GET /vehicles/{id}/limits` → `VehicleLimits` (with each limit's `note`); 404 for an
+    unknown vehicle. `RuleRow` adds `units: string[]` (units a limit can be entered in, the
+    published one first; empty = no unit published, any unit taken) and `limit_note`
+    (the team's note with an entered limit). A missing limit carries `units[0]` as its
+    unit (was `""` for wind rules).

@@ -101,6 +101,14 @@ async def _resolve(
     return t0, pad
 
 
+def units_for(rule: Any) -> list[str]:
+    """Units a limit for ``rule`` can be entered in, the published one first; [] = any."""
+    if rule.variable == "wind_speed":
+        first = [rule.unit] if rule.unit in wr.SPEED_UNITS else []
+        return first + sorted(u for u in wr.SPEED_UNITS if u not in first)
+    return [rule.unit] if rule.unit else []
+
+
 def _limit(rule: Any, entered: dict[str, Any] | None) -> dict[str, Any]:
     if entered is not None:
         return _q(
@@ -118,9 +126,11 @@ def _limit(rule: Any, entered: dict[str, Any] | None) -> dict[str, Any]:
             no_margin_reason="The limit as published.",
             source=rule.sources[0].url,
         )
+    units = units_for(rule)
     return lifecycle.missing(
-        rule.unit or "",
-        "The limit is not published; the team can enter the one it is given.",
+        units[0] if units else "",
+        "The limit is not published; the team can enter the one it is given."
+        + ("" if units else " No unit is published for it, so any unit is taken."),
         provenance="entered",
     )
 
@@ -264,10 +274,12 @@ def _conflicts(ll2: feed_service.Latest, pad_id: str, t0: datetime) -> tuple[lis
     rng = sites.get(pad_id).launch_range
     locations = {s.ll2_location_id for s in sites.records if s.launch_range == rng}
     if ll2.values is None:
-        return [], (
-            "Other launches from this range are not known: "
-            + (ll2.missing_reason or "Launch Library 2 has not been recorded yet.")
+        why = (
+            "Launch Library 2 has not been recorded yet."
+            if ll2.snapshot is None or not ll2.missing_reason
+            else ll2.missing_reason
         )
+        return [], "Other launches from this range are not known: " + why
     out = []
     for launch in ll2.values.get("launches") or []:
         if launch.get("location_id") not in locations or not launch.get("net"):
@@ -342,6 +354,8 @@ async def launch_weather(
                 "source_url": r.sources[0].url,
                 "class": r.rule_class,
                 "limit": limit,
+                "units": units_for(r),
+                "limit_note": (entered.get(r.id) or {}).get("note"),
                 "per_system": per_system,
                 "one_forecast": one,
                 "disagreement": False,
@@ -458,6 +472,17 @@ async def set_official_forecast(
         after=after,
     )
     return {**after, "id": fid, "entered_by": who.actor, "entered_at": datetime.now(UTC)}
+
+
+async def vehicle_limits(session: AsyncSession, vehicle_id: str) -> dict[str, Any]:
+    try:
+        catalogues.load("vehicles").get(vehicle_id)
+    except KeyError as exc:
+        raise MissionNotFound(vehicle_id) from exc
+    return {
+        "vehicle_id": vehicle_id,
+        "limits": await PmRepository(session).vehicle_limits(vehicle_id),
+    }
 
 
 async def set_vehicle_limits(

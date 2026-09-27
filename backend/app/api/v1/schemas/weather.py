@@ -45,6 +45,11 @@ class RuleRow(_M):
     source_url: str
     class_: Literal["model", "proxy", "observation"] = Field(alias="class")
     limit: QuantityOut
+    units: list[str] = Field(
+        description="Units a limit for this rule can be entered in, the published one first; "
+        "empty when no unit is published (any unit is taken)."
+    )
+    limit_note: str | None = Field(description="The team's note with an entered limit.")
     per_system: list[SystemShare]
     one_forecast: list[OneForecast]
     disagreement: bool

@@ -38,11 +38,13 @@ ENGINE_VERSION = "hz-2/vis-2"
 #: los:  rover-to-lander line of sight
 #: net-2: a number with no edge inside the dates says so instead of "± 0".
 #: net-3 / traj-2: a zero-length "longest" is never "cut short"; Trip lists its covered stretches.
+#: traj-3: Trip lists the burns found in the reconstruction and a correction budget.
 #: lw:   launch opportunities (daily launch instants, landing windows, direct transfer)
+#: lw-2: one opportunity per sweep of the climb plane past the Moon; plain words; weather_note.
 ENGINES: dict[str, str] = {
     "hz": "hz-2",
     "vis": "vis-2",
-    "traj": "traj-2",
+    "traj": "traj-3",
     "ecl": "ecl-1",
     "wx": "wx-1",
     "rad": "rad-1",
@@ -50,7 +52,7 @@ ENGINES: dict[str, str] = {
     "net": "net-3",
     "ready": "ready-1",
     "los": "los-1",
-    "lw": "lw-1",
+    "lw": "lw-2",
 }
 
 

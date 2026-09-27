@@ -36,6 +36,32 @@ class Burn(_M):
     dv_m_s: QuantityOut
 
 
+class CorrectionBurn(_M):
+    name: str
+    t: datetime
+    p95_m_s: QuantityOut
+    p99_m_s: QuantityOut
+
+
+class Assumption(_M):
+    what: str
+    value: str
+
+
+class Corrections(_M):
+    label: str = Field(description="Always says these sizes are a budget for assumed errors.")
+    burns: list[CorrectionBurn]
+    total_p95_m_s: QuantityOut
+    total_p99_m_s: QuantityOut = Field(description="lo/hi: its 95 % interval (bootstrap).")
+    linear_p99_m_s: QuantityOut = Field(description="The same total worked out linearly.")
+    arrival_altitude_km: QuantityOut = Field(description="Median; lo/hi the 1st and 99th %.")
+    runs: int
+    missed: int = Field(description="Runs with no close pass of the Moon (counted, not hidden).")
+    assumptions: list[Assumption]
+    plan_note: str
+    flown_note: str
+
+
 class MoonPull(_M):
     equal_pull_km: float = Field(description="From the Moon's centre, where the pulls are equal.")
     sphere_of_influence_km: float
@@ -65,5 +91,7 @@ class Trip(_M):
     numbers: TripNumbers
     burns: list[Burn]
     burns_note: str | None
+    corrections: Corrections | None
+    corrections_note: str | None = Field(description="Why there is no correction budget.")
     moon_pull: MoonPull | None
     radiation: Radiation | None

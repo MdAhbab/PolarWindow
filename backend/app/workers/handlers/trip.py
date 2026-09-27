@@ -17,7 +17,7 @@ import numpy as np
 import numpy.typing as npt
 
 from app.config import get_settings
-from app.core import eclipse, intervals, spice
+from app.core import eclipse, intervals, lincov, propagate, spice
 from app.core import trip as core_trip
 from app.core.contact import mask_elevation
 from app.core.intervals import Run
@@ -25,10 +25,13 @@ from app.core.quantity import Quantity
 from app.core.spice import R_EARTH_M, R_MOON_M, R_SUN_M
 from app.data import catalogues
 from app.db.repositories.jobs import InputRef
-from app.services import lifecycle
+from app.services import ascent, flown_burns, lifecycle
 from app.workers.compute import HandlerResult, JobContext, handler
 
 H = 3600.0
+DAY = 86_400.0
+#: Seeded runs through the force model for the correction budget (plan C4).
+BUDGET_RUNS = 1000
 MAX_SAMPLES = 2000
 #: Earth's atmosphere makes its shadow about 2 % larger than the solid Earth's
 #: (the classical enlargement used for lunar eclipses); shadow edges are
@@ -63,6 +66,139 @@ def _longest(runs: list[Run], value: bool, t0: float, t1: float) -> tuple[float,
     if r is None or r.duration <= intervals.EPS_S:
         return 0.0, False  # nothing to cut short
     return r.duration, r.start <= t0 + intervals.EPS_S or r.end >= t1 - intervals.EPS_S
+
+
+def _mps(value: float, **kw: Any) -> dict[str, Any]:
+    return lifecycle.q(Quantity(value=value, unit="m/s", provenance="computed", **kw))
+
+
+BURNS_NOTE = (
+    "Found where NASA's reconstruction leaves the force model by more than 0.05 m/s in half "
+    "an hour, up to the arrival at the Moon; each is shown as one instant. A burn in a gap "
+    "of the reconstruction is not seen. Burns in lunar orbit are not listed: there the "
+    "force model and the reconstruction part by about 1 m/s at each close pass of the Moon, "
+    "as much as a small burn."
+)
+TCM_NAMES = (
+    "First correction, a day after leaving Earth",
+    "Second correction, half-way",
+    "Third correction, a day before arriving",
+)
+
+
+async def _burns_and_budget(
+    ctx: JobContext, p: dict[str, Any], at: Any, et_origin: float
+) -> tuple[list[dict[str, Any]], str, dict[str, Any] | None, str | None]:
+    """The burns read from the reconstruction and the correction budget (C3, C4)."""
+    mid = p["mission_id"]
+    flights = await spice.run_async(ascent.measure, tuple(tuple(x) for x in p.get("flights", [])))
+    f = flights.get(mid)
+    if f is None:
+        why = "The launch record this needs (pad, vehicle, liftoff) is not published."
+        return [], why, None, why
+    fl = f.launch
+    cover_end = (fl.t_arrive or f.t0_et) + 4 * DAY
+    tables = await spice.run_async(propagate.environment, f.t0_et - DAY, cover_end)
+    named, steady = await spice.run_async(flown_burns.burns, mid, fl, tables)
+    ctx.progress(0.45, "Burns found in the reconstruction.")
+
+    def when(et: float) -> datetime:
+        out: datetime = at(et - et_origin)
+        return out
+
+    burns = [
+        {
+            "t": lifecycle.iso(when(b.t)),
+            "name": name,
+            "dv_m_s": _mps(
+                b.dv_m_s,
+                no_margin_reason=f"One instant stands for the burn; the paths before and after "
+                f"it meet within {b.mismatch_m / 1000:.1f} km there.",
+            ),
+        }
+        for b, name in named
+    ]
+    note = BURNS_NOTE
+    if steady:
+        a, b = min(x.start for x in steady), max(x.end for x in steady)
+        note += (
+            f" From {lifecycle.iso(when(a))[:10]} to {lifecycle.iso(when(b))[:10]} the "
+            "reconstruction shows a steady push, not separate burns."
+        )
+    if fl.t_arrive is None:
+        return burns, note, None, "It did not reach the Moon, so there is no arrival to budget for."
+
+    def tick(n: int) -> None:
+        if n % 50 == 0:
+            ctx.progress(0.5 + 0.45 * n / BUDGET_RUNS, f"Correction runs: {n} of {BUDGET_RUNS}.")
+
+    bud = await spice.run_async(
+        lambda: flown_burns.budget(mid, fl, tables, named, samples=BUDGET_RUNS, progress=tick)
+    )
+    if bud is None:
+        why = (
+            "The reconstruction, propagated back from the Moon, does not pass Earth near the "
+            "flown departure, so the planned flight cannot be taken from it."
+        )
+        return burns, note, None, why
+    plan, lin, runs = bud.planned.plan, bud.linear, bud.runs
+    lo, hi = lincov.bootstrap(runs.total, 99)
+    leave = next((x for x, n in named if n == "Leaving Earth for the Moon"), None)
+    dep = leave.t if leave is not None else fl.t_tli
+    shift = (plan.t_tli - dep) / 60.0
+    flown = [(n, x.dv_m_s) for x, n in named if n.startswith("Correction")]
+    budget = {
+        "label": "A budget for these assumed errors, not a prediction of what the mission "
+        "needed.",
+        "burns": [
+            {
+                "name": TCM_NAMES[k] if k < len(TCM_NAMES) else f"Correction {k + 1}",
+                "t": lifecycle.iso(when(t)),
+                "p95_m_s": _mps(
+                    runs.pct(95)[0][k],
+                    no_margin_reason=f"95th percentile of {runs.dv.shape[0]} runs.",
+                ),
+                "p99_m_s": _mps(
+                    runs.pct(99)[0][k],
+                    no_margin_reason=f"99th percentile of {runs.dv.shape[0]} runs.",
+                ),
+            }
+            for k, t in enumerate(plan.tcm_times)
+        ],
+        "total_p95_m_s": _mps(runs.pct(95)[1], no_margin_reason="95th percentile of the runs."),
+        "total_p99_m_s": _mps(runs.pct(99)[1], lo=lo, hi=hi),
+        "linear_p99_m_s": _mps(
+            lin.pct(99)[1],
+            no_margin_reason="The same errors pushed through the motion linearised about the plan.",
+        ),
+        "arrival_altitude_km": lifecycle.q(
+            Quantity(
+                value=runs.altitude_km(50),
+                unit="km",
+                provenance="computed",
+                lo=runs.altitude_km(1),
+                hi=runs.altitude_km(99),
+            )
+        ),
+        "runs": int(runs.dv.shape[0]),
+        "missed": runs.missed,
+        "assumptions": [{"what": w, "value": v} for w, v in flown_burns.ASSUMED_WORDS],
+        "plan_note": (
+            "The flight as planned: NASA's reconstruction just before entering lunar orbit, "
+            "propagated back to where it passed closest to Earth "
+            f"({bud.planned.perigee_alt_m / 1000:,.0f} km up, {abs(shift):.0f} min "
+            f"{'after' if shift >= 0 else 'before'} the flown departure). Forward from there "
+            "it arrives where and when the flown one did, with no burn on the way."
+        ),
+        "flown_note": (
+            "The reconstruction shows corrections of "
+            + ", ".join(f"{v:.2f} m/s" for _, v in flown)
+            + " after leaving Earth (any in its gaps are not seen)."
+            if flown
+            else "No correction burn is seen in the reconstruction (any in its gaps are not seen)."
+        ),
+    }
+    return burns, note, budget, None
 
 
 @handler("trip")
@@ -150,7 +286,7 @@ async def run(ctx: JobContext) -> HandlerResult:
                 heard_mask |= (t >= r.start) & (t <= r.end)
         samples["heard"].append(heard_mask)
         ctx.progress(
-            0.1 + 0.8 * (k + 1) / len(cover), f"Stretch {k + 1} of {len(cover)} worked out."
+            0.05 + 0.35 * (k + 1) / len(cover), f"Stretch {k + 1} of {len(cover)} worked out."
         )
 
     t_all = np.concatenate(samples_t)
@@ -183,6 +319,9 @@ async def run(ctx: JobContext) -> HandlerResult:
             )
         return out
 
+    burns, burns_note, corrections, corrections_note = await _burns_and_budget(
+        ctx, p, at, et_origin
+    )
     shadow_s = intervals.total(shadow_runs, True)
     shadow_wide_s = intervals.total(shadow_wide, True)
     heard_s = intervals.total(heard_runs, True)
@@ -229,9 +368,10 @@ async def run(ctx: JobContext) -> HandlerResult:
                 long_un, None, open_=long_un_open or gaps, why="Its edges are set by station masks."
             ),
         },
-        "burns": [],
-        "burns_note": "Engine burns are not published with the reconstruction; they are not "
-        "listed rather than guessed.",
+        "burns": burns,
+        "burns_note": burns_note,
+        "corrections": corrections,
+        "corrections_note": corrections_note,
         "moon_pull": {
             "equal_pull_km": core_trip.equal_pull_distance_m(d_em, mu_e, mu_m) / 1000.0,
             "sphere_of_influence_km": core_trip.sphere_of_influence_m(d_em, mu_e, mu_m) / 1000.0,

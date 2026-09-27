@@ -33,9 +33,12 @@ async def test_a_planned_mission_has_no_trip_and_says_why(anon_client) -> None:
 
 @pytest.mark.requires_kernels
 @pytest.mark.requires_clps_spice
-async def test_im2_flown_trip(anon_client, settings) -> None:
+async def test_im2_flown_trip(anon_client, settings, monkeypatch) -> None:
     if not (settings.data_dir / "clps/clps_prime1_im2_cru_rec_250227_250306_v01.bsp").exists():
         pytest.skip("IM-2 reconstruction not on disk")
+    from app.workers.handlers import trip as trip_handler
+
+    monkeypatch.setattr(trip_handler, "BUDGET_RUNS", 40)  # the budget's size is a golden test
     r = await anon_client.get(f"{API}/missions/im-2/trip")
     assert r.status_code == 202
     assert await Worker(owner="t", handlers=HANDLERS).run_once() is not None
@@ -55,8 +58,22 @@ async def test_im2_flown_trip(anon_client, settings) -> None:
     mp = d["moon_pull"]
     assert 30_000 < mp["equal_pull_km"] < 45_000 and mp["t_equal_pull"] is not None
     assert {s["light"] for s in d["samples"]} <= {"lit", "penumbral", "dark"}
-    assert r.json()["meta"]["engines"] == {"ecl": "ecl-1", "traj": "traj-2"}
+    assert r.json()["meta"]["engines"] == {"ecl": "ecl-1", "traj": "traj-3"}
     assert len(d["covered"]) >= 1 and d["covered"][0]["start"] == d["start"]
+    # Burns found in the reconstruction: corrections on the way, then lunar orbit.
+    names = [b["name"] for b in d["burns"]]
+    assert names[-1] == "Entering lunar orbit" and "Correction 1" in names
+    assert 700 < d["burns"][-1]["dv_m_s"]["value"] < 900
+    c = d["corrections"]
+    assert c["runs"] == 40 and c["missed"] == 0 and "assumed" in c["label"]
+    assert [b["name"].split(",")[0] for b in c["burns"]] == [
+        "First correction",
+        "Second correction",
+        "Third correction",
+    ]
+    p99 = c["total_p99_m_s"]
+    assert p99["lo"] <= p99["value"] <= p99["hi"] and c["assumptions"]
+    assert d["corrections_note"] is None
 
 
 @pytest.mark.requires_kernels

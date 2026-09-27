@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 
 import pytest
@@ -63,7 +64,7 @@ async def test_im2_launch_worked_out_again_from_its_trajectory(anon_client, sett
     assert 30 < o["coast_min"]["value"] < 45 and 3000 < o["dv_tli_m_s"]["value"] < 3300
     assert o["landing"]["earth_up"] is True
     assert "inside the times the landing rule allows" in o["note"]
-    assert body["meta"]["engines"] == {"lw": "lw-1", "traj": "traj-2", "vis": "vis-2"}
+    assert body["meta"]["engines"] == {"lw": "lw-2", "traj": "traj-3", "vis": "vis-2"}
 
 
 @pytest.mark.requires_kernels
@@ -95,6 +96,14 @@ async def test_griffin_calendar_backed_out_from_the_landing(anon_client) -> None
         assert o["landing"]["earth_up"] is True
         assert o["landing"]["time"]["value"] > o["t0"]["value"]
         assert "Falcon 9" in o["note"]  # Falcon Heavy's climb is taken from Falcon 9's
+        assert "TLI" not in json.dumps(o)
+        assert o["weather_note"]
+        wait = o["transfer"]["orbit_wait_days"]
+        assert wait["provenance"] == "assumed" and wait["lo"] is None and wait["hi"] is None
+    # One opportunity per sweep of the climb plane past the Moon: two of any three in a
+    # row are of the same sweep, and those are at least half a day apart.
+    t0s = sorted(o["t0"]["value"] for o in d["opportunities"])
+    assert all(c - a >= 12 * 3600 for a, c in zip(t0s, t0s[2:], strict=False))
 
 
 @pytest.mark.requires_kernels
@@ -133,7 +142,7 @@ async def test_flown_launch_days_are_inside_the_backed_out_calendar(
     from app.workers.handlers import launch as job
 
     async with session_scope() as s:
-        flights, _ = await launch_service._flights(s)
+        flights, _ = await launch_service.reconstructed_flights(s)
         m = await MissionRepository(s).get(mission)
     if not all(ascent.spk_path(f[0]).exists() for f in flights):
         pytest.skip("reconstructions not on disk")

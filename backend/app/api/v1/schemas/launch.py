@@ -46,7 +46,11 @@ class Opportunity(_M):
     window_close: datetime | None
     transfer: TransferOut
     landing: LandingOut
-    weather: Literal["forecast", "climatology", "none"]
+    weather: Literal["forecast", "climatology", "none"] = Field(
+        description="What numbers the weather tab can show. With none it still shows the "
+        "rules and limits; weather_note says why there are no numbers."
+    )
+    weather_note: str
     basis: Literal["reconstructed", "designed", "published"] = Field(
         description="How t0 was worked out: again from a flown trajectory, designed, or as "
         "published."

@@ -269,6 +269,18 @@ async def official_forecast(
         raise _weather_http(exc) from exc
 
 
+@router.get(
+    "/vehicles/{vehicle_id}/limits",
+    response_model=VehicleLimits,
+    summary="Weather limits the team entered for a vehicle, with their notes",
+)
+async def read_vehicle_limits(vehicle_id: str, session: Any = Depends(deps.db)) -> dict[str, Any]:
+    try:
+        return await weather_service.vehicle_limits(session, vehicle_id)
+    except Exception as exc:
+        raise _weather_http(exc) from exc
+
+
 @router.put(
     "/vehicles/{vehicle_id}/limits",
     response_model=VehicleLimits,
