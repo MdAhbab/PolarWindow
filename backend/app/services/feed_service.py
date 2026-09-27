@@ -30,7 +30,8 @@ PROVIDER_NAMES: dict[str, str] = {
     "nws": "US National Weather Service",
     "ndbc": "NOAA buoys (National Data Buoy Center)",
     "ll2": "Launch Library 2 launch schedule",
-    "nomads": "NOAA weather models (GEFS, HRRR)",
+    "nomads": "NOAA weather models (GEFS, HRRR, GFS-Wave)",
+    "goes": "NOAA GOES lightning mapper (GLM)",
 }
 
 

@@ -8,12 +8,12 @@ them was edited by hand. Tests never touch the network.
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 
-from app.feeds.adapters import donki, dsn_now, ll2, ndbc, nomads, nws, swpc
+from app.feeds.adapters import donki, dsn_now, glm, ll2, ndbc, nomads, nws, swpc
 from app.feeds.base import ParseError
 
 FX = Path(__file__).resolve().parents[1] / "fixtures" / "feeds"
@@ -261,3 +261,36 @@ def test_grib_bilinear_is_exact_for_a_linear_field() -> None:
     ]
     # value = 1 + 4*(lon-279.5) + 8*(lat-28.5)
     assert _bilinear(near, 28.75, -80.25) == pytest.approx(1 + 4 * 0.25 + 8 * 0.25)
+
+
+def test_glm_flashes_near_a_pad() -> None:
+    # One 20-second GOES-19 file (2026-09-26 18:00:00), trimmed to its flash variables.
+    from app.feeds.parsers import glm as glm_parser
+
+    one = raw("glm_g19_20262691800_flashes.nc")
+    fl = glm_parser.read(one)
+    assert fl.platform == "G19" and fl.lat.size > 100
+    assert fl.start == datetime(2026, 9, 26, 18, 0, 0, tzinfo=UTC)
+    assert all(fl.start - timedelta(seconds=6) <= t <= fl.end for t in fl.t)
+    # A "pad" on the first good flash, and one far from any.
+    pads = [("on-it", float(fl.lat[0]), float(fl.lon[0])), ("south-pole", -89.0, 0.0)]
+    p = glm.parse_near(pads)(glm_parser.frame([one]))
+    near = p.values["pads"]["on-it"]
+    assert near["counts"]["5"] >= 1 and near["nearest_km"] < 1.0
+    assert near["counts"]["5"] <= near["counts"]["10"] <= near["counts"]["20"]
+    assert p.values["pads"]["south-pole"]["counts"]["20"] == 0
+    assert p.values["pads"]["south-pole"]["nearest_km"] is None
+    assert p.issued_at == datetime(2026, 9, 26, 18, 0, 20, tzinfo=UTC) and not p.issues
+
+
+def test_glm_body_framing_and_file_names() -> None:
+    from app.feeds.parsers import glm as glm_parser
+
+    assert glm_parser.unframe(glm_parser.frame([b"ab", b"", b"cde"])) == [b"ab", b"", b"cde"]
+    with pytest.raises(ParseError, match="truncated"):
+        glm_parser.unframe(glm_parser.frame([b"abc"])[:-1])
+    with pytest.raises(ParseError):
+        glm.parse_near([])(glm_parser.frame([b"not hdf5"]))
+    key = "GLM-L2-LCFA/2026/269/18/OR_GLM-L2-LCFA_G19_s20262691800000_e20262691800200_c1.nc"
+    assert glm.start_of(key) == datetime(2026, 9, 26, 18, 0, 0, tzinfo=UTC)
+    assert glm.start_of("README") is None

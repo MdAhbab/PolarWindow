@@ -193,3 +193,44 @@ async def test_entries_need_a_signed_in_name(anon_client) -> None:
     assert r.status_code in (401, 403)
     r = await anon_client.put(f"{API}/missions/griffin-1/return/limits", json={})
     assert r.status_code in (401, 403)
+
+
+async def test_lightning_seen_from_space_in_the_hours_before_a_launch(anon_client) -> None:
+    now = datetime.now(UTC).replace(microsecond=0)
+
+    def iso(t: datetime) -> str:
+        return t.isoformat().replace("+00:00", "Z")
+
+    await _snap(
+        "goes",
+        "glm",
+        "florida",
+        {
+            "satellite": "G19",
+            "start": iso(now - timedelta(minutes=30)),
+            "end": iso(now),
+            "pads": {
+                "ksc-lc-39a": {
+                    "counts": {"5": 0, "10": 1, "20": 2},
+                    "nearest_km": 12.0,
+                    "flashes": [
+                        {"km": 12.0, "t": iso(now - timedelta(minutes=4))},
+                        {"km": 30.0, "t": iso(now - timedelta(minutes=2))},
+                    ],
+                }
+            },
+        },
+    )
+    soon = now + timedelta(hours=2)
+    r = await anon_client.get(
+        f"{API}/missions/im-2/launch/weather", params={"t0": soon.isoformat(), "pad": "ksc-lc-39a"}
+    )
+    obs = {x["id"]: x for x in r.json()["data"]["rules"]}["er-lightning"]["observed"]
+    assert obs["state"] == "seen" and obs["detail"].startswith("1 flash within 10 nmi")
+    assert "not at the launch time" in obs["detail"]
+    # Two days ahead the half hour just gone says nothing about the launch.
+    r = await anon_client.get(
+        f"{API}/missions/im-2/launch/weather", params={"t0": T0.isoformat(), "pad": "ksc-lc-39a"}
+    )
+    obs = {x["id"]: x for x in r.json()["data"]["rules"]}["er-lightning"]["observed"]
+    assert obs["state"] == "no_data" and "six hours" in obs["detail"]

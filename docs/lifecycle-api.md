@@ -441,3 +441,14 @@ that user. `GET /auth/me` returns the same `user`.
     `wind_m_s` are GFS-Wave's one forecast there at the step nearest that liftoff (within
     1.5 h, lattice point within 80 km), `provenance: "published"`, source the run's URL; the
     `note` says where and for which opportunity. Otherwise they are missing with the reason.
+- 2026-09-27 (backend, B0/B1 GLM):
+  - The feeds worker records `goes/glm/{florida|vandenberg}` (GOES-19 / GOES-18 lightning
+    mapper, AWS open data): for each pad, the good-quality flashes within 20 nmi in the last
+    half hour (distance, time) and the counts within 5, 10 and 20 nmi. It fetches only while
+    a designed opportunity from the region is less than six hours away (half an hour is
+    about 90 files, 22 MB); otherwise the row stays without data.
+  - `RuleRow.observed` for the lightning rule is `clear` or `seen` when the launch time is
+    within six hours (or one hour past) and a recent GLM half hour is recorded; the `detail`
+    gives the count within the rule's distance, the half hour and the last flash, and says
+    it is now, not at the launch time. Otherwise `no_data` as before.
+  - `GET /feeds` lists the new products; provider `goes` ("NOAA GOES lightning mapper").

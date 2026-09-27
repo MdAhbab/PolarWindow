@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from app.config import get_settings
 from app.data import catalogues
-from app.feeds.adapters import donki, dsn_now, ll2, ndbc, nomads, nws, swpc
+from app.feeds.adapters import donki, dsn_now, glm, ll2, ndbc, nomads, nws, swpc
 from app.feeds.base import Product, ProviderSpec
 
 #: Pads close enough to share one weather model point (a GEFS cell is ~50 km).
@@ -29,6 +29,7 @@ def providers() -> dict[str, ProviderSpec]:
             ndbc.PROVIDER,
             ll2.PROVIDER,
             nomads.PROVIDER,
+            glm.PROVIDER,
         )
     }
 
@@ -57,6 +58,7 @@ def products(wanted: nomads.Wanted | None = None) -> list[Product]:
     if locations:
         out += ll2.products(locations)
     out += nomads.products(regions, hrrr_regions=set(HRRR_REGIONS), wanted=wanted)
+    out += glm.products(regions, wanted=wanted)
     return out
 
 

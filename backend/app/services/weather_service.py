@@ -43,8 +43,8 @@ NOT_RECORDED = {
     "AIFS-ENS": "ECMWF's AI ensemble (AIFS) is not recorded yet.",
 }
 OBSERVED_DETAIL = {
-    "lightning_distance": "Lightning is not recorded here yet (GOES lightning mapper); the "
-    "range watches it at the time.",
+    "lightning_distance": "Lightning seen from space (GOES lightning mapper) is recorded only "
+    "in the six hours before a launch opportunity; the range watches it at the time.",
     "thunderstorm_distance": "Thunderstorms are watched by the range at the time.",
     "electric_field": "The range's field mill readings are not public.",
 }
@@ -233,6 +233,46 @@ def _thunder(nws: feed_service.Latest, t0: datetime) -> str | None:
     return None
 
 
+#: GLM's latest half hour describes a launch at most this far ahead: it is "now".
+GLM_REACH = timedelta(hours=6)
+
+
+def _glm(
+    glm: feed_service.Latest, pad_id: str, when: datetime, limit: dict[str, Any]
+) -> dict[str, Any] | None:
+    """Flashes within the rule's distance of the pad in GLM's latest half hour, or None."""
+    v = glm.values
+    now = datetime.now(UTC)
+    if v is None or not (now - timedelta(hours=1) <= when <= now + GLM_REACH):
+        return None
+    pad = (v.get("pads") or {}).get(pad_id)
+    if pad is None:
+        return None
+    radius_nmi = 10.0
+    if limit.get("value") is not None and limit.get("unit") == "nmi":
+        radius_nmi = float(limit["value"])
+    n = sum(1 for f in pad["flashes"] if f["km"] <= radius_nmi * 1.852)
+    end = lifecycle.parse_time(v["end"])
+    start = lifecycle.parse_time(v["start"])
+    sat = {"G19": "GOES-19", "G18": "GOES-18"}.get(v.get("satellite", ""), v.get("satellite"))
+    span = f"the {round((end - start).total_seconds() / 60)} min to {end:%H:%M} UTC"
+    if n == 0:
+        return {
+            "state": "clear",
+            "detail": f"No flashes within {radius_nmi:g} nmi of the pad in {span} ({sat} "
+            "lightning mapper). This is now, not at the launch time.",
+        }
+    last = max(
+        lifecycle.parse_time(f["t"]) for f in pad["flashes"] if f["km"] <= radius_nmi * 1.852
+    )
+    return {
+        "state": "seen",
+        "detail": f"{n} flash{'es' if n > 1 else ''} within {radius_nmi:g} nmi of the pad in "
+        f"{span}, the last at {last:%H:%M} UTC ({sat} lightning mapper). This is now, not at "
+        "the launch time.",
+    }
+
+
 def _space_weather(
     kp: feed_service.Latest,
     protons: feed_service.Latest,
@@ -327,6 +367,7 @@ async def launch_weather(
     ]
     hrrr = await feed_service.latest(session, "nomads", "hrrr", region)
     nws = await feed_service.latest(session, "nws", "grid", pad_id)
+    glm = await feed_service.latest(session, "goes", "glm", region)
     rows = []
     for r in rules:
         limit = _limit(r, entered.get(r.id))
@@ -347,6 +388,12 @@ async def launch_weather(
                 extra = _thunder(nws, when)
                 detail = f"{detail} {extra}" if extra else detail
             observed = {"state": "no_data", "detail": detail}
+            if r.variable == "lightning_distance":
+                seen = _glm(glm, pad_id, when, limit)
+                if seen is not None:
+                    extra = _thunder(nws, when)
+                    seen["detail"] += f" {extra}" if extra else ""
+                    observed = seen
         rows.append(
             {
                 "id": r.id,
@@ -373,8 +420,12 @@ async def launch_weather(
         await feed_service.latest(session, "swpc", "goes_xrays"),
         await feed_service.latest(session, "swpc", "alerts"),
     )
-    used = [s for s in [*gefs, hrrr, nws] if s.snapshot is not None]
-    names = {"nomads": "NOAA NCEP model output (NOMADS)", "nws": "National Weather Service"}
+    used = [s for s in [*gefs, hrrr, nws, glm] if s.snapshot is not None]
+    names = {
+        "nomads": "NOAA NCEP model output (NOMADS)",
+        "nws": "National Weather Service",
+        "goes": "NOAA GOES lightning mapper (AWS open data)",
+    }
     sources: list[dict[str, Any]] = []
     for snap in used:
         ref = snap.source_ref(names.get(snap.snapshot.provider, snap.snapshot.provider))  # type: ignore[union-attr]
