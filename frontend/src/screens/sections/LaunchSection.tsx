@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../../lib/api/client'
 import type { MissionDetail } from '../../lib/api/adapters'
-import type { LaunchCalendarDTO, LaunchWeatherDTO, LifecycleMetaDTO, OpportunityDTO, RuleRowDTO } from '../../lib/api/lifecycle'
+import type { LaunchCalendarDTO, LaunchWeatherDTO, LifecycleMetaDTO, OpportunityDTO, QuantityDTO, RuleRowDTO } from '../../lib/api/lifecycle'
 import { useHistory, useLifecycleWrite, useSection, useSectionStatus } from '../../lib/api/lifecycleQueries'
 import { dateTimeWords, dateWords } from '../../lib/format'
-import { ageWords, hostWords, quantityText } from '../../lib/lifecycle/quantity'
+import { ageWords, formatValue, hostWords, quantityText } from '../../lib/lifecycle/quantity'
 import { NumberRow, QuantityTile } from '../../components/lifecycle/QuantityTile'
 import { Answer, ChartPanel, HowSure, Legend, Rows, SectionLayout, SectionStates, SourcesRow, StatePanel } from '../../components/lifecycle/Section'
 import { LaunchCalendar, LaunchTable, opportunityName } from '../../components/lifecycle/LaunchCalendar'
@@ -13,9 +13,13 @@ import { WeatherRuleTable, rulesSummary } from '../../components/lifecycle/Weath
 import { Field, FormSheet, HistoryList, TextArea, TextInput, isHttpUrl } from '../../components/lifecycle/Forms'
 import { Button, Disclosure } from '../../components/ui'
 import { Icon } from '../../components/Icon'
+import { UncertaintyNote } from '../../components/States'
 import { useCanWrite } from './ReadySection'
 
 const TERMS = ['launchTime', 'flightTime', 'sunAtLanding', 'sunlightAfterLanding']
+const DAY_MS = 86_400_000
+/** The longest span the service searches at once (422 beyond it). */
+const MAX_DAYS = 180
 
 /**
  * Launch (design-lifecycle.md §4): when and from where it can launch, and
@@ -31,7 +35,19 @@ export function LaunchSection({ mission: m }: { mission: MissionDetail }) {
     <SectionLayout question="When and from where can it launch?">
       <SectionStates view={view} terms={TERMS} status={status}>
         {({ data, meta }) =>
-          data.opportunities.length ? (
+          data.none_reason ? (
+            <>
+              <StatePanel
+                icon="ring"
+                title="No launch to show yet"
+                detail={data.none_reason}
+                stillWorks="Landing, Contact and the other steps do not depend on the launch and work as usual."
+              />
+              <Rows>
+                <SourcesRow meta={meta} />
+              </Rows>
+            </>
+          ) : data.opportunities.length ? (
             <LaunchAnswer cal={data} meta={meta} missionId={m.id} />
           ) : (
             <>
@@ -42,7 +58,12 @@ export function LaunchSection({ mission: m }: { mission: MissionDetail }) {
                 stillWorks="Try other dates below. The other steps are unaffected."
               />
               <Rows>
-                <DatesRow from={from} to={to} onApply={(f, t) => setParams({ ...(f ? { from: f } : {}), ...(t ? { to: t } : {}) })} />
+                <DatesRow
+                  from={from}
+                  to={to}
+                  datesNote={data.dates_note}
+                  onApply={(f, t) => setParams({ ...(f ? { from: f } : {}), ...(t ? { to: t } : {}) })}
+                />
                 <SourcesRow meta={meta} />
               </Rows>
             </>
@@ -61,83 +82,107 @@ function firstChoice(cal: LaunchCalendarDTO): OpportunityDTO {
   return sorted.reduce((best, o) => (Math.abs((o.t0.value ?? 0) - pub) < Math.abs((best.t0.value ?? 0) - pub) ? o : best), sorted[0])
 }
 
+/** A flown mission's calendar is its one launch, worked out again or as published. */
+function isFlown(cal: LaunchCalendarDTO): boolean {
+  return cal.opportunities.length > 0 && cal.opportunities.every((x) => x.basis !== 'designed')
+}
+
+/** The landing rule's Sun-height band in words, or that none is entered yet. */
+function sunBandWords(rule: LaunchCalendarDTO['landing_rule']): string {
+  const lo = rule.sun_elevation_min_deg
+  const hi = rule.sun_elevation_max_deg
+  if (lo.value !== null && hi.value !== null) return `The landing rule asks for ${quantityText(lo)} to ${quantityText(hi)}`
+  if (lo.value !== null) return `The landing rule asks for at least ${quantityText(lo)}`
+  if (hi.value !== null) return `The landing rule asks for at most ${quantityText(hi)}`
+  return 'No Sun-height band entered; any landing with the Sun up and rising counts'
+}
+
 function LaunchAnswer({ cal, meta, missionId }: { cal: LaunchCalendarDTO; meta: LifecycleMetaDTO; missionId: string }) {
   const [params, setParams] = useSearchParams()
   const [chosen, setChosen] = useState<string | null>(null)
   const o = cal.opportunities.find((x) => x.id === chosen) ?? firstChoice(cal)
+  const flown = isFlown(cal)
   const sorted = [...cal.opportunities].sort((a, b) => (a.t0.value ?? 0) - (b.t0.value ?? 0))
-  const first = sorted[0]
-  const last = sorted[sorted.length - 1]
+  const now = Date.now()
+  const next = sorted.find((x) => (x.t0.value ?? 0) * 1000 > now)
   const pads = [...new Set(cal.opportunities.map((x) => x.pad_name))]
-  const weather = useSection<LaunchWeatherDTO>(
-    'launch-weather',
-    missionId,
-    (signal) => api.launchWeather(missionId, o.id, signal),
-    [o.id],
-    o.weather !== 'none',
-  )
+  const fromMs = cal.start ? Date.parse(cal.start) : (sorted[0].t0.value ?? 0) * 1000
+  const toMs = cal.end ? Date.parse(cal.end) : (sorted[sorted.length - 1].t0.value ?? 0) * 1000
+  // The weather endpoint answers at once for any opportunity, a flown one too:
+  // the rules and the team's limits stand even where no forecast reaches.
+  const weather = useSection<LaunchWeatherDTO>('launch-weather', missionId, (signal) => api.launchWeather(missionId, o.id, signal), [o.id])
   const wx = weather.status === 'answer' ? weather.section : null
 
   return (
     <>
       <Answer meta={meta}>
-        {cal.opportunities.length} launch opportunit{cal.opportunities.length === 1 ? 'y' : 'ies'} from {pads.join(' and ')} between{' '}
-        {dateWords((first.t0.value ?? 0) * 1000)} and {dateWords((last.t0.value ?? 0) * 1000)}.
-        {cal.published_t0?.value != null && <> The mission’s published launch time is {quantityText(cal.published_t0)}.</>}
+        {flown ? (
+          <>
+            It launched on {quantityText(o.t0)} from {o.pad_name},{' '}
+            {o.basis === 'reconstructed' ? 'as worked out again from NASA’s reconstruction of the flight' : 'as published'}.
+            {o.basis === 'reconstructed' && cal.published_t0?.value != null && (
+              <> The published liftoff is {quantityText(cal.published_t0)}.</>
+            )}
+          </>
+        ) : (
+          <>
+            {cal.opportunities.length} launch opportunit{cal.opportunities.length === 1 ? 'y' : 'ies'} from {pads.join(' and ')} between{' '}
+            {dateWords(fromMs)} and {dateWords(toMs)}.
+            {next && <> The next is {dateTimeWords((next.t0.value ?? 0) * 1000)} from {next.pad_name}.</>}
+            {cal.published_t0?.value != null && <> The mission’s published launch time is {quantityText(cal.published_t0)}.</>}
+          </>
+        )}
       </Answer>
       <div className="-mt-2 flex flex-col gap-3">
         <p className="text-small text-ink-2" aria-live="polite">
-          Numbers for the opportunity on <span className="font-semibold text-ink">{opportunityName(o)}</span>
+          Numbers for the {flown ? 'launch' : 'opportunity'} on <span className="font-semibold text-ink">{opportunityName(o)}</span>
         </p>
         <NumberRow>
           <QuantityTile term="launchTime" q={o.t0} />
-          <QuantityTile term="flightTime" q={o.transfer.flight_days} note={o.transfer.type === 'phasing_loops' ? 'with loops around Earth first' : 'direct to the Moon'} />
-          <QuantityTile
-            term="sunAtLanding"
-            q={o.landing.sun_elevation_deg}
-            tone="sun"
-            icon="sun"
-            note={`The landing rule asks for ${quantityText(cal.landing_rule.sun_elevation_min_deg)} to ${quantityText(cal.landing_rule.sun_elevation_max_deg)}`}
-          />
+          <QuantityTile term="flightTime" q={o.transfer.flight_days} note={o.transfer.type === 'phasing_loops' ? 'With loops around Earth first' : 'Direct to the Moon'} />
+          <QuantityTile term="sunAtLanding" q={o.landing.sun_elevation_deg} tone="sun" icon="sun" note={sunBandWords(cal.landing_rule)} />
           <QuantityTile term="sunlightAfterLanding" q={o.landing.sunlight_after_h} tone="sun" note={o.landing.earth_up ? 'Earth in view at landing' : 'Earth not in view at landing'} />
         </NumberRow>
+        {o.note && <UncertaintyNote>{o.note}</UncertaintyNote>}
       </div>
       <ChartPanel
-        title="Launch opportunities by day (times in UTC)"
+        title={flown ? 'The launch (time in UTC)' : 'Launch opportunities by day (times in UTC)'}
         guide="launch-calendar"
         chart={<LaunchCalendar opportunities={cal.opportunities} selected={o.id} onSelect={setChosen} />}
         legend={
           <>
             <Legend
               items={[
-                { swatch: <span className="h-4 w-8 rounded-control border border-line-strong bg-panel" />, label: 'An opportunity: choose one to see its numbers' },
-                { swatch: <span className="h-4 w-8 rounded-control bg-ink" />, label: 'Chosen' },
+                ...(flown
+                  ? []
+                  : [
+                      { swatch: <span className="h-4 w-8 rounded-control border border-line-strong bg-panel" />, label: 'An opportunity: choose one to see its numbers' },
+                      { swatch: <span className="h-4 w-8 rounded-control bg-ink" />, label: 'Chosen' },
+                    ]),
                 { swatch: <span className="hatch-uncertain h-3 w-5" />, label: 'How far the time could be off' },
               ]}
             />
             <p className="text-caption leading-caption text-ink-3">
-              Each opportunity is worked back from a landing that meets the landing rule. {cal.landing_rule.note}
+              {flown ? 'The landing rule it is checked against: ' : 'Each opportunity is worked back from a landing that meets the landing rule. '}
+              {cal.landing_rule.note}
             </p>
           </>
         }
         table={<LaunchTable opportunities={cal.opportunities} />}
       />
       <Rows>
+        <FlightRow o={o} flown={flown} />
         <Disclosure
-          title="Weather rules for this opportunity"
+          title={flown ? 'Weather rules for this launch' : 'Weather rules for this opportunity'}
           meta={
-            o.weather === 'none'
-              ? 'no weather for this date'
-              : wx
-                ? `${rulesSummary(wx.data.rules)}${o.weather === 'climatology' ? ', past years only' : ''}`
-                : weather.status === 'error'
-                  ? 'not available'
-                  : 'loading'
+            wx
+              ? `${rulesSummary(wx.data.rules)}${o.weather === 'none' ? '; no forecast for this date' : o.weather === 'climatology' ? ', past years only' : ''}`
+              : weather.status === 'error'
+                ? 'not available'
+                : 'loading'
           }
         >
-          {o.weather === 'none' ? (
-            <p className="text-body text-ink-2">This opportunity is too far ahead for a forecast, and no history is held for its pad.</p>
-          ) : wx ? (
+          {wx ? (
             <WeatherBody wx={wx.data} meta={wx.meta} />
           ) : weather.status === 'error' ? (
             <p className="text-body text-ink-2">The weather could not be loaded: {(weather.error as Error).message}</p>
@@ -148,8 +193,8 @@ function LaunchAnswer({ cal, meta, missionId }: { cal: LaunchCalendarDTO; meta: 
           )}
         </Disclosure>
         <OfficialRow wx={wx?.data ?? null} missionId={missionId} />
-        <LimitsRow rules={wx?.data.rules ?? []} vehicleId={cal.vehicle_id ?? o.vehicle_id} />
-        <Disclosure title="Other launches from this range that day" meta={wx ? String(wx.data.range_conflicts.length) : undefined}>
+        <LimitsRow rules={wx?.data.rules ?? []} vehicleId={wx?.data.vehicle_id ?? cal.vehicle_id ?? o.vehicle_id} />
+        <Disclosure title="Other launches from this range that day" meta={wx?.data.range_conflicts.length ? String(wx.data.range_conflicts.length) : undefined}>
           {wx?.data.range_conflicts.length ? (
             <ul className="flex flex-col gap-1.5">
               {wx.data.range_conflicts.map((c) => (
@@ -159,20 +204,96 @@ function LaunchAnswer({ cal, meta, missionId }: { cal: LaunchCalendarDTO; meta: 
               ))}
             </ul>
           ) : (
-            <p className="text-body text-ink-2">{wx ? 'None listed.' : 'Shown with the weather for this opportunity.'}</p>
+            !wx && <p className="text-body text-ink-2">Shown with the weather for this opportunity.</p>
           )}
+          {wx?.data.range_note && <p className="text-small leading-5 text-ink-2">{wx.data.range_note}</p>}
         </Disclosure>
         {wx && <SpaceWeatherRow wx={wx.data} meta={wx.meta} />}
-        <DatesRow
-          from={params.get('from') ?? undefined}
-          to={params.get('to') ?? undefined}
-          onApply={(f, t) => setParams({ ...(f ? { from: f } : {}), ...(t ? { to: t } : {}) })}
-        />
+        {/* A flown mission's launch is the one it flew: there are no dates to change. */}
+        {!flown && (
+          <DatesRow
+            from={params.get('from') ?? undefined}
+            to={params.get('to') ?? undefined}
+            datesNote={cal.dates_note}
+            onApply={(f, t) => setParams({ ...(f ? { from: f } : {}), ...(t ? { to: t } : {}) })}
+          />
+        )}
         <HowSure meta={meta} />
         <SourcesRow meta={meta} />
       </Rows>
     </>
   )
+}
+
+const BASIS_WORDS: Record<OpportunityDTO['basis'], string> = {
+  reconstructed: 'worked out again from NASA’s reconstruction',
+  designed: 'designed here from the pad and the landing',
+  published: 'as published',
+}
+
+/** A number, or why there is none; an assumed one also says what it assumes. */
+function QuantityLine({ q }: { q: QuantityDTO }) {
+  if (q.value === null && (q.lo === null || q.hi === null)) return <>{q.missing_reason ?? 'Not available'}</>
+  return (
+    <>
+      {quantityText(q)}
+      {q.provenance === 'assumed' && q.source && <span className="block text-small text-ink-2">Assumed: {q.source}</span>}
+    </>
+  )
+}
+
+/** How this launch reaches the Moon: the climb, the coast, leaving Earth, the flight and the landing. */
+function FlightRow({ o, flown }: { o: OpportunityDTO; flown: boolean }) {
+  const land = o.landing.time
+  const stretch = o.basis === 'designed' && land.lo !== null && land.hi !== null
+  const landing = { ...land, lo: null, hi: null }
+  return (
+    <Disclosure title={flown ? 'The flight as launched' : 'The flight for this opportunity'} meta={BASIS_WORDS[o.basis]}>
+      <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-body sm:grid-cols-[max-content_1fr]">
+        <dt className="text-ink-3">Launch time</dt>
+        <dd className="text-ink">{quantityText(o.t0)}</dd>
+        <dt className="text-ink-3">Direction of the climb (compass heading)</dt>
+        <dd className="text-ink">
+          <QuantityLine q={o.azimuth_deg} />
+        </dd>
+        <dt className="text-ink-3">Coasting in Earth orbit before leaving for the Moon</dt>
+        <dd className="text-ink">
+          <QuantityLine q={o.coast_min} />
+        </dd>
+        <dt className="text-ink-3">Speed added to leave Earth for the Moon</dt>
+        <dd className="text-ink">
+          <QuantityLine q={o.dv_tli_m_s} />
+        </dd>
+        <dt className="text-ink-3">Flight time to the Moon</dt>
+        <dd className="text-ink">
+          <QuantityLine q={o.transfer.flight_days} />
+        </dd>
+        <dt className="text-ink-3">Time in orbit around the Moon before landing</dt>
+        <dd className="text-ink">
+          <QuantityLine q={o.transfer.orbit_wait_days} />
+        </dd>
+        <dt className="text-ink-3">Landing</dt>
+        <dd className="text-ink">
+          {land.value === null ? (land.missing_reason ?? 'Not available') : quantityText(landing)}
+          {land.provenance === 'published' && <span className="text-ink-2"> (published)</span>}
+          {stretch && (
+            <span className="block text-small text-ink-2">
+              The landing rule allows a landing from {dateTimeWords((land.lo as number) * 1000)} to {dateTimeWords((land.hi as number) * 1000)}.
+            </span>
+          )}
+        </dd>
+        <dt className="text-ink-3">Earth in view at landing</dt>
+        <dd className="text-ink">{o.landing.earth_up ? 'Yes' : 'No'}</dd>
+      </dl>
+    </Disclosure>
+  )
+}
+
+/** "380 hours from now", "16 days from now", or that the launch is past. */
+function leadWords(h: number): string {
+  if (h < 0) return 'in the past'
+  if (h < 48) return `${Math.round(h)} hours from now`
+  return `${formatValue(h / 24)} days from now`
 }
 
 function WeatherBody({ wx, meta }: { wx: LaunchWeatherDTO; meta: LifecycleMetaDTO }) {
@@ -181,9 +302,9 @@ function WeatherBody({ wx, meta }: { wx: LaunchWeatherDTO; meta: LifecycleMetaDT
   return (
     <>
       <p className="text-small leading-5 text-ink-2">
-        For a launch at {dateTimeWords(Date.parse(wx.t0))}, {Math.round(wx.lead_time_h)} hours ahead of the forecasts.
-        {oldest !== null && ` The oldest forecast here was fetched ${ageWords(oldest)}.`} Each system is shown on its own;
-        nothing is added up, and the launch team decides.
+        For a launch at {dateTimeWords(Date.parse(wx.t0))}, {leadWords(wx.lead_time_h)}. {wx.note}
+        {oldest !== null && wx.lead_time_h >= 0 && ` The oldest forecast here was fetched ${ageWords(oldest)}.`} Nothing is
+        added up; the launch team decides.
       </p>
       <WeatherRuleTable rules={wx.rules} />
     </>
@@ -197,9 +318,13 @@ function SpaceWeatherRow({ wx, meta }: { wx: LaunchWeatherDTO; meta: LifecycleMe
     <Disclosure title="Space weather now" meta={`Kp ${quantityText(sw.kp)}${sw.alerts.length ? `, ${sw.alerts.length} alerts` : ''}`}>
       <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-body sm:grid-cols-[max-content_1fr]">
         <dt className="text-ink-3">Geomagnetic activity (Kp)</dt>
-        <dd className="text-ink">{quantityText(sw.kp)}</dd>
+        <dd className="text-ink">
+          <QuantityLine q={sw.kp} />
+        </dd>
         <dt className="text-ink-3">Protons above 10 MeV</dt>
-        <dd className="text-ink">{quantityText(sw.proton_10mev_pfu)}</dd>
+        <dd className="text-ink">
+          <QuantityLine q={sw.proton_10mev_pfu} />
+        </dd>
         <dt className="text-ink-3">X-ray flares</dt>
         <dd className="text-ink">{sw.xray_class ?? 'Not reported'}</dd>
         <dt className="text-ink-3">Alerts</dt>
@@ -294,27 +419,38 @@ function OfficialRow({ wx, missionId }: { wx: LaunchWeatherDTO | null; missionId
 }
 
 /**
- * The team's own weather limits, for vehicles whose limits are not published
- * (ADR-14): each is shown as "a limit the team entered", with who and when.
+ * The team's own weather limits, for rules whose limit the vehicle maker does
+ * not publish (ADR-14): each is shown as "a limit the team entered", with who
+ * and when. The service replaces the vehicle's whole list on each save, so
+ * every limit already entered is sent again with the ones changed here.
  */
-function LimitsRow({ rules, vehicleId }: { rules: RuleRowDTO[]; vehicleId: string | undefined }) {
+function LimitsRow({ rules, vehicleId }: { rules: RuleRowDTO[]; vehicleId: string | null | undefined }) {
   const canWrite = useCanWrite()
   const [open, setOpen] = useState(false)
   const history = useHistory('limits', open && vehicleId ? vehicleId : null)
-  const editable = rules.filter((r) => r.class !== 'observation' && r.limit.value !== null)
+  const editable = rules.filter((r) => r.limit.provenance !== 'published')
   const [values, setValues] = useState<Record<string, string>>({})
+  const [units, setUnits] = useState<Record<string, string>>({})
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const write = useLifecycleWrite((b: Parameters<typeof api.vehicleLimits>[1]) => api.vehicleLimits(vehicleId as string, b))
-  const entered = rules.filter((r) => r.limit.provenance === 'entered').length
+  const entered = rules.filter((r) => r.limit.provenance === 'entered' && r.limit.value !== null).length
+  const notPublished = editable.length - entered
   return (
-    <Disclosure title="Team weather limits" meta={rules.length ? `${entered} entered by the team, ${rules.length - entered} published` : undefined}>
+    <Disclosure
+      title="Team weather limits"
+      meta={rules.length ? `${entered} entered by the team${notPublished ? `, ${notPublished} not published` : ''}` : undefined}
+    >
       {rules.length ? (
         <ul className="flex flex-col divide-y divide-line border-y border-line">
           {rules.map((r) => (
             <li key={r.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2.5">
               <span className="text-body text-ink">{r.text}</span>
               <span className="text-small text-ink-2">
-                {quantityText(r.limit)} ·{' '}
-                {r.limit.provenance === 'entered' ? `entered by ${r.limit.source ?? 'the team'}` : r.limit.provenance === 'published' ? 'published' : r.limit.provenance}
+                {r.limit.value === null
+                  ? (r.limit.missing_reason ?? 'No limit given')
+                  : `${quantityText(r.limit)} · ${
+                      r.limit.provenance === 'entered' ? `entered by ${r.limit.source ?? 'the team'}` : r.limit.provenance === 'published' ? 'published' : r.limit.provenance
+                    }`}
               </span>
             </li>
           ))}
@@ -334,15 +470,28 @@ function LimitsRow({ rules, vehicleId }: { rules: RuleRowDTO[]; vehicleId: strin
         open={open}
         onClose={() => setOpen(false)}
         title="Team weather limits"
-        intro="For a vehicle whose limits are not published. Leave a field empty to keep the limit as it is."
+        intro="For the rules whose limit the vehicle maker does not publish. Leave a field empty to keep the limit as it is. A wind limit takes mph, kt, m/s or km/h."
         saving={write.isPending}
         error={write.error}
         history={<HistoryList entries={history.data} pending={history.isPending} error={history.error} />}
         onSave={async () => {
-          const limits = editable
-            .filter((r) => values[r.id] !== undefined && values[r.id] !== '')
-            .map((r) => ({ rule_id: r.id, value: Number(values[r.id]), unit: r.limit.unit, note: null }))
-          if (!limits.length || limits.some((l) => !Number.isFinite(l.value))) return false
+          const e: Record<string, string> = {}
+          const limits = []
+          for (const r of editable) {
+            const typed = values[r.id]?.trim()
+            const unit = (units[r.id] ?? r.limit.unit).trim()
+            if (typed) {
+              const n = Number(typed)
+              if (!Number.isFinite(n) || n <= 0) e[r.id] = 'A number above zero.'
+              else if (!unit) e[`${r.id}-unit`] = 'The unit the limit is given in.'
+              else limits.push({ rule_id: r.id, value: n, unit, note: null })
+            } else if (r.limit.value !== null) {
+              // Already entered and not changed here: sent again so it is kept.
+              limits.push({ rule_id: r.id, value: r.limit.value, unit: r.limit.unit, note: null })
+            }
+          }
+          setErrors(e)
+          if (Object.keys(e).length || !limits.length) return false
           try {
             await write.mutateAsync({ limits })
             return true
@@ -352,36 +501,68 @@ function LimitsRow({ rules, vehicleId }: { rules: RuleRowDTO[]; vehicleId: strin
         }}
       >
         {editable.map((r) => (
-          <Field key={r.id} label={r.text} hint={`Now ${quantityText(r.limit)}.`}>
-            {(p) => (
-              <TextInput
-                {...p}
-                inputMode="decimal"
-                value={values[r.id] ?? ''}
-                onChange={(e) => setValues({ ...values, [r.id]: e.target.value })}
-              />
+          <div key={r.id} className="flex flex-wrap items-end gap-3">
+            <Field label={r.text} hint={r.limit.value === null ? 'Not entered yet.' : `Now ${quantityText(r.limit)}.`} error={errors[r.id]}>
+              {(p) => (
+                <TextInput
+                  {...p}
+                  inputMode="decimal"
+                  className="w-40"
+                  value={values[r.id] ?? ''}
+                  onChange={(e) => setValues({ ...values, [r.id]: e.target.value })}
+                />
+              )}
+            </Field>
+            {!r.limit.unit && (
+              <Field label="Unit" error={errors[`${r.id}-unit`]}>
+                {(p) => (
+                  <TextInput {...p} className="w-28" value={units[r.id] ?? ''} onChange={(e) => setUnits({ ...units, [r.id]: e.target.value })} />
+                )}
+              </Field>
             )}
-          </Field>
+          </div>
         ))}
       </FormSheet>
     </Disclosure>
   )
 }
 
-function DatesRow({ from, to, onApply }: { from?: string; to?: string; onApply: (from?: string, to?: string) => void }) {
+function DatesRow({
+  from,
+  to,
+  datesNote,
+  onApply,
+}: {
+  from?: string
+  to?: string
+  datesNote: string | null
+  onApply: (from?: string, to?: string) => void
+}) {
   const [f, setF] = useState(from ?? '')
   const [t, setT] = useState(to ?? '')
+  const [error, setError] = useState<string | undefined>()
   return (
-    <Disclosure title="Change the dates" meta={from || to ? `${from ?? '…'} to ${to ?? '…'}` : 'the dates the service chose'}>
+    <Disclosure
+      title="Change the dates"
+      meta={from || to ? `${from ?? '…'} to ${to ?? '…'}` : (datesNote?.replace(/\.$/, '').toLowerCase() ?? 'the dates the service chose')}
+    >
       <form
         className="flex flex-wrap items-end gap-3"
         onSubmit={(e) => {
           e.preventDefault()
+          const days = f && t ? (Date.parse(t) - Date.parse(f)) / DAY_MS : null
+          if (days !== null && days <= 0) return setError('The end comes after the start.')
+          if (days !== null && days > MAX_DAYS) return setError(`At most ${MAX_DAYS} days at once.`)
+          setError(undefined)
           onApply(f || undefined, t || undefined)
         }}
       >
-        <Field label="From (UTC)">{(p) => <TextInput {...p} type="date" value={f} onChange={(e) => setF(e.target.value)} className="w-44" />}</Field>
-        <Field label="To (UTC)">{(p) => <TextInput {...p} type="date" value={t} onChange={(e) => setT(e.target.value)} className="w-44" />}</Field>
+        <Field label="From (UTC)" error={error}>
+          {(p) => <TextInput {...p} type="date" value={f} onChange={(e) => setF(e.target.value)} className="w-44" />}
+        </Field>
+        <Field label="To (UTC)" hint={`Up to ${MAX_DAYS} days.`}>
+          {(p) => <TextInput {...p} type="date" value={t} onChange={(e) => setT(e.target.value)} className="w-44" />}
+        </Field>
         <Button type="submit">Show these dates</Button>
       </form>
     </Disclosure>

@@ -21,6 +21,8 @@ const OUT = process.env.SCREENS_OUT ?? join(dirname(fileURLToPath(import.meta.ur
 const PAGES: [name: string, path: string][] = [
   ['hub-im-2', '/missions/im-2'],
   ['ready-im-2', '/missions/im-2/ready'],
+  ['launch-im-1-flown', '/missions/im-1/launch'],
+  ['launch-griffin-1-calendar', '/missions/griffin-1/launch'],
   ['trip-im-2', '/missions/im-2/trip'],
   ['trip-im-1-with-gaps', '/missions/im-1/trip'],
   ['contact-im-2', '/missions/im-2/contact'],

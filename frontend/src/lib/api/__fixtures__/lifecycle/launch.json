@@ -1,5 +1,9 @@
 {
  "data": {
+  "none_reason": null,
+  "start": "2025-02-20T00:00:00Z",
+  "end": "2025-03-10T00:00:00Z",
+  "dates_note": "The dates asked for.",
   "pads": [
    {
     "id": "lc-39a",
@@ -102,7 +106,48 @@
      },
      "earth_up": true
     },
-    "weather": "forecast"
+    "weather": "forecast",
+    "basis": "designed",
+    "note": "A due-east climb from the pad, the flight corrected in the full force model; the margin is the largest difference from a flown liftoff seen so far.",
+    "azimuth_deg": {
+     "value": 90.0,
+     "unit": "deg",
+     "provenance": "assumed",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "A due-east climb is assumed.",
+     "missing_reason": null,
+     "source": "A due-east climb is assumed."
+    },
+    "dv_tli_m_s": {
+     "value": 3140.0,
+     "unit": "m/s",
+     "provenance": "computed",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "From the designed flight.",
+     "missing_reason": null,
+     "source": null
+    },
+    "coast_min": {
+     "value": 48.0,
+     "unit": "min",
+     "provenance": "computed",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "From the designed flight.",
+     "missing_reason": null,
+     "source": null
+    }
    },
    {
     "id": "opp-2",
@@ -196,7 +241,48 @@
      },
      "earth_up": true
     },
-    "weather": "forecast"
+    "weather": "forecast",
+    "basis": "designed",
+    "note": "A due-east climb from the pad, the flight corrected in the full force model; the margin is the largest difference from a flown liftoff seen so far.",
+    "azimuth_deg": {
+     "value": 90.0,
+     "unit": "deg",
+     "provenance": "assumed",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "A due-east climb is assumed.",
+     "missing_reason": null,
+     "source": "A due-east climb is assumed."
+    },
+    "dv_tli_m_s": {
+     "value": 3140.0,
+     "unit": "m/s",
+     "provenance": "computed",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "From the designed flight.",
+     "missing_reason": null,
+     "source": null
+    },
+    "coast_min": {
+     "value": 48.0,
+     "unit": "min",
+     "provenance": "computed",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "From the designed flight.",
+     "missing_reason": null,
+     "source": null
+    }
    },
    {
     "id": "opp-3",
@@ -290,7 +376,48 @@
      },
      "earth_up": true
     },
-    "weather": "climatology"
+    "weather": "climatology",
+    "basis": "designed",
+    "note": "A due-east climb from the pad, the flight corrected in the full force model; the margin is the largest difference from a flown liftoff seen so far.",
+    "azimuth_deg": {
+     "value": 90.0,
+     "unit": "deg",
+     "provenance": "assumed",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "A due-east climb is assumed.",
+     "missing_reason": null,
+     "source": "A due-east climb is assumed."
+    },
+    "dv_tli_m_s": {
+     "value": 3140.0,
+     "unit": "m/s",
+     "provenance": "computed",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "From the designed flight.",
+     "missing_reason": null,
+     "source": null
+    },
+    "coast_min": {
+     "value": 48.0,
+     "unit": "min",
+     "provenance": "computed",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "From the designed flight.",
+     "missing_reason": null,
+     "source": null
+    }
    },
    {
     "id": "opp-4",
@@ -384,7 +511,48 @@
      },
      "earth_up": true
     },
-    "weather": "climatology"
+    "weather": "climatology",
+    "basis": "designed",
+    "note": "A due-east climb from the pad, the flight corrected in the full force model; the margin is the largest difference from a flown liftoff seen so far.",
+    "azimuth_deg": {
+     "value": 90.0,
+     "unit": "deg",
+     "provenance": "assumed",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "A due-east climb is assumed.",
+     "missing_reason": null,
+     "source": "A due-east climb is assumed."
+    },
+    "dv_tli_m_s": {
+     "value": 3140.0,
+     "unit": "m/s",
+     "provenance": "computed",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "From the designed flight.",
+     "missing_reason": null,
+     "source": null
+    },
+    "coast_min": {
+     "value": 48.0,
+     "unit": "min",
+     "provenance": "computed",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "From the designed flight.",
+     "missing_reason": null,
+     "source": null
+    }
    },
    {
     "id": "opp-5",
@@ -478,7 +646,48 @@
      },
      "earth_up": true
     },
-    "weather": "climatology"
+    "weather": "climatology",
+    "basis": "designed",
+    "note": "A due-east climb from the pad, the flight corrected in the full force model; the margin is the largest difference from a flown liftoff seen so far.",
+    "azimuth_deg": {
+     "value": 90.0,
+     "unit": "deg",
+     "provenance": "assumed",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "A due-east climb is assumed.",
+     "missing_reason": null,
+     "source": "A due-east climb is assumed."
+    },
+    "dv_tli_m_s": {
+     "value": 3140.0,
+     "unit": "m/s",
+     "provenance": "computed",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "From the designed flight.",
+     "missing_reason": null,
+     "source": null
+    },
+    "coast_min": {
+     "value": 48.0,
+     "unit": "min",
+     "provenance": "computed",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "From the designed flight.",
+     "missing_reason": null,
+     "source": null
+    }
    },
    {
     "id": "opp-6",
@@ -572,7 +781,48 @@
      },
      "earth_up": true
     },
-    "weather": "climatology"
+    "weather": "climatology",
+    "basis": "designed",
+    "note": "A due-east climb from the pad, the flight corrected in the full force model; the margin is the largest difference from a flown liftoff seen so far.",
+    "azimuth_deg": {
+     "value": 90.0,
+     "unit": "deg",
+     "provenance": "assumed",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "A due-east climb is assumed.",
+     "missing_reason": null,
+     "source": "A due-east climb is assumed."
+    },
+    "dv_tli_m_s": {
+     "value": 3140.0,
+     "unit": "m/s",
+     "provenance": "computed",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "From the designed flight.",
+     "missing_reason": null,
+     "source": null
+    },
+    "coast_min": {
+     "value": 48.0,
+     "unit": "min",
+     "provenance": "computed",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "From the designed flight.",
+     "missing_reason": null,
+     "source": null
+    }
    }
   ],
   "landing_rule": {
@@ -627,7 +877,7 @@
    "parts": [
     {
      "source": "Launch time",
-     "note": "Solved to the second; the \u00b1 covers the fitted ascent angle."
+     "note": "Solved to the second; the ± covers the fitted ascent angle."
     }
    ]
   },

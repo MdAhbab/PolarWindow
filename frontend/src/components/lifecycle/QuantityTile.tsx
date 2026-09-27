@@ -12,6 +12,11 @@ import { KeyNumberTile, type Tone } from '../KeyNumbers'
  * lower bound with ≥. A number without a margin says why under it; a missing
  * number is a dash and the reason. Where it comes from opens from the label.
  */
+/** The tile's lines as one footnote: a line that runs into the next ends with a full stop. */
+function sentences(lines: string[]): string {
+  return lines.map((l, i) => (i < lines.length - 1 && !/[.!?:]$/.test(l) ? `${l}.` : l)).join(' ')
+}
+
 export function QuantityTile({
   term,
   q,
@@ -44,7 +49,8 @@ export function QuantityTile({
   const display = joined && v.kind !== 'missing' ? `${v.figure}${v.unit}` : v.figure
   // A missing number has no unit to show beside its dash.
   const unit = joined || v.kind === 'missing' ? '' : v.unit
-  const lower = (t: string) => t.charAt(0).toLowerCase() + t.slice(1)
+  // "From TLI …" becomes "from TLI …", but an acronym that opens the reason ("TLI to …") keeps its case.
+  const lower = (t: string) => (/^[A-Z]{2}/.test(t) ? t : t.charAt(0).toLowerCase() + t.slice(1))
   const lines = [note, v.noMarginReason ? `No margin: ${lower(v.noMarginReason)}` : undefined, v.missingReason].filter(Boolean)
   const fraction = scale && v.value !== null ? v.value / scale : undefined
   const range = scale && v.kind === 'range' && v.lo !== undefined && v.hi !== undefined ? { lo: v.lo / scale, hi: v.hi / scale } : undefined
@@ -66,7 +72,7 @@ export function QuantityTile({
       fraction={fraction}
       range={range}
       bar={Boolean(scale) && v.kind !== 'time' && v.kind !== 'missing'}
-      footnote={lines.length ? lines.join(' ') : undefined}
+      footnote={lines.length ? sentences(lines as string[]) : undefined}
       spoken={v.spoken}
       age={age}
       source={<SourceLine provenance={q.provenance} source={q.source} />}

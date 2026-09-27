@@ -2,6 +2,9 @@
  "data": {
   "t0": "2025-02-26T00:16:00Z",
   "lead_time_h": 38,
+  "pad_id": "lc-39a",
+  "vehicle_id": "falcon-9",
+  "note": "Each rule as published, with what the recorded forecasts say at the launch time. Shares count one forecast system's runs; they are never combined.",
   "rules": [
    {
     "id": "wind-162ft",
@@ -72,7 +75,7 @@
     "observed": null,
     "climatology": {
      "share": 0.08,
-     "years": "2001\u20132024",
+     "years": "2001–2024",
      "source": "NASA POWER"
     },
     "class": "model"
@@ -137,7 +140,7 @@
    },
    {
     "id": "thick-cloud",
-    "text": "Do not launch through thick cloud layers between 0 and \u221220 \u00b0C",
+    "text": "Do not launch through thick cloud layers between 0 and −20 °C",
     "source_url": "https://www.nasa.gov/",
     "limit": {
      "value": 4500,
@@ -213,10 +216,90 @@
     },
     "climatology": {
      "share": 0.11,
-     "years": "2018\u20132024",
+     "years": "2018–2024",
      "source": "GOES GLM thunder hours"
     },
     "class": "observation"
+   },
+   {
+    "id": "upper-shear",
+    "text": "Do not launch through upper-level conditions containing wind shear that could lead to control problems for the launch vehicle.",
+    "source_url": "https://standards.nasa.gov/",
+    "class": "model",
+    "limit": {
+     "value": null,
+     "unit": "",
+     "provenance": "entered",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": null,
+     "missing_reason": "The limit is not published; the team can enter the one it is given.",
+     "source": null
+    },
+    "per_system": [
+     {
+      "system": "GEFS",
+      "share": null,
+      "missing_reason": "The limit is not known yet."
+     },
+     {
+      "system": "ECMWF-ENS",
+      "share": null,
+      "missing_reason": "The limit is not known yet."
+     },
+     {
+      "system": "AIFS-ENS",
+      "share": null,
+      "missing_reason": "The limit is not known yet."
+     }
+    ],
+    "one_forecast": [],
+    "disagreement": false,
+    "observed": null,
+    "climatology": null
+   },
+   {
+    "id": "cumulus-tops",
+    "text": "Do not launch through cumulus clouds with tops colder than the limit the team was given.",
+    "source_url": "https://standards.nasa.gov/",
+    "class": "proxy",
+    "limit": {
+     "value": 10000,
+     "unit": "ft",
+     "provenance": "entered",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "The limit as entered.",
+     "missing_reason": null,
+     "source": "Nadia Karim"
+    },
+    "per_system": [
+     {
+      "system": "GEFS",
+      "share": null,
+      "missing_reason": "Not yet fetched."
+     },
+     {
+      "system": "ECMWF-ENS",
+      "share": null,
+      "missing_reason": "Not yet fetched."
+     },
+     {
+      "system": "AIFS-ENS",
+      "share": null,
+      "missing_reason": "Not yet fetched."
+     }
+    ],
+    "one_forecast": [],
+    "disagreement": false,
+    "observed": null,
+    "climatology": null
    }
   ],
   "official": {
@@ -265,7 +348,8 @@
     "t0": "2025-02-26T05:30:00Z",
     "pad": "SLC-40"
    }
-  ]
+  ],
+  "range_note": "From Launch Library 2's launch schedule."
  },
  "meta": {
   "computed_at": "2026-09-27T08:00:00Z",

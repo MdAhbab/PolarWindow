@@ -618,6 +618,125 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/missions/{mission_id}/trip/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The flown trajectory as a CCSDS Orbit Ephemeris Message or CSV */
+        get: operations["trip_export_api_v1_missions__mission_id__trip_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/launch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The launch a mission flew, or its launch opportunities backed out from the landing */
+        get: operations["launch_api_v1_missions__mission_id__launch_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/launch/weather": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Each launch weather rule at one launch time, with what the forecasts say */
+        get: operations["launch_weather_api_v1_missions__mission_id__launch_weather_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/launch/official-forecast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Enter the range's official launch weather forecast */
+        put: operations["official_forecast_api_v1_missions__mission_id__launch_official_forecast_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vehicles/{vehicle_id}/limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Enter weather limits the vehicle maker does not publish */
+        put: operations["vehicle_limits_api_v1_vehicles__vehicle_id__limits_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Where the booster comes down, and whether anything comes back to Earth */
+        get: operations["recovery_api_v1_missions__mission_id__return_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/return/limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Enter the sea and wind limits for recovering the booster (and a capsule) */
+        put: operations["return_limits_api_v1_missions__mission_id__return_limits_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/missions/{mission_id}/ready": {
         parameters: {
             query?: never;
@@ -1361,6 +1480,22 @@ export interface components {
              */
             entered_at: string;
         };
+        /** Booster */
+        Booster: {
+            /**
+             * Landing
+             * @enum {string}
+             */
+            landing: "droneship" | "land" | "expended" | "unknown";
+            zone: components["schemas"]["Zone"] | null;
+            /** Note */
+            note: string;
+            wave_height_m: components["schemas"]["QuantityOut"] | null;
+            wind_m_s: components["schemas"]["QuantityOut"] | null;
+            limits: components["schemas"]["SeaLimits"];
+            /** Hazard Area Seen */
+            hazard_area_seen: boolean | null;
+        };
         /** BriefRequest */
         BriefRequest: {
             /** Site Id */
@@ -1441,6 +1576,19 @@ export interface components {
             items: components["schemas"]["CalendarBucket"][];
             meta: components["schemas"]["Meta"];
         };
+        /** Capsule */
+        Capsule: {
+            /** Applicable */
+            applicable: boolean;
+            /** Reason */
+            reason: string | null;
+            zone: components["schemas"]["Zone"] | null;
+            wave_height_m: components["schemas"]["QuantityOut"] | null;
+            wind_m_s: components["schemas"]["QuantityOut"] | null;
+            /** Daylight */
+            daylight: boolean | null;
+            limits: components["schemas"]["SeaLimits"];
+        };
         /** Cleared */
         Cleared: {
             /** What */
@@ -1452,6 +1600,15 @@ export interface components {
             removed: number | null;
             /** Message */
             message: string;
+        };
+        /** Climatology */
+        Climatology: {
+            /** Share */
+            share: number;
+            /** Years */
+            years: string;
+            /** Source */
+            source: string;
         };
         /** Comms */
         Comms: {
@@ -1975,6 +2132,66 @@ export interface components {
             /** Note */
             note: string;
         };
+        /** LandingOut */
+        LandingOut: {
+            time: components["schemas"]["QuantityOut"];
+            sun_elevation_deg: components["schemas"]["QuantityOut"];
+            sunlight_after_h: components["schemas"]["QuantityOut"];
+            /** Earth Up */
+            earth_up: boolean;
+        };
+        /** LandingRule */
+        LandingRule: {
+            sun_elevation_min_deg: components["schemas"]["QuantityOut"];
+            sun_elevation_max_deg: components["schemas"]["QuantityOut"];
+            /** Earth Required */
+            earth_required: boolean;
+            /** Note */
+            note: string;
+        };
+        /** LaunchCalendar */
+        LaunchCalendar: {
+            /** None Reason */
+            none_reason: string | null;
+            /** Start */
+            start: string | null;
+            /** End */
+            end: string | null;
+            /** Dates Note */
+            dates_note: string | null;
+            /** Vehicle Id */
+            vehicle_id: string | null;
+            /** Pads */
+            pads: components["schemas"]["Pad"][];
+            /** Opportunities */
+            opportunities: components["schemas"]["Opportunity"][];
+            landing_rule: components["schemas"]["LandingRule"];
+            published_t0: components["schemas"]["QuantityOut"] | null;
+        };
+        /** LaunchWeather */
+        LaunchWeather: {
+            /**
+             * T0
+             * Format: date-time
+             */
+            t0: string;
+            /** Lead Time H */
+            lead_time_h: number;
+            /** Pad Id */
+            pad_id: string;
+            /** Vehicle Id */
+            vehicle_id: string | null;
+            /** Note */
+            note: string;
+            /** Rules */
+            rules: components["schemas"]["RuleRow"][];
+            official: components["schemas"]["OfficialForecast"] | null;
+            space_weather_now: components["schemas"]["SpaceWeatherNow"];
+            /** Range Conflicts */
+            range_conflicts: components["schemas"]["RangeConflict"][];
+            /** Range Note */
+            range_note: string;
+        };
         /** Lesson */
         Lesson: {
             /** Id */
@@ -2032,6 +2249,40 @@ export interface components {
             min: number;
             /** Max */
             max: number;
+        };
+        /** LimitIn */
+        LimitIn: {
+            /** Rule Id */
+            rule_id: string;
+            /** Value */
+            value: number;
+            /** Unit */
+            unit: string;
+            /** Note */
+            note?: string | null;
+        };
+        /** LimitOut */
+        LimitOut: {
+            /** Rule Id */
+            rule_id: string;
+            /** Value */
+            value: number;
+            /** Unit */
+            unit: string;
+            /** Note */
+            note: string | null;
+            /** Entered By */
+            entered_by: string;
+            /**
+             * Entered At
+             * Format: date-time
+             */
+            entered_at: string;
+        };
+        /** LimitsIn */
+        LimitsIn: {
+            /** Limits */
+            limits: components["schemas"]["LimitIn"][];
         };
         /** Link */
         Link: {
@@ -2432,6 +2683,123 @@ export interface components {
             /** Launch Note */
             launch_note: string | null;
         };
+        /** Observed */
+        Observed: {
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "clear" | "seen" | "no_data";
+            /** Detail */
+            detail: string;
+        };
+        /** OfficialForecast */
+        OfficialForecast: {
+            /** Probability Pct */
+            probability_pct: number;
+            /** Concerns */
+            concerns: string[];
+            /** Pdf Url */
+            pdf_url: string;
+            /** Entered By */
+            entered_by: string;
+            /**
+             * Entered At
+             * Format: date-time
+             */
+            entered_at: string;
+        };
+        /** OfficialForecastIn */
+        OfficialForecastIn: {
+            /** Probability Pct */
+            probability_pct: number;
+            /** Concerns */
+            concerns?: string[];
+            /** Pdf Url */
+            pdf_url: string;
+        };
+        /** OfficialForecastOut */
+        OfficialForecastOut: {
+            /** Id */
+            id: number;
+            /** Probability Pct */
+            probability_pct: number;
+            /** Concerns */
+            concerns: string[];
+            /** Pdf Url */
+            pdf_url: string;
+            /** Entered By */
+            entered_by: string;
+            /**
+             * Entered At
+             * Format: date-time
+             */
+            entered_at: string;
+        };
+        /** OneForecast */
+        OneForecast: {
+            /**
+             * System
+             * @enum {string}
+             */
+            system: "NWS" | "HRRR" | "GEOS-FP";
+            value: components["schemas"]["QuantityOut"];
+            /** Over */
+            over: boolean;
+        };
+        /** Opportunity */
+        Opportunity: {
+            /** Id */
+            id: string;
+            /** Pad Id */
+            pad_id: string;
+            /** Pad Name */
+            pad_name: string;
+            /** Vehicle Id */
+            vehicle_id: string;
+            /** @description Liftoff, unit "s since epoch". */
+            t0: components["schemas"]["QuantityOut"];
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "instantaneous" | "window";
+            /** Window Open */
+            window_open: string | null;
+            /** Window Close */
+            window_close: string | null;
+            transfer: components["schemas"]["TransferOut"];
+            landing: components["schemas"]["LandingOut"];
+            /**
+             * Weather
+             * @enum {string}
+             */
+            weather: "forecast" | "climatology" | "none";
+            /**
+             * Basis
+             * @description How t0 was worked out: again from a flown trajectory, designed, or as published.
+             * @enum {string}
+             */
+            basis: "reconstructed" | "designed" | "published";
+            /** Note */
+            note: string;
+            azimuth_deg: components["schemas"]["QuantityOut"];
+            dv_tli_m_s: components["schemas"]["QuantityOut"];
+            coast_min: components["schemas"]["QuantityOut"];
+        };
+        /** Pad */
+        Pad: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Lat Deg */
+            lat_deg: number | null;
+            /** Lon Deg */
+            lon_deg: number | null;
+            /** Operator */
+            operator: string;
+        };
         /** Parameter */
         Parameter: {
             /** Id */
@@ -2688,6 +3056,18 @@ export interface components {
             /** Confirm In */
             confirm_in: string[];
         };
+        /** RangeConflict */
+        RangeConflict: {
+            /** Name */
+            name: string;
+            /**
+             * T0
+             * Format: date-time
+             */
+            t0: string;
+            /** Pad */
+            pad: string;
+        };
         /** Ready */
         Ready: {
             /**
@@ -2810,6 +3190,16 @@ export interface components {
             ephemeris: string;
             /** Frame */
             frame: string;
+        };
+        /** Return */
+        Return: {
+            booster: components["schemas"]["Booster"] | null;
+            capsule: components["schemas"]["Capsule"] | null;
+        };
+        /** ReturnLimitsIn */
+        ReturnLimitsIn: {
+            booster?: components["schemas"]["SeaLimitsIn"];
+            capsule?: components["schemas"]["SeaLimitsIn"];
         };
         /** Risk */
         Risk: {
@@ -2952,6 +3342,44 @@ export interface components {
             /** Source Url */
             source_url: string;
         };
+        /** RuleRow */
+        RuleRow: {
+            /** Id */
+            id: string;
+            /**
+             * Text
+             * @description The rule as published, word for word.
+             */
+            text: string;
+            /** Source Url */
+            source_url: string;
+            /**
+             * Class
+             * @enum {string}
+             */
+            class: "model" | "proxy" | "observation";
+            limit: components["schemas"]["QuantityOut"];
+            /** Per System */
+            per_system: components["schemas"]["SystemShare"][];
+            /** One Forecast */
+            one_forecast: components["schemas"]["OneForecast"][];
+            /** Disagreement */
+            disagreement: boolean;
+            observed: components["schemas"]["Observed"] | null;
+            climatology: components["schemas"]["Climatology"] | null;
+        };
+        /** SeaLimits */
+        SeaLimits: {
+            wave_height_m: components["schemas"]["QuantityOut"];
+            wind_m_s: components["schemas"]["QuantityOut"];
+        };
+        /** SeaLimitsIn */
+        SeaLimitsIn: {
+            /** Wave Height M */
+            wave_height_m?: number | null;
+            /** Wind M S */
+            wind_m_s?: number | null;
+        };
         /** SectionStatus */
         SectionStatus: {
             /**
@@ -2977,9 +3405,24 @@ export interface components {
             data: components["schemas"]["Contact"];
             meta: components["schemas"]["LifecycleMeta"];
         };
+        /** Section[LaunchCalendar] */
+        Section_LaunchCalendar_: {
+            data: components["schemas"]["LaunchCalendar"];
+            meta: components["schemas"]["LifecycleMeta"];
+        };
+        /** Section[LaunchWeather] */
+        Section_LaunchWeather_: {
+            data: components["schemas"]["LaunchWeather"];
+            meta: components["schemas"]["LifecycleMeta"];
+        };
         /** Section[Ready] */
         Section_Ready_: {
             data: components["schemas"]["Ready"];
+            meta: components["schemas"]["LifecycleMeta"];
+        };
+        /** Section[Return] */
+        Section_Return_: {
+            data: components["schemas"]["Return"];
             meta: components["schemas"]["LifecycleMeta"];
         };
         /** Section[Trip] */
@@ -3030,6 +3473,25 @@ export interface components {
         SettingsOut: {
             ai: components["schemas"]["AiSettingsOut"];
             system: components["schemas"]["SystemOut"];
+        };
+        /**
+         * ShareOut
+         * @description k of n model runs, with an exact 95 % interval (ADR-9, ADR-14).
+         */
+        ShareOut: {
+            /** K */
+            k: number;
+            /** N */
+            n: number;
+            /** Lo */
+            lo: number;
+            /** Hi */
+            hi: number;
+            /**
+             * Checked
+             * @description True only once this rule has been checked against observations.
+             */
+            checked: boolean;
         };
         /**
          * SignInIn
@@ -3248,6 +3710,15 @@ export interface components {
              */
             snapshot_id?: number | null;
         };
+        /** SpaceWeatherNow */
+        SpaceWeatherNow: {
+            kp: components["schemas"]["QuantityOut"];
+            proton_10mev_pfu: components["schemas"]["QuantityOut"];
+            /** Xray Class */
+            xray_class: string | null;
+            /** Alerts */
+            alerts: string[];
+        };
         /** Spacecraft */
         Spacecraft: {
             /** Mass Kg */
@@ -3316,6 +3787,17 @@ export interface components {
             /** Cache */
             cache: boolean;
             counts: components["schemas"]["Counts"];
+        };
+        /** SystemShare */
+        SystemShare: {
+            /**
+             * System
+             * @enum {string}
+             */
+            system: "GEFS" | "ECMWF-ENS" | "AIFS-ENS";
+            share: components["schemas"]["ShareOut"] | null;
+            /** Missing Reason */
+            missing_reason: string | null;
         };
         /** TargetSite */
         TargetSite: {
@@ -3437,6 +3919,16 @@ export interface components {
             /** Lunar Orbit Days */
             lunar_orbit_days: number | null;
         };
+        /** TransferOut */
+        TransferOut: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "direct" | "phasing_loops";
+            flight_days: components["schemas"]["QuantityOut"];
+            orbit_wait_days: components["schemas"]["QuantityOut"];
+        };
         /** Trip */
         Trip: {
             /**
@@ -3452,6 +3944,11 @@ export interface components {
             end: string | null;
             /** Coverage Note */
             coverage_note: string | null;
+            /**
+             * Covered
+             * @description The stretches NASA's reconstruction covers; anything between is a gap.
+             */
+            covered: components["schemas"]["StretchOut"][];
             /** Samples */
             samples: components["schemas"]["TripSample"][];
             /** Shadow */
@@ -3580,6 +4077,13 @@ export interface components {
             /** Error Type */
             type: string;
         };
+        /** VehicleLimits */
+        VehicleLimits: {
+            /** Vehicle Id */
+            vehicle_id: string;
+            /** Limits */
+            limits: components["schemas"]["LimitOut"][];
+        };
         /**
          * Who
          * @description Who a session belongs to.
@@ -3626,6 +4130,18 @@ export interface components {
             /** Worst Compound S */
             worst_compound_s: number;
             meta: components["schemas"]["Meta"];
+        };
+        /** Zone */
+        Zone: {
+            /** Lat Deg */
+            lat_deg: number;
+            /** Lon Deg */
+            lon_deg: number;
+            /**
+             * Pm Km
+             * @description Null when the zone's size is not published.
+             */
+            pm_km: number | null;
         };
     };
     responses: never;
@@ -4754,6 +5270,257 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JobRefOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trip_export_api_v1_missions__mission_id__trip_export_get: {
+        parameters: {
+            query?: {
+                format?: "oem" | "csv";
+            };
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    launch_api_v1_missions__mission_id__launch_get: {
+        parameters: {
+            query?: {
+                /** @description Default: today. */
+                from?: string | null;
+                /** @description Default: 90 days on; 180 at most. */
+                to?: string | null;
+            };
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Section_LaunchCalendar_"];
+                };
+            };
+            /** @description Being worked out; poll the job. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobRefOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    launch_weather_api_v1_missions__mission_id__launch_weather_get: {
+        parameters: {
+            query?: {
+                /** @description An opportunity id from the calendar. */
+                opportunity?: string | null;
+                /** @description Or a launch time, with a pad. */
+                t0?: string | null;
+                pad?: string | null;
+            };
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Section_LaunchWeather_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    official_forecast_api_v1_missions__mission_id__launch_official_forecast_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OfficialForecastIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfficialForecastOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    vehicle_limits_api_v1_vehicles__vehicle_id__limits_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vehicle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LimitsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VehicleLimits"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recovery_api_v1_missions__mission_id__return_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Section_Return_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    return_limits_api_v1_missions__mission_id__return_limits_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReturnLimitsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Section_Return_"];
                 };
             };
             /** @description Validation Error */

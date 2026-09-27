@@ -176,7 +176,8 @@ export function LaunchTable({ opportunities }: { opportunities: OpportunityDTO[]
               <td className={cell}>{o.pad_name}</td>
               <td className={cell}>{o.kind === 'window' ? 'Launch period' : 'One instant'}</td>
               <td className={`${cell} font-mono`}>{quantityText(o.transfer.flight_days)}</td>
-              <td className={cell}>{quantityText(o.landing.time)}</td>
+              {/* The landing itself; for a designed one, lo/hi are the stretch the rule allows, not a margin. */}
+              <td className={cell}>{quantityText({ ...o.landing.time, lo: null, hi: null })}</td>
               <td className={`${cell} font-mono`}>{quantityText(o.landing.sun_elevation_deg)}</td>
               <td className={`${cell} font-mono`}>{quantityText(o.landing.sunlight_after_h)}</td>
               <td className={cell}>{o.landing.earth_up ? 'Yes' : 'No'}</td>

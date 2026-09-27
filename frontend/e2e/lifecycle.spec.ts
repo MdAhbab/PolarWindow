@@ -117,6 +117,51 @@ test('launch (contract fixtures): choosing an opportunity sets the four numbers;
   await expectNoSeriousAxe(page, '/missions/im-2/launch with the weather open')
 })
 
+test('team weather limits (contract fixtures): an unpublished limit takes a unit, and every entered limit is sent again', async ({
+  page,
+  context,
+}) => {
+  await returningVisitor(context)
+  await serveLifecycleFixtures(context)
+  let put: unknown = null
+  await context.route(/localhost:8000\/api\/v1\/auth\/demo$/, async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback()
+    const real = await route.fetch()
+    const body = await real.json()
+    await route.fulfill({ response: real, json: { ...body, user: { id: 7, name: 'Nadia Karim', team: 'Launch' } } })
+  })
+  await context.route(/localhost:8000\/api\/v1\/vehicles\/falcon-9\/limits$/, async (route) => {
+    if (route.request().method() === 'PUT') put = route.request().postDataJSON()
+    await fulfillWrite(route, { vehicle_id: 'falcon-9', limits: [] })
+  })
+  await page.goto('/missions/im-2/launch')
+  const row = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Team weather limits' }) })
+  await row.locator('summary').click()
+  await expect(row.locator('summary')).toContainText('1 entered by the team, 1 not published')
+  await expect(row).toContainText('The limit is not published; the team can enter the one it is given.')
+  await row.getByRole('button', { name: 'Enter the team’s limits' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Team weather limits' })
+  // The published limits are not offered; the unpublished one asks for its unit.
+  await expect(sheet.getByLabel(/sustained wind at the 162-foot level/)).toHaveCount(0)
+  await sheet.getByLabel(/upper-level conditions containing wind shear/).fill('25')
+  await sheet.getByRole('button', { name: 'Save' }).click()
+  await expect(sheet).toContainText('Enter your name')
+  await sheet.getByLabel('Your name').fill('Nadia Karim')
+  await sheet.getByRole('button', { name: 'Save' }).click()
+  await expect(sheet).toContainText('The unit the limit is given in.')
+  await sheet.getByLabel('Unit').fill('kt')
+  await sheet.getByRole('button', { name: 'Save' }).click()
+  await expect(sheet.getByText('Saved.')).toBeVisible()
+  // The service replaces the vehicle's list, so the limit already entered goes with the new one.
+  expect(put).toEqual({
+    limits: [
+      { rule_id: 'upper-shear', value: 25, unit: 'kt', note: null },
+      { rule_id: 'cumulus-tops', value: 10000, unit: 'ft', note: null },
+    ],
+  })
+  await expectNoSeriousAxe(page, 'the team weather limits sheet')
+})
+
 test('working it out (contract fixtures): a 202 shows its progress and what still works', async ({ page, context }) => {
   await returningVisitor(context)
   await serveLifecycleFixtures(context, { working: ['trip'] })
@@ -285,4 +330,63 @@ test('trip and contact (live API): the flown trip with its gaps in the data, and
   await page.goto('/missions/im-2/contact')
   await expect(page.locator('[data-guide="section-answer"]')).toContainText('A ground station can hear it', { timeout: 90_000 })
   await expect(main).toContainText('Line of sight only')
+})
+
+test('launch (live API): a flown launch worked out again, and a planned mission’s calendar', async ({ page, context }) => {
+  test.setTimeout(180_000)
+  await returningVisitor(context)
+  const main = page.locator('main')
+  const answer = page.locator('[data-guide="section-answer"]')
+  const openRow = async (title: string) => {
+    const summary = page.locator('summary', { hasText: title })
+    await summary.click()
+    return page.locator('details').filter({ has: summary })
+  }
+
+  // IM-1 flew: its one launch, worked out again from NASA's reconstruction beside the published liftoff.
+  await page.goto('/missions/im-1/launch')
+  await expect(answer).toContainText('It launched on 15 Feb 2024', { timeout: 90_000 })
+  await expect(answer).toContainText('as worked out again from NASA’s reconstruction of the flight')
+  await expect(answer).toContainText('The published liftoff is 15 Feb 2024')
+  await expect(main).toContainText('Numbers for the launch on 15 February 2024')
+  await expect(main).toContainText('after the published liftoff')
+  const flight = await openRow('The flight as launched')
+  await expect(flight).toContainText('worked out again from NASA’s reconstruction')
+  await expect(flight).toContainText("The climb's direction is not published")
+  await expect(flight).toContainText('(published)')
+  const rules = await openRow('Weather rules for this launch')
+  await expect(rules.locator('summary')).toContainText('no forecast for this date')
+  await expect(rules).toContainText('in the past')
+  await expect(rules).toContainText('This launch is in the past; the forecasts made before it were not kept.')
+  // Its launch is the one it flew: no dates to change.
+  await expect(page.locator('summary', { hasText: 'Change the dates' })).toHaveCount(0)
+  await openRow('Team weather limits')
+  await openRow('Other launches from this range that day')
+  await expectNoSeriousAxe(page, '/missions/im-1/launch (live) with its rows open')
+
+  // Griffin-1 has not flown: a calendar worked back from its landing spot.
+  await page.goto('/missions/griffin-1/launch')
+  await expect(answer).toContainText(/\d+ launch opportunities from Launch Complex 39A between/, { timeout: 90_000 })
+  await expect(answer).toContainText('The next is')
+  const opps = page.getByRole('group', { name: 'Launch opportunities by day' }).getByRole('button')
+  expect(await opps.count()).toBeGreaterThan(1)
+  const second = opps.nth(1)
+  await second.click()
+  await expect(second).toHaveAttribute('aria-pressed', 'true')
+  const name = (await second.getAttribute('aria-label'))!
+  await expect(main).toContainText(`Numbers for the opportunity on ${name}`)
+  const designed = await openRow('The flight for this opportunity')
+  await expect(designed).toContainText('designed here from the pad and the landing')
+  await expect(designed).toContainText('The landing rule allows a landing from')
+  await expect(designed).toContainText('Assumed:')
+  await page.getByRole('button', { name: 'Read the chart as a table' }).click()
+  await expect(main.getByRole('table').first()).toContainText('Launch Complex 39A')
+  const dates = await openRow('Change the dates')
+  await expect(dates.locator('summary')).toContainText('the next 90 days')
+  await dates.getByLabel('From (UTC)').fill('2027-01-01')
+  await dates.getByLabel('To (UTC)').fill('2027-08-01')
+  await dates.getByRole('button', { name: 'Show these dates' }).click()
+  await expect(dates).toContainText('At most 180 days at once.')
+  await expect(page).not.toHaveURL(/from=/)
+  await expectNoSeriousAxe(page, '/missions/griffin-1/launch (live) with its table and rows open')
 })

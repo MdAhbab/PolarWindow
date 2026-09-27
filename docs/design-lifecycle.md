@@ -177,7 +177,11 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
 - **Question:** "When and from where can it launch?"
 - **Answer:** "{n} launch opportunities from {pads} between {from} and {to}.
   The next is {date, time} from {pad}." Adds the published launch time when
-  there is one.
+  there is one. A flown mission (its one opportunity `{pad}-flown`, `basis`
+  not `designed`) reads "It launched on {t0 ±} from {pad}, as worked out again
+  from NASA's reconstruction of the flight. The published liftoff is {t ±}."
+  (or "as published" when that is all there is). With `none_reason`, a
+  refused-state panel says it and nothing else is drawn.
 - **Numbers** (for the chosen opportunity; the first by default): Launch time
   ({t0} ± min) · Flight time ({days} ±) · Sun height at landing ({deg} ±) ·
   Sunlight after landing ({h} ±).
@@ -188,11 +192,24 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   days". Choosing one updates the four numbers and the weather row. Twin:
   day, time ±, pad, kind, flight days, landing time, Sun height, sunlight
   after, Earth up at landing, weather available.
-- **Rows:** Weather rules for this opportunity (meta: "{n} rules; models
-  disagree on {k}") · Official launch forecast · Team weather limits · Other
-  launches from this range that day · Space weather now · Change the dates ·
-  How sure is this? · Where does this come from? The landing rule the
-  calendar is worked back from is one line under the calendar, not a row.
+  The opportunity's `note` (how it was worked out, and anything unusual such
+  as a coast longer than any flown one) sits under the four numbers.
+- **Rows:** The flight for this opportunity (meta: how it was worked out;
+  launch time, direction of the climb, coasting in Earth orbit, speed added
+  to leave Earth for the Moon, flight time, time in orbit around the Moon
+  with what is assumed, the landing and the stretch the landing rule allows)
+  · Weather rules for this opportunity (meta: "{n} rules; models disagree on
+  {k}", "; no forecast for this date" when `weather` is `none`) · Official
+  launch forecast · Team weather limits · Other launches from this range that
+  day (with `range_note`) · Space weather now · Change the dates (up to 180
+  days; not shown for a flown mission) · How sure is this? · Where does this
+  come from? The landing rule the calendar is worked back from is one line
+  under the calendar, not a row. The weather is asked for every opportunity,
+  a flown one too: the rules and the team's limits stand where no forecast
+  reaches, and each empty cell says why.
+- **Team weather limits** offers only the rules whose limit is not
+  published; one with no unit asks for its unit. The service replaces the
+  vehicle's list on each save, so every limit already entered is sent again.
 - **Official forecast** is quoted as issued: "{n}% chance the weather breaks
   a launch rule", the 45th Weather Squadron's "probability of violating
   weather constraints", with who entered it and the PDF.
@@ -365,6 +382,9 @@ All labels follow the Words table. New words this design uses, proposed for
 | Say | Not |
 |---|---|
 | launch time (on request: "Also called T-0") | T-0, liftoff epoch |
+| speed added to leave Earth for the Moon | TLI Δv, C3 |
+| direction of the climb (compass heading) | launch azimuth |
+| time in orbit around the Moon before landing | loiter, phasing orbit time |
 | flight time | transfer duration, TOF |
 | Sun height (at landing) | Sun elevation, solar elevation angle |
 | model runs, "12 of 31 model runs" | ensemble members |

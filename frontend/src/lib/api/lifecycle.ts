@@ -260,12 +260,28 @@ export interface OpportunityDTO {
   window_open: string | null
   window_close: string | null
   transfer: { type: 'direct' | 'phasing_loops'; flight_days: QuantityDTO; orbit_wait_days: QuantityDTO }
+  /** `time` is the landing; for a designed opportunity its `lo`/`hi` are the allowed landing stretch it falls in. */
   landing: { time: QuantityDTO; sun_elevation_deg: QuantityDTO; sunlight_after_h: QuantityDTO; earth_up: boolean }
   weather: 'forecast' | 'climatology' | 'none'
+  /** How `t0` was worked out: again from NASA's reconstruction, designed from the pad, or as published. */
+  basis: 'reconstructed' | 'designed' | 'published'
+  /** One or two plain sentences: how, and anything unusual (a coast longer than any flown one). */
+  note: string
+  /** The climb's direction; missing, with the reason, for a flown launch. */
+  azimuth_deg: QuantityDTO
+  dv_tli_m_s: QuantityDTO
+  coast_min: QuantityDTO
 }
 
 export interface LaunchCalendarDTO {
-  pads: { id: string; name: string; lat_deg: number; lon_deg: number; operator: string }[]
+  /** Set, with no opportunities, when there is nothing to work from (cancelled; pad, vehicle or spot not published). */
+  none_reason: string | null
+  /** The dates searched; null for a flown mission (its one launch). */
+  start: string | null
+  end: string | null
+  /** Which dates were used, in words ("The next 90 days.", "The launch it flew."). */
+  dates_note: string | null
+  pads: { id: string; name: string; lat_deg: number | null; lon_deg: number | null; operator: string }[]
   opportunities: OpportunityDTO[]
   landing_rule: {
     sun_elevation_min_deg: QuantityDTO
@@ -274,8 +290,8 @@ export interface LaunchCalendarDTO {
     note: string
   }
   published_t0: QuantityDTO | null
-  /** Requested: the vehicle whose limits apply. */
-  vehicle_id?: string | null
+  /** The vehicle whose limits apply. */
+  vehicle_id: string | null
 }
 
 export type ModelSystem = 'GEFS' | 'ECMWF-ENS' | 'AIFS-ENS'
@@ -295,7 +311,12 @@ export interface RuleRowDTO {
 
 export interface LaunchWeatherDTO {
   t0: string
+  /** Negative for a launch in the past. */
   lead_time_h: number
+  pad_id: string
+  vehicle_id: string | null
+  /** One sentence on what is covered. */
+  note: string
   rules: RuleRowDTO[]
   official: {
     probability_pct: number
@@ -306,6 +327,8 @@ export interface LaunchWeatherDTO {
   } | null
   space_weather_now: { kp: QuantityDTO; proton_10mev_pfu: QuantityDTO; xray_class: string | null; alerts: string[] }
   range_conflicts: { name: string; t0: string; pad: string }[]
+  /** Where `range_conflicts` come from, or why they are not known. */
+  range_note: string
 }
 
 // ---------------------------------------------------------------------------
@@ -511,6 +534,8 @@ export type ContractChecks = [
   Fits<Present<S['Parameter']>, ParameterDTO>,
   Fits<Present<S['Contact']>, ContactDTO>,
   Fits<Present<S['Trip']>, TripDTO>,
+  Fits<Present<S['LaunchCalendar']>, LaunchCalendarDTO>,
+  Fits<Present<S['LaunchWeather']>, LaunchWeatherDTO>,
   // `counts` is typed as a plain map in the schema; its keys are checked in the fixture tests.
   Fits<Present<Omit<S['Ready'], 'counts'>>, Omit<ReadyDTO, 'counts'>>,
 ]

@@ -16,7 +16,10 @@ const ROUTES = [
   '/missions/im-2/return',
   // The steps the service answers, for two more flown missions: IM-1's trip
   // has gaps in NASA's reconstruction, and its contact is worked out on request.
+  // Launch: IM-1's flown launch and Griffin-1's calendar.
   '/missions/im-1/ready',
+  '/missions/im-1/launch',
+  '/missions/griffin-1/launch',
   '/missions/im-1/trip',
   '/missions/im-1/contact',
   '/missions/blue-ghost-m1/trip',
@@ -96,6 +99,8 @@ test('axe and the fixed tab bar on a phone', async ({ page, context }) => {
     '/missions/im-2/contact',
     '/missions/im-2/return',
     '/missions/im-1/trip',
+    '/missions/im-1/launch',
+    '/missions/griffin-1/launch',
     '/site',
     '/compare',
   ]) {

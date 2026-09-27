@@ -94,6 +94,11 @@ describe('QuantityTile: every margin form, and missing', () => {
     expect(screen.getByText('No margin: a rule the team set.')).toBeTruthy()
   })
 
+  it('no margin: a reason that opens with an acronym keeps its case', () => {
+    render(<QuantityTile term="flightTime" q={q({ value: 6.1, unit: 'd', no_margin_reason: 'TLI to closest approach.' })} inRow={false} />)
+    expect(screen.getByText('No margin: TLI to closest approach.')).toBeTruthy()
+  })
+
   it('missing: a dash and the reason, never a zero', () => {
     render(<QuantityTile term="tripShadow" q={q({ value: null, missing_reason: 'No trajectory yet' })} inRow={false} />)
     expect(screen.getByText('No trajectory yet')).toBeTruthy()
