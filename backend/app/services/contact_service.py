@@ -99,6 +99,11 @@ async def contact(
         )
     if m.status in ("cancelled", "reassigned"):
         raise NoContact("This delivery was cancelled.")
+    if m.status == "lost_before_landing":
+        raise NoContact(
+            "This lander was lost before it reached the surface, so there was no contact "
+            "from the landing spot to work out."
+        )
     s, e, note = window(m, start, end)
     params = _params(m, s, e, note)
     ans = await job_service.answer_or_enqueue(

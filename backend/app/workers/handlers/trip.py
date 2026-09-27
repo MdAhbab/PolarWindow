@@ -60,8 +60,8 @@ def _q(
 
 def _longest(runs: list[Run], value: bool, t0: float, t1: float) -> tuple[float, bool]:
     r = intervals.longest(runs, value)
-    if r is None:
-        return 0.0, False
+    if r is None or r.duration <= intervals.EPS_S:
+        return 0.0, False  # nothing to cut short
     return r.duration, r.start <= t0 + intervals.EPS_S or r.end >= t1 - intervals.EPS_S
 
 
@@ -202,6 +202,7 @@ async def run(ctx: JobContext) -> HandlerResult:
             if gaps
             else "NASA's reconstruction covers the whole trip without gaps."
         ),
+        "covered": [lifecycle.stretch(at(a), at(b), False, False) for a, b in edges],
         "samples": [
             {
                 "t": lifecycle.iso(at(float(t_all[i]))),

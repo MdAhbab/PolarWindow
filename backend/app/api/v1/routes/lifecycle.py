@@ -144,3 +144,28 @@ async def trip(mission_id: str, session: Any = Depends(deps.db)) -> Any:
     if code == 202:
         return JSONResponse(status_code=202, content=body)
     return body
+
+
+@router.get(
+    "/missions/{mission_id}/trip/export",
+    response_class=PlainTextResponse,
+    summary="The flown trajectory as a CCSDS Orbit Ephemeris Message or CSV",
+)
+async def trip_export(
+    mission_id: str,
+    fmt: Literal["oem", "csv"] = Query("oem", alias="format"),
+    session: Any = Depends(deps.db),
+) -> PlainTextResponse:
+    try:
+        text, media, ext = await trip_service.export(session, mission_id, fmt)
+    except trip_service.NoExport as exc:
+        raise deps.problem(
+            409, "no-export", "There is no trajectory to export", str(exc), "Nothing was changed."
+        ) from exc
+    except Exception as exc:
+        raise deps.to_http(exc) from exc
+    return PlainTextResponse(
+        text,
+        media_type=media,
+        headers={"Content-Disposition": f'attachment; filename="{mission_id}-trip.{ext}"'},
+    )

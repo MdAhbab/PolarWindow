@@ -37,17 +37,20 @@ ENGINE_VERSION = "hz-2/vis-2"
 #: link: link budget                              net: contact graph and routing
 #: los:  rover-to-lander line of sight
 #: net-2: a number with no edge inside the dates says so instead of "± 0".
+#: net-3 / traj-2: a zero-length "longest" is never "cut short"; Trip lists its covered stretches.
+#: lw:   launch opportunities (daily launch instants, landing windows, direct transfer)
 ENGINES: dict[str, str] = {
     "hz": "hz-2",
     "vis": "vis-2",
-    "traj": "traj-1",
+    "traj": "traj-2",
     "ecl": "ecl-1",
     "wx": "wx-1",
     "rad": "rad-1",
     "link": "link-1",
-    "net": "net-2",
+    "net": "net-3",
     "ready": "ready-1",
     "los": "los-1",
+    "lw": "lw-1",
 }
 
 

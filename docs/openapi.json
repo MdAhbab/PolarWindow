@@ -2108,6 +2108,62 @@
         }
       }
     },
+    "/api/v1/missions/{mission_id}/trip/export": {
+      "get": {
+        "tags": [
+          "mission sections"
+        ],
+        "summary": "The flown trajectory as a CCSDS Orbit Ephemeris Message or CSV",
+        "operationId": "trip_export_api_v1_missions__mission_id__trip_export_get",
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "oem",
+                "csv"
+              ],
+              "type": "string",
+              "default": "oem",
+              "title": "Format"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/missions/{mission_id}/ready": {
       "get": {
         "tags": [
@@ -9924,6 +9980,14 @@
             ],
             "title": "Coverage Note"
           },
+          "covered": {
+            "items": {
+              "$ref": "#/components/schemas/StretchOut"
+            },
+            "type": "array",
+            "title": "Covered",
+            "description": "The stretches NASA's reconstruction covers; anything between is a gap."
+          },
           "samples": {
             "items": {
               "$ref": "#/components/schemas/TripSample"
@@ -9996,6 +10060,7 @@
           "start",
           "end",
           "coverage_note",
+          "covered",
           "samples",
           "shadow",
           "heard",

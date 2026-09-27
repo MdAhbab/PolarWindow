@@ -324,3 +324,12 @@ that user. `GET /auth/me` returns the same `user`.
   - `samples[].heard` and `heard_h` are line of sight to a DSN antenna above its mask.
   - A mission that has not flown answers 200 with `source: "none"` and the reason;
     a flown one answers 202 with a job the first time.
+- 2026-09-27 (backend, frontend's queue):
+  - `Trip` adds `covered: Stretch[]`: the stretches NASA's reconstruction covers
+    (never open-ended); anything between two is a gap with no data.
+  - `GET /missions/{id}/trip/export?format=oem|csv` (default `oem`): the flown
+    trajectory, Earth-centred SPICE J2000 (EME2000), every 10 minutes, one CCSDS OEM 2.0
+    segment (or CSV `stretch` number) per covered stretch. 409 `no-export` for a mission
+    with no flown trajectory.
+  - Contact for a lander lost before landing (Peregrine) is 409 `no-contact`.
+  - A "longest" of zero is never `open` (engines `net-3`, `traj-2`).

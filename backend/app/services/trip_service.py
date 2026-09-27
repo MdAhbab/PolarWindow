@@ -7,11 +7,14 @@ a designed trip once its launch time is known (the launch calendar, D1/D2).
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
+import numpy as np
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import engine_closure, get_settings
+from app.core import oem, spice
 from app.data import catalogues, registry
 from app.db.repositories.missions import MissionRepository
 from app.services import job_service, lifecycle
@@ -38,6 +41,7 @@ def _none(reason: str) -> dict[str, Any]:
             "start": None,
             "end": None,
             "coverage_note": None,
+            "covered": [],
             "samples": [],
             "shadow": [],
             "heard": [],
@@ -93,3 +97,68 @@ async def trip(session: AsyncSession, mission_id: str) -> tuple[int, dict[str, A
         assert ans.job is not None
         return 202, ans.job
     return 200, ans.assessment.result
+
+
+class NoExport(LookupError):
+    """There is no trajectory to export for this mission; the message says why."""
+
+
+EXPORT_STEP_S = 600.0
+
+
+async def export(session: AsyncSession, mission_id: str, fmt: str) -> tuple[str, str, str]:
+    """``(text, media type, file extension)``: the flown trajectory as a CCSDS OEM or CSV.
+
+    Earth-centred, SPICE ``J2000`` (EME2000), sampled every ten minutes from
+    NASA's reconstruction, one block per stretch it covers.
+    """
+    m = await MissionRepository(session).get(mission_id)
+    if m is None:
+        raise MissionNotFound(mission_id)
+    if m.id not in FLOWN:
+        raise NoExport(
+            "Only a flown trip can be exported for now: a designed trip is not worked out yet."
+        )
+    ds_id, naif = FLOWN[m.id]
+    ds = next(d for d in registry.DATASETS if d.id == ds_id)
+    path = get_settings().data_dir / ds.dest
+    if not path.exists():
+        raise NoExport(f"NASA's reconstructed trajectory ({ds.dest}) is not on this machine yet.")
+
+    def build() -> list[oem.Segment]:
+        spice.load_extra([path])
+        segs = []
+        for a, b in spice.coverage(path, naif):
+            n = max(2, int((b - a) // EXPORT_STEP_S) + 1)
+            ets = np.linspace(a, a + (n - 1) * EXPORT_STEP_S, n)
+            if ets[-1] < b:
+                ets = np.append(ets, b)
+            st = spice.states(str(naif), "EARTH", spice.J2000, "NONE", ets)
+            segs.append(oem.Segment([spice.et_to_utc(t)[:-1] for t in ets], st))
+        return segs
+
+    segs = await spice.run_async(build)
+    created = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S")
+    frame_note = (
+        f"{m.name}: NASA's reconstructed trajectory ({ds.title}), Earth-centred, "
+        "SPICE J2000 (EME2000), km and km/s, every 10 minutes; "
+        "each stretch NASA's reconstruction covers is numbered."
+    )
+    if fmt == "csv":
+        return oem.csv_text(segs, frame_note), "text/csv", "csv"
+    text = oem.oem(
+        object_name=m.name,
+        object_id=f"NAIF {naif}",
+        center="EARTH",
+        frame="EME2000",
+        segments=segs,
+        created=created,
+        originator="POLAR WINDOW",
+        comments=[
+            f"Source: {ds.source}",
+            "Sampled from the SPK every 600 s; SPICE J2000 is used as EME2000.",
+            "One segment per stretch NASA's reconstruction covers; "
+            "nothing is filled in across gaps.",
+        ],
+    )
+    return text, "text/plain", "oem"

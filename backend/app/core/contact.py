@@ -62,8 +62,8 @@ class Stretches:
 
     def longest(self, value: bool) -> tuple[float, bool]:
         r = intervals.longest(self.runs, value)
-        if r is None:
-            return 0.0, False
+        if r is None or r.duration <= intervals.EPS_S:
+            return 0.0, False  # nothing to cut short
         return r.duration, (
             r.start <= self.t0 + intervals.EPS_S or r.end >= self.t1 - intervals.EPS_S
         )

@@ -56,6 +56,9 @@ class Trip(_M):
     start: datetime | None
     end: datetime | None
     coverage_note: str | None
+    covered: list[StretchOut] = Field(
+        description="The stretches NASA's reconstruction covers; anything between is a gap."
+    )
     samples: list[TripSample] = Field(max_length=2000)
     shadow: list[StretchOut]
     heard: list[StretchOut]

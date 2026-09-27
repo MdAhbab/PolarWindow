@@ -55,4 +55,26 @@ async def test_im2_flown_trip(anon_client, settings) -> None:
     mp = d["moon_pull"]
     assert 30_000 < mp["equal_pull_km"] < 45_000 and mp["t_equal_pull"] is not None
     assert {s["light"] for s in d["samples"]} <= {"lit", "penumbral", "dark"}
-    assert r.json()["meta"]["engines"] == {"ecl": "ecl-1", "traj": "traj-1"}
+    assert r.json()["meta"]["engines"] == {"ecl": "ecl-1", "traj": "traj-2"}
+    assert len(d["covered"]) >= 1 and d["covered"][0]["start"] == d["start"]
+
+
+@pytest.mark.requires_kernels
+@pytest.mark.requires_clps_spice
+async def test_im1_trip_exports_as_oem_and_csv_with_its_gaps(anon_client, settings) -> None:
+    from app.core import oem
+
+    if not (settings.data_dir / "clps/clps_to2im_im1_cru_rec_240216_240221_v01.bsp").exists():
+        pytest.skip("IM-1 reconstruction not on disk")
+    r = await anon_client.get(f"{API}/missions/im-1/trip/export?format=oem")
+    assert r.status_code == 200, r.text
+    assert "im-1-trip.oem" in r.headers["content-disposition"]
+    blocks = oem.parse_oem(r.text)
+    assert len(blocks) >= 2  # IM-1's reconstruction comes in separate stretches
+    for _times, states in blocks:
+        radius = (states[:, :3] ** 2).sum(axis=1) ** 0.5
+        assert (radius > 6_000).all() and (radius < 500_000).all()  # km, Earth to beyond the Moon
+    r = await anon_client.get(f"{API}/missions/im-1/trip/export?format=csv")
+    assert r.status_code == 200 and r.text.splitlines()[1].startswith("time_utc,stretch")
+    r = await anon_client.get(f"{API}/missions/griffin-1/trip/export")
+    assert r.status_code == 409

@@ -47,6 +47,7 @@ async def test_im1_contact_over_its_surface_days(anon_client) -> None:
     # between them, so a station could always hear it: no gap, and a message
     # waits only the light time to Earth.
     assert n["longest_unheard_h"]["value"] == pytest.approx(0.0)
+    assert n["longest_unheard_h"]["open"] is False  # a zero cannot be cut short
     wait_s = n["longest_message_wait_min"]["value"] * 60
     assert d["light_time_s"]["min"] - 1e-6 <= wait_s <= d["light_time_s"]["max"] + 1e-6
     assert n["via_relay_h"]["value"] is None and n["via_relay_h"]["missing_reason"]
@@ -54,7 +55,7 @@ async def test_im1_contact_over_its_surface_days(anon_client) -> None:
     assert len(stations) == 14
     assert d["link_budget_note"].startswith("Line of sight only")
     assert 1.1 < d["light_time_s"]["min"] < d["light_time_s"]["max"] < 1.5
-    assert body["meta"]["engines"] == {"link": "link-1", "net": "net-2", "vis": "vis-2"}
+    assert body["meta"]["engines"] == {"link": "link-1", "net": "net-3", "vis": "vis-2"}
     assert any("mask" in p["source"].lower() for p in body["meta"]["uncertainty"]["parts"])
 
 
@@ -106,3 +107,9 @@ async def test_no_landing_spot_says_why(anon_client) -> None:
     r = await anon_client.get(f"{API}/missions/blue-ghost-m3/contact")
     assert r.status_code == 409
     assert "landing spot" in r.json()["detail"]["detail"]
+
+
+async def test_a_lander_lost_before_landing_has_no_contact(anon_client) -> None:
+    r = await anon_client.get(f"{API}/missions/peregrine-m1/contact")
+    assert r.status_code == 409
+    assert "lost before" in r.json()["detail"]["detail"]
