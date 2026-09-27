@@ -84,6 +84,14 @@ describe('quantityView: every margin form draws one way', () => {
     expect(v).toMatchObject({ figure: '8 Oct', figureAbove: '2026', margin: '±3 days' })
   })
 
+  it('a date known only to months: the span of months, never a made-up day', () => {
+    const t = Date.UTC(2026, 6, 2) / 1000
+    const v = quantityView(q({ value: t, unit: 's since epoch', pm: 180 * 86400 }))
+    expect(v).toMatchObject({ figure: 'Jan–Dec', figureAbove: '2026' })
+    expect(v.margin).toBeUndefined()
+    expect(v.sentence).toBe('between January 2026 and December 2026')
+  })
+
   it('who a number comes from travels with it (invariant 10)', () => {
     expect(quantityView(q({ provenance: 'entered', source: 'A. Rahman', pm: 1 }))).toMatchObject({
       provenance: 'entered',

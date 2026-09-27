@@ -128,6 +128,9 @@
       }
      ]
     }
+   ],
+   "notes": [
+    "Likelihood and consequence are rated per category and never multiplied."
    ]
   }
  ]

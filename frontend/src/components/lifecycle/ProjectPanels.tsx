@@ -229,6 +229,13 @@ export function RiskScalePanel({ enabled }: { enabled: boolean }) {
               </>
             )}
           </p>
+          {scale.notes?.length ? (
+            <ul className="flex list-disc flex-col gap-1 pl-5 text-caption leading-caption text-ink-3">
+              {scale.notes.map((n) => (
+                <li key={n}>{n}</li>
+              ))}
+            </ul>
+          ) : null}
           <table className="w-full border-collapse text-left text-small">
             <caption className="sr-only">Likelihood levels, and consequence levels for each category.</caption>
             <thead>

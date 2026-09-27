@@ -1,13 +1,14 @@
+import type { components } from './schema'
+
 /**
- * The lifecycle sections' wire shapes, exactly as `docs/lifecycle-api.md`
- * writes them (contract v1, 2026-09-27, plus the requests under its
- * *Changes*).
+ * The lifecycle sections' wire shapes, as `docs/lifecycle-api.md` writes them
+ * (contract v1, 2026-09-27, plus the requests under its *Changes*).
  *
- * Written by hand only until the backend's OpenAPI document carries these
- * routes; then each type here becomes an alias of `Schemas[...]` from the
- * generated `schema.ts`, and a shape that drifted fails the build here.
- * Components never read these: `lib/lifecycle/adapt.ts` turns them into what
- * the screens draw.
+ * Written out here, stricter than the generated `schema.ts` in one way: every
+ * Quantity field is present (null when empty), which `client.ts` guarantees
+ * by filling any the server leaves out. For every route the backend already
+ * serves, `ContractChecks` at the end holds these to the generated types, so
+ * a shape that drifts fails the build rather than a screen.
  */
 
 export type Provenance = 'computed' | 'published' | 'entered' | 'assumed'
@@ -126,6 +127,13 @@ export interface ReadyItemDTO {
   changed_by: string | null
   evidence_url: string | null
   source: 'public' | 'entered'
+  /**
+   * False for an item prefilled from the mission record that nobody has
+   * entered a state for: it shows "not entered yet", and is not in `counts`.
+   */
+  state_known: boolean
+  /** The moves the state machine allows from here (ADR-17). */
+  allowed_next: ReadyState[]
   tests: { kind: TestKind; result: 'passed' | 'failed' | 'not_done'; report_url: string | null; date: string | null }[]
 }
 
@@ -154,6 +162,8 @@ export interface RiskDTO {
 
 export interface ReadyDTO {
   counts: Record<ReadyState, number>
+  /** Items nobody has entered a state for yet (not counted as not started). */
+  not_entered: number
   items: ReadyItemDTO[]
   milestones: MilestoneDTO[]
   risks: RiskDTO[]
@@ -165,6 +175,8 @@ export interface ReadyDTO {
 export interface AuditEntryDTO {
   at: string
   by: string
+  /** What was done ("moved", "created"), when the server says. */
+  action?: string
   before: unknown
   after: unknown
   note: string | null
@@ -187,6 +199,7 @@ export interface PartDTO {
 
 export interface PartImpactDTO {
   stops_working: { id: string; name: string; kind: string }[]
+  note?: string
 }
 
 /** Requested in the contract's *Changes* (2026-09-27). */
@@ -196,6 +209,7 @@ export interface RiskScaleDTO {
   source_url: string | null
   likelihood: { level: number; words: string }[]
   consequence: { category: RiskCategory; levels: { level: number; words: string }[] }[]
+  notes?: string[]
 }
 
 export interface RiskScalesDTO {
@@ -215,6 +229,9 @@ export interface LandingAttemptDTO {
 export interface LandingHistoryDTO {
   attempts: LandingAttemptDTO[]
   counts: { attempts: number; landed_working: number; landed_tipped_or_partial: number; failed: number }
+  since?: string | null
+  /** How the counts should be read ("counts, never a chance of success"). */
+  note?: string
 }
 
 export interface LessonDTO {
@@ -436,3 +453,44 @@ export interface UserDTO {
   name: string
   team: string | null
 }
+
+// ---------------------------------------------------------------------------
+// Held to the generated schema (docs/openapi.json via `npm run codegen`)
+// ---------------------------------------------------------------------------
+
+type S = components['schemas']
+/** Compiles only when `A` fits `B`. */
+type Fits<A extends B, B> = A
+/**
+ * A field with a default is optional in the generated types but always sent
+ * (the API serialises defaults), so the checks compare it as present.
+ */
+type Present<T> = T extends (infer U)[]
+  ? Present<U>[]
+  : T extends object
+    ? { [K in keyof T]-?: Present<Exclude<T[K], undefined>> }
+    : T
+
+/**
+ * Each served shape must fit the one written here. A field the backend
+ * renames, drops or retypes breaks the build on this line.
+ */
+export type ContractChecks = [
+  Fits<Present<S['SectionStatus']>, SectionStatusDTO>,
+  Fits<Present<S['ReadyItem']>, ReadyItemDTO>,
+  Fits<Present<S['Milestone']>, MilestoneDTO>,
+  Fits<Present<S['Risk']>, RiskDTO>,
+  Fits<Present<S['RiskScale']>, RiskScaleDTO>,
+  Fits<Present<S['Part']>, PartDTO>,
+  Fits<Present<S['PartImpact']>, PartImpactDTO>,
+  Fits<Present<S['Lesson']>, LessonDTO>,
+  Fits<Present<S['LandingHistory']>, LandingHistoryDTO>,
+  Fits<Present<S['HistoryEntry']>, AuditEntryDTO>,
+  Fits<Present<S['LifecycleMeta']>, LifecycleMetaDTO>,
+  Fits<Present<S['FeedOut']>, FeedDTO>,
+  Fits<Present<S['JobRefOut']>, JobRefDTO>,
+  Fits<Present<S['UserOut']>, UserDTO>,
+  Fits<Present<S['QuantityOut']>, QuantityDTO>,
+  // `counts` is typed as a plain map in the schema; its keys are checked in the fixture tests.
+  Fits<Present<Omit<S['Ready'], 'counts'>>, Omit<ReadyDTO, 'counts'>>,
+]

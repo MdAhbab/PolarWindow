@@ -93,10 +93,15 @@ const OUTCOME_WORDS: Record<string, { words: string; glyph: string }> = {
   failed: { words: 'Failed', glyph: '✕' },
 }
 
-/** Blocked first, then the least advanced, then by name. */
+/** Blocked first, then the least advanced, then the items nobody has entered a state for, then by name. */
 export function sortItems(items: ReadyItemDTO[]): ReadyItemDTO[] {
-  const rank = (s: ReadyState) => (s === 'blocked' ? -1 : READY_ORDER.indexOf(s))
-  return [...items].sort((a, b) => rank(a.state) - rank(b.state) || a.name.localeCompare(b.name))
+  const rank = (i: ReadyItemDTO) => (!i.state_known ? 99 : i.state === 'blocked' ? -1 : READY_ORDER.indexOf(i.state))
+  return [...items].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name))
+}
+
+/** The state in words; "Not entered yet" when nobody has entered one (never "not started"). */
+export function stateWords(i: ReadyItemDTO): string {
+  return i.state_known ? READY_WORDS[i.state] : 'Not entered yet'
 }
 
 const when = (iso: string | null) => (iso ? shortDate(Date.parse(iso)) : null)
@@ -109,8 +114,8 @@ const when = (iso: string | null) => (iso ? shortDate(Date.parse(iso)) : null)
  * How far along the fixed sequence an item is: eight steps, filled up to its
  * own. A position, not a score, and it carries no number (invariant 9).
  */
-function Ladder({ state }: { state: ReadyState }) {
-  const at = state === 'blocked' ? -1 : READY_ORDER.indexOf(state)
+function Ladder({ state, known = true }: { state: ReadyState; known?: boolean }) {
+  const at = !known || state === 'blocked' ? -1 : READY_ORDER.indexOf(state)
   return (
     <span className="flex gap-0.5" aria-hidden="true">
       {READY_ORDER.map((s, i) => (
@@ -121,6 +126,7 @@ function Ladder({ state }: { state: ReadyState }) {
 }
 
 function StateWords({ item }: { item: ReadyItemDTO }) {
+  if (!item.state_known) return <span className="text-small text-ink-3">Not entered yet</span>
   if (item.state === 'blocked') {
     return (
       <span className="flex items-start gap-1.5 text-small font-semibold text-ink">
@@ -197,7 +203,7 @@ export function ReadinessList({
                 </th>
                 <td className="px-3 py-3">
                   <span className="flex flex-col gap-1.5">
-                    <Ladder state={it.state} />
+                    <Ladder state={it.state} known={it.state_known} />
                     <StateWords item={it} />
                   </span>
                 </td>
@@ -223,7 +229,7 @@ export function ReadinessList({
           <li key={it.id} className="flex flex-col gap-1.5 py-3">
             <span className="text-body font-semibold text-ink">{it.name}</span>
             <span className="text-caption text-ink-3">{[KIND_WORDS[it.kind], it.organisation].filter(Boolean).join(' · ')}</span>
-            <Ladder state={it.state} />
+            <Ladder state={it.state} known={it.state_known} />
             <StateWords item={it} />
             <span className="text-caption text-ink-3">
               {[when(it.changed_at) ? `Since ${when(it.changed_at)}` : null, it.changed_by].filter(Boolean).join(' · ') || 'Not recorded'}
@@ -280,8 +286,8 @@ export function ReadinessTable({ items }: { items: ReadyItemDTO[] }) {
               <td className={cell}>{KIND_WORDS[it.kind]}</td>
               <td className={cell}>{it.organisation ?? 'Not given'}</td>
               <td className={cell}>
-                {READY_WORDS[it.state]}
-                {it.blocked_reason ? `: ${it.blocked_reason}` : ''}
+                {stateWords(it)}
+                {it.state_known && it.blocked_reason ? `: ${it.blocked_reason}` : ''}
               </td>
               <td className={cell}>{when(it.changed_at) ?? 'Not recorded'}</td>
               <td className={cell}>{it.changed_by ?? 'Not recorded'}</td>
@@ -494,9 +500,10 @@ export function PartsTable({
                   <>
                     <span className="font-semibold text-ink">Stops working:</span>{' '}
                     {impact.data.stops_working.map((x) => x.name).join(', ')}.
+                    {impact.data.note && <span className="block pt-1 text-ink-3">{impact.data.note}</span>}
                   </>
                 ) : (
-                  'Nothing else depends on it.'
+                  (impact.data?.note ?? 'Nothing else depends on it.')
                 )}
               </div>
             )}
@@ -513,7 +520,8 @@ export function PartsTable({
 
 export function landingCountsSentence(h: LandingHistoryDTO): string {
   const c = h.counts
-  const first = h.attempts.length ? new Date(Date.parse(h.attempts.map((a) => a.date).sort()[0])).getUTCFullYear() : null
+  const firstIso = h.since ?? (h.attempts.length ? h.attempts.map((a) => a.date).sort()[0] : null)
+  const first = firstIso ? new Date(Date.parse(firstIso)).getUTCFullYear() : null
   return `${c.attempts} landing attempts${first ? ` since ${first}` : ''}: ${c.landed_working} landed and worked, ${c.landed_tipped_or_partial} landed tipped or partly working, ${c.failed} failed.`
 }
 

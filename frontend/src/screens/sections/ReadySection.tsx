@@ -69,7 +69,8 @@ function ReadyAnswer({
   const [changing, setChanging] = useState<ReadyItemDTO | null>(null)
   const [adding, setAdding] = useState(false)
   const total = ready.items.length
-  const blocked = sortItems(ready.items).filter((i) => i.state === 'blocked')
+  const notEntered = ready.not_entered ?? ready.items.filter((i) => !i.state_known).length
+  const blocked = sortItems(ready.items).filter((i) => i.state_known && i.state === 'blocked')
   const next = ready.milestones
     .filter((x) => !x.done && x.date.value !== null)
     .sort((a, b) => (a.date.value as number) - (b.date.value as number))[0]
@@ -109,18 +110,27 @@ function ReadyAnswer({
   return (
     <>
       <Answer meta={meta}>
-        {ready.counts.ready} of {total} items are ready
-        {blocked.length ? (
+        {notEntered === total ? (
           <>
-            ; {blocked.length} blocked: {blocked.slice(0, 2).map((b) => b.name).join(' and ')}
-            {blocked.length > 2 ? ` and ${blocked.length - 2} more` : ''}.
+            {total} items are listed from the mission record; no states have been entered for them yet.
           </>
         ) : (
-          '; none is blocked.'
+          <>
+            {ready.counts.ready} of {total} items are ready
+            {blocked.length ? (
+              <>
+                ; {blocked.length} blocked: {blocked.slice(0, 2).map((b) => b.name).join(' and ')}
+                {blocked.length > 2 ? ` and ${blocked.length - 2} more` : ''}
+              </>
+            ) : (
+              '; none is blocked'
+            )}
+            {notEntered ? `; ${notEntered} not entered yet` : ''}.
+          </>
         )}
       </Answer>
       <NumberRow>
-        <CountTile term="itemsReady" value={ready.counts.ready} of={total} />
+        <CountTile term="itemsReady" value={ready.counts.ready} of={total} note={notEntered ? `${notEntered} not entered yet` : undefined} />
         <CountTile
           term="blocked"
           value={blocked.length}
@@ -135,7 +145,11 @@ function ReadyAnswer({
         <CountTile
           term="spares"
           value={ready.parts.spares}
-          note={`${ready.parts.lost} lost, ${ready.parts.damaged} damaged, ${ready.parts.failed} failed, of ${ready.parts.total} parts`}
+          note={
+            ready.parts.total
+              ? `${ready.parts.lost} lost, ${ready.parts.damaged} damaged, ${ready.parts.failed} failed, of ${ready.parts.total} parts`
+              : 'No parts entered yet'
+          }
         />
       </NumberRow>
       <ChartPanel
@@ -277,6 +291,7 @@ function HistoryRows({ ready, missionId, canWrite }: { ready: ReadyDTO; missionI
       {history.data ? (
         <>
           <p className="text-body leading-6 text-ink">{landingCountsSentence(history.data)}</p>
+          {history.data.note && <p className="text-small leading-5 text-ink-2">{history.data.note}</p>}
           <LandingHistoryTable history={history.data} />
         </>
       ) : history.error ? (

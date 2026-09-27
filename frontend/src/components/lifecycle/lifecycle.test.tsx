@@ -195,10 +195,18 @@ describe('JourneyBar', () => {
 })
 
 describe('readiness, risks and limits', () => {
-  it('blocked first, then the least advanced', () => {
-    const order = sortItems(ready.items).map((i) => i.state)
+  it('blocked first, then the least advanced, then the items with no state entered', () => {
+    const sorted = sortItems(ready.items)
+    const order = sorted.map((i) => i.state)
     expect(order[0]).toBe('blocked')
-    expect(order.indexOf('not_started')).toBeLessThan(order.indexOf('ready'))
+    expect(order.indexOf('in_test')).toBeLessThan(order.indexOf('ready'))
+    expect(sorted[sorted.length - 1].state_known).toBe(false)
+  })
+
+  it('an item nobody has entered a state for says so, and is never shown as "not started"', () => {
+    renderApp(<ReadinessList items={ready.items} />)
+    expect(screen.getAllByText('Not entered yet').length).toBeGreaterThan(0)
+    expect(screen.queryByText('Not started')).toBeNull()
   })
 
   it('a blocked item says so in words and gives its reason, not colour alone', () => {

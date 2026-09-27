@@ -104,6 +104,17 @@ export function SectionStates<T>({
         />
       )
     }
+    // A 404 with no problem of its own: this server does not answer this step yet.
+    if (view.error instanceof ApiError && view.error.status === 404 && !view.error.problem) {
+      return (
+        <StatePanel
+          icon="ring"
+          title="Not served yet"
+          detail="The service running here does not answer this step yet."
+          stillWorks="Landing and the steps it does answer work as usual."
+        />
+      )
+    }
     return <ProblemPanel error={view.error} fallbackTitle="This section could not be loaded" onRetry={view.retry} />
   }
   return (

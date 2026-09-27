@@ -8,7 +8,7 @@
  * formats a margin its own way.
  */
 import type { Provenance, QuantityDTO, ShareDTO } from '../api/lifecycle'
-import { dateWords, shortDate } from '../format'
+import { dateWords, monthWords, shortDate } from '../format'
 
 export interface QuantityView {
   kind: 'number' | 'range' | 'time' | 'missing'
@@ -133,7 +133,8 @@ export function durationMargin(seconds: number): string {
   if (s < 60) return `±${Math.round(s)} s`
   if (s < 2 * 3600) return `±${Math.round(s / 60)} min`
   if (s < 2 * 86400) return `±${formatValue(s / 3600, 0.1)} h`
-  return `±${Math.round(s / 86400)} days`
+  if (s < 60 * 86400) return `±${Math.round(s / 86400)} days`
+  return `±${Math.round(s / (30.44 * 86400))} months`
 }
 
 function durationSpoken(seconds: number): string {
@@ -141,7 +142,8 @@ function durationSpoken(seconds: number): string {
   if (s < 60) return `${Math.round(s)} seconds`
   if (s < 2 * 3600) return `${Math.round(s / 60)} minutes`
   if (s < 2 * 86400) return `${formatValue(s / 3600, 0.1)} hours`
-  return `${Math.round(s / 86400)} days`
+  if (s < 60 * 86400) return `${Math.round(s / 86400)} days`
+  return `${Math.round(s / (30.44 * 86400))} months`
 }
 
 const pad2 = (n: number) => String(n).padStart(2, '0')
@@ -194,6 +196,26 @@ function timeView(q: QuantityDTO): QuantityView {
   }
   const v = q.value as number
   const ms = v * 1000
+  // Known only to months: a day would be false precision, so the figure is
+  // the span of months it could fall in ("Jan–Dec" over "2026").
+  if (q.pm !== null && q.pm >= 45 * 86400) {
+    const lo = (v - q.pm) * 1000
+    const hi = (v + q.pm) * 1000
+    const y1 = new Date(lo).getUTCFullYear()
+    const y2 = new Date(hi).getUTCFullYear()
+    const mon = (t: number) => MONTH_SHORT[new Date(t).getUTCMonth()]
+    return {
+      ...base,
+      kind: 'time',
+      value: v,
+      lo: v - q.pm,
+      hi: v + q.pm,
+      figure: mon(lo) === mon(hi) && y1 === y2 ? mon(lo) : `${mon(lo)}–${mon(hi)}`,
+      figureAbove: y1 === y2 ? String(y1) : `${y1}–${y2}`,
+      sentence: `between ${monthWords(lo)} and ${monthWords(hi)}`,
+      spoken: `between ${monthWords(lo)} and ${monthWords(hi)}`,
+    }
+  }
   const margin = q.pm !== null ? durationMargin(q.pm) : undefined
   return {
     ...base,

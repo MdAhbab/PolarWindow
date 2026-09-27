@@ -80,9 +80,12 @@ export class ApiError extends Error {
   readonly stillWorks: string
   readonly retryable: boolean
   readonly action: string | null
+  /** The server sent its own problem detail (a title and what still works), not a bare status. */
+  readonly problem: boolean
 
   constructor(status: number, body: unknown) {
-    const p = (body as { detail?: Record<string, unknown> })?.detail ?? {}
+    const raw = (body as { detail?: unknown })?.detail
+    const p = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
     const ui = (p.ui ?? {}) as Record<string, unknown>
     const title = (p.title as string) ?? 'Something went wrong'
     super(title)
@@ -95,6 +98,7 @@ export class ApiError extends Error {
       'Other sites and windows are unaffected.'
     this.retryable = Boolean(ui.retryable ?? status >= 500)
     this.action = (ui.action as string) ?? null
+    this.problem = typeof p.title === 'string'
   }
 }
 
@@ -280,7 +284,36 @@ export type SectionResult<T> = { kind: 'answer'; section: SectionDTO<T> } | { ki
 async function section<T>(path: string, query: Query | undefined, signal?: AbortSignal): Promise<SectionResult<T>> {
   const r = await requestWithStatus<SectionDTO<T> | JobRefDTO>(path, { query, signal })
   if (r.status === 202) return { kind: 'job', job: r.body as JobRefDTO }
-  return { kind: 'answer', section: r.body as SectionDTO<T> }
+  return { kind: 'answer', section: fillQuantities(r.body) as SectionDTO<T> }
+}
+
+const QUANTITY_DEFAULTS = {
+  pm: null,
+  lo: null,
+  hi: null,
+  factor: null,
+  open: false,
+  no_margin_reason: null,
+  missing_reason: null,
+  source: null,
+}
+
+/**
+ * Every Quantity with all its fields. The API sends a field with a default
+ * even when empty, but the schema marks it optional; filling any that are
+ * left out here means "no margin" is always `null`, never `undefined`, in
+ * every check a screen makes.
+ */
+export function fillQuantities<T>(x: T): T {
+  if (Array.isArray(x)) return x.map(fillQuantities) as T
+  if (x && typeof x === 'object') {
+    const o = x as Record<string, unknown>
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(o)) out[k] = fillQuantities(v)
+    if ('provenance' in o && 'unit' in o && 'value' in o) return { ...QUANTITY_DEFAULTS, ...out } as T
+    return out as T
+  }
+  return x
 }
 
 /** ISO 8601 UTC, which is what every endpoint takes. */
@@ -388,8 +421,10 @@ export const api = {
 
   landingHistory: (signal?: AbortSignal) => request<LandingHistoryDTO>('/landing-history', { signal }),
 
-  lessons: (missionId: string, signal?: AbortSignal) =>
-    request<LessonDTO[]>('/lessons', { query: { mission: missionId }, signal }),
+  lessons: async (missionId: string, signal?: AbortSignal): Promise<LessonDTO[]> => {
+    const r = await request<LessonDTO[] | { lessons: LessonDTO[] }>('/lessons', { query: { mission: missionId }, signal })
+    return Array.isArray(r) ? r : r.lessons
+  },
 
   itemHistory: (itemId: string, signal?: AbortSignal) =>
     request<AuditEntryDTO[] | { entries: AuditEntryDTO[] }>(`/ready/items/${enc(itemId)}/history`, { signal }),
@@ -399,7 +434,8 @@ export const api = {
 
   feeds: (signal?: AbortSignal) => request<FeedsDTO>('/feeds', { signal }),
 
-  parameters: (signal?: AbortSignal) => request<{ parameters: ParameterDTO[] }>('/parameters', { signal }),
+  parameters: async (signal?: AbortSignal) =>
+    fillQuantities(await request<{ parameters: ParameterDTO[] }>('/parameters', { signal })),
 
   me: (signal?: AbortSignal) => request<{ user: UserDTO }>('/auth/me', { signal }),
 

@@ -62,5 +62,7 @@
   "landed_working": 2,
   "landed_tipped_or_partial": 3,
   "failed": 2
- }
+ },
+ "since": "2013-12-14",
+ "note": "Counts of outcomes, never a chance of success."
 }

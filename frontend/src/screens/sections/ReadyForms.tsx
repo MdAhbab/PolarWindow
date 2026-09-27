@@ -15,7 +15,7 @@ export function ReadyItemSheet({ item, onClose }: { item: ReadyItemDTO | null; o
   const open = Boolean(item)
   const history = useHistory('ready_item', item?.id ?? null)
   const write = useLifecycleWrite((b: Parameters<typeof api.moveReadyItem>[1]) => api.moveReadyItem(item!.id, b))
-  const next = item ? nextState(item.state) : 'in_build'
+  const next = item ? nextState(item) : 'in_build'
   const [state, setState] = useState<ReadyState>(next)
   const [date, setDate] = useState(todayIso())
   const [evidence, setEvidence] = useState('')
@@ -26,7 +26,7 @@ export function ReadyItemSheet({ item, onClose }: { item: ReadyItemDTO | null; o
   if (item && forItem !== item.id) {
     // A new item: start from its next step, with nothing typed.
     setForItem(item.id)
-    setState(nextState(item.state))
+    setState(nextState(item))
     setEvidence(item.evidence_url ?? '')
     setNote('')
     setReason('')
@@ -60,7 +60,15 @@ export function ReadyItemSheet({ item, onClose }: { item: ReadyItemDTO | null; o
       open={open}
       onClose={onClose}
       title={item ? `Change: ${item.name}` : 'Change an item'}
-      intro={item ? <>Now: {READY_WORDS[item.state]}{item.blocked_reason ? `, ${item.blocked_reason}` : ''}.</> : null}
+      intro={
+        item ? (
+          <>
+            Now: {item.state_known ? READY_WORDS[item.state] : 'not entered yet'}
+            {item.state_known && item.blocked_reason ? `, ${item.blocked_reason}` : ''}. The list offers only the moves allowed from
+            here.
+          </>
+        ) : null
+      }
       onSave={save}
       saving={write.isPending}
       error={write.error}
@@ -72,9 +80,7 @@ export function ReadyItemSheet({ item, onClose }: { item: ReadyItemDTO | null; o
             {...p}
             value={state}
             onChange={(e) => setState(e.target.value as ReadyState)}
-            options={[...READY_ORDER, 'blocked' as const]
-              .filter((s) => s !== item?.state)
-              .map((s) => ({ value: s, label: READY_WORDS[s] }))}
+            options={movesFrom(item).map((s) => ({ value: s, label: READY_WORDS[s] }))}
           />
         )}
       </Field>
@@ -96,9 +102,17 @@ export function ReadyItemSheet({ item, onClose }: { item: ReadyItemDTO | null; o
   )
 }
 
-function nextState(s: ReadyState): ReadyState {
-  if (s === 'blocked' || s === 'ready') return s === 'ready' ? 'blocked' : 'in_build'
-  return READY_ORDER[READY_ORDER.indexOf(s) + 1] ?? 'ready'
+/** The moves the server allows from here; every other state if it did not say. */
+function movesFrom(item: ReadyItemDTO | null): ReadyState[] {
+  if (item?.allowed_next?.length) return item.allowed_next
+  return [...READY_ORDER, 'blocked' as const].filter((s) => s !== item?.state)
+}
+
+/** The form opens on the next step forward, when that is allowed; else the first allowed move. */
+function nextState(item: ReadyItemDTO): ReadyState {
+  const moves = movesFrom(item)
+  const at = item.state_known && item.state !== 'blocked' ? READY_ORDER.indexOf(item.state) : -1
+  return moves.find((s) => s !== 'blocked' && READY_ORDER.indexOf(s as never) === at + 1) ?? moves[0] ?? 'in_build'
 }
 
 export function AddItemSheet({ open, onClose, missionId }: { open: boolean; onClose: () => void; missionId: string }) {

@@ -252,7 +252,7 @@ export function changeWords(e: AuditEntryDTO): string {
   const keys = [...new Set([...Object.keys(before), ...Object.keys(after)])].filter(
     (k) => JSON.stringify(before[k]) !== JSON.stringify(after[k]),
   )
-  if (!keys.length) return e.before === null ? 'Created' : 'Changed'
+  if (!keys.length) return e.action ? e.action.charAt(0).toUpperCase() + e.action.slice(1).replace(/_/g, ' ') : e.before === null ? 'Created' : 'Changed'
   const show = (v: unknown) => (v === null || v === undefined ? 'none' : String(v).replace(/_/g, ' '))
   return keys.map((k) => `${k.replace(/_/g, ' ')}: ${show(before[k])} → ${show(after[k])}`).join('; ')
 }

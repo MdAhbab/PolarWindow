@@ -95,7 +95,11 @@ describe('lifecycle contract fixtures', () => {
       expect(['lander', 'payload', 'rover', 'launch_vehicle', 'range', 'ground_booking', 'relay_agreement', 'ops_team', 'licence']).toContain(it.kind)
       if (it.state === 'blocked') expect(it.blocked_reason).toBeTruthy()
     }
-    for (const s of states) expect(r.counts[s]).toBe(r.items.filter((i: { state: string }) => i.state === s).length)
+    // Counts cover only items with an entered state; the rest are `not_entered`.
+    const known = r.items.filter((i: { state_known: boolean }) => i.state_known)
+    for (const s of states) expect(r.counts[s]).toBe(known.filter((i: { state: string }) => i.state === s).length)
+    expect(r.not_entered).toBe(r.items.length - known.length)
+    for (const it of r.items) for (const n of it.allowed_next) expect(states).toContain(n)
     expect(JSON.stringify(r)).not.toMatch(/percent|score/i)
     for (const risk of r.risks) for (const x of risk.ratings) expect(Object.keys(x).sort()).toEqual(['category', 'consequence', 'likelihood'])
   })
