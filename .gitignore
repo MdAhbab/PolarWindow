@@ -11,6 +11,9 @@ data/validation/
 data/spaceweather/
 data/bulk/
 data/feeds/
+# The weather hindcast's download cache and station record (make hindcast-weather).
+data/hindcast/*.cache.jsonl
+data/hindcast/asos_*.csv
 data/.sync-state.json
 data/sites.json
 

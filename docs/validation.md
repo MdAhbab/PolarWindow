@@ -292,3 +292,42 @@ assumed errors, not what the missions needed: Blue Ghost's one correction
 corrections (in the reconstruction's gaps) changed the path enough that the
 path back from the Moon with no burn passes Earth that much later; the budget
 is about that plan.
+
+# Launch weather: wind climatology and the check against observations (plan T4 B1, Verification)
+
+**Climatology** (`make climatology`, `app/data/climatology.py`). NASA POWER's hourly wind at
+50 m above the surface (MERRA-2 reanalysis; the Falcon 9 rule's 162 ft is 49 m) at LC-39A
+and SLC-4E, 2001–2024 (210,384 hours each), kept as a histogram per month and UTC hour.
+The share of hours above 30 mph at the Cape runs from about 2 % in January to none in
+July. It is what an opportunity beyond the ensembles' 16 days shows for the wind rule.
+A reanalysis cell's hourly mean is smoother than the pad's tower, so these shares
+understate gusty hours; the answer says so.
+
+**Check against observations** (`make hindcast-weather`, `app/feeds/hindcast.py`,
+`core/verification.py`; plan: a rule says "checked against observations" only if its
+Brier skill is at least 0.1 against the month-by-hour climatology at every lead up to
+48 h and its reliability is within 0.1 in every bin with 30 cases or more). The 162 ft
+wind is not measured by any public station, so the check is made at 10 m, at the Cape
+Canaveral Skid Strip's weather station (ASOS KXMR, Iowa Environmental Mesonet archive),
+with the limit brought down by a neutral logarithmic profile over open flat ground
+(roughness 0.03 m): 30 mph at 49 m is 23.5 mph at 10 m. One GEFS run a day for 2025
+(its hour turning through 00, 06, 12 and 18 UTC; NOAA's open-data bucket on AWS), 31
+runs each, 10 m wind bilinear at the station, at 24 and 48 h; the outcome is the
+station's sustained wind in its report nearest that time (48 of the 730 cases had no
+report within 30 minutes and are left out). The reference is the station's own
+month-by-hour frequency for 2015–2024.
+
+| Lead | Cases | Wind above the limit | Brier (GEFS) | Brier (climatology) | Brier skill |
+|---|---|---|---|---|---|
+| 24 h | 343 | 1 | 0.0040 | 0.0029 | −0.41 |
+| 48 h | 339 | 0 | 0.0014 | 0.00003 | −41.6 |
+
+It does not pass, and every wind share keeps saying "not checked against observations".
+The event is rare: in 2025 the station reported more than 23.5 mph in 12 of 8,247
+hourly reports (0.15 %; 0.36 % over 2015–2024), and only one fell at a verified time.
+GEFS gave shares above zero on days it did not happen (one run at 94 %), which costs
+more than climatology's near-zero forecast, probably because its 0.5° cell over the Cape
+is partly sea, where the wind runs stronger than at a station a few kilometres inland. No reliability bin
+other than the lowest (669 cases, mean share 0.002, observed 0) holds 30 cases. A year
+cannot check a limit this rarely reached; several years, or the pad's own tower record,
+would be needed.

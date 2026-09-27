@@ -104,7 +104,10 @@ async def test_ensemble_share_and_one_forecast_at_a_launch_time(anon_client) -> 
     assert r.status_code == 200, r.text
     rows = {x["id"]: x for x in r.json()["data"]["rules"]}
     share = rows["f9-wind-162ft"]["per_system"][0]["share"]
-    assert (share["k"], share["n"], share["checked"]) == (10, 31, False)
+    from app.data import verification
+
+    checked = verification.checked("florida", "f9-wind-162ft")  # make hindcast-weather
+    assert (share["k"], share["n"], share["checked"]) == (10, 31, checked)
     assert share["lo"] < 10 / 31 < share["hi"]
     (hrrr,) = rows["f9-wind-162ft"]["one_forecast"]
     assert hrrr["system"] == "HRRR" and hrrr["over"] is True and hrrr["value"]["unit"] == "mph"

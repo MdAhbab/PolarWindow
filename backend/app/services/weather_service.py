@@ -26,7 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import weather_rules as wr
 from app.core.quantity import Quantity, share
-from app.data import catalogues, climatology
+from app.data import catalogues, climatology, verification
 from app.db.repositories.missions import MissionRecord, MissionRepository
 from app.db.repositories.pm import PmRepository
 from app.services import audit_service, feed_service, lifecycle
@@ -136,7 +136,12 @@ def _limit(rule: Any, entered: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def _gefs_row(
-    snaps: list[feed_service.Latest], pad: str, t0: datetime, rule: Any, limit: dict[str, Any]
+    snaps: list[feed_service.Latest],
+    pad: str,
+    t0: datetime,
+    rule: Any,
+    limit: dict[str, Any],
+    checked: bool = False,
 ) -> dict[str, Any]:
     lead_h = (t0 - datetime.now(UTC)).total_seconds() / 3600.0
 
@@ -173,7 +178,7 @@ def _gefs_row(
             continue
         return {
             "system": "GEFS",
-            "share": lifecycle.share(share(k, n, checked=False)),
+            "share": lifecycle.share(share(k, n, checked=checked)),
             "missing_reason": None,
         }
     return missing(
@@ -416,7 +421,9 @@ async def launch_weather(
         one: list[dict[str, Any]] = []
         observed = None
         if r.rule_class in ("model", "proxy"):
-            per_system.append(_gefs_row(gefs, pad_id, when, r, limit))
+            per_system.append(
+                _gefs_row(gefs, pad_id, when, r, limit, verification.checked(region, r.id))
+            )
             per_system += [
                 {"system": s, "share": None, "missing_reason": NOT_RECORDED[s]} for s in SYSTEMS[1:]
             ]
@@ -495,8 +502,12 @@ async def launch_weather(
             "No weather rules are published for this vehicle; the team can enter its limits."
             if no_rules
             else "Each rule as published, with what the recorded forecasts say at the launch "
-            "time. Shares count one forecast system's runs; they are never combined, and none "
-            "has been checked against observations yet."
+            "time. Shares count one forecast system's runs; they are never combined. "
+            + (
+                "The wind rule's GEFS shares have been checked against observations."
+                if any(verification.checked(region, r.id) for r in rules)
+                else "None has passed a check against observations yet."
+            )
         ),
         "rules": rows,
         "official": None
@@ -527,9 +538,12 @@ async def launch_weather(
                 "winds on a logarithmic profile.",
             ),
             (
-                "Not checked yet",
-                "No rule has been checked against observations (hindcast), so each share "
-                "says so.",
+                "Checked against observations",
+                " ".join(
+                    x for x in (verification.summary(region, r.id) for r in rules) if x is not None
+                )
+                or "No rule has been checked against observations (hindcast) yet, so each "
+                "share says so.",
             ),
         ],
         stale=any(s.stale and s.snapshot is not None for s in used),

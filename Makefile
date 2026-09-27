@@ -10,7 +10,7 @@ FE    := frontend
 DATA  := data
 
 .DEFAULT_GOAL := help
-.PHONY: missions climatology validate-trip test-db help install kernels dem sites seed tiles services db-up migrate dev api worker \
+.PHONY: missions climatology hindcast-weather validate-trip test-db help install kernels dem sites seed tiles services db-up migrate dev api worker \
         compute feeds feeds-once catalogues \
         frontend test test-fast test-int test-geo lint fmt typecheck contracts \
         golden-update openapi codegen clean nuke check
@@ -77,6 +77,9 @@ feeds-once: ## Fetch every due live product once, then exit
 
 climatology: ## Wind at 50 m per month and hour at the pads, from NASA POWER (keyless; writes data/climatology)
 	cd $(BE) && $(UV) run python -m app.data.climatology
+
+hindcast-weather: ## GEFS wind shares against the Cape's weather station for a year (AWS open data + IEM; ~30 min, cached)
+	cd $(BE) && $(UV) run python -m app.feeds.hindcast
 
 catalogues: ## Validate the cited catalogues under data/catalogues
 	cd $(BE) && $(UV) run python -m app.data.catalogues

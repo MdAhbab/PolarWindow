@@ -462,3 +462,9 @@ that user. `GET /auth/me` returns the same `user`.
     vehicle has a published wind limit and the pad's region has a climatology (Falcon 9 at
     the Cape and Vandenberg); otherwise `none`. `weather_note` says which.
   - `make climatology` rebuilds `data/climatology/power_ws50m_{region}.json` (keyless).
+- 2026-09-27 (backend, T4 Verification):
+  - `Share.checked` for a wind rule's GEFS share is true only when `make hindcast-weather`
+    found that rule passing the plan's gate at the pad's region. The 2025 check at KXMR
+    does not pass (1 event in 682 verified runs), so it stays false; the weather answer's
+    `meta.uncertainty` part "Checked against observations" gives the scores in one
+    sentence, and `note` says whether any rule has passed.
