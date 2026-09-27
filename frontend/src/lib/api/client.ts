@@ -483,6 +483,10 @@ export const api = {
 
   refreshFeed: (provider: string) => request<unknown>(`/feeds/${enc(provider)}/refresh`, { method: 'POST' }),
 
+  /** Answers with every parameter, as `GET /parameters` does; 422 in the server's words when out of range. */
+  setParameter: async (id: string, body: { value: number; note: string | null }) =>
+    fillQuantities(await request<{ parameters: ParameterDTO[] }>(`/parameters/${enc(id)}`, { body, method: 'PUT' })),
+
   tileUrl: (layer: 'hillshade' | 'illumination' | 'psr', z: number, x: number, y: number) =>
     isSnapshotActive() ? snapshotTileUrl(layer, z, x, y) : `${API_BASE}/tiles/${layer}/${z}/${x}/${y}.png`,
 }

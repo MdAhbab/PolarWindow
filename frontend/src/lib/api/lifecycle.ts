@@ -506,6 +506,7 @@ export type ContractChecks = [
   Fits<Present<S['JobRefOut']>, JobRefDTO>,
   Fits<Present<S['UserOut']>, UserDTO>,
   Fits<Present<S['QuantityOut']>, QuantityDTO>,
+  Fits<Present<S['Parameter']>, ParameterDTO>,
   Fits<Present<S['Contact']>, ContactDTO>,
   Fits<Present<S['Trip']>, TripDTO>,
   // `counts` is typed as a plain map in the schema; its keys are checked in the fixture tests.

@@ -180,9 +180,12 @@ test('a readiness change asks for a name, needs evidence, and shows its history 
   await expect(sheet).toBeHidden()
 })
 
-test('settings (contract fixtures): data sources with their age, the risk scale, people', async ({ page, context }) => {
+test('settings (contract fixtures): data sources with their age, the risk scale, parameters with their history, people', async ({
+  page,
+  context,
+}) => {
   await returningVisitor(context)
-  await serveLifecycleFixtures(context)
+  await serveLifecycleFixtures(context, { swap: { 'history.json': 'history-parameter.json' } })
   await page.goto('/missions')
   await page.getByRole('button', { name: 'Settings' }).click()
   const sheet = page.getByRole('dialog', { name: 'Settings' })
@@ -193,9 +196,37 @@ test('settings (contract fixtures): data sources with their age, the risk scale,
   await expect(sheet).toContainText('data from 11 h ago')
   await sheet.locator('summary', { hasText: 'Risk scale' }).click()
   await expect(sheet).toContainText('never multiplied into a score')
+  await expect(sheet).toContainText('No words are entered for the levels yet')
+  await sheet.locator('summary', { hasText: 'Parameters' }).click()
+  await expect(sheet.locator('summary', { hasText: 'Parameters' })).toContainText('1 of 4 entered')
+  await expect(sheet.getByText('Not entered yet')).toHaveCount(3)
+  const change = sheet.getByRole('button', { name: /^Change\s*for Battery limit/ })
+  await change.click()
+  await expect(change).toHaveAttribute('aria-expanded', 'true')
+  await expect(sheet.getByLabel('Value, in hours')).toHaveValue('96')
+  await expect(sheet).toContainText('120 h → 96 h')
+  await expect(sheet).toContainText('Set to 120 h')
   await sheet.locator('summary', { hasText: 'People' }).click()
-  await expect(sheet.getByLabel('Your name')).toBeVisible()
+  await expect(sheet.getByLabel('Your name').first()).toBeVisible()
   await expectNoSeriousAxe(page, 'settings with the project rows open')
+})
+
+test('settings (live API): the parameters and the risk scale as the server has them', async ({ page, context }) => {
+  await returningVisitor(context)
+  await page.goto('/missions')
+  await page.getByRole('button', { name: 'Settings' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Settings' })
+  const params = sheet.locator('summary', { hasText: 'Parameters' })
+  await expect(params).toContainText(/\d of 4 entered/)
+  await params.click()
+  await expect(sheet).toContainText('Battery limit')
+  await expect(sheet).toContainText('Lowest Sun height allowed at landing')
+  await sheet.getByRole('button', { name: /for Planned days on the surface/ }).click()
+  await expect(sheet.getByLabel('Value, in days')).toBeVisible()
+  await expect(sheet).toContainText(/Change history/i)
+  await sheet.locator('summary', { hasText: 'Risk scale' }).click()
+  await expect(sheet.getByRole('link', { name: 'standards.nasa.gov' })).toBeVisible()
+  await expectNoSeriousAxe(page, 'settings, live parameters and risk scale')
 })
 
 test('a phone (contract fixtures): the six steps fit as three by two, with no sideways scroll', async ({ page, context }) => {

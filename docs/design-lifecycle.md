@@ -322,9 +322,15 @@ Four additions, each a group or a closed row:
   fetch as an age, next run, licence, the last error; "Refresh now" for a
   signed-in manager.
 - **Risk scale:** the likelihood and consequence levels in use, with their
-  source (read-only).
-- **Parameters:** the team's parameters and who set them, when the server
-  offers them (see §9).
+  source and notes (read-only). When the levels have no words beyond their
+  numbers (the scale as shipped: GSFC-HDBK-8005A leaves the words to a
+  non-public procedure), one sentence says so instead of a table of repeats.
+- **Parameters:** "n of 4 entered"; each value, or "Not entered yet" and why;
+  who set it and when. A signed-in manager opens "Change" (or "Enter a value")
+  in place under it: the value in its unit, a note, Save (`PUT /parameters/{id}`),
+  and its change history (`GET /history?entity=parameter`), newest first
+  ("120 h → 96 h"). An out-of-range value is refused in the server's words.
+  The row is left out when the server has no `/parameters` (see §9).
 
 ## 7. Guide
 

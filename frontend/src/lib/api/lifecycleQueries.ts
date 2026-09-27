@@ -178,7 +178,9 @@ export function useLessons(missionId: string | undefined, enabled: boolean) {
 }
 
 /** A record's change history, newest first. Readiness items have their own route. */
-export function useHistory(entity: 'ready_item' | 'part' | 'risk' | 'booking' | 'forecast' | 'limits', id: string | null) {
+export type HistoryEntity = 'ready_item' | 'part' | 'risk' | 'booking' | 'forecast' | 'limits' | 'parameter' | 'lesson' | 'feed'
+
+export function useHistory(entity: HistoryEntity, id: string | null) {
   return useQuery({
     queryKey: ['history', entity, id],
     enabled: Boolean(id),

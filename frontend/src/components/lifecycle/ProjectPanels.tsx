@@ -1,13 +1,13 @@
 import { useState, type ReactNode } from 'react'
 import { api, ApiError } from '../../lib/api/client'
-import type { FeedDTO } from '../../lib/api/lifecycle'
-import { useFeeds, useLifecycleWrite, useParameters, useRiskScales } from '../../lib/api/lifecycleQueries'
+import type { AuditEntryDTO, FeedDTO, ParameterDTO, RiskScaleDTO } from '../../lib/api/lifecycle'
+import { useFeeds, useHistory, useLifecycleWrite, useParameters, useRiskScales } from '../../lib/api/lifecycleQueries'
 import { hasOwnName, useSession, SignInFailed } from '../../lib/session'
 import { dateTimeWords } from '../../lib/format'
-import { ageFromSeconds, hostWords, quantityText } from '../../lib/lifecycle/quantity'
+import { ageFromSeconds, formatValue, hostWords, quantityText, unitWords } from '../../lib/lifecycle/quantity'
 import { Icon, type IconName } from '../Icon'
 import { Button } from '../ui'
-import { Field, TextInput } from './Forms'
+import { Field, HistoryList, TextArea, TextInput, useNamedWriter, WriteProblem } from './Forms'
 import { CATEGORY_WORDS } from './Readiness'
 
 /**
@@ -202,11 +202,23 @@ export function DataSources({ enabled, live }: { enabled: boolean; live: boolean
   )
 }
 
+/** True when every level's words say no more than its number ("1, lowest", "2"). */
+export function levelsHaveNoWords(scale: RiskScaleDTO): boolean {
+  const all = [...scale.likelihood, ...scale.consequence.flatMap((c) => c.levels)]
+  return all.every((l) => new RegExp(`^${l.level}(,?\\s*(the\\s+)?(lowest|highest))?\\.?$`, 'i').test(l.words.trim()))
+}
+
+/** "safety, technical, cost and schedule". */
+function listWords(xs: string[]): string {
+  return xs.length < 2 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`
+}
+
 /** The likelihood and consequence levels in use (read-only), with their source. */
 export function RiskScalePanel({ enabled }: { enabled: boolean }) {
   const [open, setOpen] = useState(false)
   const q = useRiskScales(enabled && open)
   const scale = q.data?.scales.find((s) => s.id === q.data?.default_id) ?? q.data?.scales[0]
+  const numbersOnly = scale ? levelsHaveNoWords(scale) : false
   return (
     <Row title="Risk scale" meta={scale?.name} onOpen={() => setOpen(true)}>
       {q.isPending ? (
@@ -236,70 +248,191 @@ export function RiskScalePanel({ enabled }: { enabled: boolean }) {
               ))}
             </ul>
           ) : null}
-          <table className="w-full border-collapse text-left text-small">
-            <caption className="sr-only">Likelihood levels, and consequence levels for each category.</caption>
-            <thead>
-              <tr className="border-b border-line">
-                <th scope="col" className="py-1.5 pr-2 font-semibold text-ink-3">Level</th>
-                <th scope="col" className="py-1.5 pr-2 font-semibold text-ink-3">Likelihood</th>
-                {scale.consequence.map((c) => (
-                  <th key={c.category} scope="col" className="py-1.5 pr-2 font-semibold text-ink-3">
-                    {CATEGORY_WORDS[c.category]}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {scale.likelihood.map((l) => (
-                <tr key={l.level} className="border-b border-line align-top">
-                  <th scope="row" className="py-1.5 pr-2 font-mono text-ink">{l.level}</th>
-                  <td className="py-1.5 pr-2 text-ink-2">{l.words}</td>
+          {numbersOnly ? (
+            <p className="text-small leading-5 text-ink-2">
+              {scale.likelihood.length} likelihood levels, and {scale.likelihood.length} consequence levels for each of{' '}
+              {listWords(scale.consequence.map((c) => CATEGORY_WORDS[c.category].toLowerCase()))}, 1 the lowest. No words
+              are entered for the levels yet, so each is shown as its number.
+            </p>
+          ) : (
+            <table className="w-full border-collapse text-left text-small">
+              <caption className="sr-only">Likelihood levels, and consequence levels for each category.</caption>
+              <thead>
+                <tr className="border-b border-line">
+                  <th scope="col" className="py-1.5 pr-2 font-semibold text-ink-3">Level</th>
+                  <th scope="col" className="py-1.5 pr-2 font-semibold text-ink-3">Likelihood</th>
                   {scale.consequence.map((c) => (
-                    <td key={c.category} className="py-1.5 pr-2 text-ink-2">
-                      {c.levels.find((x) => x.level === l.level)?.words ?? '—'}
-                    </td>
+                    <th key={c.category} scope="col" className="py-1.5 pr-2 font-semibold text-ink-3">
+                      {CATEGORY_WORDS[c.category]}
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {scale.likelihood.map((l) => (
+                  <tr key={l.level} className="border-b border-line align-top">
+                    <th scope="row" className="py-1.5 pr-2 font-mono text-ink">{l.level}</th>
+                    <td className="py-1.5 pr-2 text-ink-2">{l.words}</td>
+                    {scale.consequence.map((c) => (
+                      <td key={c.category} className="py-1.5 pr-2 text-ink-2">
+                        {c.levels.find((x) => x.level === l.level)?.words ?? '—'}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </>
       )}
     </Row>
   )
 }
 
-/** The team's parameters, and who set them; shown only when the server offers them. */
+/** "96 h", "12°": a parameter's value with its unit, as the rest of the screens write it. */
+function valueWithUnit(v: unknown, unit: string): string {
+  if (typeof v !== 'number') return 'none'
+  const u = unitWords(unit)
+  return `${formatValue(v)}${u.joined || !u.short ? '' : ' '}${u.short}`
+}
+
+/** One line for a parameter's change: "Set to 96 h" or "120 h → 96 h". */
+export function parameterChangeWords(e: AuditEntryDTO, unit: string): string {
+  const before = (e.before ?? null) as { value?: unknown } | null
+  const after = (e.after ?? null) as { value?: unknown } | null
+  if (!after) return 'Cleared'
+  if (!before || typeof before.value !== 'number') return `Set to ${valueWithUnit(after.value, unit)}`
+  if (before.value === after.value) return `Note changed; the value stays ${valueWithUnit(after.value, unit)}`
+  return `${valueWithUnit(before.value, unit)} → ${valueWithUnit(after.value, unit)}`
+}
+
+/** The note a change was saved with: the audit note, else the parameter's own note. */
+function withNote(entries: AuditEntryDTO[] | undefined): AuditEntryDTO[] | undefined {
+  return entries?.map((e) => ({ ...e, note: e.note ?? ((e.after as { note?: string | null } | null)?.note || null) }))
+}
+
+/**
+ * Enter or change one parameter, in place under it: the value in its unit,
+ * a note saying where it comes from, one Save, and its change history.
+ */
+function ParameterForm({ p, id }: { p: ParameterDTO; id: string }) {
+  const writer = useNamedWriter()
+  const save = useLifecycleWrite((body: { value: number; note: string | null }) => api.setParameter(p.id, body))
+  const history = useHistory('parameter', p.id)
+  const [value, setValue] = useState(p.value.value === null ? '' : String(p.value.value))
+  const [note, setNote] = useState(p.note ?? '')
+  const [err, setErr] = useState<string | undefined>()
+  const [saved, setSaved] = useState(false)
+  const u = unitWords(p.value.unit)
+  return (
+    <div id={id} className="flex flex-col gap-4 border-l-2 border-line-strong pl-3">
+      <form
+        className="flex flex-col gap-3"
+        onSubmit={async (e) => {
+          e.preventDefault()
+          setSaved(false)
+          const v = Number(value.trim())
+          if (!value.trim() || !Number.isFinite(v)) {
+            setErr('Enter a number.')
+            return
+          }
+          setErr(undefined)
+          if (!(await writer.ensure())) return
+          try {
+            await save.mutateAsync({ value: v, note: note.trim() || null })
+            setSaved(true)
+          } catch {
+            // shown below, in the server's words
+          }
+        }}
+      >
+        {writer.fields}
+        <Field label={u.spoken ? `Value, in ${u.spoken}` : 'Value'} error={err}>
+          {(a) => <TextInput {...a} inputMode="decimal" autoComplete="off" value={value} onChange={(e) => setValue(e.target.value)} />}
+        </Field>
+        <Field label="Note (optional)" hint="Where the value comes from, for example the power budget and its revision.">
+          {(a) => <TextArea {...a} value={note} onChange={(e) => setNote(e.target.value)} />}
+        </Field>
+        <WriteProblem error={save.error} />
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="submit" size="sm" variant="primary" disabled={save.isPending || writer.offline}>
+            {save.isPending ? 'Saving…' : 'Save'}
+          </Button>
+          <p aria-live="polite" className="text-caption text-ink-2">
+            {saved && !save.error ? 'Saved.' : ''}
+          </p>
+        </div>
+      </form>
+      <div className="flex flex-col gap-2">
+        <HistoryList
+          entries={withNote(history.data)}
+          pending={history.isPending}
+          error={history.error}
+          describe={(e) => parameterChangeWords(e, p.value.unit)}
+        />
+      </div>
+    </div>
+  )
+}
+
+/**
+ * The values the project sets (battery limit, landing Sun heights, days on
+ * the surface): each with its value or why it has none, who set it and when,
+ * and a way to enter or change it. Shown only when the server offers them.
+ */
 export function ParametersPanel({ enabled }: { enabled: boolean }) {
-  const [open, setOpen] = useState(true)
-  const q = useParameters(enabled && open)
+  const q = useParameters(enabled)
+  const session = useSession((s) => s.session)
+  const [editing, setEditing] = useState<string | null>(null)
   if (q.error instanceof ApiError && q.error.status === 404) return null
   const params = q.data?.parameters ?? []
+  const entered = params.filter((p) => p.value.value !== null).length
+  const canWrite = Boolean(session && !session.offline)
   return (
-    <Row title="Parameters" meta={q.data ? String(params.length) : undefined} onOpen={() => setOpen(true)}>
+    <Row title="Parameters" meta={q.data ? `${entered} of ${params.length} entered` : undefined}>
+      <p className="text-caption leading-caption text-ink-3">
+        Values the project sets. The sections use them once entered; until then each says what is missing.
+      </p>
       {q.isPending ? (
         <p className="text-small text-ink-3">Loading the parameters…</p>
       ) : q.error ? (
         <p className="text-small text-ink-2">The parameters could not be loaded.</p>
       ) : (
-        <dl className="flex flex-col divide-y divide-line border-y border-line">
-          {params.map((p) => (
-            <div key={p.id} className="flex flex-col gap-0.5 py-2.5">
-              <dt className="text-small font-semibold text-ink">{p.name}</dt>
-              <dd className="text-small text-ink">{quantityText(p.value)}</dd>
-              <dd className="text-caption leading-caption text-ink-3">
-                {[
-                  p.value.provenance === 'assumed' ? 'Assumed' : null,
+        <ul className="flex flex-col divide-y divide-line border-y border-line">
+          {params.map((p) => {
+            const missing = p.value.value === null
+            const open = editing === p.id
+            const meta = missing
+              ? [p.value.missing_reason]
+              : [
                   p.value.no_margin_reason,
                   p.note,
                   p.changed_by ? `set by ${p.changed_by}${p.changed_at ? `, ${dateTimeWords(Date.parse(p.changed_at))}` : ''}` : null,
                 ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </dd>
-            </div>
-          ))}
-        </dl>
+            return (
+              <li key={p.id} className="flex flex-col gap-1.5 py-2.5">
+                <span className="text-small font-semibold text-ink">{p.name}</span>
+                <span className="text-small text-ink">{missing ? 'Not entered yet' : quantityText(p.value)}</span>
+                <span className="text-caption leading-caption text-ink-3">{meta.filter(Boolean).join(' · ')}</span>
+                {canWrite && (
+                  <div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      expanded={open}
+                      controls={open ? `param-${p.id}` : undefined}
+                      onClick={() => setEditing(open ? null : p.id)}
+                    >
+                      {missing ? 'Enter a value' : 'Change'}
+                      <span className="sr-only"> for {p.name}</span>
+                    </Button>
+                  </div>
+                )}
+                {open && <ParameterForm p={p} id={`param-${p.id}`} />}
+              </li>
+            )
+          })}
+        </ul>
       )}
     </Row>
   )
