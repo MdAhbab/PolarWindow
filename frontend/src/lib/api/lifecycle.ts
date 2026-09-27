@@ -426,18 +426,31 @@ export interface RoverSightDTO {
 export interface ZoneDTO {
   lat_deg: number
   lon_deg: number
-  pm_km: number
+  /** Null when the zone's size is not published. */
+  pm_km: number | null
+}
+
+/** The team's sea limits: always a Quantity, missing with its reason until entered. */
+export interface SeaLimitsDTO {
+  wave_height_m: QuantityDTO
+  wind_m_s: QuantityDTO
 }
 
 export interface ReturnDTO {
+  /** Null for a cancelled delivery, or when the launch vehicle is not published. */
   booster: {
     landing: 'droneship' | 'land' | 'expended' | 'unknown'
+    /** Null when its position is not published (a droneship's is not). */
     zone: ZoneDTO | null
+    /** Plain words: where it came down, or the vehicle's practice and the flown CLPS landings. */
+    note: string
+    /** Null for a landing on land. */
     wave_height_m: QuantityDTO | null
     wind_m_s: QuantityDTO | null
-    limits: { wave_height_m: QuantityDTO | null; wind_m_s: QuantityDTO | null }
+    limits: SeaLimitsDTO
     hazard_area_seen: boolean | null
   } | null
+  /** Null for a cancelled delivery. */
   capsule: {
     applicable: boolean
     reason: string | null
@@ -445,6 +458,7 @@ export interface ReturnDTO {
     wave_height_m: QuantityDTO | null
     wind_m_s: QuantityDTO | null
     daylight: boolean | null
+    limits: SeaLimitsDTO
   } | null
 }
 
@@ -536,6 +550,7 @@ export type ContractChecks = [
   Fits<Present<S['Trip']>, TripDTO>,
   Fits<Present<S['LaunchCalendar']>, LaunchCalendarDTO>,
   Fits<Present<S['LaunchWeather']>, LaunchWeatherDTO>,
+  Fits<Present<S['Return']>, ReturnDTO>,
   // `counts` is typed as a plain map in the schema; its keys are checked in the fixture tests.
   Fits<Present<Omit<S['Ready'], 'counts'>>, Omit<ReadyDTO, 'counts'>>,
 ]

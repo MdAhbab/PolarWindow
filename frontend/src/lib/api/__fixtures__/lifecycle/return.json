@@ -7,6 +7,7 @@
     "lon_deg": -74.9,
     "pm_km": 12
    },
+   "note": "The booster landed on A Shortfall of Gravitas (droneship), 600 km downrange (Launch Library 2).",
    "wave_height_m": {
     "value": 1.8,
     "unit": "m",
@@ -65,11 +66,39 @@
   },
   "capsule": {
    "applicable": false,
-   "reason": "This mission brings nothing back to Earth.",
+   "reason": "Nothing comes back to Earth on this mission.",
    "zone": null,
    "wave_height_m": null,
    "wind_m_s": null,
-   "daylight": null
+   "daylight": null,
+   "limits": {
+    "wave_height_m": {
+     "value": null,
+     "unit": "m",
+     "provenance": "entered",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": null,
+     "missing_reason": "Not published by the launch provider; the team can enter the limit it is given.",
+     "source": null
+    },
+    "wind_m_s": {
+     "value": null,
+     "unit": "m/s",
+     "provenance": "entered",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": null,
+     "missing_reason": "Not published by the launch provider; the team can enter the limit it is given.",
+     "source": null
+    }
+   }
   }
  },
  "meta": {

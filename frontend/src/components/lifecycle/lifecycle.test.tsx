@@ -20,9 +20,10 @@ import { QuantityTile } from './QuantityTile'
 import { SectionStates } from './Section'
 import { JourneyBar } from './JourneyBar'
 import { ReadinessList, RiskTable, sortItems } from './Readiness'
-import { LimitBars } from './LimitBars'
+import { LimitBars, LimitTable } from './LimitBars'
 import { coverageGaps, tripStretches } from './TripStrip'
 import { shadowAndContact } from '../../screens/sections/TripSection'
+import { seaWords, zoneWords } from '../../screens/sections/ReturnSection'
 import { calendarDays } from './LaunchCalendar'
 import { axisTicks, complexOf, contactRows } from './ContactChart'
 import sectionsFixture from '../../lib/api/__fixtures__/lifecycle/sections.json'
@@ -239,6 +240,42 @@ describe('readiness, risks and limits', () => {
     )
     expect(screen.getByText('9.5 ±2.1 m/s: 1.5 m/s over the team’s limit')).toBeTruthy()
     expect(screen.getByText('1.8 ±0.4 m; no limit entered by the team')).toBeTruthy()
+  })
+
+  it('return: a limit not entered is a missing number with its reason, read as "none entered", never 0', () => {
+    const none = q({ value: null, unit: 'm/s', provenance: 'entered', missing_reason: 'Not published by the launch provider.' })
+    render(<LimitTable rows={[{ id: 'w', label: 'Wind', value: q({ value: 9.5, unit: 'm/s', pm: 2.1 }), limit: none }]} />)
+    const cells = screen.getAllByRole('cell').map((c) => c.textContent)
+    expect(cells).toEqual(['9.5 ±2.1 m/s', 'none entered', '—', '—'])
+  })
+
+  it('return: the zone with its size only when published, and the sea in one sentence', () => {
+    expect(zoneWords({ lat_deg: 28.485712, lon_deg: -80.542963, pm_km: null })).toBe('near 28.5°N 80.5°W')
+    expect(zoneWords({ lat_deg: 30.9, lon_deg: -74.9, pm_km: 12 })).toBe('near 30.9°N 74.9°W, ±12 km')
+    const past = 'This launch is in the past; the sea and wind then were not recorded.'
+    const none = q({ value: null, unit: 'm', provenance: 'entered', missing_reason: 'Not published.' })
+    const base = { zone: null, note: '', hazard_area_seen: null, limits: { wave_height_m: none, wind_m_s: { ...none, unit: 'm/s' } } }
+    // On land there are no waves: one shared reason is the sentence.
+    expect(seaWords({ ...base, landing: 'land', wave_height_m: null, wind_m_s: q({ value: null, unit: 'm/s', missing_reason: past }) })).toBe(past)
+    // Different reasons: one line pointing at the numbers.
+    expect(
+      seaWords({
+        ...base,
+        landing: 'unknown',
+        wave_height_m: q({ value: null, unit: 'm', missing_reason: 'Wave forecasts are not recorded yet.' }),
+        wind_m_s: q({ value: null, unit: 'm/s', missing_reason: 'Wind forecasts are not worked out yet.' }),
+      }),
+    ).toBe('Neither the sea nor the wind at the zone is forecast yet; each number below says why.')
+    // A forecast, against the team's limit when one is entered.
+    expect(
+      seaWords({
+        ...base,
+        landing: 'droneship',
+        wave_height_m: q({ value: 1.8, unit: 'm', pm: 0.4 }),
+        wind_m_s: q({ value: null, unit: 'm/s', missing_reason: 'x' }),
+        limits: { ...base.limits, wave_height_m: q({ value: 2.5, unit: 'm', provenance: 'entered', no_margin_reason: 'A limit the team entered.' }) },
+      }),
+    ).toBe('Waves there are forecast at 1.8 ±0.4 m against the team’s limit of 2.5 m.')
   })
 })
 

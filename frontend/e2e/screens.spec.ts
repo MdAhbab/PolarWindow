@@ -22,6 +22,9 @@ const ROUTES = [
   '/missions/griffin-1/launch',
   '/missions/im-1/trip',
   '/missions/im-1/contact',
+  // Return: IM-1's booster back on land, Griffin-1's not published yet.
+  '/missions/im-1/return',
+  '/missions/griffin-1/return',
   '/missions/blue-ghost-m1/trip',
   '/missions/blue-ghost-m1/contact',
   '/map',
@@ -101,6 +104,8 @@ test('axe and the fixed tab bar on a phone', async ({ page, context }) => {
     '/missions/im-1/trip',
     '/missions/im-1/launch',
     '/missions/griffin-1/launch',
+    '/missions/im-1/return',
+    '/missions/griffin-1/return',
     '/site',
     '/compare',
   ]) {

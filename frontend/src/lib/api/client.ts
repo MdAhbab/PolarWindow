@@ -473,13 +473,14 @@ export const api = {
   bookPass: (missionId: string, body: { station: string; start: string; end: string; note?: string | null }) =>
     request<unknown>(`/missions/${enc(missionId)}/contact/bookings`, { body, method: 'POST' }),
 
+  /** Replaces both lists (a part left out is cleared), and answers with the Return section. */
   returnLimits: (
     missionId: string,
     body: {
       booster: { wave_height_m: number | null; wind_m_s: number | null }
       capsule: { wave_height_m: number | null; wind_m_s: number | null }
     },
-  ) => request<unknown>(`/missions/${enc(missionId)}/return/limits`, { body, method: 'PUT' }),
+  ) => request<SectionDTO<ReturnDTO>>(`/missions/${enc(missionId)}/return/limits`, { body, method: 'PUT' }),
 
   refreshFeed: (provider: string) => request<unknown>(`/feeds/${enc(provider)}/refresh`, { method: 'POST' }),
 

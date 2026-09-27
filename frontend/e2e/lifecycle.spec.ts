@@ -162,6 +162,42 @@ test('team weather limits (contract fixtures): an unpublished limit takes a unit
   await expectNoSeriousAxe(page, 'the team weather limits sheet')
 })
 
+test('team sea limits (contract fixtures): the form starts from what is entered, and sends both parts', async ({ page, context }) => {
+  await returningVisitor(context)
+  await serveLifecycleFixtures(context)
+  let put: unknown = null
+  await context.route(/localhost:8000\/api\/v1\/missions\/im-2\/return\/limits$/, async (route) => {
+    if (route.request().method() === 'PUT') put = route.request().postDataJSON()
+    await fulfillWrite(route, {})
+  })
+  await page.goto('/missions/im-2/return')
+  const row = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Team limits' }) })
+  await row.locator('summary').click()
+  await expect(row.locator('summary')).toContainText('entered by A. Rahman')
+  await expect(row).toContainText('Booster landing zone: waves 2.5 m, wind 8 m/s.')
+  await row.getByRole('button', { name: 'Enter the team’s limits' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Team sea limits' })
+  const waves = sheet.getByLabel('Booster landing zone: highest waves (metres)')
+  const wind = sheet.getByLabel('Booster landing zone: strongest wind (metres a second)')
+  await expect(waves).toHaveValue('2.5')
+  await expect(wind).toHaveValue('8')
+  // No capsule returns: its fields are not offered.
+  await expect(sheet.getByLabel(/Splashdown zone/)).toHaveCount(0)
+  // The first change asks for a name to record it against.
+  await sheet.getByLabel('Your name').fill('Nadia Karim')
+  await waves.fill('-1')
+  await sheet.getByRole('button', { name: 'Save' }).click()
+  await expect(sheet).toContainText('A limit is a number above zero, or empty for none.')
+  await expect(waves).toHaveAttribute('aria-invalid', 'true')
+  await waves.fill('3')
+  await wind.fill('')
+  await sheet.getByRole('button', { name: 'Save' }).click()
+  await expect(sheet.getByText('Saved.')).toBeVisible()
+  // The service replaces both parts, so the capsule's (none entered) goes as it stands.
+  expect(put).toEqual({ booster: { wave_height_m: 3, wind_m_s: null }, capsule: { wave_height_m: null, wind_m_s: null } })
+  await expectNoSeriousAxe(page, 'the team sea limits sheet')
+})
+
 test('working it out (contract fixtures): a 202 shows its progress and what still works', async ({ page, context }) => {
   await returningVisitor(context)
   await serveLifecycleFixtures(context, { working: ['trip'] })
@@ -389,4 +425,46 @@ test('launch (live API): a flown launch worked out again, and a planned mission�
   await expect(dates).toContainText('At most 180 days at once.')
   await expect(page).not.toHaveURL(/from=/)
   await expectNoSeriousAxe(page, '/missions/griffin-1/launch (live) with its table and rows open')
+})
+
+test('return (live API): where each flown booster came down, and a planned one not published yet', async ({ page, context }) => {
+  test.setTimeout(90_000)
+  await returningVisitor(context)
+  const main = page.locator('main')
+  const answer = page.locator('[data-guide="section-answer"]')
+  const row = (title: string) => page.locator('details').filter({ has: page.locator('summary', { hasText: title }) })
+
+  // IM-1's booster came back to land: no waves, the zone without a published size, and nothing to draw.
+  await page.goto('/missions/im-1/return')
+  await expect(answer).toContainText('The booster came back to Landing Zone 1', { timeout: 30_000 })
+  await expect(answer).toContainText('This launch is in the past; the sea and wind then were not recorded.')
+  await expect(answer).toContainText('Nothing comes back to Earth on this mission.')
+  await expect(main).toContainText('On land: no waves to forecast.')
+  await expect(page.getByRole('button', { name: 'Read the chart as a table' })).toHaveCount(0)
+  await expect(row('Booster landing zone').locator('summary')).toContainText('near 28.5°N 80.5°W')
+  await row('Booster landing zone').locator('summary').click()
+  await expect(row('Booster landing zone')).toContainText('its size is not published')
+  await expect(row('Team limits').locator('summary')).toContainText('none entered')
+  await expect(main).not.toContainText(/\b0 m\b/)
+  await expectNoSeriousAxe(page, '/missions/im-1/return (live) with a row open')
+
+  // IM-2's landed on a droneship 700 km downrange, whose position is not published.
+  await page.goto('/missions/im-2/return')
+  await expect(answer).toContainText('A Shortfall of Gravitas', { timeout: 30_000 })
+  await expect(answer).toContainText('700 km downrange')
+  await expect(row('Booster landing zone').locator('summary')).toContainText('droneship, position not published')
+
+  // Griffin-1 has not flown: the vehicle's practice and the flown landings, and why there is no forecast yet.
+  await page.goto('/missions/griffin-1/return')
+  await expect(answer).toContainText('decided for each launch and not yet published for this one', { timeout: 30_000 })
+  await expect(answer).toContainText('IM-1 on Landing Zone 1')
+  await expect(main).toContainText('not recorded yet')
+  await row('Team limits').locator('summary').click()
+  await expect(row('Team limits')).toContainText('Booster landing zone: waves none entered, wind none entered.')
+  await expectNoSeriousAxe(page, '/missions/griffin-1/return (live) with its limits open')
+
+  // A cancelled delivery: the step's state, not an empty answer.
+  await page.goto('/missions/apex-1/return')
+  await expect(main).toContainText('Does not apply', { timeout: 30_000 })
+  await expect(main).toContainText('This delivery was cancelled.')
 })

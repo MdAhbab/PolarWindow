@@ -26,6 +26,9 @@ const PAGES: [name: string, path: string][] = [
   ['trip-im-2', '/missions/im-2/trip'],
   ['trip-im-1-with-gaps', '/missions/im-1/trip'],
   ['contact-im-2', '/missions/im-2/contact'],
+  ['return-im-1-land', '/missions/im-1/return'],
+  ['return-im-2-droneship', '/missions/im-2/return'],
+  ['return-griffin-1-planned', '/missions/griffin-1/return'],
 ]
 
 async function settle(page: Page) {

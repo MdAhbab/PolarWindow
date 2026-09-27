@@ -294,17 +294,29 @@ into the hub header.
 
 - **Question:** "Where do the booster and any capsule come down, and what is
   the sea like there?"
-- **Answer:** "The booster lands on a droneship {lat, lon ± km}. Waves there
-  are {v ± m} against the team's limit of {limit}." Adds "No capsule returns
-  on this mission." when not applicable.
+- **Answer:** the service's own words for where the booster comes down
+  (`booster.note`: "The booster came back to Landing Zone 1", or the vehicle's
+  practice and the flown CLPS landings when not yet published), then the sea:
+  "Waves there are forecast at {v ± m} against the team's limit of {limit}.",
+  or the one reason every measure shares ("This launch is in the past; the sea
+  and wind then were not recorded."). Adds the capsule's `reason` ("Nothing
+  comes back to Earth on this mission.") when not applicable. No booster: a
+  cancelled delivery or a vehicle not published is the step's state panel with
+  its summary.
 - **Numbers:** Waves at the booster landing zone · Wind at the booster
   landing zone · Waves at the splashdown zone · Wind at the splashdown zone
-  (the last two only with a capsule; without one the row has two tiles).
+  (the last two only with a capsule; without one the row has two tiles). On
+  land there are no waves: that tile says so and has no bar.
 - **Chart: against the team's limits.** One row per measure: the value as a
   bar with its ± hatched, the team's limit as an ink rule. Over the limit is
   magenta, a triangle and the words "{x} over the team's limit" (invariant 4).
   No limit entered: the bar alone and "No limit entered by the team". Twin:
-  measure, value, ±, limit, who entered it, over or not.
+  measure, value, ±, limit, who entered it, over or not. Nothing to draw (no
+  forecast and no limit, as for every flown launch): no chart; the tiles say
+  why.
+- **Team limits form:** starts from the limits entered (the PUT replaces both
+  parts, so a part not shown is sent as it stands); a field left empty is no
+  limit; its history is `entity=limits&id=return:{mission}`.
 - **Rows:** Booster landing zone · Splashdown zone · Team limits · How sure
   is this? · Where does this come from?
 

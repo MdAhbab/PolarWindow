@@ -96,10 +96,10 @@ export function LimitTable({ rows }: { rows: LimitRow[] }) {
           {rows.map((r) => (
             <tr key={r.id} className="border-t border-line">
               <th scope="row" className={`${cell} font-semibold text-ink`}>{r.label}</th>
-              <td className={`${cell} font-mono`}>{r.value ? quantityText(r.value) : 'none'}</td>
-              <td className={`${cell} font-mono`}>{r.limit ? quantityText(r.limit) : 'none entered'}</td>
-              <td className={cell}>{r.limit?.source ?? '—'}</td>
-              <td className={cell}>{overBy(r) !== null ? 'Yes' : r.limit && r.value?.value != null ? 'No' : '—'}</td>
+              <td className={`${cell} font-mono`}>{r.value?.value != null ? quantityText(r.value) : 'none'}</td>
+              <td className={`${cell} font-mono`}>{r.limit?.value != null ? quantityText(r.limit) : 'none entered'}</td>
+              <td className={cell}>{r.limit?.value != null ? (r.limit.source ?? 'the team') : '—'}</td>
+              <td className={cell}>{overBy(r) !== null ? 'Yes' : r.limit?.value != null && r.value?.value != null ? 'No' : '—'}</td>
             </tr>
           ))}
         </tbody>
