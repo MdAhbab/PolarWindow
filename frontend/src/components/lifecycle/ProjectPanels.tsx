@@ -4,7 +4,7 @@ import type { FeedDTO } from '../../lib/api/lifecycle'
 import { useFeeds, useLifecycleWrite, useParameters, useRiskScales } from '../../lib/api/lifecycleQueries'
 import { hasOwnName, useSession, SignInFailed } from '../../lib/session'
 import { dateTimeWords } from '../../lib/format'
-import { ageFromSeconds, ageWords, hostWords, quantityText } from '../../lib/lifecycle/quantity'
+import { ageFromSeconds, hostWords, quantityText } from '../../lib/lifecycle/quantity'
 import { Icon, type IconName } from '../Icon'
 import { Button } from '../ui'
 import { Field, TextInput } from './Forms'
@@ -103,7 +103,17 @@ function errorWords(f: FeedDTO): string | null {
   return e
 }
 
-/** Every live feed: when it last answered, when it runs next, its licence, and "Refresh now". */
+/** The worst of a provider's products decides its line: failing, then out of date, then working. */
+function worst(feeds: FeedDTO[]): FeedDTO {
+  const rank = (f: FeedDTO) => (f.breaker === 'open' ? 2 : f.stale ? 1 : 0)
+  return feeds.reduce((w, f) => (rank(f) > rank(w) ? f : w), feeds[0])
+}
+
+/**
+ * Every live feed, one line per provider (invariant 11): whether it works,
+ * how old each product's data is, when it runs next, its licence, and
+ * "Refresh now". A provider with many products stays one line until opened.
+ */
 export function DataSources({ enabled, live }: { enabled: boolean; live: boolean }) {
   const [open, setOpen] = useState(false)
   const q = useFeeds(enabled && open && live)
@@ -112,10 +122,15 @@ export function DataSources({ enabled, live }: { enabled: boolean; live: boolean
   const feeds = q.data?.feeds ?? []
   const failing = feeds.filter((f) => f.breaker === 'open').length
   const stale = feeds.filter((f) => f.stale && f.breaker !== 'open').length
+  const groups = [...feeds.reduce((m, f) => m.set(f.provider, [...(m.get(f.provider) ?? []), f]), new Map<string, FeedDTO[]>())]
   return (
     <Row
       title="Data sources"
-      meta={q.data ? `${feeds.length} feeds: ${feeds.length - failing - stale} working, ${stale} out of date, ${failing} failing` : undefined}
+      meta={
+        q.data
+          ? `${feeds.length} products from ${groups.length} providers: ${feeds.length - failing - stale} working, ${stale} out of date, ${failing} failing`
+          : undefined
+      }
       onOpen={() => setOpen(true)}
     >
       {!live ? (
@@ -130,37 +145,46 @@ export function DataSources({ enabled, live }: { enabled: boolean; live: boolean
         </p>
       ) : (
         <ul className="flex flex-col divide-y divide-line border-y border-line">
-          {feeds.map((f) => {
-            const st = feedState(f)
-            const err = errorWords(f)
+          {groups.map(([provider, list]) => {
+            const st = feedState(worst(list))
+            const next = list.map((f) => (f.next_run ? Date.parse(f.next_run) : NaN)).filter((n) => !Number.isNaN(n))
             return (
-              <li key={`${f.provider}-${f.product}`} className="flex flex-col gap-1 py-2.5">
+              <li key={provider} className="flex flex-col gap-1.5 py-2.5">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                  <span className="text-small font-semibold text-ink">{f.provider_name ?? f.provider}</span>
+                  <span className="text-small font-semibold text-ink">{list[0].provider_name ?? provider}</span>
                   <span className="flex items-center gap-1.5 text-small text-ink">
                     <Icon name={st.icon} size={14} strokeWidth={2} />
                     {st.words}
                   </span>
                 </div>
-                <span className="text-caption leading-caption text-ink-2">
-                  {f.product}
-                  {f.location ? `, ${f.location}` : ''}
-                </span>
+                <ul className="flex flex-col gap-0.5">
+                  {list.map((f) => {
+                    const s = feedState(f)
+                    const err = errorWords(f)
+                    return (
+                      <li key={`${f.product}-${f.location ?? ''}`} className="text-caption leading-caption text-ink-3">
+                        <span className="text-ink-2">
+                          {f.product}
+                          {f.location ? `, ${f.location}` : ''}
+                        </span>
+                        {' · '}
+                        {f.age_s !== null ? `data from ${ageFromSeconds(f.age_s)}` : 'no data yet'}
+                        {s.words !== 'Working' ? ` · ${s.words.toLowerCase()}` : ''}
+                        {err ? ` · ${err}` : ''}
+                      </li>
+                    )
+                  })}
+                </ul>
                 <span className="text-caption leading-caption text-ink-3">
-                  {[
-                    f.age_s !== null ? `Data from ${ageFromSeconds(f.age_s)}` : 'No data yet',
-                    f.last_ok ? `checked ${ageWords(Date.parse(f.last_ok))}` : null,
-                    f.next_run ? `next ${dateTimeWords(Date.parse(f.next_run))}` : null,
-                    f.licence ? `licence ${f.licence}` : null,
-                  ]
+                  {[next.length ? `Next run ${dateTimeWords(Math.min(...next))}` : null, list[0].licence ? `licence: ${list[0].licence}` : null]
                     .filter(Boolean)
                     .join(' · ')}
                 </span>
-                {err && <span className="text-caption leading-caption text-ink-2">Last problem: {err}</span>}
                 {session && !session.offline && (
                   <div>
-                    <Button size="sm" variant="ghost" disabled={refresh.isPending} onClick={() => refresh.mutate(f.provider)}>
+                    <Button size="sm" variant="ghost" disabled={refresh.isPending} onClick={() => refresh.mutate(provider)}>
                       Refresh now
+                      <span className="sr-only">: {list[0].provider_name ?? provider}</span>
                     </Button>
                   </div>
                 )}
@@ -169,7 +193,11 @@ export function DataSources({ enabled, live }: { enabled: boolean; live: boolean
           })}
         </ul>
       )}
-      {refresh.error ? <p role="alert" className="text-caption text-ink-2">{(refresh.error as ApiError).title ?? 'Refresh failed'}</p> : null}
+      {refresh.error ? (
+        <p role="alert" className="text-caption text-ink-2">
+          {(refresh.error as ApiError).title ?? 'Refresh failed'}
+        </p>
+      ) : null}
     </Row>
   )
 }

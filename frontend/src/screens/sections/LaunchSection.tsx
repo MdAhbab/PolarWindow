@@ -181,8 +181,8 @@ function WeatherBody({ wx, meta }: { wx: LaunchWeatherDTO; meta: LifecycleMetaDT
     <>
       <p className="text-small leading-5 text-ink-2">
         For a launch at {dateTimeWords(Date.parse(wx.t0))}, {Math.round(wx.lead_time_h)} hours ahead of the forecasts.
-        {oldest !== null && ` Forecasts fetched as long as ${ageWords(oldest)}.`} Each system is shown on its own; nothing is
-        added up, and the launch team decides.
+        {oldest !== null && ` The oldest forecast here was fetched ${ageWords(oldest)}.`} Each system is shown on its own;
+        nothing is added up, and the launch team decides.
       </p>
       <WeatherRuleTable rules={wx.rules} />
     </>

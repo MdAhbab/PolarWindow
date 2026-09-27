@@ -38,9 +38,13 @@ function SystemCell({ row, system, proxy }: { row: RuleRowDTO; system: ModelSyst
   if (!cell) return <span className="text-small text-ink-3">Not used for this rule</span>
   if (!cell.share) return <span className="text-small text-ink-3">{cell.missing_reason ?? 'No answer'}</span>
   const v = shareView(cell.share)
+  const share = cell.share
   return (
     <span className="flex flex-col gap-1">
-      <span className="text-small font-semibold text-ink tnum">{v.count}</span>
+      <span className="text-small font-semibold text-ink tnum" aria-hidden="true">
+        {share.k} of {share.n}
+      </span>
+      <span className="sr-only">{v.count}</span>
       <ShareBar share={cell.share} />
       <span className="text-caption leading-caption text-ink-3">{v.range}</span>
       <span className="sr-only">
@@ -119,7 +123,7 @@ export function WeatherRuleTable({ rules }: { rules: RuleRowDTO[] }) {
                 {SYSTEMS.map((s) => (
                   <th key={s.id} scope="col" className={head}>
                     {s.name}
-                    <span className="block font-normal tracking-normal normal-case">runs that break it</span>
+                    <span className="block font-normal tracking-normal normal-case">model runs that break it</span>
                   </th>
                 ))}
                 <th scope="col" className={head}>
