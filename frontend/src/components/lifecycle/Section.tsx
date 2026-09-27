@@ -278,11 +278,12 @@ export function SourcesRow({ meta, children }: { meta: LifecycleMetaDTO; childre
     <Disclosure title="Where does this come from?" meta={`${meta.sources.length} source${meta.sources.length === 1 ? '' : 's'}`}>
       {meta.sources.length > 0 && (
         <ul className="flex flex-col gap-3">
-          {meta.sources.map((s) => {
+          {meta.sources.map((s, i) => {
             const fetched = s.fetched_at ? Date.parse(s.fetched_at) : null
             const issued = s.issued_at ? Date.parse(s.issued_at) : null
             return (
-              <li key={`${s.name}-${s.snapshot_id ?? ''}`} className="flex flex-col gap-0.5 text-body leading-5">
+              // One record can be cited at several pages, so the name alone is not a key.
+              <li key={`${s.name}-${s.snapshot_id ?? ''}-${s.url ?? i}`} className="flex flex-col gap-0.5 text-body leading-5">
                 {s.url ? (
                   <a href={s.url} target="_blank" rel="noreferrer">
                     {s.name}

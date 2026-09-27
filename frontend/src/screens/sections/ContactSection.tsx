@@ -35,10 +35,27 @@ export function ContactSection({ mission: m }: { mission: MissionDetail }) {
   return (
     <SectionLayout question="How often can the lander talk to Earth?">
       <SectionStates view={view} terms={TERMS} status={status}>
-        {({ data, meta }) => <ContactAnswer contact={data} meta={meta} mission={m} start={Date.parse(w.start)} end={Date.parse(w.end)} />}
+        {({ data, meta }) => (
+          <ContactAnswer
+            contact={data}
+            meta={meta}
+            mission={m}
+            // The dates the answer says it covers; the asked-for ones if it does not say.
+            start={Date.parse(data.start ?? w.start)}
+            end={Date.parse(data.end ?? w.end)}
+            // Say how the dates were chosen only when they are not the ones asked for.
+            datesNote={servedOtherDates(data, w) ? data.window_note : null}
+          />
+        )}
       </SectionStates>
     </SectionLayout>
   )
+}
+
+/** True when the answer covers dates other than the ones asked for. */
+function servedOtherDates(c: Pick<ContactDTO, 'start' | 'end'>, asked: { start: string; end: string }): boolean {
+  const differs = (served: string | undefined, want: string) => served !== undefined && Date.parse(served) !== Date.parse(want)
+  return differs(c.start, asked.start) || differs(c.end, asked.end)
 }
 
 function ContactAnswer({
@@ -47,12 +64,14 @@ function ContactAnswer({
   mission: m,
   start,
   end,
+  datesNote,
 }: {
   contact: ContactDTO
   meta: LifecycleMetaDTO
   mission: MissionDetail
   start: number
   end: number
+  datesNote?: string | null
 }) {
   const hours = (end - start) / 3_600_000
   const n = contact.numbers
@@ -60,19 +79,27 @@ function ContactAnswer({
   const planned = rows.some((r) => r.planned)
   const { windowStartH, windowHours } = useStore(useShallow((s) => ({ windowStartH: s.windowStartH, windowHours: s.windowHours })))
   const relayRange = n.via_relay_h.lo !== null || n.via_relay_h.value !== null
+  // No gap at all: one sentence says so, instead of a zero-hour gap.
+  const heardThroughout = n.longest_unheard_h.value === 0
   return (
     <>
       <Answer meta={meta}>
-        A ground station can hear it for {quantityText(n.station_hears_h)} over these dates.
-        {relayRange && contact.relays.length > 0 && <> Through a relay it could add {quantityText(n.via_relay_h)}, if it flies as planned.</>}{' '}
-        The longest time without contact is {quantityText(n.longest_unheard_h)}.
+        {heardThroughout
+          ? <>A ground station can hear it for all {quantityText(n.station_hears_h)} of these dates.</>
+          : <>A ground station can hear it for {quantityText(n.station_hears_h)} over these dates.</>}
+        {relayRange && contact.relays.length > 0 && <> Through a relay it could add {quantityText(n.via_relay_h)}, if it flies as planned.</>}
+        {!heardThroughout && <> The longest time without contact is {quantityText(n.longest_unheard_h)}.</>}
       </Answer>
       {contact.link_budget_note && <UncertaintyNote className="-mt-3">{contact.link_budget_note}</UncertaintyNote>}
       <NumberRow>
         <QuantityTile term="stationHears" q={n.station_hears_h} tone="earth" icon="earth" scale={hours} />
         <QuantityTile
           term="viaRelay"
-          q={contact.relays.length ? n.via_relay_h : { ...n.via_relay_h, value: null, lo: null, hi: null, missing_reason: 'No relay serves this site.' }}
+          q={
+            contact.relays.length || n.via_relay_h.missing_reason
+              ? n.via_relay_h
+              : { ...n.via_relay_h, value: null, lo: null, hi: null, missing_reason: 'No relay serves this site.' }
+          }
           tone="earth"
           scale={hours}
           note={contact.relays.length ? 'if it flies as planned' : undefined}
@@ -81,7 +108,7 @@ function ContactAnswer({
         <QuantityTile term="messageWait" q={n.longest_message_wait_min} />
       </NumberRow>
       <ChartPanel
-        title={`Who can hear the lander, ${windowLine(msFromModelH(windowStartH), windowHours)}`}
+        title={`Who can hear the lander, ${windowLine(start, hours)}`}
         chart={<ContactChart contact={contact} rows={rows} start={start} end={end} />}
         legend={
           <Legend
@@ -94,6 +121,7 @@ function ContactAnswer({
         }
         table={<ContactTable contact={contact} rows={rows} />}
       />
+      {datesNote && <p className="-mt-3 text-caption leading-caption text-ink-3">{datesNote}</p>}
       <Rows>
         {contact.relays.length > 0 && (
           <Disclosure title="Relays" meta={contact.relays.map((r) => r.name).join(', ')}>

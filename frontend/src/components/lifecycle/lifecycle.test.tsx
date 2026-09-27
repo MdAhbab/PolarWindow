@@ -23,7 +23,7 @@ import { ReadinessList, RiskTable, sortItems } from './Readiness'
 import { LimitBars } from './LimitBars'
 import { tripStretches } from './TripStrip'
 import { calendarDays } from './LaunchCalendar'
-import { contactRows } from './ContactChart'
+import { axisTicks, complexOf, contactRows } from './ContactChart'
 import sectionsFixture from '../../lib/api/__fixtures__/lifecycle/sections.json'
 import readyFixture from '../../lib/api/__fixtures__/lifecycle/ready.json'
 import tripFixture from '../../lib/api/__fixtures__/lifecycle/trip.json'
@@ -90,7 +90,7 @@ describe('QuantityTile: every margin form, and missing', () => {
   it('no margin: says why under the number', () => {
     render(<QuantityTile term="sunAtLanding" q={q({ value: 2, unit: 'deg', no_margin_reason: 'A rule the team set.' })} inRow={false} />)
     expect(screen.getByText('2°')).toBeTruthy()
-    expect(screen.getByText('No margin: A rule the team set.')).toBeTruthy()
+    expect(screen.getByText('No margin: a rule the team set.')).toBeTruthy()
   })
 
   it('missing: a dash and the reason, never a zero', () => {
@@ -248,6 +248,31 @@ describe('the charts’ arrays, shared with their tables', () => {
     const days = calendarDays(launch.opportunities)
     expect(days.filter((d) => d.kind === 'day')).toHaveLength(6)
     expect(days.find((d) => d.kind === 'gap')).toEqual({ kind: 'gap', days: 1 })
+  })
+
+  it('contact: antennas of one Deep Space Network complex share a row; the table keeps each antenna', () => {
+    const two = {
+      ...contact,
+      nodes: [...contact.nodes, { id: 'dss-24', kind: 'station' as const, name: 'DSS-24', operator: 'NASA JPL', status: 'operating' as const, orbit: null, launch_note: null }],
+      links: [...contact.links, { from: 'lander', to: 'dss-24', stretches: [contact.links[0].stretches[0]], data_rate_kbps: null, margin_db: null }],
+    }
+    const rows = contactRows(two)
+    const goldstone = rows.find((r) => r.key === 'goldstone')!
+    expect(goldstone.label).toBe('Goldstone, California')
+    expect(goldstone.links).toHaveLength(2)
+    expect(goldstone.caption).toBe('Deep Space Network, 2 antennas')
+    expect(complexOf({ id: 'dss-63' } as never)?.name).toBe('Madrid, Spain')
+    expect(complexOf({ id: 'ksat-1' } as never)).toBeNull()
+  })
+
+  it('contact axis: labels stay inside the dates, in hours for a short stay and days for a long one', () => {
+    const t0 = Date.UTC(2025, 2, 6, 17, 30)
+    const short = axisTicks(t0, t0 + 12.75 * 3_600_000)
+    expect(short[0].label).toBe('6 Mar 2025')
+    expect(short.every((t) => t.at < t0 + 12.75 * 3_600_000)).toBe(true)
+    expect(short.slice(1).map((t) => t.label)).toEqual(['21:00', '00:00', '03:00'])
+    const long = axisTicks(t0, t0 + 14 * 86_400_000)
+    expect(long.slice(1).map((t) => t.label)).toEqual(['Day 2', 'Day 4', 'Day 6', 'Day 8', 'Day 10', 'Day 12'])
   })
 
   it('contact: a relay with no real orbit is a range row, drawn after the real links', () => {

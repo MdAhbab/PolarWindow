@@ -42,8 +42,10 @@ export function QuantityTile({
   const v = quantityView(q)
   const joined = unitWords(q.unit).joined
   const display = joined && v.kind !== 'missing' ? `${v.figure}${v.unit}` : v.figure
-  const unit = joined ? '' : v.unit
-  const lines = [note, v.noMarginReason ? `No margin: ${v.noMarginReason}` : undefined, v.missingReason].filter(Boolean)
+  // A missing number has no unit to show beside its dash.
+  const unit = joined || v.kind === 'missing' ? '' : v.unit
+  const lower = (t: string) => t.charAt(0).toLowerCase() + t.slice(1)
+  const lines = [note, v.noMarginReason ? `No margin: ${lower(v.noMarginReason)}` : undefined, v.missingReason].filter(Boolean)
   const fraction = scale && v.value !== null ? v.value / scale : undefined
   const range = scale && v.kind === 'range' && v.lo !== undefined && v.hi !== undefined ? { lo: v.lo / scale, hi: v.hi / scale } : undefined
   return (
@@ -63,7 +65,7 @@ export function QuantityTile({
       open={v.open}
       fraction={fraction}
       range={range}
-      bar={Boolean(scale) && v.kind !== 'time'}
+      bar={Boolean(scale) && v.kind !== 'time' && v.kind !== 'missing'}
       footnote={lines.length ? lines.join(' ') : undefined}
       spoken={v.spoken}
       age={age}

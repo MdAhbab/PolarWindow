@@ -601,6 +601,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/missions/{mission_id}/trip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The trip to the Moon: distance, shadow, when a station could see it */
+        get: operations["trip_api_v1_missions__mission_id__trip_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/missions/{mission_id}/ready": {
         parameters: {
             query?: never;
@@ -1352,6 +1369,17 @@ export interface components {
             start?: string | null;
             /** End */
             end?: string | null;
+        };
+        /** Burn */
+        Burn: {
+            /**
+             * T
+             * Format: date-time
+             */
+            t: string;
+            /** Name */
+            name: string;
+            dv_m_s: components["schemas"]["QuantityOut"];
         };
         /** CalendarBucket */
         CalendarBucket: {
@@ -2366,6 +2394,21 @@ export interface components {
              */
             why: string | null;
         };
+        /** MoonPull */
+        MoonPull: {
+            /**
+             * Equal Pull Km
+             * @description From the Moon's centre, where the pulls are equal.
+             */
+            equal_pull_km: number;
+            /** Sphere Of Influence Km */
+            sphere_of_influence_km: number;
+            /**
+             * T Equal Pull
+             * @description When the Moon's pull overtook Earth's.
+             */
+            t_equal_pull: string | null;
+        };
         /** Node */
         Node: {
             /** Id */
@@ -2634,6 +2677,16 @@ export interface components {
              * @description Who entered it, or the URL it was published at.
              */
             source?: string | null;
+        };
+        /** Radiation */
+        Radiation: {
+            belt_hours: components["schemas"]["QuantityOut"];
+            fluence_gt10mev: components["schemas"]["QuantityOut"];
+            gcr_dose_mgy_day: components["schemas"]["QuantityOut"];
+            /** Screening Note */
+            screening_note: string;
+            /** Confirm In */
+            confirm_in: string[];
         };
         /** Ready */
         Ready: {
@@ -2927,6 +2980,11 @@ export interface components {
         /** Section[Ready] */
         Section_Ready_: {
             data: components["schemas"]["Ready"];
+            meta: components["schemas"]["LifecycleMeta"];
+        };
+        /** Section[Trip] */
+        Section_Trip_: {
+            data: components["schemas"]["Trip"];
             meta: components["schemas"]["LifecycleMeta"];
         };
         /** Section[list[SectionStatus]] */
@@ -3378,6 +3436,65 @@ export interface components {
             flight_days: number | null;
             /** Lunar Orbit Days */
             lunar_orbit_days: number | null;
+        };
+        /** Trip */
+        Trip: {
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "flown" | "designed" | "none";
+            /** None Reason */
+            none_reason: string | null;
+            /** Start */
+            start: string | null;
+            /** End */
+            end: string | null;
+            /** Coverage Note */
+            coverage_note: string | null;
+            /** Samples */
+            samples: components["schemas"]["TripSample"][];
+            /** Shadow */
+            shadow: components["schemas"]["StretchOut"][];
+            /** Heard */
+            heard: components["schemas"]["StretchOut"][];
+            numbers: components["schemas"]["TripNumbers"];
+            /** Burns */
+            burns: components["schemas"]["Burn"][];
+            /** Burns Note */
+            burns_note: string | null;
+            moon_pull: components["schemas"]["MoonPull"] | null;
+            radiation: components["schemas"]["Radiation"] | null;
+        };
+        /** TripNumbers */
+        TripNumbers: {
+            sunlight_h: components["schemas"]["QuantityOut"];
+            /** @description Time a ground station could see the spacecraft. */
+            heard_h: components["schemas"]["QuantityOut"];
+            longest_shadow_h: components["schemas"]["QuantityOut"];
+            longest_unheard_h: components["schemas"]["QuantityOut"];
+        };
+        /** TripSample */
+        TripSample: {
+            /**
+             * T
+             * Format: date-time
+             */
+            t: string;
+            /** Earth Km */
+            earth_km: number;
+            /** Moon Km */
+            moon_km: number;
+            /**
+             * Light
+             * @enum {string}
+             */
+            light: "lit" | "penumbral" | "dark";
+            /**
+             * Heard
+             * @description A DSN antenna could see the spacecraft (line of sight).
+             */
+            heard: boolean;
         };
         /** Unavailable */
         Unavailable: {
@@ -4597,6 +4714,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BookingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trip_api_v1_missions__mission_id__trip_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Section_Trip_"];
+                };
+            };
+            /** @description Being worked out; poll the job. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobRefOut"];
                 };
             };
             /** @description Validation Error */

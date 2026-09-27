@@ -1,5 +1,26 @@
 {
  "data": {
+  "start": "2025-03-06T17:30:00Z",
+  "end": "2025-03-13T17:30:00Z",
+  "window_note": "From landing to the end of mission, as published.",
+  "light_time_s": {
+   "min": 1.23,
+   "max": 1.27
+  },
+  "longest_wait_from": "2025-03-07T18:30:00Z",
+  "sun_total_h": {
+   "value": 168,
+   "unit": "h",
+   "provenance": "computed",
+   "pm": null,
+   "lo": null,
+   "hi": null,
+   "factor": null,
+   "open": false,
+   "no_margin_reason": "The Sun did not set on these dates.",
+   "missing_reason": null,
+   "source": null
+  },
   "nodes": [
    {
     "id": "lander",

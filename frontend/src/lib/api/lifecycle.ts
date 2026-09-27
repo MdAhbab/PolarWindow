@@ -355,6 +355,10 @@ export interface LinkDTO {
 }
 
 export interface ContactDTO {
+  /** The dates this answer covers, and how they were chosen. */
+  start?: string
+  end?: string
+  window_note?: string | null
   nodes: NodeDTO[]
   links: LinkDTO[]
   numbers: {
@@ -368,7 +372,13 @@ export interface ContactDTO {
   }
   relays: { id: string; name: string; adds_h: QuantityDTO; status: string }[]
   link_budget_note: string | null
-  bookings: { station: string; start: string; end: string; entered_by: string }[]
+  bookings: { station: string; start: string; end: string; entered_by: string; note?: string | null }[]
+  /** One-way light time between the Moon and Earth over these dates, seconds. */
+  light_time_s?: { min: number; max: number }
+  /** When the longest message wait begins. */
+  longest_wait_from?: string | null
+  /** Time in sunlight over the same dates, for "dark and out of contact". */
+  sun_total_h?: QuantityDTO
 }
 
 export interface RoverSightDTO {
@@ -491,6 +501,7 @@ export type ContractChecks = [
   Fits<Present<S['JobRefOut']>, JobRefDTO>,
   Fits<Present<S['UserOut']>, UserDTO>,
   Fits<Present<S['QuantityOut']>, QuantityDTO>,
+  Fits<Present<S['Contact']>, ContactDTO>,
   // `counts` is typed as a plain map in the schema; its keys are checked in the fixture tests.
   Fits<Present<Omit<S['Ready'], 'counts'>>, Omit<ReadyDTO, 'counts'>>,
 ]

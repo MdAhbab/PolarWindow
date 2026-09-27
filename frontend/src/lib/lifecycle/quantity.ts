@@ -253,6 +253,16 @@ export function quantityView(q: QuantityDTO): QuantityView {
     }
   }
   if (q.unit === TIME_UNIT) return timeView(q)
+  // Under a minute, a wait reads better in seconds ("1.2 s", not "0.02 min").
+  if (q.unit === 'min' && q.value !== null && Math.abs(q.value) < 1 && q.lo === null) {
+    const s60 = (x: number | null) => (x === null ? null : x * 60)
+    return quantityView({ ...q, unit: 's', value: s60(q.value), pm: s60(q.pm) })
+  }
+  // Two hours or more reads better in hours ("286 h", not "17,167 min").
+  if (q.unit === 'min' && q.value !== null && Math.abs(q.value) >= 120 && q.lo === null) {
+    const h = (x: number | null) => (x === null ? null : x / 60)
+    return quantityView({ ...q, unit: 'h', value: h(q.value), pm: h(q.pm) })
+  }
 
   const bound = q.open ? '≥' : ''
   const common = {

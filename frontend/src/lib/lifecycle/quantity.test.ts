@@ -18,6 +18,12 @@ const q = (over: Partial<QuantityDTO>): QuantityDTO => ({
 })
 
 describe('quantityView: every margin form draws one way', () => {
+  it('a wait in minutes reads in seconds under a minute and in hours from two hours', () => {
+    expect(quantityText(q({ unit: 'min', value: 0.0208, pm: null }))).toBe('1.2 s')
+    expect(quantityText(q({ unit: 'min', value: 45, pm: null }))).toBe('45 min')
+    expect(quantityText(q({ unit: 'min', value: 17166.5, pm: null }))).toBe('286 h')
+  })
+
   it('± : the value to the margin’s own precision, the margin beside it', () => {
     const v = quantityView(q({ value: 183.64, pm: 0.1 }))
     expect(v).toMatchObject({ kind: 'number', figure: '183.6', margin: '±0.1', unit: 'h' })
