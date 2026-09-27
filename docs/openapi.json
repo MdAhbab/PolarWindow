@@ -2254,6 +2254,314 @@
         }
       }
     },
+    "/api/v1/missions/{mission_id}/launch/weather": {
+      "get": {
+        "tags": [
+          "mission sections"
+        ],
+        "summary": "Each launch weather rule at one launch time, with what the forecasts say",
+        "operationId": "launch_weather_api_v1_missions__mission_id__launch_weather_get",
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          },
+          {
+            "name": "opportunity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "An opportunity id from the calendar.",
+              "title": "Opportunity"
+            },
+            "description": "An opportunity id from the calendar."
+          },
+          {
+            "name": "t0",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Or a launch time, with a pad.",
+              "title": "T0"
+            },
+            "description": "Or a launch time, with a pad."
+          },
+          {
+            "name": "pad",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pad"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Section_LaunchWeather_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/missions/{mission_id}/launch/official-forecast": {
+      "put": {
+        "tags": [
+          "mission sections"
+        ],
+        "summary": "Enter the range's official launch weather forecast",
+        "operationId": "official_forecast_api_v1_missions__mission_id__launch_official_forecast_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfficialForecastIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficialForecastOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vehicles/{vehicle_id}/limits": {
+      "put": {
+        "tags": [
+          "mission sections"
+        ],
+        "summary": "Enter weather limits the vehicle maker does not publish",
+        "operationId": "vehicle_limits_api_v1_vehicles__vehicle_id__limits_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vehicle_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Vehicle Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LimitsIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleLimits"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/missions/{mission_id}/return": {
+      "get": {
+        "tags": [
+          "mission sections"
+        ],
+        "summary": "Where the booster comes down, and whether anything comes back to Earth",
+        "operationId": "recovery_api_v1_missions__mission_id__return_get",
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Section_Return_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/missions/{mission_id}/return/limits": {
+      "put": {
+        "tags": [
+          "mission sections"
+        ],
+        "summary": "Enter the sea and wind limits for recovering the booster (and a capsule)",
+        "operationId": "return_limits_api_v1_missions__mission_id__return_limits_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReturnLimitsIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Section_Return_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/missions/{mission_id}/ready": {
       "get": {
         "tags": [
@@ -4158,6 +4466,80 @@
         ],
         "title": "BookingOut"
       },
+      "Booster": {
+        "properties": {
+          "landing": {
+            "type": "string",
+            "enum": [
+              "droneship",
+              "land",
+              "expended",
+              "unknown"
+            ],
+            "title": "Landing"
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Zone"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "wave_height_m": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuantityOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "wind_m_s": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuantityOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "limits": {
+            "$ref": "#/components/schemas/SeaLimits"
+          },
+          "hazard_area_seen": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hazard Area Seen"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "landing",
+          "zone",
+          "note",
+          "wave_height_m",
+          "wind_m_s",
+          "limits",
+          "hazard_area_seen"
+        ],
+        "title": "Booster"
+      },
       "BriefRequest": {
         "properties": {
           "site_id": {
@@ -4335,6 +4717,81 @@
         "title": "CalendarResponse",
         "description": "Sun and Earth by day or by month, for choosing dates (contract v2)."
       },
+      "Capsule": {
+        "properties": {
+          "applicable": {
+            "type": "boolean",
+            "title": "Applicable"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Zone"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "wave_height_m": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuantityOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "wind_m_s": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuantityOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "daylight": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daylight"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/SeaLimits"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "applicable",
+          "reason",
+          "zone",
+          "wave_height_m",
+          "wind_m_s",
+          "daylight",
+          "limits"
+        ],
+        "title": "Capsule"
+      },
       "Cleared": {
         "properties": {
           "what": {
@@ -4366,6 +4823,30 @@
           "message"
         ],
         "title": "Cleared"
+      },
+      "Climatology": {
+        "properties": {
+          "share": {
+            "type": "number",
+            "title": "Share"
+          },
+          "years": {
+            "type": "string",
+            "title": "Years"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "share",
+          "years",
+          "source"
+        ],
+        "title": "Climatology"
       },
       "Comms": {
         "properties": {
@@ -5878,6 +6359,84 @@
         ],
         "title": "LaunchCalendar"
       },
+      "LaunchWeather": {
+        "properties": {
+          "t0": {
+            "type": "string",
+            "format": "date-time",
+            "title": "T0"
+          },
+          "lead_time_h": {
+            "type": "number",
+            "title": "Lead Time H"
+          },
+          "pad_id": {
+            "type": "string",
+            "title": "Pad Id"
+          },
+          "vehicle_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vehicle Id"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/RuleRow"
+            },
+            "type": "array",
+            "title": "Rules"
+          },
+          "official": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OfficialForecast"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "space_weather_now": {
+            "$ref": "#/components/schemas/SpaceWeatherNow"
+          },
+          "range_conflicts": {
+            "items": {
+              "$ref": "#/components/schemas/RangeConflict"
+            },
+            "type": "array",
+            "title": "Range Conflicts"
+          },
+          "range_note": {
+            "type": "string",
+            "title": "Range Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "t0",
+          "lead_time_h",
+          "pad_id",
+          "vehicle_id",
+          "note",
+          "rules",
+          "official",
+          "space_weather_now",
+          "range_conflicts",
+          "range_note"
+        ],
+        "title": "LaunchWeather"
+      },
       "Lesson": {
         "properties": {
           "id": {
@@ -6011,6 +6570,110 @@
           "max"
         ],
         "title": "LightTime"
+      },
+      "LimitIn": {
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "title": "Rule Id"
+          },
+          "value": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Value"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 24,
+            "minLength": 1,
+            "title": "Unit"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rule_id",
+          "value",
+          "unit"
+        ],
+        "title": "LimitIn"
+      },
+      "LimitOut": {
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "title": "Rule Id"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "entered_by": {
+            "type": "string",
+            "title": "Entered By"
+          },
+          "entered_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Entered At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rule_id",
+          "value",
+          "unit",
+          "note",
+          "entered_by",
+          "entered_at"
+        ],
+        "title": "LimitOut"
+      },
+      "LimitsIn": {
+        "properties": {
+          "limits": {
+            "items": {
+              "$ref": "#/components/schemas/LimitIn"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Limits"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "limits"
+        ],
+        "title": "LimitsIn"
       },
       "Link": {
         "properties": {
@@ -7321,6 +7984,169 @@
         ],
         "title": "Node"
       },
+      "Observed": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "clear",
+              "seen",
+              "no_data"
+            ],
+            "title": "State"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "state",
+          "detail"
+        ],
+        "title": "Observed"
+      },
+      "OfficialForecast": {
+        "properties": {
+          "probability_pct": {
+            "type": "number",
+            "title": "Probability Pct"
+          },
+          "concerns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Concerns"
+          },
+          "pdf_url": {
+            "type": "string",
+            "title": "Pdf Url"
+          },
+          "entered_by": {
+            "type": "string",
+            "title": "Entered By"
+          },
+          "entered_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Entered At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "probability_pct",
+          "concerns",
+          "pdf_url",
+          "entered_by",
+          "entered_at"
+        ],
+        "title": "OfficialForecast"
+      },
+      "OfficialForecastIn": {
+        "properties": {
+          "probability_pct": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Probability Pct"
+          },
+          "concerns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Concerns"
+          },
+          "pdf_url": {
+            "type": "string",
+            "pattern": "^https://\\S+$",
+            "title": "Pdf Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "probability_pct",
+          "pdf_url"
+        ],
+        "title": "OfficialForecastIn"
+      },
+      "OfficialForecastOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "probability_pct": {
+            "type": "number",
+            "title": "Probability Pct"
+          },
+          "concerns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Concerns"
+          },
+          "pdf_url": {
+            "type": "string",
+            "title": "Pdf Url"
+          },
+          "entered_by": {
+            "type": "string",
+            "title": "Entered By"
+          },
+          "entered_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Entered At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "probability_pct",
+          "concerns",
+          "pdf_url",
+          "entered_by",
+          "entered_at"
+        ],
+        "title": "OfficialForecastOut"
+      },
+      "OneForecast": {
+        "properties": {
+          "system": {
+            "type": "string",
+            "enum": [
+              "NWS",
+              "HRRR",
+              "GEOS-FP"
+            ],
+            "title": "System"
+          },
+          "value": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "over": {
+            "type": "boolean",
+            "title": "Over"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "system",
+          "value",
+          "over"
+        ],
+        "title": "OneForecast"
+      },
       "Opportunity": {
         "properties": {
           "id": {
@@ -8294,6 +9120,31 @@
         ],
         "title": "Radiation"
       },
+      "RangeConflict": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "t0": {
+            "type": "string",
+            "format": "date-time",
+            "title": "T0"
+          },
+          "pad": {
+            "type": "string",
+            "title": "Pad"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "t0",
+          "pad"
+        ],
+        "title": "RangeConflict"
+      },
       "Ready": {
         "properties": {
           "counts": {
@@ -8628,6 +9479,50 @@
         ],
         "title": "Resolution",
         "description": "What this answer was computed at."
+      },
+      "Return": {
+        "properties": {
+          "booster": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Booster"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "capsule": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Capsule"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "booster",
+          "capsule"
+        ],
+        "title": "Return"
+      },
+      "ReturnLimitsIn": {
+        "properties": {
+          "booster": {
+            "$ref": "#/components/schemas/SeaLimitsIn"
+          },
+          "capsule": {
+            "$ref": "#/components/schemas/SeaLimitsIn"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ReturnLimitsIn"
       },
       "Risk": {
         "properties": {
@@ -9141,6 +10036,134 @@
         ],
         "title": "Rover"
       },
+      "RuleRow": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "The rule as published, word for word."
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "class": {
+            "type": "string",
+            "enum": [
+              "model",
+              "proxy",
+              "observation"
+            ],
+            "title": "Class"
+          },
+          "limit": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "per_system": {
+            "items": {
+              "$ref": "#/components/schemas/SystemShare"
+            },
+            "type": "array",
+            "title": "Per System"
+          },
+          "one_forecast": {
+            "items": {
+              "$ref": "#/components/schemas/OneForecast"
+            },
+            "type": "array",
+            "title": "One Forecast"
+          },
+          "disagreement": {
+            "type": "boolean",
+            "title": "Disagreement"
+          },
+          "observed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Observed"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "climatology": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Climatology"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "text",
+          "source_url",
+          "class",
+          "limit",
+          "per_system",
+          "one_forecast",
+          "disagreement",
+          "observed",
+          "climatology"
+        ],
+        "title": "RuleRow"
+      },
+      "SeaLimits": {
+        "properties": {
+          "wave_height_m": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "wind_m_s": {
+            "$ref": "#/components/schemas/QuantityOut"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "wave_height_m",
+          "wind_m_s"
+        ],
+        "title": "SeaLimits"
+      },
+      "SeaLimitsIn": {
+        "properties": {
+          "wave_height_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wave Height M"
+          },
+          "wind_m_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wind M S"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SeaLimitsIn"
+      },
       "SectionStatus": {
         "properties": {
           "section": {
@@ -9228,6 +10251,23 @@
         ],
         "title": "Section[LaunchCalendar]"
       },
+      "Section_LaunchWeather_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/LaunchWeather"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/LifecycleMeta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Section[LaunchWeather]"
+      },
       "Section_Ready_": {
         "properties": {
           "data": {
@@ -9244,6 +10284,23 @@
           "meta"
         ],
         "title": "Section[Ready]"
+      },
+      "Section_Return_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Return"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/LifecycleMeta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Section[Return]"
       },
       "Section_Trip_": {
         "properties": {
@@ -9354,6 +10411,48 @@
           "system"
         ],
         "title": "SettingsOut"
+      },
+      "ShareOut": {
+        "properties": {
+          "k": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "K"
+          },
+          "n": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "N"
+          },
+          "lo": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Lo"
+          },
+          "hi": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Hi"
+          },
+          "checked": {
+            "type": "boolean",
+            "title": "Checked",
+            "description": "True only once this rule has been checked against observations."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "k",
+          "n",
+          "lo",
+          "hi",
+          "checked"
+        ],
+        "title": "ShareOut",
+        "description": "k of n model runs, with an exact 95 % interval (ADR-9, ADR-14)."
       },
       "SignInIn": {
         "properties": {
@@ -9851,6 +10950,43 @@
         "title": "SourceRef",
         "description": "Where one input to an answer came from, and when."
       },
+      "SpaceWeatherNow": {
+        "properties": {
+          "kp": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "proton_10mev_pfu": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "xray_class": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Xray Class"
+          },
+          "alerts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Alerts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kp",
+          "proton_10mev_pfu",
+          "xray_class",
+          "alerts"
+        ],
+        "title": "SpaceWeatherNow"
+      },
       "Spacecraft": {
         "properties": {
           "mass_kg": {
@@ -10020,6 +11156,48 @@
           "counts"
         ],
         "title": "SystemOut"
+      },
+      "SystemShare": {
+        "properties": {
+          "system": {
+            "type": "string",
+            "enum": [
+              "GEFS",
+              "ECMWF-ENS",
+              "AIFS-ENS"
+            ],
+            "title": "System"
+          },
+          "share": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ShareOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "missing_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Missing Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "system",
+          "share",
+          "missing_reason"
+        ],
+        "title": "SystemShare"
       },
       "TargetSite": {
         "properties": {
@@ -10777,6 +11955,28 @@
         ],
         "title": "ValidationError"
       },
+      "VehicleLimits": {
+        "properties": {
+          "vehicle_id": {
+            "type": "string",
+            "title": "Vehicle Id"
+          },
+          "limits": {
+            "items": {
+              "$ref": "#/components/schemas/LimitOut"
+            },
+            "type": "array",
+            "title": "Limits"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "vehicle_id",
+          "limits"
+        ],
+        "title": "VehicleLimits"
+      },
       "Who": {
         "properties": {
           "subject": {
@@ -10871,6 +12071,38 @@
           "meta"
         ],
         "title": "WindowsResponse"
+      },
+      "Zone": {
+        "properties": {
+          "lat_deg": {
+            "type": "number",
+            "title": "Lat Deg"
+          },
+          "lon_deg": {
+            "type": "number",
+            "title": "Lon Deg"
+          },
+          "pm_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pm Km",
+            "description": "Null when the zone's size is not published."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "lat_deg",
+          "lon_deg",
+          "pm_km"
+        ],
+        "title": "Zone"
       }
     },
     "securitySchemes": {

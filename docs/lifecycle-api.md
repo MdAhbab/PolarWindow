@@ -355,3 +355,36 @@ that user. `GET /auth/me` returns the same `user`.
     climatology yet). `kind` is always `instantaneous`; `window_*` null.
   - `landing_rule` minimums are missing with the reason until entered in Settings; the
     calendar then counts any landing with the Sun up and rising and the Earth up.
+- 2026-09-27 (backend, launch weather and Return as built, engine `wx-1`):
+  - `GET /missions/{id}/launch/weather?opportunity=` (an id from the calendar, including
+    `{pad}-flown`) or `?t0=&pad=`; 422 without either. Answers at once (no job).
+    `LaunchWeather` adds `pad_id`, `vehicle_id`, `note` (one sentence on what is covered)
+    and `range_note` (where `range_conflicts` come from, or why they are not known).
+  - Rules are the vehicle's, word for word, from `weather_rules` (Falcon 9's published
+    set; the range's lightning rules for every Eastern Range vehicle), plus any rule the
+    team entered a limit for (`PUT /vehicles/{id}/limits`), which then shows
+    `limit.provenance: "entered"`. A limit not published is missing with the reason.
+  - `per_system` is listed for model and proxy rules only, always GEFS, ECMWF-ENS,
+    AIFS-ENS in that order; a share is present only for a wind rule with a known limit
+    and a recorded GEFS step within 3 h of `t0` (else `missing_reason` says which:
+    past, beyond 16 days, not yet fetched, fields do not describe the rule). ECMWF and
+    AIFS are not recorded yet. `one_forecast` is HRRR within 1 h of `t0` (value in the
+    limit's unit, at the rule's height). Observation rules have `per_system: []` and
+    `observed.state: "no_data"` with a plain `detail` (the lightning rules add NWS's
+    chance of thunder in that hour). `climatology` is null (not built); `disagreement`
+    is false (one system).
+  - `PUT /missions/{id}/launch/official-forecast` → the stored forecast with `id`,
+    `entered_by`, `entered_at`. `PUT /vehicles/{id}/limits` → `{vehicle_id, limits:
+    {rule_id, value, unit, note, entered_by, entered_at}[]}`; a wind rule takes mph, kt,
+    m/s or km/h, any other rule its own unit (422 otherwise); it replaces the vehicle's list.
+  - `GET /missions/{id}/return`: `booster` adds `note` (plain words: where it came down,
+    or the vehicle's practice and the flown CLPS landings); `zone.pm_km` is
+    `number | null` (null when the zone's size is not published); a droneship's zone is
+    null (its position is not published, only 700 km downrange). `wave_height_m` is null
+    for a landing on land. `capsule` adds `limits`. `booster` and `capsule` are null for
+    a cancelled delivery; `booster` is null when the vehicle is not published.
+  - `PUT /missions/{id}/return/limits` (numbers above zero or null) → the `Return` section.
+    Changes are in `/history?entity=limits&id={vehicle}` and `id=return:{mission}`,
+    and `entity=forecast&id={mission}`.
+  - The feeds worker also records GEFS (`nomads/gefs_launch/{region}`) at the steps
+    nearest each designed opportunity's `t0` within 16 days (at most 6 per run).

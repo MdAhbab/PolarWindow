@@ -20,12 +20,23 @@ from app.api.v1.schemas.launch import LaunchCalendar
 from app.api.v1.schemas.ready import Section
 from app.api.v1.schemas.sections import SectionStatus
 from app.api.v1.schemas.trip import Trip
+from app.api.v1.schemas.weather import (
+    LaunchWeather,
+    LimitsIn,
+    OfficialForecastIn,
+    OfficialForecastOut,
+    Return,
+    ReturnLimitsIn,
+    VehicleLimits,
+)
 from app.services import (
     auth_service,
     contact_service,
     launch_service,
+    return_service,
     sections_service,
     trip_service,
+    weather_service,
 )
 from app.services.mission_service import MissionNotFound
 
@@ -206,3 +217,103 @@ async def launch(
     if code == 202:
         return JSONResponse(status_code=202, content=body)
     return body
+
+
+def _weather_http(exc: Exception) -> HTTPException:
+    if isinstance(exc, weather_service.BadRequest | return_service.BadRequest):
+        return deps.problem(
+            422,
+            "bad-request",
+            "That request cannot be answered",
+            str(exc),
+            "Nothing was changed.",
+            action="Adjust the request",
+        )
+    return deps.to_http(exc)
+
+
+@router.get(
+    "/missions/{mission_id}/launch/weather",
+    response_model=Section[LaunchWeather],
+    summary="Each launch weather rule at one launch time, with what the forecasts say",
+)
+async def launch_weather(
+    mission_id: str,
+    opportunity: str | None = Query(None, description="An opportunity id from the calendar."),
+    t0: datetime | None = Query(None, description="Or a launch time, with a pad."),
+    pad: str | None = Query(None),
+    session: Any = Depends(deps.db),
+) -> dict[str, Any]:
+    try:
+        return await weather_service.launch_weather(session, mission_id, opportunity, _utc(t0), pad)
+    except Exception as exc:
+        raise _weather_http(exc) from exc
+
+
+@router.put(
+    "/missions/{mission_id}/launch/official-forecast",
+    response_model=OfficialForecastOut,
+    summary="Enter the range's official launch weather forecast",
+)
+async def official_forecast(
+    mission_id: str,
+    body: OfficialForecastIn,
+    session: Any = Depends(deps.db),
+    who: auth_service.Claims = Depends(deps.named_manager),
+) -> dict[str, Any]:
+    try:
+        return await weather_service.set_official_forecast(
+            session, who, mission_id, body.probability_pct, body.concerns, body.pdf_url
+        )
+    except Exception as exc:
+        raise _weather_http(exc) from exc
+
+
+@router.put(
+    "/vehicles/{vehicle_id}/limits",
+    response_model=VehicleLimits,
+    summary="Enter weather limits the vehicle maker does not publish",
+)
+async def vehicle_limits(
+    vehicle_id: str,
+    body: LimitsIn,
+    session: Any = Depends(deps.db),
+    who: auth_service.Claims = Depends(deps.named_manager),
+) -> dict[str, Any]:
+    try:
+        return await weather_service.set_vehicle_limits(
+            session, who, vehicle_id, [x.model_dump() for x in body.limits]
+        )
+    except Exception as exc:
+        raise _weather_http(exc) from exc
+
+
+@router.get(
+    "/missions/{mission_id}/return",
+    response_model=Section[Return],
+    summary="Where the booster comes down, and whether anything comes back to Earth",
+)
+async def recovery(mission_id: str, session: Any = Depends(deps.db)) -> dict[str, Any]:
+    try:
+        return await return_service.recovery(session, mission_id)
+    except Exception as exc:
+        raise _weather_http(exc) from exc
+
+
+@router.put(
+    "/missions/{mission_id}/return/limits",
+    response_model=Section[Return],
+    summary="Enter the sea and wind limits for recovering the booster (and a capsule)",
+)
+async def return_limits(
+    mission_id: str,
+    body: ReturnLimitsIn,
+    session: Any = Depends(deps.db),
+    who: auth_service.Claims = Depends(deps.named_manager),
+) -> dict[str, Any]:
+    try:
+        return await return_service.set_limits(
+            session, who, mission_id, body.booster.model_dump(), body.capsule.model_dump()
+        )
+    except Exception as exc:
+        raise _weather_http(exc) from exc

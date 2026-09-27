@@ -1,0 +1,187 @@
+"""Launch weather per opportunity (T4 B1/B3), its entries, and Return (B2)."""
+
+from __future__ import annotations
+
+from datetime import UTC, datetime, timedelta
+
+import pytest
+from sqlalchemy import delete, insert, text
+
+from app.db.models import FeedSnapshot, OfficialForecast, ReturnLimits, VehicleLimit
+from app.db.session import session_scope
+
+pytestmark = [pytest.mark.requires_db, pytest.mark.asyncio]
+API = "/api/v1"
+T0 = (datetime.now(UTC) + timedelta(days=2)).replace(minute=0, second=0, microsecond=0)
+
+
+def _member(u80: float) -> dict[str, float]:
+    return {"u10_m_s": u80 * 0.8, "v10_m_s": 0.0, "u80_m_s": u80, "v80_m_s": 0.0}
+
+
+async def _snap(provider: str, product: str, key: str, parsed: dict) -> None:
+    async with session_scope() as s:
+        await s.execute(
+            insert(FeedSnapshot).values(
+                provider=provider,
+                product=product,
+                location_key=key,
+                issued_at=datetime.now(UTC),
+                fetched_at=datetime.now(UTC),
+                url=f"https://example.test/{provider}/{product}",
+                http_status=200,
+                parsed=parsed,
+                parser_version="test",
+                licence="test",
+                status="ok",
+                issues=[],
+            )
+        )
+
+
+@pytest.fixture(autouse=True)
+async def clean():
+    async with session_scope() as s:
+        await s.execute(delete(FeedSnapshot))
+        await s.execute(delete(OfficialForecast))
+        await s.execute(delete(VehicleLimit))
+        await s.execute(delete(ReturnLimits))
+        for t in ("jobs", "assessment_inputs", "assessments"):
+            await s.execute(text(f"DELETE FROM {t}"))  # noqa: S608 -- fixed table names
+    yield
+
+
+async def test_a_flown_launch_shows_its_rules_and_why_no_forecast(anon_client) -> None:
+    r = await anon_client.get(f"{API}/missions/im-2/launch/weather?opportunity=ksc-lc-39a-flown")
+    assert r.status_code == 200, r.text
+    d = r.json()["data"]
+    assert d["t0"].startswith("2025-02-27T00:16") and d["lead_time_h"] < 0
+    rows = {x["id"]: x for x in d["rules"]}
+    wind = rows["f9-wind-162ft"]
+    assert (
+        wind["class"] == "model" and wind["limit"]["value"] == 30 and wind["limit"]["unit"] == "mph"
+    )
+    assert wind["limit"]["provenance"] == "published"
+    gefs = wind["per_system"][0]
+    assert gefs["system"] == "GEFS" and gefs["share"] is None and "past" in gefs["missing_reason"]
+    assert rows["er-lightning"]["observed"]["state"] == "no_data"
+    assert rows["f9-upper-wind-shear"]["limit"]["value"] is None
+    assert "not known" in d["range_note"] or "Launch Library" in d["range_note"]
+
+
+async def test_ensemble_share_and_one_forecast_at_a_launch_time(anon_client) -> None:
+    valid = (T0 + timedelta(hours=1)).isoformat().replace("+00:00", "Z")
+    members = {str(i): _member(20.0 if i < 10 else 3.0) for i in range(31)}
+    await _snap(
+        "nomads",
+        "gefs_launch",
+        "florida",
+        {
+            "model": "GEFS",
+            "points": {"ksc-lc-39a": {"leads": {"48": {"valid": valid, "members": members}}}},
+        },
+    )
+    await _snap(
+        "nomads",
+        "hrrr",
+        "florida",
+        {
+            "model": "HRRR",
+            "points": {
+                "ksc-lc-39a": {"leads": {"18": {"valid": valid, "members": {"0": _member(20.0)}}}}
+            },
+        },
+    )
+    hours = [(T0 + timedelta(hours=h)).isoformat().replace("+00:00", "Z") for h in (-1, 0, 1)]
+    await _snap("nws", "grid", "ksc-lc-39a", {"times": hours, "p_thunder_frac": [0.0, 0.3, 0.0]})
+    r = await anon_client.get(
+        f"{API}/missions/im-2/launch/weather",
+        params={"t0": T0.isoformat(), "pad": "ksc-lc-39a"},
+    )
+    assert r.status_code == 200, r.text
+    rows = {x["id"]: x for x in r.json()["data"]["rules"]}
+    share = rows["f9-wind-162ft"]["per_system"][0]["share"]
+    assert (share["k"], share["n"], share["checked"]) == (10, 31, False)
+    assert share["lo"] < 10 / 31 < share["hi"]
+    (hrrr,) = rows["f9-wind-162ft"]["one_forecast"]
+    assert hrrr["system"] == "HRRR" and hrrr["over"] is True and hrrr["value"]["unit"] == "mph"
+    assert "30% chance of thunder" in rows["er-lightning"]["observed"]["detail"]
+    assert [p["system"] for p in rows["f9-wind-162ft"]["per_system"]] == [
+        "GEFS",
+        "ECMWF-ENS",
+        "AIFS-ENS",
+    ]
+
+
+async def test_bad_requests_are_refused(anon_client) -> None:
+    r = await anon_client.get(f"{API}/missions/im-2/launch/weather")
+    assert r.status_code == 422
+    r = await anon_client.get(f"{API}/missions/im-2/launch/weather?opportunity=nonsense")
+    assert r.status_code == 422
+
+
+async def test_entries_are_recorded_and_show_up(client) -> None:
+    body = {
+        "probability_pct": 80,
+        "concerns": ["Cumulus Cloud Rule"],
+        "pdf_url": "https://example.test/l1.pdf",
+    }
+    r = await client.put(f"{API}/missions/griffin-1/launch/official-forecast", json=body)
+    assert r.status_code == 200, r.text
+    lim = {
+        "limits": [
+            {"rule_id": "f9-wind-162ft", "value": 25, "unit": "kt", "note": "from the provider"}
+        ]
+    }
+    r = await client.put(f"{API}/vehicles/falcon-heavy/limits", json=lim)
+    assert r.status_code == 200, r.text
+    assert r.json()["limits"][0]["entered_by"].startswith("Test manager")
+    bad = {"limits": [{"rule_id": "f9-wind-162ft", "value": 25, "unit": "ft"}]}
+    assert (await client.put(f"{API}/vehicles/falcon-heavy/limits", json=bad)).status_code == 422
+    r = await client.get(
+        f"{API}/missions/griffin-1/launch/weather",
+        params={"t0": T0.isoformat(), "pad": "ksc-lc-39a"},
+    )
+    d = r.json()["data"]
+    assert d["official"]["probability_pct"] == 80
+    wind = next(x for x in d["rules"] if x["id"] == "f9-wind-162ft")
+    assert wind["limit"]["provenance"] == "entered" and wind["limit"]["unit"] == "kt"
+    h = await client.get(f"{API}/history", params={"entity": "limits", "id": "falcon-heavy"})
+    assert h.status_code == 200 and h.json()["entries"]
+
+
+async def test_return_for_flown_and_planned_missions(client, anon_client) -> None:
+    d = (await anon_client.get(f"{API}/missions/im-1/return")).json()["data"]
+    assert d["booster"]["landing"] == "land" and d["booster"]["zone"]["lat_deg"] == pytest.approx(
+        28.4857, abs=1e-3
+    )
+    assert d["booster"]["wave_height_m"] is None
+    assert d["capsule"]["applicable"] is False
+    d = (await anon_client.get(f"{API}/missions/im-2/return")).json()["data"]
+    assert d["booster"]["landing"] == "droneship" and d["booster"]["zone"] is None
+    assert "700 km" in d["booster"]["note"]
+    d = (await anon_client.get(f"{API}/missions/griffin-1/return")).json()["data"]
+    assert d["booster"]["landing"] == "unknown" and "IM-1" in d["booster"]["note"]
+    assert d["booster"]["limits"]["wave_height_m"]["missing_reason"]
+    r = await client.put(
+        f"{API}/missions/griffin-1/return/limits",
+        json={"booster": {"wave_height_m": 2.5, "wind_m_s": None}},
+    )
+    assert r.status_code == 200, r.text
+    lim = r.json()["data"]["booster"]["limits"]
+    assert lim["wave_height_m"]["value"] == 2.5 and lim["wave_height_m"]["provenance"] == "entered"
+    assert lim["wind_m_s"]["value"] is None
+    bad = await client.put(
+        f"{API}/missions/griffin-1/return/limits", json={"booster": {"wave_height_m": -1}}
+    )
+    assert bad.status_code == 422
+    d = (await anon_client.get(f"{API}/missions/blue-ghost-m3/return")).json()["data"]
+    assert d["booster"] is None
+
+
+async def test_entries_need_a_signed_in_name(anon_client) -> None:
+    body = {"probability_pct": 80, "concerns": [], "pdf_url": "https://example.test/l1.pdf"}
+    r = await anon_client.put(f"{API}/missions/griffin-1/launch/official-forecast", json=body)
+    assert r.status_code in (401, 403)
+    r = await anon_client.put(f"{API}/missions/griffin-1/return/limits", json={})
+    assert r.status_code in (401, 403)
