@@ -447,6 +447,70 @@ def et_to_utc(et: float, *, precision: int = 3) -> str:
         return str(spice.et2utc(float(et), "ISOC", precision)) + "Z"
 
 
+#: Kernels the ground-station geometry needs (ADR-18).
+STATION_KERNELS: Final[tuple[str, ...]] = (
+    "earth_1962_260806_2126_combined.bpc",
+    "earthstns_itrf93_260814.bsp",
+    "earth_topo_260814.tf",
+)
+
+
+@dataclass(frozen=True, slots=True)
+class StationLook:
+    """Where a point on the Moon appears from one ground station, per epoch."""
+
+    station: str
+    az_deg: npt.NDArray[np.float64]
+    el_deg: npt.NDArray[np.float64]
+    range_m: npt.NDArray[np.float64]
+
+
+def station_look_angles(
+    stations: list[str], site_me_m: npt.NDArray[np.float64], ets: npt.NDArray[np.float64]
+) -> list[StationLook]:
+    """Azimuth, elevation and range of a lunar surface point from each DSN station.
+
+    The station frames are NAIF's ``{station}_TOPO`` (x north, y west, z up,
+    from ``earth_topo_*.tf``); Earth orientation is ITRF93 from the dated
+    combined kernel. The Moon's apparent position (``LT+S``) is taken from
+    Earth's centre and the station's own offset is subtracted, which differs
+    from observing at the station by a few milliseconds of light time: far
+    below a DSN mask's 0.1 degree. The site vector is rotated from MOON_ME at
+    each epoch. One pass over the epochs for all stations; per epoch only the
+    two time-varying rotations are asked of CSPICE.
+    """
+    _require_lifecycle(STATION_KERNELS)
+    ets = np.asarray(ets, dtype=np.float64)
+    site = np.asarray(site_me_m, dtype=np.float64).reshape(3) / 1000.0  # km, as CSPICE
+    n = ets.size
+    r_i2j = np.empty((n, 3, 3))
+    r_me2j = np.empty((n, 3, 3))
+    with _lock:
+        moon, _lt = spice.spkpos("MOON", ets, "J2000", "LT+S", "EARTH")
+        for i, et in enumerate(ets):
+            r_i2j[i] = spice.pxform("ITRF93", "J2000", float(et))
+            r_me2j[i] = spice.pxform("MOON_ME", "J2000", float(et))
+        st_itrf = {}
+        r_topo = {}
+        for st in stations:
+            p, _ = spice.spkpos(st, float(ets[0]), "ITRF93", "NONE", "EARTH")
+            st_itrf[st] = np.asarray(p, dtype=np.float64)
+            r_topo[st] = np.asarray(spice.pxform("ITRF93", f"{st}_TOPO", float(ets[0])))
+    moon = np.asarray(moon, dtype=np.float64).reshape(-1, 3)
+    target_j2k = moon + np.einsum("nij,j->ni", r_me2j, site)
+    out = []
+    for st in stations:
+        st_j2k = np.einsum("nij,j->ni", r_i2j, st_itrf[st])
+        rel_j2k = target_j2k - st_j2k
+        rel_itrf = np.einsum("nji,nj->ni", r_i2j, rel_j2k)  # transpose: J2000 -> ITRF93
+        v = rel_itrf @ r_topo[st].T
+        rng = np.linalg.norm(v, axis=1)
+        el = np.degrees(np.arcsin(np.clip(v[:, 2] / rng, -1.0, 1.0)))
+        az = np.mod(np.degrees(np.arctan2(-v[:, 1], v[:, 0])), 360.0)
+        out.append(StationLook(station=st, az_deg=az, el_deg=el, range_m=rng * 1000.0))
+    return out
+
+
 async def run_async(fn: Any, /, *args: Any, **kwargs: Any) -> Any:
     """Run any function of this module on the one SPICE thread."""
     import functools

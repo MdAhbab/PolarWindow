@@ -1836,6 +1836,226 @@
         }
       }
     },
+    "/api/v1/missions/{mission_id}/contact": {
+      "get": {
+        "tags": [
+          "mission sections"
+        ],
+        "summary": "Who can hear the lander, and how long a message waits",
+        "operationId": "contact_api_v1_missions__mission_id__contact_get",
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Default: the mission's surface dates.",
+              "title": "Start"
+            },
+            "description": "Default: the mission's surface dates."
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Section_Contact_"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Being worked out; poll the job.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRefOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/missions/{mission_id}/contact/plan": {
+      "get": {
+        "tags": [
+          "mission sections"
+        ],
+        "summary": "The contact plan as CSV, or as an ION-DTN contact plan (needs a data rate)",
+        "operationId": "contact_plan_api_v1_missions__mission_id__contact_plan_get",
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "csv",
+                "ion"
+              ],
+              "type": "string",
+              "default": "csv",
+              "title": "Format"
+            }
+          },
+          {
+            "name": "rate_bps",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Data rate for ION, bits per second.",
+              "title": "Rate Bps"
+            },
+            "description": "Data rate for ION, bits per second."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/missions/{mission_id}/contact/bookings": {
+      "post": {
+        "tags": [
+          "mission sections"
+        ],
+        "summary": "Record a ground station pass the team has booked",
+        "operationId": "add_booking_api_v1_missions__mission_id__contact_bookings_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookingIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/missions/{mission_id}/ready": {
       "get": {
         "tags": [
@@ -3605,6 +3825,141 @@
         ],
         "title": "BodyWindows"
       },
+      "Booking": {
+        "properties": {
+          "station": {
+            "type": "string",
+            "title": "Station"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End"
+          },
+          "entered_by": {
+            "type": "string",
+            "title": "Entered By"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "station",
+          "start",
+          "end",
+          "entered_by"
+        ],
+        "title": "Booking"
+      },
+      "BookingIn": {
+        "properties": {
+          "station": {
+            "type": "string",
+            "title": "Station",
+            "description": "Ground station id from the catalogue, e.g. `dss-14`."
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "station",
+          "start",
+          "end"
+        ],
+        "title": "BookingIn"
+      },
+      "BookingOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "station": {
+            "type": "string",
+            "title": "Station"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "entered_by": {
+            "type": "string",
+            "title": "Entered By"
+          },
+          "entered_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Entered At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "station",
+          "start",
+          "end",
+          "note",
+          "entered_by",
+          "entered_at"
+        ],
+        "title": "BookingOut"
+      },
       "BriefRequest": {
         "properties": {
           "site_id": {
@@ -4178,6 +4533,135 @@
           "levels"
         ],
         "title": "ConsequenceScale"
+      },
+      "Contact": {
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End"
+          },
+          "window_note": {
+            "type": "string",
+            "title": "Window Note"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/Node"
+            },
+            "type": "array",
+            "title": "Nodes"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/Link"
+            },
+            "type": "array",
+            "title": "Links"
+          },
+          "numbers": {
+            "$ref": "#/components/schemas/ContactNumbers"
+          },
+          "relays": {
+            "items": {
+              "$ref": "#/components/schemas/RelayRow"
+            },
+            "type": "array",
+            "title": "Relays"
+          },
+          "link_budget_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link Budget Note"
+          },
+          "bookings": {
+            "items": {
+              "$ref": "#/components/schemas/Booking"
+            },
+            "type": "array",
+            "title": "Bookings"
+          },
+          "light_time_s": {
+            "$ref": "#/components/schemas/LightTime"
+          },
+          "longest_wait_from": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Longest Wait From"
+          },
+          "sun_total_h": {
+            "$ref": "#/components/schemas/QuantityOut"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "window_note",
+          "nodes",
+          "links",
+          "numbers",
+          "relays",
+          "link_budget_note",
+          "bookings",
+          "light_time_s",
+          "longest_wait_from",
+          "sun_total_h"
+        ],
+        "title": "Contact"
+      },
+      "ContactNumbers": {
+        "properties": {
+          "direct_h": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Time in contact with Earth (Earth above the skyline)."
+          },
+          "via_relay_h": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Through a relay, as a range, if it flies as planned."
+          },
+          "either_h": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "station_hears_h": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Time a ground station can hear the lander."
+          },
+          "longest_unheard_h": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "longest_message_wait_min": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "dark_and_unheard_h": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "The longest single stretch that is dark and out of contact at once."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "direct_h",
+          "via_relay_h",
+          "either_h",
+          "station_hears_h",
+          "longest_unheard_h",
+          "longest_message_wait_min",
+          "dark_and_unheard_h"
+        ],
+        "title": "ContactNumbers"
       },
       "Counts": {
         "properties": {
@@ -5131,6 +5615,74 @@
         ],
         "title": "LifecycleMeta",
         "description": "`meta` for launch, trip, contact, readiness and recovery answers."
+      },
+      "LightTime": {
+        "properties": {
+          "min": {
+            "type": "number",
+            "title": "Min"
+          },
+          "max": {
+            "type": "number",
+            "title": "Max"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "min",
+          "max"
+        ],
+        "title": "LightTime"
+      },
+      "Link": {
+        "properties": {
+          "from": {
+            "type": "string",
+            "title": "From"
+          },
+          "to": {
+            "type": "string",
+            "title": "To"
+          },
+          "stretches": {
+            "items": {
+              "$ref": "#/components/schemas/StretchOut"
+            },
+            "type": "array",
+            "title": "Stretches"
+          },
+          "data_rate_kbps": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuantityOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "margin_db": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuantityOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "from",
+          "to",
+          "stretches",
+          "data_rate_kbps",
+          "margin_db"
+        ],
+        "title": "Link"
       },
       "Meta": {
         "properties": {
@@ -6277,6 +6829,87 @@
         ],
         "title": "ModelState"
       },
+      "Node": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "station",
+              "relay",
+              "lander",
+              "rover",
+              "earth"
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "operator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operator"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "operating",
+              "planned",
+              "not_launched"
+            ],
+            "title": "Status"
+          },
+          "orbit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "real",
+                  "planned"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Orbit"
+          },
+          "launch_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Launch Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "operator",
+          "status",
+          "orbit",
+          "launch_note"
+        ],
+        "title": "Node"
+      },
       "Parameter": {
         "properties": {
           "id": {
@@ -7307,6 +7940,34 @@
         ],
         "title": "RefreshOut"
       },
+      "RelayRow": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "adds_h": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "adds_h",
+          "status"
+        ],
+        "title": "RelayRow"
+      },
       "Resolution": {
         "properties": {
           "azimuth_deg": {
@@ -7924,6 +8585,23 @@
           "as_of"
         ],
         "title": "SectionStatus"
+      },
+      "Section_Contact_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Contact"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/LifecycleMeta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Section[Contact]"
       },
       "Section_Ready_": {
         "properties": {
@@ -8575,6 +9253,39 @@
           "cr"
         ],
         "title": "Spacecraft"
+      },
+      "StretchOut": {
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End"
+          },
+          "open_start": {
+            "type": "boolean",
+            "title": "Open Start",
+            "description": "Cut by the start of the dates."
+          },
+          "open_end": {
+            "type": "boolean",
+            "title": "Open End",
+            "description": "Cut by the end of the dates."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "open_start",
+          "open_end"
+        ],
+        "title": "StretchOut"
       },
       "SurfaceWindow": {
         "properties": {

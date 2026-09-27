@@ -303,3 +303,17 @@ that user. `GET /auth/me` returns the same `user`.
     project's own words are to be entered.
   - `GET /parameters` ids: `battery_limit_h`, `landing_sun_min_deg`,
     `landing_sun_max_deg`, `surface_days`; a value is missing (with the reason) until entered.
+- 2026-09-27 (backend, Contact as built):
+  - `Contact` adds `start`, `end`, `window_note` (which dates were used: the mission's
+    surface dates by default, else the reference lunar day, said so), `light_time_s
+    {min, max}`, `longest_wait_from` and `sun_total_h`. `Booking` adds `note`.
+  - `dark_and_unheard_h` is the longest single stretch that is dark and out of contact.
+  - With no relay planned, `via_relay_h` is missing ("No relay is planned") and
+    `either_h` equals `direct_h`; with a planned relay whose orbit is not published,
+    both are missing with that reason, and `relays[].adds_h` is missing too.
+  - `data_rate_kbps` and `margin_db` are null (no lander radio figures are published);
+    `link_budget_note` says so.
+  - `GET /missions/{id}/contact/plan?format=csv|ion`: ION needs `rate_bps` (the lander's
+    rate is not published; without it the answer is 422 saying so).
+  - `POST /missions/{id}/contact/bookings` → the booking with `id`, `entered_by`, `entered_at`.
+  - 409 `no-contact` when a mission has no landing spot or was cancelled.

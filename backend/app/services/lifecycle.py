@@ -136,3 +136,10 @@ def stretch(start: datetime, end: datetime, open_start: bool, open_end: bool) ->
 
 def iso(dt: datetime) -> str:
     return dt.astimezone(UTC).isoformat().replace("+00:00", "Z")
+
+
+def jsonable(obj: Any) -> Any:
+    """``obj`` with datetimes as ISO strings, safe for a JSONB column."""
+    import orjson
+
+    return orjson.loads(orjson.dumps(obj, option=orjson.OPT_UTC_Z | orjson.OPT_NAIVE_UTC))

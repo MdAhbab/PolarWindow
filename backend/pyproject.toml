@@ -208,7 +208,11 @@ allow_indirect_imports = true
 source_modules = ["app"]
 forbidden_modules = ["spiceypy"]
 # The tests that pin the boundary itself may name the library they pin.
-ignore_imports = ["app.core.spice -> spiceypy", "app.tests.unit.test_spice -> spiceypy"]
+ignore_imports = [
+    "app.core.spice -> spiceypy",
+    "app.tests.unit.test_spice -> spiceypy",
+    "app.tests.unit.test_contact_core -> spiceypy",
+]
 
 [[tool.importlinter.contracts]]
 name = "only the API layer imports fastapi"
