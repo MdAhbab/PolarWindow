@@ -2164,6 +2164,96 @@
         }
       }
     },
+    "/api/v1/missions/{mission_id}/launch": {
+      "get": {
+        "tags": [
+          "mission sections"
+        ],
+        "summary": "The launch a mission flew, or its launch opportunities backed out from the landing",
+        "operationId": "launch_api_v1_missions__mission_id__launch_get",
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Default: today.",
+              "title": "From"
+            },
+            "description": "Default: today."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Default: 90 days on; 180 at most.",
+              "title": "To"
+            },
+            "description": "Default: 90 days on; 180 at most."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Section_LaunchCalendar_"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Being worked out; poll the job.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRefOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/missions/{mission_id}/ready": {
       "get": {
         "tags": [
@@ -5633,6 +5723,161 @@
         ],
         "title": "LandingHistory"
       },
+      "LandingOut": {
+        "properties": {
+          "time": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "sun_elevation_deg": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "sunlight_after_h": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "earth_up": {
+            "type": "boolean",
+            "title": "Earth Up"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "time",
+          "sun_elevation_deg",
+          "sunlight_after_h",
+          "earth_up"
+        ],
+        "title": "LandingOut"
+      },
+      "LandingRule": {
+        "properties": {
+          "sun_elevation_min_deg": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "sun_elevation_max_deg": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "earth_required": {
+            "type": "boolean",
+            "title": "Earth Required"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sun_elevation_min_deg",
+          "sun_elevation_max_deg",
+          "earth_required",
+          "note"
+        ],
+        "title": "LandingRule"
+      },
+      "LaunchCalendar": {
+        "properties": {
+          "none_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "None Reason"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "dates_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dates Note"
+          },
+          "vehicle_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vehicle Id"
+          },
+          "pads": {
+            "items": {
+              "$ref": "#/components/schemas/Pad"
+            },
+            "type": "array",
+            "title": "Pads"
+          },
+          "opportunities": {
+            "items": {
+              "$ref": "#/components/schemas/Opportunity"
+            },
+            "type": "array",
+            "title": "Opportunities"
+          },
+          "landing_rule": {
+            "$ref": "#/components/schemas/LandingRule"
+          },
+          "published_t0": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuantityOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "none_reason",
+          "start",
+          "end",
+          "dates_note",
+          "vehicle_id",
+          "pads",
+          "opportunities",
+          "landing_rule",
+          "published_t0"
+        ],
+        "title": "LaunchCalendar"
+      },
       "Lesson": {
         "properties": {
           "id": {
@@ -7075,6 +7320,169 @@
           "launch_note"
         ],
         "title": "Node"
+      },
+      "Opportunity": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "pad_id": {
+            "type": "string",
+            "title": "Pad Id"
+          },
+          "pad_name": {
+            "type": "string",
+            "title": "Pad Name"
+          },
+          "vehicle_id": {
+            "type": "string",
+            "title": "Vehicle Id"
+          },
+          "t0": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Liftoff, unit \"s since epoch\"."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "instantaneous",
+              "window"
+            ],
+            "title": "Kind"
+          },
+          "window_open": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Open"
+          },
+          "window_close": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Close"
+          },
+          "transfer": {
+            "$ref": "#/components/schemas/TransferOut"
+          },
+          "landing": {
+            "$ref": "#/components/schemas/LandingOut"
+          },
+          "weather": {
+            "type": "string",
+            "enum": [
+              "forecast",
+              "climatology",
+              "none"
+            ],
+            "title": "Weather"
+          },
+          "basis": {
+            "type": "string",
+            "enum": [
+              "reconstructed",
+              "designed",
+              "published"
+            ],
+            "title": "Basis",
+            "description": "How t0 was worked out: again from a flown trajectory, designed, or as published."
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "azimuth_deg": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "dv_tli_m_s": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "coast_min": {
+            "$ref": "#/components/schemas/QuantityOut"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "pad_id",
+          "pad_name",
+          "vehicle_id",
+          "t0",
+          "kind",
+          "window_open",
+          "window_close",
+          "transfer",
+          "landing",
+          "weather",
+          "basis",
+          "note",
+          "azimuth_deg",
+          "dv_tli_m_s",
+          "coast_min"
+        ],
+        "title": "Opportunity"
+      },
+      "Pad": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "lat_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lat Deg"
+          },
+          "lon_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lon Deg"
+          },
+          "operator": {
+            "type": "string",
+            "title": "Operator"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "lat_deg",
+          "lon_deg",
+          "operator"
+        ],
+        "title": "Pad"
       },
       "Parameter": {
         "properties": {
@@ -8803,6 +9211,23 @@
         ],
         "title": "Section[Contact]"
       },
+      "Section_LaunchCalendar_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/LaunchCalendar"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/LifecycleMeta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Section[LaunchCalendar]"
+      },
       "Section_Ready_": {
         "properties": {
           "data": {
@@ -9922,6 +10347,32 @@
           "lunar_orbit_days"
         ],
         "title": "Transfer"
+      },
+      "TransferOut": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "direct",
+              "phasing_loops"
+            ],
+            "title": "Type"
+          },
+          "flight_days": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "orbit_wait_days": {
+            "$ref": "#/components/schemas/QuantityOut"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "flight_days",
+          "orbit_wait_days"
+        ],
+        "title": "TransferOut"
       },
       "Trip": {
         "properties": {

@@ -58,10 +58,21 @@ async def _ready(session: AsyncSession, m: MissionRecord) -> dict[str, Any]:
     return _status("ready", "available", "; ".join(parts) + ".")
 
 
-def _launch(m: MissionRecord) -> dict[str, Any]:
+async def _launch(session: AsyncSession, m: MissionRecord) -> dict[str, Any]:
     if m.status in ready_service.CANCELLED:
         return _status("launch", "not_applicable", "This delivery was cancelled.")
     lc = m.lifecycle or {}
+    job = await _stored(session, "launch", m.id)
+    if job and job[0] in ("queued", "running"):
+        return _status("launch", "computing", "Launch opportunities are being worked out.", job[1])
+    if not lc.get("t0") and lc.get("pad_id") and lc.get("vehicle_id") and m.site_id:
+        pad = _name("launch_sites", lc.get("pad_id"))
+        return _status(
+            "launch",
+            "available",
+            f"Launch opportunities from {pad}, backed out from sunlight at the landing spot.",
+            job[1] if job and job[0] == "done" else None,
+        )
     t0 = lc.get("t0")
     veh = _name("vehicles", lc.get("vehicle_id"))
     pad = _name("launch_sites", lc.get("pad_id"))
@@ -112,7 +123,7 @@ async def sections(session: AsyncSession, mission_id: str) -> dict[str, Any]:
         raise MissionNotFound(mission_id)
     out = [
         await _ready(session, m),
-        _launch(m),
+        await _launch(session, m),
         await _trip(session, m),
         await _landing(session, m),
         await _contact(session, m),

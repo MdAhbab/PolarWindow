@@ -16,10 +16,17 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from app.api.v1 import deps
 from app.api.v1.schemas.contact import BookingIn, BookingOut, Contact
 from app.api.v1.schemas.jobs import JobRefOut
+from app.api.v1.schemas.launch import LaunchCalendar
 from app.api.v1.schemas.ready import Section
 from app.api.v1.schemas.sections import SectionStatus
 from app.api.v1.schemas.trip import Trip
-from app.services import auth_service, contact_service, sections_service, trip_service
+from app.services import (
+    auth_service,
+    contact_service,
+    launch_service,
+    sections_service,
+    trip_service,
+)
 from app.services.mission_service import MissionNotFound
 
 router = APIRouter(tags=["mission sections"])
@@ -169,3 +176,33 @@ async def trip_export(
         media_type=media,
         headers={"Content-Disposition": f'attachment; filename="{mission_id}-trip.{ext}"'},
     )
+
+
+@router.get(
+    "/missions/{mission_id}/launch",
+    response_model=Section[LaunchCalendar],
+    responses={202: {"model": JobRefOut, "description": "Being worked out; poll the job."}},
+    summary="The launch a mission flew, or its launch opportunities backed out from the landing",
+)
+async def launch(
+    mission_id: str,
+    start: datetime | None = Query(None, alias="from", description="Default: today."),
+    end: datetime | None = Query(None, alias="to", description="Default: 90 days on; 180 at most."),
+    session: Any = Depends(deps.db),
+) -> Any:
+    try:
+        code, body = await launch_service.launch(session, mission_id, _utc(start), _utc(end))
+    except launch_service.BadDates as exc:
+        raise deps.problem(
+            422,
+            "bad-request",
+            "Those dates cannot be used",
+            str(exc),
+            "Nothing was changed.",
+            action="Adjust the dates",
+        ) from exc
+    except Exception as exc:
+        raise deps.to_http(exc) from exc
+    if code == 202:
+        return JSONResponse(status_code=202, content=body)
+    return body

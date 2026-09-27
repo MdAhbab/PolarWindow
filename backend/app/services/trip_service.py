@@ -17,19 +17,14 @@ from app.config import engine_closure, get_settings
 from app.core import oem, spice
 from app.data import catalogues, registry
 from app.db.repositories.missions import MissionRepository
-from app.services import job_service, lifecycle
+from app.services import ascent, job_service, lifecycle
 from app.services.mission_service import MissionNotFound
 
 KIND = "trip"
 STEP_S = 60
 
 #: Flown CLPS missions with a reconstructed trajectory: registry id and NAIF id.
-FLOWN: dict[str, tuple[str, int]] = {
-    "peregrine-m1": ("clps:peregrine_cruise", -244),
-    "im-1": ("clps:im1_cruise", -370011),
-    "blue-ghost-m1": ("clps:bgm1_cruise", -2711),
-    "im-2": ("clps:im2_cruise", -370021),
-}
+FLOWN = ascent.RECONSTRUCTED
 
 
 def _none(reason: str) -> dict[str, Any]:

@@ -333,3 +333,25 @@ that user. `GET /auth/me` returns the same `user`.
     with no flown trajectory.
   - Contact for a lander lost before landing (Peregrine) is 409 `no-contact`.
   - A "longest" of zero is never `open` (engines `net-3`, `traj-2`).
+- 2026-09-27 (backend, Launch as built, engines `lw-1`, `traj-2`, `vis-2`):
+  - `GET /missions/{id}/launch?from=&to=` (default: today for 90 days; at most 180; 422
+    otherwise). 200 at once, with no opportunities and `none_reason`, when there is
+    nothing to work from (cancelled; pad, vehicle or landing spot not published; no
+    reconstructed launch of the vehicle); otherwise 202 with a job the first time.
+  - `LaunchCalendar` adds `none_reason: string | null`, `start`, `end` (dates used;
+    null for a flown mission), `dates_note`, and `vehicle_id` (as agreed).
+  - `Opportunity` adds `basis: "reconstructed" | "designed" | "published"` (how `t0` was
+    worked out), `note` (one or two plain sentences: how, and anything unusual such as
+    a coast longer than any flown one), `azimuth_deg`, `dv_tli_m_s` and `coast_min`
+    (Quantities; `azimuth_deg` is missing with the reason for a flown launch).
+  - A flown mission (IM-1, IM-2, Blue Ghost 1, Peregrine) has one opportunity, id
+    `{pad}-flown`: its launch worked out again from NASA's reconstruction (± seconds) or,
+    for Peregrine, the published liftoff. `landing.time` is the published landing
+    (± its precision); `sun_elevation_deg` then has `lo`/`hi` over that span.
+  - A planned one (Griffin-1 today) has up to two opportunities a day, id
+    `{pad}-{YYYYMMDDTHHMM}`: `t0` ± 44 min (`pm`), `landing.time` with `lo`/`hi` = the
+    allowed landing stretch it falls in, `orbit_wait_days` `assumed` (its `source` says
+    from what). `weather` is `forecast` within 16 days of now, else `none` (no
+    climatology yet). `kind` is always `instantaneous`; `window_*` null.
+  - `landing_rule` minimums are missing with the reason until entered in Settings; the
+    calendar then counts any landing with the Sun up and rising and the Earth up.
