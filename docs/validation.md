@@ -100,8 +100,11 @@ published, and we do not assert one.
 
 **Leak detection (Peregrine).** Peregrine's reconstruction needs an
 unexplained push for its whole flight: median 7.6e-5 m/s², 90th percentile
-1.8e-4 m/s², and no quiet stretch at all. This is the propellant leak
-Astrobotic reported after launch, seen here only as a residual.
+1.8e-4 m/s², and no quiet stretch at all. Astrobotic's post-mission report
+traces the loss to a helium pressure control valve that failed to seal
+([PM1 post-mission report](https://www.astrobotic.com/wp-content/uploads/2024/08/PM1_Post-Mission-Report_Website.pdf));
+the residual is where that shows in the trajectory, and nothing here
+estimates the leak itself.
 
 **What replaces GMAT.** The plan's reference for the propagator was GMAT
 R2026a run offline (`make gmat-golden`). GMAT is not installed on this
