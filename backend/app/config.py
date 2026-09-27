@@ -36,6 +36,7 @@ ENGINE_VERSION = "hz-2/vis-2"
 #: wx:   launch and recovery weather rules       rad: radiation screening
 #: link: link budget                              net: contact graph and routing
 #: los:  rover-to-lander line of sight
+#: net-2: a number with no edge inside the dates says so instead of "± 0".
 ENGINES: dict[str, str] = {
     "hz": "hz-2",
     "vis": "vis-2",
@@ -44,7 +45,7 @@ ENGINES: dict[str, str] = {
     "wx": "wx-1",
     "rad": "rad-1",
     "link": "link-1",
-    "net": "net-1",
+    "net": "net-2",
     "ready": "ready-1",
     "los": "los-1",
 }
