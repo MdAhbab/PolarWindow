@@ -27,7 +27,15 @@ from typing import Any
 import httpx
 
 from app.feeds import http
-from app.feeds.base import PUBLIC_DOMAIN, Parsed, ParseError, Product, ProviderSpec, iso
+from app.feeds.base import (
+    PUBLIC_DOMAIN,
+    Parsed,
+    ParseError,
+    Product,
+    ProviderSpec,
+    in_range,
+    iso,
+)
 from app.feeds.parsers import grib
 
 BASE = "https://nomads.ncep.noaa.gov/cgi-bin"
@@ -61,6 +69,21 @@ _SHORT = {
     ("swh", 1): "wave_height_m",
     ("perpw", 1): "wave_period_s",
     ("ws", 1): "wind_m_s",
+}
+#: Physical ranges (SI) a value must fall in to be kept; outside, it is dropped and said.
+RANGES: dict[str, tuple[float, float]] = {
+    "t2m_k": (180.0, 340.0),
+    "u10_m_s": (-100.0, 100.0),
+    "v10_m_s": (-100.0, 100.0),
+    "u80_m_s": (-120.0, 120.0),
+    "v80_m_s": (-120.0, 120.0),
+    "gust_m_s": (0.0, 120.0),
+    "precip_mm": (0.0, 500.0),
+    "cloud_frac": (0.0, 1.0),
+    "cape_j_kg": (0.0, 10_000.0),
+    "wave_height_m": (0.0, 30.0),
+    "wave_period_s": (0.0, 40.0),
+    "wind_m_s": (0.0, 100.0),
 }
 #: GFS-Wave: every hour to 120 h, then every 3 hours to 384 h.
 WAVE_MAX_LEAD_H = 384
@@ -98,7 +121,14 @@ def parse_points(points: list[Point], model: str, n_members: int) -> Callable[[b
             key = _SHORT.get((r.short_name, r.level))
             if key is None:
                 continue
-            value = r.value / 100.0 if key == "cloud_frac" else r.value
+            value = in_range(
+                f"{r.point_id} {key} +{r.step_h} h",
+                r.value / 100.0 if key == "cloud_frac" else r.value,
+                *RANGES[key],
+                issues,
+            )
+            if value is None:
+                continue
             pad = out.setdefault(
                 r.point_id,
                 {

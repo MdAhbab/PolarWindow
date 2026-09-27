@@ -294,3 +294,19 @@ def test_glm_body_framing_and_file_names() -> None:
     key = "GLM-L2-LCFA/2026/269/18/OR_GLM-L2-LCFA_G19_s20262691800000_e20262691800200_c1.nc"
     assert glm.start_of(key) == datetime(2026, 9, 26, 18, 0, 0, tzinfo=UTC)
     assert glm.start_of("README") is None
+
+
+def test_a_model_value_outside_its_physical_range_is_dropped_and_said(monkeypatch) -> None:
+    from app.feeds.parsers import grib
+
+    run = datetime(2026, 9, 26, tzinfo=UTC)
+
+    def pv(name: str, level: int, value: float) -> grib.PointValue:
+        return grib.PointValue(name, "surface", level, run, 24, None, "p", value, 0, 0, 0, "", "")
+
+    rows = [pv("swh", 1, 2.5), pv("perpw", 1, 9.0), pv("ws", 1, 250.0)]
+    monkeypatch.setattr(grib, "point_values", lambda _b, _p: rows)
+    p = nomads.parse_points([("p", 0.0, 0.0)], "GFS-Wave", 1)(b"GRIB")
+    sea = p.values["points"]["p"]["leads"]["24"]["members"]["0"]
+    assert sea == {"wave_height_m": 2.5, "wave_period_s": 9.0}
+    assert any("wind_m_s" in i and "250" in i for i in p.issues)
