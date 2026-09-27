@@ -103,6 +103,8 @@ validate-trip: ## Propagator and shadows against NASA's reconstructed trajectori
 	cd $(BE) && $(UV) run python -m app.tests.golden.validate_trip
 	cd $(BE) && $(UV) run pytest app/tests/golden/test_launch_vs_clps.py -q
 	cd $(BE) && $(UV) run python -m app.tests.golden.validate_launch 2>/dev/null
+	cd $(BE) && $(UV) run pytest app/tests/golden/test_loops_vs_clps.py -q
+	cd $(BE) && $(UV) run python -m app.tests.golden.validate_loops 2>/dev/null
 
 test-fe: ## Frontend units: the adapter, the cache keys, the exports
 	cd $(FE) && npm test --silent

@@ -126,7 +126,7 @@ launch is predicted with its own flight left out of the vehicle's climb.
 | Mission | Published liftoff | From its TLI | Designed (due east) | Coast designed / flown | TLI speed designed / flown | Flight designed / flown |
 |---|---|---|---|---|---|---|
 | im-1 | 2024-02-15T06:05:37Z | +15 s | +9.8 min | 41.3 / 42.0 min | 3134 / 3135 m/s | 6.32 / 6.33 d |
-| blue-ghost-m1 | 2025-01-15T06:11:39Z | -11 s | phasing loops (C3) | 59.0 min | 3119 m/s | 29.78 d |
+| blue-ghost-m1 | 2025-01-15T06:11:39Z | -11 s | phasing loops (below) | 59.0 min | 3119 m/s | 29.78 d |
 | im-2 | 2025-02-27T00:16:30Z | -4 s | +43.8 min | 34.6 / 36.9 min | 3125 / 3126 m/s | 4.45 / 4.48 d |
 
 **How a climb is described.** From the first reconstructed state after TLI
@@ -178,10 +178,117 @@ puts a launch opportunity on each one's real launch day (`test_launch.py`).
 The lunar orbit's plane passing over the landing spot (plan L4) is not
 checked: near the poles the lighting decides.
 
-**Not yet done.** Phasing-loop transfers (Blue Ghost, C3) are not designed;
-correction burns and dispersions (C4) are not worked out; the vehicle's
+**Not yet done.** The vehicle's
 azimuth limits are not applied, because the design flies due east, inside
 the Eastern Range's assumed 35–120°. Coasts longer than any flown one are
 accepted up to 120 min and flagged: with the Moon south of the equator a
 due-east climb reaches the TLI point only after most of an orbit, and upper
 stage coast limits are not published.
+
+# Phasing loops and correction burns against the flown landers (plan C3, C4)
+
+`make validate-trip` prints these tables (`app/tests/golden/validate_loops.py`;
+the acceptance is pinned in `test_loops_vs_clps.py`).
+
+**Burns read from the reconstruction.** Each half hour of NASA's
+reconstruction is propagated in the force model and compared with the
+reconstruction at its end; a window that differs by more than 0.05 m/s holds a
+burn (outside burns they agree to about 1e-4 m/s). A run of such windows is one
+burn, shown as one instant where the path before it (forward) and the path
+after it (backward) come closest. Blue Ghost 1, up to its arrival at the Moon:
+
+| Burn found | Size | Distance from Earth | Arcs meet within |
+|---|---|---|---|
+| 2025-01-19T04:15:36Z Burn near the highest point of the orbit | 22.53 m/s | 335,814 km | 86 m |
+| 2025-01-23T19:32:38Z Burn near the lowest point of the orbit | 3.27 m/s | 13,081 km | 8 m |
+| 2025-02-09T05:01:12Z Leaving Earth for the Moon | 23.61 m/s | 12,038 km | 83 m |
+| 2025-02-10T05:01:12Z Correction 1 | 1.15 m/s | 196,485 km | 10 m |
+| 2025-02-14T01:53:24Z Entering lunar orbit | 356.25 m/s | 397,914 km | 1918 m |
+
+IM-2's reconstruction shows seven corrections (0.06 to 9.7 m/s) and its
+capture (828 m/s); IM-1's shows none, because its stretches (at most four hours
+each) leave its burns in the gaps. Peregrine's shows a steady push over days
+(the propellant leak), reported as such rather than as burns. In lunar orbit
+the force model and the reconstruction part by about 1 m/s at every close pass
+of the Moon, as much as a small burn, so burns there are not listed.
+
+**Replay** (plan: perigee and apogee times within 1 h, apogee radius within
+1%). Blue Ghost's first reconstructed state propagated with these burns as
+instants:
+
+| Flown | Time | Replayed: minutes off | radius off |
+|---|---|---|---|
+| apogee | 2025-01-19T14:00:21Z | +0.1 | +0.001 % |
+| perigee | 2025-01-23T19:30:45Z | +0.2 | +0.011 % |
+| apogee | 2025-01-27T22:01:37Z | +0.9 | +0.007 % |
+| perigee | 2025-02-01T00:10:21Z | +1.5 | +0.016 % |
+| apogee | 2025-02-05T02:42:52Z | +2.2 | +0.008 % |
+| perigee | 2025-02-09T05:08:42Z | +2.9 | +0.027 % |
+
+**Designed loops** (plan: the flown loop count, and a launch period that holds
+the flown date). Given the pad, the other Falcon 9 flights' climb, Falcon 9's
+injection as flown (3,119 m/s above the parking orbit's speed), the flown first
+perigee (13,067 km from the Earth's centre) and NASA's arrival at the Moon,
+the design flies a due-east climb, raises the perigee at the first apogee,
+sets the period of the remaining loops at the first perigee and leaves Earth
+at the last, and corrects liftoff, coast and the three burns in the force
+model (Sun, Moon, Earth J2–J6) until the arrival matches in the B-plane and
+in time and the first perigee is where it was flown. Each launch day keeps
+its cheapest design over one loop fewer, the two-body count and one more.
+
+| Day | Loops | Liftoff (min) | Raise | Period | Leave | Total (m/s) |
+|---|---|---|---|---|---|---|
+| −5 | 3 | +478 | 108.8 | +30.3 | −1.5 | 140.6 |
+| −4 | 3 | +479 | 122.1 | +26.3 | 3.4 | 151.9 |
+| −3 | 3 | +489 | 116.1 | +16.8 | 17.6 | 150.5 |
+| −2 | 3 | +490 | 92.6 | +12.2 | 16.6 | 121.4 |
+| −1 | 3 | −151 | 83.0 | +12.1 | 15.8 | 110.9 |
+| **0** | **3** | **−139** | **20.8** | **−4.7** | **24.8** | **50.3** |
+| +1 | 3 | −159 | 47.1 | −12.3 | 36.2 | 95.6 |
+| +2 | 3 | +457 | 76.6 | −11.3 | 36.0 | 124.0 |
+| +3 | 2 | −167 | 80.0 | +42.0 | −15.1 | 137.2 |
+| +4 | 2 | −171 | 89.5 | +37.8 | −11.2 | 138.5 |
+| +5 | 1 | +448 | 94.0 | — | 27.6 | 121.6 |
+
+The flown day needs three loops, as flown, and is the cheapest day of the
+eleven by 45 m/s: its burns add up to 50.3 m/s against the 49.4 m/s found in
+the reconstruction (22.5, 3.3 and 23.6 m/s). With no propellant budget
+published, every day whose design works belongs to a period, so the
+three-loop period (−5 to +2 days) holds the flown date. The cost curve is the
+stronger result: an eight-day loop reaches 330,000 km, where the Sun's pull
+over one loop moves the perigee by thousands of kilometres, and on the flown
+day it did most of the raising (20.8 m/s against 85 m/s in two-body terms).
+The liftoff lands 139 min before the real one, the due-east climb again (the
+real one was inclined 35°, which a due-east climb from Florida does not give).
+
+**Correction budget** (plan: linear and Monte Carlo within 10% at the 95th and
+99th percentiles; a seeded run repeats bit for bit). The flight as planned is
+NASA's reconstruction just before the lander entered lunar orbit, propagated
+back to where it passed closest to Earth near the flown departure (propagating
+the arrival itself back would not do: a close pass of the Moon spreads any
+difference by thousands of kilometres). Three corrections (a day after
+leaving Earth, half-way, a day before arriving) aim the estimated state at the
+planned position at the planned arrival time. Errors, all assumed (no user
+guide with injection accuracy is in the catalogue, and the lander makers
+publish no navigation or engine figures): leaving Earth, 1 km in position and
+0.5 / 1.0 / 0.5 m/s (up, along, sideways); knowledge at each correction 1 km and
+1 mm/s; each burn 1% and 1° (Gates' model) plus 1 cm/s. Linear: the errors
+pushed through state transition matrices of each stretch (100,000 draws, since
+Gates' errors grow with the burn). Monte Carlo: 1,000 seeded runs through the
+force model, each correction refined twice on the run's own estimated state.
+
+| Mission | Planned departure | 95th linear / runs | 99th linear / runs (95 % interval) | Arrival altitude 1st–99th % | Flown corrections found |
+|---|---|---|---|---|---|
+| blue-ghost-m1 | 5,390 km up, +8 min | 14.71 / 14.16 m/s | 19.33 / 18.08 m/s (16.52–19.85) | 156.2–160.2 km | 1.15 m/s |
+| im-1 | 622 km up, +170 min | 20.91 / 21.64 m/s | 27.45 / 28.50 m/s (25.93–30.40) | 110.6–114.5 km | none (in its gaps) |
+| im-2 | 1,002 km up, −28 min | 21.29 / 21.45 m/s | 27.82 / 28.89 m/s (26.24–30.24) | 99.8–103.8 km | 0.06, 0.13, 1.06, 2.11, 9.71, 6.06, 4.72 m/s |
+
+The two methods agree within 7% (Blue Ghost's 99th percentile; the others
+within 4%); no run missed the Moon. Nearly all of the total is the first
+correction, which removes the departure error. These are budgets for the
+assumed errors, not what the missions needed: Blue Ghost's one correction
+(1.15 m/s) sits well inside its budget, and IM-2's add up to 24 m/s, near its
+99th percentile. IM-1's planned departure is 170 min after its real one, 622 km up: its
+corrections (in the reconstruction's gaps) changed the path enough that the
+path back from the Moon with no burn passes Earth that much later; the budget
+is about that plan.
