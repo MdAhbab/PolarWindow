@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "catalogue": "recovery_zones",
+  "compiled": "2026-09-27",
+  "about": "Where launch vehicle boosters came down after the flown CLPS launches, from Launch Library 2's landing records. A landing zone on land has a fixed position; a droneship's moves with each launch, so only its distance downrange is recorded. Nothing returns from the Moon on the CLPS missions, so there is no capsule zone.",
+  "records": [
+    {
+      "id": "lz-1",
+      "name": "Landing Zone 1",
+      "kind": "booster_land",
+      "vehicle": "falcon-9",
+      "lat_deg": 28.485712,
+      "lon_deg": -80.542963,
+      "radius_km": null,
+      "downrange_km": null,
+      "nearest_buoys": [
+        "41009"
+      ],
+      "pads": [
+        "ksc-lc-39a"
+      ],
+      "used_by": [
+        "im-1"
+      ],
+      "sources": [
+        {
+          "url": "https://ll.thespacedevs.com/2.3.0/launches/942a1814-c237-41de-9970-d27bb9630f3b/",
+          "title": "Launch Library 2: Falcon 9 Block 5, Nova-C IM-1 (booster landing)",
+          "publisher": "The Space Devs (Launch Library 2)",
+          "accessed": "2026-09-27"
+        }
+      ],
+      "field_sources": {
+        "vehicle": "https://ll.thespacedevs.com/2.3.0/launches/942a1814-c237-41de-9970-d27bb9630f3b/",
+        "lat_deg": "https://ll.thespacedevs.com/2.3.0/launches/942a1814-c237-41de-9970-d27bb9630f3b/",
+        "lon_deg": "https://ll.thespacedevs.com/2.3.0/launches/942a1814-c237-41de-9970-d27bb9630f3b/",
+        "pads": "https://ll.thespacedevs.com/2.3.0/launches/942a1814-c237-41de-9970-d27bb9630f3b/",
+        "used_by": "https://ll.thespacedevs.com/2.3.0/launches/942a1814-c237-41de-9970-d27bb9630f3b/",
+        "kind": "https://ll.thespacedevs.com/2.3.0/launches/942a1814-c237-41de-9970-d27bb9630f3b/"
+      },
+      "assumed_fields": {
+        "nearest_buoys": {
+          "reason": "NDBC 41009 (Canaveral, 20 nautical miles east of the Cape) is the recorded buoy closest to the landing zone; it measures the sea, not the zone's own wind."
+        }
+      },
+      "unconfirmed_fields": [
+        "radius_km"
+      ],
+      "notes": []
+    },
+    {
+      "id": "jrti",
+      "name": "Just Read the Instructions (droneship)",
+      "kind": "booster_droneship",
+      "vehicle": "falcon-9",
+      "lat_deg": null,
+      "lon_deg": null,
+      "radius_km": null,
+      "downrange_km": 700.0,
+      "nearest_buoys": [],
+      "pads": [
+        "ksc-lc-39a"
+      ],
+      "used_by": [
+        "blue-ghost-m1"
+      ],
+      "sources": [
+        {
+          "url": "https://ll.thespacedevs.com/2.3.0/launches/9a30d934-fa56-4fe5-81df-7c4b24386da2/",
+          "title": "Launch Library 2: Falcon 9 Block 5, Blue Ghost Mission 1 (booster landing)",
+          "publisher": "The Space Devs (Launch Library 2)",
+          "accessed": "2026-09-27"
+        }
+      ],
+      "field_sources": {
+        "vehicle": "https://ll.thespacedevs.com/2.3.0/launches/9a30d934-fa56-4fe5-81df-7c4b24386da2/",
+        "downrange_km": "https://ll.thespacedevs.com/2.3.0/launches/9a30d934-fa56-4fe5-81df-7c4b24386da2/",
+        "pads": "https://ll.thespacedevs.com/2.3.0/launches/9a30d934-fa56-4fe5-81df-7c4b24386da2/",
+        "used_by": "https://ll.thespacedevs.com/2.3.0/launches/9a30d934-fa56-4fe5-81df-7c4b24386da2/",
+        "kind": "https://ll.thespacedevs.com/2.3.0/launches/9a30d934-fa56-4fe5-81df-7c4b24386da2/"
+      },
+      "assumed_fields": {},
+      "unconfirmed_fields": [
+        "lat_deg",
+        "lon_deg",
+        "radius_km",
+        "nearest_buoys"
+      ],
+      "notes": [
+        "A droneship's position moves with each launch; Launch Library 2 gives its distance downrange, not its position."
+      ]
+    },
+    {
+      "id": "asog",
+      "name": "A Shortfall of Gravitas (droneship)",
+      "kind": "booster_droneship",
+      "vehicle": "falcon-9",
+      "lat_deg": null,
+      "lon_deg": null,
+      "radius_km": null,
+      "downrange_km": 700.0,
+      "nearest_buoys": [],
+      "pads": [
+        "ksc-lc-39a"
+      ],
+      "used_by": [
+        "im-2"
+      ],
+      "sources": [
+        {
+          "url": "https://ll.thespacedevs.com/2.3.0/launches/fd0fbaac-d079-4027-98b0-bcf25c15a166/",
+          "title": "Launch Library 2: Falcon 9 Block 5, Nova-C IM-2 (booster landing)",
+          "publisher": "The Space Devs (Launch Library 2)",
+          "accessed": "2026-09-27"
+        }
+      ],
+      "field_sources": {
+        "vehicle": "https://ll.thespacedevs.com/2.3.0/launches/fd0fbaac-d079-4027-98b0-bcf25c15a166/",
+        "downrange_km": "https://ll.thespacedevs.com/2.3.0/launches/fd0fbaac-d079-4027-98b0-bcf25c15a166/",
+        "pads": "https://ll.thespacedevs.com/2.3.0/launches/fd0fbaac-d079-4027-98b0-bcf25c15a166/",
+        "used_by": "https://ll.thespacedevs.com/2.3.0/launches/fd0fbaac-d079-4027-98b0-bcf25c15a166/",
+        "kind": "https://ll.thespacedevs.com/2.3.0/launches/fd0fbaac-d079-4027-98b0-bcf25c15a166/"
+      },
+      "assumed_fields": {},
+      "unconfirmed_fields": [
+        "lat_deg",
+        "lon_deg",
+        "radius_km",
+        "nearest_buoys"
+      ],
+      "notes": [
+        "A droneship's position moves with each launch; Launch Library 2 gives its distance downrange, not its position."
+      ]
+    }
+  ]
+}

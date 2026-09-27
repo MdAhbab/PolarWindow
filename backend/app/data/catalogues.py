@@ -212,11 +212,19 @@ class Relay(CitedRecord):
 class RecoveryZone(CitedRecord):
     kind: Literal["booster_droneship", "booster_land", "capsule_splashdown", "capsule_land"]
     vehicle: str | None
+    #: A fixed zone's position; a droneship's moves with each launch (null, unconfirmed).
     lat_deg: float | None = Field(ge=-90, le=90)
     lon_deg: float | None = Field(ge=-180, le=180)
     radius_km: float | None = Field(gt=0)
+    #: How far downrange of the pad a droneship waited on the flights in ``used_by``.
+    downrange_km: float | None = Field(gt=0)
     nearest_buoys: list[str]
     pads: list[str]
+    #: Missions in data/missions.json whose booster came down here.
+    used_by: list[str]
+
+    def not_applicable(self) -> set[str]:
+        return {"downrange_km"} if self.kind in ("booster_land", "capsule_land") else set()
 
 
 class LandingAttempt(CitedRecord):
@@ -267,6 +275,11 @@ RuleClass = Literal["model", "proxy", "observation"]
 
 
 class WeatherRule(CitedRecord):
+    #: ``rule_class`` and ``variable`` are this project's classification of a rule (how it
+    #: can be checked: from a forecast model, from model ingredients, or only by
+    #: observation), explained in the file's ``about``.
+    CLASSIFICATION: ClassVar[frozenset[str]] = frozenset({"rule_class", "variable"})
+
     #: The rule text as published, verbatim.
     text: str = Field(min_length=10)
     rule_class: RuleClass
@@ -277,6 +290,13 @@ class WeatherRule(CitedRecord):
     comparison: Literal["gt", "ge", "lt", "le"] | None
     height_m: float | None
     duration_note: str | None
+
+    def not_applicable(self) -> set[str]:
+        # Only a model rule is read at a height; a rule that states no duration has none.
+        na = {"duration_note"}
+        if self.rule_class != "model":
+            na.add("height_m")
+        return na
 
 
 CATALOGUES: dict[str, type[CitedRecord]] = {
