@@ -4,6 +4,7 @@
   "none_reason": null,
   "start": "2025-02-27T00:16:00Z",
   "end": "2025-03-06T17:04:00Z",
+  "coverage_note": "NASA's reconstruction covers the whole trip without gaps.",
   "samples": [
    {
     "t": "2025-02-27T00:16:00Z",
@@ -1268,6 +1269,7 @@
     }
    }
   ],
+  "burns_note": null,
   "moon_pull": {
    "equal_pull_km": 38400,
    "sphere_of_influence_km": 66100,
@@ -1328,7 +1330,7 @@
    "parts": [
     {
      "source": "Reconstructed trajectory",
-     "note": "As flown, from the operator\u2019s reconstruction; about 1 km."
+     "note": "As flown, from the operator’s reconstruction; about 1 km."
     },
     {
      "source": "Shadow edges",

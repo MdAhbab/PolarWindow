@@ -253,6 +253,8 @@ export function quantityView(q: QuantityDTO): QuantityView {
     }
   }
   if (q.unit === TIME_UNIT) return timeView(q)
+  // "At least zero" says nothing: a zero is shown as a plain zero.
+  if (q.open && q.value === 0 && q.lo === null) return quantityView({ ...q, open: false })
   // Under a minute, a wait reads better in seconds ("1.2 s", not "0.02 min").
   if (q.unit === 'min' && q.value !== null && Math.abs(q.value) < 1 && q.lo === null) {
     const s60 = (x: number | null) => (x === null ? null : x * 60)

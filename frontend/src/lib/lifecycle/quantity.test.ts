@@ -22,6 +22,8 @@ describe('quantityView: every margin form draws one way', () => {
     expect(quantityText(q({ unit: 'min', value: 0.0208, pm: null }))).toBe('1.2 s')
     expect(quantityText(q({ unit: 'min', value: 45, pm: null }))).toBe('45 min')
     expect(quantityText(q({ unit: 'min', value: 17166.5, pm: null }))).toBe('286 h')
+    // "At least zero" says nothing, so a zero is a plain zero.
+    expect(quantityText(q({ value: 0, pm: null, open: true }))).toBe('0 h')
   })
 
   it('± : the value to the margin’s own precision, the margin beside it', () => {

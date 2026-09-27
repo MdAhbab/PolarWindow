@@ -2,8 +2,9 @@
  "data": {
   "source": "none",
   "none_reason": "No trajectory is published for this mission, and its launch date is not known.",
-  "start": "2027-01-01T00:00:00Z",
-  "end": "2027-01-01T00:00:00Z",
+  "start": null,
+  "end": null,
+  "coverage_note": null,
   "samples": [],
   "shadow": [],
   "heard": [],
@@ -62,11 +63,8 @@
    }
   },
   "burns": [],
-  "moon_pull": {
-   "equal_pull_km": 38400,
-   "sphere_of_influence_km": 66100,
-   "t_equal_pull": null
-  },
+  "burns_note": null,
+  "moon_pull": null,
   "radiation": null
  },
  "meta": {

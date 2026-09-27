@@ -315,14 +315,19 @@ export interface LaunchWeatherDTO {
 export interface TripDTO {
   source: 'flown' | 'designed' | 'none'
   none_reason: string | null
-  start: string
-  end: string
+  /** Null when there is no trip (`source: "none"`). */
+  start: string | null
+  end: string | null
+  /** What part of the trip NASA's reconstruction covers; the numbers describe only that part. */
+  coverage_note?: string | null
   samples: { t: string; earth_km: number; moon_km: number; light: 'lit' | 'penumbral' | 'dark'; heard: boolean }[]
   shadow: StretchDTO[]
   heard: StretchDTO[]
   numbers: { sunlight_h: QuantityDTO; heard_h: QuantityDTO; longest_shadow_h: QuantityDTO; longest_unheard_h: QuantityDTO }
   burns: { t: string; name: string; dv_m_s: QuantityDTO }[]
-  moon_pull: { equal_pull_km: number; sphere_of_influence_km: number; t_equal_pull: string | null }
+  /** Why `burns` is empty, when it is. */
+  burns_note?: string | null
+  moon_pull: { equal_pull_km: number; sphere_of_influence_km: number; t_equal_pull: string | null } | null
   radiation: {
     belt_hours: QuantityDTO
     fluence_gt10mev: QuantityDTO
@@ -502,6 +507,7 @@ export type ContractChecks = [
   Fits<Present<S['UserOut']>, UserDTO>,
   Fits<Present<S['QuantityOut']>, QuantityDTO>,
   Fits<Present<S['Contact']>, ContactDTO>,
+  Fits<Present<S['Trip']>, TripDTO>,
   // `counts` is typed as a plain map in the schema; its keys are checked in the fixture tests.
   Fits<Present<Omit<S['Ready'], 'counts'>>, Omit<ReadyDTO, 'counts'>>,
 ]

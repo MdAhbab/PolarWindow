@@ -212,3 +212,27 @@ test('a phone (contract fixtures): the six steps fit as three by two, with no si
     await expectNoSeriousAxe(page, `/missions/im-2/${s} at 375 px`)
   }
 })
+
+test('trip and contact (live API): the flown trip with its gaps in the data, and the dates contact covers', async ({ page, context }) => {
+  test.setTimeout(120_000)
+  await returningVisitor(context)
+  const main = page.locator('main')
+  // IM-1's reconstruction comes in separate stretches: the note says so and the key names the gaps.
+  await page.goto('/missions/im-1/trip')
+  // The first visit may answer 202 while the trip is worked out; the answer follows.
+  await expect(page.locator('[data-guide="section-answer"]')).toContainText('The trip takes', { timeout: 90_000 })
+  await expect(main).toContainText('(as flown)')
+  await expect(main).toContainText('separate stretches')
+  await expect(main).toContainText('No data')
+  await page.getByRole('button', { name: 'Read the chart as a table' }).click()
+  await expect(main.getByRole('table').first()).toContainText('No data')
+  await expectNoSeriousAxe(page, '/missions/im-1/trip (live) with its table open')
+
+  // A mission that has not flown says why there is no trip.
+  await page.goto('/missions/griffin-1/trip')
+  await expect(page.getByText('No trip to show yet')).toBeVisible({ timeout: 30_000 })
+
+  await page.goto('/missions/im-2/contact')
+  await expect(page.locator('[data-guide="section-answer"]')).toContainText('A ground station can hear it', { timeout: 90_000 })
+  await expect(main).toContainText('Line of sight only')
+})

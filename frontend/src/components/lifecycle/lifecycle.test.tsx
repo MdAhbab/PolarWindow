@@ -21,7 +21,8 @@ import { SectionStates } from './Section'
 import { JourneyBar } from './JourneyBar'
 import { ReadinessList, RiskTable, sortItems } from './Readiness'
 import { LimitBars } from './LimitBars'
-import { tripStretches } from './TripStrip'
+import { coverageGaps, tripStretches } from './TripStrip'
+import { shadowAndContact } from '../../screens/sections/TripSection'
 import { calendarDays } from './LaunchCalendar'
 import { axisTicks, complexOf, contactRows } from './ContactChart'
 import sectionsFixture from '../../lib/api/__fixtures__/lifecycle/sections.json'
@@ -242,6 +243,43 @@ describe('the charts’ arrays, shared with their tables', () => {
     expect(rows.filter((r) => r.kind === 'shadow')).toHaveLength(1)
     const unheard = rows.filter((r) => r.kind === 'unheard').map((r) => (r.end - r.start) / 3_600_000)
     expect(unheard).toEqual([6, 4])
+  })
+
+  it('trip with gaps in the data (IM-1): no line across a gap, and a gap is no data, not out of contact', () => {
+    const t0 = Date.UTC(2024, 1, 16, 17)
+    const iso = (ms: number) => new Date(ms).toISOString()
+    const minute = 60_000
+    // Two hours of samples, five hours with none, then two more hours.
+    const times = [...Array.from({ length: 121 }, (_, i) => t0 + i * minute), ...Array.from({ length: 121 }, (_, i) => t0 + 7 * 60 * minute + i * minute)]
+    const gappy: TripDTO = {
+      ...trip.data,
+      start: iso(times[0]),
+      end: iso(times[times.length - 1]),
+      samples: times.map((t) => ({ t: iso(t), earth_km: 250_000, moon_km: 300_000, light: 'lit' as const, heard: true })),
+      shadow: [],
+      heard: [
+        { start: iso(times[0]), end: iso(times[120]), open_start: true, open_end: true },
+        { start: iso(times[121]), end: iso(times[241]), open_start: true, open_end: true },
+      ],
+      burns: [],
+    }
+    expect(coverageGaps(gappy)).toEqual([{ start: times[120], end: times[121] }])
+    const rows = tripStretches(gappy)
+    expect(rows.map((r) => r.kind)).toEqual(['nodata'])
+    expect((rows[0].end - rows[0].start) / 3_600_000).toBe(5)
+    // Evenly spaced samples have no gaps.
+    expect(coverageGaps(trip.data)).toEqual([])
+  })
+
+  it('trip answer: never in shadow, heard the whole time, and "at least" when the dates cut a stretch short', () => {
+    const n = trip.data.numbers
+    const zero = { ...n.longest_shadow_h, value: 0, pm: null }
+    expect(shadowAndContact({ ...n, longest_shadow_h: zero, longest_unheard_h: zero })).toBe(
+      'It is never in shadow, and a ground station can hear it the whole time.',
+    )
+    expect(shadowAndContact({ ...n, longest_shadow_h: zero, longest_unheard_h: { ...zero, value: 0.12, open: true } })).toBe(
+      'It is never in shadow; the longest time without contact is at least 0.12 h.',
+    )
   })
 
   it('launch calendar: days with opportunities, and runs of empty days as one line', () => {

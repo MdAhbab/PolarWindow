@@ -208,9 +208,12 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
 ### Trip (`/trip`, `GET /missions/{id}/trip`)
 
 - **Question:** "What does the lander go through on the way?"
-- **Answer:** "The trip takes {days} days ({as flown | as designed}). It is
-  in shadow for {h} hours at most at a time, and out of contact for {h} hours
-  at most."
+- **Answer:** "The trip takes {days} days ({as flown | as designed}). The
+  longest time in shadow is {h}, and the longest time without contact is {h}."
+  A zero reads "It is never in shadow" / "a ground station can hear it the
+  whole time"; a stretch the dates cut short reads "at least {h}". When NASA's
+  reconstruction has gaps (IM-1), `coverage_note` sits under the answer, since
+  the numbers then describe only the parts with data.
 - **Numbers:** Time in sunlight · Time a ground station can hear it · Longest
   time in shadow · Longest time without contact.
 - **Chart: the trip strip** (schematic, no 3D). Top: distance to Earth and to
@@ -219,10 +222,14 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   the same time axis: sunlight (amber lit, −45° hatch partly shadowed, +45°
   hatch in shadow) and "a ground station can hear it" (cyan heard, +45° hatch
   not heard). Twin: every shadow and not-heard stretch (start, end, length)
-  and every burn.
+  and every burn. Gaps in the data (a sample step many times the usual one)
+  break both lines and leave both lanes empty with a dashed outline, keyed
+  "No data" and listed in the twin; a gap is never counted as out of contact.
 - **Rows:** Radiation on the way (screening only, and where to confirm) ·
-  Burns ({n}) · Where the Moon's pull wins · Download the trip (OEM, SPICE
-  SPK, CSV) · How sure is this? · Where does this come from?
+  Burns ({n}, or "none listed" with `burns_note`) · Where the Moon's pull wins
+  (only when `moon_pull` is given) · Download the trip (OEM, SPICE SPK, CSV;
+  hidden until `/trip/export` is served) · How sure is this? · Where does this
+  come from?
 - **No data:** `source: "none"` shows `none_reason`.
 
 ### Landing (`/landing`, and the hub's default)
@@ -237,7 +244,10 @@ into the hub header.
 - **Question:** "How often can the lander talk to Earth?"
 - **Answer:** "A ground station can hear it for {h} hours over these dates.
   Through a relay it could add {lo} to {hi} hours, if it flies as planned. The
-  longest time without contact is {h} hours."
+  longest time without contact is {h} hours." With no gap at all: "A ground
+  station can hear it for all {h} of these dates." `window_note` shows only
+  when the server used other dates than the ones asked for. A wait under a
+  minute reads in seconds, one of two hours or more in hours.
 - **Numbers:** Time a ground station can hear the lander · Through a relay
   ({lo}–{hi} h, "if it flies as planned") · Longest time without contact ·
   Longest message wait. (Time in contact with Earth, the geometric number,
@@ -247,7 +257,9 @@ into the hub header.
   lander to each relay, relay to station), bars where the link is up. A
   planned relay has no real timeline, so its row is the −45° hatch across the
   dates with "{lo}–{hi} h somewhere in these dates, if it flies as planned".
-  Booked passes are outlined boxes labelled "booked". Twin: link, start, end,
+  Booked passes are outlined boxes labelled "booked". The antennas of one Deep
+  Space Network complex share a row ("Goldstone, California · Deep Space
+  Network, 4 antennas"); the twin keeps each antenna. Twin: link, start, end,
   length, booked or not.
 - **Rows:** Relays (each with its launch status) · Booked ground-station
   passes · Rover and lander line of sight · More numbers · Download the

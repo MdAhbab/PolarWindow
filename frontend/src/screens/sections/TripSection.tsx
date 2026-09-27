@@ -1,7 +1,7 @@
 import { api } from '../../lib/api/client'
 import { API_BASE } from '../../lib/api/client'
 import type { MissionDetail } from '../../lib/api/adapters'
-import type { TripDTO } from '../../lib/api/lifecycle'
+import type { LifecycleMetaDTO, QuantityDTO, TripDTO } from '../../lib/api/lifecycle'
 import { useSection, useSectionStatus } from '../../lib/api/lifecycleQueries'
 import { formatValue, quantityText } from '../../lib/lifecycle/quantity'
 import { dateTimeWords } from '../../lib/format'
@@ -17,11 +17,14 @@ import {
   SourcesRow,
   StatePanel,
 } from '../../components/lifecycle/Section'
-import { TripLegendItems, TripStrip, TripTable, tripStretches } from '../../components/lifecycle/TripStrip'
+import { TripLegendItems, TripStrip, TripTable, tripSpan, tripStretches } from '../../components/lifecycle/TripStrip'
+import { UncertaintyNote } from '../../components/States'
 import { Disclosure } from '../../components/ui'
 
 const TERMS = ['tripSunlight', 'tripHeard', 'tripShadow', 'tripUnheard']
 const HOUR = 3_600_000
+/** `GET /missions/{id}/trip/export` is in the contract but answers 404 so far. */
+const TRIP_EXPORTS_SERVED = false
 
 /**
  * Trip (design-lifecycle.md §4): the way from Earth to the Moon, with the
@@ -50,19 +53,35 @@ export function TripSection({ mission: m }: { mission: MissionDetail }) {
   )
 }
 
-function TripAnswer({ trip, meta, missionId }: { trip: TripDTO; meta: Parameters<typeof Answer>[0]['meta'] & object; missionId: string }) {
-  const t0 = Date.parse(trip.start)
-  const t1 = Date.parse(trip.end)
+/** "the longest time … is X", or "at least X" when the dates cut it short. */
+function longest(q: QuantityDTO): string {
+  return q.open ? `at least ${quantityText({ ...q, open: false })}` : quantityText(q)
+}
+
+/** The answer's second sentence, with no zero-hour stretches in it. */
+export function shadowAndContact(n: TripDTO['numbers']): string {
+  const neverDark = n.longest_shadow_h.value === 0
+  const alwaysHeard = n.longest_unheard_h.value === 0
+  const dark = neverDark ? 'It is never in shadow' : `The longest time in shadow is ${longest(n.longest_shadow_h)}`
+  const heard = alwaysHeard
+    ? 'a ground station can hear it the whole time'
+    : `the longest time without contact is ${longest(n.longest_unheard_h)}`
+  return `${dark}${neverDark && !alwaysHeard ? ';' : ', and'} ${heard}.`
+}
+
+function TripAnswer({ trip, meta, missionId }: { trip: TripDTO; meta: LifecycleMetaDTO; missionId: string }) {
+  const { t0, t1 } = tripSpan(trip)
   const hours = (t1 - t0) / HOUR
   const stretches = tripStretches(trip)
+  const gaps = stretches.some((r) => r.kind === 'nodata')
   const n = trip.numbers
   return (
     <>
       <Answer meta={meta}>
-        The trip takes {formatValue(hours / 24)} days ({trip.source === 'flown' ? 'as flown' : 'as designed'}). It is in
-        shadow for {quantityText(n.longest_shadow_h)} at most at a time, and out of contact for{' '}
-        {quantityText(n.longest_unheard_h)} at most.
+        The trip takes {formatValue(hours / 24)} days ({trip.source === 'flown' ? 'as flown' : 'as designed'}). {shadowAndContact(n)}
       </Answer>
+      {/* Only when the data has gaps does the note change what the numbers mean. */}
+      {gaps && trip.coverage_note && <UncertaintyNote className="-mt-3">{trip.coverage_note}</UncertaintyNote>}
       <NumberRow>
         <QuantityTile term="tripSunlight" q={n.sunlight_h} tone="sun" icon="sun" scale={hours} />
         <QuantityTile term="tripHeard" q={n.heard_h} tone="earth" icon="earth" scale={hours} />
@@ -94,26 +113,25 @@ function TripAnswer({ trip, meta, missionId }: { trip: TripDTO; meta: Parameters
             )}
           </Disclosure>
         )}
-        <Disclosure title="Burns" meta={`${trip.burns.length}`}>
-          <ol className="flex flex-col gap-2">
-            {trip.burns.map((b, i) => (
-              <li key={b.t} className="flex flex-wrap items-baseline gap-x-3 text-body">
-                <span className="font-mono text-caption text-ink-3">{i + 1}</span>
-                <span className="font-semibold text-ink">{b.name}</span>
-                <span className="text-ink-2">{dateTimeWords(Date.parse(b.t))}</span>
-                <span className="font-mono text-small text-ink">{quantityText(b.dv_m_s)}</span>
-              </li>
-            ))}
-          </ol>
+        <Disclosure title="Burns" meta={trip.burns.length ? `${trip.burns.length}` : 'none listed'}>
+          {trip.burns.length === 0 ? (
+            <p className="text-body leading-6 text-ink-2">{trip.burns_note ?? 'No burns are listed for this trip.'}</p>
+          ) : (
+            <ol className="flex flex-col gap-2">
+              {trip.burns.map((b, i) => (
+                <li key={b.t} className="flex flex-wrap items-baseline gap-x-3 text-body">
+                  <span className="font-mono text-caption text-ink-3">{i + 1}</span>
+                  <span className="font-semibold text-ink">{b.name}</span>
+                  <span className="text-ink-2">{dateTimeWords(Date.parse(b.t))}</span>
+                  <span className="font-mono text-small text-ink">{quantityText(b.dv_m_s)}</span>
+                </li>
+              ))}
+            </ol>
+          )}
         </Disclosure>
-        <Disclosure title="Where the Moon’s pull wins" meta={`${formatValue(trip.moon_pull.equal_pull_km)} km from the Moon`}>
-          <p className="text-body leading-6 text-ink-2">
-            Closer than {formatValue(trip.moon_pull.equal_pull_km)} km to the Moon, the Moon pulls harder than Earth.
-            {trip.moon_pull.t_equal_pull && ` This trip crossed that point ${dateTimeWords(Date.parse(trip.moon_pull.t_equal_pull))}.`}{' '}
-            The Moon’s own sphere of influence, used to plan the trip, reaches {formatValue(trip.moon_pull.sphere_of_influence_km)} km.
-          </p>
-        </Disclosure>
-        <Disclosure title="Download the trip" meta="OEM, SPICE, spreadsheet">
+        {trip.moon_pull && <MoonPullRow pull={trip.moon_pull} />}
+        {/* The exports are in the contract but not served yet; the row returns when they are. */}
+        {TRIP_EXPORTS_SERVED && <Disclosure title="Download the trip" meta="OEM, SPICE, spreadsheet">
           <p className="text-small leading-5 text-ink-2">The trajectory in the formats flight software and analysts use.</p>
           <ul className="flex flex-wrap gap-3">
             {(
@@ -134,10 +152,22 @@ function TripAnswer({ trip, meta, missionId }: { trip: TripDTO; meta: Parameters
               </li>
             ))}
           </ul>
-        </Disclosure>
+        </Disclosure>}
         <HowSure meta={meta} />
         <SourcesRow meta={meta} />
       </Rows>
     </>
+  )
+}
+
+function MoonPullRow({ pull }: { pull: NonNullable<TripDTO['moon_pull']> }) {
+  return (
+    <Disclosure title="Where the Moon’s pull wins" meta={`${formatValue(pull.equal_pull_km)} km from the Moon`}>
+      <p className="text-body leading-6 text-ink-2">
+        Closer than {formatValue(pull.equal_pull_km)} km to the Moon, the Moon pulls harder than Earth.
+        {pull.t_equal_pull && ` This trip crossed that point ${dateTimeWords(Date.parse(pull.t_equal_pull))}.`}{' '}
+        The Moon’s own sphere of influence, used to plan the trip, reaches {formatValue(pull.sphere_of_influence_km)} km.
+      </p>
+    </Disclosure>
   )
 }
