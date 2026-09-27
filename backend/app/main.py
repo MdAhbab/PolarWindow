@@ -164,7 +164,9 @@ def create_app() -> FastAPI:
         compare,
         health,
         jobs,
+        lifecycle,
         missions,
+        ready,
         settings,
         sites,
         tiles,
@@ -181,6 +183,8 @@ def create_app() -> FastAPI:
     app.include_router(auth.router, prefix=s.api_prefix)
     app.include_router(settings.router, prefix=s.api_prefix)
     app.include_router(jobs.router, prefix=s.api_prefix)
+    app.include_router(lifecycle.router, prefix=s.api_prefix)
+    app.include_router(ready.router, prefix=s.api_prefix)
 
     # /healthz is also mounted unprefixed: container health checks and load
     # balancers look there, and they should not need to know the API version.

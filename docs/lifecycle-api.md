@@ -284,3 +284,22 @@ that user. `GET /auth/me` returns the same `user`.
   - `/healthz` is `degraded` when a feed is failing; stale data alone does not
     degrade it (each number already says its age).
   - A write from a session without a name answers 403 with type `.../name-needed`.
+- 2026-09-27 (backend, Ready as built):
+  - `ReadyItem` adds `state_known: boolean` (false for a prefilled item nobody has
+    entered a state for: show "not entered yet"; such items are left out of `counts`)
+    and `allowed_next: ReadyState[]`. `Ready` adds `not_entered: number`.
+    Item ids are `{mission}--{suffix}` (no slash), e.g. `im-2--lander`.
+  - For a flown mission every prefilled item is `ready` with the launch record as
+    its evidence (`source: "public"`); for a planned one, `state_known` is false.
+  - `PUT /ready/items/{item_id}/tests` `{kind, result, report_url, date}` records one
+    environmental test (report link and date required unless `not_done`).
+  - A 409 from `PATCH /ready/items/{id}` carries `detail.allowed` (the allowed states).
+  - History entries add `action` (create, move, update, test, set, adopt, refresh).
+  - `GET /parts/{id}/impact` adds `note`; `GET /landing-history` adds `since`,
+    `note` and per attempt `cause_url`, `clps`, `mission_id`.
+  - `GET /lessons` returns `{lessons: [...]}`; `POST .../adopt` → `{adopted, item_id}`.
+  - `GET /risk-scales` scales add `notes`. The one scale shipped has five levels and
+    no level words: GSFC-HDBK-8005A leaves them to a non-public procedure, so the
+    project's own words are to be entered.
+  - `GET /parameters` ids: `battery_limit_h`, `landing_sun_min_deg`,
+    `landing_sun_max_deg`, `surface_days`; a value is missing (with the reason) until entered.

@@ -45,6 +45,7 @@ ENGINES: dict[str, str] = {
     "rad": "rad-1",
     "link": "link-1",
     "net": "net-1",
+    "ready": "ready-1",
     "los": "los-1",
 }
 

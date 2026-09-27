@@ -372,6 +372,53 @@ def load(name: str) -> Catalogue:
     return parse(name, data, str(p))
 
 
+class RiskLevel(_Strict):
+    level: int = Field(ge=1, le=10)
+    words: str = Field(min_length=1)
+
+
+class ConsequenceScale(_Strict):
+    category: Literal["safety", "technical", "cost", "schedule"]
+    levels: list[RiskLevel] = Field(min_length=2)
+
+
+class RiskScale(_Strict):
+    id: str
+    name: str
+    source_url: str | None
+    likelihood: list[RiskLevel] = Field(min_length=2)
+    consequence: list[ConsequenceScale] = Field(min_length=1)
+    notes: list[str] = Field(default_factory=list)
+    sources: list[Source] = Field(min_length=1)
+
+
+class RiskScaleFile(_Strict):
+    schema_version: Literal[1]
+    compiled: date
+    default_id: str
+    scales: list[RiskScale] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _default_exists(self) -> RiskScaleFile:
+        if self.default_id not in {s.id for s in self.scales}:
+            raise ValueError(f"default_id '{self.default_id}' is not one of the scales")
+        return self
+
+
+@lru_cache(maxsize=1)
+def risk_scales() -> dict[str, Any]:
+    """``{default_id, scales}`` from ``risk_scales.json`` (the contract's shape)."""
+    p = get_settings().data_dir / "catalogues" / "risk_scales.json"
+    try:
+        f = RiskScaleFile.model_validate(json.loads(p.read_bytes()))
+    except (OSError, ValueError, ValidationError) as exc:
+        raise CatalogueError(f"{p}: {exc}") from exc
+    return {
+        "default_id": f.default_id,
+        "scales": [s.model_dump(mode="json", exclude={"sources"}) for s in f.scales],
+    }
+
+
 def versions() -> dict[str, str]:
     """``{catalogue: version}`` for every catalogue that loads."""
     out = {}

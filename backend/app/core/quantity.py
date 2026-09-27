@@ -56,7 +56,11 @@ class Quantity:
     def __post_init__(self) -> None:
         if self.provenance not in PROVENANCES:
             raise ValueError(f"unknown provenance {self.provenance!r}")
-        if self.provenance in ("entered", "published") and not self.source:
+        if (
+            self.value is not None
+            and self.provenance in ("entered", "published")
+            and not self.source
+        ):
             raise ValueError(f"a {self.provenance} number must name its source")
         if self.value is None:
             if not self.missing_reason:

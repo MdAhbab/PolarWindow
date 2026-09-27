@@ -1794,6 +1794,933 @@
         }
       }
     },
+    "/api/v1/missions/{mission_id}/sections": {
+      "get": {
+        "tags": [
+          "mission sections"
+        ],
+        "summary": "The six steps of a mission and one plain sentence for each",
+        "operationId": "sections_api_v1_missions__mission_id__sections_get",
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Section_list_SectionStatus__"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/missions/{mission_id}/ready": {
+      "get": {
+        "tags": [
+          "ready"
+        ],
+        "summary": "Readiness: every item's state, milestones, risks and parts",
+        "operationId": "get_ready_api_v1_missions__mission_id__ready_get",
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Section_Ready_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/missions/{mission_id}/ready/items": {
+      "post": {
+        "tags": [
+          "ready"
+        ],
+        "summary": "Add a readiness item",
+        "operationId": "add_item_api_v1_missions__mission_id__ready_items_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemCreateIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadyItem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ready/items/{item_id}": {
+      "patch": {
+        "tags": [
+          "ready"
+        ],
+        "summary": "Move an item to its next state (409 with the allowed states when not allowed)",
+        "operationId": "move_item_api_v1_ready_items__item_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemMoveIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadyItem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ready/items/{item_id}/tests": {
+      "put": {
+        "tags": [
+          "ready"
+        ],
+        "summary": "Record an environmental test result for an item",
+        "operationId": "record_test_api_v1_ready_items__item_id__tests_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadyItem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ready/items/{item_id}/history": {
+      "get": {
+        "tags": [
+          "ready"
+        ],
+        "summary": "Change history of one readiness item",
+        "operationId": "item_history_api_v1_ready_items__item_id__history_get",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/History"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/history": {
+      "get": {
+        "tags": [
+          "ready"
+        ],
+        "summary": "Change history of any entered record",
+        "operationId": "history_api_v1_history_get",
+        "parameters": [
+          {
+            "name": "entity",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "ready_item, part, risk, booking, forecast, limits, parameter, lesson, feed",
+              "title": "Entity"
+            },
+            "description": "ready_item, part, risk, booking, forecast, limits, parameter, lesson, feed"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/History"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/missions/{mission_id}/parts": {
+      "get": {
+        "tags": [
+          "ready"
+        ],
+        "summary": "Flight parts and spares",
+        "operationId": "list_parts_api_v1_missions__mission_id__parts_get",
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Parts"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ready"
+        ],
+        "summary": "Add a part",
+        "operationId": "add_part_api_v1_missions__mission_id__parts_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Part"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parts/{part_id}": {
+      "patch": {
+        "tags": [
+          "ready"
+        ],
+        "summary": "Change a part (its status, place)",
+        "operationId": "patch_part_api_v1_parts__part_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "part_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Part Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Part"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parts/{part_id}/impact": {
+      "get": {
+        "tags": [
+          "ready"
+        ],
+        "summary": "What stops working if this part is lost",
+        "operationId": "part_impact_api_v1_parts__part_id__impact_get",
+        "parameters": [
+          {
+            "name": "part_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Part Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartImpact"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/risk-scales": {
+      "get": {
+        "tags": [
+          "ready"
+        ],
+        "summary": "Likelihood and consequence scales",
+        "operationId": "risk_scales_api_v1_risk_scales_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskScales"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/missions/{mission_id}/risks": {
+      "get": {
+        "tags": [
+          "ready"
+        ],
+        "summary": "A mission's risks",
+        "operationId": "list_risks_api_v1_missions__mission_id__risks_get",
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Risks"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ready"
+        ],
+        "summary": "Add a risk (likelihood and consequence per category, never multiplied)",
+        "operationId": "add_risk_api_v1_missions__mission_id__risks_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Risk"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/risks/{risk_id}": {
+      "patch": {
+        "tags": [
+          "ready"
+        ],
+        "summary": "Change a risk",
+        "operationId": "patch_risk_api_v1_risks__risk_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "risk_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Risk Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Risk"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/landing-history": {
+      "get": {
+        "tags": [
+          "ready"
+        ],
+        "summary": "Every lunar landing attempt since 2013 and its cause (counts, no odds)",
+        "operationId": "landing_history_api_v1_landing_history_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LandingHistory"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/lessons": {
+      "get": {
+        "tags": [
+          "ready"
+        ],
+        "summary": "Lessons from past landings",
+        "operationId": "lessons_api_v1_lessons_get",
+        "parameters": [
+          {
+            "name": "mission",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Mark which lessons this mission adopted.",
+              "title": "Mission"
+            },
+            "description": "Mark which lessons this mission adopted."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Lessons"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/missions/{mission_id}/lessons/{lesson_id}/adopt": {
+      "post": {
+        "tags": [
+          "ready"
+        ],
+        "summary": "Adopt a lesson as a readiness checklist item",
+        "operationId": "adopt_api_v1_missions__mission_id__lessons__lesson_id__adopt_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          },
+          {
+            "name": "lesson_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Lesson Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Adopted"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parameters": {
+      "get": {
+        "tags": [
+          "ready"
+        ],
+        "summary": "Values the project sets",
+        "operationId": "parameters_api_v1_parameters_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Parameters"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parameters/{parameter_id}": {
+      "put": {
+        "tags": [
+          "ready"
+        ],
+        "summary": "Set a value",
+        "operationId": "set_parameter_api_v1_parameters__parameter_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "parameter_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Parameter Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParameterIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Parameters"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/healthz": {
       "get": {
         "tags": [
@@ -1818,6 +2745,25 @@
   },
   "components": {
     "schemas": {
+      "Adopted": {
+        "properties": {
+          "adopted": {
+            "type": "boolean",
+            "title": "Adopted"
+          },
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "adopted",
+          "item_id"
+        ],
+        "title": "Adopted"
+      },
       "AdviseRequest": {
         "properties": {
           "requirement": {
@@ -2365,6 +3311,115 @@
           "question"
         ],
         "title": "AskRequest"
+      },
+      "Attempt": {
+        "properties": {
+          "mission": {
+            "type": "string",
+            "title": "Mission"
+          },
+          "agency": {
+            "type": "string",
+            "title": "Agency"
+          },
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "landed_working",
+              "landed_tipped_or_partial",
+              "failed"
+            ],
+            "title": "Outcome"
+          },
+          "cause": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cause"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "cause_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cause Url"
+          },
+          "clps": {
+            "type": "boolean",
+            "title": "Clps"
+          },
+          "mission_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mission Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mission",
+          "agency",
+          "date",
+          "outcome",
+          "cause",
+          "source_url",
+          "cause_url",
+          "clps",
+          "mission_id"
+        ],
+        "title": "Attempt"
+      },
+      "AttemptCounts": {
+        "properties": {
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts"
+          },
+          "landed_working": {
+            "type": "integer",
+            "title": "Landed Working"
+          },
+          "landed_tipped_or_partial": {
+            "type": "integer",
+            "title": "Landed Tipped Or Partial"
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "attempts",
+          "landed_working",
+          "landed_tipped_or_partial",
+          "failed"
+        ],
+        "title": "AttemptCounts"
       },
       "Autonomy": {
         "properties": {
@@ -3036,6 +4091,30 @@
         ],
         "title": "CompareWindow"
       },
+      "CompositeUncertainty": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "composite",
+            "title": "Kind",
+            "default": "composite"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/UncertaintyPart"
+            },
+            "type": "array",
+            "title": "Parts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "parts"
+        ],
+        "title": "CompositeUncertainty",
+        "description": "Every source of error in a lifecycle answer, one part each."
+      },
       "CompoundEvent": {
         "properties": {
           "start": {
@@ -3071,6 +4150,34 @@
           "open_end"
         ],
         "title": "CompoundEvent"
+      },
+      "ConsequenceScale": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "safety",
+              "technical",
+              "cost",
+              "schedule"
+            ],
+            "title": "Category"
+          },
+          "levels": {
+            "items": {
+              "$ref": "#/components/schemas/RiskLevel"
+            },
+            "type": "array",
+            "title": "Levels"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "category",
+          "levels"
+        ],
+        "title": "ConsequenceScale"
       },
       "Counts": {
         "properties": {
@@ -3469,6 +4576,68 @@
         ],
         "title": "HealthResponse"
       },
+      "History": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryEntry"
+            },
+            "type": "array",
+            "title": "Entries"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "entries"
+        ],
+        "title": "History"
+      },
+      "HistoryEntry": {
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "by": {
+            "type": "string",
+            "title": "By"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "before": {
+            "title": "Before"
+          },
+          "after": {
+            "title": "After"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "at",
+          "by",
+          "action",
+          "before",
+          "after",
+          "note"
+        ],
+        "title": "HistoryEntry"
+      },
       "HorizonResponse": {
         "properties": {
           "site_id": {
@@ -3571,6 +4740,138 @@
           "computed_at"
         ],
         "title": "HorizonSummary"
+      },
+      "ImpactItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind"
+        ],
+        "title": "ImpactItem"
+      },
+      "ItemCreateIn": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "lander",
+              "payload",
+              "rover",
+              "launch_vehicle",
+              "range",
+              "ground_booking",
+              "relay_agreement",
+              "ops_team",
+              "licence"
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "organisation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organisation"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "name"
+        ],
+        "title": "ItemCreateIn"
+      },
+      "ItemMoveIn": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "not_started",
+              "in_build",
+              "in_test",
+              "test_passed",
+              "delivered",
+              "integrated",
+              "verified_on_lander",
+              "ready",
+              "blocked"
+            ],
+            "title": "State"
+          },
+          "date": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 10,
+            "title": "Date",
+            "description": "When it happened, ISO date."
+          },
+          "evidence_url": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 8,
+            "title": "Evidence Url"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "blocked_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocked Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "state",
+          "date",
+          "evidence_url"
+        ],
+        "title": "ItemMoveIn"
       },
       "JobRefOut": {
         "properties": {
@@ -3676,6 +4977,160 @@
           "missing"
         ],
         "title": "KernelHealth"
+      },
+      "LandingHistory": {
+        "properties": {
+          "attempts": {
+            "items": {
+              "$ref": "#/components/schemas/Attempt"
+            },
+            "type": "array",
+            "title": "Attempts"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/AttemptCounts",
+            "description": "Counts of outcomes; never a chance of success."
+          },
+          "since": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Since"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "attempts",
+          "counts",
+          "since",
+          "note"
+        ],
+        "title": "LandingHistory"
+      },
+      "Lesson": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "from_mission": {
+            "type": "string",
+            "title": "From Mission"
+          },
+          "year": {
+            "type": "integer",
+            "title": "Year"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "checklist_item": {
+            "type": "string",
+            "title": "Checklist Item"
+          },
+          "adopted": {
+            "type": "boolean",
+            "title": "Adopted"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "text",
+          "from_mission",
+          "year",
+          "source_url",
+          "checklist_item",
+          "adopted"
+        ],
+        "title": "Lesson"
+      },
+      "Lessons": {
+        "properties": {
+          "lessons": {
+            "items": {
+              "$ref": "#/components/schemas/Lesson"
+            },
+            "type": "array",
+            "title": "Lessons"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "lessons"
+        ],
+        "title": "Lessons"
+      },
+      "LifecycleMeta": {
+        "properties": {
+          "computed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Computed At"
+          },
+          "uncertainty": {
+            "$ref": "#/components/schemas/CompositeUncertainty"
+          },
+          "engines": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Engines",
+            "description": "Engine versions this answer depends on."
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/SourceRef"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "stale": {
+            "type": "boolean",
+            "title": "Stale",
+            "description": "True when an input is past its staleness budget; the numbers it fed are then missing, with the reason (invariant 11).",
+            "default": false
+          },
+          "compute_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compute Ms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "computed_at",
+          "uncertainty",
+          "engines",
+          "sources"
+        ],
+        "title": "LifecycleMeta",
+        "description": "`meta` for launch, trip, contact, readiness and recovery answers."
       },
       "Meta": {
         "properties": {
@@ -3883,6 +5338,46 @@
         ],
         "title": "MetricsResponse",
         "description": "The four numbers. There is deliberately no composite score.\n\nA score ranks sites on one axis, which destroys exactly the information this\nproduct exists to show: which corner a site gives up. The absence of a\n`score` field here is asserted by a test."
+      },
+      "Milestone": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "date": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "done": {
+            "type": "boolean",
+            "title": "Done"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "date",
+          "done",
+          "source"
+        ],
+        "title": "Milestone"
       },
       "MissionBrief": {
         "properties": {
@@ -4782,6 +6277,451 @@
         ],
         "title": "ModelState"
       },
+      "Parameter": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "value": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "changed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changed By"
+          },
+          "changed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changed At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "value",
+          "note",
+          "changed_by",
+          "changed_at"
+        ],
+        "title": "Parameter"
+      },
+      "ParameterIn": {
+        "properties": {
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "title": "ParameterIn"
+      },
+      "Parameters": {
+        "properties": {
+          "parameters": {
+            "items": {
+              "$ref": "#/components/schemas/Parameter"
+            },
+            "type": "array",
+            "title": "Parameters"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "parameters"
+        ],
+        "title": "Parameters"
+      },
+      "Part": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "part_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Part Number"
+          },
+          "serial": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serial"
+          },
+          "parent_item_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Item Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "installed",
+              "spare",
+              "in_test",
+              "damaged",
+              "failed",
+              "lost"
+            ],
+            "title": "Status"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "changed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changed At"
+          },
+          "changed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changed By"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "part_number",
+          "serial",
+          "parent_item_id",
+          "status",
+          "location",
+          "changed_at",
+          "changed_by"
+        ],
+        "title": "Part"
+      },
+      "PartImpact": {
+        "properties": {
+          "stops_working": {
+            "items": {
+              "$ref": "#/components/schemas/ImpactItem"
+            },
+            "type": "array",
+            "title": "Stops Working"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "stops_working",
+          "note"
+        ],
+        "title": "PartImpact"
+      },
+      "PartIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "part_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Part Number"
+          },
+          "serial": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serial"
+          },
+          "parent_item_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Item Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "installed",
+              "spare",
+              "in_test",
+              "damaged",
+              "failed",
+              "lost"
+            ],
+            "title": "Status"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "status"
+        ],
+        "title": "PartIn"
+      },
+      "PartPatch": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "part_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Part Number"
+          },
+          "serial": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serial"
+          },
+          "parent_item_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Item Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "installed",
+                  "spare",
+                  "in_test",
+                  "damaged",
+                  "failed",
+                  "lost"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "PartPatch"
+      },
+      "Parts": {
+        "properties": {
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/Part"
+            },
+            "type": "array",
+            "title": "Parts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "parts"
+        ],
+        "title": "Parts"
+      },
+      "PartsSummary": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "spares": {
+            "type": "integer",
+            "title": "Spares"
+          },
+          "lost": {
+            "type": "integer",
+            "title": "Lost"
+          },
+          "damaged": {
+            "type": "integer",
+            "title": "Damaged"
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "total",
+          "spares",
+          "lost",
+          "damaged",
+          "failed"
+        ],
+        "title": "PartsSummary"
+      },
       "Payload": {
         "properties": {
           "id": {
@@ -4985,6 +6925,364 @@
         ],
         "title": "PublishedDate"
       },
+      "QuantityOut": {
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "provenance": {
+            "type": "string",
+            "enum": [
+              "computed",
+              "published",
+              "entered",
+              "assumed"
+            ],
+            "title": "Provenance"
+          },
+          "pm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pm",
+            "description": "Symmetric margin, same unit."
+          },
+          "lo": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lo",
+            "description": "Lower end of a range."
+          },
+          "hi": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hi",
+            "description": "Upper end of a range."
+          },
+          "factor": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Factor",
+            "description": "Multiplicative margin: value / factor to value * factor."
+          },
+          "open": {
+            "type": "boolean",
+            "title": "Open",
+            "description": "A lower bound: the dates cut it short.",
+            "default": false
+          },
+          "no_margin_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "No Margin Reason"
+          },
+          "missing_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Missing Reason",
+            "description": "Why there is no value, when `value` is null."
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source",
+            "description": "Who entered it, or the URL it was published at."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value",
+          "unit",
+          "provenance"
+        ],
+        "title": "QuantityOut",
+        "description": "A number with its margin in exactly one form, or the reason it has none.\n\nMirrors `app/core/quantity.py`, which refuses to build a number that breaks\nthese rules; this model is how it reaches the wire."
+      },
+      "Ready": {
+        "properties": {
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "propertyNames": {
+              "enum": [
+                "not_started",
+                "in_build",
+                "in_test",
+                "test_passed",
+                "delivered",
+                "integrated",
+                "verified_on_lander",
+                "ready",
+                "blocked"
+              ]
+            },
+            "type": "object",
+            "title": "Counts",
+            "description": "Items per state. Never a percentage."
+          },
+          "not_entered": {
+            "type": "integer",
+            "title": "Not Entered",
+            "description": "Prefilled items with no state entered yet."
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReadyItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "milestones": {
+            "items": {
+              "$ref": "#/components/schemas/Milestone"
+            },
+            "type": "array",
+            "title": "Milestones"
+          },
+          "risks": {
+            "items": {
+              "$ref": "#/components/schemas/Risk"
+            },
+            "type": "array",
+            "title": "Risks"
+          },
+          "parts": {
+            "$ref": "#/components/schemas/PartsSummary"
+          },
+          "lessons_available": {
+            "type": "integer",
+            "title": "Lessons Available"
+          },
+          "lessons_adopted": {
+            "type": "integer",
+            "title": "Lessons Adopted"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "counts",
+          "not_entered",
+          "items",
+          "milestones",
+          "risks",
+          "parts",
+          "lessons_available",
+          "lessons_adopted"
+        ],
+        "title": "Ready"
+      },
+      "ReadyItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "lander",
+              "payload",
+              "rover",
+              "launch_vehicle",
+              "range",
+              "ground_booking",
+              "relay_agreement",
+              "ops_team",
+              "licence"
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "organisation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organisation"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "not_started",
+              "in_build",
+              "in_test",
+              "test_passed",
+              "delivered",
+              "integrated",
+              "verified_on_lander",
+              "ready",
+              "blocked"
+            ],
+            "title": "State"
+          },
+          "state_known": {
+            "type": "boolean",
+            "title": "State Known",
+            "description": "False for a prefilled item nobody has entered a state for: show 'not entered yet', not the state. Such items are not in `counts`."
+          },
+          "allowed_next": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "not_started",
+                "in_build",
+                "in_test",
+                "test_passed",
+                "delivered",
+                "integrated",
+                "verified_on_lander",
+                "ready",
+                "blocked"
+              ]
+            },
+            "type": "array",
+            "title": "Allowed Next",
+            "description": "States this item may move to next."
+          },
+          "blocked_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocked Reason"
+          },
+          "changed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changed At",
+            "description": "The date the change happened, as entered."
+          },
+          "changed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changed By"
+          },
+          "evidence_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Url"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "public",
+              "entered"
+            ],
+            "title": "Source"
+          },
+          "tests": {
+            "items": {
+              "$ref": "#/components/schemas/TestRecord"
+            },
+            "type": "array",
+            "title": "Tests"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "organisation",
+          "state",
+          "state_known",
+          "allowed_next",
+          "blocked_reason",
+          "changed_at",
+          "changed_by",
+          "evidence_url",
+          "source",
+          "tests"
+        ],
+        "title": "ReadyItem"
+      },
       "RefreshOut": {
         "properties": {
           "provider": {
@@ -5062,6 +7360,482 @@
         "title": "Resolution",
         "description": "What this answer was computed at."
       },
+      "Risk": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "cause": {
+            "type": "string",
+            "title": "Cause"
+          },
+          "consequence_text": {
+            "type": "string",
+            "title": "Consequence Text"
+          },
+          "scale_id": {
+            "type": "string",
+            "title": "Scale Id"
+          },
+          "ratings": {
+            "items": {
+              "$ref": "#/components/schemas/RiskRating"
+            },
+            "type": "array",
+            "title": "Ratings",
+            "description": "Per category; never multiplied or summed."
+          },
+          "trend": {
+            "type": "string",
+            "enum": [
+              "rising",
+              "steady",
+              "falling"
+            ],
+            "title": "Trend"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner"
+          },
+          "mitigation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mitigation"
+          },
+          "links": {
+            "$ref": "#/components/schemas/RiskLinks"
+          },
+          "changed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changed At"
+          },
+          "changed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changed By"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "cause",
+          "consequence_text",
+          "scale_id",
+          "ratings",
+          "trend",
+          "owner",
+          "mitigation",
+          "links"
+        ],
+        "title": "Risk"
+      },
+      "RiskIn": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "cause": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Cause"
+          },
+          "consequence_text": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Consequence Text"
+          },
+          "scale_id": {
+            "type": "string",
+            "title": "Scale Id"
+          },
+          "ratings": {
+            "items": {
+              "$ref": "#/components/schemas/RiskRating"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Ratings"
+          },
+          "trend": {
+            "type": "string",
+            "enum": [
+              "rising",
+              "steady",
+              "falling"
+            ],
+            "title": "Trend"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner"
+          },
+          "mitigation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mitigation"
+          },
+          "links": {
+            "$ref": "#/components/schemas/RiskLinks"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "title",
+          "cause",
+          "consequence_text",
+          "scale_id",
+          "ratings",
+          "trend"
+        ],
+        "title": "RiskIn"
+      },
+      "RiskLevel": {
+        "properties": {
+          "level": {
+            "type": "integer",
+            "title": "Level"
+          },
+          "words": {
+            "type": "string",
+            "title": "Words"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "level",
+          "words"
+        ],
+        "title": "RiskLevel"
+      },
+      "RiskLinks": {
+        "properties": {
+          "readiness_items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Readiness Items"
+          },
+          "parts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Parts"
+          },
+          "lessons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Lessons"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RiskLinks"
+      },
+      "RiskPatch": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "cause": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cause"
+          },
+          "consequence_text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consequence Text"
+          },
+          "scale_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scale Id"
+          },
+          "ratings": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/RiskRating"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ratings"
+          },
+          "trend": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "rising",
+                  "steady",
+                  "falling"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trend"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner"
+          },
+          "mitigation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mitigation"
+          },
+          "links": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RiskLinks"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RiskPatch"
+      },
+      "RiskRating": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "safety",
+              "technical",
+              "cost",
+              "schedule"
+            ],
+            "title": "Category"
+          },
+          "likelihood": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Likelihood"
+          },
+          "consequence": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Consequence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "category",
+          "likelihood",
+          "consequence"
+        ],
+        "title": "RiskRating"
+      },
+      "RiskScale": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "likelihood": {
+            "items": {
+              "$ref": "#/components/schemas/RiskLevel"
+            },
+            "type": "array",
+            "title": "Likelihood"
+          },
+          "consequence": {
+            "items": {
+              "$ref": "#/components/schemas/ConsequenceScale"
+            },
+            "type": "array",
+            "title": "Consequence"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "source_url",
+          "likelihood",
+          "consequence"
+        ],
+        "title": "RiskScale"
+      },
+      "RiskScales": {
+        "properties": {
+          "default_id": {
+            "type": "string",
+            "title": "Default Id"
+          },
+          "scales": {
+            "items": {
+              "$ref": "#/components/schemas/RiskScale"
+            },
+            "type": "array",
+            "title": "Scales"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "default_id",
+          "scales"
+        ],
+        "title": "RiskScales"
+      },
+      "Risks": {
+        "properties": {
+          "risks": {
+            "items": {
+              "$ref": "#/components/schemas/Risk"
+            },
+            "type": "array",
+            "title": "Risks"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "risks"
+        ],
+        "title": "Risks"
+      },
       "Rover": {
         "properties": {
           "id": {
@@ -5097,6 +7871,97 @@
           "source_url"
         ],
         "title": "Rover"
+      },
+      "SectionStatus": {
+        "properties": {
+          "section": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "launch",
+              "trip",
+              "landing",
+              "contact",
+              "return"
+            ],
+            "title": "Section"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "available",
+              "computing",
+              "needs_input",
+              "not_applicable",
+              "no_data"
+            ],
+            "title": "State"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "description": "One plain sentence; never a verdict."
+          },
+          "as_of": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "section",
+          "state",
+          "summary",
+          "as_of"
+        ],
+        "title": "SectionStatus"
+      },
+      "Section_Ready_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Ready"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/LifecycleMeta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Section[Ready]"
+      },
+      "Section_list_SectionStatus__": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/SectionStatus"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/LifecycleMeta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Section[list[SectionStatus]]"
       },
       "SessionOut": {
         "properties": {
@@ -5592,6 +8457,80 @@
         ],
         "title": "Source"
       },
+      "SourceRef": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "issued_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issued At",
+            "description": "Model run or issue time of a forecast; null for files."
+          },
+          "fetched_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetched At"
+          },
+          "licence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licence"
+          },
+          "snapshot_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Id",
+            "description": "The stored snapshot this answer used (ADR-8)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "SourceRef",
+        "description": "Where one input to an answer came from, and when."
+      },
       "Spacecraft": {
         "properties": {
           "mass_kg": {
@@ -5802,6 +8741,116 @@
           "source_note"
         ],
         "title": "TargetSite"
+      },
+      "TestIn": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "vibration",
+              "shock",
+              "thermal_vacuum",
+              "emi_emc",
+              "functional"
+            ],
+            "title": "Kind"
+          },
+          "result": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "failed",
+              "not_done"
+            ],
+            "title": "Result"
+          },
+          "report_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report Url"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "result"
+        ],
+        "title": "TestIn"
+      },
+      "TestRecord": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "vibration",
+              "shock",
+              "thermal_vacuum",
+              "emi_emc",
+              "functional"
+            ],
+            "title": "Kind"
+          },
+          "result": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "failed",
+              "not_done"
+            ],
+            "title": "Result"
+          },
+          "report_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report Url"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "result",
+          "report_url",
+          "date"
+        ],
+        "title": "TestRecord"
       },
       "TimelineResponse": {
         "properties": {
@@ -6048,6 +9097,26 @@
         ],
         "title": "Uncertainty",
         "description": "How wrong this could be, in the units the caller is reading."
+      },
+      "UncertaintyPart": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "description": "What contributes this error, in plain words."
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source",
+          "note"
+        ],
+        "title": "UncertaintyPart"
       },
       "UserOut": {
         "properties": {
