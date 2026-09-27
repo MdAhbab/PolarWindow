@@ -26,7 +26,7 @@ def test_lifecycle_key_changes_with_closure_and_parts() -> None:
     b = cache.make_lifecycle_key("contact", engine_closure("vis", "net", "link"), site="x")
     c = cache.make_lifecycle_key("contact", engine_closure("vis", "net"), site="y")
     assert len({a, b, c}) == 3
-    assert a.startswith("pw:net-1+vis-2:")
+    assert a.startswith(f"pw:{ENGINES['net']}+{ENGINES['vis']}:")
 
 
 def test_surface_key_format_is_unchanged() -> None:
