@@ -26,7 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import weather_rules as wr
 from app.core.quantity import Quantity, share
-from app.data import catalogues
+from app.data import catalogues, climatology
 from app.db.repositories.missions import MissionRecord, MissionRepository
 from app.db.repositories.pm import PmRepository
 from app.services import audit_service, feed_service, lifecycle
@@ -233,6 +233,47 @@ def _thunder(nws: feed_service.Latest, t0: datetime) -> str | None:
     return None
 
 
+MONTHS = (
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+)
+
+
+def _climatology(
+    rule: Any, limit: dict[str, Any], region: str, when: datetime
+) -> dict[str, Any] | None:
+    """How often the wind at 50 m has been above the limit in this month and UTC hour."""
+    if rule.variable != "wind_speed" or limit.get("value") is None:
+        return None
+    unit = str(limit.get("unit"))
+    if unit not in wr.SPEED_UNITS:
+        return None
+    cl = climatology.load(region)
+    if cl is None:
+        return None
+    got = cl.share_above(when.month, when.hour, wr.to_m_s(float(limit["value"]), unit))
+    if got is None:
+        return None
+    share, n = got
+    return {
+        "share": share,
+        "years": cl.years,
+        "source": f"NASA POWER hourly wind at 50 m from the MERRA-2 reanalysis (the rule's 162 "
+        f"ft is 49 m), the {n} hours of {MONTHS[when.month - 1]} at {when.hour:02d} UTC in "
+        f"those years; a reanalysis cell's hourly mean is smoother than the pad's tower.",
+    }
+
+
 #: GLM's latest half hour describes a launch at most this far ahead: it is "now".
 GLM_REACH = timedelta(hours=6)
 
@@ -407,7 +448,7 @@ async def launch_weather(
                 "one_forecast": one,
                 "disagreement": False,
                 "observed": observed,
-                "climatology": None,
+                "climatology": _climatology(r, limit, region, when),
             }
         )
     off = await pm.official_forecast(m.id)
@@ -431,6 +472,13 @@ async def launch_weather(
         ref = snap.source_ref(names.get(snap.snapshot.provider, snap.snapshot.provider))  # type: ignore[union-attr]
         if ref is not None:
             sources.append(ref)
+    cl = climatology.load(region)
+    if cl is not None and any(row["climatology"] for row in rows):
+        sources.append(
+            lifecycle.source_ref(
+                f"NASA POWER hourly wind at 50 m (MERRA-2), {cl.years}", cl.source_url
+            )
+        )
     sources.append(
         lifecycle.source_ref(
             "Falcon 9 launch weather criteria (NASA Facts FS-2020-05-568-KSC)",

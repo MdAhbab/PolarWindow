@@ -23,7 +23,7 @@ from app.core.intervals import Run
 from app.core.quantity import Quantity
 from app.core.spice import R_MOON_M
 from app.core.vec import rotate, unit
-from app.data import catalogues
+from app.data import catalogues, climatology
 from app.db.repositories.jobs import InputRef
 from app.db.session import session_scope
 from app.services import ascent, launch_service, lifecycle, site_service
@@ -459,6 +459,7 @@ async def _designed(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, 
     for group in clusters:
         o = min(group, key=lambda x: (x["land_t"], x["flight_d"]))
         land_epoch = tr.start.timestamp() + o["land_t"]
+        weather, weather_note = _weather(o["t0"] - now, p["pad_id"], p["vehicle_id"])
         a, b = o["window"]
         when = datetime.fromtimestamp(o["t0"], UTC)
         note = (
@@ -511,8 +512,8 @@ async def _designed(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, 
                     ),
                     **_landing_numbers(tr, o["land_t"], None),
                 },
-                "weather": "forecast" if 0 <= o["t0"] - now <= FORECAST_LEAD_S else "none",
-                "weather_note": _weather_note(o["t0"] - now),
+                "weather": weather,
+                "weather_note": weather_note,
                 "basis": "designed",
                 "note": note,
                 "azimuth_deg": _q(
@@ -546,14 +547,35 @@ async def _designed(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, 
     return opps, None
 
 
-def _weather_note(lead_s: float) -> str:
+def _has_wind_climatology(pad_id: str, vehicle_id: str) -> bool:
+    """A wind climatology is built for the pad's region and the vehicle has a published
+    wind limit it can be read against."""
+    site = catalogues.load("launch_sites").get(pad_id)
+    region = catalogues.MODEL_REGION_OF_RANGE.get(site.launch_range, "")
+    if climatology.load(region) is None:
+        return False
+    return any(
+        r.variable == "wind_speed" and r.threshold is not None and vehicle_id in r.applies_to
+        for r in catalogues.load("weather_rules").records
+    )
+
+
+def _weather(lead_s: float, pad_id: str, vehicle_id: str) -> tuple[str, str]:
+    """What the weather tab can show for a designed opportunity, and why."""
     if lead_s < 0:
-        return "This launch time has passed; the weather tab shows the rules and limits."
+        return "none", "This launch time has passed; the weather tab shows the rules and limits."
     if lead_s <= FORECAST_LEAD_S:
-        return "Forecasts reach this launch: the weather tab shows what they say for each rule."
-    return (
-        "More than 16 days away: forecasts do not reach it yet and no climatology is built, "
-        "so the weather tab shows the rules and limits only."
+        return "forecast", (
+            "Forecasts reach this launch: the weather tab shows what they say for each rule."
+        )
+    if _has_wind_climatology(pad_id, vehicle_id):
+        return "climatology", (
+            "More than 16 days away, beyond the forecasts: the weather tab shows how often the "
+            "wind limit was broken in this month and hour since 2001, and the other rules."
+        )
+    return "none", (
+        "More than 16 days away, beyond the forecasts, and this vehicle has no published "
+        "wind limit to read a climatology against: the weather tab shows the rules and limits."
     )
 
 

@@ -452,3 +452,13 @@ that user. `GET /auth/me` returns the same `user`.
     gives the count within the rule's distance, the half hour and the last flash, and says
     it is now, not at the launch time. Otherwise `no_data` as before.
   - `GET /feeds` lists the new products; provider `goes` ("NOAA GOES lightning mapper").
+- 2026-09-27 (backend, B1 wind climatology; engine `lw-3`):
+  - `RuleRow.climatology` is filled for a wind rule with a known limit (published or
+    entered, in a speed unit): `share` = how often NASA POWER's hourly wind at 50 m (MERRA-2
+    reanalysis; the rule's 162 ft is 49 m) was above the limit in the launch's month and UTC
+    hour, `years` "2001-2024", `source` in words (hours counted, and that a reanalysis
+    cell's hourly mean is smoother than the pad's tower). Null for every other rule.
+  - A designed opportunity more than 16 days ahead says `weather: "climatology"` when the
+    vehicle has a published wind limit and the pad's region has a climatology (Falcon 9 at
+    the Cape and Vandenberg); otherwise `none`. `weather_note` says which.
+  - `make climatology` rebuilds `data/climatology/power_ws50m_{region}.json` (keyless).

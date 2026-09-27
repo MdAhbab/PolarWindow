@@ -41,6 +41,7 @@ ENGINE_VERSION = "hz-2/vis-2"
 #: traj-3: Trip lists the burns found in the reconstruction and a correction budget.
 #: lw:   launch opportunities (daily launch instants, landing windows, direct transfer)
 #: lw-2: one opportunity per sweep of the climb plane past the Moon; plain words; weather_note.
+#: lw-3: weather "climatology" beyond 16 days where a wind climatology can be read.
 ENGINES: dict[str, str] = {
     "hz": "hz-2",
     "vis": "vis-2",
@@ -52,7 +53,7 @@ ENGINES: dict[str, str] = {
     "net": "net-3",
     "ready": "ready-1",
     "los": "los-1",
-    "lw": "lw-2",
+    "lw": "lw-3",
 }
 
 

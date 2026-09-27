@@ -109,6 +109,13 @@ async def test_ensemble_share_and_one_forecast_at_a_launch_time(anon_client) -> 
     (hrrr,) = rows["f9-wind-162ft"]["one_forecast"]
     assert hrrr["system"] == "HRRR" and hrrr["over"] is True and hrrr["value"]["unit"] == "mph"
     assert "30% chance of thunder" in rows["er-lightning"]["observed"]["detail"]
+    from app.data import climatology
+
+    clim = rows["f9-wind-162ft"]["climatology"]
+    if climatology.load("florida") is not None:  # built by make climatology
+        assert 0.0 <= clim["share"] <= 0.2 and clim["years"] == "2001-2024"
+        assert "50 m" in clim["source"] and f"{T0.hour:02d} UTC" in clim["source"]
+    assert rows["er-lightning"]["climatology"] is None
     assert [p["system"] for p in rows["f9-wind-162ft"]["per_system"]] == [
         "GEFS",
         "ECMWF-ENS",

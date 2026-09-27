@@ -10,7 +10,7 @@ FE    := frontend
 DATA  := data
 
 .DEFAULT_GOAL := help
-.PHONY: missions validate-trip test-db help install kernels dem sites seed tiles services db-up migrate dev api worker \
+.PHONY: missions climatology validate-trip test-db help install kernels dem sites seed tiles services db-up migrate dev api worker \
         compute feeds feeds-once catalogues \
         frontend test test-fast test-int test-geo lint fmt typecheck contracts \
         golden-update openapi codegen clean nuke check
@@ -74,6 +74,9 @@ feeds: ## Run the feeds worker: records weather, space weather and DSN Now (ADR-
 
 feeds-once: ## Fetch every due live product once, then exit
 	cd $(BE) && $(UV) run python -m app.workers.feeds --once
+
+climatology: ## Wind at 50 m per month and hour at the pads, from NASA POWER (keyless; writes data/climatology)
+	cd $(BE) && $(UV) run python -m app.data.climatology
 
 catalogues: ## Validate the cited catalogues under data/catalogues
 	cd $(BE) && $(UV) run python -m app.data.catalogues

@@ -64,7 +64,7 @@ async def test_im2_launch_worked_out_again_from_its_trajectory(anon_client, sett
     assert 30 < o["coast_min"]["value"] < 45 and 3000 < o["dv_tli_m_s"]["value"] < 3300
     assert o["landing"]["earth_up"] is True
     assert "inside the times the landing rule allows" in o["note"]
-    assert body["meta"]["engines"] == {"lw": "lw-2", "traj": "traj-3", "vis": "vis-2"}
+    assert body["meta"]["engines"] == {"lw": "lw-3", "traj": "traj-3", "vis": "vis-2"}
 
 
 @pytest.mark.requires_kernels
