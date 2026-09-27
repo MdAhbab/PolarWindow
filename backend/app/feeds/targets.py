@@ -13,7 +13,7 @@ from app.feeds.adapters import donki, dsn_now, ll2, ndbc, nomads, nws, swpc
 from app.feeds.base import Product, ProviderSpec
 
 #: Pads close enough to share one weather model point (a GEFS cell is ~50 km).
-REGION_OF_RANGE = {"eastern": "florida", "western": "vandenberg"}
+REGION_OF_RANGE = catalogues.MODEL_REGION_OF_RANGE
 #: HRRR covers the contiguous United States only.
 HRRR_REGIONS = frozenset({"florida", "vandenberg"})
 
@@ -33,7 +33,8 @@ def providers() -> dict[str, ProviderSpec]:
     }
 
 
-def products() -> list[Product]:
+def products(wanted: nomads.Wanted | None = None) -> list[Product]:
+    """``wanted``: launch times of upcoming opportunities per model region (B3)."""
     sites = [s for s in catalogues.load("launch_sites").records if s.status != "inactive"]
     pads = [
         (s.id, s.lat_deg, s.lon_deg)
@@ -55,10 +56,17 @@ def products() -> list[Product]:
     out += ndbc.products(buoys)
     if locations:
         out += ll2.products(locations)
-    out += nomads.products(regions, hrrr_regions=set(HRRR_REGIONS))
+    out += nomads.products(regions, hrrr_regions=set(HRRR_REGIONS), wanted=wanted)
     return out
 
 
 def secrets() -> tuple[str, ...]:
     s = get_settings()
     return tuple(x for x in (s.nasa_api_key, s.earthdata_token) if x)
+
+
+def region_of_pad(pad_id: str) -> str | None:
+    try:
+        return REGION_OF_RANGE.get(catalogues.load("launch_sites").get(pad_id).launch_range)
+    except KeyError:
+        return None

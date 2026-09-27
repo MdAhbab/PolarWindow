@@ -32,11 +32,17 @@ LICENCE = f"NOAA NCEP (NOMADS), {PUBLIC_DOMAIN}"
 
 GEFS_MEMBERS: tuple[str, ...] = ("gec00", *(f"gep{i:02d}" for i in range(1, 31)))
 GEFS_LEADS_H: tuple[int, ...] = (24, 48)
+#: GEFS output reaches 16 days (384 h).
+GEFS_MAX_LEAD_H = 384
+#: At most this many launch times are fetched from one run (each is 62 requests).
+MAX_TARGETED_LEADS = 6
 HRRR_LEADS_H: tuple[int, ...] = (1, 6, 12, 18)
 #: Pause between NOMADS requests: its limit is about 120 a minute per address.
 PAUSE_S = 0.6
 
 Point = tuple[str, float, float]
+#: ``region -> launch times wanted from it``, read when a run is fetched.
+Wanted = Callable[[str], Awaitable[list[datetime]]]
 
 _SHORT = {
     ("2t", 2): "t2m_k",
@@ -122,10 +128,24 @@ async def _get_grib(client: httpx.AsyncClient, url: str, params: dict[str, str])
     return got.body
 
 
-def _gefs_fetch(points: list[Point], lead_h: int, now: Callable[[], datetime]) -> Any:
+def gefs_lead(cycle: datetime, valid: datetime) -> int | None:
+    """The GEFS output step nearest ``valid`` from a run at ``cycle``: every 3 hours to
+    240 h, every 6 to 384 h; None outside that."""
+    h = (valid - cycle).total_seconds() / 3600.0
+    if h < 0 or h > GEFS_MAX_LEAD_H + 3:
+        return None
+    step = 3 if h <= 240 else 6
+    return min(GEFS_MAX_LEAD_H, int(round(h / step)) * step)
+
+
+LeadsFor = Callable[[datetime], Awaitable[list[int]]]
+
+
+def _gefs_fetch(points: list[Point], leads_for: LeadsFor, now: Callable[[], datetime]) -> Any:
+    """All members of the latest complete GEFS run at the leads ``leads_for(cycle)`` gives."""
     box = _box(points, 1.0)
 
-    def files(cycle: datetime, member: str) -> list[tuple[str, dict[str, str]]]:
+    def files(cycle: datetime, member: str, lead_h: int) -> list[tuple[str, dict[str, str]]]:
         d, hh = cycle.strftime("%Y%m%d"), f"{cycle.hour:02d}"
         a = {
             "dir": f"/gefs.{d}/{hh}/atmos/pgrb2ap5",
@@ -162,19 +182,24 @@ def _gefs_fetch(points: list[Point], lead_h: int, now: Callable[[], datetime]) -
         latest = t.replace(hour=t.hour - t.hour % 6, minute=0, second=0, microsecond=0)
         for back in range(0, 5):
             cycle = latest - timedelta(hours=6 * back)
-            url, params = files(cycle, GEFS_MEMBERS[-1])[1]
+            leads = sorted(set(await leads_for(cycle)))[:MAX_TARGETED_LEADS]
+            url0 = f"{BASE}/filter_gefs_atmos_0p50a.pl?dir=/gefs.{cycle:%Y%m%d}/{cycle.hour:02d}"
+            if not leads:
+                # Nothing wanted from this run (no launch opportunity in reach): no request.
+                return http.Fetched(url0, 304, b"", None, None, None, True, 0)
+            url, params = files(cycle, GEFS_MEMBERS[-1], leads[-1])[1]
             if await _get_grib(client, url, params) is None:
                 continue  # the last member's b-file is the last to appear
             bodies: list[bytes] = []
-            for m in GEFS_MEMBERS:
-                for url, params in files(cycle, m):
-                    await asyncio.sleep(PAUSE_S)
-                    body = await _get_grib(client, url, params)
-                    if body is not None:
-                        bodies.append(body)
+            for lead_h in leads:
+                for m in GEFS_MEMBERS:
+                    for url, params in files(cycle, m, lead_h):
+                        await asyncio.sleep(PAUSE_S)
+                        body = await _get_grib(client, url, params)
+                        if body is not None:
+                            bodies.append(body)
             return http.Fetched(
-                url=f"{BASE}/filter_gefs_atmos_0p50a.pl?dir=/gefs.{cycle:%Y%m%d}/{cycle.hour:02d}"
-                f"&lead={lead_h}",
+                url=f"{url0}&lead={','.join(str(x) for x in leads)}",
                 status=200,
                 body=b"".join(bodies),
                 etag=None,
@@ -186,6 +211,21 @@ def _gefs_fetch(points: list[Point], lead_h: int, now: Callable[[], datetime]) -
         raise http.FeedHttpError("no complete GEFS run found in the last 30 hours")
 
     return fetch
+
+
+def _fixed(lead_h: int) -> LeadsFor:
+    async def leads(_cycle: datetime) -> list[int]:
+        return [lead_h]
+
+    return leads
+
+
+def _targeted(region: str, wanted: Wanted) -> LeadsFor:
+    async def leads(cycle: datetime) -> list[int]:
+        out = [gefs_lead(cycle, t) for t in await wanted(region)]
+        return [x for x in out if x is not None]
+
+    return leads
 
 
 def _hrrr_fetch(points: list[Point], now: Callable[[], datetime]) -> Any:
@@ -240,10 +280,32 @@ def products(
     *,
     hrrr_regions: set[str] | None = None,
     now: Callable[[], datetime] = lambda: datetime.now(UTC),
+    wanted: Wanted | None = None,
 ) -> list[Product]:
-    """One GEFS product per region and lead; HRRR for regions inside its grid (CONUS)."""
+    """One GEFS product per region and lead; HRRR for regions inside its grid (CONUS).
+
+    With ``wanted`` (the launch times of upcoming opportunities from a region's pads),
+    also ``gefs_launch``: every member at the GEFS steps nearest those times (B0, B3).
+    """
     out: list[Product] = []
     for region, pts in regions.items():
+        if wanted is not None:
+            out.append(
+                Product(
+                    provider="nomads",
+                    product="gefs_launch",
+                    location_key=region,
+                    url=f"{BASE}/filter_gefs_atmos_0p50a.pl",
+                    licence=LICENCE,
+                    parser_version="gefs-1",
+                    interval_s=6 * 3600,
+                    staleness_s=18 * 3600,
+                    parse=parse_points(pts, "GEFS", len(GEFS_MEMBERS)),
+                    custom_fetch=_gefs_fetch(pts, _targeted(region, wanted), now),
+                    keep_raw=False,
+                    cost=MAX_TARGETED_LEADS * 2 * len(GEFS_MEMBERS) + 1,
+                )
+            )
         for lead in GEFS_LEADS_H:
             out.append(
                 Product(
@@ -256,7 +318,7 @@ def products(
                     interval_s=6 * 3600,
                     staleness_s=18 * 3600,
                     parse=parse_points(pts, "GEFS", len(GEFS_MEMBERS)),
-                    custom_fetch=_gefs_fetch(pts, lead, now),
+                    custom_fetch=_gefs_fetch(pts, _fixed(lead), now),
                     keep_raw=False,
                     cost=2 * len(GEFS_MEMBERS) + 1,
                 )

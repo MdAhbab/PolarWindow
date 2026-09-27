@@ -130,6 +130,10 @@ class CitedRecord(_Strict):
 
 RangeName = Literal["eastern", "western", "tanegashima", "sriharikota", "guiana", "wenchang"]
 
+#: Pads on one range share one weather-model point set (a GEFS cell is ~50 km); the
+#: feeds worker records each set under this name.
+MODEL_REGION_OF_RANGE: dict[str, str] = {"eastern": "florida", "western": "vandenberg"}
+
 
 class LaunchSite(CitedRecord):
     operator: str | None

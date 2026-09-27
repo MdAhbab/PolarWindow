@@ -15,7 +15,9 @@ import asyncio
 import contextlib
 import logging
 import signal
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+
+from sqlalchemy import text
 
 from app.config import get_settings
 from app.db.repositories.feeds import FEEDS_CHANNEL, FeedRepository
@@ -29,10 +31,42 @@ RAW_KEEP_DAYS = 30
 TICK_S = 30.0
 
 
+#: Launch opportunities further ahead than this are past the ensemble forecasts.
+FORECAST_REACH = timedelta(days=16)
+
+
+async def launch_times(region: str) -> list[datetime]:
+    """Liftoffs of the designed launch opportunities stored for any mission, from pads in
+    ``region``, between now and the ensembles' reach (the GEFS times to fetch, B3)."""
+    now = datetime.now(UTC)
+    out: set[datetime] = set()
+    async with session_scope() as s:
+        rows = (
+            await s.execute(
+                text(
+                    "SELECT DISTINCT ON (mission_id) result FROM assessments "
+                    "WHERE kind = 'launch' ORDER BY mission_id, id DESC"
+                )
+            )
+        ).scalars()
+        for result in rows:
+            for o in (result.get("data") or {}).get("opportunities") or []:
+                t0 = (o.get("t0") or {}).get("value")
+                if o.get("basis") != "designed" or t0 is None:
+                    continue
+                t = datetime.fromtimestamp(float(t0), UTC)
+                if (
+                    now <= t <= now + FORECAST_REACH
+                    and targets.region_of_pad(o["pad_id"]) == region
+                ):
+                    out.add(t)
+    return sorted(out)
+
+
 def build() -> scheduler.Scheduler:
     s = get_settings()
     return scheduler.Scheduler(
-        products=targets.products(),
+        products=targets.products(wanted=launch_times),
         providers=targets.providers(),
         raw_root=s.data_dir / "feeds" / "raw",
         secrets=targets.secrets(),
