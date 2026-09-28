@@ -32,6 +32,7 @@ import type {
   RiskScalesDTO,
   RoverSightDTO,
   SectionDTO,
+  RemovedForecastDTO,
   StoredForecastDTO,
   VehicleLimitsDTO,
   SectionStatusDTO,
@@ -472,6 +473,9 @@ export const api = {
   /** Answers with the forecast as stored (who entered it, and when). */
   officialForecast: (missionId: string, body: { probability_pct: number; concerns: string[]; pdf_url: string }) =>
     request<StoredForecastDTO>(`/missions/${enc(missionId)}/launch/official-forecast`, { body, method: 'PUT' }),
+  /** Takes back the forecast shown (the latest entered); the one before it is shown again. */
+  takeBackForecast: (missionId: string) =>
+    request<RemovedForecastDTO>(`/missions/${enc(missionId)}/launch/official-forecast`, { method: 'DELETE' }),
 
   vehicleLimits: (vehicleId: string, body: { limits: { rule_id: string; value: number; unit: string; note: string | null }[] }) =>
     request<VehicleLimitsDTO>(`/vehicles/${enc(vehicleId)}/limits`, { body, method: 'PUT' }),

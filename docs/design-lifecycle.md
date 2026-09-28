@@ -222,6 +222,10 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   weather constraints", with who entered it and the PDF. One per mission,
   the latest; a save answers with the forecast as stored, which the row shows
   at once (the later-entered of it and the weather answer's `official`).
+  "Take back this forecast" (a sheet naming which, then `DELETE`) shows the
+  one entered before it again, or "not entered", with "Taken back. …" in the
+  row; the history says "Entered {n}% (…); before it: …" and "Took back {n}%
+  (…); shown now: …".
 - **Weather rules** row opens with the opportunity's `weather_note` (what
   the rules can show, and why there are no forecast numbers when there are
   none).

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { api } from '../../lib/api/client'
 import type { MissionDetail } from '../../lib/api/adapters'
 import type {
+  AuditEntryDTO,
   EnteredLimitDTO,
   LaunchCalendarDTO,
   LaunchWeatherDTO,
@@ -352,16 +353,57 @@ export function newestForecast(a: OfficialForecastDTO | null, b: OfficialForecas
 }
 
 /**
+ * The same entered forecast, as two answers carry it: a save answers with the
+ * time it was sent, the weather answer with the time it was stored, a moment apart.
+ */
+export function sameForecast(a: OfficialForecastDTO, b: OfficialForecastDTO): boolean {
+  return (
+    a.probability_pct === b.probability_pct &&
+    a.pdf_url === b.pdf_url &&
+    a.entered_by === b.entered_by &&
+    Math.abs(Date.parse(a.entered_at) - Date.parse(b.entered_at)) < 5_000
+  )
+}
+
+/** The forecast to show: the newest of those at hand, leaving out any taken back. */
+export function shownForecast(
+  candidates: (OfficialForecastDTO | null | undefined)[],
+  takenBack: OfficialForecastDTO[],
+): OfficialForecastDTO | null {
+  return candidates.reduce<OfficialForecastDTO | null>(
+    (best, f) => (!f || takenBack.some((t) => sameForecast(t, f)) ? best : newestForecast(best, f)),
+    null,
+  )
+}
+
+/** A forecast's history entry in words: what was entered, or what was taken back. */
+export function forecastChangeWords(e: AuditEntryDTO): string {
+  const words = (f: unknown) => {
+    const x = f as { probability_pct?: number; concerns?: string[] } | null
+    return x && typeof x.probability_pct === 'number'
+      ? `${x.probability_pct}%${x.concerns?.length ? ` (${x.concerns.join(', ').toLowerCase()})` : ''}`
+      : 'none'
+  }
+  if (e.action === 'delete') return `Took back ${words(e.before)}; shown now: ${words(e.after)}`
+  return `Entered ${words(e.after)}${e.before ? `; before it: ${words(e.before)}` : ''}`
+}
+
+/**
  * The official launch forecast, entered by the project manager with its PDF
  * (ADR-14: attributed, never scraped). Quoted as issued; nothing is added.
+ * The one shown can be taken back; the one entered before it is shown again.
  */
 function OfficialRow({ wx, missionId }: { wx: LaunchWeatherDTO | null; missionId: string }) {
   const canWrite = useCanWrite()
   const [open, setOpen] = useState(false)
-  const history = useHistory('forecast', open ? missionId : null)
+  const [takeBackOpen, setTakeBackOpen] = useState<OfficialForecastDTO | null>(null)
+  const [takenBack, setTakenBack] = useState<OfficialForecastDTO[]>([])
+  const history = useHistory('forecast', open || takeBackOpen ? missionId : null)
   const write = useLifecycleWrite((b: { probability_pct: number; concerns: string[]; pdf_url: string }) => api.officialForecast(missionId, b))
-  // The save answers with the forecast as stored: shown at once, until the weather answer carries the same or a newer one.
-  const official = newestForecast(wx?.official ?? null, write.data ?? null)
+  const takeBack = useLifecycleWrite(() => api.takeBackForecast(missionId))
+  // A save answers with the forecast as stored, a take-back with the one now shown: each is shown at
+  // once, until the weather answer carries the same or a newer one.
+  const official = shownForecast([wx?.official, write.data, takeBack.data?.official], takenBack)
   const [pct, setPct] = useState('')
   const [concerns, setConcerns] = useState('')
   const [pdf, setPdf] = useState('')
@@ -386,14 +428,56 @@ function OfficialRow({ wx, missionId }: { wx: LaunchWeatherDTO | null; missionId
           The launch weather officer’s forecast is entered here by the team, with a link to the PDF as issued.
         </p>
       )}
+      <p aria-live="polite" className="text-small text-ink-2 empty:hidden">
+        {takenBack.length > 0 && takeBack.isSuccess
+          ? official
+            ? 'Taken back. The forecast entered before it is shown again.'
+            : 'Taken back. No other forecast is entered.'
+          : ''}
+      </p>
       {canWrite && (
-        <div>
-          <Button onClick={() => setOpen(true)} >
+        <div className="flex flex-wrap gap-3">
+          <Button onClick={() => setOpen(true)}>
             <Icon name="pencil" size={15} />
             {official ? 'Enter a newer forecast' : 'Enter the official forecast'}
           </Button>
+          {official && <Button variant="ghost" onClick={() => setTakeBackOpen(official)}>Take back this forecast</Button>}
         </div>
       )}
+      <FormSheet
+        open={takeBackOpen !== null}
+        onClose={() => setTakeBackOpen(null)}
+        title="Take back the official forecast"
+        intro={
+          takeBackOpen && (
+            <>
+              This takes back the {takeBackOpen.probability_pct}% forecast entered by {takeBackOpen.entered_by},{' '}
+              {dateTimeWords(Date.parse(takeBackOpen.entered_at))}. The one entered before it, if any, is shown again. The change
+              is kept in the history.
+            </>
+          )
+        }
+        saveLabel="Take back"
+        savingLabel="Taking back…"
+        saving={takeBack.isPending}
+        error={takeBack.error}
+        history={<HistoryList entries={history.data} pending={history.isPending} error={history.error} describe={forecastChangeWords} />}
+        onSave={async () => {
+          const target = takeBackOpen
+          if (!target) return false
+          try {
+            await takeBack.mutateAsync(undefined)
+            write.reset()
+            setTakenBack((t) => [...t, target])
+            setTakeBackOpen(null)
+            return true
+          } catch {
+            return false
+          }
+        }}
+      >
+        {null}
+      </FormSheet>
       <FormSheet
         open={open}
         onClose={() => setOpen(false)}
@@ -401,7 +485,7 @@ function OfficialRow({ wx, missionId }: { wx: LaunchWeatherDTO | null; missionId
         intro="Copy the numbers as issued, and link the PDF. Nothing here is worked out by POLAR WINDOW."
         saving={write.isPending}
         error={write.error}
-        history={<HistoryList entries={history.data} pending={history.isPending} error={history.error} />}
+        history={<HistoryList entries={history.data} pending={history.isPending} error={history.error} describe={forecastChangeWords} />}
         onSave={async () => {
           const e: Record<string, string> = {}
           const n = Number(pct)
@@ -415,6 +499,7 @@ function OfficialRow({ wx, missionId }: { wx: LaunchWeatherDTO | null; missionId
               concerns: concerns.split(/[,;\n]/).map((c) => c.trim()).filter(Boolean),
               pdf_url: pdf,
             })
+            takeBack.reset()
             return true
           } catch {
             return false

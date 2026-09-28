@@ -177,12 +177,19 @@ test('team weather limits (contract fixtures): the form starts from the limits a
   await expectNoSeriousAxe(page, 'the team weather limits sheet')
 })
 
-test('official launch forecast (contract fixtures): a save shows the forecast as stored, not the one before', async ({ page, context }) => {
+test('official launch forecast (contract fixtures): a save shows the forecast as stored, not the one before; taking it back shows the one before again', async ({ page, context }) => {
   await returningVisitor(context)
   await serveLifecycleFixtures(context)
   let put: Record<string, unknown> | null = null
+  let deletes = 0
+  const before = { id: 8, probability_pct: 10, concerns: ['Cumulus cloud rule', 'Thick cloud layers'], pdf_url: 'https://www.patrick.spaceforce.mil/', entered_by: 'A. Rahman', entered_at: '2026-09-26T12:00:00Z' }
   await context.route(/localhost:8000\/api\/v1\/missions\/im-2\/launch\/official-forecast$/, async (route) => {
-    if (route.request().method() === 'PUT') put = route.request().postDataJSON()
+    const method = route.request().method()
+    if (method === 'PUT') put = route.request().postDataJSON()
+    if (method === 'DELETE') {
+      deletes += 1
+      return fulfillWrite(route, { removed_id: 9, official: before })
+    }
     // The service answers with the forecast as stored; the weather fixture still carries the older one.
     await fulfillWrite(route, { id: 9, ...put, entered_by: 'Nadia Karim', entered_at: new Date().toISOString() })
   })
@@ -211,6 +218,17 @@ test('official launch forecast (contract fixtures): a save shows the forecast as
   await expect(summary).toContainText('20%, entered by Nadia Karim')
   await expect(row).toContainText('20% chance the weather breaks a launch rule, in the official forecast; main concerns: cumulus cloud rule, surface wind.')
   await expect(row.getByRole('link', { name: /the forecast as issued \(example\.test\)/ })).toHaveAttribute('href', 'https://example.test/l-1.pdf')
+  // Take it back: the sheet says which, and the one entered before it is shown again (the weather fixture still carries it).
+  await row.getByRole('button', { name: 'Take back this forecast' }).click()
+  const back = page.getByRole('dialog', { name: 'Take back the official forecast' })
+  await expect(back).toContainText('This takes back the 20% forecast entered by Nadia Karim')
+  await expect(back).toContainText('Recorded as Nadia Karim')
+  await expectNoSeriousAxe(page, 'the take-back sheet')
+  await back.getByRole('button', { name: 'Take back', exact: true }).click()
+  await expect(back).toBeHidden()
+  expect(deletes).toBe(1)
+  await expect(summary).toContainText('10%, entered by A. Rahman')
+  await expect(row).toContainText('Taken back. The forecast entered before it is shown again.')
 })
 
 test('team sea limits (contract fixtures): the form starts from what is entered, and sends both parts', async ({ page, context }) => {
@@ -598,18 +616,19 @@ test('return (live API): where each flown booster came down, and a planned one n
 })
 
 
-test('official launch forecast (live API, writes): a signed-in save is stored, shown in the row, in its history and after a reload', async ({
+test('official launch forecast (live API, writes): a signed-in save is stored, shown in the row, in its history and after a reload, then taken back', async ({
   page,
   context,
 }) => {
-  // Every run adds a forecast to the mission for good (there is no way to remove one), so this runs only when asked.
-  test.skip(!process.env.E2E_LIVE_WRITES, 'Writes to the live database: set E2E_LIVE_WRITES=1, against a scratch database.')
+  // The run takes its forecast back at the end, so the mission is left showing what it showed before (the history keeps both entries).
   test.setTimeout(90_000)
   await returningVisitor(context)
   const pct = 1 + Math.floor(Math.random() * 98)
   await page.goto('/missions/peregrine-m1/launch')
   await expect(page.locator('[data-guide="section-answer"]')).toContainText('It launched on', { timeout: 60_000 })
   const summary = page.locator('summary', { hasText: 'Official launch forecast' })
+  await expect(summary).toContainText(/not entered|entered by/, { timeout: 60_000 })
+  const shownBefore = ((await summary.textContent()) ?? '').replace('Official launch forecast', '').trim()
   await summary.click()
   await page.getByRole('button', { name: /^Enter (the official|a newer) forecast$/ }).click()
   const sheet = page.getByRole('dialog', { name: 'Official launch forecast' })
@@ -627,5 +646,19 @@ test('official launch forecast (live API, writes): a signed-in save is stored, s
   await expect(summary).toContainText(`${pct}%, entered by End-to-end check`)
   // The weather answer carries the stored forecast.
   await page.reload()
-  await expect(page.locator('summary', { hasText: 'Official launch forecast' })).toContainText(`${pct}%, entered by End-to-end check`, { timeout: 60_000 })
+  const again = page.locator('summary', { hasText: 'Official launch forecast' })
+  await expect(again).toContainText(`${pct}%, entered by End-to-end check`, { timeout: 60_000 })
+  // Take it back: the forecast shown before the run is shown again, here and after a reload, and the history says so.
+  await again.click()
+  await page.getByRole('button', { name: 'Take back this forecast' }).click()
+  const back = page.getByRole('dialog', { name: 'Take back the official forecast' })
+  await expect(back).toContainText(`This takes back the ${pct}% forecast entered by End-to-end check`)
+  await back.getByRole('button', { name: 'Take back', exact: true }).click()
+  await expect(back).toBeHidden()
+  await expect(again).toContainText(shownBefore)
+  await page.reload()
+  await expect(page.locator('summary', { hasText: 'Official launch forecast' })).toContainText(shownBefore, { timeout: 60_000 })
+  await page.locator('summary', { hasText: 'Official launch forecast' }).click()
+  await page.getByRole('button', { name: /^Enter (the official|a newer) forecast$/ }).click()
+  await expect(page.getByRole('dialog', { name: 'Official launch forecast' }).locator('li').first()).toContainText(`Took back ${pct}%`)
 })

@@ -345,6 +345,12 @@ export interface StoredForecastDTO extends OfficialForecastDTO {
   id: number
 }
 
+/** `DELETE /launch/official-forecast`: the forecast taken back, and the one entered before it (now shown), if any. */
+export interface RemovedForecastDTO {
+  removed_id: number
+  official: StoredForecastDTO | null
+}
+
 export interface LaunchWeatherDTO {
   t0: string
   /** Negative for a launch in the past. */
@@ -605,6 +611,7 @@ export type ContractChecks = [
   Fits<Present<S['Return']>, ReturnDTO>,
   Fits<Present<S['OfficialForecast']>, OfficialForecastDTO>,
   Fits<Present<S['OfficialForecastOut']>, StoredForecastDTO>,
+  Fits<Present<S['OfficialForecastRemoved']>, RemovedForecastDTO>,
   Fits<Present<S['VehicleLimits']>, VehicleLimitsDTO>,
   // `counts` is typed as a plain map in the schema; its keys are checked in the fixture tests.
   Fits<Present<Omit<S['Ready'], 'counts'>>, Omit<ReadyDTO, 'counts'>>,

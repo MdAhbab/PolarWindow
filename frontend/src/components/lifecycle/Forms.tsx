@@ -156,6 +156,7 @@ export function FormSheet({
   error,
   history,
   saveLabel = 'Save',
+  savingLabel = 'Saving…',
 }: {
   open: boolean
   onClose: () => void
@@ -167,6 +168,7 @@ export function FormSheet({
   error?: unknown
   history?: ReactNode
   saveLabel?: string
+  savingLabel?: string
 }) {
   const writer = useNamedWriter()
   const [saved, setSaved] = useState(false)
@@ -190,7 +192,7 @@ export function FormSheet({
         <WriteProblem error={error} />
         <div className="flex flex-wrap items-center gap-3">
           <Button type="submit" variant="primary" disabled={saving || writer.offline}>
-            {saving ? 'Saving…' : saveLabel}
+            {saving ? savingLabel : saveLabel}
           </Button>
           <Button variant="ghost" onClick={onClose}>
             Close

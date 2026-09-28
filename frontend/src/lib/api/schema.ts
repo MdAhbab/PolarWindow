@@ -680,7 +680,8 @@ export interface paths {
         /** Enter the range's official launch weather forecast */
         put: operations["official_forecast_api_v1_missions__mission_id__launch_official_forecast_put"];
         post?: never;
-        delete?: never;
+        /** Take back the official launch weather forecast shown */
+        delete: operations["remove_official_forecast_api_v1_missions__mission_id__launch_official_forecast_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -731,6 +732,23 @@ export interface paths {
         get?: never;
         /** Enter the sea and wind limits for recovering the booster (and a capsule) */
         put: operations["return_limits_api_v1_missions__mission_id__return_limits_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/space-weather": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What the Sun is doing now (NOAA SWPC, NASA DONKI), each number with its age */
+        get: operations["space_weather_api_v1_space_weather_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -1618,6 +1636,19 @@ export interface components {
             /** Source */
             source: string;
         };
+        /** Cme */
+        Cme: {
+            /** Id */
+            id: string;
+            /** Start */
+            start: string | null;
+            /** Speed M S */
+            speed_m_s: number | null;
+            /** Earth Arrival Estimates */
+            earth_arrival_estimates: string[] | null;
+            /** Link */
+            link: string | null;
+        };
         /** Comms */
         Comms: {
             /** Bands */
@@ -1906,6 +1937,22 @@ export interface components {
             /** Earth Required */
             earth_required: boolean | null;
         };
+        /** Donki */
+        Donki: {
+            /** Cme */
+            cme: components["schemas"]["Cme"][];
+            /** Flares */
+            flares: components["schemas"]["Flare"][];
+            /** Sep */
+            sep: components["schemas"]["Sep"][];
+            /**
+             * Days
+             * @description How many days back DONKI was asked.
+             */
+            days: number | null;
+            /** Missing Reason */
+            missing_reason: string | null;
+        };
         /** ExplainRequest */
         ExplainRequest: {
             /** Site Id */
@@ -1990,6 +2037,17 @@ export interface components {
         FeedsOut: {
             /** Feeds */
             feeds: components["schemas"]["FeedOut"][];
+        };
+        /** Flare */
+        Flare: {
+            /** Id */
+            id: string;
+            /** Peak */
+            peak: string | null;
+            /** Class */
+            class: string | null;
+            /** Link */
+            link: string | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -2733,6 +2791,21 @@ export interface components {
             /** Launch Note */
             launch_note: string | null;
         };
+        /** Now */
+        Now: {
+            kp: components["schemas"]["QuantityOut"];
+            proton_10mev_pfu: components["schemas"]["QuantityOut"];
+            proton_100mev_pfu: components["schemas"]["QuantityOut"];
+            /** Xray Class */
+            xray_class: string | null;
+            solar_wind_km_s: components["schemas"]["QuantityOut"];
+            bz_nt: components["schemas"]["QuantityOut"];
+            /**
+             * Alerts
+             * @description SWPC alert headlines of the last 24 hours.
+             */
+            alerts: string[];
+        };
         /** Observed */
         Observed: {
             /**
@@ -2785,6 +2858,16 @@ export interface components {
              * Format: date-time
              */
             entered_at: string;
+        };
+        /** OfficialForecastRemoved */
+        OfficialForecastRemoved: {
+            /**
+             * Removed Id
+             * @description The forecast taken back.
+             */
+            removed_id: number;
+            /** @description The forecast shown now (the one entered before), or null. */
+            official: components["schemas"]["OfficialForecastOut"] | null;
         };
         /** OneForecast */
         OneForecast: {
@@ -2839,6 +2922,27 @@ export interface components {
             azimuth_deg: components["schemas"]["QuantityOut"];
             dv_tli_m_s: components["schemas"]["QuantityOut"];
             coast_min: components["schemas"]["QuantityOut"];
+        };
+        /** Outlook */
+        Outlook: {
+            /** Issued */
+            issued: string | null;
+            /** Days */
+            days: string | null;
+            /**
+             * S1 Or Greater Pct
+             * @description SWPC's chance of a solar radiation storm (S1 or more), day 1-3, verbatim.
+             */
+            s1_or_greater_pct: number[] | null;
+            /** Kp Max Expected */
+            kp_max_expected: number | null;
+            /**
+             * Text
+             * @description SWPC's 3-day forecast as issued.
+             */
+            text: string | null;
+            /** Missing Reason */
+            missing_reason: string | null;
         };
         /** Pad */
         Pad: {
@@ -3102,8 +3206,21 @@ export interface components {
         /** Radiation */
         Radiation: {
             belt_hours: components["schemas"]["QuantityOut"];
+            /** Belt Passes */
+            belt_passes: number;
+            electron_fluence_gt1mev: components["schemas"]["QuantityOut"];
+            /** @description Trapped protons above 10 MeV (AP8). */
             fluence_gt10mev: components["schemas"]["QuantityOut"];
             gcr_dose_mgy_day: components["schemas"]["QuantityOut"];
+            surface: components["schemas"]["SurfaceDose"] | null;
+            /** Surface Note */
+            surface_note: string | null;
+            /** Sep Events */
+            sep_events: components["schemas"]["SepEvent"][];
+            /** Sep Note */
+            sep_note: string;
+            /** Scenarios */
+            scenarios: components["schemas"]["SepScenario"][];
             /** Screening Note */
             screening_note: string;
             /** Confirm In */
@@ -3488,6 +3605,11 @@ export interface components {
             data: components["schemas"]["Return"];
             meta: components["schemas"]["LifecycleMeta"];
         };
+        /** Section[SpaceWeather] */
+        Section_SpaceWeather_: {
+            data: components["schemas"]["SpaceWeather"];
+            meta: components["schemas"]["LifecycleMeta"];
+        };
         /** Section[Trip] */
         Section_Trip_: {
             data: components["schemas"]["Trip"];
@@ -3498,6 +3620,38 @@ export interface components {
             /** Data */
             data: components["schemas"]["SectionStatus"][];
             meta: components["schemas"]["LifecycleMeta"];
+        };
+        /** Sep */
+        Sep: {
+            /** Id */
+            id: string;
+            /** Time */
+            time: string | null;
+            /** Instruments */
+            instruments: (string | null)[] | null;
+            /** Link */
+            link: string | null;
+        };
+        /** SepEvent */
+        SepEvent: {
+            /**
+             * T
+             * @description When NOAA's >10 MeV threshold was crossed (NASA DONKI).
+             */
+            t: string;
+            /** Link */
+            link: string;
+        };
+        /** SepScenario */
+        SepScenario: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            fluence_gt10mev: components["schemas"]["QuantityOut"];
+            fluence_gt30mev: components["schemas"]["QuantityOut"];
+            /** Source Url */
+            source_url: string;
         };
         /** SessionOut */
         SessionOut: {
@@ -3773,6 +3927,14 @@ export interface components {
              */
             snapshot_id?: number | null;
         };
+        /** SpaceWeather */
+        SpaceWeather: {
+            now: components["schemas"]["Now"];
+            outlook: components["schemas"]["Outlook"];
+            donki: components["schemas"]["Donki"];
+            /** Note */
+            note: string;
+        };
         /** SpaceWeatherNow */
         SpaceWeatherNow: {
             kp: components["schemas"]["QuantityOut"];
@@ -3813,6 +3975,14 @@ export interface components {
              * @description Cut by the end of the dates.
              */
             open_end: boolean;
+        };
+        /** SurfaceDose */
+        SurfaceDose: {
+            /** Site Id */
+            site_id: string;
+            /** @description The site's share of open sky, 1 = flat horizon. */
+            open_sky: components["schemas"]["QuantityOut"];
+            gcr_dose_mgy_day: components["schemas"]["QuantityOut"];
         };
         /** SurfaceWindow */
         SurfaceWindow: {
@@ -4031,6 +4201,11 @@ export interface components {
             corrections_note: string | null;
             moon_pull: components["schemas"]["MoonPull"] | null;
             radiation: components["schemas"]["Radiation"] | null;
+            /**
+             * Radiation Note
+             * @description Why there is no radiation block.
+             */
+            radiation_note?: string | null;
         };
         /** TripNumbers */
         TripNumbers: {
@@ -5502,6 +5677,37 @@ export interface operations {
             };
         };
     };
+    remove_official_forecast_api_v1_missions__mission_id__launch_official_forecast_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfficialForecastRemoved"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_vehicle_limits_api_v1_vehicles__vehicle_id__limits_get: {
         parameters: {
             query?: never;
@@ -5630,6 +5836,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    space_weather_api_v1_space_weather_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Section_SpaceWeather_"];
                 };
             };
         };

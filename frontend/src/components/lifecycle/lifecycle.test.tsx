@@ -24,7 +24,7 @@ import { LimitBars, LimitTable } from './LimitBars'
 import { coverageGaps, tripStretches } from './TripStrip'
 import { CorrectionsRow, shadowAndContact } from '../../screens/sections/TripSection'
 import { observedWords, percentWords } from './WeatherRules'
-import { limitDraft, limitsToSend } from '../../screens/sections/LaunchSection'
+import { forecastChangeWords, limitDraft, limitsToSend, shownForecast } from '../../screens/sections/LaunchSection'
 import type { EnteredLimitDTO, RuleRowDTO } from '../../lib/api/lifecycle'
 import { seaWords, zoneWords } from '../../screens/sections/ReturnSection'
 import { calendarDays } from './LaunchCalendar'
@@ -481,5 +481,36 @@ describe('useSection follows a 202 through its job', () => {
     const e = (result.current as { error: { title: string; detail: string; stillWorks: string } }).error
     expect(e.detail).toBe('Out of memory')
     expect(e.stillWorks).toMatch(/other sections/)
+  })
+})
+
+describe('Official forecast: the one shown, and taking it back', () => {
+  const f = (pct: number, at: string, by = 'A. Rahman') => ({
+    probability_pct: pct,
+    concerns: ['Cumulus cloud rule'],
+    pdf_url: `https://example.test/${pct}.pdf`,
+    entered_by: by,
+    entered_at: at,
+  })
+  const older = f(10, '2026-09-28T10:00:00Z')
+  const saved = f(20, '2026-09-28T11:00:00.400Z')
+  const stored = f(20, '2026-09-28T11:00:00.100Z')
+  it('shows the newest at hand', () => {
+    expect(shownForecast([older, saved, null], [])).toBe(saved)
+    expect(shownForecast([null, undefined], [])).toBeNull()
+  })
+  it('leaves out one taken back, whichever answer still carries it (times a moment apart)', () => {
+    expect(shownForecast([stored, null, older], [saved])).toBe(older)
+    expect(shownForecast([stored, null, null], [saved])).toBeNull()
+    // Another forecast of the same percent entered later is not the one taken back.
+    expect(shownForecast([f(20, '2026-09-28T12:00:00Z')], [saved])?.entered_at).toBe('2026-09-28T12:00:00Z')
+  })
+  it('says what each history entry did', () => {
+    const e = { at: '', by: 'A', note: null }
+    expect(forecastChangeWords({ ...e, action: 'set', before: null, after: older })).toBe('Entered 10% (cumulus cloud rule)')
+    expect(forecastChangeWords({ ...e, action: 'set', before: older, after: saved })).toBe(
+      'Entered 20% (cumulus cloud rule); before it: 10% (cumulus cloud rule)',
+    )
+    expect(forecastChangeWords({ ...e, action: 'delete', before: saved, after: null })).toBe('Took back 20% (cumulus cloud rule); shown now: none')
   })
 })
