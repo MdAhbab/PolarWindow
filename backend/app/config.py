@@ -42,18 +42,19 @@ ENGINE_VERSION = "hz-2/vis-2"
 #: lw:   launch opportunities (daily launch instants, landing windows, direct transfer)
 #: lw-2: one opportunity per sweep of the climb plane past the Moon; plain words; weather_note.
 #: lw-3: weather "climatology" beyond 16 days where a wind climatology can be read.
+#: lw-4 / wx-2: the thunder climatology (GLM thunder hours) for the lightning rules.
 ENGINES: dict[str, str] = {
     "hz": "hz-2",
     "vis": "vis-2",
     "traj": "traj-3",
     "ecl": "ecl-1",
-    "wx": "wx-1",
+    "wx": "wx-2",
     "rad": "rad-1",
     "link": "link-1",
     "net": "net-3",
     "ready": "ready-1",
     "los": "los-1",
-    "lw": "lw-3",
+    "lw": "lw-4",
 }
 
 

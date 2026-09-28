@@ -492,3 +492,16 @@ that user. `GET /auth/me` returns the same `user`.
     shown (the latest entered) → `{removed_id, official}` where `official` is the forecast
     entered before it, now shown again, or null. 404 `nothing-to-remove` when none is
     entered. Recorded in `/history?entity=forecast&id={mission}` with `action: "delete"`.
+- 2026-09-28 (backend, lightning climatology; engines `lw-4`, `wx-2`):
+  - `RuleRow.climatology` is also filled for the lightning rules (`er-lightning`,
+    `er-thunderstorm`) when the pad's region has a thunder climatology: `share` = how often
+    thunder could be heard in the pad's 0.05-degree grid cell in the launch's month and UTC
+    hour, `years` "2019-2025", `source` in words (hours with thunder of the hours seen by the
+    lightning mappers, and that thunder at the pad is not the rule's own distance). From NASA
+    MSFC's Combined GLM Hourly Thunder Hour data (GHRC DAAC, doi:10.5067/GLM/HTH/DATA301).
+  - A designed opportunity more than 16 days ahead says `weather: "climatology"` also when
+    only the thunder climatology can be read (a lightning rule applies to the vehicle);
+    `weather_note` names what the weather tab shows.
+  - `make thunder-climatology` (needs `PW_EARTHDATA_TOKEN`) rebuilds
+    `data/climatology/glm_thunder_{region}.json` through NASA Earthdata's OPeNDAP (only the
+    pads' cells are read; a day's file is 600 MB).

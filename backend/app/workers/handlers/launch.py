@@ -23,7 +23,7 @@ from app.core.intervals import Run
 from app.core.quantity import Quantity
 from app.core.spice import R_MOON_M
 from app.core.vec import rotate, unit
-from app.data import catalogues, climatology
+from app.data import catalogues, climatology, thunder_climatology
 from app.db.repositories.jobs import InputRef
 from app.db.session import session_scope
 from app.services import ascent, launch_service, lifecycle, site_service
@@ -547,17 +547,20 @@ async def _designed(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, 
     return opps, None
 
 
-def _has_wind_climatology(pad_id: str, vehicle_id: str) -> bool:
-    """A wind climatology is built for the pad's region and the vehicle has a published
-    wind limit it can be read against."""
+def _climatologies(pad_id: str, vehicle_id: str) -> tuple[bool, bool]:
+    """Whether a wind climatology (built for the pad's region, and the vehicle has a
+    published wind limit to read it against) and a thunder climatology (built for the
+    region, and a lightning rule applies to the vehicle) can be shown."""
     site = catalogues.load("launch_sites").get(pad_id)
     region = catalogues.MODEL_REGION_OF_RANGE.get(site.launch_range, "")
-    if climatology.load(region) is None:
-        return False
-    return any(
-        r.variable == "wind_speed" and r.threshold is not None and vehicle_id in r.applies_to
-        for r in catalogues.load("weather_rules").records
+    rules = [r for r in catalogues.load("weather_rules").records if vehicle_id in r.applies_to]
+    wind = climatology.load(region) is not None and any(
+        r.variable == "wind_speed" and r.threshold is not None for r in rules
     )
+    thunder = thunder_climatology.load(region) is not None and any(
+        r.variable == "lightning_distance" for r in rules
+    )
+    return wind, thunder
 
 
 def _weather(lead_s: float, pad_id: str, vehicle_id: str) -> tuple[str, str]:
@@ -568,14 +571,27 @@ def _weather(lead_s: float, pad_id: str, vehicle_id: str) -> tuple[str, str]:
         return "forecast", (
             "Forecasts reach this launch: the weather tab shows what they say for each rule."
         )
-    if _has_wind_climatology(pad_id, vehicle_id):
+    wind, thunder = _climatologies(pad_id, vehicle_id)
+    shows = [
+        *(
+            ["how often the wind limit was broken in this month and hour since 2001"]
+            if wind
+            else []
+        ),
+        *(
+            ["how often thunder was heard at the pad in this month and hour since 2019"]
+            if thunder
+            else []
+        ),
+    ]
+    if shows:
         return "climatology", (
-            "More than 16 days away, beyond the forecasts: the weather tab shows how often the "
-            "wind limit was broken in this month and hour since 2001, and the other rules."
+            "More than 16 days away, beyond the forecasts: the weather tab shows "
+            f"{' and '.join(shows)}, and the other rules."
         )
     return "none", (
-        "More than 16 days away, beyond the forecasts, and this vehicle has no published "
-        "wind limit to read a climatology against: the weather tab shows the rules and limits."
+        "More than 16 days away, beyond the forecasts, and there is no climatology to read "
+        "for this vehicle at this pad: the weather tab shows the rules and limits."
     )
 
 

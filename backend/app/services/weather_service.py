@@ -26,7 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import weather_rules as wr
 from app.core.quantity import Quantity, share
-from app.data import catalogues, climatology, verification
+from app.data import catalogues, climatology, thunder_climatology, verification
 from app.db.repositories.missions import MissionRecord, MissionRepository
 from app.db.repositories.pm import PmRepository
 from app.services import audit_service, feed_service, lifecycle
@@ -254,10 +254,34 @@ MONTHS = (
 )
 
 
+#: Rules about lightning near the pad, read against the thunder-hour climatology.
+THUNDER_RULES = frozenset({"lightning_distance", "thunderstorm_distance"})
+
+
+def _thunder_climatology(pad_id: str, region: str, when: datetime) -> dict[str, Any] | None:
+    """How often thunder could be heard at the pad in this month and UTC hour (GLM)."""
+    cl = thunder_climatology.load(region)
+    got = None if cl is None else cl.share(pad_id, when.month, when.hour)
+    if cl is None or got is None:
+        return None
+    share, k, n = got
+    return {
+        "share": share,
+        "years": cl.years,
+        "source": f"NASA's GLM thunder hours (GHRC DAAC): thunder could be heard in the pad's "
+        f"5 km grid cell in {k} of the {n} hours of {MONTHS[when.month - 1]} at "
+        f"{when.hour:02d} UTC seen by the lightning mappers in those years. Thunder heard "
+        "at the pad means lightning close by, not a count of the rule's own distance.",
+    }
+
+
 def _climatology(
-    rule: Any, limit: dict[str, Any], region: str, when: datetime
+    rule: Any, limit: dict[str, Any], region: str, when: datetime, pad_id: str = ""
 ) -> dict[str, Any] | None:
-    """How often the wind at 50 m has been above the limit in this month and UTC hour."""
+    """How often the wind at 50 m has been above the limit in this month and UTC hour, or,
+    for a lightning rule, how often thunder could be heard at the pad."""
+    if rule.variable in THUNDER_RULES:
+        return _thunder_climatology(pad_id, region, when)
     if rule.variable != "wind_speed" or limit.get("value") is None:
         return None
     unit = str(limit.get("unit"))
@@ -455,7 +479,7 @@ async def launch_weather(
                 "one_forecast": one,
                 "disagreement": False,
                 "observed": observed,
-                "climatology": _climatology(r, limit, region, when),
+                "climatology": _climatology(r, limit, region, when, pad_id),
             }
         )
     off = await pm.official_forecast(m.id)
@@ -480,10 +504,21 @@ async def launch_weather(
         if ref is not None:
             sources.append(ref)
     cl = climatology.load(region)
-    if cl is not None and any(row["climatology"] for row in rows):
+    kinds = {r.id: r.variable for r in rules}
+    with_cl = [row for row in rows if row["climatology"]]
+    if cl is not None and any(kinds.get(row["id"]) == "wind_speed" for row in with_cl):
         sources.append(
             lifecycle.source_ref(
                 f"NASA POWER hourly wind at 50 m (MERRA-2), {cl.years}", cl.source_url
+            )
+        )
+    th = thunder_climatology.load(region)
+    if th is not None and any(kinds.get(row["id"]) in THUNDER_RULES for row in with_cl):
+        sources.append(
+            lifecycle.source_ref(
+                f"Combined GLM Hourly Thunder Hour data (NASA MSFC, GHRC DAAC), {th.years}",
+                th.source_url,
+                licence="US government work (public domain)",
             )
         )
     sources.append(

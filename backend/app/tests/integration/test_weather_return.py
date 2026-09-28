@@ -182,7 +182,7 @@ async def test_an_entered_forecast_can_be_taken_back(client) -> None:
     assert r.json()["official"] is None
     h = await client.get(f"{API}/history", params={"entity": "forecast", "id": "griffin-1"})
     actions = [e.get("action") for e in h.json()["entries"]]
-    assert actions.count("delete") == 2
+    assert actions.count("delete") >= 2  # the audit log is kept between runs
 
 
 async def test_return_for_flown_and_planned_missions(client, anon_client) -> None:
@@ -268,3 +268,23 @@ async def test_lightning_seen_from_space_in_the_hours_before_a_launch(anon_clien
     )
     obs = {x["id"]: x for x in r.json()["data"]["rules"]}["er-lightning"]["observed"]
     assert obs["state"] == "no_data" and "six hours" in obs["detail"]
+
+
+async def test_lightning_rules_say_how_often_thunder_was_heard_at_the_pad(
+    anon_client, monkeypatch
+) -> None:
+    from app.data import thunder_climatology as tc
+
+    when = (T0 + timedelta(days=40)).replace(hour=20)
+    counts = {"ksc-lc-39a": {f"{when.month:02d}": {"20": [210, 42]}}}
+    cl = tc.ThunderClimatology(region="florida", years="2019-2025", source_url="u", counts=counts)
+    monkeypatch.setattr(tc, "load", lambda region: cl if region == "florida" else None)
+    r = await anon_client.get(
+        f"{API}/missions/im-2/launch/weather", params={"t0": when.isoformat(), "pad": "ksc-lc-39a"}
+    )
+    body = r.json()
+    rows = {x["id"]: x for x in body["data"]["rules"]}
+    got = rows["er-lightning"]["climatology"]
+    assert got["share"] == pytest.approx(0.2) and got["years"] == "2019-2025"
+    assert "42 of the 210 hours" in got["source"]
+    assert any("Thunder Hour" in s["name"] for s in body["meta"]["sources"])
