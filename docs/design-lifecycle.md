@@ -239,7 +239,24 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   up. The last column also has what was seen ("Seen now: clear." or "Seen
   now:" with the count, for lightning within six hours; said to be now, not
   at the launch) and past years for a wind rule ("Past years (2001-2024):
-  over the limit 1.0% of the time." with its source and hours counted).
+  over the limit 1.0% of the time." with its source and hours counted) and
+  for the lightning rules ("Past years (2019-2025): thunder could be heard at
+  the pad 1.0% of the time.", GLM thunder hours, with what that does not count).
+- **Space weather now** (`GET /space-weather`, answered at once, read again
+  every five minutes while shown): meta "Kp {n}, {k} alerts" or "no current
+  reading". Opens with one line: "Now: Kp 1, protons above 10 MeV at 0.23 pfu,
+  X-ray flares class B4.7, solar wind at 456 km/s; 2 alerts in the last 24
+  hours." (none recent enough: "No reading is recent enough to show: the
+  newest is from {time}."). Then each reading with its age from its own
+  source ("· as of 2 h ago") or why it is not shown: Kp, protons above 10 and
+  100 MeV, solar wind, the Sun's field north–south (Bz), X-ray class, the
+  alerts as headlines. "The next three days": NOAA's outlook in one sentence,
+  numbers as issued (chance of a radiation storm, S1 or greater, day by day;
+  largest Kp expected), and the forecast word for word behind "NOAA's
+  forecast as issued". "Newest events on the Sun (NASA DONKI)": the three
+  newest clouds thrown off the Sun (coronal mass ejections; speed, Earth
+  arrival if estimated), flares (class, peak) and solar particle events, each
+  with its record. No dose here: the service's `note` points to Trip.
 
 ### Trip (`/trip`, `GET /missions/{id}/trip`)
 
@@ -262,7 +279,7 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   and every burn. Gaps in the data (between the stretches the service lists
   in `covered`; a seam under a second is not a gap) break both lines and leave both lanes empty with a dashed outline, keyed
   "No data" and listed in the twin; a gap is never counted as out of contact.
-- **Rows:** Radiation on the way (screening only, and where to confirm) ·
+- **Rows:** Radiation on the way (meta "screening only"; below) ·
   Burns ({n}, or "none listed"; each burn is one instant with its
   `no_margin_reason` under it, and `burns_note` says what is not seen) ·
   Corrections on the way (meta "a budget: {total} in 99 of 100 runs"; the
@@ -275,6 +292,20 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   OEM and CSV, one block per stretch NASA's reconstruction covers, said in the
   row when there is more than one; SPK is not served) · How sure is this? · Where does this
   come from?
+- **Radiation on the way** (`Trip.radiation`; null: `radiation_note`). One
+  sentence first: "{h ×/÷2} in the radiation belts over {n} passes. Cosmic
+  rays give {mGy a day ±} on the way and {…} at the landing spot, before any
+  shielding." A lower bound of zero (the climb out is not in NASA's
+  reconstruction) reads "No time in the radiation belts is counted …" and
+  "none counted", never "≥0". Then `screening_note` (it names where to
+  confirm; `confirm_in` is added only for a tool it does not name), the
+  numbers as a list (belts and passes, electrons above 1 MeV, protons above
+  10 MeV in the belts, cosmic-ray dose on the way and at the landing spot with
+  the share of open sky), the solar particle events during the trip
+  (`sep_note`, each with its DONKI record), "Past large events, for
+  comparison" (a table: Oct 1989, Oct 2003, Aug 1972, protons above 10 and 30
+  MeV per cm², each linking its measurements) and "How each was worked out"
+  (every figure's `source`, each past event's measurement).
 - **No data:** `source: "none"` shows `none_reason`.
 
 ### Landing (`/landing`, and the hub's default)

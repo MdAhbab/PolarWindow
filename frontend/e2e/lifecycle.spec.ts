@@ -231,6 +231,43 @@ test('official launch forecast (contract fixtures): a save shows the forecast as
   await expect(row).toContainText('Taken back. The forecast entered before it is shown again.')
 })
 
+test('space weather now (contract fixtures): the readings in a sentence, each with its age, NOAA’s outlook as issued and DONKI’s newest events', async ({
+  page,
+  context,
+}) => {
+  await returningVisitor(context)
+  await serveLifecycleFixtures(context)
+  await page.goto('/missions/im-2/launch')
+  const summary = page.locator('summary', { hasText: 'Space weather now' })
+  const row = page.locator('details').filter({ has: summary })
+  await expect(summary).toContainText('Kp 1, 2 alerts')
+  await summary.click()
+  await expect(row).toContainText('Now: Kp 1, protons above 10 MeV at 0.23 pfu, X-ray flares class B4.7, solar wind at 456 km/s; 2 alerts in the last 24 hours.')
+  // Each reading says how old it is.
+  for (const label of ['Geomagnetic activity (Kp, 0 to 9)', 'Protons above 100 MeV', 'Magnetic field from the Sun, north–south (Bz)', 'X-ray flares (class)']) {
+    await expect(row.locator('dt', { hasText: label }).locator('xpath=following-sibling::dd[1]')).toContainText(/ · as of .+ ago$/)
+  }
+  await expect(row).toContainText('ALERT: Electron 2MeV Integral Flux exceeded 1,000pfu')
+  await expect(row).toContainText('NOAA’s outlook for Sep 26-Sep 28 2026, issued 26 September 2026, 12:30 UTC: a 1%, 1% and 1% chance of a radiation storm (S1 or greater), day by day; the largest Kp expected is 4.')
+  await row.locator('summary', { hasText: 'NOAA’s forecast as issued' }).click()
+  await expect(row.locator('pre')).toContainText(':Product: 3-Day Forecast')
+  // DONKI: the three newest of each kind, each with its record.
+  await expect(row).toContainText('Newest events on the Sun, last 30 days (NASA DONKI)')
+  await expect(row.getByRole('link', { name: 'record' })).toHaveCount(3 + 3 + 2)
+  await expect(row).toContainText('26 September 2026, 15:24 UTC, 449 km/s; no Earth arrival estimated')
+  await expect(row).toContainText('C3.3, peak 19 September 2026, 18:17 UTC')
+  await expect(row).toContainText('Doses along a trip are in the Trip section')
+  await expectNoSeriousAxe(page, 'space weather now, open (dark)')
+  // The other theme, and a phone: nothing runs off the side.
+  await page.evaluate(() => localStorage.setItem('pw-prefs', JSON.stringify({ theme: 'light', motion: 'full', shortcuts: true })))
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.reload()
+  await openRow(page, 'Space weather now')
+  await page.locator('summary', { hasText: 'NOAA’s forecast as issued' }).click()
+  await expectNoSeriousAxe(page, 'space weather now, open (light, 375 px)')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth), 'space weather scrolls sideways at 375 px').toBeLessThanOrEqual(375)
+})
+
 test('team sea limits (contract fixtures): the form starts from what is entered, and sends both parts', async ({ page, context }) => {
   await returningVisitor(context)
   await serveLifecycleFixtures(context)
@@ -543,6 +580,9 @@ test('trip corrections and launch weather words (live API): Blue Ghost’s burns
   const rules = row('Weather rules for this launch')
   await expect(rules).toContainText('This launch has flown', { timeout: 30_000 })
   await expect(rules).toContainText(/Past years \(2001-2024\): over the limit [\d.]+% of the time\./)
+  // The lightning rules' past years are thunder heard at the pad, not a share over a limit.
+  await expect(rules).toContainText(/Past years \(2019-2025\): thunder could be heard at the pad [\d.]+% of the time\./)
+  await expect(rules).toContainText('lightning mappers')
   await expect(rules).toContainText('GOES lightning mapper')
   // The team's limits form starts from what is entered, read back from the service.
   await openRow(page, 'Team weather limits')
@@ -673,4 +713,51 @@ test('official launch forecast (live API, writes): a signed-in save is stored, s
   await page.locator('summary', { hasText: 'Official launch forecast' }).click()
   await page.getByRole('button', { name: /^Enter (the official|a newer) forecast$/ }).click()
   await expect(page.getByRole('dialog', { name: 'Official launch forecast' }).locator('li').first()).toContainText(`Took back ${pct}%`)
+})
+
+test('radiation and space weather (live API): Blue Ghost’s screening with its particle event, IM-1’s belts not counted, the Sun now', async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(120_000)
+  await returningVisitor(context)
+  const row = (title: string) => page.locator('details').filter({ has: page.locator('summary', { hasText: title }) })
+  await page.goto('/missions/blue-ghost-m1/trip')
+  await expect(page.locator('[data-guide="section-answer"]')).toContainText('The trip takes', { timeout: 90_000 })
+  const rad = row('Radiation on the way')
+  await expect(rad.locator('summary').first()).toContainText('screening only')
+  await openRow(page, 'Radiation on the way')
+  await expect(rad).toContainText(/At least [\d.]+ ×\/÷2 h in the radiation belts over \d+ passes\. Cosmic rays give [\d.]+ ±[\d.]+ mGy a day on the way and [\d.]+ ±[\d.]+ mGy a day at the landing spot, before any shielding\./)
+  await expect(rad).toContainText('Screening only:')
+  await expect(rad).toContainText('Confirm in SPENVIS, OLTARIS or CREME-MC')
+  await expect(rad).toContainText(/Electrons above 1 MeV, whole trip≥[\d.]+ × 10¹⁰ ×\/÷2 per cm²/)
+  await expect(rad).toContainText('% of the sky open)')
+  // The one solar particle event during the trip, with its record.
+  await expect(rad).toContainText('25 February 2025, 00:20 UTC')
+  await expect(rad.getByRole('link', { name: 'NASA DONKI record' })).toHaveAttribute('href', /DONKI\/view\/SEP/)
+  // Three past large events for comparison, each with its measurements.
+  await expect(rad.locator('tbody tr')).toHaveCount(3)
+  await expect(rad).toContainText('August 1972')
+  await rad.locator('summary', { hasText: 'How each was worked out' }).click()
+  await expect(rad).toContainText('AE8/AP8')
+  await expect(rad).toContainText('CRaTER')
+
+  // IM-1: NASA's reconstruction starts past the belts, so none is counted (never "≥0").
+  await page.goto('/missions/im-1/trip')
+  await expect(page.locator('[data-guide="section-answer"]')).toContainText('The trip takes', { timeout: 90_000 })
+  await openRow(page, 'Radiation on the way')
+  await expect(row('Radiation on the way')).toContainText('No time in the radiation belts is counted (the climb out is not in NASA’s reconstruction).')
+  await expect(row('Radiation on the way')).not.toContainText('≥0')
+
+  // The Sun now, from the service: each reading with its age, or why it is not shown.
+  await page.goto('/missions/im-1/launch')
+  await expect(page.locator('[data-guide="section-answer"]')).toContainText('It launched on', { timeout: 90_000 })
+  await openRow(page, 'Space weather now')
+  const sw = row('Space weather now')
+  await expect(sw).toContainText(/(Now: .+ in the last 24 hours\.|No reading is recent enough to show: |No reading has been recorded yet\.)/, { timeout: 30_000 })
+  for (const label of ['Geomagnetic activity (Kp, 0 to 9)', 'Protons above 10 MeV', 'Solar wind speed']) {
+    await expect(sw.locator('dt', { hasText: label }).locator('xpath=following-sibling::dd[1]')).toContainText(/( · as of .+ ago|not shown|recorded yet)/)
+  }
+  await expect(sw).toContainText('The next three days')
+  await expect(sw).toContainText('(NASA DONKI)')
 })

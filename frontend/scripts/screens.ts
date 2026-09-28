@@ -27,6 +27,8 @@ const PAGES: [name: string, path: string, open?: string[]][] = [
   ['trip-im-1-with-gaps', '/missions/im-1/trip'],
   ['trip-blue-ghost-m1-corrections', '/missions/blue-ghost-m1/trip', ['Burns', 'Corrections on the way']],
   ['launch-im-1-weather-rules', '/missions/im-1/launch', ['Weather rules for this launch', 'Team weather limits']],
+  ['trip-blue-ghost-m1-radiation', '/missions/blue-ghost-m1/trip', ['Radiation on the way', 'How each was worked out']],
+  ['launch-im-1-space-weather', '/missions/im-1/launch', ['Space weather now']],
   ['contact-im-2', '/missions/im-2/contact'],
   ['return-im-1-land', '/missions/im-1/return'],
   ['return-im-2-droneship', '/missions/im-2/return'],

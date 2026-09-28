@@ -1285,49 +1285,195 @@
   },
   "radiation": {
    "belt_hours": {
-    "value": 3.1,
+    "value": 21.108333333333334,
     "unit": "h",
     "provenance": "computed",
-    "pm": 0.3,
+    "pm": null,
     "lo": null,
     "hi": null,
-    "factor": null,
-    "open": false,
+    "factor": 2.0,
+    "open": true,
     "no_margin_reason": null,
     "missing_reason": null,
-    "source": null
+    "source": "Inside the belts: where the maps hold electrons above 1 MeV or protons above 10 MeV. AE8/AP8 MAX (IRBEM): the year before averaged 155 sunspots a day, against 2 to 155 over the 11 years before (OMNI), so the solar-maximum maps. NASA's reconstruction starts 4,769 km above Earth, so the climb out of the parking orbit before it is not counted: a lower bound."
    },
-   "fluence_gt10mev": {
-    "value": 4100000000.0,
+   "belt_passes": 4,
+   "electron_fluence_gt1mev": {
+    "value": 20395979184.29259,
     "unit": "cm^-2",
     "provenance": "computed",
     "pm": null,
     "lo": null,
     "hi": null,
-    "factor": 2,
-    "open": false,
+    "factor": 2.0,
+    "open": true,
     "no_margin_reason": null,
     "missing_reason": null,
-    "source": null
+    "source": "AE8/AP8 MAX (IRBEM): the year before averaged 155 sunspots a day, against 2 to 155 over the 11 years before (OMNI), so the solar-maximum maps. The solar-minimum maps give 1.4e+10."
+   },
+   "fluence_gt10mev": {
+    "value": 799535361.2266312,
+    "unit": "cm^-2",
+    "provenance": "computed",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": 2.0,
+    "open": true,
+    "no_margin_reason": null,
+    "missing_reason": null,
+    "source": "Trapped protons above 10 MeV. AE8/AP8 MAX (IRBEM): the year before averaged 155 sunspots a day, against 2 to 155 over the 11 years before (OMNI), so the solar-maximum maps. The solar-minimum maps give 7.9e+08."
    },
    "gcr_dose_mgy_day": {
-    "value": 0.3,
-    "unit": "mGy/day",
+    "value": 0.171192453851957,
+    "unit": "mGy/d",
     "provenance": "computed",
-    "pm": 0.09,
+    "pm": 0.0513577361555871,
     "lo": null,
     "hi": null,
     "factor": null,
     "open": false,
     "no_margin_reason": null,
     "missing_reason": null,
-    "source": null
+    "source": "From 18.9 cGy a year in silicon, measured by CRaTER's microdosimeter on LRO on 20 June 2009, about 10,000 km from the Moon (Mazur et al. 2011, as given by Schwadron et al. 2012, JGR 117, E00H13), scaled by the cosmic-ray model's change between then (W = 5) and 2025-01 (W = 108): ×0.33 (Matthiä et al. 2013, W from the Oulu neutron monitor, NMDB). ±30 % covers the scaling."
    },
-   "screening_note": "Screening only: belt models AE8 and AP8, good to a factor of 2.",
+   "surface": {
+    "site_id": "mission-blue-ghost-m1",
+    "open_sky": {
+     "value": 1.0,
+     "unit": "",
+     "provenance": "computed",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "From the site's skyline, the cosmic rays taken as arriving evenly from every direction; 1 is a flat horizon.",
+     "missing_reason": null,
+     "source": null
+    },
+    "gcr_dose_mgy_day": {
+     "value": 0.11842950689209908,
+     "unit": "mGy/d",
+     "provenance": "computed",
+     "pm": 0.03552885206762972,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": null,
+     "missing_reason": null,
+     "source": "From 13.2 ± 1 µGy an hour in silicon, measured on the surface by Chang'e-4's LND from January 2019 (Zhang et al. 2020, Science Advances 6, eaaz1334), its horizon taken as flat, scaled by the cosmic-ray model's change between then (W = 16) and 2025-03 (W = 105): ×0.37 (Matthiä et al. 2013, W from the Oulu neutron monitor, NMDB). ±30 % covers the scaling. Times the site's open sky (1.000)."
+    }
+   },
+   "surface_note": null,
+   "sep_events": [
+    {
+     "t": "2025-02-25T00:20Z",
+     "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/37527/-1"
+    }
+   ],
+   "sep_note": "1 solar particle event(s) crossed NOAA's threshold (10 pfu above 10 MeV at GOES) during the trip, from NASA DONKI; their fluence is not worked out.",
+   "scenarios": [
+    {
+     "id": "oct-1989",
+     "name": "October 1989 (three events, 19-31 October)",
+     "fluence_gt10mev": {
+      "value": 19178330850.82127,
+      "unit": "cm^-2",
+      "provenance": "computed",
+      "pm": null,
+      "lo": null,
+      "hi": null,
+      "factor": null,
+      "open": false,
+      "no_margin_reason": "As measured at 1 AU outside Earth's magnetic field (taken as arriving evenly from all directions); GOES proton detector, 5-minute averages (NOAA NCEI), 1989-10-19 12:00 to 1989-11-01 00:00 UTC; peak 42,200 pfu above 10 MeV (NOAA's list: 40,000).",
+      "missing_reason": null,
+      "source": null
+     },
+     "fluence_gt30mev": {
+      "value": 4236815403.783322,
+      "unit": "cm^-2",
+      "provenance": "computed",
+      "pm": null,
+      "lo": null,
+      "hi": null,
+      "factor": null,
+      "open": false,
+      "no_margin_reason": "As above, above 30 MeV.",
+      "missing_reason": null,
+      "source": null
+     },
+     "source_url": "https://www.ncei.noaa.gov/data/goes-space-environment-monitor/access/avg/1989/10/goes07/csv/g07_eps_5m_19891001_19891031.csv"
+    },
+    {
+     "id": "oct-2003",
+     "name": "Late October 2003 (28-31 October)",
+     "fluence_gt10mev": {
+      "value": 13889295054.591164,
+      "unit": "cm^-2",
+      "provenance": "computed",
+      "pm": null,
+      "lo": null,
+      "hi": null,
+      "factor": null,
+      "open": false,
+      "no_margin_reason": "As measured at 1 AU outside Earth's magnetic field (taken as arriving evenly from all directions); GOES proton detector, 5-minute averages (NOAA NCEI), 2003-10-28 11:00 to 2003-11-01 00:00 UTC; peak 29,500 pfu above 10 MeV (NOAA's list: 29,500).",
+      "missing_reason": null,
+      "source": null
+     },
+     "fluence_gt30mev": {
+      "value": 3606545747.489446,
+      "unit": "cm^-2",
+      "provenance": "computed",
+      "pm": null,
+      "lo": null,
+      "hi": null,
+      "factor": null,
+      "open": false,
+      "no_margin_reason": "As above, above 30 MeV.",
+      "missing_reason": null,
+      "source": null
+     },
+     "source_url": "https://www.ncei.noaa.gov/data/goes-space-environment-monitor/access/avg/2003/10/goes11/csv/g11_eps_5m_20031001_20031031.csv"
+    },
+    {
+     "id": "aug-1972",
+     "name": "August 1972",
+     "fluence_gt10mev": {
+      "value": 16803374689.388996,
+      "unit": "cm^-2",
+      "provenance": "computed",
+      "pm": null,
+      "lo": null,
+      "hi": null,
+      "factor": null,
+      "open": false,
+      "no_margin_reason": "As measured at 1 AU outside Earth's magnetic field (taken as arriving evenly from all directions); King (1974), J. Spacecraft Rockets 11, 401: fitted spectrum J(>E) = 7.9e9 exp((30 - E)/26.5) per cm², as SPENVIS gives it.",
+      "missing_reason": null,
+      "source": null
+     },
+     "fluence_gt30mev": {
+      "value": 7900000000.0,
+      "unit": "cm^-2",
+      "provenance": "computed",
+      "pm": null,
+      "lo": null,
+      "hi": null,
+      "factor": null,
+      "open": false,
+      "no_margin_reason": "As above, above 30 MeV.",
+      "missing_reason": null,
+      "source": null
+     },
+     "source_url": "https://www.spenvis.oma.be/help/background/flare/flare.html"
+    }
+   ],
+   "screening_note": "Screening only: long-term average belt maps (good to about a factor of two), cosmic-ray dose scaled from measurements (±30 %), and past events as they were measured at 1 AU. None of it accounts for the spacecraft's own shielding. Confirm in SPENVIS, OLTARIS or CREME-MC before any design decision.",
    "confirm_in": [
-    "SPENVIS",
-    "OLTARIS",
-    "CREME-MC"
+    "SPENVIS (ESA)",
+    "OLTARIS (NASA)",
+    "CREME-MC (Vanderbilt University)"
    ]
   },
   "corrections": {
@@ -1499,7 +1645,8 @@
    "plan_note": "The flight as planned: NASA's reconstruction just before entering lunar orbit, propagated back to where it passed closest to Earth. Forward from there it arrives where and when the flown one did, with no burn on the way.",
    "flown_note": "The reconstruction shows corrections of 3.2 m/s after leaving Earth (any in its gaps are not seen)."
   },
-  "corrections_note": null
+  "corrections_note": null,
+  "radiation_note": null
  },
  "meta": {
   "computed_at": "2026-09-27T08:00:00Z",

@@ -53,7 +53,7 @@ function walk(x: unknown, at: string, found: string[]): number {
   return n
 }
 
-const SECTION_FILES = ['ready.json', 'ready-empty.json', 'launch.json', 'launch-weather.json', 'trip.json', 'trip-none.json', 'contact.json', 'rover.json', 'return.json']
+const SECTION_FILES = ['ready.json', 'ready-empty.json', 'launch.json', 'launch-weather.json', 'trip.json', 'trip-none.json', 'contact.json', 'rover.json', 'return.json', 'space-weather.json']
 
 describe('lifecycle contract fixtures', () => {
   it('every Quantity in every fixture has one margin form or a reason (ADR-9)', () => {

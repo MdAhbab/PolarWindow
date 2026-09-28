@@ -23,7 +23,11 @@ import { ReadinessList, RiskTable, sortItems } from './Readiness'
 import { LimitBars, LimitTable } from './LimitBars'
 import { coverageGaps, tripStretches } from './TripStrip'
 import { CorrectionsRow, shadowAndContact } from '../../screens/sections/TripSection'
-import { observedWords, percentWords } from './WeatherRules'
+import { climatologyWords, observedWords, percentWords } from './WeatherRules'
+import { RadiationRow, radiationSentence, screeningFigure } from './Radiation'
+import { outlookSentence, readingAge, spaceWeatherSentence } from './SpaceWeather'
+import spaceWeatherFixture from '../../lib/api/__fixtures__/lifecycle/space-weather.json'
+import type { RadiationDTO, SpaceWeatherDTO } from '../../lib/api/lifecycle'
 import { forecastChangeWords, limitDraft, limitsToSend, shownForecast } from '../../screens/sections/LaunchSection'
 import type { EnteredLimitDTO, RuleRowDTO } from '../../lib/api/lifecycle'
 import { seaWords, zoneWords } from '../../screens/sections/ReturnSection'
@@ -512,5 +516,61 @@ describe('Official forecast: the one shown, and taking it back', () => {
       'Entered 20% (cumulus cloud rule); before it: 10% (cumulus cloud rule)',
     )
     expect(forecastChangeWords({ ...e, action: 'delete', before: saved, after: null })).toBe('Took back 20% (cumulus cloud rule); shown now: none')
+  })
+})
+
+describe('Radiation on the way: screening only', () => {
+  const rad = tripFixture.data.radiation as unknown as RadiationDTO
+  it('opens with the belts and the cosmic-ray dose, each with its margin', () => {
+    expect(radiationSentence(rad)).toBe(
+      'At least 21.1 ×/÷2 h in the radiation belts over 4 passes. Cosmic rays give 0.17 ±0.05 mGy a day on the way and 0.12 ±0.04 mGy a day at the landing spot, before any shielding.',
+    )
+  })
+  it('says a lower bound of zero is not counted, never "≥0"', () => {
+    const b = { ...rad.belt_hours, value: 0, open: true }
+    expect(screeningFigure(b)).toBe('none counted')
+    expect(radiationSentence({ ...rad, belt_hours: b, belt_passes: 0, surface: null })).toMatch(
+      /^No time in the radiation belts is counted \(the climb out is not in NASA’s reconstruction\)\. Cosmic rays give .+ on the way, before any shielding\.$/,
+    )
+  })
+  it('shows the fluences as powers of ten with their factor, and why there is none', () => {
+    expect(screeningFigure(rad.electron_fluence_gt1mev)).toMatch(/^≥[\d.]+ × 10¹⁰ ×\/÷2 per cm²$/)
+    renderApp(<RadiationRow r={null} note="No trip has been worked out." />)
+    expect(screen.getByText('No trip has been worked out.')).toBeTruthy()
+  })
+})
+
+describe('Space weather now', () => {
+  const sw = spaceWeatherFixture.data as unknown as SpaceWeatherDTO
+  const meta = spaceWeatherFixture.meta
+  it('says the readings in one line', () => {
+    expect(spaceWeatherSentence(sw, meta)).toBe(
+      'Now: Kp 1, protons above 10 MeV at 0.23 pfu, X-ray flares class B4.7, solar wind at 456 km/s; 2 alerts in the last 24 hours.',
+    )
+  })
+  it('says when no reading is recent enough, once', () => {
+    const missing = { ...sw.now.kp, value: null, missing_reason: 'Old.' }
+    const none = { ...sw, now: { ...sw.now, kp: missing, proton_10mev_pfu: missing, proton_100mev_pfu: missing, solar_wind_km_s: missing, bz_nt: missing, xray_class: null } }
+    expect(spaceWeatherSentence(none, { computed_at: '2026-09-26T20:14:00Z', stale: true })).toBe(
+      'No reading is recent enough to show: the newest is from 26 September 2026, 20:14 UTC. Each says why below.',
+    )
+  })
+  it('gives NOAA’s outlook as issued, or why not', () => {
+    expect(outlookSentence(sw.outlook)).toBe(
+      'NOAA’s outlook for Sep 26-Sep 28 2026, issued 26 September 2026, 12:30 UTC: a 1%, 1% and 1% chance of a radiation storm (S1 or greater), day by day; the largest Kp expected is 4.',
+    )
+    expect(outlookSentence({ ...sw.outlook, missing_reason: 'Too old.' })).toBe('Too old.')
+  })
+  it('dates each reading by its own source', () => {
+    expect(readingAge(meta, (u) => u === sw.now.kp.source, )).toMatch(/^as of /)
+    expect(readingAge(meta, () => false)).toBeNull()
+  })
+})
+
+describe('Weather rules: past years', () => {
+  const c = { share: 0.0101, years: '2019-2025', source: '' }
+  it('reads a lightning rule as thunder at the pad, a wind rule as over the limit', () => {
+    expect(climatologyWords({ class: 'observation', climatology: c })).toBe('Past years (2019-2025): thunder could be heard at the pad 1.0% of the time.')
+    expect(climatologyWords({ class: 'model', climatology: { ...c, years: '2001-2024' } })).toBe('Past years (2001-2024): over the limit 1.0% of the time.')
   })
 })

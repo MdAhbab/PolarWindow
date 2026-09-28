@@ -392,13 +392,61 @@ export interface TripDTO {
   corrections: CorrectionsDTO | null
   corrections_note: string | null
   moon_pull: { equal_pull_km: number; sphere_of_influence_km: number; t_equal_pull: string | null } | null
-  radiation: {
-    belt_hours: QuantityDTO
-    fluence_gt10mev: QuantityDTO
-    gcr_dose_mgy_day: QuantityDTO
-    screening_note: string
-    confirm_in: string[]
-  } | null
+  /** A screening estimate for a flown trip; null with `radiation_note` saying why. */
+  radiation: RadiationDTO | null
+  radiation_note?: string | null
+}
+
+/** Screening only: belt maps good to a factor of two, cosmic rays ±30 %, past events as measured at 1 AU. */
+export interface RadiationDTO {
+  /** Factor 2; `open` = the climb out before NASA's reconstruction is not counted (a lower bound). */
+  belt_hours: QuantityDTO
+  belt_passes: number
+  /** Electrons above 1 MeV, per cm², whole trip. */
+  electron_fluence_gt1mev: QuantityDTO
+  /** Trapped protons above 10 MeV, per cm², whole trip. */
+  fluence_gt10mev: QuantityDTO
+  /** mGy a day in silicon, before shielding. */
+  gcr_dose_mgy_day: QuantityDTO
+  surface: { site_id: string; open_sky: QuantityDTO; gcr_dose_mgy_day: QuantityDTO } | null
+  surface_note: string | null
+  sep_events: { t: string; link: string }[]
+  sep_note: string
+  scenarios: { id: string; name: string; fluence_gt10mev: QuantityDTO; fluence_gt30mev: QuantityDTO; source_url: string }[]
+  screening_note: string
+  confirm_in: string[]
+}
+
+/** `GET /space-weather`: what the Sun is doing now, as NOAA SWPC and NASA DONKI report it. */
+export interface SpaceWeatherDTO {
+  now: {
+    kp: QuantityDTO
+    proton_10mev_pfu: QuantityDTO
+    proton_100mev_pfu: QuantityDTO
+    xray_class: string | null
+    solar_wind_km_s: QuantityDTO
+    bz_nt: QuantityDTO
+    /** SWPC headlines of the last 24 h. */
+    alerts: string[]
+  }
+  outlook: {
+    issued: string | null
+    days: string | null
+    /** SWPC's day 1-3 chance of a radiation storm (S1 or greater), verbatim. */
+    s1_or_greater_pct: number[] | null
+    kp_max_expected: number | null
+    /** The three-day forecast, word for word. */
+    text: string | null
+    missing_reason: string | null
+  }
+  donki: {
+    cme: { id: string; start: string | null; speed_m_s: number | null; earth_arrival_estimates: string[] | null; link: string | null }[]
+    flares: { id: string; peak: string | null; class: string | null; link: string | null }[]
+    sep: { id: string; time: string | null; instruments: (string | null)[] | null; link: string | null }[]
+    days: number | null
+    missing_reason: string | null
+  }
+  note: string
 }
 
 /** Never a prediction: sizes of the corrections under the listed assumed errors, over many runs. */
@@ -612,6 +660,8 @@ export type ContractChecks = [
   Fits<Present<S['OfficialForecast']>, OfficialForecastDTO>,
   Fits<Present<S['OfficialForecastOut']>, StoredForecastDTO>,
   Fits<Present<S['OfficialForecastRemoved']>, RemovedForecastDTO>,
+  Fits<Present<S['Radiation']>, RadiationDTO>,
+  Fits<Present<S['SpaceWeather']>, SpaceWeatherDTO>,
   Fits<Present<S['VehicleLimits']>, VehicleLimitsDTO>,
   // `counts` is typed as a plain map in the schema; its keys are checked in the fixture tests.
   Fits<Present<Omit<S['Ready'], 'counts'>>, Omit<ReadyDTO, 'counts'>>,

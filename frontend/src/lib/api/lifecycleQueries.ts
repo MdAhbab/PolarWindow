@@ -205,6 +205,18 @@ export function useEnteredLimits(vehicleId: string | null | undefined, enabled: 
   })
 }
 
+/** What the Sun is doing now: public, answered at once; read again every five minutes while shown. */
+export function useSpaceWeather(enabled: boolean) {
+  return useQuery({
+    queryKey: keys.lifecycle('space-weather', undefined),
+    enabled,
+    staleTime: 5 * MINUTE,
+    refetchInterval: enabled ? 5 * MINUTE : false,
+    retry: retryServerErrors,
+    queryFn: ({ signal }) => api.spaceWeather(signal),
+  })
+}
+
 export function useFeeds(enabled: boolean) {
   return useQuery({
     queryKey: keys.feeds(),

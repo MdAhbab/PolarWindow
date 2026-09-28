@@ -68,7 +68,8 @@
   "moon_pull": null,
   "radiation": null,
   "corrections": null,
-  "corrections_note": "No trip has been worked out: a designed trip needs a launch time, and the launch calendar for this mission is not worked out yet."
+  "corrections_note": "No trip has been worked out: a designed trip needs a launch time, and the launch calendar for this mission is not worked out yet.",
+  "radiation_note": "No trip has been worked out: a designed trip needs a launch time, and the launch calendar for this mission is not worked out yet."
  },
  "meta": {
   "computed_at": "2026-09-27T08:00:00Z",

@@ -1,0 +1,260 @@
+{
+ "data": {
+  "now": {
+   "kp": {
+    "value": 1.0,
+    "unit": "Kp",
+    "provenance": "published",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": "As NOAA Space Weather Prediction Center reports it.",
+    "missing_reason": null,
+    "source": "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
+   },
+   "proton_10mev_pfu": {
+    "value": 0.23378969728946686,
+    "unit": "pfu",
+    "provenance": "published",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": "As NOAA Space Weather Prediction Center reports it.",
+    "missing_reason": null,
+    "source": "https://services.swpc.noaa.gov/json/goes/primary/integral-protons-6-hour.json"
+   },
+   "proton_100mev_pfu": {
+    "value": 0.2151239514350891,
+    "unit": "pfu",
+    "provenance": "published",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": "As NOAA Space Weather Prediction Center reports it.",
+    "missing_reason": null,
+    "source": "https://services.swpc.noaa.gov/json/goes/primary/integral-protons-6-hour.json"
+   },
+   "xray_class": "B4.7",
+   "solar_wind_km_s": {
+    "value": 456.2,
+    "unit": "km/s",
+    "provenance": "published",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": "As NOAA Space Weather Prediction Center reports it.",
+    "missing_reason": null,
+    "source": "https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json"
+   },
+   "bz_nt": {
+    "value": -0.47000000000000003,
+    "unit": "nT",
+    "provenance": "published",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": "As NOAA Space Weather Prediction Center reports it.",
+    "missing_reason": null,
+    "source": "https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json"
+   },
+   "alerts": [
+    "ALERT: Electron 2MeV Integral Flux exceeded 1,000pfu",
+    "ALERT: Geomagnetic K-index of 4"
+   ]
+  },
+  "outlook": {
+   "issued": "2026-09-26T12:30:00Z",
+   "days": "Sep 26-Sep 28 2026",
+   "s1_or_greater_pct": [
+    1,
+    1,
+    1
+   ],
+   "kp_max_expected": 4.0,
+   "text": ":Product: 3-Day Forecast\n:Issued: 2026 Sep 26 1230 UTC\n# Prepared by the U.S. Dept. of Commerce, NOAA, Space Weather Prediction Center\n#\nA. NOAA Geomagnetic Activity Observation and Forecast\n\nThe greatest observed 3 hr Kp over the past 24 hours was 4 (below NOAA\nScale levels).\nThe greatest expected 3 hr Kp for Sep 26-Sep 28 2026 is 4.00 (below NOAA\nScale levels).\n\nNOAA Kp index breakdown Sep 26-Sep 28 2026\n\n             Sep 26       Sep 27       Sep 28\n00-03UT       3.33         2.67         1.67     \n03-06UT       4.00         3.00         2.00     \n06-09UT       3.67         2.67         1.67     \n09-12UT       2.67         2.67         1.67     \n12-15UT       2.00         2.00         1.67     \n15-18UT       1.67         1.67         0.67     \n18-21UT       1.67         1.67         0.67     \n21-00UT       2.33         2.00         1.67     \n\nRationale: No G1 (Minor) or greater geomagnetic storms are expected\nthrough 28 Sep as no significant transient or recurrent solar wind\nfeatures are forecast.\n\nB. NOAA Solar Radiation Activity Observation and Forecast\n\nSolar radiation, as observed by NOAA GOES-18 over the past 24 hours, was\nbelow S-scale storm level thresholds.\n\nSolar Radiation Storm Forecast for Sep 26-Sep 28 2026\n\n              Sep 26  Sep 27  Sep 28\nS1 or greater    1%      1%      1%\n\nRationale: No S1 (Minor) or greater solar radiation storms are expected.\nNo significant active region activity favorable for radiation storm\nproduction is forecast.\n\nC. NOAA Radio Blackout Activity and Forecast\n\nNo radio blackouts were observed over the past 24 hours.\n\nRadio Blackout Forecast for Sep 26-Sep 28 2026\n\n              Sep 26        Sep 27        Sep 28\nR1-R2           10%           10%            5%\nR3 or greater    1%            1%            1%\n\nRationale: There is a slight chance for R1-R2 (Minor-Moderate) radio\nblackouts through 28 Sep.\n",
+   "missing_reason": null
+  },
+  "donki": {
+   "cme": [
+    {
+     "id": "2026-09-26T15:24:00-CME-001",
+     "start": "2026-09-26T15:24:00Z",
+     "speed_m_s": 449000.0,
+     "earth_arrival_estimates": [],
+     "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/CME/48832/-1"
+    },
+    {
+     "id": "2026-09-26T02:24:00-CME-001",
+     "start": "2026-09-26T02:24:00Z",
+     "speed_m_s": 417000.0,
+     "earth_arrival_estimates": [],
+     "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/CME/48829/-1"
+    },
+    {
+     "id": "2026-09-26T00:48:00-CME-001",
+     "start": "2026-09-26T00:48:00Z",
+     "speed_m_s": 478000.0,
+     "earth_arrival_estimates": [],
+     "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/CME/48823/-1"
+    },
+    {
+     "id": "2026-09-25T23:00:00-CME-001",
+     "start": "2026-09-25T23:00:00Z",
+     "speed_m_s": 472000.0,
+     "earth_arrival_estimates": [],
+     "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/CME/48821/-1"
+    }
+   ],
+   "flares": [
+    {
+     "id": "2026-09-19T17:57:00-FLR-001",
+     "peak": "2026-09-19T18:17:00Z",
+     "class": "C3.3",
+     "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/FLR/48733/-1"
+    },
+    {
+     "id": "2026-09-09T08:48:00-FLR-001",
+     "peak": "2026-09-09T09:08:00Z",
+     "class": "C3.4",
+     "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/FLR/48629/-1"
+    },
+    {
+     "id": "2026-09-08T12:19:00-FLR-001",
+     "peak": "2026-09-08T12:24:00Z",
+     "class": "C2.4",
+     "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/FLR/48618/-1"
+    }
+   ],
+   "sep": [
+    {
+     "id": "2026-09-05T16:30:00-SEP-001",
+     "time": "2026-09-05T16:30:00Z",
+     "instruments": [
+      "MODEL: REleASE:ACE/EPAM 15.8-39.8 MeV"
+     ],
+     "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/48554/-1"
+    },
+    {
+     "id": "2026-09-05T16:30:00-SEP-002",
+     "time": "2026-09-05T16:30:00Z",
+     "instruments": [
+      "MODEL: REleASE:SOHO/EPHIN 15.8-39.8 MeV"
+     ],
+     "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/48555/-1"
+    }
+   ],
+   "days": 30,
+   "missing_reason": null
+  },
+  "note": "What the Sun is doing now, as NOAA SWPC and NASA DONKI report it; each number has its own age. Doses along a trip are in the Trip section, as a screening estimate."
+ },
+ "meta": {
+  "computed_at": "2026-09-26T20:14:00Z",
+  "uncertainty": {
+   "kind": "composite",
+   "parts": [
+    {
+     "source": "Space weather",
+     "note": "As published; no model of ours is involved."
+    }
+   ]
+  },
+  "engines": {
+   "rad": "rad-2"
+  },
+  "sources": [
+   {
+    "name": "NOAA Space Weather Prediction Center",
+    "url": "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json",
+    "issued_at": "2026-09-26T15:00:00Z",
+    "fetched_at": "2026-09-26T20:20:28Z",
+    "licence": "NOAA SWPC, US government work (public domain)",
+    "snapshot_id": 4
+   },
+   {
+    "name": "NOAA Space Weather Prediction Center",
+    "url": "https://services.swpc.noaa.gov/json/goes/primary/integral-protons-6-hour.json",
+    "issued_at": "2026-09-26T20:05:00Z",
+    "fetched_at": "2026-09-26T20:20:28Z",
+    "licence": "NOAA SWPC, US government work (public domain)",
+    "snapshot_id": 8
+   },
+   {
+    "name": "NOAA Space Weather Prediction Center",
+    "url": "https://services.swpc.noaa.gov/json/goes/primary/xrays-6-hour.json",
+    "issued_at": "2026-09-26T20:14:00Z",
+    "fetched_at": "2026-09-26T20:20:29Z",
+    "licence": "NOAA SWPC, US government work (public domain)",
+    "snapshot_id": 10
+   },
+   {
+    "name": "NOAA Space Weather Prediction Center",
+    "url": "https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json",
+    "issued_at": "2026-09-26T20:13:00Z",
+    "fetched_at": "2026-09-26T20:20:29Z",
+    "licence": "NOAA SWPC, US government work (public domain)",
+    "snapshot_id": 12
+   },
+   {
+    "name": "NOAA Space Weather Prediction Center",
+    "url": "https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json",
+    "issued_at": "2026-09-26T20:14:00Z",
+    "fetched_at": "2026-09-26T20:20:29Z",
+    "licence": "NOAA SWPC, US government work (public domain)",
+    "snapshot_id": 14
+   },
+   {
+    "name": "NOAA Space Weather Prediction Center",
+    "url": "https://services.swpc.noaa.gov/products/alerts.json",
+    "issued_at": "2026-09-26T15:51:34Z",
+    "fetched_at": "2026-09-26T20:20:30Z",
+    "licence": "NOAA SWPC, US government work (public domain)",
+    "snapshot_id": 15
+   },
+   {
+    "name": "NOAA Space Weather Prediction Center",
+    "url": "https://services.swpc.noaa.gov/text/3-day-forecast.txt",
+    "issued_at": "2026-09-26T12:30:00Z",
+    "fetched_at": "2026-09-26T20:20:30Z",
+    "licence": "NOAA SWPC, US government work (public domain)",
+    "snapshot_id": 17
+   },
+   {
+    "name": "NASA DONKI (CCMC)",
+    "url": "https://api.nasa.gov/DONKI/CME?startDate=2026-08-27&endDate=2026-09-26",
+    "issued_at": "2026-09-26T15:24:00Z",
+    "fetched_at": "2026-09-26T20:20:34Z",
+    "licence": "NASA CCMC DONKI, US government work (public domain)",
+    "snapshot_id": 27
+   },
+   {
+    "name": "NASA DONKI (CCMC)",
+    "url": "https://api.nasa.gov/DONKI/FLR?startDate=2026-08-27&endDate=2026-09-26",
+    "issued_at": "2026-09-19T18:17:00Z",
+    "fetched_at": "2026-09-26T20:20:36Z",
+    "licence": "NASA CCMC DONKI, US government work (public domain)",
+    "snapshot_id": 28
+   },
+   {
+    "name": "NASA DONKI (CCMC)",
+    "url": "https://api.nasa.gov/DONKI/SEP?startDate=2026-08-27&endDate=2026-09-26",
+    "issued_at": "2026-09-05T16:30:00Z",
+    "fetched_at": "2026-09-26T20:20:36Z",
+    "licence": "NASA CCMC DONKI, US government work (public domain)",
+    "snapshot_id": 29
+   }
+  ],
+  "stale": false,
+  "compute_ms": null
+ }
+}

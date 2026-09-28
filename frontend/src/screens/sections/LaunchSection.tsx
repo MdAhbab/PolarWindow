@@ -24,6 +24,7 @@ import { Field, FormSheet, HistoryList, Select, TextArea, TextInput, isHttpUrl }
 import { Button, Disclosure } from '../../components/ui'
 import { Icon } from '../../components/Icon'
 import { UncertaintyNote } from '../../components/States'
+import { SpaceWeatherRow } from '../../components/lifecycle/SpaceWeather'
 import { useCanWrite } from './ReadySection'
 
 const TERMS = ['launchTime', 'flightTime', 'sunAtLanding', 'sunlightAfterLanding']
@@ -218,7 +219,7 @@ function LaunchAnswer({ cal, meta, missionId }: { cal: LaunchCalendarDTO; meta: 
           )}
           {wx?.data.range_note && <p className="text-small leading-5 text-ink-2">{wx.data.range_note}</p>}
         </Disclosure>
-        {wx && <SpaceWeatherRow wx={wx.data} meta={wx.meta} />}
+        <SpaceWeatherRow />
         {/* A flown mission's launch is the one it flew: there are no dates to change. */}
         {!flown && (
           <DatesRow
@@ -319,30 +320,6 @@ function WeatherBody({ wx, meta, note }: { wx: LaunchWeatherDTO; meta: Lifecycle
       </p>
       <WeatherRuleTable rules={wx.rules} />
     </>
-  )
-}
-
-function SpaceWeatherRow({ wx, meta }: { wx: LaunchWeatherDTO; meta: LifecycleMetaDTO }) {
-  const sw = wx.space_weather_now
-  const swpc = meta.sources.find((s) => /SWPC|space weather/i.test(s.name))
-  return (
-    <Disclosure title="Space weather now" meta={`Kp ${quantityText(sw.kp)}${sw.alerts.length ? `, ${sw.alerts.length} alerts` : ''}`}>
-      <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-body sm:grid-cols-[max-content_1fr]">
-        <dt className="text-ink-3">Geomagnetic activity (Kp)</dt>
-        <dd className="text-ink">
-          <QuantityLine q={sw.kp} />
-        </dd>
-        <dt className="text-ink-3">Protons above 10 MeV</dt>
-        <dd className="text-ink">
-          <QuantityLine q={sw.proton_10mev_pfu} />
-        </dd>
-        <dt className="text-ink-3">X-ray flares</dt>
-        <dd className="text-ink">{sw.xray_class ?? 'Not reported'}</dd>
-        <dt className="text-ink-3">Alerts</dt>
-        <dd className="text-ink">{sw.alerts.length ? sw.alerts.join('; ') : 'None'}</dd>
-      </dl>
-      {swpc?.fetched_at && <p className="text-caption text-ink-3">As of {ageWords(Date.parse(swpc.fetched_at))}, from NOAA’s Space Weather Prediction Center.</p>}
-    </Disclosure>
   )
 }
 

@@ -36,6 +36,7 @@ import type {
   StoredForecastDTO,
   VehicleLimitsDTO,
   SectionStatusDTO,
+  SpaceWeatherDTO,
   TripDTO,
   UserDTO,
 } from './lifecycle'
@@ -411,6 +412,9 @@ export const api = {
 
   returnSection: (missionId: string, signal?: AbortSignal) =>
     section<ReturnDTO>(`/missions/${enc(missionId)}/return`, undefined, signal),
+
+  /** What the Sun is doing now (public; answers at once, no job). */
+  spaceWeather: (signal?: AbortSignal) => request<SectionDTO<SpaceWeatherDTO>>('/space-weather', { signal }),
 
   job: (jobId: number, signal?: AbortSignal) => request<JobRefDTO>(`/jobs/${jobId}`, { signal }),
 

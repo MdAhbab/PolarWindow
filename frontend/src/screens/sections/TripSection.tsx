@@ -20,6 +20,7 @@ import {
 import { TripLegendItems, TripStrip, TripTable, tripSpan, tripStretches } from '../../components/lifecycle/TripStrip'
 import { UncertaintyNote } from '../../components/States'
 import { Disclosure } from '../../components/ui'
+import { RadiationRow } from '../../components/lifecycle/Radiation'
 
 const TERMS = ['tripSunlight', 'tripHeard', 'tripShadow', 'tripUnheard']
 const HOUR = 3_600_000
@@ -104,24 +105,7 @@ function TripAnswer({ trip, meta, missionId }: { trip: TripDTO; meta: LifecycleM
         table={<TripTable trip={trip} stretches={stretches} />}
       />
       <Rows>
-        {trip.radiation && (
-          <Disclosure title="Radiation on the way" meta="screening only">
-            <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-body sm:grid-cols-[max-content_1fr]">
-              <dt className="text-ink-3">Time in the radiation belts</dt>
-              <dd className="text-ink">{quantityText(trip.radiation.belt_hours)}</dd>
-              <dt className="text-ink-3">Protons above 10 MeV, all trip</dt>
-              <dd className="text-ink">{quantityText(trip.radiation.fluence_gt10mev)}</dd>
-              <dt className="text-ink-3">Dose from cosmic rays</dt>
-              <dd className="text-ink">{quantityText(trip.radiation.gcr_dose_mgy_day)}</dd>
-            </dl>
-            <p className="text-small leading-5 text-ink-2">{trip.radiation.screening_note}</p>
-            {trip.radiation.confirm_in.length > 0 && (
-              <p className="text-small leading-5 text-ink-2">
-                Confirm in {trip.radiation.confirm_in.join(', ')} before relying on it.
-              </p>
-            )}
-          </Disclosure>
-        )}
+        <RadiationRow r={trip.radiation} note={trip.radiation_note} />
         <Disclosure title="Burns" meta={trip.burns.length ? `${trip.burns.length}` : 'none listed'}>
           {trip.burns.length === 0 ? (
             <p className="text-body leading-6 text-ink-2">{trip.burns_note ?? 'No burns are listed for this trip.'}</p>

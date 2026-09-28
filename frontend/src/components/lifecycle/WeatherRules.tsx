@@ -91,6 +91,18 @@ export function observedWords(o: NonNullable<RuleRowDTO['observed']>): { lead?: 
   return { detail: o.detail }
 }
 
+/**
+ * Past years in words: a wind rule's share over its limit, or, for a lightning
+ * rule (seen, not forecast), how often thunder could be heard at the pad.
+ */
+export function climatologyWords(row: Pick<RuleRowDTO, 'class' | 'climatology'>): string {
+  const c = row.climatology
+  if (!c) return ''
+  return row.class === 'observation'
+    ? `Past years (${c.years}): thunder could be heard at the pad ${percentWords(c.share)} of the time.`
+    : `Past years (${c.years}): over the limit ${percentWords(c.share)} of the time.`
+}
+
 function OtherCell({ row }: { row: RuleRowDTO }) {
   const lines: { key: string; lead?: string; text: string; strong?: boolean }[] = []
   for (const f of row.one_forecast) {
@@ -100,10 +112,7 @@ function OtherCell({ row }: { row: RuleRowDTO }) {
     const w = observedWords(row.observed)
     lines.push({ key: 'observed', lead: w.lead, text: w.detail, strong: row.observed.state === 'seen' })
   }
-  if (row.climatology) {
-    const c = row.climatology
-    lines.push({ key: 'climatology', lead: `Past years (${c.years}): over the limit ${percentWords(c.share)} of the time.`, text: c.source })
-  }
+  if (row.climatology) lines.push({ key: 'climatology', lead: climatologyWords(row), text: row.climatology.source })
   if (!lines.length) return <span className="text-small text-ink-3">—</span>
   return (
     <ul className="flex flex-col gap-1.5">
