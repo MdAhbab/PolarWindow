@@ -1,0 +1,15 @@
+{
+ "stops_working": [
+  {
+   "id": "item-prime1",
+   "name": "PRIME-1 drill and mass spectrometer",
+   "kind": "payload"
+  },
+  {
+   "id": "meas-ice-depth",
+   "name": "Ice below the surface, by depth",
+   "kind": "measurement"
+  }
+ ],
+ "note": "Follows what the team entered as depending on this part."
+}

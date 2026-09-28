@@ -328,10 +328,13 @@ export interface paths {
         put?: never;
         /**
          * Sign in as the project manager
-         * @description A project manager's session, with no user name or password.
+         * @description A named project manager's session, with no password.
          *
          *     For a judged demo: the landing page's "Open the dashboard" button calls
-         *     this. Turned off with `PW_DEMO_SIGN_IN=false`, when it answers 403.
+         *     this, with the name the person typed or with no body, when the session is
+         *     recorded as "Demo project manager". Every change made with the session is
+         *     recorded against that name. Turned off with `PW_DEMO_SIGN_IN=false`, when
+         *     it answers 403.
          */
         post: operations["demo_sign_in_api_v1_auth_demo_post"];
         delete?: never;
@@ -462,6 +465,588 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Where a heavy answer has got to */
+        get: operations["get_job_api_v1_jobs__job_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/jobs/{job_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Work out a failed answer again */
+        post: operations["retry_job_api_v1_jobs__job_id__retry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/feeds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every live data source and its age */
+        get: operations["list_feeds_api_v1_feeds_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/feeds/{provider}/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask the feeds worker to fetch a provider's products now */
+        post: operations["refresh_api_v1_feeds__provider__refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/sections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The six steps of a mission and one plain sentence for each */
+        get: operations["sections_api_v1_missions__mission_id__sections_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/contact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Who can hear the lander, and how long a message waits */
+        get: operations["contact_api_v1_missions__mission_id__contact_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/contact/plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The contact plan as CSV, or as an ION-DTN contact plan (needs a data rate) */
+        get: operations["contact_plan_api_v1_missions__mission_id__contact_plan_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/contact/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record a ground station pass the team has booked */
+        post: operations["add_booking_api_v1_missions__mission_id__contact_bookings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/trip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The trip to the Moon: distance, shadow, when a station could see it */
+        get: operations["trip_api_v1_missions__mission_id__trip_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/trip/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The flown trajectory as a CCSDS Orbit Ephemeris Message or CSV */
+        get: operations["trip_export_api_v1_missions__mission_id__trip_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/launch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The launch a mission flew, or its launch opportunities backed out from the landing */
+        get: operations["launch_api_v1_missions__mission_id__launch_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/launch/weather": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Each launch weather rule at one launch time, with what the forecasts say */
+        get: operations["launch_weather_api_v1_missions__mission_id__launch_weather_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/launch/official-forecast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Enter the range's official launch weather forecast */
+        put: operations["official_forecast_api_v1_missions__mission_id__launch_official_forecast_put"];
+        post?: never;
+        /** Take back the official launch weather forecast shown */
+        delete: operations["remove_official_forecast_api_v1_missions__mission_id__launch_official_forecast_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vehicles/{vehicle_id}/limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Weather limits the team entered for a vehicle, with their notes */
+        get: operations["read_vehicle_limits_api_v1_vehicles__vehicle_id__limits_get"];
+        /** Enter weather limits the vehicle maker does not publish */
+        put: operations["vehicle_limits_api_v1_vehicles__vehicle_id__limits_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Where the booster comes down, and whether anything comes back to Earth */
+        get: operations["recovery_api_v1_missions__mission_id__return_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/return/limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Enter the sea and wind limits for recovering the booster (and a capsule) */
+        put: operations["return_limits_api_v1_missions__mission_id__return_limits_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/space-weather": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What the Sun is doing now (NOAA SWPC, NASA DONKI), each number with its age */
+        get: operations["space_weather_api_v1_space_weather_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Readiness: every item's state, milestones, risks and parts */
+        get: operations["get_ready_api_v1_missions__mission_id__ready_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/ready/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a readiness item */
+        post: operations["add_item_api_v1_missions__mission_id__ready_items_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ready/items/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Move an item to its next state (409 with the allowed states when not allowed) */
+        patch: operations["move_item_api_v1_ready_items__item_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/ready/items/{item_id}/tests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Record an environmental test result for an item */
+        put: operations["record_test_api_v1_ready_items__item_id__tests_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ready/items/{item_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Change history of one readiness item */
+        get: operations["item_history_api_v1_ready_items__item_id__history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Change history of any entered record */
+        get: operations["history_api_v1_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/parts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Flight parts and spares */
+        get: operations["list_parts_api_v1_missions__mission_id__parts_get"];
+        put?: never;
+        /** Add a part */
+        post: operations["add_part_api_v1_missions__mission_id__parts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/parts/{part_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change a part (its status, place) */
+        patch: operations["patch_part_api_v1_parts__part_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/parts/{part_id}/impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What stops working if this part is lost */
+        get: operations["part_impact_api_v1_parts__part_id__impact_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/risk-scales": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Likelihood and consequence scales */
+        get: operations["risk_scales_api_v1_risk_scales_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/risks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A mission's risks */
+        get: operations["list_risks_api_v1_missions__mission_id__risks_get"];
+        put?: never;
+        /** Add a risk (likelihood and consequence per category, never multiplied) */
+        post: operations["add_risk_api_v1_missions__mission_id__risks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/risks/{risk_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change a risk */
+        patch: operations["patch_risk_api_v1_risks__risk_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/landing-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every lunar landing attempt since 2013 and its cause (counts, no odds) */
+        get: operations["landing_history_api_v1_landing_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lessons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lessons from past landings */
+        get: operations["lessons_api_v1_lessons_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/lessons/{lesson_id}/adopt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Adopt a lesson as a readiness checklist item */
+        post: operations["adopt_api_v1_missions__mission_id__lessons__lesson_id__adopt_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/parameters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Values the project sets */
+        get: operations["parameters_api_v1_parameters_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/parameters/{parameter_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set a value */
+        put: operations["set_parameter_api_v1_parameters__parameter_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -483,6 +1068,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** Adopted */
+        Adopted: {
+            /** Adopted */
+            adopted: boolean;
+            /** Item Id */
+            item_id: string;
+        };
         /** AdviseRequest */
         AdviseRequest: {
             /**
@@ -731,6 +1323,48 @@ export interface components {
             /** Question */
             question: string;
         };
+        /** Assumption */
+        Assumption: {
+            /** What */
+            what: string;
+            /** Value */
+            value: string;
+        };
+        /** Attempt */
+        Attempt: {
+            /** Mission */
+            mission: string;
+            /** Agency */
+            agency: string;
+            /** Date */
+            date: string;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "landed_working" | "landed_tipped_or_partial" | "failed";
+            /** Cause */
+            cause: string | null;
+            /** Source Url */
+            source_url: string;
+            /** Cause Url */
+            cause_url: string | null;
+            /** Clps */
+            clps: boolean;
+            /** Mission Id */
+            mission_id: string | null;
+        };
+        /** AttemptCounts */
+        AttemptCounts: {
+            /** Attempts */
+            attempts: number;
+            /** Landed Working */
+            landed_working: number;
+            /** Landed Tipped Or Partial */
+            landed_tipped_or_partial: number;
+            /** Failed */
+            failed: number;
+        };
         /** Autonomy */
         Autonomy: {
             /** Worst Compound S */
@@ -807,6 +1441,87 @@ export interface components {
             /** Grazing */
             grazing: boolean;
         };
+        /** Booking */
+        Booking: {
+            /** Station */
+            station: string;
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /** Entered By */
+            entered_by: string;
+            /** Note */
+            note?: string | null;
+        };
+        /** BookingIn */
+        BookingIn: {
+            /**
+             * Station
+             * @description Ground station id from the catalogue, e.g. `dss-14`.
+             */
+            station: string;
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /** Note */
+            note?: string | null;
+        };
+        /** BookingOut */
+        BookingOut: {
+            /** Id */
+            id: number;
+            /** Station */
+            station: string;
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /** Note */
+            note: string | null;
+            /** Entered By */
+            entered_by: string;
+            /**
+             * Entered At
+             * Format: date-time
+             */
+            entered_at: string;
+        };
+        /** Booster */
+        Booster: {
+            /**
+             * Landing
+             * @enum {string}
+             */
+            landing: "droneship" | "land" | "expended" | "unknown";
+            zone: components["schemas"]["Zone"] | null;
+            /** Note */
+            note: string;
+            wave_height_m: components["schemas"]["QuantityOut"] | null;
+            wind_m_s: components["schemas"]["QuantityOut"] | null;
+            limits: components["schemas"]["SeaLimits"];
+            /** Hazard Area Seen */
+            hazard_area_seen: boolean | null;
+        };
         /** BriefRequest */
         BriefRequest: {
             /** Site Id */
@@ -815,6 +1530,17 @@ export interface components {
             start?: string | null;
             /** End */
             end?: string | null;
+        };
+        /** Burn */
+        Burn: {
+            /**
+             * T
+             * Format: date-time
+             */
+            t: string;
+            /** Name */
+            name: string;
+            dv_m_s: components["schemas"]["QuantityOut"];
         };
         /** CalendarBucket */
         CalendarBucket: {
@@ -876,6 +1602,49 @@ export interface components {
             items: components["schemas"]["CalendarBucket"][];
             meta: components["schemas"]["Meta"];
         };
+        /** Capsule */
+        Capsule: {
+            /** Applicable */
+            applicable: boolean;
+            /** Reason */
+            reason: string | null;
+            zone: components["schemas"]["Zone"] | null;
+            wave_height_m: components["schemas"]["QuantityOut"] | null;
+            wind_m_s: components["schemas"]["QuantityOut"] | null;
+            /** Daylight */
+            daylight: boolean | null;
+            limits: components["schemas"]["SeaLimits"];
+            model_check: components["schemas"]["CapsuleModelCheck"] | null;
+        };
+        /**
+         * CapsuleModelCheck
+         * @description The capsule entry model (3-DOF, U.S. Standard Atmosphere 1976) flown from
+         *     OSIRIS-REx's reconstructed entry state, against where its capsule landed.
+         */
+        CapsuleModelCheck: {
+            /** Case */
+            case: string;
+            /** Distance Km */
+            distance_km: number;
+            /** Distance Range Km */
+            distance_range_km: number[];
+            /** Limit Km */
+            limit_km: number;
+            /** Passed */
+            passed: boolean;
+            /** Mission Team Km */
+            mission_team_km: number;
+            /** Ellipse 99 Km */
+            ellipse_99_km: number[];
+            /** Measured Inside Ellipse */
+            measured_inside_ellipse: boolean;
+            /** Checked At */
+            checked_at: string;
+            /** Sources */
+            sources: string[];
+            /** Note */
+            note: string;
+        };
         /** Cleared */
         Cleared: {
             /** What */
@@ -887,6 +1656,41 @@ export interface components {
             removed: number | null;
             /** Message */
             message: string;
+        };
+        /** Climatology */
+        Climatology: {
+            /** Share */
+            share: number;
+            /** Years */
+            years: string;
+            /** Source */
+            source: string;
+        };
+        /** Cme */
+        Cme: {
+            /** Id */
+            id: string;
+            /** Start */
+            start: string | null;
+            /** Speed M S */
+            speed_m_s: number | null;
+            /** Earth Arrival Estimates */
+            earth_arrival_estimates: string[] | null;
+            /** Link */
+            link: string | null;
+        };
+        /** Comms */
+        Comms: {
+            /** Bands */
+            bands: string[];
+            /** Eirp Dbw */
+            eirp_dbw: number | null;
+            /** Gt Dbk */
+            gt_dbk: number | null;
+            /** Ground Stations */
+            ground_stations: string[];
+            /** Relays */
+            relays: string[];
         };
         /** CompareItem */
         CompareItem: {
@@ -994,6 +1798,20 @@ export interface components {
             /** Step S */
             step_s: number;
         };
+        /**
+         * CompositeUncertainty
+         * @description Every source of error in a lifecycle answer, one part each.
+         */
+        CompositeUncertainty: {
+            /**
+             * Kind
+             * @default composite
+             * @constant
+             */
+            kind: "composite";
+            /** Parts */
+            parts: components["schemas"]["UncertaintyPart"][];
+        };
         /** CompoundEvent */
         CompoundEvent: {
             /**
@@ -1012,6 +1830,105 @@ export interface components {
             open_start: boolean;
             /** Open End */
             open_end: boolean;
+        };
+        /** ConsequenceScale */
+        ConsequenceScale: {
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "safety" | "technical" | "cost" | "schedule";
+            /** Levels */
+            levels: components["schemas"]["RiskLevel"][];
+        };
+        /** Contact */
+        Contact: {
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /** Window Note */
+            window_note: string;
+            /** Nodes */
+            nodes: components["schemas"]["Node"][];
+            /** Links */
+            links: components["schemas"]["Link"][];
+            numbers: components["schemas"]["ContactNumbers"];
+            /** Relays */
+            relays: components["schemas"]["RelayRow"][];
+            /** Link Budget Note */
+            link_budget_note: string | null;
+            /** Bookings */
+            bookings: components["schemas"]["Booking"][];
+            light_time_s: components["schemas"]["LightTime"];
+            /**
+             * Longest Wait From
+             * Format: date-time
+             */
+            longest_wait_from: string;
+            sun_total_h: components["schemas"]["QuantityOut"];
+        };
+        /** ContactNumbers */
+        ContactNumbers: {
+            /** @description Time in contact with Earth (Earth above the skyline). */
+            direct_h: components["schemas"]["QuantityOut"];
+            /** @description Through a relay, as a range, if it flies as planned. */
+            via_relay_h: components["schemas"]["QuantityOut"];
+            either_h: components["schemas"]["QuantityOut"];
+            /** @description Time a ground station can hear the lander. */
+            station_hears_h: components["schemas"]["QuantityOut"];
+            longest_unheard_h: components["schemas"]["QuantityOut"];
+            longest_message_wait_min: components["schemas"]["QuantityOut"];
+            /** @description The longest single stretch that is dark and out of contact at once. */
+            dark_and_unheard_h: components["schemas"]["QuantityOut"];
+        };
+        /** CorrectionBurn */
+        CorrectionBurn: {
+            /** Name */
+            name: string;
+            /**
+             * T
+             * Format: date-time
+             */
+            t: string;
+            p95_m_s: components["schemas"]["QuantityOut"];
+            p99_m_s: components["schemas"]["QuantityOut"];
+        };
+        /** Corrections */
+        Corrections: {
+            /**
+             * Label
+             * @description Always says these sizes are a budget for assumed errors.
+             */
+            label: string;
+            /** Burns */
+            burns: components["schemas"]["CorrectionBurn"][];
+            total_p95_m_s: components["schemas"]["QuantityOut"];
+            /** @description lo/hi: its 95 % interval (bootstrap). */
+            total_p99_m_s: components["schemas"]["QuantityOut"];
+            /** @description The same total worked out linearly. */
+            linear_p99_m_s: components["schemas"]["QuantityOut"];
+            /** @description Median; lo/hi the 1st and 99th %. */
+            arrival_altitude_km: components["schemas"]["QuantityOut"];
+            /** Runs */
+            runs: number;
+            /**
+             * Missed
+             * @description Runs with no close pass of the Moon (counted, not hidden).
+             */
+            missed: number;
+            /** Assumptions */
+            assumptions: components["schemas"]["Assumption"][];
+            /** Plan Note */
+            plan_note: string;
+            /** Flown Note */
+            flown_note: string;
         };
         /** Counts */
         Counts: {
@@ -1041,6 +1958,51 @@ export interface components {
             /** Product */
             product: string;
         };
+        /** Descent */
+        Descent: {
+            /** Sun El Min Deg */
+            sun_el_min_deg: number | null;
+            /** Sun El Max Deg */
+            sun_el_max_deg: number | null;
+            /** Earth Required */
+            earth_required: boolean | null;
+        };
+        /** Donki */
+        Donki: {
+            /**
+             * Cme
+             * @description The newest 20.
+             */
+            cme: components["schemas"]["Cme"][];
+            /**
+             * Flares
+             * @description The newest 20.
+             */
+            flares: components["schemas"]["Flare"][];
+            /**
+             * Sep
+             * @description The newest 20.
+             */
+            sep: components["schemas"]["Sep"][];
+            /** @description How many DONKI gave per kind over `days` (the lists show the newest 20); null for a kind not shown. */
+            counts: components["schemas"]["DonkiCounts"];
+            /**
+             * Days
+             * @description How many days back DONKI was asked.
+             */
+            days: number | null;
+            /** Missing Reason */
+            missing_reason: string | null;
+        };
+        /** DonkiCounts */
+        DonkiCounts: {
+            /** Cme */
+            cme: number | null;
+            /** Flares */
+            flares: number | null;
+            /** Sep */
+            sep: number | null;
+        };
         /** ExplainRequest */
         ExplainRequest: {
             /** Site Id */
@@ -1049,6 +2011,93 @@ export interface components {
             start?: string | null;
             /** End */
             end?: string | null;
+        };
+        /**
+         * FeedHealth
+         * @description Live data sources (ADR-8): a failing one makes the service degraded, never down.
+         */
+        FeedHealth: {
+            /** Ok */
+            ok: number;
+            /**
+             * Stale
+             * @description Past their staleness budget, or no data yet.
+             */
+            stale: number;
+            /**
+             * Failing
+             * @description Last attempt failed, or paused after repeated failures.
+             */
+            failing: number;
+        };
+        /** FeedOut */
+        FeedOut: {
+            /** Provider */
+            provider: string;
+            /** Provider Name */
+            provider_name: string;
+            /** Product */
+            product: string;
+            /**
+             * Location
+             * @description Pad or buoy the product is for, if any.
+             */
+            location: string | null;
+            /**
+             * Last Ok
+             * @description When the product was last fetched or checked.
+             */
+            last_ok: string | null;
+            /**
+             * Data Time
+             * @description The time the data itself refers to (model run, issue time, newest reading).
+             */
+            data_time: string | null;
+            /**
+             * Age S
+             * @description How old the data is, seconds; null if none yet.
+             */
+            age_s: number | null;
+            /**
+             * Stale
+             * @description Past its staleness budget (or no data yet).
+             */
+            stale: boolean;
+            /** Staleness Budget S */
+            staleness_budget_s: number;
+            /** Next Run */
+            next_run: string | null;
+            /**
+             * Errors
+             * @description Failed attempts in a row.
+             */
+            errors: number;
+            /** Last Error */
+            last_error: string | null;
+            /** Licence */
+            licence: string;
+            /**
+             * Breaker
+             * @description `open`: the provider failed repeatedly and is being left alone for a while.
+             * @enum {string}
+             */
+            breaker: "closed" | "open" | "half_open";
+        };
+        /** FeedsOut */
+        FeedsOut: {
+            /** Feeds */
+            feeds: components["schemas"]["FeedOut"][];
+        };
+        /** Flare */
+        Flare: {
+            /** Id */
+            id: string;
+            /** Peak */
+            peak: string | null;
+            /** Class */
+            class: string | null;
+            /** Link */
+            link: string | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1076,7 +2125,31 @@ export interface components {
              * @enum {string}
              */
             redis: "ok" | "bypass";
+            feeds?: components["schemas"]["FeedHealth"];
             dem: components["schemas"]["DemHealth"];
+        };
+        /** History */
+        History: {
+            /** Entries */
+            entries: components["schemas"]["HistoryEntry"][];
+        };
+        /** HistoryEntry */
+        HistoryEntry: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** By */
+            by: string;
+            /** Action */
+            action: string;
+            /** Before */
+            before: unknown;
+            /** After */
+            after: unknown;
+            /** Note */
+            note: string | null;
         };
         /**
          * HorizonResponse
@@ -1123,6 +2196,76 @@ export interface components {
              */
             computed_at: string;
         };
+        /** ImpactItem */
+        ImpactItem: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Kind */
+            kind: string;
+        };
+        /** ItemCreateIn */
+        ItemCreateIn: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "lander" | "payload" | "rover" | "launch_vehicle" | "range" | "ground_booking" | "relay_agreement" | "ops_team" | "licence";
+            /** Name */
+            name: string;
+            /** Organisation */
+            organisation?: string | null;
+        };
+        /** ItemMoveIn */
+        ItemMoveIn: {
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "not_started" | "in_build" | "in_test" | "test_passed" | "delivered" | "integrated" | "verified_on_lander" | "ready" | "blocked";
+            /**
+             * Date
+             * @description When it happened, ISO date.
+             */
+            date: string;
+            /** Evidence Url */
+            evidence_url: string;
+            /** Note */
+            note?: string | null;
+            /** Blocked Reason */
+            blocked_reason?: string | null;
+        };
+        /**
+         * JobRefOut
+         * @description A heavy answer being worked out. Poll ``GET /jobs/{job_id}`` after ``poll_after_s``.
+         */
+        JobRefOut: {
+            /** Job Id */
+            job_id: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "done" | "failed";
+            /**
+             * Progress
+             * @description 0 to 1, when the job reports it.
+             */
+            progress: number | null;
+            /**
+             * Message
+             * @description One plain sentence about where the job is.
+             */
+            message: string;
+            /** Poll After S */
+            poll_after_s: number;
+            /**
+             * Assessment Id
+             * @description The stored answer, once the job is done.
+             */
+            assessment_id?: number | null;
+        };
         /** KernelHealth */
         KernelHealth: {
             /** Loaded */
@@ -1135,6 +2278,179 @@ export interface components {
             missing: string[];
             /** Error */
             error?: string | null;
+        };
+        /** LandingHistory */
+        LandingHistory: {
+            /** Attempts */
+            attempts: components["schemas"]["Attempt"][];
+            /** @description Counts of outcomes; never a chance of success. */
+            counts: components["schemas"]["AttemptCounts"];
+            /** Since */
+            since: string | null;
+            /** Note */
+            note: string;
+        };
+        /** LandingOut */
+        LandingOut: {
+            time: components["schemas"]["QuantityOut"];
+            sun_elevation_deg: components["schemas"]["QuantityOut"];
+            sunlight_after_h: components["schemas"]["QuantityOut"];
+            /** Earth Up */
+            earth_up: boolean;
+        };
+        /** LandingRule */
+        LandingRule: {
+            sun_elevation_min_deg: components["schemas"]["QuantityOut"];
+            sun_elevation_max_deg: components["schemas"]["QuantityOut"];
+            /** Earth Required */
+            earth_required: boolean;
+            /** Note */
+            note: string;
+        };
+        /** LaunchCalendar */
+        LaunchCalendar: {
+            /** None Reason */
+            none_reason: string | null;
+            /** Start */
+            start: string | null;
+            /** End */
+            end: string | null;
+            /** Dates Note */
+            dates_note: string | null;
+            /** Vehicle Id */
+            vehicle_id: string | null;
+            /** Pads */
+            pads: components["schemas"]["Pad"][];
+            /** Opportunities */
+            opportunities: components["schemas"]["Opportunity"][];
+            landing_rule: components["schemas"]["LandingRule"];
+            published_t0: components["schemas"]["QuantityOut"] | null;
+        };
+        /** LaunchWeather */
+        LaunchWeather: {
+            /**
+             * T0
+             * Format: date-time
+             */
+            t0: string;
+            /** Lead Time H */
+            lead_time_h: number;
+            /** Pad Id */
+            pad_id: string;
+            /** Vehicle Id */
+            vehicle_id: string | null;
+            /** Note */
+            note: string;
+            /** Rules */
+            rules: components["schemas"]["RuleRow"][];
+            official: components["schemas"]["OfficialForecast"] | null;
+            /** Range Conflicts */
+            range_conflicts: components["schemas"]["RangeConflict"][];
+            /** Range Note */
+            range_note: string;
+        };
+        /** Lesson */
+        Lesson: {
+            /** Id */
+            id: string;
+            /** Text */
+            text: string;
+            /** From Mission */
+            from_mission: string;
+            /** Year */
+            year: number;
+            /** Source Url */
+            source_url: string;
+            /** Checklist Item */
+            checklist_item: string;
+            /** Adopted */
+            adopted: boolean;
+        };
+        /** Lessons */
+        Lessons: {
+            /** Lessons */
+            lessons: components["schemas"]["Lesson"][];
+        };
+        /**
+         * LifecycleMeta
+         * @description `meta` for launch, trip, contact, readiness and recovery answers.
+         */
+        LifecycleMeta: {
+            /**
+             * Computed At
+             * Format: date-time
+             */
+            computed_at: string;
+            uncertainty: components["schemas"]["CompositeUncertainty"];
+            /**
+             * Engines
+             * @description Engine versions this answer depends on.
+             */
+            engines: {
+                [key: string]: string;
+            };
+            /** Sources */
+            sources: components["schemas"]["SourceRef"][];
+            /**
+             * Stale
+             * @description True when an input is past its staleness budget; the numbers it fed are then missing, with the reason (invariant 11).
+             * @default false
+             */
+            stale: boolean;
+            /** Compute Ms */
+            compute_ms?: number | null;
+        };
+        /** LightTime */
+        LightTime: {
+            /** Min */
+            min: number;
+            /** Max */
+            max: number;
+        };
+        /** LimitIn */
+        LimitIn: {
+            /** Rule Id */
+            rule_id: string;
+            /** Value */
+            value: number;
+            /** Unit */
+            unit: string;
+            /** Note */
+            note?: string | null;
+        };
+        /** LimitOut */
+        LimitOut: {
+            /** Rule Id */
+            rule_id: string;
+            /** Value */
+            value: number;
+            /** Unit */
+            unit: string;
+            /** Note */
+            note: string | null;
+            /** Entered By */
+            entered_by: string;
+            /**
+             * Entered At
+             * Format: date-time
+             */
+            entered_at: string;
+        };
+        /** LimitsIn */
+        LimitsIn: {
+            /** Limits */
+            limits: components["schemas"]["LimitIn"][];
+        };
+        /** Link */
+        Link: {
+            /** From */
+            from: string;
+            /** To */
+            to: string;
+            /** Stretches */
+            stretches: components["schemas"]["StretchOut"][];
+            data_rate_kbps: components["schemas"]["QuantityOut"] | null;
+            margin_db: components["schemas"]["QuantityOut"] | null;
         };
         /** Meta */
         Meta: {
@@ -1243,6 +2559,18 @@ export interface components {
             longest_blackout_grazing: boolean;
             autonomy: components["schemas"]["Autonomy"];
             meta: components["schemas"]["Meta"];
+        };
+        /** Milestone */
+        Milestone: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            date: components["schemas"]["QuantityOut"];
+            /** Done */
+            done: boolean;
+            /** Source */
+            source: string | null;
         };
         /** MissionBrief */
         MissionBrief: {
@@ -1356,7 +2684,40 @@ export interface components {
              */
             ellipse_ring: number[][] | null;
             site: components["schemas"]["TargetSite"] | null;
+            /** @description Launch, trip, radio and return facts (schema v2). */
+            lifecycle?: components["schemas"]["MissionLifecycle"] | null;
             meta: components["schemas"]["Meta"];
+        };
+        /**
+         * MissionLifecycle
+         * @description Schema v2 facts (ADR-10); each non-null field has its URL in ``field_sources``.
+         */
+        MissionLifecycle: {
+            /** Vehicle Id */
+            vehicle_id: string | null;
+            /**
+             * Vehicle Name
+             * @description The launch vehicle's name, from the catalogue.
+             */
+            vehicle_name: string | null;
+            /** Pad Id */
+            pad_id: string | null;
+            /** Pad Name */
+            pad_name: string | null;
+            /** @description The published launch instant. */
+            t0: components["schemas"]["PublishedDate"] | null;
+            transfer: components["schemas"]["Transfer"] | null;
+            descent: components["schemas"]["Descent"] | null;
+            comms: components["schemas"]["Comms"] | null;
+            spacecraft: components["schemas"]["Spacecraft"] | null;
+            /** Rovers */
+            rovers: components["schemas"]["Rover"][];
+            /** Returns */
+            returns: ("none" | "sample_capsule" | "crew") | null;
+            /** Field Sources */
+            field_sources: {
+                [key: string]: string;
+            };
         };
         /** MissionList */
         MissionList: {
@@ -1441,6 +2802,330 @@ export interface components {
              */
             why: string | null;
         };
+        /** MoonPull */
+        MoonPull: {
+            /**
+             * Equal Pull Km
+             * @description From the Moon's centre, where the pulls are equal.
+             */
+            equal_pull_km: number;
+            /** Sphere Of Influence Km */
+            sphere_of_influence_km: number;
+            /**
+             * T Equal Pull
+             * @description When the Moon's pull overtook Earth's.
+             */
+            t_equal_pull: string | null;
+        };
+        /** Node */
+        Node: {
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "station" | "relay" | "lander" | "rover" | "earth";
+            /** Name */
+            name: string;
+            /** Operator */
+            operator: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "operating" | "planned" | "not_launched";
+            /** Orbit */
+            orbit: ("real" | "planned") | null;
+            /** Launch Note */
+            launch_note: string | null;
+        };
+        /** Now */
+        Now: {
+            kp: components["schemas"]["QuantityOut"];
+            proton_10mev_pfu: components["schemas"]["QuantityOut"];
+            proton_100mev_pfu: components["schemas"]["QuantityOut"];
+            /** Xray Class */
+            xray_class: string | null;
+            /**
+             * Xray Missing Reason
+             * @description Why there is no X-ray class (no reading recorded, or too old); null when there is one.
+             */
+            xray_missing_reason: string | null;
+            solar_wind_km_s: components["schemas"]["QuantityOut"];
+            bz_nt: components["schemas"]["QuantityOut"];
+            /**
+             * Alerts
+             * @description SWPC alert headlines of the last 24 hours.
+             */
+            alerts: string[];
+            /**
+             * Alerts Missing Reason
+             * @description Why the alert list is not shown (not recorded, or too old); null when it is current, so an empty list means SWPC issued no alert in the last 24 hours.
+             */
+            alerts_missing_reason: string | null;
+        };
+        /** Observed */
+        Observed: {
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "clear" | "seen" | "no_data";
+            /** Detail */
+            detail: string;
+        };
+        /** OfficialForecast */
+        OfficialForecast: {
+            /** Id */
+            id: number;
+            /** Probability Pct */
+            probability_pct: number;
+            /** Concerns */
+            concerns: string[];
+            /** Pdf Url */
+            pdf_url: string;
+            /** Entered By */
+            entered_by: string;
+            /**
+             * Entered At
+             * Format: date-time
+             */
+            entered_at: string;
+        };
+        /** OfficialForecastIn */
+        OfficialForecastIn: {
+            /** Probability Pct */
+            probability_pct: number;
+            /** Concerns */
+            concerns?: string[];
+            /** Pdf Url */
+            pdf_url: string;
+        };
+        /** OfficialForecastOut */
+        OfficialForecastOut: {
+            /** Id */
+            id: number;
+            /** Probability Pct */
+            probability_pct: number;
+            /** Concerns */
+            concerns: string[];
+            /** Pdf Url */
+            pdf_url: string;
+            /** Entered By */
+            entered_by: string;
+            /**
+             * Entered At
+             * Format: date-time
+             */
+            entered_at: string;
+        };
+        /** OfficialForecastRemoved */
+        OfficialForecastRemoved: {
+            /**
+             * Removed Id
+             * @description The forecast taken back.
+             */
+            removed_id: number;
+            /** @description The forecast shown now (the one entered before), or null. */
+            official: components["schemas"]["OfficialForecastOut"] | null;
+        };
+        /** OneForecast */
+        OneForecast: {
+            /**
+             * System
+             * @enum {string}
+             */
+            system: "NWS" | "HRRR" | "GEOS-FP";
+            value: components["schemas"]["QuantityOut"];
+            /** Over */
+            over: boolean;
+        };
+        /** Opportunity */
+        Opportunity: {
+            /** Id */
+            id: string;
+            /** Pad Id */
+            pad_id: string;
+            /** Pad Name */
+            pad_name: string;
+            /** Vehicle Id */
+            vehicle_id: string;
+            /** @description Liftoff, unit "s since epoch". */
+            t0: components["schemas"]["QuantityOut"];
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "instantaneous" | "window";
+            /** Window Open */
+            window_open: string | null;
+            /** Window Close */
+            window_close: string | null;
+            transfer: components["schemas"]["TransferOut"];
+            landing: components["schemas"]["LandingOut"];
+            /**
+             * Weather
+             * @description What numbers the weather rules can show. With none it still shows the rules and limits; weather_note says why there are no numbers.
+             * @enum {string}
+             */
+            weather: "forecast" | "climatology" | "none";
+            /** Weather Note */
+            weather_note: string;
+            /**
+             * Basis
+             * @description How t0 was worked out: again from a flown trajectory, designed, or as published.
+             * @enum {string}
+             */
+            basis: "reconstructed" | "designed" | "published";
+            /** Note */
+            note: string;
+            azimuth_deg: components["schemas"]["QuantityOut"];
+            dv_tli_m_s: components["schemas"]["QuantityOut"];
+            coast_min: components["schemas"]["QuantityOut"];
+        };
+        /** Outlook */
+        Outlook: {
+            /** Issued */
+            issued: string | null;
+            /** Days */
+            days: string | null;
+            /**
+             * S1 Or Greater Pct
+             * @description SWPC's chance of a solar radiation storm (S1 or more), day 1-3, verbatim.
+             */
+            s1_or_greater_pct: number[] | null;
+            /** Kp Max Expected */
+            kp_max_expected: number | null;
+            /**
+             * Text
+             * @description SWPC's 3-day forecast as issued.
+             */
+            text: string | null;
+            /** Missing Reason */
+            missing_reason: string | null;
+        };
+        /** Pad */
+        Pad: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Lat Deg */
+            lat_deg: number | null;
+            /** Lon Deg */
+            lon_deg: number | null;
+            /** Operator */
+            operator: string;
+        };
+        /** Parameter */
+        Parameter: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            value: components["schemas"]["QuantityOut"];
+            /** Note */
+            note: string | null;
+            /** Changed By */
+            changed_by: string | null;
+            /** Changed At */
+            changed_at: string | null;
+        };
+        /** ParameterIn */
+        ParameterIn: {
+            /** Value */
+            value: number;
+            /** Note */
+            note?: string | null;
+        };
+        /** Parameters */
+        Parameters: {
+            /** Parameters */
+            parameters: components["schemas"]["Parameter"][];
+        };
+        /** Part */
+        Part: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Part Number */
+            part_number: string | null;
+            /** Serial */
+            serial: string | null;
+            /** Parent Item Id */
+            parent_item_id: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "installed" | "spare" | "in_test" | "damaged" | "failed" | "lost";
+            /** Location */
+            location: string | null;
+            /** Changed At */
+            changed_at: string | null;
+            /** Changed By */
+            changed_by: string | null;
+        };
+        /** PartImpact */
+        PartImpact: {
+            /** Stops Working */
+            stops_working: components["schemas"]["ImpactItem"][];
+            /** Note */
+            note: string;
+        };
+        /** PartIn */
+        PartIn: {
+            /** Name */
+            name: string;
+            /** Part Number */
+            part_number?: string | null;
+            /** Serial */
+            serial?: string | null;
+            /** Parent Item Id */
+            parent_item_id?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "installed" | "spare" | "in_test" | "damaged" | "failed" | "lost";
+            /** Location */
+            location?: string | null;
+        };
+        /** PartPatch */
+        PartPatch: {
+            /** Name */
+            name?: string | null;
+            /** Part Number */
+            part_number?: string | null;
+            /** Serial */
+            serial?: string | null;
+            /** Parent Item Id */
+            parent_item_id?: string | null;
+            /** Status */
+            status?: ("installed" | "spare" | "in_test" | "damaged" | "failed" | "lost") | null;
+            /** Location */
+            location?: string | null;
+        };
+        /** Parts */
+        Parts: {
+            /** Parts */
+            parts: components["schemas"]["Part"][];
+        };
+        /** PartsSummary */
+        PartsSummary: {
+            /** Total */
+            total: number;
+            /** Spares */
+            spares: number;
+            /** Lost */
+            lost: number;
+            /** Damaged */
+            damaged: number;
+            /** Failed */
+            failed: number;
+        };
         /** Payload */
         Payload: {
             /** Id */
@@ -1524,6 +3209,189 @@ export interface components {
             as_published: string;
         };
         /**
+         * QuantityOut
+         * @description A number with its margin in exactly one form, or the reason it has none.
+         *
+         *     Mirrors `app/core/quantity.py`, which refuses to build a number that breaks
+         *     these rules; this model is how it reaches the wire.
+         */
+        QuantityOut: {
+            /** Value */
+            value: number | null;
+            /** Unit */
+            unit: string;
+            /**
+             * Provenance
+             * @enum {string}
+             */
+            provenance: "computed" | "published" | "entered" | "assumed";
+            /**
+             * Pm
+             * @description Symmetric margin, same unit.
+             */
+            pm?: number | null;
+            /**
+             * Lo
+             * @description Lower end of a range.
+             */
+            lo?: number | null;
+            /**
+             * Hi
+             * @description Upper end of a range.
+             */
+            hi?: number | null;
+            /**
+             * Factor
+             * @description Multiplicative margin: value / factor to value * factor.
+             */
+            factor?: number | null;
+            /**
+             * Open
+             * @description A lower bound: the dates cut it short.
+             * @default false
+             */
+            open: boolean;
+            /** No Margin Reason */
+            no_margin_reason?: string | null;
+            /**
+             * Missing Reason
+             * @description Why there is no value, when `value` is null.
+             */
+            missing_reason?: string | null;
+            /**
+             * Source
+             * @description Who entered it, or the URL it was published at.
+             */
+            source?: string | null;
+        };
+        /** Radiation */
+        Radiation: {
+            belt_hours: components["schemas"]["QuantityOut"];
+            /** Belt Passes */
+            belt_passes: number;
+            electron_fluence_gt1mev: components["schemas"]["QuantityOut"];
+            /** @description Trapped protons above 10 MeV (AP8). */
+            fluence_gt10mev: components["schemas"]["QuantityOut"];
+            gcr_dose_mgy_day: components["schemas"]["QuantityOut"];
+            surface: components["schemas"]["SurfaceDose"] | null;
+            /** Surface Note */
+            surface_note: string | null;
+            /** Sep Events */
+            sep_events: components["schemas"]["SepEvent"][];
+            /** Sep Note */
+            sep_note: string;
+            /** Scenarios */
+            scenarios: components["schemas"]["SepScenario"][];
+            /** Screening Note */
+            screening_note: string;
+            /** Confirm In */
+            confirm_in: string[];
+        };
+        /** RangeConflict */
+        RangeConflict: {
+            /** Name */
+            name: string;
+            /**
+             * T0
+             * Format: date-time
+             */
+            t0: string;
+            /** Pad */
+            pad: string;
+        };
+        /** Ready */
+        Ready: {
+            /**
+             * Counts
+             * @description Items per state. Never a percentage.
+             */
+            counts: {
+                [key: string]: number;
+            };
+            /**
+             * Not Entered
+             * @description Prefilled items with no state entered yet.
+             */
+            not_entered: number;
+            /** Items */
+            items: components["schemas"]["ReadyItem"][];
+            /** Milestones */
+            milestones: components["schemas"]["Milestone"][];
+            /** Risks */
+            risks: components["schemas"]["Risk"][];
+            parts: components["schemas"]["PartsSummary"];
+            /** Lessons Available */
+            lessons_available: number;
+            /** Lessons Adopted */
+            lessons_adopted: number;
+        };
+        /** ReadyItem */
+        ReadyItem: {
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "lander" | "payload" | "rover" | "launch_vehicle" | "range" | "ground_booking" | "relay_agreement" | "ops_team" | "licence";
+            /** Name */
+            name: string;
+            /** Organisation */
+            organisation: string | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "not_started" | "in_build" | "in_test" | "test_passed" | "delivered" | "integrated" | "verified_on_lander" | "ready" | "blocked";
+            /**
+             * State Known
+             * @description False for a prefilled item nobody has entered a state for: show 'not entered yet', not the state. Such items are not in `counts`.
+             */
+            state_known: boolean;
+            /**
+             * Allowed Next
+             * @description States this item may move to next.
+             */
+            allowed_next: ("not_started" | "in_build" | "in_test" | "test_passed" | "delivered" | "integrated" | "verified_on_lander" | "ready" | "blocked")[];
+            /** Blocked Reason */
+            blocked_reason: string | null;
+            /**
+             * Changed At
+             * @description The date the change happened, as entered.
+             */
+            changed_at: string | null;
+            /** Changed By */
+            changed_by: string | null;
+            /** Evidence Url */
+            evidence_url: string | null;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "public" | "entered";
+            /** Tests */
+            tests: components["schemas"]["TestRecord"][];
+        };
+        /** RefreshOut */
+        RefreshOut: {
+            /** Provider */
+            provider: string;
+            /** Products */
+            products: number;
+            /** Message */
+            message: string;
+        };
+        /** RelayRow */
+        RelayRow: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            adds_h: components["schemas"]["QuantityOut"];
+            /** Status */
+            status: string;
+        };
+        /**
          * Resolution
          * @description What this answer was computed at.
          */
@@ -1554,6 +3422,298 @@ export interface components {
             /** Frame */
             frame: string;
         };
+        /** Return */
+        Return: {
+            booster: components["schemas"]["Booster"] | null;
+            capsule: components["schemas"]["Capsule"] | null;
+        };
+        /** ReturnLimitsIn */
+        ReturnLimitsIn: {
+            booster?: components["schemas"]["SeaLimitsIn"];
+            capsule?: components["schemas"]["SeaLimitsIn"];
+        };
+        /** Risk */
+        Risk: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Cause */
+            cause: string;
+            /** Consequence Text */
+            consequence_text: string;
+            /** Scale Id */
+            scale_id: string;
+            /**
+             * Ratings
+             * @description Per category; never multiplied or summed.
+             */
+            ratings: components["schemas"]["RiskRating"][];
+            /**
+             * Trend
+             * @enum {string}
+             */
+            trend: "rising" | "steady" | "falling";
+            /** Owner */
+            owner: string | null;
+            /** Mitigation */
+            mitigation: string | null;
+            links: components["schemas"]["RiskLinks"];
+            /** Changed At */
+            changed_at?: string | null;
+            /** Changed By */
+            changed_by?: string | null;
+        };
+        /** RiskIn */
+        RiskIn: {
+            /** Title */
+            title: string;
+            /** Cause */
+            cause: string;
+            /** Consequence Text */
+            consequence_text: string;
+            /** Scale Id */
+            scale_id: string;
+            /** Ratings */
+            ratings: components["schemas"]["RiskRating"][];
+            /**
+             * Trend
+             * @enum {string}
+             */
+            trend: "rising" | "steady" | "falling";
+            /** Owner */
+            owner?: string | null;
+            /** Mitigation */
+            mitigation?: string | null;
+            links?: components["schemas"]["RiskLinks"];
+        };
+        /** RiskLevel */
+        RiskLevel: {
+            /** Level */
+            level: number;
+            /** Words */
+            words: string;
+        };
+        /** RiskLinks */
+        RiskLinks: {
+            /** Readiness Items */
+            readiness_items?: string[];
+            /** Parts */
+            parts?: string[];
+            /** Lessons */
+            lessons?: string[];
+        };
+        /** RiskPatch */
+        RiskPatch: {
+            /** Title */
+            title?: string | null;
+            /** Cause */
+            cause?: string | null;
+            /** Consequence Text */
+            consequence_text?: string | null;
+            /** Scale Id */
+            scale_id?: string | null;
+            /** Ratings */
+            ratings?: components["schemas"]["RiskRating"][] | null;
+            /** Trend */
+            trend?: ("rising" | "steady" | "falling") | null;
+            /** Owner */
+            owner?: string | null;
+            /** Mitigation */
+            mitigation?: string | null;
+            links?: components["schemas"]["RiskLinks"] | null;
+        };
+        /** RiskRating */
+        RiskRating: {
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "safety" | "technical" | "cost" | "schedule";
+            /** Likelihood */
+            likelihood: number;
+            /** Consequence */
+            consequence: number;
+        };
+        /** RiskScale */
+        RiskScale: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Source Url */
+            source_url: string | null;
+            /** Likelihood */
+            likelihood: components["schemas"]["RiskLevel"][];
+            /** Consequence */
+            consequence: components["schemas"]["ConsequenceScale"][];
+            /** Notes */
+            notes?: string[];
+        };
+        /** RiskScales */
+        RiskScales: {
+            /** Default Id */
+            default_id: string;
+            /** Scales */
+            scales: components["schemas"]["RiskScale"][];
+        };
+        /** Risks */
+        Risks: {
+            /** Risks */
+            risks: components["schemas"]["Risk"][];
+        };
+        /** Rover */
+        Rover: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Organisation */
+            organisation: string | null;
+            /** Source Url */
+            source_url: string;
+        };
+        /** RuleRow */
+        RuleRow: {
+            /** Id */
+            id: string;
+            /**
+             * Text
+             * @description The rule as published, word for word.
+             */
+            text: string;
+            /** Source Url */
+            source_url: string;
+            /**
+             * Class
+             * @enum {string}
+             */
+            class: "model" | "proxy" | "observation";
+            limit: components["schemas"]["QuantityOut"];
+            /**
+             * Units
+             * @description Units a limit for this rule can be entered in, the published one first; empty when no unit is published (any unit is taken).
+             */
+            units: string[];
+            /**
+             * Limit Note
+             * @description The team's note with an entered limit.
+             */
+            limit_note: string | null;
+            /** Per System */
+            per_system: components["schemas"]["SystemShare"][];
+            /** One Forecast */
+            one_forecast: components["schemas"]["OneForecast"][];
+            /** Disagreement */
+            disagreement: boolean;
+            observed: components["schemas"]["Observed"] | null;
+            climatology: components["schemas"]["Climatology"] | null;
+        };
+        /** SeaLimits */
+        SeaLimits: {
+            wave_height_m: components["schemas"]["QuantityOut"];
+            wind_m_s: components["schemas"]["QuantityOut"];
+        };
+        /** SeaLimitsIn */
+        SeaLimitsIn: {
+            /** Wave Height M */
+            wave_height_m?: number | null;
+            /** Wind M S */
+            wind_m_s?: number | null;
+        };
+        /** SectionStatus */
+        SectionStatus: {
+            /**
+             * Section
+             * @enum {string}
+             */
+            section: "ready" | "launch" | "trip" | "landing" | "contact" | "return";
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "available" | "computing" | "needs_input" | "not_applicable" | "no_data";
+            /**
+             * Summary
+             * @description One plain sentence; never a verdict.
+             */
+            summary: string;
+            /** As Of */
+            as_of: string | null;
+        };
+        /** Section[Contact] */
+        Section_Contact_: {
+            data: components["schemas"]["Contact"];
+            meta: components["schemas"]["LifecycleMeta"];
+        };
+        /** Section[LaunchCalendar] */
+        Section_LaunchCalendar_: {
+            data: components["schemas"]["LaunchCalendar"];
+            meta: components["schemas"]["LifecycleMeta"];
+        };
+        /** Section[LaunchWeather] */
+        Section_LaunchWeather_: {
+            data: components["schemas"]["LaunchWeather"];
+            meta: components["schemas"]["LifecycleMeta"];
+        };
+        /** Section[Ready] */
+        Section_Ready_: {
+            data: components["schemas"]["Ready"];
+            meta: components["schemas"]["LifecycleMeta"];
+        };
+        /** Section[Return] */
+        Section_Return_: {
+            data: components["schemas"]["Return"];
+            meta: components["schemas"]["LifecycleMeta"];
+        };
+        /** Section[SpaceWeather] */
+        Section_SpaceWeather_: {
+            data: components["schemas"]["SpaceWeather"];
+            meta: components["schemas"]["LifecycleMeta"];
+        };
+        /** Section[Trip] */
+        Section_Trip_: {
+            data: components["schemas"]["Trip"];
+            meta: components["schemas"]["LifecycleMeta"];
+        };
+        /** Section[list[SectionStatus]] */
+        Section_list_SectionStatus__: {
+            /** Data */
+            data: components["schemas"]["SectionStatus"][];
+            meta: components["schemas"]["LifecycleMeta"];
+        };
+        /** Sep */
+        Sep: {
+            /** Id */
+            id: string;
+            /** Time */
+            time: string | null;
+            /** Instruments */
+            instruments: (string | null)[] | null;
+            /** Link */
+            link: string | null;
+        };
+        /** SepEvent */
+        SepEvent: {
+            /**
+             * T
+             * @description When NOAA's >10 MeV threshold was crossed (NASA DONKI).
+             */
+            t: string;
+            /** Link */
+            link: string;
+        };
+        /** SepScenario */
+        SepScenario: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            fluence_gt10mev: components["schemas"]["QuantityOut"];
+            fluence_gt30mev: components["schemas"]["QuantityOut"];
+            /** Source Url */
+            source_url: string;
+        };
         /** SessionOut */
         SessionOut: {
             /** Subject */
@@ -1573,6 +3733,8 @@ export interface components {
              * Format: date-time
              */
             expires_at: string;
+            /** @description The named person. Null for a session that can read but not change records (a token issued before names were asked for). */
+            user?: components["schemas"]["UserOut"] | null;
             /**
              * Token
              * @description A JWT (HS256). Send it as `Authorization: Bearer <token>`.
@@ -1589,6 +3751,38 @@ export interface components {
         SettingsOut: {
             ai: components["schemas"]["AiSettingsOut"];
             system: components["schemas"]["SystemOut"];
+        };
+        /**
+         * ShareOut
+         * @description k of n model runs, with an exact 95 % interval (ADR-9, ADR-14).
+         */
+        ShareOut: {
+            /** K */
+            k: number;
+            /** N */
+            n: number;
+            /** Lo */
+            lo: number;
+            /** Hi */
+            hi: number;
+            /**
+             * Checked
+             * @description True only once this rule has been checked against observations.
+             */
+            checked: boolean;
+        };
+        /**
+         * SignInIn
+         * @description Who is signing in. With no body, the name is "Demo project manager".
+         */
+        SignInIn: {
+            /**
+             * Name
+             * @description Recorded on every change.
+             */
+            name: string;
+            /** Team */
+            team?: string | null;
         };
         /** SiteBrief */
         SiteBrief: {
@@ -1770,6 +3964,78 @@ export interface components {
              */
             accessed: string;
         };
+        /**
+         * SourceRef
+         * @description Where one input to an answer came from, and when.
+         */
+        SourceRef: {
+            /** Name */
+            name: string;
+            /** Url */
+            url?: string | null;
+            /**
+             * Issued At
+             * @description Model run or issue time of a forecast; null for files.
+             */
+            issued_at?: string | null;
+            /** Fetched At */
+            fetched_at?: string | null;
+            /** Licence */
+            licence?: string | null;
+            /**
+             * Snapshot Id
+             * @description The stored snapshot this answer used (ADR-8).
+             */
+            snapshot_id?: number | null;
+        };
+        /** SpaceWeather */
+        SpaceWeather: {
+            now: components["schemas"]["Now"];
+            outlook: components["schemas"]["Outlook"];
+            donki: components["schemas"]["Donki"];
+            /** Note */
+            note: string;
+        };
+        /** Spacecraft */
+        Spacecraft: {
+            /** Mass Kg */
+            mass_kg: number | null;
+            /** Area M2 */
+            area_m2: number | null;
+            /** Cr */
+            cr: number | null;
+        };
+        /** StretchOut */
+        StretchOut: {
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /**
+             * Open Start
+             * @description Cut by the start of the dates.
+             */
+            open_start: boolean;
+            /**
+             * Open End
+             * @description Cut by the end of the dates.
+             */
+            open_end: boolean;
+        };
+        /** SurfaceDose */
+        SurfaceDose: {
+            /** Site Id */
+            site_id: string;
+            /** @description The site's share of open sky, 1 = flat horizon. */
+            open_sky: components["schemas"]["QuantityOut"];
+            gcr_dose_mgy_day: components["schemas"]["QuantityOut"];
+        };
         /** SurfaceWindow */
         SurfaceWindow: {
             /** Start */
@@ -1807,6 +4073,17 @@ export interface components {
             cache: boolean;
             counts: components["schemas"]["Counts"];
         };
+        /** SystemShare */
+        SystemShare: {
+            /**
+             * System
+             * @enum {string}
+             */
+            system: "GEFS" | "ECMWF-ENS" | "AIFS-ENS";
+            share: components["schemas"]["ShareOut"] | null;
+            /** Missing Reason */
+            missing_reason: string | null;
+        };
         /** TargetSite */
         TargetSite: {
             /** Id */
@@ -1835,6 +4112,40 @@ export interface components {
             terrain_modelled: boolean;
             /** Source Note */
             source_note: string;
+        };
+        /** TestIn */
+        TestIn: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "vibration" | "shock" | "thermal_vacuum" | "emi_emc" | "functional";
+            /**
+             * Result
+             * @enum {string}
+             */
+            result: "passed" | "failed" | "not_done";
+            /** Report Url */
+            report_url?: string | null;
+            /** Date */
+            date?: string | null;
+        };
+        /** TestRecord */
+        TestRecord: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "vibration" | "shock" | "thermal_vacuum" | "emi_emc" | "functional";
+            /**
+             * Result
+             * @enum {string}
+             */
+            result: "passed" | "failed" | "not_done";
+            /** Report Url */
+            report_url: string | null;
+            /** Date */
+            date: string | null;
         };
         /** TimelineResponse */
         TimelineResponse: {
@@ -1881,6 +4192,103 @@ export interface components {
             /** Number Count */
             number_count: number;
         };
+        /** Transfer */
+        Transfer: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "direct" | "phasing_loops" | "low_energy" | "unknown";
+            /** Flight Days */
+            flight_days: number | null;
+            /** Lunar Orbit Days */
+            lunar_orbit_days: number | null;
+        };
+        /** TransferOut */
+        TransferOut: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "direct" | "phasing_loops";
+            flight_days: components["schemas"]["QuantityOut"];
+            orbit_wait_days: components["schemas"]["QuantityOut"];
+        };
+        /** Trip */
+        Trip: {
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "flown" | "designed" | "none";
+            /** None Reason */
+            none_reason: string | null;
+            /** Start */
+            start: string | null;
+            /** End */
+            end: string | null;
+            /** Coverage Note */
+            coverage_note: string | null;
+            /**
+             * Covered
+             * @description The stretches NASA's reconstruction covers; anything between is a gap.
+             */
+            covered: components["schemas"]["StretchOut"][];
+            /** Samples */
+            samples: components["schemas"]["TripSample"][];
+            /** Shadow */
+            shadow: components["schemas"]["StretchOut"][];
+            /** Heard */
+            heard: components["schemas"]["StretchOut"][];
+            numbers: components["schemas"]["TripNumbers"];
+            /** Burns */
+            burns: components["schemas"]["Burn"][];
+            /** Burns Note */
+            burns_note: string | null;
+            corrections: components["schemas"]["Corrections"] | null;
+            /**
+             * Corrections Note
+             * @description Why there is no correction budget.
+             */
+            corrections_note: string | null;
+            moon_pull: components["schemas"]["MoonPull"] | null;
+            radiation: components["schemas"]["Radiation"] | null;
+            /**
+             * Radiation Note
+             * @description Why there is no radiation block.
+             */
+            radiation_note?: string | null;
+        };
+        /** TripNumbers */
+        TripNumbers: {
+            sunlight_h: components["schemas"]["QuantityOut"];
+            /** @description Time a ground station could see the spacecraft. */
+            heard_h: components["schemas"]["QuantityOut"];
+            longest_shadow_h: components["schemas"]["QuantityOut"];
+            longest_unheard_h: components["schemas"]["QuantityOut"];
+        };
+        /** TripSample */
+        TripSample: {
+            /**
+             * T
+             * Format: date-time
+             */
+            t: string;
+            /** Earth Km */
+            earth_km: number;
+            /** Moon Km */
+            moon_km: number;
+            /**
+             * Light
+             * @enum {string}
+             */
+            light: "lit" | "penumbral" | "dark";
+            /**
+             * Heard
+             * @description A DSN antenna could see the spacecraft (line of sight).
+             */
+            heard: boolean;
+        };
         /** Unavailable */
         Unavailable: {
             /** Site Id */
@@ -1893,6 +4301,13 @@ export interface components {
          * @description How wrong this could be, in the units the caller is reading.
          */
         Uncertainty: {
+            /**
+             * Kind
+             * @description Which uncertainty envelope this is (ADR-9). Surface answers are always `terrain`; lifecycle answers carry a `composite` envelope instead.
+             * @default terrain
+             * @constant
+             */
+            kind: "terrain";
             /** Dem Vertical Error M */
             dem_vertical_error_m: number;
             /** Dem Resolution M */
@@ -1930,6 +4345,25 @@ export interface components {
             /** Notes */
             notes: string[];
         };
+        /** UncertaintyPart */
+        UncertaintyPart: {
+            /**
+             * Source
+             * @description What contributes this error, in plain words.
+             */
+            source: string;
+            /** Note */
+            note: string;
+        };
+        /** UserOut */
+        UserOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Team */
+            team: string | null;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -1938,6 +4372,13 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** VehicleLimits */
+        VehicleLimits: {
+            /** Vehicle Id */
+            vehicle_id: string;
+            /** Limits */
+            limits: components["schemas"]["LimitOut"][];
         };
         /**
          * Who
@@ -1961,6 +4402,8 @@ export interface components {
              * Format: date-time
              */
             expires_at: string;
+            /** @description The named person. Null for a session that can read but not change records (a token issued before names were asked for). */
+            user?: components["schemas"]["UserOut"] | null;
         };
         /** WindowsResponse */
         WindowsResponse: {
@@ -1983,6 +4426,18 @@ export interface components {
             /** Worst Compound S */
             worst_compound_s: number;
             meta: components["schemas"]["Meta"];
+        };
+        /** Zone */
+        Zone: {
+            /** Lat Deg */
+            lat_deg: number;
+            /** Lon Deg */
+            lon_deg: number;
+            /**
+             * Pm Km
+             * @description Null when the zone's size is not published.
+             */
+            pm_km: number | null;
         };
     };
     responses: never;
@@ -2647,7 +5102,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SignInIn"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -2656,6 +5115,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -2809,6 +5277,1229 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Cleared"];
+                };
+            };
+        };
+    };
+    get_job_api_v1_jobs__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobRefOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_job_api_v1_jobs__job_id__retry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobRefOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_feeds_api_v1_feeds_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedsOut"];
+                };
+            };
+        };
+    };
+    refresh_api_v1_feeds__provider__refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefreshOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sections_api_v1_missions__mission_id__sections_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Section_list_SectionStatus__"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    contact_api_v1_missions__mission_id__contact_get: {
+        parameters: {
+            query?: {
+                /** @description Default: the mission's surface dates. */
+                start?: string | null;
+                end?: string | null;
+            };
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Section_Contact_"];
+                };
+            };
+            /** @description Being worked out; poll the job. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobRefOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    contact_plan_api_v1_missions__mission_id__contact_plan_get: {
+        parameters: {
+            query?: {
+                format?: "csv" | "ion";
+                /** @description Data rate for ION, bits per second. */
+                rate_bps?: number | null;
+            };
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_booking_api_v1_missions__mission_id__contact_bookings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trip_api_v1_missions__mission_id__trip_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Section_Trip_"];
+                };
+            };
+            /** @description Being worked out; poll the job. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobRefOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trip_export_api_v1_missions__mission_id__trip_export_get: {
+        parameters: {
+            query?: {
+                format?: "oem" | "csv";
+            };
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    launch_api_v1_missions__mission_id__launch_get: {
+        parameters: {
+            query?: {
+                /** @description Default: today. */
+                from?: string | null;
+                /** @description Default: 90 days on; 180 at most. */
+                to?: string | null;
+            };
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Section_LaunchCalendar_"];
+                };
+            };
+            /** @description Being worked out; poll the job. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobRefOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    launch_weather_api_v1_missions__mission_id__launch_weather_get: {
+        parameters: {
+            query?: {
+                /** @description An opportunity id from the calendar. */
+                opportunity?: string | null;
+                /** @description Or a launch time, with a pad. */
+                t0?: string | null;
+                pad?: string | null;
+            };
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Section_LaunchWeather_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    official_forecast_api_v1_missions__mission_id__launch_official_forecast_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OfficialForecastIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfficialForecastOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_official_forecast_api_v1_missions__mission_id__launch_official_forecast_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfficialForecastRemoved"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_vehicle_limits_api_v1_vehicles__vehicle_id__limits_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vehicle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VehicleLimits"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    vehicle_limits_api_v1_vehicles__vehicle_id__limits_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vehicle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LimitsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VehicleLimits"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recovery_api_v1_missions__mission_id__return_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Section_Return_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    return_limits_api_v1_missions__mission_id__return_limits_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReturnLimitsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Section_Return_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    space_weather_api_v1_space_weather_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Section_SpaceWeather_"];
+                };
+            };
+        };
+    };
+    get_ready_api_v1_missions__mission_id__ready_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Section_Ready_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_item_api_v1_missions__mission_id__ready_items_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadyItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    move_item_api_v1_ready_items__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemMoveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadyItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_test_api_v1_ready_items__item_id__tests_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadyItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    item_history_api_v1_ready_items__item_id__history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["History"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    history_api_v1_history_get: {
+        parameters: {
+            query: {
+                /** @description ready_item, part, risk, booking, forecast, limits, parameter, lesson, milestone, feed, job, settings */
+                entity: string;
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["History"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_parts_api_v1_missions__mission_id__parts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Parts"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_part_api_v1_missions__mission_id__parts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Part"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_part_api_v1_parts__part_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                part_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Part"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    part_impact_api_v1_parts__part_id__impact_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                part_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PartImpact"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    risk_scales_api_v1_risk_scales_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskScales"];
+                };
+            };
+        };
+    };
+    list_risks_api_v1_missions__mission_id__risks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Risks"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_risk_api_v1_missions__mission_id__risks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RiskIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Risk"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_risk_api_v1_risks__risk_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                risk_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RiskPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Risk"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    landing_history_api_v1_landing_history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LandingHistory"];
+                };
+            };
+        };
+    };
+    lessons_api_v1_lessons_get: {
+        parameters: {
+            query?: {
+                /** @description Mark which lessons this mission adopted. */
+                mission?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lessons"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    adopt_api_v1_missions__mission_id__lessons__lesson_id__adopt_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+                lesson_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Adopted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    parameters_api_v1_parameters_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Parameters"];
+                };
+            };
+        };
+    };
+    set_parameter_api_v1_parameters__parameter_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                parameter_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ParameterIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Parameters"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

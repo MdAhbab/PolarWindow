@@ -9,7 +9,7 @@ import { HorizonScreen } from './screens/HorizonScreen'
 import { BlackoutScreen } from './screens/BlackoutScreen'
 import { ReportScreen } from './screens/ReportScreen'
 import { MissionsScreen } from './screens/MissionsScreen'
-import { MissionDetailScreen } from './screens/MissionDetailScreen'
+import { MissionHub } from './screens/MissionHub'
 import { useMission } from './lib/store'
 import { useEngineVersionWatch, useSites } from './lib/api/queries'
 import { setSites, hasSite, defaultCompare, getCandidates } from './lib/sites'
@@ -149,7 +149,8 @@ function Dashboard() {
     <AppShell>
       <Routes>
         <Route path="/missions" element={<MissionsScreen />} />
-        <Route path="/missions/:id" element={<MissionDetailScreen />} />
+        {/* A mission's hub: Landing by default, or one of its six steps. */}
+        <Route path="/missions/:id/*" element={<MissionHub />} />
         <Route path="/map" element={<MapScreen />} />
         <Route path="/site" element={<TwoClockScreen />} />
         <Route path="/compare" element={<CompareScreen />} />

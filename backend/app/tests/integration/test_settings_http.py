@@ -136,3 +136,32 @@ async def test_the_run_log_and_the_cache_can_be_cleared(client) -> None:
     r = await client.delete(f"{API}/settings/cache")
     assert r.status_code == 200
     assert r.json()["what"] == "cache"
+
+
+async def test_every_settings_change_is_in_the_history(client, settings) -> None:
+    """Settings apply to everyone, so each change is recorded against its maker (ADR-17)."""
+
+    async def entries(what: str) -> list[dict]:
+        r = await client.get(f"{API}/history", params={"entity": "settings", "id": what})
+        assert r.status_code == 200, r.text
+        return r.json()["entries"]
+
+    n_ai = len(await entries("ai"))
+    n_runs = len(await entries("agent_runs"))
+    n_cache = len(await entries("cache"))
+    order = list(reversed(settings.agent_models))
+    body = {"enabled": False, "models": order, "models_light": list(settings.agent_models_light)}
+    assert (await client.put(f"{API}/settings/ai", json=body)).status_code == 200
+    assert (await client.post(f"{API}/settings/ai/retry")).status_code == 200
+    assert (await client.post(f"{API}/settings/ai/reset")).status_code == 200
+    assert (await client.delete(f"{API}/settings/agent-runs")).status_code == 200
+    assert (await client.delete(f"{API}/settings/cache")).status_code == 200
+
+    ai = await entries("ai")
+    assert [e["action"] for e in ai[-3:]] == ["set", "retry", "reset"]
+    assert len(ai) == n_ai + 3
+    saved = ai[-3]
+    assert saved["by"].startswith("Test manager") and saved["after"]["enabled"] is False
+    assert saved["after"]["models"] == order
+    assert len(await entries("agent_runs")) == n_runs + 1
+    assert len(await entries("cache")) == n_cache + 1

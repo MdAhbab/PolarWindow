@@ -374,6 +374,29 @@ month; a cache hit is about 2 ms.
 
 ---
 
+## Mission lifecycle (contract `docs/lifecycle-api.md`)
+
+The lifecycle sections have their own reference, kept with the frontend as the
+contract: `docs/lifecycle-api.md` (shapes and their *Changes*) and
+`docs/openapi.json` (generated, `make openapi`). In short:
+
+| Endpoint | Answer |
+|---|---|
+| `GET /missions/{id}/sections` | each section's state and a line of words |
+| `GET /missions/{id}/ready`, `.../ready/items`, `.../parts`, `.../risks`, `GET /lessons` | readiness items, milestones, parts, risks as entered (writes need a named sign-in; audited) |
+| `GET /missions/{id}/launch` | the flown launch, or opportunities backed out from the landing (job) |
+| `GET /missions/{id}/launch/weather` | each weather rule at one launch time with what each forecast says |
+| `PUT`/`DELETE /missions/{id}/launch/official-forecast`, `GET`/`PUT /vehicles/{id}/limits` | the team's entries (audited) |
+| `GET /missions/{id}/trip` (+ `/export?format=oem\|csv`) | distance, shadow, burns, correction budget, radiation (job) |
+| `GET /missions/{id}/contact` (+ `/plan`, `/bookings`) | who can hear the lander and how long a message waits (job) |
+| `GET /missions/{id}/return`, `PUT .../return/limits` | the booster's landing, sea and wind, the capsule and its entry model's check |
+| `GET /space-weather` | space weather now, each value with its age |
+| `GET /jobs/{id}`, `POST /jobs/{id}/retry` | a heavy answer's progress; retry a failed one |
+| `GET /feeds`, `POST /feeds/{provider}/refresh` | every live source and its age; fetch one now (signed in) |
+
+A heavy answer that is not stored yet comes back **202** with a `JobRef`; poll
+`GET /jobs/{id}` and ask again when it is `done`.
+
 ## Tiles
 
 `GET /tiles/{layer}/{z}/{x}/{y}.png` (the suffix is optional), layers `hillshade` | `illumination` | `psr`. `make seed` pre-renders z0–z5 (4,095 tiles, ~134 MB); z6–z7 render on first request.
@@ -427,7 +450,16 @@ A `user_request` entry means the figure came from the caller's own question,
 which is quoting rather than claiming.
 
 `guard_failures` retains rejections that a retry then fixed. That is what lets
-the guard be *shown working* rather than asserted to exist.
+the guard be *shown working* rather than asserted to exist. Besides ungrounded
+numbers and dates, the guard rejects verdict words (`kind: "verdict_word"`:
+go/no-go, "safe", a readiness percentage, a risk score, an overall chance of
+launch), even in a denial.
+
+`ask` can read the missions too: `tool` in `tool_calls` and `provenance` may be
+`list_missions`, `get_mission_sections`, `get_mission_section` or
+`get_space_weather` besides the six site tools. A mission section reaches the
+model cut to at most 200 numbers, and a section not worked out yet is reported,
+never started (ADR-6, amended 2026-09-28).
 
 Without a session these four answer **401** with `WWW-Authenticate: Bearer`.
 When the project manager has turned the AI off in Settings they still answer,

@@ -120,3 +120,58 @@ Pole Atlas anchors. The landing point is the most open-skied landable post in
 the top elevation decile of a stated ring or disc around the anchor, with a
 maximum slope of 12°. The anchor, search region, offset and rule are stored on
 every site and returned by the API.
+
+## The mission lifecycle (tracks T1–T4, E, H)
+
+Three kinds of source feed the sections (Ready, Launch, Trip, Contact, Return and
+space weather). Each number says which one it came from (`provenance`, invariant 10)
+and, when it is live, how old it is (invariant 11).
+
+### Files, fetched once (`backend/app/data/registry.py`)
+
+Every file is listed once in the registry, with its URL, size, sha256 and what it is
+used for; the README's "Required data" table is generated from it
+(`uv run polar-data readme --write`) and `polar-data sync` downloads it. Tiers:
+`core` (the product will not start without it), `lifecycle` (NASA's reconstructed
+CLPS trajectories from NAIF, GRAIL gravity, DSN station kernels), `bulk` (large and
+optional: GLM thunder hours) and `validation` (only for `make validate-*`: the
+OSIRIS-REx capsule's reconstructed entry, IRBEM references).
+
+### Cited catalogues (`data/catalogues/*.json`, ADR-10)
+
+`launch_sites`, `vehicles`, `weather_rules` (NASA FS-2020-05-568-KSC, verbatim),
+`recovery_zones` (Launch Library 2 landing records), `ground_stations`, `relays`,
+`landing_attempts`, `risk_scales` and `lessons`. Every record carries its sources and
+the date it was compiled; `make catalogues` validates them. A value no source
+publishes is absent with a reason, never filled in.
+
+### Computed once and committed
+
+| File | Made by | From |
+|---|---|---|
+| `data/climatology/power_ws50m_*.json` | `make climatology` | NASA POWER hourly wind at 50 m, 2001–2024 |
+| `data/climatology/glm_thunder_*.json` | `make thunder-climatology` | GLM thunder hours, GHRC DAAC (Earthdata token) |
+| `data/hindcast/gefs_wind_florida.json` | `make hindcast-weather` | GEFS on AWS against the Cape's station (IEM) |
+| `data/radiation/*.json` | `make space-climate` | Oulu neutron monitor (NMDB), GOES events (NCEI), DONKI |
+| `data/capsule/orex_check.json` | `make validate-capsule` | the entry model against OSIRIS-REx's landing |
+
+### Live feeds (ADR-8; `make feeds`, listed at `GET /feeds`)
+
+Only the feeds worker reaches these (an import contract forbids anything else from
+importing `app.feeds`). Each product is recorded as a snapshot with its fetch time;
+past its staleness budget its numbers are replaced by the reason.
+
+| Provider | Products | Budget | Used by |
+|---|---|---|---|
+| NOAA SWPC | Kp (+ forecast), GOES protons and X-rays, solar wind and field, alerts, 3-day forecast, F10.7 | 1 h to 2 d | space weather, launch weather's space weather rule |
+| NASA DONKI | CMEs, flares, particle events (last 30 days; `PW_NASA_API_KEY`, else DEMO_KEY) | 24 h, from the fetch | space weather, trip radiation |
+| NOAA NOMADS | GEFS 24/48 h, HRRR, GEFS at each designed opportunity (`gefs_launch/{region}`), GFS-Wave off Florida | 6–18 h | launch weather, return |
+| NOAA GOES GLM | lightning flashes near the pad, only when an opportunity is < 6 h away | 10 min | launch weather |
+| NWS | alerts and the gridded forecast at the pads | 3–6 h | launch weather |
+| NDBC | buoy 41009 | 3 h | recorded only (shown at `/feeds`) |
+| Launch Library 2 | upcoming launches at the Florida and Vandenberg ranges | 12 h | launch weather (other launches from the range that day) |
+| NASA DSN Now | which dishes are tracking what | 15 min | recorded only (shown at `/feeds`) |
+
+Not recorded, with the reason: GEOS-FP (host unreachable from here), ECMWF ENS/AIFS
+(whole-globe fields, too heavy for a routine fetch), NGA's NAVAREA IV warnings (the
+API returns an error page from this network).

@@ -22,9 +22,11 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, ORJSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from app.api.limits import AGENTS, COMPARE, SIGN_IN, WRITES, BodyLimit, RateLimit
 from app.config import ENGINE_VERSION, get_settings
 from app.core import spice
 from app.core.kernels import KernelError
+from app.services.job_service import QueueFull
 
 log = logging.getLogger("polar_window")
 
@@ -144,6 +146,20 @@ def create_app() -> FastAPI:
     # 500 handler must sit inside CORS (see ProblemOn500), and compression
     # between them so error bodies are compressed like any other.
     app.add_middleware(ProblemOn500)
+    # Limits sit inside CORS (and outside the 500 handler), so a refusal
+    # reaches the browser with its headers and its own words.
+    app.add_middleware(BodyLimit, max_bytes=s.max_body_bytes)
+    if s.rate_limits:
+        app.add_middleware(
+            RateLimit,
+            prefix=s.api_prefix,
+            per_minute={
+                SIGN_IN: s.rate_sign_in_per_min,
+                AGENTS: s.rate_agents_per_min,
+                COMPARE: s.rate_compare_per_min,
+                WRITES: s.rate_writes_per_min,
+            },
+        )
     # A 2,835-sample timeline is ~210 KB of JSON. Measured on it: level 1 gives
     # 82 KB in 1.1 ms, level 5 gives 74 KB in 4.9 ms, level 9 the same 74 KB in
     # 18 ms. Level 1 keeps ~90 % of the saving at a quarter of the CPU, which is
@@ -153,7 +169,7 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=list(s.cors_origins),
         allow_credentials=False,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["*"],
         expose_headers=["X-Tile-Source", "X-Tile-Note", "ETag"],
     )
@@ -163,7 +179,10 @@ def create_app() -> FastAPI:
         auth,
         compare,
         health,
+        jobs,
+        lifecycle,
         missions,
+        ready,
         settings,
         sites,
         tiles,
@@ -179,6 +198,9 @@ def create_app() -> FastAPI:
     app.include_router(agents.router, prefix=s.api_prefix)
     app.include_router(auth.router, prefix=s.api_prefix)
     app.include_router(settings.router, prefix=s.api_prefix)
+    app.include_router(jobs.router, prefix=s.api_prefix)
+    app.include_router(lifecycle.router, prefix=s.api_prefix)
+    app.include_router(ready.router, prefix=s.api_prefix)
 
     # /healthz is also mounted unprefixed: container health checks and load
     # balancers look there, and they should not need to know the API version.
@@ -210,6 +232,29 @@ def create_app() -> FastAPI:
                         "highlighted value will work.",
                         "retryable": False,
                         "action": "Adjust the request",
+                    },
+                }
+            },
+        )
+
+    @app.exception_handler(QueueFull)
+    async def queue_full(request: Request, exc: QueueFull) -> JSONResponse:
+        """Too many answers are waiting for a compute worker to queue another."""
+        return JSONResponse(
+            status_code=503,
+            headers={"Retry-After": "60"},
+            content={
+                "detail": {
+                    "type": "https://polar-window.dev/errors/queue-full",
+                    "title": "Too many answers are being worked out",
+                    "status": 503,
+                    "detail": f"{exc.queued} answers are waiting for a compute worker, the "
+                    "most this service queues. This one was not added.",
+                    "ui": {
+                        "still_works": "Every answer already worked out can still be read, "
+                        "and every other section still answers.",
+                        "retryable": True,
+                        "action": "Try again in a minute",
                     },
                 }
             },

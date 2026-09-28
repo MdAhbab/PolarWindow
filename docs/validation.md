@@ -43,3 +43,447 @@ reported and **no cause is asserted**.
 - One agreement to the day is not a timing accuracy. The ± on each crossing
   comes from the DEM's vertical error (`meta.uncertainty`), and a published
   timeline to the day cannot confirm a figure in minutes.
+
+# The trip propagator against flown trajectories (plan C1)
+
+Measured on commit `d01b407` with `make validate-trip`
+(`backend/app/tests/golden/validate_trip.py`; the acceptance numbers are
+pinned by `test_propagate_vs_clps.py`).
+
+**Method.** The references are NASA's reconstructed trajectories in NAIF's
+CLPS SPICE archive (IM-1, Blue Ghost Mission 1, IM-2, Peregrine) and the
+Lunar Reconnaissance Orbiter's reconstructed orbit for 20–27 March 2025.
+Every 10 minutes the acceleration each reconstruction implies (a five-point
+difference of its velocity) is compared with the force model's. Where they
+differ by more than 1e-5 m/s² the spacecraft was firing an engine or
+thrusters; a *quiet stretch* is a run below that, less 30 minutes at each
+end. From the start of a quiet stretch the reconstructed state is propagated
+and compared with the reconstruction 24 h and 72 h later. Nothing is fitted.
+The force model is the default one (DE440 Sun and Moon, Earth J2–J6, GRAIL
+GRGM1200A to degree 50 in cruise and 100 in lunar orbit, no sunlight
+pressure); the last column repeats the run with sunlight pressure for an
+assumed Cr·A/m of 0.01 m²/kg, since no lander publishes its area or mass
+at that point in the flight.
+
+| Reference | Start (UTC) | Where | After | Position error | With assumed sunlight pressure |
+|---|---|---|---|---|---|
+| Blue Ghost 1 | 2025-01-16 07:32 | cruise | 24 h | 0.11 km | 0.07 km |
+| Blue Ghost 1 | 2025-01-17 07:32 | cruise | 24 h | 0.11 km | 0.07 km |
+| Blue Ghost 1 | 2025-01-15 07:32 | cruise | 24 h | 0.37 km | 0.51 km |
+| Blue Ghost 1 | 2025-01-15 07:32 | cruise | 72 h | 1.46 km | 3.21 km |
+| Blue Ghost 1 | 2025-02-03 13:12 | cruise | 72 h | 1.08 km | 0.62 km |
+| IM-2 | 2025-03-03 13:01 | lunar orbit, ~100 km | 24 h | 0.51 km | 0.50 km |
+| IM-2 | 2025-03-04 13:01 | lunar orbit, ~100 km | 24 h | 0.27 km | 0.28 km |
+| LRO | 2025-03-20 00:01 | lunar orbit, 80–100 km | 24 h | 0.05 km | 0.05 km |
+| LRO | 2025-03-21 01:41 | lunar orbit, 80–100 km | 24 h | 0.03 km | 0.03 km |
+| IM-1 | 2024-02-19 20:26 | cruise | 8.5 h (longest stretch) | 0.64 km | 0.64 km |
+| IM-2 | 2025-02-27 01:51 | cruise | 24 h | **4.61 km** | 4.43 km |
+
+Raising the Moon's field from degree 100 to 200 changes the lunar-orbit rows
+by at most 8 m. A 24 h forward-and-back run from Blue Ghost's reconstructed
+state returns to within **5.8 mm**.
+
+**Against the plan's tolerances.** Reconstructions: ≤1 km after 24 h is met
+for Blue Ghost 1 and for IM-2 in lunar orbit, **not for IM-2's cruise
+(4.61 km)**; ≤5 km after 72 h is met (1.08 and 1.46 km). LRO: ≤1 km after
+24 h is met (0.03–0.05 km). Round trip ≤1 m is met.
+
+**Why IM-2's cruise misses.** Throughout its cruise IM-2's reconstruction
+carries an acceleration the force model does not have: median 6.4e-7 m/s²
+over the whole file, about 1e-6 m/s² in the stretch used (IM-1's is
+1.8e-6 m/s², Blue Ghost's 2.9e-7 m/s²). Held for a day, 1e-6 m/s² moves a
+spacecraft ½·a·t² ≈ 3.7 km, which is the size of the miss. The residual is
+constant within each hour of the reconstruction and steps between hours, as
+an estimated acceleration in an orbit-determination solution would; whether
+it is thruster activity, venting or the solution's own estimate is not
+published, and we do not assert one.
+
+**Leak detection (Peregrine).** Peregrine's reconstruction needs an
+unexplained push for its whole flight: median 7.6e-5 m/s², 90th percentile
+1.8e-4 m/s², and no quiet stretch at all. Astrobotic's post-mission report
+traces the loss to a helium pressure control valve that failed to seal
+([PM1 post-mission report](https://www.astrobotic.com/wp-content/uploads/2024/08/PM1_Post-Mission-Report_Website.pdf));
+the residual is where that shows in the trajectory, and nothing here
+estimates the leak itself.
+
+**What replaces GMAT.** The plan's reference for the propagator was GMAT
+R2026a run offline (`make gmat-golden`). GMAT is not installed on this
+machine and no container runtime is available, so the GMAT comparisons (a
+5-day coast to 10 m and 1 mm/s; a 100 km polar lunar orbit for 24 h to 10 m)
+have **not been run**. In their place, `test_propagate.py` checks the
+integrator against closed forms: two-body motion against Kepler's equation
+over five orbits (under 1 mm), the J2 nodal drift against the textbook rate
+(within 2 %), forward-and-back in a 100 km lunar orbit with a lumpy field and
+sunlight pressure (under 1 m; measured 0.2–0.9 mm), and the same trip about
+the Earth and about the Moon (under 1 m).
+
+# Launch instants and direct transfers against the flown launches (plan D1, C2, D2)
+
+`make validate-trip` prints this table (`app/tests/golden/validate_launch.py`;
+the acceptance is pinned in `test_launch_vs_clps.py`). Each Falcon 9 lunar
+launch is predicted with its own flight left out of the vehicle's climb.
+
+| Mission | Published liftoff | From its TLI | Designed (due east) | Coast designed / flown | TLI speed designed / flown | Flight designed / flown |
+|---|---|---|---|---|---|---|
+| im-1 | 2024-02-15T06:05:37Z | +15 s | +9.8 min | 41.3 / 42.0 min | 3134 / 3135 m/s | 6.32 / 6.33 d |
+| blue-ghost-m1 | 2025-01-15T06:11:39Z | -11 s | phasing loops (below) | 59.0 min | 3119 m/s | 29.78 d |
+| im-2 | 2025-02-27T00:16:30Z | -4 s | +27.4 min | 35.5 / 36.9 min | 3125 / 3126 m/s | 4.46 / 4.48 d |
+
+| Mission | Climbed at (inertial / over the ground) | Designed: due east | at the azimuth it climbed | at the other direct flight's |
+|---|---|---|---|---|
+| im-1 | 88.8° / 88.7° | +9.8 min | +0.2 min | −15.8 min (86.6°) |
+| blue-ghost-m1 | 110.2° / 111.3° | −139 min (loops) | +0.6 min (loops, below) | none flown with loops |
+| im-2 | 86.6° / 86.4° | +27.4 min (+43.8 before) | −0.0 min | +17.5 min (88.8°) |
+
+**How a climb is described.** From the first reconstructed state after TLI
+the trajectory is propagated back to its perigee, where TLI fired. That gives
+the TLI time and point, the parking orbit's radius (6,570 to 6,598 km for Falcon 9) and
+the *climb constant* `c`: the angle a climb falls behind a circular orbit that
+started at the pad at liftoff, `u(pad → TLI point) − n·(t_TLI − T0)`. For
+Falcon 9 it is −18.2° (IM-1), −17.5° (IM-2) and −17.1° (Blue Ghost), although
+the coasts differ (42, 37 and 59 min) and Blue Ghost's orbit was inclined 35°.
+Vulcan's one flight (Peregrine) gives −26.1° and cannot be checked against
+another.
+
+**From its TLI** (plan: 2 min for IM-1 and IM-2, 5 min for Blue Ghost). The
+liftoff solved from the flown TLI and the other two flights' mean `c` lands
+15, 4 and 11 s from the published one. One degree of `c` moves the liftoff by
+15.5 s, so the spread of `c` (1.1°) is what sets this. The plan's first
+formulation, the instant the pad crosses the flown orbit's plane, is ill
+conditioned for these launches: all three flew close to due east, so the pad
+grazes the plane (IM-1's orbit was inclined 0.04° more than the pad's
+latitude, IM-2's 0.10° *less*, which only a turn at TLI allows), and a few
+hundredths of a degree move the crossing by ten minutes or more.
+
+**Designed** (plan: the right day, and within 10 min). Given only the pad,
+the other flights' climb and NASA's arrival at the Moon (time, closest
+approach, inclination to the Moon's equator and the way round the orbit
+goes), the design takes a climb azimuth and corrects three things in the
+force model (Sun, Moon, Earth J2–J6; the Moon a point mass): the liftoff
+time, which turns the parking orbit's plane with the Earth; the coast, which
+moves the TLI point along it; and the speed TLI adds. It converges in 3–4
+steps to under 0.1 km in the B-plane and 1 s in time. The coast, TLI speed
+and flight time it needs agree with the flown ones (within 1.4 min, 1 m/s
+and 0.02 d), so the transfer itself is right.
+
+*Before* (a due-east climb, the arrival's inclination alone): the liftoff was
+right to the day but 9.8 min (IM-1, inside the plan's 10 min) and 43.8 min
+(IM-2) after the real one; Blue Ghost's loop design 139 min before it. Two
+things were wrong. IM-2 arrived in a near-polar orbit, where the inclination
+alone also allows the mirror orbit going round the other way; the design took
+whichever was nearer its first guess. Holding the orbit's direction as well
+(`transfer.Target.normal`) brings IM-2 to +27.4 min due east. The rest is the
+climb's direction. For a direct transfer the arrival fixes the plane through
+the Moon's direction, so the azimuth and the liftoff time trade one for the
+other: every azimuth has its own instant, about 7 min per degree here (the
+pad sits near the top of the orbit, where the plane's crossing is slow).
+
+*After* (the climb azimuth solved for, plan §D1, `sin A = cos i / cos φ`):
+the climb's direction of each flight is measured from the plane through the
+pad at liftoff and the TLI point (`launchwin.climb_azimuth`; IM-1 88.8°,
+IM-2 86.6°, Blue Ghost 110.2°: climb planes inclined 28.63°, 28.79° and 34.5°
+from a pad at 28.61°). Designed at that azimuth the liftoff lands 0.2 min (IM-1),
+0.0 min (IM-2) and 0.6 min (Blue Ghost, three loops as flown) from the
+real one, inside the plan's 2 and 5 min. That uses the flight's own
+direction. Held out, each Nova-C designed at the other's direction misses by
+15.8 min (IM-1, early) and 17.5 min (IM-2, late): outside the plan's 10 min,
+since the two flights' directions differ by 2.2°, and nothing published says
+which azimuth a flight will take. All three are inside the Eastern Range's
+assumed 35–120° over the ground (`launchwin.ground_azimuth`), and so the
+calendar's check of the pad's limits passes for them.
+
+The planned calendar therefore climbs at the mean of the vehicle's direct
+lunar flights (Falcon 9: 87.7°, 87.6° over the ground; due east with a ±44 min
+margin for a vehicle with none) and gives the liftoff ± 18 min, the larger
+held-out miss (it was ± 44 min). A launch is still an instant: no flown CLPS
+launch published a window, so the plan's widening to a window between the
+azimuth limits is not applied. Designing the calendar with the flight held out
+still puts an opportunity on each real launch day (D2 below); on that day the
+nearest one is 90 min before IM-1's liftoff (66 min due east) and 36 min after
+IM-2's (45 min due east), because the calendar aims at the landing times the
+rule allows, not at the flown arrival, and the arrival time moves the instant
+more than the direction does.
+Keeping the TLI point fixed and steering with a sideways push at TLI instead
+was tried first and fails: for a transfer of nearly 180° the push barely
+moves the arrival, and the correction found answers about 100 to 190 m/s from the
+flown TLI.
+
+**Backed out from the landing** (plan D2: flown landings inside the
+landing rule; flown launch days inside the calendar). With no Sun-height band
+entered, the rule is: the Sun's centre above the skyline and rising, and the
+Earth up. IM-1's, IM-2's and Blue Ghost's landings all fall inside it
+(`test_launch.py`). Designing the calendar as if IM-1 and IM-2 had not flown
+(own flight left out of the climb, the other Nova-C's time in lunar orbit)
+puts a launch opportunity on each one's real launch day (`test_launch.py`).
+The lunar orbit's plane passing over the landing spot (plan L4) is not
+checked: near the poles the lighting decides.
+
+**Not yet done.** Coasts longer than any flown one are accepted up to 120 min
+and flagged: with the Moon south of the equator the climb reaches the TLI point
+only after most of an orbit, and upper stage coast limits are not published.
+Which azimuth a flight takes is not predicted better than the spread of the
+flown ones (2.2°, 16–18 min).
+
+# Phasing loops and correction burns against the flown landers (plan C3, C4)
+
+`make validate-trip` prints these tables (`app/tests/golden/validate_loops.py`;
+the acceptance is pinned in `test_loops_vs_clps.py`).
+
+**Burns read from the reconstruction.** Each half hour of NASA's
+reconstruction is propagated in the force model and compared with the
+reconstruction at its end; a window that differs by more than 0.05 m/s holds a
+burn (outside burns they agree to about 1e-4 m/s). A run of such windows is one
+burn, shown as one instant where the path before it (forward) and the path
+after it (backward) come closest. Blue Ghost 1, up to its arrival at the Moon:
+
+| Burn found | Size | Distance from Earth | Arcs meet within |
+|---|---|---|---|
+| 2025-01-19T04:15:36Z Burn near the highest point of the orbit | 22.53 m/s | 335,814 km | 86 m |
+| 2025-01-23T19:32:38Z Burn near the lowest point of the orbit | 3.27 m/s | 13,081 km | 8 m |
+| 2025-02-09T05:01:12Z Leaving Earth for the Moon | 23.61 m/s | 12,038 km | 83 m |
+| 2025-02-10T05:01:12Z Correction 1 | 1.15 m/s | 196,485 km | 10 m |
+| 2025-02-14T01:53:24Z Entering lunar orbit | 356.25 m/s | 397,914 km | 1918 m |
+
+IM-2's reconstruction shows seven corrections (0.06 to 9.7 m/s) and its
+capture (828 m/s); IM-1's shows none, because its stretches (at most four hours
+each) leave its burns in the gaps. Peregrine's shows a steady push over days
+(the propellant leak), reported as such rather than as burns. In lunar orbit
+the force model and the reconstruction part by about 1 m/s at every close pass
+of the Moon, as much as a small burn, so burns there are not listed.
+
+**Replay** (plan: perigee and apogee times within 1 h, apogee radius within
+1%). Blue Ghost's first reconstructed state propagated with these burns as
+instants:
+
+| Flown | Time | Replayed: minutes off | radius off |
+|---|---|---|---|
+| apogee | 2025-01-19T14:00:21Z | +0.1 | +0.001 % |
+| perigee | 2025-01-23T19:30:45Z | +0.2 | +0.011 % |
+| apogee | 2025-01-27T22:01:37Z | +0.9 | +0.007 % |
+| perigee | 2025-02-01T00:10:21Z | +1.5 | +0.016 % |
+| apogee | 2025-02-05T02:42:52Z | +2.2 | +0.008 % |
+| perigee | 2025-02-09T05:08:42Z | +2.9 | +0.027 % |
+
+**Designed loops** (plan: the flown loop count, and a launch period that holds
+the flown date). Given the pad, the other Falcon 9 flights' climb, Falcon 9's
+injection as flown (3,119 m/s above the parking orbit's speed), the flown first
+perigee (13,067 km from the Earth's centre) and NASA's arrival at the Moon,
+the design flies a due-east climb, raises the perigee at the first apogee,
+sets the period of the remaining loops at the first perigee and leaves Earth
+at the last, and corrects liftoff, coast and the three burns in the force
+model (Sun, Moon, Earth J2–J6) until the arrival matches in the B-plane and
+in time and the first perigee is where it was flown. Each launch day keeps
+its cheapest design over one loop fewer, the two-body count and one more.
+
+| Day | Loops | Liftoff (min) | Raise | Period | Leave | Total (m/s) |
+|---|---|---|---|---|---|---|
+| −5 | 3 | +478 | 108.8 | +30.3 | −1.5 | 140.6 |
+| −4 | 3 | +479 | 122.1 | +26.3 | 3.4 | 151.9 |
+| −3 | 3 | +489 | 116.1 | +16.8 | 17.6 | 150.5 |
+| −2 | 3 | +490 | 92.6 | +12.2 | 16.6 | 121.4 |
+| −1 | 3 | −151 | 83.0 | +12.1 | 15.8 | 110.9 |
+| **0** | **3** | **−139** | **20.8** | **−4.7** | **24.8** | **50.3** |
+| +1 | 3 | −159 | 47.1 | −12.3 | 36.2 | 95.6 |
+| +2 | 3 | +457 | 76.6 | −11.3 | 36.0 | 124.0 |
+| +3 | 2 | −167 | 80.0 | +42.0 | −15.1 | 137.2 |
+| +4 | 2 | −171 | 89.5 | +37.8 | −11.2 | 138.5 |
+| +5 | 1 | +448 | 94.0 | — | 27.6 | 121.6 |
+
+The flown day needs three loops, as flown, and is the cheapest day of the
+eleven by 45 m/s: its burns add up to 50.3 m/s against the 49.4 m/s found in
+the reconstruction (22.5, 3.3 and 23.6 m/s). With no propellant budget
+published, every day whose design works belongs to a period, so the
+three-loop period (−5 to +2 days) holds the flown date. The cost curve is the
+stronger result: an eight-day loop reaches 330,000 km, where the Sun's pull
+over one loop moves the perigee by thousands of kilometres, and on the flown
+day it did most of the raising (20.8 m/s against 85 m/s in two-body terms).
+Due east, the liftoff lands 139 min before the real one (the real climb was
+inclined 34.5°, which a due-east climb from Florida does not give). Climbing
+at the azimuth it flew (110.2°), the flown day's design needs 3 loops and
+lands 0.6 min after the real liftoff (plan: 5 min), 55.3 m/s in all (flown 49.4).
+
+**Correction budget** (plan: linear and Monte Carlo within 10% at the 95th and
+99th percentiles; a seeded run repeats bit for bit). The flight as planned is
+NASA's reconstruction just before the lander entered lunar orbit, propagated
+back to where it passed closest to Earth near the flown departure (propagating
+the arrival itself back would not do: a close pass of the Moon spreads any
+difference by thousands of kilometres). Three corrections (a day after
+leaving Earth, half-way, a day before arriving) aim the estimated state at the
+planned position at the planned arrival time. Errors, all assumed (no user
+guide with injection accuracy is in the catalogue, and the lander makers
+publish no navigation or engine figures): leaving Earth, 1 km in position and
+0.5 / 1.0 / 0.5 m/s (up, along, sideways); knowledge at each correction 1 km and
+1 mm/s; each burn 1% and 1° (Gates' model) plus 1 cm/s. Linear: the errors
+pushed through state transition matrices of each stretch (100,000 draws, since
+Gates' errors grow with the burn). Monte Carlo: 1,000 seeded runs through the
+force model, each correction refined twice on the run's own estimated state.
+
+| Mission | Planned departure | 95th linear / runs | 99th linear / runs (95 % interval) | Arrival altitude 1st–99th % | Flown corrections found |
+|---|---|---|---|---|---|
+| blue-ghost-m1 | 5,390 km up, +8 min | 14.71 / 14.16 m/s | 19.33 / 18.08 m/s (16.52–19.85) | 156.2–160.2 km | 1.15 m/s |
+| im-1 | 622 km up, +170 min | 20.91 / 21.64 m/s | 27.45 / 28.50 m/s (25.93–30.40) | 110.6–114.5 km | none (in its gaps) |
+| im-2 | 1,002 km up, −28 min | 21.29 / 21.45 m/s | 27.82 / 28.89 m/s (26.24–30.24) | 99.8–103.8 km | 0.06, 0.13, 1.06, 2.11, 9.71, 6.06, 4.72 m/s |
+
+The two methods agree within 7% (Blue Ghost's 99th percentile; the others
+within 4%); no run missed the Moon. Nearly all of the total is the first
+correction, which removes the departure error. These are budgets for the
+assumed errors, not what the missions needed: Blue Ghost's one correction
+(1.15 m/s) sits well inside its budget, and IM-2's add up to 24 m/s, near its
+99th percentile. IM-1's planned departure is 170 min after its real one, 622 km up: its
+corrections (in the reconstruction's gaps) changed the path enough that the
+path back from the Moon with no burn passes Earth that much later; the budget
+is about that plan.
+
+# Launch weather: wind climatology and the check against observations (plan T4 B1, Verification)
+
+**Climatology** (`make climatology`, `app/data/climatology.py`). NASA POWER's hourly wind at
+50 m above the surface (MERRA-2 reanalysis; the Falcon 9 rule's 162 ft is 49 m) at LC-39A
+and SLC-4E, 2001–2024 (210,384 hours each), kept as a histogram per month and UTC hour.
+The share of hours above 30 mph at the Cape runs from about 2 % in January to none in
+July. It is what an opportunity beyond the ensembles' 16 days shows for the wind rule.
+A reanalysis cell's hourly mean is smoother than the pad's tower, so these shares
+understate gusty hours; the answer says so.
+
+**Check against observations** (`make hindcast-weather`, `app/feeds/hindcast.py`,
+`core/verification.py`; plan: a rule says "checked against observations" only if its
+Brier skill is at least 0.1 against the month-by-hour climatology at every lead up to
+48 h and its reliability is within 0.1 in every bin with 30 cases or more). The 162 ft
+wind is not measured by any public station, so the check is made at 10 m, at the Cape
+Canaveral Skid Strip's weather station (ASOS KXMR, Iowa Environmental Mesonet archive),
+with the limit brought down by a neutral logarithmic profile over open flat ground
+(roughness 0.03 m): 30 mph at 49 m is 23.5 mph at 10 m. One GEFS run a day for 2025
+(its hour turning through 00, 06, 12 and 18 UTC; NOAA's open-data bucket on AWS), 31
+runs each, 10 m wind bilinear at the station, at 24 and 48 h; the outcome is the
+station's sustained wind in its report nearest that time (48 of the 730 cases had no
+report within 30 minutes and are left out). The reference is the station's own
+month-by-hour frequency for 2015–2024.
+
+| Lead | Cases | Wind above the limit | Brier (GEFS) | Brier (climatology) | Brier skill |
+|---|---|---|---|---|---|
+| 24 h | 343 | 1 | 0.0040 | 0.0029 | −0.41 |
+| 48 h | 339 | 0 | 0.0014 | 0.00003 | −41.6 |
+
+It does not pass, and every wind share keeps saying "not checked against observations".
+The event is rare: in 2025 the station reported more than 23.5 mph in 12 of 8,247
+hourly reports (0.15 %; 0.36 % over 2015–2024), and only one fell at a verified time.
+GEFS gave shares above zero on days it did not happen (one run at 94 %), which costs
+more than climatology's near-zero forecast, probably because its 0.5° cell over the Cape
+is partly sea, where the wind runs stronger than at a station a few kilometres inland. No reliability bin
+other than the lowest (669 cases, mean share 0.002, observed 0) holds 30 cases. A year
+cannot check a limit this rarely reached; several years, or the pad's own tower record,
+would be needed.
+
+**Lightning climatology** (`make thunder-climatology`, `app/data/thunder_climatology.py`).
+NASA MSFC's Combined GLM Hourly Thunder Hour data (GHRC DAAC, doi:10.5067/GLM/HTH/DATA301),
+2019–2025, 2,557 days: for each hour, whether thunder could be heard in each 0.05° cell.
+A day's file is 600 MB, so only the pads' cells are read through NASA Earthdata's OPeNDAP;
+for one day the pads' cells matched the whole file hour for hour. At LC-39A thunder was heard
+in about 21 % of July's 20 UTC hours and none of January's.
+
+# Radiation screening (plan track E)
+
+`make validate-radiation` (`app/tests/golden/validate_radiation.py`) prints these tables;
+`test_radiation.py` pins the cosmic-ray and past-event checks.
+
+**Belts: the engine against a second implementation** (plan: IRBEM within 5 % of SPENVIS
+running AE8/AP8). SPENVIS is a web service and was not run here. Instead, along each flown
+trajectory (one-minute samples within 15 Earth radii, from NASA's reconstruction), the
+fluence from IRBEM (the engine, compiled in spacepy's wheel; its own magnetic shells from
+IGRF) is compared with NASA SPDF's own AE8/AP8 code (`radbelt`; its own shells from its
+IGRF). Solar-maximum maps for all four (the year before each launch was near the cycle's
+peak in OMNI's sunspot record).
+
+| Mission | 1-min samples | e >1 MeV IRBEM | SPDF | diff | p >10 MeV IRBEM | SPDF | diff |
+|---|---|---|---|---|---|---|---|
+| IM-1 | 0 | – | – | – | – | – | – |
+| IM-2 | 437 | 1.09e10 | 1.13e10 | −2.8 % | 8.55e5 | 1.44e6 | −40.5 % |
+| Blue Ghost 1 | 3,311 | 2.04e10 | 2.15e10 | −5.0 % | 8.00e8 | 7.94e8 | +0.7 % |
+| Peregrine | 867 | 2.35e10 | 2.33e10 | +0.8 % | 2.67e8 | 2.80e8 | −4.8 % |
+
+Electrons agree within 5 % on every trip; protons on the two trips that spend hours in
+the inner belt (Blue Ghost's four passes, Peregrine's two). IM-2's proton fluence, a
+thousand times smaller, differs by 40 %: it comes from minutes at the inner belt's lower
+edge, where the flux changes steeply with B/B0 and the two codes' shells differ most.
+IM-1's reconstruction starts 242,000 km out, a day and a half after launch, past the
+belts, so it has none; the answer
+says the climb out is not counted (a lower bound). The maps themselves are read as good
+to a factor of two (×/÷2 on every number).
+
+**Cosmic rays** (plan: ±30 %). The dose on the trip is CRaTER's measured rate scaled by
+the model's change with the Sun's modulation (Matthiä et al. 2013, W from the Oulu
+neutron monitor via NMDB). As an absolute check, the model's dose in a thin silicon layer
+in free space (Bethe stopping power, nuclei Z = 1–28 above 10 MeV/n) in June 2009 (W = 5)
+is 14.1 cGy a year, against CRaTER's 18.9 (microdosimeter, −26 %) and 16.5 (D1–D2,
+−15 %) at 10,000 km from the Moon (Schwadron et al. 2012). Both are inside ±30 %. How
+the dose changes between solar minimum and maximum is the model's alone and has not been
+checked against a second measurement here. Scaled this way the trip dose was 0.21 mGy a
+day for IM-1 (February 2024, W = 91) and 0.17 for Blue Ghost 1 (January 2025, W = 108),
+before any shielding; on the surface, Chang'e-4's 13.2 µGy an hour (January 2019) scaled
+the same way and by the site's open sky.
+
+**Past events** (plan: within 10 % of NOAA's list). The >10 MeV peak from the GOES
+detector's 5-minute averages (NOAA NCEI) against NOAA SWPC's list of solar proton events:
+
+| Event | GOES peak (pfu) | at | NOAA list | at | diff | fluence >10 MeV (cm⁻²) |
+|---|---|---|---|---|---|---|
+| October 1989, 19–31 Oct (GOES-7) | 42,200 | 20 Oct 16:00 | 40,000 | 20 Oct 16:00 | +5.5 % | 1.92e10 |
+| Late October 2003, 28–31 Oct (GOES-11) | 29,500 | 29 Oct 06:15 | 29,500 | 29 Oct 06:15 | 0.0 % | 1.39e10 |
+
+August 1972 comes from King's (1974) fitted spectrum as SPENVIS gives it (7.9e9 cm⁻²
+above 30 MeV). Fluences take the flux as arriving evenly from every direction. OMNI's
+merged proton record was not used for these: it has gaps at both peaks and no proton
+values after March 2020, so the events during a flown trip are listed from NASA DONKI (NOAA's
+10 pfu threshold at GOES) without a fluence.
+
+# Capsule entry against OSIRIS-REx (plan track H)
+
+`make validate-capsule` (`app/tests/golden/validate_capsule.py`; the model is
+`app/core/entry.py` with `app/core/atmosphere.py`). The model is a point mass with a
+ballistic coefficient β, falling from the entry interface through the U.S. Standard
+Atmosphere 1976 (equations to 86 km, its Table I densities from 86 to 150 km) that turns
+with the Earth, under gravity with J2; no lift, no parachutes, and a wind only in the
+footprint. Nothing returns to Earth on a CLPS mission, so the model is checked on the one
+recent sample return with a published entry state and a measured landing point.
+
+**Entry state.** The sample return capsule's reconstructed trajectory in NAIF's PDS
+archive (`src_230924_230924_230930_od383a_v1.bsp`, in the registry as
+`naif:orex-src-entry`) ends at the entry interface, 6,503.142 km from the Earth's centre,
+at 14:41:55.072 UTC on 24 September 2023. Its state there matches the navigation team's
+reconstructed entry state (Wibben et al., AAS 24-058, Table 12) to the table's last digit:
+flight path angle −8.184°, heading 66.396°, Earth-relative speed 12.361 km/s, 37.339° N,
+237.216° E.
+
+**Landing** (plan: within 10 km of the measured point). β from published numbers: the
+capsule's mass at entry (49.64 kg as built plus the 121.6 g sample), Stardust's diameter
+(0.8128 m, the same forebody) and its hypersonic axial force coefficient, 1.48 to 1.56
+(Mitcheltree et al. 1997). Flown to the touchdown height, 1,288 m, and compared with the
+recovery team's measured point, 40.3719° N, 113.24° W:
+
+| C_A | β (kg/m²) | Landing | From the measured point | Entry to ground | Peak deceleration |
+|---|---|---|---|---|---|
+| 1.48 | 64.8 | 40.3609 N, 113.3176 W | 6.7 km | 524 s | 30.8 g |
+| 1.52 | 63.1 | 40.3532 N, 113.3491 W | **9.5 km** | 530 s | 31.0 g |
+| 1.56 | 61.5 | 40.3456 N, 113.3797 W | 12.2 km | 535 s | 31.2 g |
+
+The middle value passes, with little room; the published drag range spans 6.7 to 12.2 km.
+Every case lands short (west-southwest), as the mission's own simulation did: from the
+same reconstructed state with its pre-flight atmosphere and winds, it was 8.9 km off, and
+3.5 km with the day's reconstructed atmosphere (Francis et al., AAS 24, comparison
+table), so most of the miss is the day's upper atmosphere, which a standard atmosphere
+cannot know. The time to the ground (530 s) is not comparable with the observed 615 s:
+the model has no parachutes, which change the time and not the place.
+
+**Footprint.** A seeded Monte Carlo of 200 runs: the flight path angle from TCM-12's
+delivery accuracy (0.073° at 3σ, AAS 24-058 Table 5), heading and speed from the E-1 day
+solution (Table 12), β ±2.6 % (the published C_A range as one sigma), and, assumed, the
+density ±5 % and a wind below 30 km of 10 m/s in each direction. Its 99 % ellipse is 51.4
+by 21.4 km, long axis 77° from north, and holds the measured point (the mission's design
+ellipse was 84 by 20 km). Without the wind the ellipse was 0.3 km wide and missed the
+measured point, which lies about 0.9 km across the track: the wind is what sets the width.
+
+The result is written to `data/capsule/orex_check.json` and served in
+`GET /missions/{id}/return` as `capsule.model_check`.
+
+**Not done.** The Moon-to-Earth return trajectory to the entry interface (C1/C2 reversed)
+is not built: no CLPS mission brings anything back, and no planned one publishes an entry
+state. A capsule's zone weather (B2) waits for the same.

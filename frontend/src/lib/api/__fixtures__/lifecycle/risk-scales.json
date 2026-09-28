@@ -1,0 +1,137 @@
+{
+ "default_id": "five-level",
+ "scales": [
+  {
+   "id": "five-level",
+   "name": "Five levels, 1 lowest to 5 highest",
+   "source_url": "https://standards.nasa.gov/sites/default/files/standards/GSFC/Revision/0/GSFC-HDBK-8005A_Approved.pdf",
+   "likelihood": [
+    {
+     "level": 1,
+     "words": "1, lowest"
+    },
+    {
+     "level": 2,
+     "words": "2"
+    },
+    {
+     "level": 3,
+     "words": "3"
+    },
+    {
+     "level": 4,
+     "words": "4"
+    },
+    {
+     "level": 5,
+     "words": "5, highest"
+    }
+   ],
+   "consequence": [
+    {
+     "category": "safety",
+     "levels": [
+      {
+       "level": 1,
+       "words": "1, lowest"
+      },
+      {
+       "level": 2,
+       "words": "2"
+      },
+      {
+       "level": 3,
+       "words": "3"
+      },
+      {
+       "level": 4,
+       "words": "4"
+      },
+      {
+       "level": 5,
+       "words": "5, highest"
+      }
+     ]
+    },
+    {
+     "category": "technical",
+     "levels": [
+      {
+       "level": 1,
+       "words": "1, lowest"
+      },
+      {
+       "level": 2,
+       "words": "2"
+      },
+      {
+       "level": 3,
+       "words": "3"
+      },
+      {
+       "level": 4,
+       "words": "4"
+      },
+      {
+       "level": 5,
+       "words": "5, highest"
+      }
+     ]
+    },
+    {
+     "category": "cost",
+     "levels": [
+      {
+       "level": 1,
+       "words": "1, lowest"
+      },
+      {
+       "level": 2,
+       "words": "2"
+      },
+      {
+       "level": 3,
+       "words": "3"
+      },
+      {
+       "level": 4,
+       "words": "4"
+      },
+      {
+       "level": 5,
+       "words": "5, highest"
+      }
+     ]
+    },
+    {
+     "category": "schedule",
+     "levels": [
+      {
+       "level": 1,
+       "words": "1, lowest"
+      },
+      {
+       "level": 2,
+       "words": "2"
+      },
+      {
+       "level": 3,
+       "words": "3"
+      },
+      {
+       "level": 4,
+       "words": "4"
+      },
+      {
+       "level": 5,
+       "words": "5, highest"
+      }
+     ]
+    }
+   ],
+   "notes": [
+    "GSFC-HDBK-8005A uses five likelihood levels with 1 the lowest and leaves the level definitions to GPR 7120.4, which is not public; NPR 8000.4C leaves scales to each programme. The words for each level are therefore the project's to enter. Likelihood and consequence are shown side by side and never multiplied."
+   ]
+  }
+ ]
+}

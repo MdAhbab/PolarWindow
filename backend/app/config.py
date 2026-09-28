@@ -26,6 +26,51 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 #:        survival sized on the longest night; adjacent-run coalescing.
 ENGINE_VERSION = "hz-2/vis-2"
 
+#: One version per engine (ADR-13). The surface engine keeps ``ENGINE_VERSION``
+#: above so its cache keys, stored masks and goldens are untouched; every
+#: lifecycle answer instead names the engines it depends on (its *closure*), so
+#: a change to the trip propagator invalidates trip and contact answers and
+#: nothing else.
+#:
+#: traj: trip propagator and transfer design     ecl: shadow along the trip
+#: wx:   launch and recovery weather rules       rad: radiation screening
+#: link: link budget                              net: contact graph and routing
+#: los:  rover-to-lander line of sight
+#: net-2: a number with no edge inside the dates says so instead of "± 0".
+#: net-3 / traj-2: a zero-length "longest" is never "cut short"; Trip lists its covered stretches.
+#: traj-3: Trip lists the burns found in the reconstruction and a correction budget.
+#: lw:   launch opportunities (daily launch instants, landing windows, direct transfer)
+#: lw-2: one opportunity per sweep of the climb plane past the Moon; plain words; weather_note.
+#: lw-3: weather "climatology" beyond 16 days where a wind climatology can be read.
+#: lw-4 / wx-2: the thunder climatology (GLM thunder hours) for the lightning rules.
+#: rad-2: Trip radiation: AE8/AP8 belts, cosmic-ray dose, solar particle events (track E).
+#: rad-3: belt numbers missing when the reconstruction starts beyond the belts; no surface
+#:        dose for a lander that did not land; a flat-horizon fallback is "assumed".
+#: lw-5: a designed launch climbs in the direction of the vehicle's direct lunar flights,
+#:       inside the pad's azimuth limits; a flown launch's climb direction is computed.
+ENGINES: dict[str, str] = {
+    "hz": "hz-2",
+    "vis": "vis-2",
+    "traj": "traj-3",
+    "ecl": "ecl-1",
+    "wx": "wx-2",
+    "rad": "rad-3",
+    "link": "link-1",
+    "net": "net-3",
+    "ready": "ready-1",
+    "los": "los-1",
+    "lw": "lw-5",
+}
+
+
+def engine_closure(*names: str) -> str:
+    """The versions an answer depends on, in a stable order: ``"traj-1+vis-2"``."""
+    unknown = [n for n in names if n not in ENGINES]
+    if unknown:
+        raise KeyError(f"unknown engine(s) {unknown}; known: {sorted(ENGINES)}")
+    return "+".join(ENGINES[n] for n in sorted(set(names)))
+
+
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -145,6 +190,36 @@ class Settings(BaseSettings):
     #: with no user name or password. Right for a judged demo, wrong anywhere
     #: real, so it can be turned off.
     demo_sign_in: bool = True
+
+    # --- request limits (app/api/limits.py) ----------------------------------
+    #: The largest request body taken, in bytes. The largest real one (a risk
+    #: with every text field full) is under 20 KB.
+    max_body_bytes: int = 64 * 1024
+    #: Requests that are not reads, per client address per minute. Off (for a
+    #: load test) with PW_RATE_LIMITS=off.
+    rate_limits: bool = True
+    rate_sign_in_per_min: int = 60
+    rate_agents_per_min: int = 20
+    rate_compare_per_min: int = 60
+    rate_writes_per_min: int = 120
+    #: Jobs waiting for a compute worker. Past this a section that needs a new
+    #: job answers 503 with Retry-After instead of queueing it, so asking for
+    #: arbitrary windows cannot grow the queue without end.
+    max_queued_jobs: int = 200
+
+    # --- data providers -----------------------------------------------------
+    #: Free keys that make some downloads possible or faster. Every feature
+    #: works without them (ADR-8): a missing key skips that source and says so.
+    #:
+    #: NASA Earthdata Login token (urs.earthdata.nasa.gov, free). Needed only for
+    #: the bulk archives at the GHRC DAAC (KSC field mills, GLM thunder hours).
+    earthdata_token: str = ""
+    #: api.nasa.gov key (free). Without it DONKI answers on DEMO_KEY, which
+    #: allows 30 requests an hour.
+    nasa_api_key: str = "DEMO_KEY"
+    #: Contact line in the User-Agent the data providers see (NWS asks for one).
+    #: A project address, never a person's own email by default.
+    data_contact: str = "https://github.com/MdAhbab/PolarWindow"
 
     # --- agents ------------------------------------------------------------
     gemini_api_key: str = ""

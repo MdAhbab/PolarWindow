@@ -1,0 +1,171 @@
+{
+ "data": {
+  "booster": {
+   "landing": "droneship",
+   "zone": {
+    "lat_deg": 30.9,
+    "lon_deg": -74.9,
+    "pm_km": 12
+   },
+   "note": "The booster landed on A Shortfall of Gravitas (droneship), 600 km downrange.",
+   "wave_height_m": {
+    "value": 1.8,
+    "unit": "m",
+    "provenance": "computed",
+    "pm": 0.4,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": null,
+    "source": null
+   },
+   "wind_m_s": {
+    "value": 9.5,
+    "unit": "m/s",
+    "provenance": "computed",
+    "pm": 2.1,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": null,
+    "source": null
+   },
+   "limits": {
+    "wave_height_m": {
+     "value": 2.5,
+     "unit": "m",
+     "provenance": "entered",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "A limit the team set.",
+     "missing_reason": null,
+     "source": "A. Rahman"
+    },
+    "wind_m_s": {
+     "value": 8.0,
+     "unit": "m/s",
+     "provenance": "entered",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "A limit the team set.",
+     "missing_reason": null,
+     "source": "A. Rahman"
+    }
+   },
+   "hazard_area_seen": true
+  },
+  "capsule": {
+   "applicable": false,
+   "reason": "Nothing comes back to Earth on this mission.",
+   "zone": null,
+   "wave_height_m": null,
+   "wind_m_s": null,
+   "daylight": null,
+   "limits": {
+    "wave_height_m": {
+     "value": null,
+     "unit": "m",
+     "provenance": "entered",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": null,
+     "missing_reason": "Not published by the launch provider; the team can enter the limit it is given.",
+     "source": null
+    },
+    "wind_m_s": {
+     "value": null,
+     "unit": "m/s",
+     "provenance": "entered",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": null,
+     "missing_reason": "Not published by the launch provider; the team can enter the limit it is given.",
+     "source": null
+    }
+   },
+   "model_check": {
+    "case": "OSIRIS-REx sample return capsule, 24 September 2023",
+    "distance_km": 9.5,
+    "distance_range_km": [
+     6.7,
+     12.2
+    ],
+    "limit_km": 10.0,
+    "passed": true,
+    "mission_team_km": 8.9,
+    "ellipse_99_km": [
+     51.4,
+     21.4
+    ],
+    "measured_inside_ellipse": true,
+    "checked_at": "2026-09-28T15:19:19+00:00",
+    "sources": [
+     "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/orex/orex_spice/spice_kernels/spk/src_230924_230924_230930_od383a_v1.bsp",
+     "Francis et al., Entry, Descent, and Landing Analysis for the OSIRIS-REx Sample Return Capsule (AAS 24)",
+     "Wibben et al., AAS 24-058, Table 12 (reconstructed entry state)",
+     "Mitcheltree et al. 1997 and Wilmoth et al. 1997 (Stardust capsule shape and axial force)"
+    ],
+    "note": "From OSIRIS-REx’s reconstructed entry state, the entry model lands its capsule 9.5 km from where the recovery team found it (6.7 to 12.2 km over the published drag range; the limit is 10 km). The mission’s own simulation from the same state, before the day’s atmosphere was known, was 8.9 km off. Its 99 % landing area, 51.4 by 21.4 km, holds the real landing point."
+   }
+  }
+ },
+ "meta": {
+  "computed_at": "2026-09-27T08:00:00Z",
+  "uncertainty": {
+   "kind": "composite",
+   "parts": [
+    {
+     "source": "Zone position",
+     "note": "From the launch azimuth and the published downrange distance, ±12 km."
+    }
+   ]
+  },
+  "engines": {
+   "wx": "wx-1"
+  },
+  "sources": [
+   {
+    "name": "Launch Library 2 landing records",
+    "url": "https://ll.thespacedevs.com/2.3.0/launches/",
+    "issued_at": null,
+    "fetched_at": "2026-09-27T00:00:00Z",
+    "licence": null,
+    "snapshot_id": null
+   },
+   {
+    "name": "NOAA GFS-Wave",
+    "url": "https://registry.opendata.aws/noaa-gfs-bdp-pds/",
+    "issued_at": "2026-09-27T00:00:00Z",
+    "fetched_at": "2026-09-27T06:10:00Z",
+    "licence": "Public domain",
+    "snapshot_id": 1301
+   },
+   {
+    "name": "NDBC buoy 41010",
+    "url": "https://www.ndbc.noaa.gov/station_page.php?station=41010",
+    "issued_at": "2026-09-27T07:50:00Z",
+    "fetched_at": "2026-09-27T07:58:00Z",
+    "licence": "Public domain",
+    "snapshot_id": 1302
+   }
+  ],
+  "stale": false,
+  "compute_ms": 412.0
+ }
+}

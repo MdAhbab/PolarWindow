@@ -1,0 +1,84 @@
+{
+ "parameters": [
+  {
+   "id": "battery_limit_h",
+   "name": "Battery limit: the longest night the lander is built to survive",
+   "value": {
+    "value": 96.0,
+    "unit": "h",
+    "provenance": "entered",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": "Entered by the project team as a limit, not measured.",
+    "missing_reason": null,
+    "source": "A. Rahman"
+   },
+   "note": "From the lander power budget, rev C.",
+   "changed_by": "A. Rahman",
+   "changed_at": "2026-09-20T09:30:00Z"
+  },
+  {
+   "id": "landing_sun_min_deg",
+   "name": "Lowest Sun height allowed at landing",
+   "value": {
+    "value": null,
+    "unit": "deg",
+    "provenance": "entered",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": "No landing Sun height limit has been entered. IM-2's landing showed that a low Sun and long shadows can confuse camera navigation (see Lessons).",
+    "source": null
+   },
+   "note": null,
+   "changed_by": null,
+   "changed_at": null
+  },
+  {
+   "id": "landing_sun_max_deg",
+   "name": "Highest Sun height allowed at landing",
+   "value": {
+    "value": null,
+    "unit": "deg",
+    "provenance": "entered",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": "No upper Sun height limit has been entered.",
+    "source": null
+   },
+   "note": null,
+   "changed_by": null,
+   "changed_at": null
+  },
+  {
+   "id": "surface_days",
+   "name": "Planned days on the surface (when the mission does not publish it)",
+   "value": {
+    "value": null,
+    "unit": "d",
+    "provenance": "entered",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": "Enter the planned surface duration when the mission record does not give one.",
+    "source": null
+   },
+   "note": null,
+   "changed_by": null,
+   "changed_at": null
+  }
+ ]
+}

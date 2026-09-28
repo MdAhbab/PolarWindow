@@ -1,0 +1,48 @@
+{
+ "parts": [
+  {
+   "id": "part-lrf",
+   "name": "Laser rangefinder",
+   "part_number": "LRF-200",
+   "serial": "SN-0042",
+   "parent_item_id": "item-lander",
+   "status": "installed",
+   "location": "On the lander",
+   "changed_at": "2025-01-10T09:00:00Z",
+   "changed_by": "Demo project manager"
+  },
+  {
+   "id": "part-lrf-spare",
+   "name": "Laser rangefinder",
+   "part_number": "LRF-200",
+   "serial": "SN-0043",
+   "parent_item_id": "item-lander",
+   "status": "spare",
+   "location": "Houston store",
+   "changed_at": "2025-01-10T09:00:00Z",
+   "changed_by": "Demo project manager"
+  },
+  {
+   "id": "part-drill-bit",
+   "name": "Drill bit",
+   "part_number": "TRIDENT-B3",
+   "serial": "SN-7",
+   "parent_item_id": "item-prime1",
+   "status": "lost",
+   "location": null,
+   "changed_at": "2026-09-10T09:00:00Z",
+   "changed_by": "A. Rahman"
+  },
+  {
+   "id": "part-mapp-wheel",
+   "name": "Rover wheel",
+   "part_number": "MW-4",
+   "serial": "SN-19",
+   "parent_item_id": "item-mapp",
+   "status": "in_test",
+   "location": "Test lab",
+   "changed_at": "2026-09-18T09:00:00Z",
+   "changed_by": "A. Rahman"
+  }
+ ]
+}

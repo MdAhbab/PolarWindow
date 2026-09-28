@@ -57,6 +57,13 @@ export const GUIDE_STEPS: GuideStep[] = [
     body: 'Without Earth in view, the lander must work alone on stored commands. This page lists every such stretch, longest first, with what to prepare. Download the list as a spreadsheet to share with your team.',
   },
   {
+    id: 'journey',
+    path: '/missions/im-2/trip',
+    target: 'journey',
+    title: 'Follow a mission from start to finish',
+    body: 'Each mission has six steps, from getting ready to coming home. Every step answers one question the same way: a sentence first, up to four numbers, one chart, and the rest in rows you open.',
+  },
+  {
     id: 'mission',
     path: '/missions/im-2',
     target: 'sun-earth',
@@ -82,7 +89,7 @@ export const GUIDE_STEPS: GuideStep[] = [
     path: '/missions/im-2',
     target: 'settings',
     title: 'Settings and the project',
-    body: 'Settings holds the display options and the controls for this project. Turn the AI on or off, and read its activity log there. Press Guide at the top any time to see this tour again.',
+    body: 'Settings holds the display options and the controls for this project: the AI and its activity log, who is signed in, and where the live data comes from. Press Guide at the top any time to see this tour again.',
   },
 ]
 

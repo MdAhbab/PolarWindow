@@ -1,0 +1,68 @@
+{
+ "feeds": [
+  {
+   "provider": "swpc",
+   "provider_name": "NOAA SWPC",
+   "product": "Protons and X-rays",
+   "location": null,
+   "last_ok": "2026-09-27T07:59:00Z",
+   "data_time": "2026-09-27T07:58:00Z",
+   "age_s": 60,
+   "stale": false,
+   "staleness_budget_s": 900,
+   "next_run": "2026-09-27T08:05:00Z",
+   "errors": 0,
+   "last_error": null,
+   "licence": "Public domain",
+   "breaker": "closed"
+  },
+  {
+   "provider": "nws",
+   "provider_name": "National Weather Service",
+   "product": "Hourly forecast",
+   "location": "LC-39A",
+   "last_ok": "2026-09-27T07:55:00Z",
+   "data_time": "2026-09-27T07:00:00Z",
+   "age_s": 300,
+   "stale": false,
+   "staleness_budget_s": 7200,
+   "next_run": "2026-09-27T09:00:00Z",
+   "errors": 0,
+   "last_error": null,
+   "licence": "Public domain",
+   "breaker": "closed"
+  },
+  {
+   "provider": "ndbc",
+   "provider_name": "NOAA NDBC",
+   "product": "Buoy observations",
+   "location": "Buoy 41010",
+   "last_ok": "2026-09-27T07:50:00Z",
+   "data_time": "2026-09-26T21:00:00Z",
+   "age_s": 39600,
+   "stale": true,
+   "staleness_budget_s": 10800,
+   "next_run": "2026-09-27T08:10:00Z",
+   "errors": 3,
+   "last_error": "The buoy has not reported since 21:00 UTC",
+   "licence": "Public domain",
+   "breaker": "half_open"
+  },
+  {
+   "provider": "dsn-now",
+   "provider_name": "DSN Now",
+   "product": "Antennas in use",
+   "location": null,
+   "last_ok": null,
+   "data_time": null,
+   "age_s": null,
+   "stale": true,
+   "staleness_budget_s": 600,
+   "next_run": "2026-09-27T08:02:00Z",
+   "errors": 5,
+   "last_error": "Timed out after 20 s",
+   "licence": "Public domain",
+   "breaker": "open"
+  }
+ ]
+}

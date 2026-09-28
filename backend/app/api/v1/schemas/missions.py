@@ -154,6 +154,56 @@ class TargetSite(_Model):
     source_note: str
 
 
+class Transfer(_Model):
+    type: Literal["direct", "phasing_loops", "low_energy", "unknown"]
+    flight_days: float | None
+    lunar_orbit_days: float | None
+
+
+class Descent(_Model):
+    sun_el_min_deg: float | None
+    sun_el_max_deg: float | None
+    earth_required: bool | None
+
+
+class Comms(_Model):
+    bands: list[str]
+    eirp_dbw: float | None
+    gt_dbk: float | None
+    ground_stations: list[str]
+    relays: list[str]
+
+
+class Spacecraft(_Model):
+    mass_kg: float | None
+    area_m2: float | None
+    cr: float | None
+
+
+class Rover(_Model):
+    id: str
+    name: str
+    organisation: str | None
+    source_url: str
+
+
+class MissionLifecycle(_Model):
+    """Schema v2 facts (ADR-10); each non-null field has its URL in ``field_sources``."""
+
+    vehicle_id: str | None
+    vehicle_name: str | None = Field(description="The launch vehicle's name, from the catalogue.")
+    pad_id: str | None
+    pad_name: str | None
+    t0: PublishedDate | None = Field(description="The published launch instant.")
+    transfer: Transfer | None
+    descent: Descent | None
+    comms: Comms | None
+    spacecraft: Spacecraft | None
+    rovers: list[Rover]
+    returns: Literal["none", "sample_capsule", "crew"] | None
+    field_sources: dict[str, str]
+
+
 class MissionDetail(MissionBrief):
     outcome_note: str
     end_of_mission: PublishedDate | None
@@ -165,4 +215,7 @@ class MissionDetail(MissionBrief):
         description="Published landing ellipse as [lat, lon] vertices; null when none is published."
     )
     site: TargetSite | None
+    lifecycle: MissionLifecycle | None = Field(
+        default=None, description="Launch, trip, radio and return facts (schema v2)."
+    )
     meta: Meta

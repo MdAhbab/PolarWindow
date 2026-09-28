@@ -10,7 +10,8 @@ FE    := frontend
 DATA  := data
 
 .DEFAULT_GOAL := help
-.PHONY: missions test-db help install kernels dem sites seed tiles services db-up migrate dev api worker \
+.PHONY: missions climatology thunder-climatology space-climate validate-radiation validate-capsule hindcast-weather validate-trip test-db help install kernels dem sites seed tiles services db-up migrate dev api worker \
+        compute feeds feeds-once catalogues \
         frontend test test-fast test-int test-geo lint fmt typecheck contracts \
         golden-update openapi codegen clean nuke check
 
@@ -65,6 +66,36 @@ api: ## Run the API with reload
 worker: ## Run the precompute worker once
 	cd $(BE) && $(UV) run python -m app.workers.precompute
 
+compute: ## Run the compute worker: trip, contact and launch answers (ADR-12)
+	cd $(BE) && $(UV) run python -m app.workers.compute
+
+feeds: ## Run the feeds worker: records weather, space weather and DSN Now (ADR-8)
+	cd $(BE) && $(UV) run python -m app.workers.feeds
+
+feeds-once: ## Fetch every due live product once, then exit
+	cd $(BE) && $(UV) run python -m app.workers.feeds --once
+
+climatology: ## Wind at 50 m per month and hour at the pads, from NASA POWER (keyless; writes data/climatology)
+	cd $(BE) && $(UV) run python -m app.data.climatology
+
+thunder-climatology: ## Thunder hours per month and hour at the pads, from GLM (GHRC DAAC via OPeNDAP; needs PW_EARTHDATA_TOKEN; ~1.5 h, cached)
+	cd $(BE) && $(UV) run python -m app.data.thunder_climatology
+
+space-climate: ## Oulu neutron monitor (NMDB), past solar particle events (GOES, NCEI) and DONKI's GOES events, for the radiation screening (writes data/radiation)
+	cd $(BE) && $(UV) run python -m app.data.space_climate
+
+validate-radiation: ## Belts (IRBEM against NASA SPDF's AE8/AP8), cosmic rays against CRaTER, past events against NOAA's list (prints the docs/validation.md tables)
+	cd $(BE) && $(UV) run python -m app.tests.golden.validate_radiation 2>/dev/null
+
+validate-capsule: ## Capsule entry against OSIRIS-REx (landing within 10 km; writes data/capsule/orex_check.json and prints the docs/validation.md tables)
+	cd $(BE) && $(UV) run python -m app.tests.golden.validate_capsule 2>/dev/null
+
+hindcast-weather: ## GEFS wind shares against the Cape's weather station for a year (AWS open data + IEM; ~30 min, cached)
+	cd $(BE) && $(UV) run python -m app.feeds.hindcast
+
+catalogues: ## Validate the cited catalogues under data/catalogues
+	cd $(BE) && $(UV) run python -m app.data.catalogues
+
 frontend: ## Run the Vite dev server
 	cd $(FE) && npm run dev
 
@@ -84,6 +115,18 @@ test-int: ## Integration and agent tests
 
 test-geo: ## Golden tests against the real kernels and DEM
 	cd $(BE) && $(UV) run pytest app/tests/golden -q
+
+load-compute: ## Load test of the compute queue: every section at once, WORKERS=2 (own database; writes data/load)
+	cd $(BE) && PW_TEST_DB_NAME=polar_window_load $(UV) run python -m app.tests.fixtures.make_test_db
+	cd $(BE) && WORKERS=$${WORKERS:-2} $(UV) run python -m app.tests.load.load_compute
+
+validate-trip: ## Propagator and shadows against NASA's reconstructed trajectories (prints the docs/validation.md table)
+	cd $(BE) && $(UV) run pytest app/tests/golden/test_propagate_vs_clps.py app/tests/golden/test_eclipse_vs_spice.py -q
+	cd $(BE) && $(UV) run python -m app.tests.golden.validate_trip
+	cd $(BE) && $(UV) run pytest app/tests/golden/test_launch_vs_clps.py -q
+	cd $(BE) && $(UV) run python -m app.tests.golden.validate_launch 2>/dev/null
+	cd $(BE) && $(UV) run pytest app/tests/golden/test_loops_vs_clps.py -q
+	cd $(BE) && $(UV) run python -m app.tests.golden.validate_loops 2>/dev/null
 
 test-fe: ## Frontend units: the adapter, the cache keys, the exports
 	cd $(FE) && npm test --silent

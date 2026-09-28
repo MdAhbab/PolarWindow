@@ -124,6 +124,29 @@ const PATHS: Record<string, JSX.Element> = {
       <path d="M4 6 h0.01 M4 12 h0.01 M4 18 h0.01" />
     </>
   ),
+  /* The six mission steps' states: shape, never colour alone. */
+  dot: <circle cx="12" cy="12" r="5" fill="currentColor" />,
+  ring: <circle cx="12" cy="12" r="5.5" />,
+  quarter: (
+    <>
+      <circle cx="12" cy="12" r="6" />
+      <path d="M12 12 V6 A6 6 0 0 1 18 12 Z" fill="currentColor" />
+    </>
+  ),
+  pencil: (
+    <>
+      <path d="M15 5 L19 9 L9 19 H5 V15 Z" />
+      <path d="M13 7 L17 11" />
+    </>
+  ),
+  dash: <path d="M7 12 H17" />,
+  link: (
+    <>
+      <path d="M10 14 L20 4 M14 4 H20 V10" />
+      <path d="M18 14 V20 H4 V6 H10" />
+    </>
+  ),
+  plus: <path d="M12 5 V19 M5 12 H19" />,
   speaker: (
     <>
       <path d="M11 5 L6 9 H3 V15 H6 L11 19 Z" />

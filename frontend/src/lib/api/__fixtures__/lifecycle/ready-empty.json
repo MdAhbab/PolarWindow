@@ -1,0 +1,41 @@
+{
+ "data": {
+  "counts": {
+   "not_started": 0,
+   "in_build": 0,
+   "in_test": 0,
+   "test_passed": 0,
+   "delivered": 0,
+   "integrated": 0,
+   "verified_on_lander": 0,
+   "ready": 0,
+   "blocked": 0
+  },
+  "not_entered": 0,
+  "items": [],
+  "milestones": [],
+  "risks": [],
+  "parts": {
+   "total": 0,
+   "spares": 0,
+   "lost": 0,
+   "damaged": 0,
+   "failed": 0
+  },
+  "lessons_available": 6,
+  "lessons_adopted": 0
+ },
+ "meta": {
+  "computed_at": "2026-09-27T08:00:00Z",
+  "uncertainty": {
+   "kind": "composite",
+   "parts": []
+  },
+  "engines": {
+   "ready": "ready-1"
+  },
+  "sources": [],
+  "stale": false,
+  "compute_ms": 412.0
+ }
+}

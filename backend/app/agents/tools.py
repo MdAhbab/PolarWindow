@@ -1,9 +1,12 @@
 """The only place an agent touches the system.
 
-Six tools, each with a typed argument model and a JSON schema. Agents cannot
+Ten tools, each with a typed argument model and a JSON schema: six over the
+sites (the brief's), and four over the missions' sections (ADR-6, amended),
+whose results are cut to at most 200 numbers (``compact.py``). Agents cannot
 reach a service or a repository directly -- an import-linter contract forbids it
 -- so this module is the complete, auditable surface area of what an LLM can do
-here. It reads; nothing in it writes.
+here. It reads; nothing in it writes, and it never queues a computation: a
+section that is not worked out yet says so (``job_service.read_only``).
 
 Arguments are validated by pydantic before anything runs. A model that emits
 ``site_id="'; DROP TABLE sites"`` fails the argument model and never reaches a
@@ -24,13 +27,29 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 
+import orjson
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agents.compact import compact
 from app.agents.schema_convert import tool_parameters
 from app.config import get_settings
 from app.core.metrics import METRIC_KEYS
-from app.services import compare_service, mission_service, site_service
+from app.db.repositories.missions import MissionRepository
+from app.services import (
+    compare_service,
+    contact_service,
+    job_service,
+    launch_service,
+    mission_service,
+    ready_service,
+    return_service,
+    sections_service,
+    site_service,
+    space_weather_service,
+    trip_service,
+    weather_service,
+)
 
 log = logging.getLogger(__name__)
 
@@ -111,6 +130,48 @@ class CompareArgs(BaseModel):
     rank_by: str = Field(default="longest_dark_s")
 
 
+class ListMissionsArgs(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    q: str | None = Field(
+        default=None, description="Substring of the mission's name, lander or provider."
+    )
+    status: list[str] | None = Field(
+        default=None,
+        description="Mission statuses: planned, in_transit, operating, completed, "
+        "partial_success, landing_failed, lost_before_landing, cancelled, reassigned.",
+    )
+
+
+class MissionArgs(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    mission_id: str = Field(description="Mission id from list_missions, e.g. 'im-2'.")
+
+
+Section = Literal["ready", "launch", "launch_weather", "trip", "contact", "return"]
+
+
+class SectionArgs(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    mission_id: str = Field(description="Mission id from list_missions, e.g. 'im-2'.")
+    section: Section = Field(
+        description="ready: readiness items, milestones, risks. launch: the flown launch or "
+        "the launch opportunities. launch_weather: each launch weather rule at the next "
+        "opportunity (or the flown launch). trip: distance, shadow, burns, correction "
+        "budget, radiation along the way. contact: when the Deep Space Network and relays "
+        "can hear the lander. return: where the booster comes down; any capsule."
+    )
+    opportunity: str | None = Field(
+        default=None, description="launch_weather only: an opportunity id from launch."
+    )
+
+
+class NoArgs(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
 # ---------------------------------------------------------------------------
 # Declarations handed to the model
 # ---------------------------------------------------------------------------
@@ -168,6 +229,42 @@ TOOL_DECLARATIONS: list[dict[str, Any]] = [
             "unknowable; never call such a site best. Also returns ties."
         ),
         "parameters": tool_parameters(CompareArgs.model_json_schema()),
+    },
+    {
+        "name": "list_missions",
+        "description": (
+            "The CLPS missions: id, name, provider, lander, status, target site and "
+            "published launch and landing dates. Use it to find a mission's id."
+        ),
+        "parameters": tool_parameters(ListMissionsArgs.model_json_schema()),
+    },
+    {
+        "name": "get_mission_sections",
+        "description": (
+            "For one mission, each section (ready, launch, trip, landing, contact, return): "
+            "whether it is available, being worked out or has no data, and in words what "
+            "it shows."
+        ),
+        "parameters": tool_parameters(MissionArgs.model_json_schema()),
+    },
+    {
+        "name": "get_mission_section",
+        "description": (
+            "One section of one mission as the page shows it, cut to at most 200 numbers: "
+            "each value with its unit, provenance and ± or the reason it has none. "
+            "`left_out` says what was cut (plot series, the tail of long lists). A section "
+            "not worked out yet says so and is not started from here."
+        ),
+        "parameters": tool_parameters(SectionArgs.model_json_schema()),
+    },
+    {
+        "name": "get_space_weather",
+        "description": (
+            "Space weather now: Kp, protons above 10 and 100 MeV, X-ray class, solar wind, "
+            "SWPC's alerts and three-day outlook, recent CMEs, flares and particle events, "
+            "each with its age or the reason it is missing."
+        ),
+        # No parameters: Gemini refuses an OBJECT schema with no properties.
     },
 ]
 
@@ -250,6 +347,59 @@ SUMMARY_KEYS: tuple[str, ...] = (
 
 def _summary(summary: dict[str, Any] | None) -> dict[str, Any] | None:
     return None if summary is None else _trim(summary, SUMMARY_KEYS)
+
+
+def _default(obj: Any) -> Any:
+    if isinstance(obj, BaseModel):
+        return obj.model_dump(mode="json")
+    return str(obj)
+
+
+def _plain(obj: Any) -> Any:
+    """JSON types only, as the endpoint would send them (times as ISO strings)."""
+    opts = orjson.OPT_SERIALIZE_NUMPY | orjson.OPT_NON_STR_KEYS | orjson.OPT_UTC_Z
+    return orjson.loads(orjson.dumps(obj, default=_default, option=opts))
+
+
+async def _next_opportunity(session: Session, mission_id: str) -> str | None:
+    """The flown launch, or the first opportunity still to come (else the last one)."""
+    code, body = await launch_service.launch(session, mission_id)
+    opps = body.get("data", {}).get("opportunities") or [] if code == 200 else []
+    if not opps:
+        return None
+    now = time.time()
+    ahead = [o for o in opps if (o["t0"].get("value") or 0) >= now]
+    return str((ahead or opps[-1:])[0]["id"])
+
+
+async def _section(session: Session, a: SectionArgs) -> dict[str, Any]:
+    """The section's answer as its endpoint gives it, from stored answers only."""
+    mid = a.mission_id
+    try:
+        with job_service.read_only():
+            if a.section == "ready":
+                return await ready_service.ready(session, mid)
+            if a.section == "launch_weather":
+                opp = a.opportunity or await _next_opportunity(session, mid)
+                if opp is None:
+                    return {
+                        "available": False,
+                        "reason": "No launch opportunity is worked out for this mission.",
+                    }
+                return await weather_service.launch_weather(session, mid, opp)
+            if a.section == "return":
+                return await return_service.recovery(session, mid)
+            if a.section == "launch":
+                code, body = await launch_service.launch(session, mid)
+            elif a.section == "trip":
+                code, body = await trip_service.trip(session, mid)
+            else:
+                code, body = await contact_service.contact(session, mid, None, None)
+    except job_service.NotWorkedOut as exc:
+        return {"available": False, "reason": str(exc)}
+    if code == 202:  # a stored failure: its message is the answer
+        return {"available": False, "reason": body.get("message") or body.get("error")}
+    return body
 
 
 async def execute(session: Session, name: str, raw_args: dict[str, Any], seq: int) -> ToolCallLog:
@@ -451,6 +601,43 @@ async def execute(session: Session, name: str, raw_args: dict[str, Any], seq: in
                     for it in payload["items"]
                 ],
             }
+        elif name == "list_missions":
+            lm = ListMissionsArgs(**raw_args)
+            found = await MissionRepository(session).find(statuses=lm.status, q=lm.q)
+            result = {
+                "count": len(found),
+                "missions": [
+                    {
+                        "mission_id": m.id,
+                        "name": m.name,
+                        "provider": m.provider,
+                        "lander": m.lander,
+                        "status": m.status,
+                        "site_id": m.site_id,
+                        "launch": (m.launch or {}).get("date"),
+                        "landing": (m.landing or {}).get("date"),
+                    }
+                    for m in found
+                ],
+            }
+
+        elif name == "get_mission_sections":
+            ma = MissionArgs(**raw_args)
+            body = await sections_service.sections(session, ma.mission_id)
+            result = {"mission_id": ma.mission_id, "sections": _plain(body["data"])}
+
+        elif name == "get_mission_section":
+            sa = SectionArgs(**raw_args)
+            result = {
+                "mission_id": sa.mission_id,
+                "section": sa.section,
+                **compact(_plain(await _section(session, sa))),
+            }
+
+        elif name == "get_space_weather":
+            NoArgs(**raw_args)
+            result = compact(_plain(await space_weather_service.now(session)))
+
         else:  # pragma: no cover - guarded above
             raise ValueError(name)
 

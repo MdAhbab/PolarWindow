@@ -3,44 +3,55 @@
 \usepackage[margin=25mm,headheight=14pt]{geometry}
 \usepackage{fontspec}
 \usepackage{graphicx}
+\usepackage{amsmath}
 \usepackage{microtype}
 \usepackage{booktabs}
 \usepackage{siunitx}
 \usepackage{tabularx}
-\usepackage{longtable}
 \usepackage{xltabular}
 \usepackage[inline]{enumitem}
 \usepackage{xcolor}
 \usepackage{titlesec}
 \usepackage{fancyhdr}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,fit}
+\usepackage[numbers,sort&compress]{natbib}
 \usepackage[hidelinks]{hyperref}
 \usepackage{cleveref}
 
 \hypersetup{
-  pdftitle={POLAR WINDOW: submission report},
+  pdftitle={POLAR WINDOW: a lifecycle planner for CLPS lunar deliveries},
   pdfsubject={NASA Space Apps Challenge 2026, CLPS Lunar Mission Browser},
   pdfauthor={POLAR WINDOW team},
-  pdfkeywords={lunar south pole, CLPS, illumination, direct-to-Earth, LOLA, SPICE},
+  pdfkeywords={CLPS, lunar south pole, trajectory, launch weather, radiation, uncertainty},
   pdfcreator={LaTeX}
 }
 
-% The one accent colour. It is used for the section rules and nowhere else.
-\definecolor{pwaccent}{HTML}{0072B2}
+% Palette of the figures, also used for the section rules.
+\definecolor{pwblue}{HTML}{2563EB}
+\definecolor{pworange}{HTML}{E8710A}
+\definecolor{pwgreen}{HTML}{059669}
+\definecolor{pwgrey}{HTML}{6B7280}
+\definecolor{pwtext}{HTML}{111827}
 
 \titleformat{\section}
   {\normalfont\large\bfseries}{\thesection}{0.6em}{}
-  [{\color{pwaccent}\titlerule[0.8pt]}]
+  [{\color{pwblue}\titlerule[0.8pt]}]
 \titlespacing*{\section}{0pt}{1.4\baselineskip}{0.5\baselineskip}
 \titleformat{\subsection}{\normalfont\normalsize\bfseries}{\thesubsection}{0.6em}{}
 \titlespacing*{\subsection}{0pt}{0.9\baselineskip}{0.3\baselineskip}
 
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\footnotesize NASA Space Apps Challenge 2026 --- CLPS Lunar Mission Browser}
+\fancyhead[L]{\footnotesize NASA Space Apps Challenge 2026: CLPS Lunar Mission Browser}
 \fancyhead[R]{\footnotesize\thepage}
 \fancyfoot[C]{\footnotesize\url{https://github.com/MdAhbab/PolarWindow}}
 \renewcommand{\headrulewidth}{0.4pt}
 \renewcommand{\footrulewidth}{0.4pt}
+
+\captionsetup{font=small,labelfont=bf,skip=4pt}
 
 \sisetup{
   group-separator={,},
@@ -58,7 +69,8 @@
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
 
 \title{\textbf{POLAR WINDOW}\\[3pt]
-  \large Sun, Earth and terrain for CLPS missions at the Moon's south pole}
+  \large A lifecycle planner for CLPS lunar deliveries, from launch to return,\\
+  with the uncertainty and source of every number}
 \author{}
 \date{}
 
@@ -68,499 +80,894 @@
 \vspace{-2.4\baselineskip}
 \begin{center}\small
 Submission report for the 2026 challenge \emph{CLPS Lunar Mission Browser}.
-Timings and site figures were measured on commit \texttt{97d7626}; test counts on
-the final build of 24~September~2026.
+Engine checks were measured on commit \texttt{f421298} of branch \texttt{featured};\\
+response times, test counts and screens on \texttt{f1d5667}, whose engines are unchanged.
 \end{center}
 
-% ---------------------------------------------------------------------------
-\section{Problem statement}
-\label{sec:problem}
-
-NASA's brief notes that south-pole missions face extreme lighting and communication
-constraints, and that existing Sun and Earth tools have ``complicated interfaces''. It asks
-for an intuitive tool that lets planners, educators and the public compare landing sites
-\emph{and dates} quickly, with Sun and Earth shown against the horizon to judge power and
-direct-to-Earth windows.\footnote{%
-\url{https://www.spaceappschallenge.org/2026/challenges/clps-lunar-mission-browser/}}
-
-General tools fail at the pole for four reasons:
-\begin{itemize}
-\item \textbf{The Sun hugs the horizon.} The Moon's axis is tilted only
-  \qty{1.54}{\degree}, so at the pole the Sun circles the horizon. At Connecting Ridge its
-  centre stays between \qty{-1.61}{\degree} and \qty{-0.70}{\degree} all month, so metres
-  of terrain decide the answer, and a smooth-globe horizon gets it wrong.
-\item \textbf{The textbook azimuth formula breaks down.} It divides by the cosine of
-  latitude, which goes to zero exactly where the sites are.
-\item \textbf{Crater coordinates point at shadow.} An IAU crater coordinate is the centre;
-  the elevation model puts Shackleton's at \qty{-2767}{\m}, a permanently shadowed floor.
-\item \textbf{Earth sinks for days.} Its elevation at Connecting Ridge swings from
-  \qty{-7.4}{\degree} to \qty[retain-explicit-plus]{+6.0}{\degree} over the month, so
-  contact is lost for days, not minutes.
-\end{itemize}
+\begin{abstract}
+NASA's Commercial Lunar Payload Services (CLPS) programme buys the delivery of science payloads to the Moon from commercial providers. Planning one delivery draws on separate tools for launch design, weather, trajectory, radiation, communications and recovery, each with its own conventions. This report describes POLAR WINDOW, an open planner that follows one CLPS delivery through six sections: readiness, launch, trip, landing, contact with Earth and return. Every number it serves states its source, its margin or the reason it has none. It also carries the age of any live input. No section returns a verdict or a combined score. The engines are checked against the public record of flown missions. The references are NASA's reconstructed trajectories of four CLPS landers, their published liftoff times and NOAA's list of solar particle events. Measured lunar radiation doses and the landing point of the OSIRIS-REx capsule complete the set. Designed at the direction each vehicle climbed, the launch instants of the three flown Falcon 9 missions fall within one minute of the published liftoffs. One day of propagation from a reconstructed state stays within one kilometre in all but one case. Unmet planned tolerances are reported with their measured values. When the climb direction is not known in advance, a designed launch instant misses by about 16 to 18 minutes. The wind ensemble shows no skill against one year of station observations, so its shares are marked not checked. Relays, link budgets and the return from the Moon remain unbuilt, because their inputs are not published.
+\end{abstract}
 
 % ---------------------------------------------------------------------------
-\section{Our solution}
-\label{sec:solution}
+\section{Introduction}
+\label{sec:intro}
 
-Every screen draws one primitive: \emph{time above the local horizon}. A body is ``up''
-when its centre clears the site's own skyline, computed from real terrain. From the Sun
-and Earth series over a window follow four numbers, always shown together:
-\begin{enumerate*}[label=(\arabic*)]
-\item hours of sunlight (power);
-\item hours of Earth contact (direct-to-Earth geometry);
-\item the longest dark gap (survival);
-\item the longest blackout (autonomy).
-\end{enumerate*}
-The last two end missions, and a total hides them.
+NASA's Commercial Lunar Payload Services (CLPS) programme buys the delivery of science
+payloads to the Moon from commercial providers \citep{nasaclps}. Four CLPS landers have
+flown: Peregrine Mission One, IM-1, Blue Ghost Mission~1 and IM-2. Their reconstructed
+trajectories are public in NASA's SPICE archive \citep{naifclps}. The 2026 NASA Space Apps challenge \emph{CLPS Lunar Mission Browser} asks for a tool to compare landing sites and dates \citep{spaceapps2026}. The tool is meant for planners, educators and the public, and it should show the Sun and Earth against the local horizon.
 
-Missions come first. A mission is a published target plus a surface window. The home
-screen shows 20 CLPS deliveries on a Moon view and a programme timeline, filtered by
-instrument type, status and provider, and every record field carries its source. A
-mission's target becomes a site, and the same engine answers what the Sun and Earth do
-there. A window picker and a monthly calendar make dates as easy to compare as places.
-Fifteen terrain-derived candidate sites are the alternatives. Browser tests walk the
-mission screens end to end, and with no service at all the app still shows the demo path
-from a saved copy of the API's answers, labelled as such.
+The first version of POLAR WINDOW answered one question. At a south-polar site and over
+chosen dates, it reported how long the Sun and Earth stay above the site's own skyline.
+A delivery raises many more questions. A project manager must know when the vehicle can
+leave the pad and whether the weather rules allow it. The trip passes through sunlight,
+shadow and the radiation belts. After landing, the team needs the hours in which a
+ground station can hear the lander. The launch vehicle's booster comes back to a landing zone on
+land or at sea. Each payload must also be built, tested and delivered on
+time. Each answer comes from a different tool and data source, and each tool states its
+assumptions in its own way.
 
-% ---------------------------------------------------------------------------
-\section{What makes it different}
-\label{sec:different}
+This report describes the extension of POLAR WINDOW into a planner that follows one CLPS
+delivery through six sections: \emph{Ready}, \emph{Launch}, \emph{Trip}, \emph{Landing},
+\emph{Contact} and \emph{Return}. The work makes four contributions.
+\begin{enumerate}
+\item A single contract for every number. Each value states its provenance: computed, published, entered by a named person, or assumed. It carries a margin (a $\pm$, a range or a multiplicative factor) or the reason it has none. It also carries the age of any live input. No
+  section returns a verdict, a readiness percentage or a combined score.
+\item Trajectory, launch, radiation and entry engines checked against flown missions.
+  The references are NASA's reconstructions of the four CLPS trips and the measured
+  landing of the OSIRIS-REx sample capsule.
+\item A process design that separates network access, long computations and request
+  handling. Every stored answer records the inputs and engine versions it came from.
+  \Cref{sec:perf} measures its response times and its job queue under load.
+\item A disclosure of every planned acceptance tolerance that the engines do not meet,
+  with the measured value beside it.
+\end{enumerate}
 
-\paragraph{Real geometry, on the server.} Terrain is LOLA at \qty{20}{\m} to
-\qty{20}{\km} and \qty{80}{\m} to \qty{50}{\km}, ray-cast on \num{1440} bearings with
-curvature removed. Sun and Earth come from SPICE (DE440, \texttt{MOON\_ME}, light-time and
-stellar aberration), projected with unit vectors that stay exact at the pole. Each
-skyline crossing is bisected between samples, so it is not rounded to the time step.
-
-\paragraph{Uncertainty travels with the number.} Each duration carries a $\pm$ from the
-terrain's vertical error and the rate at which the body crosses the skyline. A stretch the
-window cut short is shown as a lower bound ($\geq$). A crossing too shallow to time is
-called \emph{grazing} rather than given a false $\pm$. The API also brackets each total
-with full-disc and any-limb figures. The $\pm$ still leaves out one model choice
-(\cref{sec:limits}).
-
-\paragraph{No composite score.} A score needs weights, and the weights belong to the
-mission, not to us. We rank on one named metric at a time. Each value becomes an interval,
-and a value the window cut short gets a range of places, never ``best''.
-
-\paragraph{Sites derived from terrain.} A candidate site is the most open-skied landable
-post (slope under \qty{12}{\degree}) on the high ground of a stated ring or disc around a
-named feature. The anchor and the rule are stored with it. Mission targets are the
-reverse case: we use them exactly as published, because moving one would describe a
-different mission.
-
-\paragraph{One view, detail on request.} Every visitor sees the same plain-English view
-with the same four numbers and their $\pm$ or $\geq$. Pressing a number's label says what it
-means and gives its professional name; closed rows beside the chart open what blocks the
-Sun and Earth, how sure the numbers are, their sources and other dates.
-
-\paragraph{Agents that cannot state an unmeasured number.} Four agents see the system
-only through six declared tools. A guard checks every number and full date in an answer
-against that run's tool results. After two failures, the answer is replaced by a summary
-built from measurements alone.
+The evaluation is bounded by public data. Only four CLPS trips have reconstructions,
+and none of the planned missions publishes a trajectory, a radio link budget or a
+return state. The engines are therefore checked on the flown cases, and the planned
+missions receive designed answers labelled as such. Two external references named in
+the plan could not be run: the General Mission Analysis Tool (GMAT) and the SPENVIS web
+service. \Cref{sec:eval} states what replaced each of them.
 
 % ---------------------------------------------------------------------------
-\section{Results}
-\label{sec:results}
+\section{Related work}
+\label{sec:related}
 
-\paragraph{Build.} 316 backend tests (207 unit, 90 integration, 19 golden), 140 frontend
-unit and component tests and 20 browser tests pass. In the browser tests, axe reports no
-serious or critical WCAG~2.1~AA violation on any screen, in either theme or on a phone.
-Strict type checking and all eight import contracts are clean.
-\Cref{tab:timing} was measured on an Apple M3; ``cold'' counts only cache misses.
+\paragraph{Illumination and Earth visibility at the lunar poles.} Polar lighting has been
+mapped from Lunar Orbiter Laser Altimeter (LOLA) topography \citep{smith2010} by casting
+horizons and averaging Sun visibility over years \citep{mazarico2011}. Later work located
+persistently illuminated regions in camera images \citep{speyerer2013} and in
+higher-resolution terrain models \citep{glaser2014}. These studies produce fractions over
+long periods on a fixed grid. They answer where the light is on average, not what
+happens at one landing point over one mission's dates. They also report no timing
+uncertainty per crossing. The surface engine of POLAR WINDOW computes the Sun and Earth
+from the Navigation and Ancillary Information Facility's SPICE system
+\citep{acton1996,acton2018} with the DE440 ephemeris \citep{park2021}. It reports
+each duration with a margin derived from the terrain's vertical error.
+
+\paragraph{Trajectory and launch design.} High-fidelity mission design is available in
+open tools such as GMAT, which has a documented verification programme
+\citep{hughes2014}. Its building blocks are standard. They include Lambert solvers for the initial
+transfer \citep{izzo2015}, numerical integration under point-mass and harmonic gravity
+\citep{montenbruck2000}, and lunar gravity fields from GRAIL \citep{zuber2013}. These
+tools require a scripted mission and an analyst. They do not read NASA's CLPS reconstructions or relate a launch day to the lighting rule at the landing site. They also do not label an input as published or assumed. POLAR WINDOW does not
+compete with them on fidelity. It connects a small, checked subset of their methods to
+the landing site, the pad and the reconstructions.
+
+\paragraph{Launch weather and forecast verification.} Launch weather criteria are
+published per vehicle as rule sets. The Falcon~9 rules, for example, limit the wind at
+\qty{162}{ft} and lightning near the pad \citep{nasa2020wx}. Ensemble systems such as
+the Global Ensemble Forecast System (GEFS) give a sample of possible weather
+\citep{guan2022}. Lightning is observed from orbit by the Geostationary Lightning Mapper
+(GLM) \citep{goodman2013,virts2025}, and long wind records come from the MERRA-2
+reanalysis \citep{gelaro2017}. The standard score for a probability forecast is the
+Brier score \citep{brier1950}. Public presentations of launch weather usually give one
+chance of a rule being broken. They rarely state the sample behind it or whether that
+chance has been checked against observations.
+
+\paragraph{Radiation screening.} Trapped belt fluxes are commonly taken from the AE8 and
+AP8 models \citep{vette1991,sawyer1976}. The IRBEM
+library\footnote{\url{https://prbem.github.io/IRBEM/}} implements them, and SpacePy
+exposes them in Python \citep{niehof2022}. Galactic cosmic
+rays (GCR) can be modelled with one solar modulation parameter \citep{matthia2013}. Measured doses exist in lunar orbit from CRaTER \citep{schwadron2012} and on the far-side
+surface from Chang'e-4 \citep{zhang2020}. Large solar particle events are described by
+published spectra \citep{king1974}. Engineering tools such as OLTARIS compute dose behind
+shielding once a trajectory and a geometry are known \citep{singleterry2011}. They need
+an account and a finished design, so they do not serve early screening of several
+candidate trips.
+
+\paragraph{Contact planning.} The Deep Space Network (DSN) publishes each antenna's
+horizon mask and link parameters \citep{jpl810005}. Delay-tolerant networks route messages
+over scheduled contacts with contact graph routing \citep{araniti2015}. Neither source
+combines a station's mask with the terrain around a polar lander, which decides whether
+Earth is visible at all.
+
+\paragraph{Gap.} Each area has mature tools, but each answers one phase with its own
+conventions. None carries the provenance and uncertainty of a number from the pad to the
+landing site and back. POLAR WINDOW keeps both attached to every number across the six
+phases of a delivery. Its engines are deliberately
+simpler than the specialist tools above. Designed values are labelled as designed, and
+the radiation answers name the tools in which a design must be confirmed.
+
+% ---------------------------------------------------------------------------
+\section{System design}
+\label{sec:design}
+
+\subsection{Processes and data flow}
+
+The system is one Python code base run as three long-lived processes over PostgreSQL
+and Redis (\cref{fig:arch}). The \emph{API} process answers requests from the browser
+and from the agents. It reads stored answers and feed snapshots, and it never waits for
+a long computation. The \emph{compute worker} runs trajectory, launch-calendar and
+contact jobs. The \emph{feeds worker} is the only process that reaches external services. It fetches weather, space weather, launch schedules and DSN activity, and it stores each response as a snapshot with its fetch time. An import contract enforces this
+rule in code. No module in the API, the services, the agents or the numerical core can
+import the feed package.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\sffamily\small, node distance=9mm and 11mm,
+  box/.style={draw=pwtext, line width=0.5pt, minimum height=9mm, align=center,
+    inner sep=3pt, text width=#1},
+  box/.default=30mm,
+  store/.style={box=34mm, draw=pwblue, line width=0.8pt},
+  ext/.style={box=30mm, draw=pwgrey, dashed},
+  lab/.style={font=\sffamily\footnotesize, fill=white, inner sep=1pt},
+  arr/.style={-{Stealth[length=2mm]}, line width=0.5pt, draw=pwtext}]
+\node[box=24mm] (web) {Browser\\six sections};
+\node[box, right=of web] (api) {API process\\agents and guard};
+\node[store, right=of api] (pg) {PostgreSQL\\answers, jobs,\\snapshots, audit log};
+\node[box, below=of api] (cw) {Compute worker(s)\\trip, launch, contact};
+\node[box, below=of pg] (fw) {Feeds worker\\fetch, parse, store};
+\node[ext, right=11mm of fw] (ext) {NOAA, NASA,\\Launch Library 2};
+\node[box=24mm, draw=pwgrey, above=of api] (redis) {Redis cache};
+\draw[arr] (web) -- node[lab, above=2pt]{HTTP} (api);
+\draw[arr] (api) -- node[lab, above=2pt]{read} (pg);
+\draw[arr] (api) -- (redis);
+\draw[arr] (cw.east) -- node[lab, pos=0.55, above left=0pt]{jobs} (pg.south west);
+\draw[arr] (fw) -- node[lab, right=2pt]{snapshot} (pg);
+\draw[arr] (fw) -- node[lab, above=2pt]{fetch} (ext);
+\end{tikzpicture}
+\caption{Processes. Only the feeds worker has outbound network access; the API queues
+work and reads stored answers.}
+\label{fig:arch}
+\end{figure}
+
+An answer that takes seconds or minutes to compute is a \emph{job}. Its key is a hash of the job kind, its parameters and the
+versions of every engine it depends on, called its \emph{closure}. When a stored answer
+with that key exists, the API returns it at once. Otherwise the API queues a job and
+returns HTTP status 202 with a job reference, and the page polls until the answer is
+ready. Workers lease jobs from a PostgreSQL table with row locks that skip rows already
+taken. Several workers can therefore run without a separate queue service. Each answer is stored
+as an \emph{assessment} together with its inputs. These are the feed snapshot identifiers,
+the catalogue versions, the kernel set, the terrain product and any values a person entered. An
+answer is therefore reused until one of its inputs or engine versions changes.
+
+\subsection{One contract for every number}
+
+Every value that leaves the service has one shape, called a \emph{quantity}. It holds the
+value, the unit, the provenance and exactly one form of margin: a symmetric $\pm$, a
+low-to-high range, or a multiplicative factor. A value without a margin carries a
+sentence that says why. A value that cannot be given is null and carries its
+\emph{missing reason}, for example that a vehicle's limit is not published. A duration
+cut short by the chosen dates is flagged as a lower bound. Probabilities use a second shape, called a \emph{share}. It holds $k$ of $n$ model runs, an exact binomial interval \citep{clopper1934} and a flag stating whether the share has been checked against observations.
+
+Four rules of the project govern these shapes. No section returns a verdict: there is no
+go or no-go, no readiness percentage, no risk score and no overall chance of launch.
+Every number states whether it was computed, published, entered or assumed. Every live
+number shows its age, and past its staleness budget it is replaced by the reason there
+is no number. Every probability states its sample and its verification status. A schema
+test and the agents' guard check the first rule (\cref{sec:agents}).
+
+\subsection{Layering, versions and catalogues}
+
+The numerical core has no input or output, no clock and no database access. Ten import
+contracts keep the layers apart. Among them, SPICE is reachable from one module only.
+Routes reach the domain only through services, and agents reach it only through their
+tool module. Each engine carries its own version, for example \texttt{traj-3} for the
+trajectory engine and \texttt{lw-5} for launch design. A change to one engine
+invalidates only the answers whose closure contains it.
+
+Static facts live in nine cited catalogues: launch pads, vehicles, ground stations,
+relays, recovery zones, landing attempts, lessons, risk scales and weather rules. Every
+record carries its sources and compile date. A value that no source publishes is left
+empty with its reason and is never filled with a typical figure. The mission list itself
+holds 20 CLPS deliveries and 64 payloads, each payload with a source address.
+
+% ---------------------------------------------------------------------------
+\section{Methods by mission section}
+\label{sec:methods}
+
+\Cref{tab:sections} lists the six sections, the question each one answers and the
+reference against which its engine is checked. The subsections below describe the
+engines in the order of a delivery. \Cref{fig:screens} shows two sections as the project
+manager sees them. Each number carries its margin, or a sentence stating why it has none.
 
 \begin{table}[htbp]
 \centering\small
-\caption{Measured latency, median and 95th percentile.}
-\label{tab:timing}
-\begin{tabular}{@{}lrrr@{}}
+\caption{The six mission sections and the checks behind them.}
+\label{tab:sections}
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}p{0.34\textwidth}Y@{}}
 \toprule
-Operation & $N$ & Median & p95 \\
+Section & Question answered & Engine checked against \\
 \midrule
-Horizon mask, \num{1440} bearings (precompute) & 75 & \qty{44.6}{\ms} & \qty{46.7}{\ms} \\
-\texttt{/metrics}, cold / warm & 30 / 30 & \qty{11.2}{\ms} / \qty{0.8}{\ms} & \qty{12.7}{\ms} / \qty{1.3}{\ms} \\
-\texttt{/timeline} (\num{2836} samples, \qty{210}{\kilo\byte}), cold / warm & 30 / 30 & \qty{15.2}{\ms} / \qty{4.1}{\ms} & \qty{16.8}{\ms} / \qty{4.3}{\ms} \\
-\texttt{/calendar}, 365 days, monthly, cold & 10 & \qty{103}{\ms} & \qty{105}{\ms} \\
-\texttt{/missions}, all 20, warm & 30 & \qty{4.0}{\ms} & \qty{4.7}{\ms} \\
+Ready & What is built, tested and delivered, and what is blocked? & State rules and the
+hash-chained audit log (tests) \\
+Launch & When can the vehicle leave the pad for a landing the lighting allows? & Flown
+liftoffs of IM-1, IM-2 and Blue Ghost~1 \\
+Launch weather & Which published weather rule would be broken, in how many model runs? &
+One year of station observations at the Cape \\
+Trip & Where is the spacecraft, when is it in shadow, what radiation does it meet? & NASA
+reconstructions of four CLPS trips and LRO; NOAA's event list \\
+Landing & How long are the Sun and Earth above the site's skyline? & Blue Ghost~1's
+reported end; golden fixtures \\
+Contact & When can a ground station hear the lander, and how long must a message wait? &
+DSN masks and SPICE station kernels (tests) \\
+Return & Where does the booster or a capsule come down, in what sea? & OSIRIS-REx's
+measured landing point \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
-\paragraph{Three contrasting sites} over the reference window, 14 March 2027 plus
-\qty{708.75}{\hour} (\cref{tab:sites}): Connecting Ridge (high and open), Malapert (a real
-night) and Faustini (sheltered).
+\begin{figure}[tbp]
+\centering
+\begin{subfigure}{\linewidth}
+\centering
+\includegraphics[width=0.88\linewidth]{fig-screen-hub.png}
+\caption{IM-2: the six sections above the open Landing section and its four numbers.}
+\end{subfigure}
+\par\medskip
+\begin{subfigure}{\linewidth}
+\centering
+\includegraphics[width=0.88\linewidth]{fig-screen-launch.png}
+\caption{Griffin-1's Launch section: the next liftoff carries the larger held-out miss,
+\qty{\pm 18}{\minute}.}
+\end{subfigure}
+\caption{Two screens at commit \texttt{f1d5667}, 1440 pixels wide, dark theme, cropped.}
+\label{fig:screens}
+\end{figure}
+
+\subsection{Landing: the Sun and Earth above the local skyline}
+
+Terrain comes from the LOLA polar elevation models at \qty{20}{\m} (to \qty{20}{\km}
+from the site) and \qty{80}{\m} (to \qty{50}{\km}). Rays are cast on \num{1440} bearings
+with the Moon's curvature removed, giving the elevation of the skyline in every
+direction. The Sun and Earth come from SPICE in the \texttt{MOON\_ME} frame with
+light-time and stellar aberration corrections. A body is \emph{up} when its centre
+clears the skyline at its azimuth. Each skyline crossing is located by bisection between
+time samples, so its time is not rounded to the step. Four durations follow over the
+chosen dates. The screens name them time in sunlight, time in contact with Earth, the
+longest night and the longest time without contact. Each duration carries a $\pm$ from the
+terrain's vertical error divided by the rate at which the body crosses the skyline.
+A crossing too shallow to time is reported as \emph{grazing} instead of receiving a
+margin.
+
+\subsection{Launch: liftoff instants backed out from the landing}
+
+\paragraph{Landing rule.} A landing time is allowed when the Sun's centre is above the
+site's skyline and rising, and the Earth is up. The project manager may narrow the Sun
+elevation to a band. Landing times that satisfy the rule are moved back by the time in lunar orbit and the flight time. The result is the set of days on which the vehicle must leave Earth.
+
+\paragraph{Liftoff instant.} For a direct transfer the arrival at the Moon fixes the
+plane of the parking orbit. The pad must lie in that plane at liftoff. The climb direction then follows from $\sin A = \cos i / \cos \varphi$. Here $A$ is the inertial azimuth, $i$ the parking orbit's inclination and $\varphi$ the pad's latitude. The
+angle a climb falls behind a circular orbit started at the pad, called here the
+\emph{climb constant}, is measured on the vehicle's flown lunar launches. A design then corrects three quantities in the force model until the arrival matches. They are the liftoff time, the coast in the parking orbit before trans-lunar injection (TLI), and the speed that TLI adds. The force model holds the Sun, the Moon as a point mass and the Earth's
+zonal harmonics J2 to J6. A candidate climb azimuth outside the range's published or
+assumed limits is refused.
+
+\paragraph{Phasing loops.} Blue Ghost~1 flew several long Earth orbits before leaving for
+the Moon. For such a mission, the design raises the perigee at the first apogee. It then sets
+the period of the remaining loops and leaves Earth at the last perigee. It corrects
+liftoff, coast and the three burns in the force model for each launch day and keeps the
+cheapest loop count.
+
+\subsection{Trip: propagation, shadow and correction budget}
+
+A flown trip is read from NASA's reconstruction \citep{naifclps}. A designed trip is
+propagated in the J2000 frame on the barycentric dynamical time scale with an
+eighth-order Dormand--Prince integrator at a relative tolerance of $10^{-12}$. The Sun
+and Moon are point masses from DE440 \citep{park2021}. The Earth adds zonal terms J2 to
+J6. Within ten lunar radii the Moon's field is the GRAIL model GRGM1200A
+\citep{zuber2013}, to degree 50 in cruise and degree 100 in lunar orbit. Solar radiation
+pressure is off by default, because no lander publishes its area and mass at that point
+in the flight. Shadow stretches come from conical Earth and Moon shadows with the
+overlap of the two discs \citep{montenbruck2000}, and each edge is bisected.
+
+The correction budget uses an assumed error model, since no provider publishes one.
+Errors at departure, in orbit knowledge and in each burn (the model of
+\citet{gates1963}) are pushed through the trajectory in two ways. The linear method uses
+state transition matrices of each stretch. The Monte Carlo method flies seeded runs
+through the full force model. In each run, every correction burn aims the run's own
+estimated state at the planned arrival. The answer reports the 95th and 99th percentiles of the
+total correction and labels them a budget for the assumed errors.
+
+\subsection{Trip: radiation screening}
+
+Belt fluence along the trajectory comes from AE8 and AP8 \citep{vette1991,sawyer1976}
+through IRBEM in SpacePy \citep{niehof2022}, with a factor of two on
+every value. The cosmic-ray dose is CRaTER's measured rate \citep{schwadron2012} scaled
+by the change of the model of \citet{matthia2013} with solar modulation. The modulation
+parameter comes from the Oulu neutron monitor. On the surface, Chang'e-4's measured
+rate \citep{zhang2020} is scaled the same way. It is also scaled by the fraction of open
+sky above the site, taken from the site's own skyline. Solar particle events during a flown trip are
+listed from NASA's DONKI record. Three past large events give comparison fluences: August
+1972 from King's spectrum \citep{king1974}, and October 1989 and October 2003 integrated
+from GOES proton data. Every radiation answer states that it is screening only and names
+the tools in which a design must be confirmed.
+
+\subsection{Contact: when a station hears the lander}
+
+A ground station hears the lander when two conditions hold at once. Earth must be above
+the lander's skyline, which is the surface engine's existing number. The lander must
+also be above the station's own horizon mask, taken from the DSN handbook
+\citep{jpl810005} per degree of azimuth. The station positions come from SPICE station
+kernels. The union over the 14 catalogued DSN antennas is the \emph{time a ground station
+can hear the lander}. Contacts between nodes, each with its one-way light time, feed an
+earliest-arrival search over contacts, the simplest exact form of contact graph routing
+\citep{araniti2015}. It yields the longest time a message created on the lander waits
+before it reaches Earth. The plan can be exported in the contact-plan format of the
+Interplanetary Overlay Network or as CSV. Relays and link budgets are not computed, for
+reasons given in \cref{sec:limits}.
+
+\subsection{Launch weather}
+
+The twelve weather rules of the Falcon~9 fact sheet \citep{nasa2020wx} are stored
+verbatim as data, each with its unit, height and class. Two are \emph{model} rules,
+checked against forecast numbers. Two are \emph{proxy} rules, for which a model can
+only show the ingredients. Eight are \emph{observation} rules, such as lightning within
+a set distance in the last 30 minutes, for which no forecast probability is given. A
+model rule is evaluated per run of the 31-member GEFS ensemble \citep{guan2022}. The
+wind at the rule's height of \qty{162}{ft} is interpolated on a logarithmic profile
+between the model's \qty{10}{\m} and \qty{80}{\m} winds. The value is labelled as interpolated.
+The result is a share, $k$ of 31 runs, with its exact interval. Beyond the ensemble's range, the answer falls back to month-by-hour climatology. Wind at \qty{50}{\m} comes from NASA POWER, which is based on MERRA-2 \citep{gelaro2017}, and thunder hours come from GLM \citep{virts2025}. The range's official forecast is entered by the project manager with
+its document link and is never scraped.
+
+\subsection{Return: booster zone and capsule entry}
+
+The booster's landing type and zone come from the vehicle catalogue and Launch Library~2
+landing records. For a planned droneship landing, the zone lies along the designed launch direction. The GFS-Wave forecast there is compared with limits that the team enters, since providers do not publish them. No CLPS mission returns a capsule. The capsule
+entry model is therefore checked on OSIRIS-REx \citep{lauretta2017}. It is a point mass
+with a ballistic coefficient, falling from the entry interface through the 1976 U.S.
+Standard Atmosphere \citep{ussa1976} over a rotating Earth with J2 gravity. It has no
+lift and no parachutes.
+
+\subsection{Ready: readiness, parts, risks and the audit log}
+
+Readiness is a state machine per item. Its states are not started, in build, in test, test passed, delivered to the lander provider, integrated, verified on the lander and ready. An item may also be blocked, with a reason, from any state. Every change needs a date and an evidence link,
+and illegal moves are refused. Parts carry their status and a dependency path to the
+measurements they serve. Risks use a configurable likelihood and consequence scale and
+are never multiplied or summed. Every write needs a named session and is recorded in an
+append-only log in which each entry holds the hash of the previous one. A database
+trigger rejects updates and deletions of that log. The landing history lists 14 lunar
+landing attempts as counts with sourced causes, never as a success probability.
+
+\subsection{Agents}
+\label{sec:agents}
+
+Four language-model agents describe a site, rank sites against a stated requirement,
+write the same facts for three audiences and answer questions. They reach
+the system only through ten read-only tools, four of which read the mission sections. A
+section is cut to at most 200 numbers before an agent sees it, and every kept value keeps
+its margin. A guard checks every number and full date in an answer against that run's
+tool results. It also rejects verdict words such as \emph{go}, \emph{no-go} or
+\emph{safe}. After one failed repair, the answer is replaced by a summary built only from
+measured values.
+
+% ---------------------------------------------------------------------------
+\section{Evaluation}
+\label{sec:eval}
+
+\subsection{Setup and choice of references}
+
+The engine checks and the load test ran with the backend at commit \texttt{f421298}. The
+response times, the test counts and the screens were measured at \texttt{f1d5667}. The
+commits between the two change only the feeds worker and the frontend, so no engine
+result differs. The machine was an Apple M3 with eight cores and \qty{8}{\giga\byte} of
+memory. The software was macOS~27.0, Python~3.12.14, PostgreSQL~16.15 and Redis~8.10.2. Every table below is printed by a script or a \texttt{make} target
+listed in \cref{app:repro}. The references were chosen because they are the only public
+cases of each kind. NASA's reconstructions cover the four flown CLPS trips, and the Lunar
+Reconnaissance Orbiter (LRO) adds a well-tracked lunar orbit. OSIRIS-REx is the only
+recent capsule with both a published entry state and a measured landing point
+\citep{wibben2024,francis2024}. The plan also named GMAT for the propagator and SPENVIS for
+the belts. GMAT is not installed on the measurement machine, and SPENVIS is a web service
+that needs an account. Closed-form tests and NASA's own AE8/AP8 code replace them, and
+neither replacement is equivalent.
+
+\subsection{Landing: the Sun and Earth at the flown landers}
+
+Each flown lander's published LROC landing point was used as it stands, with its
+published surface dates. Nothing was tuned to these events. Blue Ghost~1 landed at
+\qty{18.56}{\degree}\,N, outside the polar terrain model, so its skyline is a smooth
+sphere. Its computed sunset falls on 16 March 2025 at 20:10~UTC, the date on which NASA
+reports that the mission ended. A golden test pins this sunset. IM-1 and IM-2 both ended while
+the Sun and Earth were still up at their sites. IM-1's next computed sunset is 2 March
+2024 at 14:01~UTC \qty{\pm 28}{\minute}, with \qty{83}{\percent} of the surrounding
+terrain inside the elevation model. IM-2's is 19 March 2025 at 19:17~UTC
+\qty{\pm 34}{\minute}. No cause is claimed for either end. The comparison shows that
+lighting geometry alone does not predict when a mission ends, and the product does not
+claim that it does.
+
+At the pole the answer depends on metres of terrain. \Cref{tab:sites} gives the four
+numbers at three contrasting candidate sites over a reference window of
+\qty{708.75}{\hour} from 14 March 2027. At Connecting Ridge the Sun's centre stays between
+\qty{-1.61}{\degree} and \qty{-0.70}{\degree} all month, yet the site is lit in
+\qty{81}{\percent} of the samples (\cref{fig:sky}). The site stands \qty{1957.5}{\m} above
+the reference sphere, and its skyline has a mean elevation of \qty{-2.37}{\degree} and a
+highest point of \qty{-0.06}{\degree}.
 
 \begin{table}[htbp]
 \centering\small
-\caption{The four numbers, in hours. $\geq$ marks a lower bound the window cut short.}
+\caption{The four numbers at three candidate sites, in hours, 14 March 2027 plus
+\qty{708.75}{\hour}.}
 \label{tab:sites}
 \begin{tabular}{@{}lllll@{}}
 \toprule
-Site & Sunlight & Earth contact & Longest dark & Longest blackout \\
+Site & Sunlight & Contact with Earth & Longest night & Longest without contact \\
 \midrule
-Connecting Ridge, \qty{89.44}{\degree}\,S & \num{574.4 +- 17.1} & \num{430.3 +- 5.3} & \num{121.6 +- 17.1} & \num{278.5 +- 5.3} \\
-Malapert massif, \qty{85.99}{\degree}\,S & \num{394.2 +- 7.3} & \num{570.6 +- 7.6} & $\geq$\,\num{287.8} & \num{138.1 +- 7.6} \\
-Faustini rim, \qty{86.64}{\degree}\,S & \num{103.1 +- 24.0} & \num{278.6 +- 33.9} & \num{605.7}, grazing & \num{430.2}, grazing \\
+Connecting Ridge & \num{574.4 +- 17.1} & \num{430.3 +- 5.3} & \num{121.6 +- 17.1} & \num{278.5 +- 5.3} \\
+Malapert massif & \num{394.2 +- 7.3} & \num{570.6 +- 7.6} & $\geq$\,\num{287.8} & \num{138.1 +- 7.6} \\
+Faustini rim & \num{103.1 +- 24.0} & \num{278.6 +- 33.9} & \num{605.7}, grazing & \num{430.2}, grazing \\
 \bottomrule
 \end{tabular}
+\par\smallskip\footnotesize $\geq$: a lower bound cut short by the window. Grazing: the
+crossing is too shallow to time, so no margin is given.
 \end{table}
-
-\Cref{fig:sky} shows why Connecting Ridge is lit \qty{81}{\percent} of the time although
-the Sun never rises. The site stands \qty{1957.5}{\m} above the reference sphere, and its
-skyline sits below the Sun's path. Dates matter as much as places: over 2027 its longest
-monthly night runs from \qty{0}{\hour} (January, and September to December) to
-\qty{144.7}{\hour} (May). Bounds matter too. A window two weeks wider turns de~Gerlache
-rim's \qty{\geq 112.2}{\hour} into \qty{202.0 +- 5.3}{\hour}.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{fig-sun-skyline.pdf}
-\caption{Connecting Ridge is lit although the Sun never rises: its centre stays below
-\qty{0}{\degree} all month, yet it clears the site's own lowered skyline in
-\qty{81}{\percent} of samples (shaded). Measured, \qty{900}{\s} step.}
+\caption{Sun and skyline at Connecting Ridge, \num{2836} samples at \qty{900}{\s}. The
+Sun never rises above level but clears the lowered skyline in \qty{81}{\percent} of
+samples.}
 \label{fig:sky}
 \end{figure}
 
-\paragraph{Against flown missions.} We used each mission's published LROC landing point
-and NASA dates. Blue Ghost~1's computed sunset (16 March 2025, 20:10~UTC) falls on the day
-NASA reports the mission ended, and a golden test pins it. IM-1 and IM-2 both ended while
-the Sun and Earth were still up. Their computed sunsets are 2 March 2024 14:01
-\qty{\pm 28}{\minute}, with \qty{17}{\percent} of the skyline outside the terrain model,
-and 19 March 2025 19:17 \qty{\pm 34}{\minute}. We claim no cause for either end.
+\subsection{Propagator and shadows against NASA's reconstructions}
 
-\paragraph{CLPS data.} 20 deliveries and 64 payloads, each payload with a source URL.
-Nine missions have a target: three LROC landing points and six IAU feature centres. None
-has a published landing ellipse. 139 fields are marked unconfirmed. A volatiles filter
-returns five missions.
+The acceleration implied by each reconstruction was compared every 10 minutes with the
+force model's. Where they differ by more than \qty{1e-5}{\m\per\s\squared}, the spacecraft
+was firing thrusters. A \emph{quiet stretch} is a run below that threshold, less 30
+minutes at each end. From the start of a quiet stretch, the reconstructed state was
+propagated and compared with the reconstruction 24 or 72 hours later. Nothing was
+fitted. \Cref{tab:prop} gives the result.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Position error after propagating a reconstructed state through a quiet stretch.}
+\label{tab:prop}
+\begin{tabular}{@{}llllrr@{}}
+\toprule
+Reference & Start (UTC) & Where & After & Error (\unit{\km}) & With assumed SRP (\unit{\km}) \\
+\midrule
+Blue Ghost 1 & 2025-01-15 07:32 & cruise & \qty{24}{\hour} & 0.37 & 0.51 \\
+Blue Ghost 1 & 2025-01-16 07:32 & cruise & \qty{24}{\hour} & 0.11 & 0.07 \\
+Blue Ghost 1 & 2025-01-17 07:32 & cruise & \qty{24}{\hour} & 0.11 & 0.07 \\
+Blue Ghost 1 & 2025-01-15 07:32 & cruise & \qty{72}{\hour} & 1.46 & 3.21 \\
+Blue Ghost 1 & 2025-02-03 13:12 & cruise & \qty{72}{\hour} & 1.08 & 0.62 \\
+IM-1 & 2024-02-19 20:26 & cruise & \qty{8.5}{\hour} & 0.64 & 0.64 \\
+IM-2 & 2025-02-27 01:51 & cruise & \qty{24}{\hour} & \textbf{4.61} & 4.43 \\
+IM-2 & 2025-03-03 13:01 & lunar orbit & \qty{24}{\hour} & 0.51 & 0.50 \\
+IM-2 & 2025-03-04 13:01 & lunar orbit & \qty{24}{\hour} & 0.27 & 0.28 \\
+LRO & 2025-03-20 00:01 & lunar orbit & \qty{24}{\hour} & 0.05 & 0.05 \\
+LRO & 2025-03-21 01:41 & lunar orbit & \qty{24}{\hour} & 0.03 & 0.03 \\
+\bottomrule
+\end{tabular}
+\par\smallskip\footnotesize SRP: solar radiation pressure with an assumed
+$C_r A/m$ of \qty{0.01}{\m\squared\per\kg}. IM-1's longest quiet stretch is
+\qty{8.5}{\hour}.
+\end{table}
+
+The plan's tolerances were \qty{1}{\km} after \qty{24}{\hour} and \qty{5}{\km} after
+\qty{72}{\hour}. Every row meets them except IM-2's cruise, at \qty{4.61}{\km}. IM-2's
+reconstruction carries an acceleration that the force model lacks, with a median of
+\qty{6.4e-7}{\m\per\s\squared} and a 90th percentile of \qty{1.7e-6}{\m\per\s\squared}
+over the file. Held for one day, \qty{1e-6}{\m\per\s\squared} moves a spacecraft by
+$\tfrac12 a t^2 = \qty{3.7}{\km}$, which matches the size of the miss. Its cause is not
+published, and this report asserts none. Raising the Moon's field from degree 100 to 200
+changes the lunar-orbit rows by at most \qty{8}{\m}. A 24-hour forward and backward run
+returns to within \qty{5.8}{\mm} of its start.
+
+Peregrine's reconstruction has no quiet stretch at all. Its unexplained acceleration has
+a median of \qty{7.6e-5}{\m\per\s\squared} and a 90th percentile of
+\qty{1.8e-4}{\m\per\s\squared}. The provider traced the loss of that mission to a
+helium pressure control valve that failed to seal \citep{astrobotic2024}. The residual
+shows where that leak appears in the trajectory; the engine does not estimate the leak.
+
+Shadow edges were compared with SPICE's own occultation finder along two days of IM-2's
+lunar orbit, with the same spheres on both sides. Both found the same 24 shadow passes.
+The 48 edges differ by a median of \qty{0.07}{\s} and at most \qty{0.10}{\s}, inside the
+plan's \qty{1}{\s}.
+
+\subsection{Launch instants against the flown liftoffs}
+
+Each Falcon~9 lunar launch was designed from its pad, NASA's arrival at the Moon and the
+climb constant of the vehicle's other flights. \Cref{tab:launch} compares the designed
+liftoff with the published one under three choices of climb direction.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Designed minus published liftoff, by the climb direction the design assumes.}
+\label{tab:launch}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Mission & Flown climb azimuth & Due east & Azimuth it flew & Other flight's azimuth \\
+\midrule
+IM-1 & \qty{88.8}{\degree} & \qty{+9.8}{\minute} & \qty{+0.2}{\minute} & \qty{-15.8}{\minute} \\
+IM-2 & \qty{86.6}{\degree} & \qty{+27.4}{\minute} & \qty{-0.0}{\minute} & \qty{+17.5}{\minute} \\
+Blue Ghost 1 & \qty{110.2}{\degree} & \multicolumn{3}{l}{phasing loops (\cref{tab:loops})} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Designed at the azimuth each flight actually climbed, the liftoff lands within
+\qty{0.2}{\minute} of the published one. The designed coast, TLI speed and flight time
+agree with the flown values within \qty{1.4}{\minute}, \qty{1}{\m\per\s} and
+\qty{0.02}{\day}. That result uses the flight's own direction, which is not known before
+launch. Held out, each Nova-C lander designed at the other flight's azimuth misses by
+\qty{15.8}{\minute} and \qty{17.5}{\minute}. The plan asked for \qty{10}{\minute}, so this
+criterion is \textbf{not met}. The two flown azimuths differ by \qty{2.2}{\degree}, and
+each degree moves the instant by about seven minutes. Nothing published predicts which
+azimuth a flight will take. The planned calendar therefore climbs at the mean azimuth of the vehicle's direct flights and states the larger held-out miss as its margin. For Griffin-1 the designed climb is \qty{87.7}{\degree}, and every liftoff carries \qty{\pm 18}{\minute}.
+
+\subsection{Phasing loops and the correction budget}
+
+Burns were read from Blue Ghost~1's reconstruction by propagating each half hour and
+comparing its end with the reconstruction. Three burns before departure were found: 22.53,
+3.27 and \qty{23.61}{\m\per\s}, a total of \qty{49.4}{\m\per\s}. Replayed from the first
+reconstructed state with these burns, the six flown apogees and perigees fall within
+\qty{2.9}{\minute} and \qty{0.027}{\percent} in radius of the reconstruction. The plan
+asked for \qty{1}{\hour} and \qty{1}{\percent}.
+
+The loop design was then run for eleven launch days around the flown one
+(\cref{fig:loops}). The flown day needs three loops, as flown, and costs
+\qty{50.3}{\m\per\s}. It is the cheapest of the eleven days by \qty{45}{\m\per\s}. On that
+day the Sun's pull over each eight-day loop does most of the perigee raising, which a
+two-body design cannot capture. Designed at the azimuth Blue Ghost~1 actually climbed,
+\qty{110.2}{\degree}, the flown day's liftoff lands \qty{0.6}{\minute} after the
+published one, inside the plan's \qty{5}{\minute}.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{fig-loops.pdf}
+\caption{Designed burn total per launch day for Blue Ghost~1 (design climbing due east).
+The flown day is the cheapest; the dashed line is the total of the three flown burns.}
+\label{fig:loops}
+\end{figure}
+
+\Cref{tab:budget} gives the correction budget for the three landers under the assumed
+errors. The linear and Monte Carlo percentiles agree within \qty{7}{\percent}; the plan
+allowed \qty{10}{\percent}. Blue Ghost~1's one flown correction, \qty{1.15}{\m\per\s},
+lies well inside its budget. IM-2's seven corrections add up to \qty{24}{\m\per\s},
+between the 95th and 99th percentiles of its runs. IM-1's reconstruction shows no
+correction, because its burns fall in the gaps between its short stretches.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Total correction for assumed errors, linear method and 1,000 seeded runs.}
+\label{tab:budget}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Mission & 95th, linear / runs & 99th, linear / runs & 99th, 95\,\% interval & Arrival altitude, 1--99\,\% \\
+\midrule
+Blue Ghost 1 & 14.71 / 14.16 & 19.33 / 18.08 & 16.52--19.85 & \qtyrange{156.2}{160.2}{\km} \\
+IM-1 & 20.91 / 21.64 & 27.45 / 28.50 & 25.93--30.40 & \qtyrange{110.6}{114.5}{\km} \\
+IM-2 & 21.29 / 21.45 & 27.82 / 28.89 & 26.24--30.24 & \qtyrange{99.8}{103.8}{\km} \\
+\bottomrule
+\end{tabular}
+\par\smallskip\footnotesize Velocities in \unit{\m\per\s}. The interval is a bootstrap
+interval on the 99th percentile of the runs.
+\end{table}
+
+\subsection{Radiation screening}
+
+SPENVIS was not run. The engine's belt fluences were therefore compared with a second implementation of the same models, NASA SPDF's own AE8/AP8 code. Each code uses its own magnetic field shells. The comparison used one-minute samples within 15 Earth radii along
+each flown trajectory, with solar-maximum maps (\cref{tab:belts}). Electrons agree within
+\qty{5}{\percent} on every trip. Protons agree within \qty{5}{\percent} on the two trips
+that spend hours in the inner belt. IM-2's proton fluence, about a thousand times smaller,
+differs by \qty{40.5}{\percent}. It comes from minutes at the inner belt's lower edge,
+where the flux changes steeply and the two codes' shells differ most. IM-1's
+reconstruction starts \qty{242208}{\km} from Earth, beyond the belts, so its belt numbers
+are missing with that reason rather than shown as zero.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Belt fluence along flown trips: the engine (IRBEM) against NASA SPDF's AE8/AP8.}
+\label{tab:belts}
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+& & \multicolumn{3}{c}{Electrons $>$\qty{1}{MeV} (\unit{\per\cm\squared})} &
+\multicolumn{3}{c}{Protons $>$\qty{10}{MeV} (\unit{\per\cm\squared})} \\
+\cmidrule(lr){3-5}\cmidrule(l){6-8}
+Mission & Samples & IRBEM & SPDF & Diff. & IRBEM & SPDF & Diff. \\
+\midrule
+IM-2 & 437 & \num{1.09e10} & \num{1.13e10} & \qty{-2.8}{\percent} & \num{8.55e5} & \num{1.44e6} & \qty{-40.5}{\percent} \\
+Blue Ghost 1 & \num{3311} & \num{2.04e10} & \num{2.15e10} & \qty{-5.0}{\percent} & \num{8.00e8} & \num{7.94e8} & \qty{+0.7}{\percent} \\
+Peregrine & 867 & \num{2.35e10} & \num{2.33e10} & \qty{+0.8}{\percent} & \num{2.67e8} & \num{2.80e8} & \qty{-4.8}{\percent} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The cosmic-ray model was checked in absolute terms for June 2009. Its dose in a thin
+silicon layer in free space is \qty{14.1}{cGy} per year. Two of CRaTER's detectors gave
+18.9 and \qty{16.5}{cGy} per year, so the model is lower by \qty{26}{\percent} and
+\qty{15}{\percent} \citep{schwadron2012}. Both lie inside the stated \qty{\pm 30}{\percent}. Scaled to each
+trip, the unshielded cosmic-ray dose is \qty{0.21 +- 0.06}{mGy} per day for IM-1 and
+\qty{0.17 +- 0.05}{mGy} per day for Blue Ghost~1. The GOES peaks of the October 1989 and
+October 2003 events match NOAA's list within \qty{5.5}{\percent} and \qty{0.0}{\percent},
+inside the plan's \qty{10}{\percent}.
+
+\subsection{Capsule entry against OSIRIS-REx}
+
+The OSIRIS-REx capsule's reconstructed trajectory in NAIF's archive ends at the entry
+interface, \qty{6503.142}{\km} from the Earth's centre, at 14:41:55~UTC on 24 September
+2023. Its state there matches the navigation team's published entry state to the last
+printed digit: flight path angle \qty{-8.184}{\degree}, heading \qty{66.396}{\degree} and
+Earth-relative speed \qty{12.361}{\km\per\s} \citep{wibben2024}. The ballistic coefficient $\beta$ was built from published values. They are the capsule's mass at entry and the diameter of the Stardust forebody it shares. The third is Stardust's hypersonic axial force coefficient $C_A$ of 1.48 to 1.56 \citep{mitcheltree1997}. \Cref{tab:capsule} compares
+the modelled landing with the point the recovery team measured \citep{francis2024}.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Modelled OSIRIS-REx landing against the measured point (limit \qty{10}{\km}).}
+\label{tab:capsule}
+\begin{tabular}{@{}rrlrrr@{}}
+\toprule
+$C_A$ & $\beta$ (\unit{\kg\per\m\squared}) & Landing & Miss (\unit{\km}) & To ground (\unit{\s}) & Peak (g) \\
+\midrule
+1.48 & 64.8 & \ang{40.3609}\,N, \ang{113.3176}\,W & 6.7 & 524 & 30.8 \\
+1.52 & 63.1 & \ang{40.3532}\,N, \ang{113.3491}\,W & \textbf{9.5} & 530 & 31.0 \\
+1.56 & 61.5 & \ang{40.3456}\,N, \ang{113.3797}\,W & 12.2 & 535 & 31.2 \\
+\bottomrule
+\end{tabular}
+\par\smallskip\footnotesize Peak: the largest deceleration on the way down.
+\end{table}
+
+The middle coefficient passes the plan's \qty{10}{\km} with little room, and the
+published range of $C_A$ spans 6.7 to \qty{12.2}{\km}. Every case lands short of the
+measured point. The mission team's own simulation from the same state, with its
+pre-flight atmosphere and winds, missed by \qty{8.9}{\km} \citep{francis2024}. A miss of
+this size is therefore expected from any model that does not know the day's upper
+atmosphere. The modelled time to the ground, \qty{530}{\s}, is not comparable with the
+observed \qty{615}{\s}, because the model has no parachutes. A seeded Monte Carlo of 200
+runs gives a \qty{99}{\percent} ellipse of \qty{51.4}{\km} by \qty{21.4}{\km} that holds
+the measured point.
+
+\subsection{Launch weather against station observations}
+
+No public station measures the wind at the rule's \qty{162}{ft}. The check was therefore
+made at \qty{10}{\m} at the Cape Canaveral Skid Strip (station KXMR). The limit of
+\qty{30}{mph} at \qty{49}{\m} becomes \qty{23.5}{mph} at \qty{10}{\m} on a neutral
+logarithmic profile with a roughness length of \qty{0.03}{\m}. One GEFS run per day in
+2025, with 31 members, gave the share of members above the limit 24 and 48 hours ahead.
+The outcome was the station's sustained wind in the report nearest that time. The
+reference forecast was the station's own month-by-hour frequency over 2015 to 2024. The
+Brier skill score compares the two: a positive value means the ensemble beats the
+climatology.
+
+\begin{table}[htbp]
+\centering\small
+\caption{GEFS wind shares against KXMR observations, 2025.}
+\label{tab:brier}
+\begin{tabular}{@{}rrrrrr@{}}
+\toprule
+Lead & Cases & Events & Brier, GEFS & Brier, climatology & Brier skill \\
+\midrule
+\qty{24}{\hour} & 343 & 1 & 0.0040 & 0.0029 & $-0.41$ \\
+\qty{48}{\hour} & 339 & 0 & 0.0014 & 0.00003 & $-41.6$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The plan's gate was a Brier skill of at least 0.1 at every lead up to 48 hours. The
+ensemble fails it at both leads (\cref{tab:brier}), so every wind share on screen says
+\emph{not checked against observations}. The event is rare. In 2025 the station
+reported more than \qty{23.5}{mph} in 12 of \num{8247} routine reports
+(\qty{0.15}{\percent}), against \qty{0.36}{\percent} over 2015 to 2024. Only one such
+report fell at a verified time. The ensemble gave shares above zero on days without an
+event, once \qty{94}{\percent}, which a near-zero climatology does not pay for. Only the
+lowest reliability bin holds 30 cases or more (669 cases, mean share 0.002, observed
+frequency 0). One year cannot verify a limit that is reached this rarely.
+
+\subsection{Response times and the compute queue}
+\label{sec:perf}
+
+\Cref{tab:perf} gives response times through the API at commit \texttt{f1d5667}, with the
+compute and feeds workers stopped. The run followed three readings of the one-minute load
+average below 2, taken \qty{20}{\s} apart. A \emph{cold} surface request asks for a window
+that no earlier request has asked for. It counts only if the response reports a cache
+miss, and all 30 of each kind did. A \emph{warm} request repeats a window or reads a stored
+section answer. Each section was read 20 times for each of four missions: IM-1, IM-2, Blue
+Ghost~1 and Griffin-1.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Response times through the API, median and 95th percentile.}
+\label{tab:perf}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Request & $N$ & Median & p95 \\
+\midrule
+\multicolumn{4}{@{}l}{\emph{Landing: the surface engine}} \\
+Horizon mask, \num{1440} bearings (precompute) & 75 & \qty{45.9}{\ms} & \qty{50.6}{\ms} \\
+Four numbers, cold / warm & 30 / 30 & 11.2 / \qty{0.83}{\ms} & 14.4 / \qty{0.92}{\ms} \\
+Timeline, \qty{210}{\kilo\byte}, cold / warm & 30 / 30 & 16.6 / \qty{4.05}{\ms} & 19.3 / \qty{4.38}{\ms} \\
+\addlinespace
+\multicolumn{4}{@{}l}{\emph{Stored section answers, warm}} \\
+Six-section summary & 80 & \qty{1.3}{\ms} & \qty{1.4}{\ms} \\
+Ready & 80 & \qty{1.5}{\ms} & \qty{1.9}{\ms} \\
+Launch & 80 & \qty{3.0}{\ms} & \qty{8.1}{\ms} \\
+Launch weather & 80 & \qty{5.4}{\ms} & \qty{10.4}{\ms} \\
+Trip & 80 & \qty{9.3}{\ms} & \qty{9.9}{\ms} \\
+Contact & 80 & \qty{2.0}{\ms} & \qty{2.3}{\ms} \\
+Return & 80 & \qty{2.4}{\ms} & \qty{4.4}{\ms} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A stored answer of any section returns within \qty{10.4}{\ms} at the 95th percentile. Of
+the \qty{11.2}{\ms} of a cold four-numbers request, the positions of the Sun and Earth
+take \qty{6.7}{\ms} and the two tracks against the skyline \qty{2.6}{\ms}. Most of a
+cold request is therefore spent on the ephemeris, not on the terrain.
+
+A trip, launch calendar or contact answer that is not yet stored is computed as a job
+(\cref{sec:design}). The load test asks for these three sections of all 20 missions in
+one burst. Extra launch and contact windows bring the burst to 138 requests. It runs against
+its own copy of the database, with two compute workers on the eight-core machine and the
+backend at \texttt{f421298}. The API answered 43 requests from stored answers and queued
+58 jobs. It refused 37 contact requests with status 409 and a reason. The 13 missions
+concerned have no landing to hear. Their landing spot is not published, the lander was
+lost before reaching the Moon, or the delivery was cancelled. With all 138 requests in flight at once, the API's median response was
+\qty{761}{\ms} and its slowest \qty{1.42}{\s}. The two workers emptied the queue in
+\qty{211.5}{\s}, 16.5 jobs per minute, and were busy for \qty{89}{\percent} of that time.
+No job failed or was retried. At the median a contact job ran for \qty{0.19}{\s}, a
+launch calendar for \qty{13.3}{\s} and a trip for \qty{55.0}{\s}. The longest wait in
+the queue was a trip's, \qty{160.7}{\s}. The same burst repeated afterwards found every
+answer stored. It received 101 answers and the same 37 refusals, at a median of
+\qty{318}{\ms} per request.
+
+\subsection{Tests and accessibility}
+
+On the backend at \texttt{f1d5667}, the linter, strict static type checking of 246 source
+files and all ten import contracts pass. The full suite of 675 tests passes against its
+own database in \qty{364}{\s}. Of these, 475 need no service and run in \qty{9.7}{\s},
+inside the plan's \qty{20}{\s}. Another 179 need PostgreSQL. The 38 golden tests among
+them pin results to committed fixtures or to the flown missions.
+
+On the frontend at the same commit, the type check passes, and 236 unit and component
+tests pass. All 47 browser tests pass in Chromium in \qty{4.0}{\minute} against the running
+API. Nineteen of them run on recorded contract fixtures, which pin the answers the API
+documents, and seven read the live API. Four browser tests run the axe accessibility checker against levels A and AA of the Web
+Content Accessibility Guidelines (WCAG)~2.1. A test fails on any violation that axe rates
+serious or critical. The four cover 26 routes in the dark and the light theme, 14 pages
+with every closed row open and the Settings sheet. On a 375-pixel phone they cover 14
+routes and six pages with every row open. None
+reported a violation.
 
 % ---------------------------------------------------------------------------
-\section{Data sources}
-\label{sec:data}
-
-\begin{itemize}
-\item \textbf{Terrain:} LOLA polar elevation models \texttt{LDEM\_80S\_20M} (\qty{20}{\m},
-  read by HTTP range request) and \texttt{LDEM\_80S\_80M} (\qty{80}{\m},
-  \qty{115}{\mega\byte}), from the PDS Geosciences Node (LRO LOLA RDR, gridded data records).
-\item \textbf{Ephemeris:} NAIF kernels \texttt{de440}, \texttt{moon\_pa\_de440\_200625},
-  \texttt{moon\_de440\_250416}, \texttt{pck00011} and \texttt{naif0012}, each pinned by
-  SHA-256.
-\item \textbf{Candidate sites:} 15 anchors from the IAU Gazetteer of Planetary Nomenclature
-  and the LPI Lunar South Pole Atlas. Four names, such as Connecting Ridge, are informal.
-  Each point is derived by the rule in \cref{sec:different}.
-\item \textbf{Missions:} NASA CLPS delivery pages and releases, LROC images
-  (NASA/GSFC/Arizona State University) and the Gazetteer: 48 source entries, all read on
-  23 September 2026. The instrument types are our own classification.
-\end{itemize}
-The code is released under Apache-2.0. The data are public NASA and NAIF products, credited
-above. \textbf{This is not an official NASA product and is not endorsed by NASA} or by any
-other agency.
-
-% ---------------------------------------------------------------------------
-\section{Architecture}
-\label{sec:arch}
-
-The system is one Python service over Postgres and Redis, in layers. The \texttt{core}
-package is pure functions with no I/O, clock or database. Repositories alone touch SQL,
-services hold policy, and routes only parse and serialise. Eight import contracts enforce
-this. Among them: SPICE is reachable from one module only, routes never reach the ORM, and
-agents reach the domain only through the tool module, so the guard sees every number an
-agent can read.
-
-What is precomputed follows what varies. A skyline depends only on its site, so masks and
-one reference window per site are built offline. Anything that depends on the window is
-computed per request: timelines, arcs, the four numbers, calendars and mission windows.
-Requests are snapped to the time grid and cached, so dragging the date reuses results.
-
-The geometry stays on the server. The kernels (\qty{127}{\mega\byte}) and terrain data
-(\qty{308}{\mega\byte}) do not belong in a browser, a second copy would drift from the
-first, and the screens, agents and worker all call the same services. The browser keeps no
-geometry model: even the map's shadow line is drawn from the Sun position the API's own
-timeline reports. Each agent tries a chain of Gemini models, nothing older than 2.5, and
-moves to the next when one is over its quota.
-
-% ---------------------------------------------------------------------------
-\section{Limitations and what is next}
+\section{Limitations}
 \label{sec:limits}
 
-\begin{itemize}
-\item \textbf{The \qty{120}{\hour} survival limit is a placeholder}, standing in for a
-  thermal and battery model. Connecting Ridge, at \qty{121.6 +- 17.1}{\hour}, is marked
-  over the limit, well within its own uncertainty.
-\item \textbf{The terrain error is set per product, not per pixel.} Every $\pm$ rests on a
-  placeholder vertical error (\qty{2}{\m} or \qty{4}{\m}), and edge errors are assumed
-  independent. It also leaves out the near-field noise threshold: halving or doubling it
-  moves Connecting Ridge's longest night to \qty{84.1}{\hour} or \qty{206.5}{\hour}.
-  Smooth-sphere targets have no terrain error to state, so the screens print no $\pm$
-  there and say why.
-\item \textbf{The map shows relief, not terrain shadow.} It draws the LOLA hillshade and
-  the line where the Sun sets on a smooth Moon, from the same SPICE Sun as the numbers;
-  ridges cast no shadow on it. The approximate illumination and PSR tiles are not drawn.
-\item \textbf{No screen-reader user has tested it.} Axe and 20 browser tests now run on
-  every screen, but automated checks do not replace a person.
-\item \textbf{CLPS coverage is thin.} Eleven missions have no published target, and only
-  the three flown ones have a known surface window. No mission has a published ellipse.
-\item \textbf{The agents have never run against a live model.} Until it is cleared, the
-  development run log holds scripted test runs. The guard treats any whole number from 1900 to 2200 as a year, and
-  it checks numbers, not words.
-\item \textbf{Two contrast gaps remain in the light theme.} The month strip's bars stand
-  at \num{2.70}:1 and \num{2.87}:1 against their well, and input borders at \num{1.99}:1,
-  under the 3:1 a graphic needs. The fix is a colour token.
-\end{itemize}
-\textbf{Next:} validate the polar masks against published LOLA illumination maps,
-propagate per-pixel error, and run a live model and a screen-reader test.
+\paragraph{Acceptance tolerances not met.} \Cref{tab:gates} lists every planned tolerance
+with its measured value. Four results fall outside the plan. A held-out launch design
+misses by \qty{15.8}{\minute} and \qty{17.5}{\minute} against a planned
+\qty{10}{\minute}, because the climb direction of a future flight is not published. IM-2's
+cruise propagation misses by \qty{4.61}{\km} against \qty{1}{\km}, because its
+reconstruction contains an acceleration of unpublished origin. The weather ensemble has
+negative Brier skill at both leads, so no wind share is marked as checked. IM-2's belt
+protons differ by \qty{40.5}{\percent} between two implementations of AP8, against a
+planned \qty{5}{\percent}. The capsule check passes at the middle drag coefficient.
+Over the published drag range the miss moves from 6.7 to \qty{12.2}{\km}, partly outside
+the limit.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Planned acceptance tolerances and the measured values.}
+\label{tab:gates}
+\begin{tabularx}{\textwidth}{@{}Yllc@{}}
+\toprule
+Check & Plan & Measured & Met \\
+\midrule
+Propagation of reconstructions, \qty{24}{\hour} & \qty{1}{\km} & 0.11--\qty{0.51}{\km}; IM-2 cruise \qty{4.61}{\km} & partly \\
+Propagation of reconstructions, \qty{72}{\hour} & \qty{5}{\km} & 1.08, \qty{1.46}{\km} & yes \\
+LRO in lunar orbit, \qty{24}{\hour} & \qty{1}{\km} & 0.03, \qty{0.05}{\km} & yes \\
+Forward and backward run, \qty{24}{\hour} & \qty{1}{\m} & \qty{5.8}{\mm} & yes \\
+Shadow edges against SPICE & \qty{1}{\s} & \qty{0.10}{\s} & yes \\
+Liftoff from the flown TLI & 2 or \qty{5}{\minute} & 4 to \qty{15}{\s} & yes \\
+Liftoff designed at the flown azimuth & 2 or \qty{5}{\minute} & 0.0 to \qty{0.6}{\minute} & yes \\
+Liftoff designed at the other flight's azimuth & \qty{10}{\minute} & 15.8, \qty{17.5}{\minute} & no \\
+Loop replay: apsis time, radius & \qty{1}{\hour}, \qty{1}{\percent} & \qty{2.9}{\minute}, \qty{0.027}{\percent} & yes \\
+Loop design: flown loop count and date & both & 3 loops; period holds the date & yes \\
+Correction budget, linear against runs & \qty{10}{\percent} & \qty{7}{\percent} & yes \\
+Belt fluence, two AE8/AP8 codes & \qty{5}{\percent} & electrons \qty{5.0}{\percent}; IM-2 protons \qty{40.5}{\percent} & partly \\
+Cosmic-ray dose against CRaTER & \qty{30}{\percent} & \qty{-26}{\percent}, \qty{-15}{\percent} & yes \\
+Solar event peaks against NOAA & \qty{10}{\percent} & \qty{5.5}{\percent}, \qty{0.0}{\percent} & yes \\
+Wind shares, Brier skill & $\geq 0.1$ & $-0.41$, $-41.6$ & no \\
+Capsule landing & \qty{10}{\km} & \qty{9.5}{\km} (6.7--\qty{12.2}{\km}) & partly \\
+GMAT and SPENVIS comparisons & run & not run & no \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Parts of the plan not built.} Planned relay satellites have no published orbit
+phase, so time in contact through a relay is not computed. The answer says so and gives
+the direct figure. No lander publishes its transmitter power or data rate, so no link
+budget is computed, and contact means line of sight only. Line of sight between a rover
+and its lander is not computed. No CLPS mission returns anything to Earth, and no planned
+one publishes an entry state. The Moon-to-Earth return trajectory and the weather at a
+capsule's landing zone are therefore not built. The European ensembles are not recorded, since only
+whole-globe fields are offered. NASA's GEOS-FP forecasts and the NAVAREA~IV hazard
+warnings could not be reached from the measurement network.
+
+\paragraph{Validity of the references.} GMAT and SPENVIS, the plan's references, were
+not run. Closed-form tests replace GMAT: two-body motion against Kepler's equation, the
+J2 nodal drift against its analytic rate, and forward-and-backward runs. NASA's AE8/AP8
+code replaces SPENVIS, but it implements the same models, so agreement shows correct use
+of the models, not their accuracy. The four CLPS reconstructions are orbit
+determination products, not truth, and IM-2's contains an unexplained acceleration.
+
+\paragraph{Carried over from the surface engine.} The terrain's vertical error is one
+value per product, \qty{2}{\m} or \qty{4}{\m}, not a per-pixel error, and crossing errors
+are treated as independent. The near-field noise threshold is not part of any margin.
+Terrain is modelled only south of \qty{80}{\degree}\,S; elsewhere the skyline is a
+smooth sphere and the durations are upper bounds. No model key was configured on the
+measurement machine, so the agents were not evaluated with a live language model. Their
+tests use scripted model replies. No user with a screen reader has
+tested the screens.
 
 % ---------------------------------------------------------------------------
-\section{Judge questions}
-\label{sec:questions}
+\section{Conclusion}
+\label{sec:conclusion}
 
-\small
-\renewcommand{\arraystretch}{1.15}
-\begin{xltabular}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.28\textwidth}Y@{}}
+POLAR WINDOW now follows a CLPS delivery through six sections, from readiness on the
+ground to the return of the booster. Every number it serves states where it came from
+and how uncertain it is, or why no margin can be given. It also states the age of its live inputs. No
+section returns a verdict or a combined score. The engines were checked against the public record of the flown missions. The references were NASA's reconstructions of four CLPS trips, the flown liftoffs and NOAA's solar event list. CRaTER's measured dose and the landing point of the OSIRIS-REx capsule completed the set. Most checks meet the plan's tolerances. Four do not, and each is stated
+beside its measured value. They are the held-out launch design, IM-2's cruise, the weather
+ensemble's skill and the belt protons on IM-2's short passage. The planned relays, link
+budgets, rover line of sight and the Moon-to-Earth return remain unbuilt because their
+inputs are not public. The product is a screening and comparison tool. Its designed values
+are labelled as such and are meant to be confirmed in specialist tools before a mission
+team commits to them.
+
+\bibliographystyle{unsrtnat}
+\bibliography{ref}
+
+\appendix
+% ---------------------------------------------------------------------------
+\section{Reproducing the numbers}
+\label{app:repro}
+
+Each table and figure comes from one command, run from the repository root with the
+services and data described in the runbook. Targets named \texttt{make} are in the
+repository. The scripts named ``the report's'' read the running API and are kept with the
+report's working files, outside the repository.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Where each result comes from.}
+\label{tab:repro}
+\begin{tabularx}{\textwidth}{@{}lY@{}}
 \toprule
-\textbf{Question} & \textbf{Answer} \\
+Result & Command \\
 \midrule
-\endfirsthead
-\toprule
-\textbf{Question} & \textbf{Answer} \\
-\midrule
-\endhead
-\midrule
-\multicolumn{2}{r@{}}{\footnotesize\itshape continued overleaf}\\
-\endfoot
+\Cref{tab:prop,tab:launch,tab:budget} & \texttt{make validate-trip} \\
+\Cref{fig:loops} & \texttt{make validate-trip}, drawn by the report's \texttt{make\_fig\_loops.py} \\
+Shadow edges against SPICE & \texttt{test\_eclipse\_vs\_spice.py}, printed by the report's
+\texttt{eclipse\_check.py} \\
+\Cref{tab:brier} & \texttt{make hindcast-weather} (cached GEFS runs and KXMR reports) \\
+\Cref{tab:belts} and the cosmic-ray and event checks & \texttt{make validate-radiation} \\
+\Cref{tab:capsule} and the footprint & \texttt{make validate-capsule} \\
+\Cref{tab:sites}, \cref{fig:sky} & the report's \texttt{export\_data.py} and
+\texttt{make\_figure.py} \\
+Landing hindcast & \texttt{test\_hindcast.py}; the report's \texttt{hindcast\_surface.py} \\
+\Cref{tab:perf} & the report's \texttt{measure\_timing.py} and \texttt{sections.py -{}-timing} \\
+The compute queue & \texttt{make load-compute} \\
+\Cref{fig:screens} & \texttt{frontend/scripts/screens.ts} in a clean checkout, run by the
+report's \texttt{screens.sh} and cropped by \texttt{make\_fig\_screens.py} \\
+Test counts & \texttt{make lint}, \texttt{make test}, \texttt{npx vitest run},
+\texttt{npx playwright test} \\
 \bottomrule
-\endlastfoot
-
-\multicolumn{2}{@{}l}{\textbf{Science}}\\
-\addlinespace[2pt]
-Why no composite score, when every competitor has one?
-& A score needs weights, and the weights are the mission's decision, not ours: a
-battery-limited lander and a rover that can hibernate rank the same sites in opposite
-orders. We rank on one named metric at a time. Each value becomes an interval from its own
-uncertainty, and a value the window cut short gets a range of places, never a rank. The
-trade stays visible. \\
-\addlinespace
-How do you know the horizon masks are right?
-& Partly, and we say so. The ray-march is tested against surfaces whose horizon can be
-derived by hand (plane, cone, ramp, crater rim), and golden fixtures lock three real sites.
-We have not yet compared one mask with published LOLA illumination products. One near-field
-threshold moves Connecting Ridge's longest night from \qty{84}{\hour} to
-\qty{206}{\hour}. That comparison is the first thing to settle. \\
-\addlinespace
-What is the error on the error?
-& Unknown, and larger than our error bars suggest. Every $\pm$ comes from a placeholder
-vertical error (\qty{2}{\m} or \qty{4}{\m} by tier), with crossings treated as independent.
-The near-field noise threshold sits outside every $\pm$: halving or doubling it moves
-Connecting Ridge's longest night by \qty{-37}{\hour} and \qty[retain-explicit-plus]{+85}{\hour},
-against a stated \qty{\pm 17}{\hour}. Per-pixel LOLA error and a Monte Carlo run over correlated terrain
-perturbations would settle it. \\
-\addlinespace
-The Sun never rises above level at Connecting Ridge, yet you report \qty{81}{\percent}
-sunlight. How?
-& The site stands \qty{1957.5}{\m} above the reference sphere and looks down on its
-surroundings. Its highest skyline point is \qty{-0.06}{\degree} and the mean is
-\qty{-2.37}{\degree}. The Sun's centre stays between \qty{-1.61}{\degree} and
-\qty{-0.70}{\degree}: below level, but above that lowered skyline in \qty{81}{\percent} of
-samples. ``Sunlight'' means above the site's own horizon, which is the definition that
-matters to a solar panel. \\
-\addlinespace
-Why \qty{0.25}{\degree} bins and a \qty{900}{\s} step?
-& Near the pole the Sun's azimuth sweeps about \qty{0.5}{\degree} an hour, so one bin is
-roughly half an hour of Sun motion. That is close to the timing error the terrain error
-already implies. The step only brackets crossings, which are then bisected, so edges are
-not quantised to 15 minutes. A mask costs \qty{45}{\ms}. A convergence run at
-\qty{0.125}{\degree} and \qty{300}{\s} is still to do. \\
-\addlinespace
-Your sunlight hours use the Sun's centre. What about the penumbra?
-& The API brackets the centre figure with full-disc and any-limb totals. At Connecting
-Ridge they are \qty{535.6}{\hour}, \qty{574.4}{\hour} and \qty{603.5}{\hour}. Across the
-fifteen sites, \qtyrange{0.6}{17.1}{\percent} of samples are partly occluded. The bracket
-is in the API but not yet on any screen, and it is not folded into the $\pm$, so the headline
-understates this part of the uncertainty. \\
-\addlinespace
-Why \texttt{MOON\_ME}, and why light-time plus stellar aberration?
-& \texttt{MOON\_ME} is the mean-Earth/polar-axis frame that lunar maps and the LOLA
-products use, so terrain and ephemeris share one frame. Light-time plus stellar aberration
-gives the apparent direction: where the Sun appears to a panel, where Earth appears to an
-antenna. We measured the correction over the window: at most \qty{0.006}{\degree} for the
-Sun and \qty{0.0002}{\degree} for Earth, far below a bin. \\
-\addlinespace
-What does ``Earth contact'' mean, and not mean?
-& Earth's centre above the site's own skyline: the geometric possibility of a
-direct-to-Earth link. It does not model a link budget, antenna pattern, ground-station
-schedule or relay. Earth's disc is about \qty{1.9}{\degree} across, so near an edge part of
-it may be visible. Read it as an upper bound on when a direct link could exist, never as a
-communications plan. \\
-\addlinespace
-Why are your site coordinates not the IAU coordinates?
-& An IAU crater coordinate is the centre, which near the pole is a shadowed floor: the
-elevation model puts Shackleton's at \qty{-2767}{\m}. We anchor on the named feature and
-search for the most open-skied landable post on its high ground. Offsets run from
-\qtyrange{0.04}{52}{\km} and are stored with each site. Mission targets are the exception:
-they are used exactly as published. \\
-\addlinespace
-Your map shows a lit pole in March 2027; your numbers say the Sun stays below level. Which
-is right?
-& The numbers, and now the map agrees. SPICE puts the sub-solar latitude at
-\qtyrange[retain-explicit-plus]{+0.83}{+1.36}{\degree} for this window, so the south pole
-is in winter and the Sun stays below level. Our review found the map drawing its terminator
-from a schematic model with the season inverted. It now takes the Sun's position from the
-API's own SPICE timeline and shades the side where the Sun is down on a smooth Moon. \\
-\addlinespace[4pt]
-
-\multicolumn{2}{@{}l}{\textbf{Engineering}}\\
-\addlinespace[2pt]
-What happens when SPICE kernels are missing?
-& The API still starts. Each of the five kernels is checked against a pinned SHA-256 and
-a size floor. The error names the file, its NAIF URL and the fix, and \texttt{/healthz}
-returns 503. Every geometry request then returns a problem detail saying what still works,
-never a plausible zero. Unit tests cover the messages. We have not rehearsed a demo with a
-kernel removed. \\
-\addlinespace
-What happens when Redis or Postgres is down?
-& Redis is only a cache. Without it every request is computed, marked \texttt{bypass},
-and \texttt{/healthz} reports ``degraded'' with a 200. Postgres holds the sites, masks and
-missions, so without it \texttt{/healthz} returns 503 and nothing computes. Both behaviours
-are designed and written down, but no automated test stops either service, and we have not
-rehearsed either failure. \\
-\addlinespace
-Why is the geometry not in the browser?
-& One ephemeris and one terrain model give one answer. The kernels (\qty{127}{\mega\byte})
-and elevation data (\qty{308}{\mega\byte}) do not belong in a browser, and a second
-implementation would drift from the first. The screens, the agent tools and the precompute
-worker all call the same services. Even the map's shadow line uses the Sun position the API
-reports. \\
-\addlinespace
-What do the eight import contracts buy you?
-& They make the layering executable. The core has no I/O. SPICE is reachable through one
-module only. Routes never touch the ORM, services never import the web framework, and
-agents reach the domain only through the tool module, so the guard sees every number an
-agent could read. All eight hold on this build. They prove the structure is sound, not
-that the numbers are right. \\
-\addlinespace
-What would break first at ten times the sites?
-& We have not measured it. Masks cost \qty{45}{\ms} each, so 150 sites is about seven
-seconds of precompute, and storage is small. The likely first limit is the single SPICE
-thread per process, which serialises every cold window, together with a compare call that
-runs sites in sequence and stops at eight. The fix is more API processes, not more
-threads. A 150-site load test would settle it. \\
-\addlinespace
-Warm and cold timings, measured how?
-& With a script against the running API on an Apple M3, 30 requests per case. ``Cold'' is
-a window never requested before, and counts only if the response reports a cache miss.
-``Warm'' repeats one window and requires a hit. Medians: metrics \qty{11.2}{\ms} cold and
-\qty{0.8}{\ms} warm; timeline \qty{15.2}{\ms} and \qty{4.1}{\ms}; a year of monthly
-calendar \qty{103}{\ms}; one mask ray-march \qty{45}{\ms}. \\
-\addlinespace
-How do you know a refactor has not changed the physics?
-& Nineteen golden tests pin masks, timelines, the four numbers, the resolved site
-catalogue and one mission hindcast to committed fixtures. A manifest records the kernel
-digests, and regenerating the fixtures requires a stated reason. An engine version is
-stamped on every stored row, cache key and response. The limit is that the fixtures came
-from this code, so they detect change, not error. \\
-\addlinespace
-How large is the test suite, and what does it not cover?
-& 316 backend tests (207 unit, 90 integration, 19 golden), 140 frontend unit and
-component tests and 20 browser tests pass. The integration tests use their own database.
-The browser tests walk the demo path, check that superseded requests are cancelled, run
-axe on every screen in both themes and on a phone, and serve the saved copy with the
-service unreachable. No test stops Redis or Postgres, and there is no load test. \\
-\addlinespace[4pt]
-
-\multicolumn{2}{@{}l}{\textbf{Product}}\\
-\addlinespace[2pt]
-Why \qty{120}{\hour}?
-& It is a placeholder, and the code says so: the longest darkness a lander is assumed to
-survive on stored energy, to be replaced by a real thermal and battery figure. The backend
-returns durations and never verdicts. Because the over-limit colour depends on it,
-Connecting Ridge at \qty{121.6 +- 17.1}{\hour} reads as \qty{2}{\hour} over the limit, well
-inside its own uncertainty. \\
-\addlinespace
-Why should a planner trust this over an established tool?
-& Not yet for a commitment. It is a fast comparison layer that shows each number's
-source, resolution and uncertainty, and it will not invent a difference between sites. Its
-one external check matches Blue Ghost~1's reported end date. No polar result has yet been
-compared with an established illumination tool, and the error bars rest on a placeholder
-terrain error. Use it to shortlist and explain, then confirm with a validated tool. \\
-\addlinespace
-Can I change the date?
-& Yes. A window picker sets any start and a duration from 14 days to a year. A month
-strip shows each month's sunlight and Earth fractions from the calendar endpoint, and a
-mission sets its own surface window. At Connecting Ridge the longest night ranges from
-\qty{0}{\hour} in January 2027 to \qty{145}{\hour} in May 2027, which is why dates matter as
-much as sites. \\
-\addlinespace
-The challenge is a CLPS mission browser. Where are the missions?
-& On the home screen: 20 CLPS deliveries on a Moon view and a programme timeline,
-filterable by instrument type, status and provider, each opening a sourced record. The
-three flown missions get Sun and Earth numbers over their published surface windows. Six
-more have a target, and the user picks the dates. Eleven have no published target. \\
-\addlinespace
-Is the payload list right, and what does ``unconfirmed'' mean?
-& It is compiled by hand from NASA's CLPS pages, NASA releases, LROC images and the IAU
-Gazetteer. Every one of the 64 payloads has a source URL, all read on 23 September 2026
-and not yet re-audited. ``Unconfirmed'' means we found no source, so the field is left
-empty and listed, never guessed. There are 139 such entries, including every landing
-ellipse and six manifests that NASA has not fully named. \\
-\addlinespace
-Why not move a mission's target to open sky, as you do for candidate sites?
-& A candidate area has no fixed point, so we choose a defensible one. A mission target is
-a published fact, and moving it would describe a landing that did not happen or is not
-planned. Where only a feature centre is published, as for the three missions aimed at Mons
-Mouton, the numbers are for that centre, and the record says it is not a landing point. \\
-\addlinespace
-What about targets outside \qty{80}{\degree}\,S, such as Mare Crisium?
-& The Sun and Earth are still computed with SPICE, but against a smooth-sphere horizon.
-Every response flags that terrain is not modelled and notes that sunlight and Earth time
-are therefore upper bounds. Four of the seven target sites are like this, including Blue
-Ghost~1. There the screens print no $\pm$ and say the terrain is not modelled, rather than
-a $\pm 0$ that would read as certainty exactly where there is least. \\
-\addlinespace
-Does plain English make the claims simpler than the data?
-& There is one view, and it shows the same four numbers with their $\pm$ or $\geq$ that the
-API returns. Detail opens in place rather than living in a separate ``expert'' version, so
-no one sees a reduced claim: the margin, what blocks the Sun and Earth at each site, and
-the sources are one press away on every screen. Our rule is that simpler words must never
-mean a simpler claim. \\
-\addlinespace[4pt]
-
-\multicolumn{2}{@{}l}{\textbf{Ethics and provenance}}\\
-\addlinespace[2pt]
-What stops the AI from inventing a number?
-& Every number and full date in an answer is checked against that run's tool results. A
-failure gets one repair attempt, then the answer is replaced by a summary built only from
-measurements. Known holes: any whole number from 1900 to 2200 passes as a year, so an
-invented ``2100 hours'' is not caught. Words are not checked, so ``best site'' passes. It
-stops invented numbers, not invented claims. \\
-\addlinespace
-Has the AI ever run live, and what if it is unavailable?
-& No. No model key has been configured, so every agent answer so far is the deterministic
-summary built from measurements, and it is labelled as such. The development run log still
-holds several hundred scripted test runs, including ``ok'' ones, from before the tests had
-their own database. It must be cleared before a demo. With a key, each agent tries a chain
-of Gemini models and moves on when one is over its quota. A live run is the next check. \\
-\addlinespace
-Is this a NASA product, and what may you claim?
-& No. It is an independent Space Apps entry built on public NASA and NAIF data: LOLA
-terrain, SPICE kernels and NASA's CLPS pages. We may claim that the numbers are computed
-from those data. We may not claim endorsement, flight-grade values or an official list of
-candidate sites. The interface, the API root and the printed report each say so. \\
-\addlinespace
-What is the most misleading thing a user could take away?
-& That a site under the \qty{120}{\hour} limit is safe. The limit is a placeholder, and
-Connecting Ridge's night, \qty{121.6 +- 17.1}{\hour}, lies on both sides of it. Second,
-that ``Earth contact'' is a link rather than geometry. Our review found three worse ones,
-now fixed: a map with the season inverted, $\pm 0$ on smooth-sphere numbers, and a
-sentence saying no ridge blocks Earth, false at five sites. \\
-\addlinespace
-What did your own review find that you did not fix?
-& Values with an untimeable edge are ranked as if unbounded. The guard's holes. The
-scripted run log, until it is cleared. The placeholder terrain error and the
-\qty{120}{\hour} limit. Two light-theme contrast gaps. No load test, and no test that stops
-Redis or Postgres. Fixed since the review: the map's season, $\pm 0$ and ``uncertain by up
-to 0 hours'' on smooth-sphere targets, the false Earth sentence, the missing $\pm$ in the
-plain view, stale counts in the documents, and the missing browser and accessibility
-tests. \\
-\end{xltabular}
-\normalsize
+\end{tabularx}
+\end{table}
 
 \end{document}

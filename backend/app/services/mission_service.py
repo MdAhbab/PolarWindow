@@ -284,7 +284,45 @@ async def get_mission(session: AsyncSession, mission_id: str) -> dict[str, Any]:
         "notes": m.notes,
         "ellipse_ring": ring,
         "site": None if site is None else site_brief(site),
+        "lifecycle": lifecycle_brief(m),
         "meta": await _meta(session, [m]),
+    }
+
+
+def lifecycle_brief(m: MissionRecord) -> dict[str, Any] | None:
+    """The v2 facts with the catalogue names of the vehicle and pad."""
+    lc = m.lifecycle
+    if not lc:
+        return None
+    from app.data import catalogues
+
+    def name_of(cat: str, rid: str | None) -> str | None:
+        if not rid:
+            return None
+        try:
+            return str(catalogues.load(cat).get(rid).name)
+        except (KeyError, catalogues.CatalogueError):
+            return None
+
+    t0 = lc.get("t0")
+    return {
+        **{
+            k: lc.get(k)
+            for k in (
+                "vehicle_id",
+                "pad_id",
+                "transfer",
+                "descent",
+                "comms",
+                "spacecraft",
+                "returns",
+            )
+        },
+        "vehicle_name": name_of("vehicles", lc.get("vehicle_id")),
+        "pad_name": name_of("launch_sites", lc.get("pad_id")),
+        "t0": None if t0 is None else {k: t0[k] for k in ("date", "precision", "as_published")},
+        "rovers": list(lc.get("rovers") or []),
+        "field_sources": dict(lc.get("field_sources") or {}),
     }
 
 

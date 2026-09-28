@@ -57,6 +57,8 @@ class MissionRecord:
     notes: list[str]
     data_version: str
     payloads: list[PayloadRecord] = field(default_factory=list)
+    #: Schema v2 facts (ADR-10); empty for a v1 row.
+    lifecycle: dict[str, Any] = field(default_factory=dict)
 
     @property
     def payload_types(self) -> list[str]:
@@ -91,6 +93,7 @@ def _record(row: Mission) -> MissionRecord:
         unconfirmed_fields=list(row.unconfirmed_fields or []),
         notes=list(row.notes or []),
         data_version=row.data_version,
+        lifecycle=dict(row.lifecycle or {}),
         payloads=[
             PayloadRecord(
                 id=p.id,

@@ -261,3 +261,58 @@ Learned the hard way while building this, recorded so nobody rediscovers them:
   inside `asyncio.to_thread`. Model calls are blocked at our own `_generate`
   seam instead — a test that sets a fake key really did reach the live API and
   get a 400 before that was fixed.
+
+## 7. The mission lifecycle: processes, keys, feed outages
+
+**Processes.** Besides the API, two workers (ADR-8, ADR-12), both reading the same
+Postgres:
+
+| Process | Start | Does | If it is not running |
+|---|---|---|---|
+| compute worker | `make compute` (`run.py` starts `POLAR_COMPUTE_WORKERS`, default 2) | trip, contact and launch answers, one job at a time each | a section stays "being worked out"; after a while its message says "the compute worker is not running (make compute)" |
+| feeds worker | `make feeds` (`make feeds-once` for one pass) | records weather, space weather, launch schedules, DSN Now | live numbers age past their budgets and are replaced by the reason; `/healthz` stays up |
+
+After a code change restart the API **and** the compute workers: a worker keeps the
+code it started with, and a stored answer is reused until its inputs or engine
+versions change (ADR-13).
+
+**Keys** (all optional, in `.env`, never committed or printed):
+
+| Setting | Needed for | Without it |
+|---|---|---|
+| `PW_GEMINI_API_KEY` | the AI helpers | they answer `degraded` with a plain summary |
+| `PW_NASA_API_KEY` | DONKI (api.nasa.gov) | DEMO_KEY, 30 requests an hour |
+| `PW_EARTHDATA_TOKEN` | `make thunder-climatology` (GHRC via OPeNDAP) and Earthdata downloads | the lightning rules show no climatology |
+| `PW_JWT_SECRET` | sign-in tokens that survive an API restart | a random secret per process: people sign in again after a restart |
+
+**A feed is failing.** `GET /api/v1/feeds` lists every product with its age, last
+error and breaker. `/healthz` says `degraded` (200, never `down`) while any product
+is failing; stale data alone does not degrade it. Each number that needs the feed
+says why it is missing, and every other section is unaffected
+(`tests/integration/test_chaos.py`). A signed-in project manager can ask for one
+provider now: `POST /api/v1/feeds/{provider}/refresh` (audited). After five failed
+runs the breaker holds the provider for a cool-down, then tries once. Known from
+this network: Launch Library 2 answers 429 when the shared IP is over its limit (the
+interval is already 30 min); NGA's NAVAREA IV API returns an error page; GEOS-FP's
+host does not answer.
+
+**A job failed.** Its message is the answer until the inputs change (a failed job
+is not retried on every page load). `POST /api/v1/jobs/{id}/retry` (signed in)
+queues it again (recorded in `/history?entity=job`); `GET /api/v1/jobs/{id}` shows
+its progress.
+
+**Sections answer 503 "Too many answers are being worked out".** 200 jobs are
+waiting (`PW_MAX_QUEUED_JOBS`); stored answers still read. Start more compute
+workers (`POLAR_COMPUTE_WORKERS`) or wait; `make load-compute` measures what two
+workers get through (docs/test-plan.md §11.4).
+
+**A write answers 429.** One address made more changes in a minute than its
+allowance (`PW_RATE_SIGN_IN_PER_MIN` 60, `PW_RATE_AGENTS_PER_MIN` 20,
+`PW_RATE_COMPARE_PER_MIN` 60, `PW_RATE_WRITES_PER_MIN` 120; `PW_RATE_LIMITS=off` turns
+them off). `Retry-After` says when to try again. The counts live in the API process
+and reset when it restarts. Bodies over `PW_MAX_BODY_BYTES` (64 KB) are refused (413).
+
+**Long commands**, cached where they can be: `make hindcast-weather` (~40 min),
+`make thunder-climatology` (~1.5 h), `make validate-trip` (~7 min with the loops),
+`make validate-capsule` (~20 s), `make validate-radiation`, `make space-climate`.
+Their results are committed under `data/` (see `docs/data-sources.md`).

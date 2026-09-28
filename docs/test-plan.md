@@ -418,7 +418,7 @@ Named so that absences are decisions rather than oversights:
 
 - **Load/performance testing.** N1 is verified by a single timed assertion in
   `test_concurrent_slider_burst` (p95 under 150 ms warm on CI hardware, generous
-  bound). A real load suite is not a hackathon deliverable.
+  bound). The compute queue has its own load run (§11.4); the rest has none.
 - **Chaos / failover.** N6 says single-node. There is nothing to fail over to.
 - **Tile rendering pixel output.** Tested for existence, content-type, extent
   behaviour and ETag — not for pixel values. Pinning a colour ramp adds
@@ -603,3 +603,111 @@ never pointed at the dev database. New HTTP tests:
 | `data/ingest_missions.py`, `data/ingest_sites.py` | ≥ 85 %; both are back in coverage |
 | services and routes | ≥ 85 % |
 | frontend logic (`lib/`) | ≥ 80 %; components through state tests, not line coverage |
+
+## 11. The mission lifecycle (2026-09-28)
+
+**Baseline** (2026-09-28): `make test-fast` 459 passed in ~10 s (unit and synthetic
+golden), integration 162 (`make test-int`, against `polar_window_test`), golden 36
+collected (`make test-geo`; the reconstruction-based ones skip without the data).
+
+### 11.1 What each part is checked against
+
+| Part | Tests | Checked against (plan tolerance; result in `docs/validation.md`) |
+|---|---|---|
+| Propagator, shadows (C1) | `test_propagate.py`, `golden/test_propagate_vs_clps.py`, `test_eclipse_vs_spice.py` | NASA's reconstructed CLPS trajectories (≤ 1 km after 24 h) |
+| Launch instants, transfers (C2, D1, D2) | `test_launch_core.py`, `golden/test_launch_vs_clps.py` | the flown launches (2 min from TLI; designed: right day) |
+| Loops and correction budget (C3, C4) | `test_phasing_lincov.py`, `golden/test_loops_vs_clps.py` | the flown burns; linear against Monte Carlo (≤ 10 %) |
+| Launch weather (T4) | `test_weather_rules.py`, `test_verification.py`, `golden/test_hindcast.py`, `test_gefs_targeted.py` | the rules verbatim; GEFS against the Cape's station (Brier skill) |
+| Radiation (E) | `test_radiation.py`, `make validate-radiation` | IRBEM against SPDF (5 %), CRaTER (±30 %), NOAA's event list (10 %) |
+| Contact (T1) | `test_contact_core.py`, `integration/test_contact.py` | DSN station kernels, horizon masks |
+| Capsule entry (H) | `test_entry.py`, `golden/test_capsule_vs_orex.py`, `make validate-capsule` | the U.S. Standard Atmosphere 1976 tables; OSIRIS-REx's landing (≤ 10 km) |
+| Readiness, parts, risks (T3) | `test_readiness.py`, `integration/test_ready.py`, `test_audit_and_sign_in.py` | the state machine; every write audited and hash-chained |
+| Jobs (ADR-12) | `integration/test_jobs.py`, `test_job_ref.py` | one claim per job, leases, back-off, the waiting messages |
+| Feeds (ADR-8) | `test_feed_parsers.py`, `test_feed_http.py`, `integration/test_feeds.py` | recorded responses; breaker, retries, secrets never stored |
+
+### 11.2 Chaos (`integration/test_chaos.py`)
+
+For a space weather feed that is **down** (connection refused), **slow** (read
+timeout) or **malformed** (an HTML page): the section answers 200, the number is
+missing with "the last attempt to fetch it failed", the section's other feed
+(DONKI) still answers, Ready, Sections and Return are unchanged, and `/healthz`
+says `degraded` (200), never `down`. **Stale** (recorded three days ago): the
+number is replaced by its age and limit, `meta.stale` is true, `/healthz` is not
+degraded by it. **No feed recorded at all**: space weather, launch weather,
+Return and the other sections all answer 200, and every space weather value says
+no data has been recorded. The first run found a real fault: DONKI's lists took
+their newest event's time as their age, so a quiet Sun hid them as stale.
+
+### 11.3 Agents over the missions (`test_compact.py`, `test_guards.py`, `integration/test_agents.py`)
+
+- A section reaches the model with at most 200 numbers, each value with its ±,
+  times as UTC times, plot series and list tails named in `left_out`.
+- The tools never queue a job (`read_only`: the job count does not change).
+- Verdict words are rejected in any answer field, even in a denial; the user's
+  own words (`question`, `interpreted_as`) are not.
+- The tool set is exactly ten names.
+
+### 11.4 Load on the compute queue (`make load-compute`)
+
+`app/tests/load/load_compute.py` builds its own database (`polar_window_load`, the
+migrations and the seeded rows), starts the API on :8011 and two compute workers
+against it, and asks for the trip, contact and launch sections of all 20 missions at
+once, with six more contact windows per landed mission and twelve more launch windows
+per planned one: 138 requests, 58 jobs (37 contact, 17 launch, 4 trip). It waits for the
+queue to empty and reads the times from the jobs table; the result is
+`data/load/compute_queue.json`. Measured 2026-09-28 on an 8-core laptop, two workers:
+
+| | In arrival order | Cheapest first (now) |
+|---|---|---|
+| Queue empty after | 170 s | 180 s |
+| Jobs per minute | 20.4 | 19.3 |
+| Workers busy | 86 % | 86 % |
+| Wait, all jobs: median / 95 % / longest | 95 / 117 / 127 s | 2.8 / 65 / 123 s |
+| Wait, contact (runs 0.1 s) | median 115 s, longest 127 s | median 1.9 s, longest 3.1 s |
+| Wait, launch (runs ~10 s) | median 73 s | median 21 s |
+| Wait, trip (runs ~55 s) | median 1.8 s | median 71 s |
+
+The API answered every request in the burst within 0.34 s (median 0.21 s; it only
+queues), and the same 138 requests again, all stored, within 0.46 s (median 0.37 s,
+all at once on one API process). Two workers are the limit: throughput is set by the
+four trips (a minute each), so a third worker would shorten the queue, not the longest
+job. Two findings, both fixed: jobs were taken in arrival order, so a 0.1 s contact plan
+waited two minutes behind trips (now contact before launch before trip); and a job
+queued longer than two minutes said "the compute worker is not running" while both
+workers were busy (now said only when nothing is ahead of it). The queue holds at most
+200 waiting jobs; past that a section answers 503 with `Retry-After`
+(`test_jobs.py::test_a_full_queue_*`), because the contact and launch sections take
+any window and each new window is a new job.
+
+### 11.5 The project manager's writes (security review)
+
+Checked on every route that is not a read (`unit/test_request_limits.py`,
+`integration/test_jobs.py`, `integration/test_settings_http.py`,
+`integration/test_contact.py`):
+
+- **Sign-in on every write.** Each of the 26 non-GET routes needs a named project
+  manager, except signing in, the site comparison (computed on the request, nothing
+  stored) and the four AI helpers (a project manager's session, no name needed: they
+  read). A test walks the app's routes, so a new write without it fails.
+- **History on every change.** Settings (the AI model order, its reset, the model retry,
+  clearing the run log, clearing the cache) and job retries were not in the change
+  history; they are now (`entity=settings`, `entity=job`), in the same transaction as
+  the change.
+- **Input bounds.** Numbers must be finite (NaN or infinity was accepted for the sea
+  limits and stored); sea limits, vehicle limits, forecast concerns and link, risk
+  scale, ratings and links, booking station and agents' site ids have length or size
+  limits; a booked pass is at most 24 hours. Request bodies over 64 KB are refused
+  (413) before they are read, or while they are read when sent without a length.
+- **Rate limits.** Per address, per sliding minute: 60 sign-ins, 20 AI questions, 60
+  site comparisons, 120 other changes; past them 429 with `Retry-After`. Reads are not
+  limited. The counts are per API process.
+- **Browsers could not PATCH.** CORS allowed GET, POST, PUT and DELETE only, so moving a
+  readiness item and changing a part or a risk failed from the dashboard (another
+  origin); PATCH is allowed now.
+- Not an issue: tokens travel in the `Authorization` header, not cookies, so a
+  cross-site request carries none (no CSRF); a 500 returns a problem detail without the
+  trace.
+
+### 11.6 Not tested yet
+
+The live end-to-end runs against the real feeds (they are recorded responses here).

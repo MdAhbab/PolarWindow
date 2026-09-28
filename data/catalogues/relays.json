@@ -1,0 +1,280 @@
+{
+ "schema_version": 1,
+ "catalogue": "relays",
+ "compiled": "2026-09-27",
+ "about": "Relay satellites that may carry a lander's data to Earth, with their launch status, and real lunar orbiters used only to check the pass calculation. A relay's contribution is worked out only from a published or entered orbit, and is shown as a range 'if it flies as planned'. Queqiao-2 is not listed: it publishes no orbit a CLPS mission could book.",
+ "records": [
+  {
+   "sources": [
+    {
+     "url": "https://bsgn.esa.int/service/lunar-pathfinder/",
+     "title": "Lunar Pathfinder (ESA Business in Space Growth Network service page)",
+     "publisher": "ESA",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://www.sstl.co.uk/space-portfolio/missions-in-build/2025/lunar-pathfinder",
+     "title": "Lunar Pathfinder mission",
+     "publisher": "Surrey Satellite Technology Ltd",
+     "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://www.jpl.nasa.gov/images/pia26598-blue-ghost-mission-2-gets-stacked-at-jpl/",
+     "title": "Blue Ghost Mission 2 Gets Stacked at JPL (PIA26598, 16 December 2025)",
+     "publisher": "NASA JPL",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "operator": "https://www.sstl.co.uk/space-portfolio/missions-in-build/2025/lunar-pathfinder",
+    "status": "https://bsgn.esa.int/service/lunar-pathfinder/",
+    "launch_note": "https://bsgn.esa.int/service/lunar-pathfinder/",
+    "orbit_note": "https://www.sstl.co.uk/space-portfolio/missions-in-build/2025/lunar-pathfinder",
+    "serves_missions": "https://www.jpl.nasa.gov/images/pia26598-blue-ghost-mission-2-gets-stacked-at-jpl/",
+    "bands": "https://www.sstl.co.uk/space-portfolio/missions-in-build/2025/lunar-pathfinder"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [
+    "apoapsis_km",
+    "inclination_deg",
+    "periapsis_km",
+    "period_h"
+   ],
+   "notes": [],
+   "id": "lunar-pathfinder",
+   "name": "Lunar Pathfinder",
+   "role": "relay",
+   "operator": "ESA, built and operated by Surrey Satellite Technology Ltd",
+   "naif_id": null,
+   "status": "planned",
+   "launch_note": "To fly on Firefly's Blue Ghost Mission 2, integrated into its Elytra Dark orbital vehicle. ESA: launch not earlier than November 2026; SSTL: due to launch 2027.",
+   "periapsis_km": null,
+   "apoapsis_km": null,
+   "inclination_deg": null,
+   "period_h": null,
+   "orbit_note": "ESA and SSTL publish only 'a stable elliptical orbit to provide long duration visibility of the Southern Lunar Hemisphere each day' (an elliptical lunar frozen orbit); no orbital elements are published, so no relay timeline is worked out until they are published or entered.",
+   "serves_missions": [
+    "blue-ghost-m2"
+   ],
+   "bands": [
+    "S (to lunar users)",
+    "UHF (to lunar users)",
+    "X (to Earth)"
+   ]
+  },
+  {
+   "sources": [
+    {
+     "url": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/",
+     "title": "NASA Provides Updates on Moon Base Cargo Landers, Tech Demonstrations (Aug 04, 2026)",
+     "publisher": "NASA",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "operator": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/",
+    "status": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/",
+    "launch_note": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/",
+    "serves_missions": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [
+    "apoapsis_km",
+    "bands",
+    "inclination_deg",
+    "orbit_note",
+    "periapsis_km",
+    "period_h"
+   ],
+   "notes": [],
+   "id": "altus-1",
+   "name": "Altus-1 data-relay satellite",
+   "role": "relay",
+   "operator": "Intuitive Machines",
+   "naif_id": null,
+   "status": "planned",
+   "launch_note": "Planned to fly alongside IM-3 (NASA, August 2026).",
+   "periapsis_km": null,
+   "apoapsis_km": null,
+   "inclination_deg": null,
+   "period_h": null,
+   "orbit_note": null,
+   "serves_missions": [
+    "im-3"
+   ],
+   "bands": []
+  },
+  {
+   "sources": [
+    {
+     "url": "https://ssd.jpl.nasa.gov/horizons/",
+     "title": "JPL Horizons on-line ephemeris system",
+     "publisher": "NASA JPL Solar System Dynamics",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "operator": "https://ssd.jpl.nasa.gov/horizons/",
+    "naif_id": "https://ssd.jpl.nasa.gov/horizons/",
+    "orbit_note": "https://ssd.jpl.nasa.gov/horizons/",
+    "status": "https://ssd.jpl.nasa.gov/horizons/"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [
+    "apoapsis_km",
+    "bands",
+    "inclination_deg",
+    "launch_note",
+    "periapsis_km",
+    "period_h",
+    "serves_missions"
+   ],
+   "notes": [
+    "Used only to check the pass calculation against a real orbit. Not a relay for any CLPS lander, and never shown as one."
+   ],
+   "id": "lro",
+   "name": "Lunar Reconnaissance Orbiter",
+   "role": "validation_only",
+   "operator": "NASA",
+   "naif_id": -85,
+   "status": "operating",
+   "launch_note": null,
+   "periapsis_km": null,
+   "apoapsis_km": null,
+   "inclination_deg": null,
+   "period_h": null,
+   "orbit_note": "Real orbit from JPL Horizons (the trajectory, not published elements).",
+   "serves_missions": [],
+   "bands": []
+  },
+  {
+   "sources": [
+    {
+     "url": "https://ssd.jpl.nasa.gov/horizons/",
+     "title": "JPL Horizons on-line ephemeris system",
+     "publisher": "NASA JPL Solar System Dynamics",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "operator": "https://ssd.jpl.nasa.gov/horizons/",
+    "naif_id": "https://ssd.jpl.nasa.gov/horizons/",
+    "orbit_note": "https://ssd.jpl.nasa.gov/horizons/",
+    "status": "https://ssd.jpl.nasa.gov/horizons/"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [
+    "apoapsis_km",
+    "bands",
+    "inclination_deg",
+    "launch_note",
+    "periapsis_km",
+    "period_h",
+    "serves_missions"
+   ],
+   "notes": [
+    "Used only to check the pass calculation against a real orbit. Not a relay for any CLPS lander, and never shown as one."
+   ],
+   "id": "danuri",
+   "name": "Danuri (Korea Pathfinder Lunar Orbiter)",
+   "role": "validation_only",
+   "operator": "KARI/KASA",
+   "naif_id": -155,
+   "status": "operating",
+   "launch_note": null,
+   "periapsis_km": null,
+   "apoapsis_km": null,
+   "inclination_deg": null,
+   "period_h": null,
+   "orbit_note": "Real orbit from JPL Horizons (the trajectory, not published elements).",
+   "serves_missions": [],
+   "bands": []
+  },
+  {
+   "sources": [
+    {
+     "url": "https://ssd.jpl.nasa.gov/horizons/",
+     "title": "JPL Horizons on-line ephemeris system",
+     "publisher": "NASA JPL Solar System Dynamics",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "operator": "https://ssd.jpl.nasa.gov/horizons/",
+    "naif_id": "https://ssd.jpl.nasa.gov/horizons/",
+    "orbit_note": "https://ssd.jpl.nasa.gov/horizons/",
+    "status": "https://ssd.jpl.nasa.gov/horizons/"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [
+    "apoapsis_km",
+    "bands",
+    "inclination_deg",
+    "launch_note",
+    "periapsis_km",
+    "period_h",
+    "serves_missions"
+   ],
+   "notes": [
+    "Used only to check the pass calculation against a real orbit. Not a relay for any CLPS lander, and never shown as one."
+   ],
+   "id": "chandrayaan-2-orbiter",
+   "name": "Chandrayaan-2 orbiter",
+   "role": "validation_only",
+   "operator": "ISRO",
+   "naif_id": -152,
+   "status": "operating",
+   "launch_note": null,
+   "periapsis_km": null,
+   "apoapsis_km": null,
+   "inclination_deg": null,
+   "period_h": null,
+   "orbit_note": "Real orbit from JPL Horizons (the trajectory, not published elements).",
+   "serves_missions": [],
+   "bands": []
+  },
+  {
+   "sources": [
+    {
+     "url": "https://ssd.jpl.nasa.gov/horizons/",
+     "title": "JPL Horizons on-line ephemeris system",
+     "publisher": "NASA JPL Solar System Dynamics",
+     "accessed": "2026-09-27"
+    }
+   ],
+   "field_sources": {
+    "operator": "https://ssd.jpl.nasa.gov/horizons/",
+    "naif_id": "https://ssd.jpl.nasa.gov/horizons/",
+    "orbit_note": "https://ssd.jpl.nasa.gov/horizons/",
+    "status": "https://ssd.jpl.nasa.gov/horizons/"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [
+    "apoapsis_km",
+    "bands",
+    "inclination_deg",
+    "launch_note",
+    "periapsis_km",
+    "period_h",
+    "serves_missions"
+   ],
+   "notes": [
+    "Used only to check the pass calculation against a real orbit. Not a relay for any CLPS lander, and never shown as one."
+   ],
+   "id": "capstone",
+   "name": "CAPSTONE",
+   "role": "validation_only",
+   "operator": "NASA / Advanced Space",
+   "naif_id": -1176,
+   "status": "operating",
+   "launch_note": null,
+   "periapsis_km": null,
+   "apoapsis_km": null,
+   "inclination_deg": null,
+   "period_h": null,
+   "orbit_note": "Real orbit from JPL Horizons (the trajectory, not published elements).",
+   "serves_missions": [],
+   "bands": []
+  }
+ ]
+}

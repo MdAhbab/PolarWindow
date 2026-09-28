@@ -1,0 +1,87 @@
+{
+ "data": {
+  "source": "none",
+  "none_reason": "No trajectory is published for this mission, and its launch date is not known.",
+  "start": null,
+  "end": null,
+  "coverage_note": null,
+  "covered": [],
+  "samples": [],
+  "shadow": [],
+  "heard": [],
+  "numbers": {
+   "sunlight_h": {
+    "value": null,
+    "unit": "h",
+    "provenance": "computed",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": "No trajectory yet",
+    "source": null
+   },
+   "heard_h": {
+    "value": null,
+    "unit": "h",
+    "provenance": "computed",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": "No trajectory yet",
+    "source": null
+   },
+   "longest_shadow_h": {
+    "value": null,
+    "unit": "h",
+    "provenance": "computed",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": "No trajectory yet",
+    "source": null
+   },
+   "longest_unheard_h": {
+    "value": null,
+    "unit": "h",
+    "provenance": "computed",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": "No trajectory yet",
+    "source": null
+   }
+  },
+  "burns": [],
+  "burns_note": null,
+  "moon_pull": null,
+  "radiation": null,
+  "corrections": null,
+  "corrections_note": "No trip has been worked out: a designed trip needs a launch time, and the launch calendar for this mission is not worked out yet.",
+  "radiation_note": "No trip has been worked out: a designed trip needs a launch time, and the launch calendar for this mission is not worked out yet."
+ },
+ "meta": {
+  "computed_at": "2026-09-27T08:00:00Z",
+  "uncertainty": {
+   "kind": "composite",
+   "parts": []
+  },
+  "engines": {
+   "traj": "traj-1"
+  },
+  "sources": [],
+  "stale": false,
+  "compute_ms": 412.0
+ }
+}

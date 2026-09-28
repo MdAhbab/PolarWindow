@@ -283,8 +283,9 @@ async def test_tool_results_carry_their_numbers(client) -> None:
     assert entry.result["sunlit_s"] in entry.numbers
 
 
-async def test_agents_declare_exactly_six_tools() -> None:
-    """The complete, auditable surface area an LLM can reach."""
+async def test_agents_declare_exactly_ten_tools() -> None:
+    """The complete, auditable surface area an LLM can reach: the brief's six over the
+    sites and four over the missions' sections (ADR-6, amended)."""
     from app.agents.tools import TOOL_NAMES
 
     assert {
@@ -294,7 +295,54 @@ async def test_agents_declare_exactly_six_tools() -> None:
         "get_horizon_profile",
         "search_sites",
         "compare_sites",
+        "list_missions",
+        "get_mission_sections",
+        "get_mission_section",
+        "get_space_weather",
     } == TOOL_NAMES
+
+
+async def test_mission_tools_read_sections_within_the_number_cap(client) -> None:
+    from app.agents import tools
+    from app.agents.compact import MAX_NUMBERS
+    from app.db.session import session_scope
+
+    async with session_scope() as session:
+        found = await tools.execute(session, "list_missions", {"q": "IM-2"}, 1)
+        secs = await tools.execute(session, "get_mission_sections", {"mission_id": "im-2"}, 2)
+        ret = await tools.execute(
+            session, "get_mission_section", {"mission_id": "im-2", "section": "return"}, 3
+        )
+        bad = await tools.execute(
+            session, "get_mission_section", {"mission_id": "im-2", "section": "cost"}, 4
+        )
+        sw = await tools.execute(session, "get_space_weather", {}, 5)
+    assert found.result and secs.result and ret.result and sw.result
+    assert found.error is None and any(m["mission_id"] == "im-2" for m in found.result["missions"])
+    assert secs.result["sections"][0]["section"] == "ready"
+    assert ret.error is None and ret.result["data"]["booster"]["landing"] == "droneship"
+    assert len(ret.numbers) <= MAX_NUMBERS
+    assert "source" not in str(ret.result["data"]["booster"]["limits"])
+    assert bad.error and "invalid arguments" in bad.error
+    assert sw.error is None and "meta" in sw.result
+
+
+async def test_a_section_not_worked_out_is_said_so_and_never_queued(client) -> None:
+    """The tools only read: a missing answer is reported, not started."""
+    from sqlalchemy import text
+
+    from app.db.session import session_scope
+    from app.services import job_service
+
+    params = {"probe": "agent-read-only"}
+    async with session_scope() as session:
+        before = (await session.execute(text("SELECT count(*) FROM jobs"))).scalar_one()
+        with job_service.read_only(), pytest.raises(job_service.NotWorkedOut):
+            await job_service.answer_or_enqueue(
+                session, kind="trip", closure="x", params=params, mission_id=None
+            )
+        after = (await session.execute(text("SELECT count(*) FROM jobs"))).scalar_one()
+    assert after == before
 
 
 async def test_user_supplied_numbers_are_grounded_but_attributed(client, fake_gemini) -> None:

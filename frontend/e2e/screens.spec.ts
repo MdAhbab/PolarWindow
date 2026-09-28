@@ -7,6 +7,26 @@ const ROUTES = [
   '/missions/im-2',
   '/missions/blue-ghost-m1',
   '/missions/cs-8',
+  // The six steps (contract fixtures where the backend does not answer yet).
+  '/missions/im-2/ready',
+  '/missions/im-2/launch',
+  '/missions/im-2/trip',
+  '/missions/im-2/landing',
+  '/missions/im-2/contact',
+  '/missions/im-2/return',
+  // The steps the service answers, for two more flown missions: IM-1's trip
+  // has gaps in NASA's reconstruction, and its contact is worked out on request.
+  // Launch: IM-1's flown launch and Griffin-1's calendar.
+  '/missions/im-1/ready',
+  '/missions/im-1/launch',
+  '/missions/griffin-1/launch',
+  '/missions/im-1/trip',
+  '/missions/im-1/contact',
+  // Return: IM-1's booster back on land, Griffin-1's not published yet.
+  '/missions/im-1/return',
+  '/missions/griffin-1/return',
+  '/missions/blue-ghost-m1/trip',
+  '/missions/blue-ghost-m1/contact',
   '/map',
   '/site',
   '/compare',
@@ -17,6 +37,8 @@ const ROUTES = [
 
 for (const theme of ['dark', 'light'] as const) {
   test(`axe: every route, ${theme} theme`, async ({ page, context }) => {
+    // Many routes, each read by axe: well past the default minute when the suite runs in parallel.
+    test.setTimeout(300_000)
     await returningVisitor(context, { theme })
     const problems = watchConsole(page)
     for (const r of ROUTES) {
@@ -25,13 +47,47 @@ for (const theme of ['dark', 'light'] as const) {
       await page.waitForLoadState('networkidle')
       await expectNoSeriousAxe(page, `${r} (${theme})`)
     }
+    // The newest answers with every row open: the correction budget, the weather notes, the sea at Griffin-1's zone.
+    // IM-1's belts not counted and Griffin-1's assumed climb, too.
+    for (const r of ['/missions/blue-ghost-m1/trip', '/missions/im-1/launch', '/missions/griffin-1/return', '/missions/im-1/trip', '/missions/griffin-1/launch']) {
+      await page.goto(r)
+      await page.waitForLoadState('networkidle')
+      for (const s of await page.locator('main summary').all()) await s.click()
+      await expectNoSeriousAxe(page, `${r} with every row open (${theme})`)
+    }
+    // Settings with every project row open, a parameter's form and history among them.
+    await page.goto('/missions')
+    await page.getByRole('button', { name: 'Settings' }).click()
+    const sheet = page.getByRole('dialog', { name: 'Settings' })
+    await expect(sheet.locator('summary', { hasText: 'Parameters' })).toContainText(/\d of \d entered/)
+    for (const s of await sheet.locator('summary').all()) await s.click()
+    // Data sources grows as its list arrives, so a click on a row below it can land elsewhere: make sure Parameters is open.
+    const params = sheet.locator('details').filter({ has: page.locator('summary', { hasText: /^Parameters/ }) })
+    const battery = sheet.getByRole('button', { name: /for Battery limit/ })
+    await expect(async () => {
+      if (!(await params.evaluate((d) => (d as HTMLDetailsElement).open))) await params.locator('summary').first().click()
+      await expect(battery).toBeVisible({ timeout: 2_000 })
+    }).toPass({ timeout: 30_000 })
+    await battery.click()
+    await expect(sheet.getByText('Change history')).toBeVisible()
+    await expectNoSeriousAxe(page, `settings with every row open (${theme})`)
     expect(problems).toEqual([])
   })
 }
 
 test('every closed row opens, and axe passes with them open', async ({ page, context }) => {
   await returningVisitor(context)
-  for (const r of ['/missions/im-2', '/site', '/skyline', '/plan']) {
+  for (const r of [
+    '/missions/im-2',
+    '/missions/im-2/ready',
+    '/missions/im-2/launch',
+    '/missions/im-2/trip',
+    '/missions/im-2/contact',
+    '/missions/im-2/return',
+    '/site',
+    '/skyline',
+    '/plan',
+  ]) {
     await page.goto(r)
     await page.waitForLoadState('networkidle')
     for (const s of await page.locator('main summary').all()) await s.click()
@@ -51,16 +107,60 @@ test('a number says what it means when its label is pressed', async ({ page, con
 })
 
 test('axe and the fixed tab bar on a phone', async ({ page, context }) => {
+  // Seventeen routes and six with every row open, each read by axe.
+  test.setTimeout(180_000)
   await returningVisitor(context)
   await page.setViewportSize({ width: 375, height: 812 })
   const tabs = page.getByRole('navigation', { name: 'Views' }).last()
-  for (const r of ['/missions?type=volatiles', '/missions/im-2', '/site', '/compare']) {
+  for (const r of [
+    '/missions?type=volatiles',
+    '/missions/im-2',
+    '/missions/im-2/ready',
+    '/missions/im-2/launch',
+    '/missions/im-2/trip',
+    '/missions/im-2/contact',
+    '/missions/im-2/return',
+    '/missions/im-1/trip',
+    '/missions/im-1/launch',
+    '/missions/griffin-1/launch',
+    '/missions/im-1/return',
+    '/missions/griffin-1/return',
+    '/site',
+    '/compare',
+  ]) {
     await page.goto(r)
     await page.waitForLoadState('networkidle')
     await expect(tabs.getByRole('link')).toHaveCount(5)
     await expect(tabs).toHaveCSS('position', 'fixed')
     await expectNoSeriousAxe(page, `${r} at 375 px`)
+    // Nothing runs off the side: no sideways scroll on a phone.
+    expect(await page.evaluate(() => document.documentElement.scrollWidth), `${r} scrolls sideways at 375 px`).toBeLessThanOrEqual(375)
   }
+  // Rows open on a phone: the correction budget's table, the weather notes and space weather, the capsule
+  // model's check with its source links, the climb's direction and each radiation case still fit; so does the limits form.
+  // IM-1's launch last: its limits form is opened next.
+  for (const r of [
+    '/missions/blue-ghost-m1/trip',
+    '/missions/griffin-1/return',
+    '/missions/griffin-1/launch',
+    '/missions/im-1/trip',
+    '/missions/peregrine-m1/trip',
+    '/missions/im-1/launch',
+  ]) {
+    await page.goto(r)
+    await page.waitForLoadState('networkidle')
+    for (const s of await page.locator('main summary').all()) await s.click()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth), `${r} with rows open scrolls sideways at 375 px`).toBeLessThanOrEqual(375)
+    await expectNoSeriousAxe(page, `${r} with rows open at 375 px`)
+  }
+  await page.getByRole('button', { name: 'Enter the team’s limits' }).click()
+  const limits = page.getByRole('dialog', { name: 'Team weather limits' })
+  await expect(limits.getByLabel('Note (optional)').first()).toBeVisible()
+  expect(await limits.evaluate((d) => d.scrollWidth - d.clientWidth), 'the limits form scrolls sideways at 375 px').toBeLessThanOrEqual(0)
+  await expectNoSeriousAxe(page, 'the team weather limits form at 375 px')
+  await limits.getByRole('button', { name: 'Close' }).first().click()
+  await page.goto('/compare')
+  await page.waitForLoadState('networkidle')
   // The last line of the page is never under the tab bar.
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
   const footer = page.getByText('Estimates from a terrain map', { exact: false })
@@ -76,6 +176,25 @@ test('axe and the fixed tab bar on a phone', async ({ page, context }) => {
   expect(g!.y + g!.height).toBeLessThanOrEqual(t2!.y + 1)
   expect(f2!.y + f2!.height).toBeLessThanOrEqual(g!.y + 1)
   await expectNoSeriousAxe(page, '/compare at 375 px with the guide open')
+})
+
+test('settings on a phone: every project row and a parameter form fit, with no sideways scroll', async ({ page, context }) => {
+  await returningVisitor(context)
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.goto('/missions')
+  await page.getByRole('button', { name: 'Settings' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Settings' })
+  await expect(sheet.locator('summary', { hasText: 'Parameters' })).toContainText(/\d of \d entered/)
+  for (const s of await sheet.locator('summary').all()) await s.click()
+  await sheet.getByRole('button', { name: /for Lowest Sun height/ }).click()
+  const value = sheet.getByLabel('Value, in degrees')
+  await expect(value).toBeVisible()
+  const box = await value.boundingBox()
+  expect(box!.x + box!.width).toBeLessThanOrEqual(375)
+  expect(box!.height).toBeGreaterThanOrEqual(44)
+  expect(await sheet.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375)
+  await expectNoSeriousAxe(page, 'settings at 375 px with every row open')
 })
 
 test('mission filters live in the URL; the back button undoes a chip', async ({ page, context }) => {

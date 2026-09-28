@@ -1,0 +1,263 @@
+{
+ "what": "NASA DONKI solar particle events seen by a GOES >10 MeV detector",
+ "source_url": "https://kauai.ccmc.gsfc.nasa.gov/DONKI/",
+ "built": "2026-09-28T02:10:38+00:00",
+ "from": "2019-01-01",
+ "events": [
+  {
+   "id": "2021-05-29T03:00:00-SEP-001",
+   "t": "2021-05-29T03:00Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/17004/-1"
+  },
+  {
+   "id": "2021-10-28T17:40:00-SEP-001",
+   "t": "2021-10-28T17:40Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/18108/-1"
+  },
+  {
+   "id": "2021-11-03T20:55:00-SEP-001",
+   "t": "2021-11-03T20:55Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/18191/-1"
+  },
+  {
+   "id": "2022-01-20T08:00:00-SEP-001",
+   "t": "2022-01-20T08:00Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/18901/-1"
+  },
+  {
+   "id": "2022-03-28T13:25:00-SEP-001",
+   "t": "2022-03-28T13:25Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/19558/-1"
+  },
+  {
+   "id": "2022-03-31T06:20:00-SEP-001",
+   "t": "2022-03-31T06:20Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/19605/-1"
+  },
+  {
+   "id": "2022-04-02T14:30:00-SEP-001",
+   "t": "2022-04-02T14:30Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/19633/-1"
+  },
+  {
+   "id": "2022-08-27T11:55:00-SEP-001",
+   "t": "2022-08-27T11:55Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/21373/-1"
+  },
+  {
+   "id": "2023-02-25T21:10:00-SEP-001",
+   "t": "2023-02-25T21:10Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/23940/-1"
+  },
+  {
+   "id": "2023-03-13T07:45:00-SEP-001",
+   "t": "2023-03-13T07:45Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/24203/-1"
+  },
+  {
+   "id": "2023-03-13T14:05:00-SEP-001",
+   "t": "2023-03-13T14:05Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/24225/-1"
+  },
+  {
+   "id": "2023-03-13T16:20:00-SEP-001",
+   "t": "2023-03-13T16:20Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/24226/-1"
+  },
+  {
+   "id": "2023-03-14T11:55:00-SEP-001",
+   "t": "2023-03-14T11:55Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/24233/-1"
+  },
+  {
+   "id": "2023-04-23T18:15:00-SEP-001",
+   "t": "2023-04-23T18:15Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/24763/-1"
+  },
+  {
+   "id": "2023-05-08T11:45:00-SEP-001",
+   "t": "2023-05-08T11:45Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/24997/-1"
+  },
+  {
+   "id": "2023-05-09T23:15:00-SEP-001",
+   "t": "2023-05-09T23:15Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/25061/-1"
+  },
+  {
+   "id": "2023-07-16T06:35:00-SEP-001",
+   "t": "2023-07-16T06:35Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/25996/-1"
+  },
+  {
+   "id": "2023-07-18T01:15:00-SEP-001",
+   "t": "2023-07-18T01:15Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/26065/-1"
+  },
+  {
+   "id": "2023-07-28T23:50:00-SEP-001",
+   "t": "2023-07-28T23:50Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/26231/-1"
+  },
+  {
+   "id": "2023-08-05T11:15:00-SEP-001",
+   "t": "2023-08-05T11:15Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/26340/-1"
+  },
+  {
+   "id": "2023-08-08T01:00:00-SEP-001",
+   "t": "2023-08-08T01:00Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/26416/-1"
+  },
+  {
+   "id": "2023-09-01T04:30:00-SEP-001",
+   "t": "2023-09-01T04:30Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/26701/-1"
+  },
+  {
+   "id": "2023-12-15T23:45:00-SEP-001",
+   "t": "2023-12-15T23:45Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/28193/-1"
+  },
+  {
+   "id": "2024-01-03T20:05:00-SEP-001",
+   "t": "2024-01-03T20:05Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/28464/-1"
+  },
+  {
+   "id": "2024-01-29T06:15:00-SEP-001",
+   "t": "2024-01-29T06:15Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/28842/-1"
+  },
+  {
+   "id": "2024-02-09T15:30:00-SEP-001",
+   "t": "2024-02-09T15:30Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/29079/-1"
+  },
+  {
+   "id": "2024-02-12T08:05:00-SEP-001",
+   "t": "2024-02-12T08:05Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/29156/-1"
+  },
+  {
+   "id": "2024-03-15T20:50:00-SEP-001",
+   "t": "2024-03-15T20:50Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/29608/-1"
+  },
+  {
+   "id": "2024-03-23T08:15:00-SEP-001",
+   "t": "2024-03-23T08:15Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/29711/-1"
+  },
+  {
+   "id": "2024-05-10T13:35:00-SEP-001",
+   "t": "2024-05-10T13:35Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/30677/-1"
+  },
+  {
+   "id": "2024-05-13T14:00:00-SEP-001",
+   "t": "2024-05-13T14:00Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/30817/-1"
+  },
+  {
+   "id": "2024-06-08T02:55:00-SEP-001",
+   "t": "2024-06-08T02:55Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/31343/-1"
+  },
+  {
+   "id": "2024-07-23T03:00:00-SEP-001",
+   "t": "2024-07-23T03:00Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/32118/-1"
+  },
+  {
+   "id": "2024-09-09T08:50:00-SEP-001",
+   "t": "2024-09-09T08:50Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/33257/-1"
+  },
+  {
+   "id": "2024-09-17T07:35:00-SEP-001",
+   "t": "2024-09-17T07:35Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/33467/-1"
+  },
+  {
+   "id": "2024-10-09T05:05:00-SEP-001",
+   "t": "2024-10-09T05:05Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/33866/-1"
+  },
+  {
+   "id": "2024-10-26T18:05:00-SEP-001",
+   "t": "2024-10-26T18:05Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/34222/-1"
+  },
+  {
+   "id": "2024-11-21T19:25:00-SEP-001",
+   "t": "2024-11-21T19:25Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/35208/-1"
+  },
+  {
+   "id": "2025-01-04T22:15:00-SEP-001",
+   "t": "2025-01-04T22:15Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/36263/-1"
+  },
+  {
+   "id": "2025-02-25T00:20:00-SEP-001",
+   "t": "2025-02-25T00:20Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/37527/-1"
+  },
+  {
+   "id": "2025-03-31T11:05:00-SEP-001",
+   "t": "2025-03-31T11:05Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/38129/-1"
+  },
+  {
+   "id": "2025-05-31T17:10:00-SEP-001",
+   "t": "2025-05-31T17:10Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/39201/-1"
+  },
+  {
+   "id": "2025-08-25T13:20:00-SEP-001",
+   "t": "2025-08-25T13:20Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/40815/-1"
+  },
+  {
+   "id": "2025-08-26T12:10:00-SEP-001",
+   "t": "2025-08-26T12:10Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/40848/-1"
+  },
+  {
+   "id": "2025-11-10T11:25:00-SEP-001",
+   "t": "2025-11-10T11:25Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/42572/-1"
+  },
+  {
+   "id": "2025-11-11T09:45:00-SEP-001",
+   "t": "2025-11-11T09:45Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/42608/-1"
+  },
+  {
+   "id": "2025-11-14T09:20:00-SEP-001",
+   "t": "2025-11-14T09:20Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/42704/-1"
+  },
+  {
+   "id": "2026-01-18T22:55:00-SEP-001",
+   "t": "2026-01-18T22:55Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/44041/-1"
+  },
+  {
+   "id": "2026-05-26T00:15:00-SEP-001",
+   "t": "2026-05-26T00:15Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/46373/-1"
+  },
+  {
+   "id": "2026-07-30T18:45:00-SEP-001",
+   "t": "2026-07-30T18:45Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/47879/-1"
+  },
+  {
+   "id": "2026-09-05T16:15:00-SEP-001",
+   "t": "2026-09-05T16:15Z",
+   "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/48558/-1"
+  }
+ ]
+}

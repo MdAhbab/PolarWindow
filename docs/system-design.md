@@ -965,3 +965,75 @@ with its own test.
   and each payload row links its source so the judgement is checkable.
 - Revisit if the scope grows beyond CLPS: a `programmes` table
   (CLPS, Artemis, international) and a global DEM tier.
+
+---
+
+## 11. The mission lifecycle (2026-09-27/28; tracks T1–T4, E, H, I)
+
+The product now follows a CLPS delivery end to end: **Ready · Launch · Trip ·
+Surface · Contact · Return**, plus space weather. The contract is
+`docs/lifecycle-api.md`; the decisions are ADR-8 (live feeds), ADR-10
+(catalogues), ADR-11 (trajectory engine), ADR-12 (heavy compute), ADR-13 (engine
+versions), ADR-14 (weather rules), ADR-15 (radiation), ADR-16 (communications),
+ADR-17 (project manager data), ADR-18 (kernel pinning).
+
+### 11.1 Processes
+
+```
+ browser ──▶ api (FastAPI) ──────────────┐  reads stored answers and snapshots;
+                │  202 + JobRef          │  queues a job when an answer is missing
+                ▼                        ▼
+ compute worker(s) ──▶ postgres ◀── feeds worker ──▶ NOAA, NASA, LL2 (outbound only)
+ trip · contact ·      jobs, assessments,  fetch, parse, snapshot,
+ launch jobs           assessment_inputs,  breaker, staleness budget
+                       feed_snapshots/health/limits,
+                       audit_log, readiness_items, parts, risks, ...
+```
+
+- **api** stays read-mostly. A heavy answer (trip, contact, launch calendar) is a
+  job: its key is a hash of the kind, the engine versions it depends on (its
+  *closure*) and its parameters; a stored answer with that key is served at once,
+  otherwise a job is queued and the page polls `GET /jobs/{id}` (ADR-12).
+- **compute worker** (`app/workers/compute.py`, one job at a time per process)
+  runs the handlers in `app/workers/handlers/`. Each answer records its inputs
+  (`assessment_inputs`: kernels, catalogues, feed snapshots), so it is reused
+  until one of them or an engine version changes.
+- **feeds worker** (`app/feeds/`) is the only code that reaches the network
+  (import contract). Each product is a snapshot with its fetch time; a failing
+  provider opens its breaker after five runs; the API reads the newest good
+  snapshot and, past its budget, gives the reason instead of the number.
+
+### 11.2 Sections and the code behind them
+
+| Section | Endpoint | Engine (`app/core`) | Inputs |
+|---|---|---|---|
+| Ready | `/missions/{id}/ready` (+ items, parts, risks, lessons) | `readiness` | the team's entries (audited), `lessons`, `risk_scales` |
+| Launch | `/missions/{id}/launch` | `launchwin`, `transfer`, `phasing`, `landing_windows`, `flown` | pads, vehicles, NASA's reconstructions |
+| Launch weather | `/missions/{id}/launch/weather` | `weather_rules`, `verification` | `weather_rules` (verbatim), GEFS, HRRR, NWS, GLM, LL2, climatologies |
+| Trip | `/missions/{id}/trip` (+ export) | `propagate`, `forces`, `gravity`, `eclipse`, `lincov`, `belts`, `gcr` | NAIF SPKs, GRGM1200A, DONKI, OMNI, Oulu |
+| Contact | `/missions/{id}/contact` (+ plan, bookings) | `contact`, `network`, `visibility` | DSN station kernels, `ground_stations`, `relays`, horizon masks |
+| Return | `/missions/{id}/return` | `entry`, `atmosphere` (capsule model check) | `recovery_zones`, `vehicles`, GFS-Wave |
+| Space weather | `/space-weather` | none | SWPC, DONKI |
+
+Every value is a `Quantity` with its provenance and ± or the reason it has none
+(ADR-9); no section returns a verdict, score or overall chance (invariant 9).
+
+### 11.3 Agents over the sections
+
+The agents reach the lifecycle through four read-only tools (ADR-6 and ADR-3,
+amended 2026-09-28): `list_missions`, `get_mission_sections`,
+`get_mission_section` and `get_space_weather`. A section is cut to at most 200
+numbers by `app/agents/compact.py` (values keep their ±; plot series and long
+list tails are left out and named); the tools run inside
+`job_service.read_only()`, so a question never queues a computation. The
+grounding guard also rejects verdict words.
+
+### 11.4 Failure modes added
+
+| Failure | What a person sees | Tested in |
+|---|---|---|
+| a feed down, slow or malformed | its numbers missing with "the last attempt to fetch it failed"; the section's other feeds and every other section unchanged; `/healthz` degraded, never down | `test_chaos.py`, `test_feeds.py` |
+| a feed stale | its numbers replaced by "N old, past its limit"; `meta.stale` true; `/healthz` unchanged | same |
+| no compute worker | the section says it is waiting and, after a while, that the worker is not running | `test_job_ref.py` |
+| a job fails | its message is the answer until the inputs change; a signed-in retry | `test_jobs.py`, `test_job_ref.py` |
+| a catalogue value unpublished | absent with its reason, never filled | `test_catalogues.py` |

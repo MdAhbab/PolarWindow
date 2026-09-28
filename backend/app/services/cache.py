@@ -85,6 +85,18 @@ def make_key(kind: str, **parts: object) -> str:
     return f"pw:{ENGINE_VERSION}:s{PAYLOAD_SCHEMA}:{kind}:{digest}"
 
 
+def make_lifecycle_key(kind: str, closure: str, **parts: object) -> str:
+    """Cache key for a lifecycle answer (ADR-13).
+
+    ``closure`` is ``config.engine_closure(...)`` for the engines the answer
+    depends on. Feed-derived answers put their snapshot ids in ``parts``, so a
+    new forecast is a new key without anyone remembering to invalidate.
+    """
+    blob = orjson.dumps(parts, option=orjson.OPT_SORT_KEYS)
+    digest = hashlib.sha256(blob).hexdigest()[:20]
+    return f"pw:{closure}:s{PAYLOAD_SCHEMA}:{kind}:{digest}"
+
+
 async def reset() -> None:
     """Drop the cached client so the next call reconnects.
 

@@ -49,15 +49,27 @@ const TITLES: Record<string, string> = {
 function useRouteFocus() {
   const { pathname } = useLocation()
   const first = useRef(true)
+  const previous = useRef(pathname)
   useEffect(() => {
-    const title = TITLES[pathname] ?? (pathname.startsWith('/missions/') ? 'Mission' : 'POLAR WINDOW')
-    document.title = `${title} · POLAR WINDOW`
+    const before = previous.current
+    previous.current = pathname
+    // A mission's hub names its own page ("IM-2, Trip"), once its record is in.
+    if (!missionOf(pathname)) document.title = `${TITLES[pathname] ?? 'POLAR WINDOW'} · POLAR WINDOW`
     if (first.current) {
       first.current = false
       return
     }
+    // Moving between one mission's six steps is a move inside one page, like
+    // a tab: focus stays on the step that was pressed, so the next one is one
+    // arrow or Tab away. Anywhere else, focus goes to the new content.
+    if (missionOf(pathname) && missionOf(pathname) === missionOf(before)) return
     document.getElementById('pw-main')?.focus()
   }, [pathname])
+}
+
+/** The mission a path is about, for `/missions/:id` and its steps. */
+function missionOf(pathname: string): string | null {
+  return pathname.match(/^\/missions\/([^/]+)/)?.[1] ?? null
 }
 
 export function AppShell({ children }: { children: ReactNode }) {

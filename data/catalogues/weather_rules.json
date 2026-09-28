@@ -1,0 +1,489 @@
+{
+  "schema_version": 1,
+  "catalogue": "weather_rules",
+  "compiled": "2026-09-27",
+  "about": "Launch weather rules, word for word as NASA publishes them for Falcon 9 at Cape Canaveral and Kennedy. rule_class is this project's classification of how a rule can be checked: 'model' from a forecast model's numbers (P = k of N ensemble runs), 'proxy' when a model can only show the ingredients, 'observation' when only an observation at the time can decide. variable names what a rule is about. Only Falcon 9's own limits are published; the lightning rules are the range's and are taken to apply to every vehicle there (stated per record). A limit a vehicle maker does not publish is entered by the team, never filled in here.",
+  "records": [
+    {
+      "id": "f9-wind-162ft",
+      "name": "Liftoff wind at 162 feet",
+      "text": "Do not launch if the sustained wind at the 162-foot level of the launch pad exceeds 30 mph.",
+      "rule_class": "model",
+      "applies_to": [
+        "falcon-9"
+      ],
+      "variable": "wind_speed",
+      "threshold": 30.0,
+      "unit": "mph",
+      "comparison": "gt",
+      "height_m": 49.38,
+      "duration_note": null,
+      "sources": [
+        {
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+          "title": "Falcon 9 Crew Dragon Launch Weather Criteria (NASA Facts FS-2020-05-568-KSC)",
+          "publisher": "NASA Kennedy Space Center",
+          "accessed": "2026-09-27"
+        }
+      ],
+      "field_sources": {
+        "text": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "threshold": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "unit": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "comparison": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "height_m": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+      },
+      "assumed_fields": {
+        "applies_to": {
+          "reason": "Published for Falcon 9 carrying Crew Dragon; taken to hold for Falcon 9 with any payload, since the limit is the vehicle's.",
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+        }
+      },
+      "unconfirmed_fields": [],
+      "notes": []
+    },
+    {
+      "id": "f9-upper-wind-shear",
+      "name": "Upper-level wind shear",
+      "text": "Do not launch through upper-level conditions containing wind shear that could lead to control problems for the launch vehicle.",
+      "rule_class": "model",
+      "applies_to": [
+        "falcon-9"
+      ],
+      "variable": "upper_level_wind_shear",
+      "threshold": null,
+      "unit": null,
+      "comparison": null,
+      "height_m": null,
+      "duration_note": null,
+      "sources": [
+        {
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+          "title": "Falcon 9 Crew Dragon Launch Weather Criteria (NASA Facts FS-2020-05-568-KSC)",
+          "publisher": "NASA Kennedy Space Center",
+          "accessed": "2026-09-27"
+        }
+      ],
+      "field_sources": {
+        "text": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+      },
+      "assumed_fields": {
+        "applies_to": {
+          "reason": "Published for Falcon 9 carrying Crew Dragon; taken to hold for Falcon 9 with any payload, since the limit is the vehicle's.",
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+        }
+      },
+      "unconfirmed_fields": [
+        "threshold",
+        "unit",
+        "comparison",
+        "height_m"
+      ],
+      "notes": []
+    },
+    {
+      "id": "er-lightning",
+      "name": "Lightning",
+      "text": "Do not launch for 30 minutes after lightning is observed within 10 nautical miles of the launch pad or the flight path, unless specified conditions can be met.",
+      "rule_class": "observation",
+      "applies_to": [
+        "falcon-9",
+        "falcon-heavy",
+        "vulcan-centaur",
+        "new-glenn"
+      ],
+      "variable": "lightning_distance",
+      "threshold": 10.0,
+      "unit": "nmi",
+      "comparison": "lt",
+      "height_m": null,
+      "duration_note": "for 30 minutes after the lightning",
+      "sources": [
+        {
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+          "title": "Falcon 9 Crew Dragon Launch Weather Criteria (NASA Facts FS-2020-05-568-KSC)",
+          "publisher": "NASA Kennedy Space Center",
+          "accessed": "2026-09-27"
+        }
+      ],
+      "field_sources": {
+        "text": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "threshold": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "unit": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "comparison": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "duration_note": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+      },
+      "assumed_fields": {
+        "applies_to": {
+          "reason": "These are the Eastern Range's lightning launch commit criteria, which every vehicle launching from the range follows; the sheet states them for Falcon 9 carrying Crew Dragon.",
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+        }
+      },
+      "unconfirmed_fields": [],
+      "notes": []
+    },
+    {
+      "id": "er-attached-anvil",
+      "name": "Attached anvil cloud",
+      "text": "Do not launch within 10 nautical miles of an attached thunderstorm anvil cloud, unless temperature and time-associated distance criteria can be met.",
+      "rule_class": "observation",
+      "applies_to": [
+        "falcon-9",
+        "falcon-heavy",
+        "vulcan-centaur",
+        "new-glenn"
+      ],
+      "variable": "anvil_distance",
+      "threshold": 10.0,
+      "unit": "nmi",
+      "comparison": "lt",
+      "height_m": null,
+      "duration_note": null,
+      "sources": [
+        {
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+          "title": "Falcon 9 Crew Dragon Launch Weather Criteria (NASA Facts FS-2020-05-568-KSC)",
+          "publisher": "NASA Kennedy Space Center",
+          "accessed": "2026-09-27"
+        }
+      ],
+      "field_sources": {
+        "text": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "threshold": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "unit": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "comparison": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+      },
+      "assumed_fields": {
+        "applies_to": {
+          "reason": "These are the Eastern Range's lightning launch commit criteria, which every vehicle launching from the range follows; the sheet states them for Falcon 9 carrying Crew Dragon.",
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+        }
+      },
+      "unconfirmed_fields": [],
+      "notes": []
+    },
+    {
+      "id": "er-detached-anvil",
+      "name": "Detached anvil cloud",
+      "text": "Do not launch within 10 nautical miles of a detached thunderstorm anvil cloud.",
+      "rule_class": "observation",
+      "applies_to": [
+        "falcon-9",
+        "falcon-heavy",
+        "vulcan-centaur",
+        "new-glenn"
+      ],
+      "variable": "anvil_distance",
+      "threshold": 10.0,
+      "unit": "nmi",
+      "comparison": "lt",
+      "height_m": null,
+      "duration_note": null,
+      "sources": [
+        {
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+          "title": "Falcon 9 Crew Dragon Launch Weather Criteria (NASA Facts FS-2020-05-568-KSC)",
+          "publisher": "NASA Kennedy Space Center",
+          "accessed": "2026-09-27"
+        }
+      ],
+      "field_sources": {
+        "text": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "threshold": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "unit": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "comparison": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+      },
+      "assumed_fields": {
+        "applies_to": {
+          "reason": "These are the Eastern Range's lightning launch commit criteria, which every vehicle launching from the range follows; the sheet states them for Falcon 9 carrying Crew Dragon.",
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+        }
+      },
+      "unconfirmed_fields": [],
+      "notes": []
+    },
+    {
+      "id": "er-debris-cloud",
+      "name": "Thunderstorm debris cloud",
+      "text": "Do not launch within 3 nautical miles of a thunderstorm debris cloud, unless specific time-associated distance criteria can be met.",
+      "rule_class": "observation",
+      "applies_to": [
+        "falcon-9",
+        "falcon-heavy",
+        "vulcan-centaur",
+        "new-glenn"
+      ],
+      "variable": "debris_cloud_distance",
+      "threshold": 3.0,
+      "unit": "nmi",
+      "comparison": "lt",
+      "height_m": null,
+      "duration_note": null,
+      "sources": [
+        {
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+          "title": "Falcon 9 Crew Dragon Launch Weather Criteria (NASA Facts FS-2020-05-568-KSC)",
+          "publisher": "NASA Kennedy Space Center",
+          "accessed": "2026-09-27"
+        }
+      ],
+      "field_sources": {
+        "text": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "threshold": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "unit": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "comparison": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+      },
+      "assumed_fields": {
+        "applies_to": {
+          "reason": "These are the Eastern Range's lightning launch commit criteria, which every vehicle launching from the range follows; the sheet states them for Falcon 9 carrying Crew Dragon.",
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+        }
+      },
+      "unconfirmed_fields": [],
+      "notes": []
+    },
+    {
+      "id": "er-disturbed-weather",
+      "name": "Disturbed weather",
+      "text": "Do not launch within 5 nautical miles of disturbed weather clouds that extend into freezing temperatures and contain moderate or greater precipitation, unless specific time-associated distance criteria can be met.",
+      "rule_class": "observation",
+      "applies_to": [
+        "falcon-9",
+        "falcon-heavy",
+        "vulcan-centaur",
+        "new-glenn"
+      ],
+      "variable": "disturbed_weather_distance",
+      "threshold": 5.0,
+      "unit": "nmi",
+      "comparison": "lt",
+      "height_m": null,
+      "duration_note": null,
+      "sources": [
+        {
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+          "title": "Falcon 9 Crew Dragon Launch Weather Criteria (NASA Facts FS-2020-05-568-KSC)",
+          "publisher": "NASA Kennedy Space Center",
+          "accessed": "2026-09-27"
+        }
+      ],
+      "field_sources": {
+        "text": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "threshold": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "unit": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "comparison": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+      },
+      "assumed_fields": {
+        "applies_to": {
+          "reason": "These are the Eastern Range's lightning launch commit criteria, which every vehicle launching from the range follows; the sheet states them for Falcon 9 carrying Crew Dragon.",
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+        }
+      },
+      "unconfirmed_fields": [],
+      "notes": []
+    },
+    {
+      "id": "er-field-mill",
+      "name": "Electric field at the ground",
+      "text": "Do not launch for 15 minutes if field mill instrument readings within five nautical miles of the launch pad exceed +/- 1,500 volts per meter, or +/- 1,000 volts per meter if specified criteria can be met.",
+      "rule_class": "observation",
+      "applies_to": [
+        "falcon-9",
+        "falcon-heavy",
+        "vulcan-centaur",
+        "new-glenn"
+      ],
+      "variable": "electric_field",
+      "threshold": 1500.0,
+      "unit": "V/m",
+      "comparison": "gt",
+      "height_m": null,
+      "duration_note": "for 15 minutes",
+      "sources": [
+        {
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+          "title": "Falcon 9 Crew Dragon Launch Weather Criteria (NASA Facts FS-2020-05-568-KSC)",
+          "publisher": "NASA Kennedy Space Center",
+          "accessed": "2026-09-27"
+        }
+      ],
+      "field_sources": {
+        "text": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "threshold": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "unit": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "comparison": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "duration_note": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+      },
+      "assumed_fields": {
+        "applies_to": {
+          "reason": "These are the Eastern Range's lightning launch commit criteria, which every vehicle launching from the range follows; the sheet states them for Falcon 9 carrying Crew Dragon.",
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+        }
+      },
+      "unconfirmed_fields": [],
+      "notes": []
+    },
+    {
+      "id": "er-thick-cloud",
+      "name": "Thick cloud layers",
+      "text": "Do not launch through a cloud layer greater than 4,500 feet thick that extends into freezing temperatures, unless other specific criteria can be met.",
+      "rule_class": "proxy",
+      "applies_to": [
+        "falcon-9",
+        "falcon-heavy",
+        "vulcan-centaur",
+        "new-glenn"
+      ],
+      "variable": "cloud_layer_thickness",
+      "threshold": 4500.0,
+      "unit": "ft",
+      "comparison": "gt",
+      "height_m": null,
+      "duration_note": null,
+      "sources": [
+        {
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+          "title": "Falcon 9 Crew Dragon Launch Weather Criteria (NASA Facts FS-2020-05-568-KSC)",
+          "publisher": "NASA Kennedy Space Center",
+          "accessed": "2026-09-27"
+        }
+      ],
+      "field_sources": {
+        "text": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "threshold": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "unit": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "comparison": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+      },
+      "assumed_fields": {
+        "applies_to": {
+          "reason": "These are the Eastern Range's lightning launch commit criteria, which every vehicle launching from the range follows; the sheet states them for Falcon 9 carrying Crew Dragon.",
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+        }
+      },
+      "unconfirmed_fields": [],
+      "notes": []
+    },
+    {
+      "id": "er-cumulus",
+      "name": "Cumulus clouds",
+      "text": "Do not launch within 10 nautical miles of cumulus clouds with tops that extend into freezing temperatures, unless specific height-associated distance criteria can be met.",
+      "rule_class": "proxy",
+      "applies_to": [
+        "falcon-9",
+        "falcon-heavy",
+        "vulcan-centaur",
+        "new-glenn"
+      ],
+      "variable": "cumulus_distance",
+      "threshold": 10.0,
+      "unit": "nmi",
+      "comparison": "lt",
+      "height_m": null,
+      "duration_note": null,
+      "sources": [
+        {
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+          "title": "Falcon 9 Crew Dragon Launch Weather Criteria (NASA Facts FS-2020-05-568-KSC)",
+          "publisher": "NASA Kennedy Space Center",
+          "accessed": "2026-09-27"
+        }
+      ],
+      "field_sources": {
+        "text": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "threshold": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "unit": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "comparison": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+      },
+      "assumed_fields": {
+        "applies_to": {
+          "reason": "These are the Eastern Range's lightning launch commit criteria, which every vehicle launching from the range follows; the sheet states them for Falcon 9 carrying Crew Dragon.",
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+        }
+      },
+      "unconfirmed_fields": [],
+      "notes": []
+    },
+    {
+      "id": "er-thunderstorm",
+      "name": "Thunderstorm",
+      "text": "Do not launch within 10 nautical miles of the edge of a thunderstorm that is producing lightning within 30 minutes after the last lightning is observed.",
+      "rule_class": "observation",
+      "applies_to": [
+        "falcon-9",
+        "falcon-heavy",
+        "vulcan-centaur",
+        "new-glenn"
+      ],
+      "variable": "thunderstorm_distance",
+      "threshold": 10.0,
+      "unit": "nmi",
+      "comparison": "lt",
+      "height_m": null,
+      "duration_note": "within 30 minutes after the last lightning",
+      "sources": [
+        {
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+          "title": "Falcon 9 Crew Dragon Launch Weather Criteria (NASA Facts FS-2020-05-568-KSC)",
+          "publisher": "NASA Kennedy Space Center",
+          "accessed": "2026-09-27"
+        }
+      ],
+      "field_sources": {
+        "text": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "threshold": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "unit": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "comparison": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+        "duration_note": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+      },
+      "assumed_fields": {
+        "applies_to": {
+          "reason": "These are the Eastern Range's lightning launch commit criteria, which every vehicle launching from the range follows; the sheet states them for Falcon 9 carrying Crew Dragon.",
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+        }
+      },
+      "unconfirmed_fields": [],
+      "notes": []
+    },
+    {
+      "id": "er-smoke-plume",
+      "name": "Smoke plume cumulus",
+      "text": "Do not launch through cumulus clouds formed as the result of or directly attached to a smoke plume, unless time-associated criteria can be met.",
+      "rule_class": "observation",
+      "applies_to": [
+        "falcon-9",
+        "falcon-heavy",
+        "vulcan-centaur",
+        "new-glenn"
+      ],
+      "variable": "smoke_plume_cumulus",
+      "threshold": null,
+      "unit": null,
+      "comparison": null,
+      "height_m": null,
+      "duration_note": null,
+      "sources": [
+        {
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf",
+          "title": "Falcon 9 Crew Dragon Launch Weather Criteria (NASA Facts FS-2020-05-568-KSC)",
+          "publisher": "NASA Kennedy Space Center",
+          "accessed": "2026-09-27"
+        }
+      ],
+      "field_sources": {
+        "text": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+      },
+      "assumed_fields": {
+        "applies_to": {
+          "reason": "These are the Eastern Range's lightning launch commit criteria, which every vehicle launching from the range follows; the sheet states them for Falcon 9 carrying Crew Dragon.",
+          "url": "https://www.nasa.gov/wp-content/uploads/2021/07/falcon9_crewdragon_launch_weather_criteria_fact_sheet.pdf"
+        }
+      },
+      "unconfirmed_fields": [
+        "threshold",
+        "unit",
+        "comparison"
+      ],
+      "notes": []
+    }
+  ]
+}

@@ -1,0 +1,390 @@
+{
+ "data": {
+  "t0": "2025-02-26T00:16:00Z",
+  "lead_time_h": 38,
+  "pad_id": "lc-39a",
+  "vehicle_id": "falcon-9",
+  "note": "Each rule as published, with what the recorded forecasts say at the launch time. Shares count one forecast system's runs; they are never combined.",
+  "rules": [
+   {
+    "id": "wind-162ft",
+    "text": "Sustained wind at 162 ft must not exceed 30 mph",
+    "source_url": "https://www.nasa.gov/",
+    "limit": {
+     "value": 13.4,
+     "unit": "m/s",
+     "provenance": "published",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "A published rule, not a measurement.",
+     "missing_reason": null,
+     "source": "https://www.nasa.gov/"
+    },
+    "units": [
+     "m/s",
+     "mph",
+     "kt",
+     "km/h"
+    ],
+    "limit_note": null,
+    "per_system": [
+     {
+      "system": "GEFS",
+      "share": {
+       "k": 3,
+       "n": 31,
+       "lo": 0.02,
+       "hi": 0.26,
+       "checked": false
+      },
+      "missing_reason": null
+     },
+     {
+      "system": "ECMWF-ENS",
+      "share": {
+       "k": 4,
+       "n": 51,
+       "lo": 0.02,
+       "hi": 0.19,
+       "checked": false
+      },
+      "missing_reason": null
+     },
+     {
+      "system": "AIFS-ENS",
+      "share": null,
+      "missing_reason": "This run is not out yet"
+     }
+    ],
+    "one_forecast": [
+     {
+      "system": "NWS",
+      "value": {
+       "value": 8.9,
+       "unit": "m/s",
+       "provenance": "published",
+       "pm": null,
+       "lo": null,
+       "hi": null,
+       "factor": null,
+       "open": false,
+       "no_margin_reason": "One forecast has no spread.",
+       "missing_reason": null,
+       "source": null
+      },
+      "over": false
+     }
+    ],
+    "disagreement": false,
+    "observed": null,
+    "climatology": {
+     "share": 0.0099,
+     "years": "2001-2024",
+     "source": "NASA POWER hourly wind at 50 m from the MERRA-2 reanalysis (the rule's 162 ft is 49 m), the 678 hours of February at 00 UTC in those years; a reanalysis cell's hourly mean is smoother than the pad's tower."
+    },
+    "class": "model"
+   },
+   {
+    "id": "rain",
+    "text": "No precipitation at the pad at launch",
+    "source_url": "https://www.nasa.gov/",
+    "limit": {
+     "value": 0,
+     "unit": "mm/h",
+     "provenance": "published",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "A published rule, not a measurement.",
+     "missing_reason": null,
+     "source": null
+    },
+    "units": [
+     "mm/h"
+    ],
+    "limit_note": null,
+    "per_system": [
+     {
+      "system": "GEFS",
+      "share": {
+       "k": 2,
+       "n": 31,
+       "lo": 0.01,
+       "hi": 0.21,
+       "checked": false
+      },
+      "missing_reason": null
+     },
+     {
+      "system": "ECMWF-ENS",
+      "share": {
+       "k": 21,
+       "n": 51,
+       "lo": 0.28,
+       "hi": 0.55,
+       "checked": false
+      },
+      "missing_reason": null
+     },
+     {
+      "system": "AIFS-ENS",
+      "share": {
+       "k": 18,
+       "n": 51,
+       "lo": 0.23,
+       "hi": 0.5,
+       "checked": false
+      },
+      "missing_reason": null
+     }
+    ],
+    "one_forecast": [],
+    "disagreement": true,
+    "observed": null,
+    "climatology": null,
+    "class": "model"
+   },
+   {
+    "id": "thick-cloud",
+    "text": "Do not launch through thick cloud layers between 0 and −20 °C",
+    "source_url": "https://www.nasa.gov/",
+    "limit": {
+     "value": 4500,
+     "unit": "ft",
+     "provenance": "published",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "A published rule, not a measurement.",
+     "missing_reason": null,
+     "source": null
+    },
+    "units": [
+     "ft"
+    ],
+    "limit_note": null,
+    "per_system": [
+     {
+      "system": "GEFS",
+      "share": {
+       "k": 5,
+       "n": 31,
+       "lo": 0.05,
+       "hi": 0.34,
+       "checked": false
+      },
+      "missing_reason": null
+     },
+     {
+      "system": "ECMWF-ENS",
+      "share": {
+       "k": 9,
+       "n": 51,
+       "lo": 0.08,
+       "hi": 0.31,
+       "checked": false
+      },
+      "missing_reason": null
+     },
+     {
+      "system": "AIFS-ENS",
+      "share": null,
+      "missing_reason": "This system does not give cloud layers"
+     }
+    ],
+    "one_forecast": [],
+    "disagreement": false,
+    "observed": null,
+    "climatology": null,
+    "class": "proxy"
+   },
+   {
+    "id": "lightning",
+    "text": "No launch within 30 minutes of lightning within 10 nautical miles",
+    "source_url": "https://standards.nasa.gov/",
+    "limit": {
+     "value": 10,
+     "unit": "nmi",
+     "provenance": "published",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "A published rule, not a measurement.",
+     "missing_reason": null,
+     "source": null
+    },
+    "units": [
+     "nmi"
+    ],
+    "limit_note": null,
+    "per_system": [],
+    "one_forecast": [],
+    "disagreement": false,
+    "observed": {
+     "state": "clear",
+     "detail": "No lightning seen by GOES within 10 nautical miles in the last 30 minutes"
+    },
+    "climatology": null,
+    "class": "observation"
+   },
+   {
+    "id": "upper-shear",
+    "text": "Do not launch through upper-level conditions containing wind shear that could lead to control problems for the launch vehicle.",
+    "source_url": "https://standards.nasa.gov/",
+    "class": "model",
+    "limit": {
+     "value": null,
+     "unit": "",
+     "provenance": "entered",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": null,
+     "missing_reason": "The limit is not published; the team can enter the one it is given.",
+     "source": null
+    },
+    "units": [],
+    "limit_note": null,
+    "per_system": [
+     {
+      "system": "GEFS",
+      "share": null,
+      "missing_reason": "The limit is not known yet."
+     },
+     {
+      "system": "ECMWF-ENS",
+      "share": null,
+      "missing_reason": "The limit is not known yet."
+     },
+     {
+      "system": "AIFS-ENS",
+      "share": null,
+      "missing_reason": "The limit is not known yet."
+     }
+    ],
+    "one_forecast": [],
+    "disagreement": false,
+    "observed": null,
+    "climatology": null
+   },
+   {
+    "id": "cumulus-tops",
+    "text": "Do not launch through cumulus clouds with tops colder than the limit the team was given.",
+    "source_url": "https://standards.nasa.gov/",
+    "class": "proxy",
+    "limit": {
+     "value": 10000,
+     "unit": "ft",
+     "provenance": "entered",
+     "pm": null,
+     "lo": null,
+     "hi": null,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": "The limit as entered.",
+     "missing_reason": null,
+     "source": "Nadia Karim"
+    },
+    "units": [
+     "ft",
+     "m"
+    ],
+    "limit_note": "As given by the range weather officer for this campaign.",
+    "per_system": [
+     {
+      "system": "GEFS",
+      "share": null,
+      "missing_reason": "Not yet fetched."
+     },
+     {
+      "system": "ECMWF-ENS",
+      "share": null,
+      "missing_reason": "Not yet fetched."
+     },
+     {
+      "system": "AIFS-ENS",
+      "share": null,
+      "missing_reason": "Not yet fetched."
+     }
+    ],
+    "one_forecast": [],
+    "disagreement": false,
+    "observed": null,
+    "climatology": null
+   }
+  ],
+  "official": {
+   "id": 41,
+   "probability_pct": 10,
+   "concerns": [
+    "Cumulus cloud rule",
+    "Thick cloud layers"
+   ],
+   "pdf_url": "https://www.patrick.spaceforce.mil/",
+   "entered_by": "A. Rahman",
+   "entered_at": "2026-09-26T12:00:00Z"
+  },
+  "range_conflicts": [
+   {
+    "name": "Starlink Group 12-9",
+    "t0": "2025-02-26T05:30:00Z",
+    "pad": "SLC-40"
+   }
+  ],
+  "range_note": "From Launch Library 2's launch schedule."
+ },
+ "meta": {
+  "computed_at": "2026-09-27T08:00:00Z",
+  "uncertainty": {
+   "kind": "composite",
+   "parts": [
+    {
+     "source": "Model spread",
+     "note": "Each share is k of n runs with an exact 95% range."
+    }
+   ]
+  },
+  "engines": {
+   "wx": "wx-1"
+  },
+  "sources": [
+   {
+    "name": "NOAA GEFS (31 runs)",
+    "url": "https://registry.opendata.aws/noaa-gefs/",
+    "issued_at": "2026-09-27T00:00:00Z",
+    "fetched_at": "2026-09-27T05:12:00Z",
+    "licence": "Public domain",
+    "snapshot_id": 1201
+   },
+   {
+    "name": "ECMWF ensemble (51 runs)",
+    "url": "https://www.ecmwf.int/en/forecasts/datasets/open-data",
+    "issued_at": "2026-09-27T00:00:00Z",
+    "fetched_at": "2026-09-27T07:40:00Z",
+    "licence": "CC-BY-4.0",
+    "snapshot_id": 1202
+   },
+   {
+    "name": "National Weather Service",
+    "url": "https://api.weather.gov/",
+    "issued_at": "2026-09-27T06:00:00Z",
+    "fetched_at": "2026-09-27T07:55:00Z",
+    "licence": "Public domain",
+    "snapshot_id": 1203
+   }
+  ],
+  "stale": false,
+  "compute_ms": 412.0
+ }
+}

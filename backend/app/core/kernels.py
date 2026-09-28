@@ -73,6 +73,9 @@ class KernelSpec:
     min_bytes: int
     sha256: str | None = None
     why: str = ""
+    #: Where NAIF moves the file once a newer one supersedes it. Dated kernels
+    #: never change content, but they do change address.
+    mirrors: tuple[str, ...] = ()
 
 
 # The minimum set that makes MOON_ME work. Each entry's `why` is the sentence a
@@ -125,6 +128,57 @@ REQUIRED_KERNELS: tuple[KernelSpec, ...] = (
         "coordinates are expressed in.",
     ),
 )
+
+#: Kernels the lifecycle engines need (trip, launch, ground stations). The
+#: surface engine never needs them, so they are loaded when present and their
+#: absence degrades only the sections that use them -- never ``/healthz`` to down.
+#: Every one is a *dated* file: NAIF's ``earth_latest_high_prec.bpc`` is
+#: republished daily under one name and cannot be SHA-pinned (ADR-18).
+LIFECYCLE_KERNELS: tuple[KernelSpec, ...] = (
+    KernelSpec(
+        name="gm_de440.tpc",
+        url=f"{NAIF_GENERIC}/pck/gm_de440.tpc",
+        mirrors=(f"{NAIF_GENERIC}/pck/a_old_versions/gm_de440.tpc",),
+        kind="PCK",
+        min_bytes=10_000,
+        sha256="924ddf4fb9ead9fe8a1aa55780bcabde40b09d00065d58226e24b68d8092f140",
+        why="Gravitational parameters consistent with DE440. Without it the "
+        "trip propagator has no masses for the Sun, Earth and Moon.",
+    ),
+    KernelSpec(
+        name="earth_1962_260806_2126_combined.bpc",
+        url=f"{NAIF_GENERIC}/pck/earth_1962_260806_2126_combined.bpc",
+        mirrors=(f"{NAIF_GENERIC}/pck/a_old_versions/earth_1962_260806_2126_combined.bpc",),
+        kind="PCK",
+        min_bytes=31_000_000,
+        sha256="cc87ad1a495cf598800ba403763d350f087ac0b97da9fec603278a3864c6a53e",
+        why="Earth orientation (ITRF93): measured to 2026-08-06, predicted to "
+        "2126. Without it launch pads and ground stations cannot be placed in "
+        "space, so launch times and station view periods cannot be computed.",
+    ),
+    KernelSpec(
+        name="earthstns_itrf93_260814.bsp",
+        url=f"{NAIF_GENERIC}/spk/stations/earthstns_itrf93_260814.bsp",
+        mirrors=(f"{NAIF_GENERIC}/spk/stations/a_old_versions/earthstns_itrf93_260814.bsp",),
+        kind="SPK",
+        min_bytes=10_000,
+        sha256="007eb0aad5dd022c6d61bdbfb2395680bd1eb31c49a8637d0b0a1cfbea737c6b",
+        why="Deep Space Network antenna positions. Without it the ground "
+        "stations that can hear a lander cannot be computed.",
+    ),
+    KernelSpec(
+        name="earth_topo_260814.tf",
+        url=f"{NAIF_GENERIC}/fk/stations/earth_topo_260814.tf",
+        mirrors=(f"{NAIF_GENERIC}/fk/stations/a_old_versions/earth_topo_260814.tf",),
+        kind="FK",
+        min_bytes=10_000,
+        sha256="4f40cd1e86718047bc8ea6ff6bd063c9fbf36102b63f0dca370c8e94fd282490",
+        why="Local horizon frames at each Deep Space Network antenna. Without "
+        "it a station's elevation above its horizon cannot be computed.",
+    ),
+)
+
+ALL_KERNELS: tuple[KernelSpec, ...] = REQUIRED_KERNELS + LIFECYCLE_KERNELS
 
 METAKERNEL_NAME = "polar-window.tm"
 
@@ -231,6 +285,16 @@ def missing(directory: Path, specs: Iterable[KernelSpec] = REQUIRED_KERNELS) -> 
     return out
 
 
+def loadable(directory: Path) -> tuple[KernelSpec, ...]:
+    """The required set plus whichever lifecycle kernels verify: what gets furnsh'd."""
+    return REQUIRED_KERNELS + available(directory, LIFECYCLE_KERNELS)
+
+
+def available(directory: Path, specs: Iterable[KernelSpec]) -> tuple[KernelSpec, ...]:
+    """The subset of ``specs`` that is on disk and verifies. Never raises."""
+    return tuple(spec for spec in specs if spec.name not in missing(directory, (spec,)))
+
+
 def download(spec: KernelSpec, directory: Path, *, timeout: float = 600.0) -> Path:
     """Fetch one kernel to disk, atomically.
 
@@ -241,9 +305,24 @@ def download(spec: KernelSpec, directory: Path, *, timeout: float = 600.0) -> Pa
     target = directory / spec.name
     partial = directory / f"{spec.name}.part"
 
-    log.info("fetching %s (%s) from %s", spec.name, spec.kind, spec.url)
+    last: Exception | None = None
+    for url in (spec.url, *spec.mirrors):
+        try:
+            return _download_from(spec, url, target, partial, timeout=timeout)
+        except KernelError as exc:
+            last = exc
+            log.warning("  %s: %s failed, trying the next address", spec.name, url)
+    assert last is not None
+    raise last
+
+
+def _download_from(
+    spec: KernelSpec, url: str, target: Path, partial: Path, *, timeout: float
+) -> Path:
+    directory = target.parent
+    log.info("fetching %s (%s) from %s", spec.name, spec.kind, url)
     try:
-        with httpx.stream("GET", spec.url, timeout=timeout, follow_redirects=True) as resp:
+        with httpx.stream("GET", url, timeout=timeout, follow_redirects=True) as resp:
             resp.raise_for_status()
             total = int(resp.headers.get("content-length", 0))
             written = 0
@@ -257,7 +336,7 @@ def download(spec: KernelSpec, directory: Path, *, timeout: float = 600.0) -> Pa
         partial.unlink(missing_ok=True)
         raise KernelError(
             f"Could not download {spec.name}: {exc}\n"
-            f"  url : {spec.url}\n"
+            f"  url : {url}\n"
             f"  fix : download it by hand into {directory} and re-run.\n"
             f"  note: NAIF is occasionally unreachable from corporate networks; "
             f"a browser download of the URL above works when curl does not."
@@ -373,10 +452,20 @@ def main(argv: list[str] | None = None) -> None:
             if s.offline:
                 log.warning("OFFLINE=1: not downloading; verifying what is on disk")
             ensure(s.kernel_dir, allow_download=not s.offline)
-            mk = write_metakernel(s.kernel_dir)
+            if not s.offline:
+                for spec in LIFECYCLE_KERNELS:
+                    try:
+                        ensure(s.kernel_dir, allow_download=True, specs=(spec,))
+                    except KernelError as exc:
+                        # The surface engine does not need these; say so and go on.
+                        log.warning("lifecycle kernel not fetched (%s): %s", spec.name, exc)
+            mk = write_metakernel(s.kernel_dir, loadable(s.kernel_dir))
             log.info("kernels verified by sha256; metakernel at %s", mk)
         else:
             verify_all(s.kernel_dir)
             log.info("all %d kernels present and verified by sha256", len(REQUIRED_KERNELS))
+        gone = missing(s.kernel_dir, LIFECYCLE_KERNELS)
+        if gone:
+            log.warning("lifecycle kernels missing (trip/launch/stations unavailable): %s", gone)
     except KernelError as exc:
         raise SystemExit(str(exc)) from exc

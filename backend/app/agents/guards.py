@@ -660,6 +660,56 @@ def check_negative_result(output: dict[str, Any]) -> Verdict:
     return Verdict(ok=True)
 
 
+#: Words that judge the whole instead of showing the evidence (docs/conventions.md,
+#: invariant 9): a go/no-go, "safe", a readiness percentage, a risk score, an overall
+#: chance of launch. Each pattern names one of those; plain uses of "ready" or "risk"
+#: (a readiness item, a risk on the list) are not in it.
+VERDICT_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
+    re.compile(p, re.IGNORECASE)
+    for p in (
+        r"\bgo\s*/\s*no[- ]?go\b",
+        r"\bno[- ]go\b",
+        r"\b(?:is|are|it's|looks like) a go\b",
+        r"\bgo for (?:launch|landing|flight)\b",
+        r"\b(?:un)?safe(?:ly)?\b",
+        r"\breadiness (?:percentage|score|index|level of \d)",
+        r"\b\d+(?:\.\d+)?\s?(?:%|per ?cent) (?:ready|complete|go)\b",
+        r"\bready to (?:launch|fly|land)\b",
+        r"\bcleared (?:for|to) (?:launch|fly|land)\b",
+        r"\brisk (?:score|rating|index)\b",
+        r"\blikelihood\s*(?:times|x|×|\*)\s*consequence\b",
+        r"\b(?:overall|total|combined) (?:chance|probability|likelihood|odds) "
+        r"(?:of|that|for) (?:a |the )?(?:launch|launching|success|going|landing)",
+        r"\b(?:recommend|advise)\w* (?:launching|to launch|scrubbing|to scrub|a scrub)\b",
+    )
+)
+
+#: Fields that echo the user's own words back; a verdict word there is theirs.
+_ECHO_FIELDS = frozenset({"question", "interpreted_as", "requirement_summary"})
+
+
+def check_verdict_words(output: dict[str, Any]) -> Verdict:
+    """No verdicts (invariant 9): the answer shows the evidence rule by rule and people
+    decide. A verdict word is rejected even in a denial ("it is not safe" judges too)."""
+    violations = []
+    for path, text in _string_leaves(output):
+        if path.split(".")[0].split("[")[0] in _ECHO_FIELDS:
+            continue
+        for pat in VERDICT_PATTERNS:
+            m = pat.search(text)
+            if m:
+                violations.append(
+                    Violation(
+                        kind="verdict_word",
+                        detail=f"'{m.group(0)}' in {path} is a verdict. Do not judge the "
+                        "whole, not even to deny it: say what each number or rule shows "
+                        "and leave the decision to the people reading it.",
+                    )
+                )
+                break
+    return Verdict(ok=not violations, violations=violations)
+
+
 def check(output: dict[str, Any], tool_results: list[dict[str, Any]]) -> Verdict:
     """Run every guard. Grounding last, so structural problems report first."""
     violations: list[Violation] = []
@@ -667,6 +717,7 @@ def check(output: dict[str, Any], tool_results: list[dict[str, Any]]) -> Verdict
     for verdict in (
         check_refusal(output),
         check_negative_result(output),
+        check_verdict_words(output),
         check_grounding(output, tool_results),
     ):
         violations.extend(verdict.violations)

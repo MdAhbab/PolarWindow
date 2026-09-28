@@ -1,7 +1,7 @@
 {
-  "schema_version": 1,
-  "compiled": "2026-09-23",
-  "about": "CLPS deliveries, every field sourced. A field that is null is listed in unconfirmed_fields. instrument_types is a classification made by this project from each payload's sourced description (see docs/data-sources.md), not a NASA taxonomy.",
+  "schema_version": 2,
+  "compiled": "2026-09-27",
+  "about": "CLPS deliveries, every field sourced. A field that is null is listed in unconfirmed_fields. instrument_types is a classification made by this project from each payload's sourced description (see docs/data-sources.md), not a NASA taxonomy. Schema v2 (ADR-10) adds each mission's launch vehicle, pad, launch instant, transfer, descent limits, radio, spacecraft, rovers and return, each with its own source in field_sources or listed in unconfirmed_fields.",
   "missions": [
     {
       "vehicle_name": null,
@@ -110,20 +110,49 @@
           "title": "Gazetteer of Planetary Nomenclature: Sinus Viscositatis",
           "publisher": "IAU / USGS Astrogeology",
           "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://ll.thespacedevs.com/2.3.0/launches/b973e965-3901-4bda-9236-b0afee33f388/",
+          "title": "Launch Library 2 launch record: Peregrine lunar lander (Vulcan VC2S maiden flight)",
+          "publisher": "The Space Devs (Launch Library 2)",
+          "accessed": "2026-09-27"
         }
       ],
       "unconfirmed_fields": [
+        "comms",
+        "descent",
         "ellipse",
         "end_of_mission",
         "landing",
         "planned_surface_days",
+        "spacecraft",
+        "transfer",
         "vehicle_name"
       ],
       "notes": [
         "The target coordinate is the IAU centre of the named feature, not a published landing point."
       ],
       "id": "peregrine-m1",
-      "name": "Peregrine Mission One"
+      "name": "Peregrine Mission One",
+      "vehicle_id": "vulcan-centaur",
+      "pad_id": "ccsfs-slc-41",
+      "t0": {
+        "date": "2024-01-08T07:18:38Z",
+        "precision": "minute",
+        "as_published": "2024-01-08T07:18:38Z (Launch Library 2, to the second)"
+      },
+      "transfer": null,
+      "descent": null,
+      "comms": null,
+      "spacecraft": null,
+      "returns": "none",
+      "rovers": [],
+      "field_sources": {
+        "vehicle_id": "https://ll.thespacedevs.com/2.3.0/launches/b973e965-3901-4bda-9236-b0afee33f388/",
+        "pad_id": "https://ll.thespacedevs.com/2.3.0/launches/b973e965-3901-4bda-9236-b0afee33f388/",
+        "t0": "https://ll.thespacedevs.com/2.3.0/launches/b973e965-3901-4bda-9236-b0afee33f388/",
+        "returns": "https://science.nasa.gov/lunar-discovery/deliveries"
+      }
     },
     {
       "vehicle_name": "Odysseus",
@@ -258,17 +287,52 @@
           "title": "NASA Collects First Surface Science in Decades via Commercial Moon Mission (Mar 01, 2024)",
           "publisher": "NASA",
           "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://ll.thespacedevs.com/2.3.0/launches/942a1814-c237-41de-9970-d27bb9630f3b/",
+          "title": "Launch Library 2 launch record: Falcon 9 Block 5 | Nova-C IM-1",
+          "publisher": "The Space Devs (Launch Library 2)",
+          "accessed": "2026-09-27"
+        },
+        {
+          "url": "https://science.nasa.gov/lunar-discovery/deliveries",
+          "title": "Commercial Lunar Payload Services (CLPS) Deliveries (page updated May 06, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
         }
       ],
       "unconfirmed_fields": [
+        "comms",
+        "descent",
         "ellipse",
-        "planned_surface_days"
+        "planned_surface_days",
+        "spacecraft",
+        "transfer"
       ],
       "notes": [
         "Landing and end of mission are known to the day, not the hour."
       ],
       "id": "im-1",
-      "name": "IM-1"
+      "name": "IM-1",
+      "vehicle_id": "falcon-9",
+      "pad_id": "ksc-lc-39a",
+      "t0": {
+        "date": "2024-02-15T06:05:37Z",
+        "precision": "minute",
+        "as_published": "2024-02-15T06:05:37Z (Launch Library 2, to the second)"
+      },
+      "transfer": null,
+      "descent": null,
+      "comms": null,
+      "spacecraft": null,
+      "returns": "none",
+      "rovers": [],
+      "field_sources": {
+        "vehicle_id": "https://ll.thespacedevs.com/2.3.0/launches/942a1814-c237-41de-9970-d27bb9630f3b/",
+        "pad_id": "https://ll.thespacedevs.com/2.3.0/launches/942a1814-c237-41de-9970-d27bb9630f3b/",
+        "t0": "https://ll.thespacedevs.com/2.3.0/launches/942a1814-c237-41de-9970-d27bb9630f3b/",
+        "returns": "https://science.nasa.gov/lunar-discovery/deliveries"
+      }
     },
     {
       "vehicle_name": "Blue Ghost",
@@ -459,15 +523,50 @@
           "title": "NASA Science Continues After Firefly's First Moon Mission Concludes (RELEASE 25-026, Mar 18, 2025)",
           "publisher": "NASA",
           "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://ll.thespacedevs.com/2.3.0/launches/9a30d934-fa56-4fe5-81df-7c4b24386da2/",
+          "title": "Launch Library 2 launch record: Falcon 9 Block 5 | Blue Ghost Lunar Lander Mission 1 & Hakuto-R M2",
+          "publisher": "The Space Devs (Launch Library 2)",
+          "accessed": "2026-09-27"
+        },
+        {
+          "url": "https://science.nasa.gov/lunar-discovery/deliveries",
+          "title": "Commercial Lunar Payload Services (CLPS) Deliveries (page updated May 06, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
         }
       ],
       "unconfirmed_fields": [
+        "comms",
+        "descent",
         "ellipse",
-        "planned_surface_days"
+        "planned_surface_days",
+        "spacecraft",
+        "transfer"
       ],
       "notes": [],
       "id": "blue-ghost-m1",
-      "name": "Blue Ghost Mission 1"
+      "name": "Blue Ghost Mission 1",
+      "vehicle_id": "falcon-9",
+      "pad_id": "ksc-lc-39a",
+      "t0": {
+        "date": "2025-01-15T06:11:39Z",
+        "precision": "minute",
+        "as_published": "2025-01-15T06:11:39Z (Launch Library 2, to the second)"
+      },
+      "transfer": null,
+      "descent": null,
+      "comms": null,
+      "spacecraft": null,
+      "returns": "none",
+      "rovers": [],
+      "field_sources": {
+        "vehicle_id": "https://ll.thespacedevs.com/2.3.0/launches/9a30d934-fa56-4fe5-81df-7c4b24386da2/",
+        "pad_id": "https://ll.thespacedevs.com/2.3.0/launches/9a30d934-fa56-4fe5-81df-7c4b24386da2/",
+        "t0": "https://ll.thespacedevs.com/2.3.0/launches/9a30d934-fa56-4fe5-81df-7c4b24386da2/",
+        "returns": "https://science.nasa.gov/lunar-discovery/deliveries"
+      }
     },
     {
       "vehicle_name": "Athena",
@@ -487,7 +586,11 @@
       },
       "target_name": "Mons Mouton",
       "ellipse": null,
-      "launch": null,
+      "launch": {
+        "date": "2025-02-27",
+        "precision": "day",
+        "as_published": "launched on a Falcon 9 on 27 February, 2025"
+      },
       "landing": {
         "date": "2025-03-06T17:30:00Z",
         "precision": "minute",
@@ -562,19 +665,68 @@
           "title": "NASA Receives Some Data Before Intuitive Machines Ends Lunar Mission (RELEASE 25-025, Mar 07, 2025)",
           "publisher": "NASA",
           "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://ll.thespacedevs.com/2.3.0/launches/fd0fbaac-d079-4027-98b0-bcf25c15a166/",
+          "title": "Launch Library 2 launch record: Falcon 9 Block 5 | Nova-C IM-2 & Others",
+          "publisher": "The Space Devs (Launch Library 2)",
+          "accessed": "2026-09-27"
+        },
+        {
+          "url": "https://science.nasa.gov/lunar-discovery/deliveries",
+          "title": "Commercial Lunar Payload Services (CLPS) Deliveries (page updated May 06, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=PRIME-1",
+          "title": "NSSDCA Master Catalog: Intuitive Machines 2 (PRIME 1)",
+          "publisher": "NASA NSSDCA",
+          "accessed": "2026-09-27"
         }
       ],
       "unconfirmed_fields": [
+        "comms",
+        "descent",
         "ellipse",
-        "launch",
-        "planned_surface_days"
+        "planned_surface_days",
+        "spacecraft",
+        "transfer"
       ],
       "notes": [
         "The intended landing site was -84.78, 29.13 E (LROC 1401); the coordinate used is where Athena came to rest.",
-        "NASA counts three PRIME-1 payloads: the PRIME-1 page names TRIDENT and MSOLO, and the TO2-IM page lists PRIME-1 among the LRA's task orders."
+        "NASA counts three PRIME-1 payloads: the PRIME-1 page names TRIDENT and MSOLO, and the TO2-IM page lists PRIME-1 among the LRA's task orders.",
+        "NSSDCA also lists a small hopper; only the rover it names is listed here."
       ],
       "id": "im-2",
-      "name": "IM-2"
+      "name": "IM-2",
+      "vehicle_id": "falcon-9",
+      "pad_id": "ksc-lc-39a",
+      "t0": {
+        "date": "2025-02-27T00:16:30Z",
+        "precision": "minute",
+        "as_published": "2025-02-27T00:16:30Z (Launch Library 2, to the second)"
+      },
+      "transfer": null,
+      "descent": null,
+      "comms": null,
+      "spacecraft": null,
+      "returns": "none",
+      "rovers": [
+        {
+          "id": "im-2/yaoki",
+          "name": "Yaoki",
+          "organisation": null,
+          "source_url": "https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=PRIME-1"
+        }
+      ],
+      "field_sources": {
+        "vehicle_id": "https://ll.thespacedevs.com/2.3.0/launches/fd0fbaac-d079-4027-98b0-bcf25c15a166/",
+        "pad_id": "https://ll.thespacedevs.com/2.3.0/launches/fd0fbaac-d079-4027-98b0-bcf25c15a166/",
+        "t0": "https://ll.thespacedevs.com/2.3.0/launches/fd0fbaac-d079-4027-98b0-bcf25c15a166/",
+        "returns": "https://science.nasa.gov/lunar-discovery/deliveries",
+        "rovers": "https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=PRIME-1"
+      }
     },
     {
       "vehicle_name": "Griffin-1",
@@ -640,22 +792,56 @@
           "title": "Gazetteer of Planetary Nomenclature: Mons Mouton",
           "publisher": "IAU / USGS Astrogeology",
           "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://ll.thespacedevs.com/2.3.0/launches/d3bd7fb2-fac6-49fc-ae52-cee07d2fde67/",
+          "title": "Launch Library 2 launch record: Falcon Heavy | Griffin Mission One",
+          "publisher": "The Space Devs (Launch Library 2)",
+          "accessed": "2026-09-27"
         }
       ],
       "unconfirmed_fields": [
+        "comms",
+        "descent",
         "ellipse",
         "end_of_mission",
         "landing",
         "payloads",
-        "planned_surface_days"
+        "planned_surface_days",
+        "spacecraft",
+        "t0",
+        "transfer"
       ],
       "notes": [
         "NASA's TO20A page names one payload (LRA); NASA's Aug 2026 update says five NASA payloads on the FLIP rover. Only the named one is listed.",
         "The deliveries overview still says 'Astrobotic's Griffin lander ... in 2025'; the Aug 2026 pages name Voyager Technologies. The newer pages are used.",
-        "The target coordinate is the IAU centre of Mons Mouton, not a published landing point."
+        "The target coordinate is the IAU centre of Mons Mouton, not a published landing point.",
+        "Launch Library 2 lists Griffin Mission One on Falcon Heavy from LC-39A, no earlier than November 2026, with its status 'to be determined' (a placeholder date). NASA's August 2026 update says 'late 2026'; that is the date used."
       ],
       "id": "griffin-1",
-      "name": "Griffin Mission One"
+      "name": "Griffin Mission One",
+      "vehicle_id": "falcon-heavy",
+      "pad_id": "ksc-lc-39a",
+      "t0": null,
+      "transfer": null,
+      "descent": null,
+      "comms": null,
+      "spacecraft": null,
+      "returns": "none",
+      "rovers": [
+        {
+          "id": "griffin-1/flip",
+          "name": "FLIP (FLEX Lunar Innovation Platform)",
+          "organisation": "Astrolab",
+          "source_url": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/"
+        }
+      ],
+      "field_sources": {
+        "returns": "https://science.nasa.gov/lunar-discovery/deliveries",
+        "vehicle_id": "https://ll.thespacedevs.com/2.3.0/launches/d3bd7fb2-fac6-49fc-ae52-cee07d2fde67/",
+        "pad_id": "https://ll.thespacedevs.com/2.3.0/launches/d3bd7fb2-fac6-49fc-ae52-cee07d2fde67/",
+        "rovers": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/"
+      }
     },
     {
       "vehicle_name": "Trinity",
@@ -753,29 +939,71 @@
           "title": "Gazetteer of Planetary Nomenclature: Reiner Gamma",
           "publisher": "IAU / USGS Astrogeology",
           "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://science.nasa.gov/lunar-discovery/deliveries",
+          "title": "Commercial Lunar Payload Services (CLPS) Deliveries (page updated May 06, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://www.nasa.gov/event/clps-flight-intuitive-machines-im-3",
+          "title": "CLPS Flight: Intuitive Machines IM-3 (event page updated Sep 01, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-27"
         }
       ],
       "unconfirmed_fields": [
+        "comms.eirp_dbw",
+        "comms.gt_dbk",
+        "descent",
         "ellipse",
         "end_of_mission",
         "launch",
+        "pad_id",
         "payloads",
-        "planned_surface_days"
+        "planned_surface_days",
+        "spacecraft",
+        "t0",
+        "transfer",
+        "vehicle_id"
       ],
       "notes": [
         "NASA's CP-11 page names four NASA payloads; NASA's Aug 2026 update says five. The four named are listed.",
-        "The target coordinate is the IAU centre of Reiner Gamma, not a published landing point."
+        "The target coordinate is the IAU centre of Reiner Gamma, not a published landing point.",
+        "NASA's IM-3 event page (updated 1 September 2026) says 2026; Launch Library 2 (updated 13 August 2026) lists the first quarter of 2027. NASA's date is used."
       ],
       "id": "im-3",
-      "name": "IM-3"
+      "name": "IM-3",
+      "vehicle_id": null,
+      "pad_id": null,
+      "t0": null,
+      "transfer": null,
+      "descent": null,
+      "comms": {
+        "bands": [],
+        "eirp_dbw": null,
+        "gt_dbk": null,
+        "ground_stations": [],
+        "relays": [
+          "altus-1"
+        ]
+      },
+      "spacecraft": null,
+      "returns": "none",
+      "rovers": [],
+      "field_sources": {
+        "returns": "https://science.nasa.gov/lunar-discovery/deliveries",
+        "comms": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/"
+      }
     },
     {
       "vehicle_name": null,
       "task_order": "CP-12",
       "provider": "Draper / ispace-U.S.",
       "lander": "APEX 1.0",
-      "status": "planned",
-      "outcome_note": "Will deliver three NASA CLPS payloads to Schrödinger Basin.",
+      "status": "cancelled",
+      "outcome_note": "NASA and Draper ended CLPS task order CP-12 after delays in the lander's redesign (announced by ispace-U.S. on 15 July 2026; reported by SpaceNews on 17 July 2026). The three payloads were not delivered.",
       "region": "farside",
       "target": {
         "name": "Schrödinger (IAU crater centre)",
@@ -848,21 +1076,53 @@
           "title": "Gazetteer of Planetary Nomenclature: Schrödinger",
           "publisher": "IAU / USGS Astrogeology",
           "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://www.ispace-inc.com/2026/07/15/ispace-u-s-update-on-contract-with-draper/",
+          "title": "ispace-U.S. Update on Contract with Draper (15 July 2026)",
+          "publisher": "ispace",
+          "accessed": "2026-09-27"
+        },
+        {
+          "url": "https://spacenews.com/nasa-terminates-draper-lunar-lander-mission/",
+          "title": "NASA terminates Draper lunar lander mission (Jeff Foust, 17 July 2026)",
+          "publisher": "SpaceNews",
+          "accessed": "2026-09-27"
         }
       ],
       "unconfirmed_fields": [
+        "comms",
+        "descent",
         "ellipse",
         "end_of_mission",
         "landing",
         "launch",
+        "pad_id",
         "planned_surface_days",
+        "spacecraft",
+        "t0",
+        "transfer",
+        "vehicle_id",
         "vehicle_name"
       ],
       "notes": [
-        "The target coordinate is the IAU centre of Schrödinger crater, not a published landing point."
+        "The target coordinate is the IAU centre of Schrödinger crater, not a published landing point.",
+        "No source gives the day the task order ended, so none is stated. NASA's CP-12 page (updated 20 February 2026) still describes the delivery."
       ],
       "id": "apex-1",
-      "name": "CP-12 (APEX 1.0)"
+      "name": "CP-12 (APEX 1.0)",
+      "vehicle_id": null,
+      "pad_id": null,
+      "t0": null,
+      "transfer": null,
+      "descent": null,
+      "comms": null,
+      "spacecraft": null,
+      "returns": "none",
+      "rovers": [],
+      "field_sources": {
+        "returns": "https://science.nasa.gov/lunar-discovery/deliveries"
+      }
     },
     {
       "vehicle_name": null,
@@ -875,7 +1135,11 @@
       "target": null,
       "target_name": "Lunar far side",
       "ellipse": null,
-      "launch": null,
+      "launch": {
+        "date": "2027-01-01",
+        "precision": "year",
+        "as_published": "2027 (Launch Library 2, a placeholder year)"
+      },
       "landing": null,
       "end_of_mission": null,
       "planned_surface_days": null,
@@ -905,23 +1169,77 @@
           "title": "NASA Provides Updates on Moon Base Cargo Landers, Tech Demonstrations (Aug 04, 2026)",
           "publisher": "NASA",
           "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://science.nasa.gov/lunar-discovery/deliveries",
+          "title": "Commercial Lunar Payload Services (CLPS) Deliveries (page updated May 06, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://ll.thespacedevs.com/2.3.0/launches/387aadc6-68ca-4090-9be7-d57603ad7c79/",
+          "title": "Launch Library 2 launch record: Falcon 9 Block 5 | Blue Ghost Lunar Lander Mission 2",
+          "publisher": "The Space Devs (Launch Library 2)",
+          "accessed": "2026-09-27"
+        },
+        {
+          "url": "https://www.jpl.nasa.gov/images/pia26598-blue-ghost-mission-2-gets-stacked-at-jpl/",
+          "title": "Blue Ghost Mission 2 Gets Stacked at JPL (PIA26598, 16 December 2025)",
+          "publisher": "NASA JPL",
+          "accessed": "2026-09-27"
+        },
+        {
+          "url": "https://bsgn.esa.int/service/lunar-pathfinder/",
+          "title": "Lunar Pathfinder (ESA Business in Space Growth Network service page)",
+          "publisher": "ESA",
+          "accessed": "2026-09-27"
         }
       ],
       "unconfirmed_fields": [
+        "comms.eirp_dbw",
+        "comms.gt_dbk",
+        "descent",
         "ellipse",
         "end_of_mission",
         "landing",
-        "launch",
+        "pad_id",
         "payloads",
         "planned_surface_days",
+        "spacecraft",
+        "t0",
         "target",
+        "transfer",
         "vehicle_name"
       ],
       "notes": [
-        "NASA counts three payloads; its CS-3/4 page names one (LuSEE-Night)."
+        "NASA counts three payloads; its CS-3/4 page names one (LuSEE-Night).",
+        "ESA's Lunar Pathfinder page says launch no earlier than November 2026 and NASA JPL said 2026 in December 2025; Launch Library 2 (updated 15 August 2026) lists 2027 as a placeholder year, which is used.",
+        "ESA's Lunar Pathfinder relay satellite is integrated into Firefly's Elytra Dark orbital vehicle on this mission (NASA JPL, December 2025)."
       ],
       "id": "blue-ghost-m2",
-      "name": "Blue Ghost Mission 2"
+      "name": "Blue Ghost Mission 2",
+      "vehicle_id": "falcon-9",
+      "pad_id": null,
+      "t0": null,
+      "transfer": null,
+      "descent": null,
+      "comms": {
+        "bands": [],
+        "eirp_dbw": null,
+        "gt_dbk": null,
+        "ground_stations": [],
+        "relays": [
+          "lunar-pathfinder"
+        ]
+      },
+      "spacecraft": null,
+      "returns": "none",
+      "rovers": [],
+      "field_sources": {
+        "returns": "https://science.nasa.gov/lunar-discovery/deliveries",
+        "vehicle_id": "https://ll.thespacedevs.com/2.3.0/launches/387aadc6-68ca-4090-9be7-d57603ad7c79/",
+        "comms": "https://www.jpl.nasa.gov/images/pia26598-blue-ghost-mission-2-gets-stacked-at-jpl/"
+      }
     },
     {
       "vehicle_name": null,
@@ -1029,19 +1347,38 @@
         }
       ],
       "unconfirmed_fields": [
+        "comms",
+        "descent",
         "ellipse",
         "end_of_mission",
         "landing",
         "launch",
+        "pad_id",
         "planned_surface_days",
+        "spacecraft",
+        "t0",
         "target",
+        "transfer",
+        "vehicle_id",
         "vehicle_name"
       ],
       "notes": [
         "'Gruithuisen Domes' is not a single IAU feature, so no coordinate is asserted."
       ],
       "id": "blue-ghost-m3",
-      "name": "Blue Ghost Mission 3"
+      "name": "Blue Ghost Mission 3",
+      "vehicle_id": null,
+      "pad_id": null,
+      "t0": null,
+      "transfer": null,
+      "descent": null,
+      "comms": null,
+      "spacecraft": null,
+      "returns": "none",
+      "rovers": [],
+      "field_sources": {
+        "returns": "https://science.nasa.gov/lunar-discovery/deliveries"
+      }
     },
     {
       "vehicle_name": null,
@@ -1161,18 +1498,37 @@
         }
       ],
       "unconfirmed_fields": [
+        "comms",
+        "descent",
         "ellipse",
         "end_of_mission",
         "landing",
         "launch",
+        "pad_id",
         "planned_surface_days",
+        "spacecraft",
+        "t0",
+        "transfer",
+        "vehicle_id",
         "vehicle_name"
       ],
       "notes": [
         "The target coordinate is the IAU centre of Mons Mouton, not a published landing point."
       ],
       "id": "im-4",
-      "name": "IM-4"
+      "name": "IM-4",
+      "vehicle_id": null,
+      "pad_id": null,
+      "t0": null,
+      "transfer": null,
+      "descent": null,
+      "comms": null,
+      "spacecraft": null,
+      "returns": "none",
+      "rovers": [],
+      "field_sources": {
+        "returns": "https://science.nasa.gov/lunar-discovery/deliveries"
+      }
     },
     {
       "vehicle_name": "Endurance",
@@ -1233,21 +1589,46 @@
           "title": "NASA Selects Blue Origin to Deliver VIPER Rover to Moon's South Pole (RELEASE 25-064, Sep 19, 2025)",
           "publisher": "NASA",
           "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://science.nasa.gov/lunar-discovery/deliveries",
+          "title": "Commercial Lunar Payload Services (CLPS) Deliveries (page updated May 06, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
         }
       ],
       "unconfirmed_fields": [
+        "comms",
+        "descent",
         "ellipse",
         "end_of_mission",
         "landing",
         "launch",
+        "pad_id",
         "planned_surface_days",
-        "target"
+        "spacecraft",
+        "t0",
+        "target",
+        "transfer",
+        "vehicle_id"
       ],
       "notes": [
         "NASA's Sept 2025 release targeted launch 'later this year'; the Aug 2026 update shows it still in testing, so no current date is asserted."
       ],
       "id": "blue-moon-mk1-endurance",
-      "name": "Blue Moon MK1 (Endurance)"
+      "name": "Blue Moon MK1 (Endurance)",
+      "vehicle_id": null,
+      "pad_id": null,
+      "t0": null,
+      "transfer": null,
+      "descent": null,
+      "comms": null,
+      "spacecraft": null,
+      "returns": "none",
+      "rovers": [],
+      "field_sources": {
+        "returns": "https://science.nasa.gov/lunar-discovery/deliveries"
+      }
     },
     {
       "vehicle_name": null,
@@ -1308,20 +1689,45 @@
           "title": "Gazetteer of Planetary Nomenclature: Mons Mouton",
           "publisher": "IAU / USGS Astrogeology",
           "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://science.nasa.gov/lunar-discovery/deliveries",
+          "title": "Commercial Lunar Payload Services (CLPS) Deliveries (page updated May 06, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
         }
       ],
       "unconfirmed_fields": [
+        "comms",
+        "descent",
         "ellipse",
         "end_of_mission",
         "launch",
+        "pad_id",
         "planned_surface_days",
+        "spacecraft",
+        "t0",
+        "transfer",
+        "vehicle_id",
         "vehicle_name"
       ],
       "notes": [
         "The Mons Mouton destination is from the TO20A editor's note; the coordinate is the IAU feature centre."
       ],
       "id": "blue-moon-mk1-viper",
-      "name": "VIPER delivery (Blue Moon MK1)"
+      "name": "VIPER delivery (Blue Moon MK1)",
+      "vehicle_id": null,
+      "pad_id": null,
+      "t0": null,
+      "transfer": null,
+      "descent": null,
+      "comms": null,
+      "spacecraft": null,
+      "returns": "none",
+      "rovers": [],
+      "field_sources": {
+        "returns": "https://science.nasa.gov/lunar-discovery/deliveries"
+      }
     },
     {
       "vehicle_name": null,
@@ -1404,17 +1810,36 @@
         }
       ],
       "unconfirmed_fields": [
+        "comms",
+        "descent",
         "ellipse",
         "end_of_mission",
         "landing",
         "launch",
+        "pad_id",
         "planned_surface_days",
+        "spacecraft",
+        "t0",
         "target",
+        "transfer",
+        "vehicle_id",
         "vehicle_name"
       ],
       "notes": [],
       "id": "blue-ghost-m4",
-      "name": "Blue Ghost Mission 4"
+      "name": "Blue Ghost Mission 4",
+      "vehicle_id": null,
+      "pad_id": null,
+      "t0": null,
+      "transfer": null,
+      "descent": null,
+      "comms": null,
+      "spacecraft": null,
+      "returns": "none",
+      "rovers": [],
+      "field_sources": {
+        "returns": "https://science.nasa.gov/lunar-discovery/deliveries"
+      }
     },
     {
       "vehicle_name": null,
@@ -1441,20 +1866,39 @@
         }
       ],
       "unconfirmed_fields": [
+        "comms",
+        "descent",
         "ellipse",
         "end_of_mission",
         "landing",
         "launch",
+        "pad_id",
         "payloads",
         "planned_surface_days",
+        "spacecraft",
+        "t0",
         "target",
+        "transfer",
+        "vehicle_id",
         "vehicle_name"
       ],
       "notes": [
         "NASA counts six payloads but does not name them on the deliveries page."
       ],
       "id": "ct-4",
-      "name": "CT-4 (Nova-D)"
+      "name": "CT-4 (Nova-D)",
+      "vehicle_id": null,
+      "pad_id": null,
+      "t0": null,
+      "transfer": null,
+      "descent": null,
+      "comms": null,
+      "spacecraft": null,
+      "returns": "none",
+      "rovers": [],
+      "field_sources": {
+        "returns": "https://science.nasa.gov/lunar-discovery/deliveries"
+      }
     },
     {
       "vehicle_name": null,
@@ -1481,22 +1925,41 @@
         }
       ],
       "unconfirmed_fields": [
+        "comms",
+        "descent",
         "ellipse",
         "end_of_mission",
         "lander",
         "landing",
         "launch",
+        "pad_id",
         "payloads",
         "planned_surface_days",
         "provider",
         "region",
+        "spacecraft",
+        "t0",
         "target",
         "target_name",
+        "transfer",
+        "vehicle_id",
         "vehicle_name"
       ],
       "notes": [],
       "id": "cs-8",
-      "name": "CS-8"
+      "name": "CS-8",
+      "vehicle_id": null,
+      "pad_id": null,
+      "t0": null,
+      "transfer": null,
+      "descent": null,
+      "comms": null,
+      "spacecraft": null,
+      "returns": "none",
+      "rovers": [],
+      "field_sources": {
+        "returns": "https://science.nasa.gov/lunar-discovery/deliveries"
+      }
     },
     {
       "vehicle_name": null,
@@ -1523,22 +1986,41 @@
         }
       ],
       "unconfirmed_fields": [
+        "comms",
+        "descent",
         "ellipse",
         "end_of_mission",
         "lander",
         "landing",
         "launch",
+        "pad_id",
         "payloads",
         "planned_surface_days",
         "provider",
         "region",
+        "spacecraft",
+        "t0",
         "target",
         "target_name",
+        "transfer",
+        "vehicle_id",
         "vehicle_name"
       ],
       "notes": [],
       "id": "cx-2",
-      "name": "CX-2"
+      "name": "CX-2",
+      "vehicle_id": null,
+      "pad_id": null,
+      "t0": null,
+      "transfer": null,
+      "descent": null,
+      "comms": null,
+      "spacecraft": null,
+      "returns": "none",
+      "rovers": [],
+      "field_sources": {
+        "returns": "https://science.nasa.gov/lunar-discovery/deliveries"
+      }
     },
     {
       "vehicle_name": null,
@@ -1603,25 +2085,50 @@
           "title": "NASA Awards More Moon Base Science, Previews New Opportunities (RELEASE 26-053, Jun 30, 2026)",
           "publisher": "NASA",
           "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://science.nasa.gov/lunar-discovery/deliveries",
+          "title": "Commercial Lunar Payload Services (CLPS) Deliveries (page updated May 06, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
         }
       ],
       "unconfirmed_fields": [
+        "comms",
+        "descent",
         "ellipse",
         "end_of_mission",
         "lander",
         "launch",
+        "pad_id",
         "planned_surface_days",
         "region",
+        "spacecraft",
+        "t0",
         "target",
         "target_name",
         "task_order",
+        "transfer",
+        "vehicle_id",
         "vehicle_name"
       ],
       "notes": [
         "NASA did not publish a task order name, lander, or destination for this award in the release."
       ],
       "id": "moon-base-2028-astrobotic-a",
-      "name": "Moon Base science delivery (Astrobotic, first of two)"
+      "name": "Moon Base science delivery (Astrobotic, first of two)",
+      "vehicle_id": null,
+      "pad_id": null,
+      "t0": null,
+      "transfer": null,
+      "descent": null,
+      "comms": null,
+      "spacecraft": null,
+      "returns": "none",
+      "rovers": [],
+      "field_sources": {
+        "returns": "https://science.nasa.gov/lunar-discovery/deliveries"
+      }
     },
     {
       "vehicle_name": null,
@@ -1686,25 +2193,50 @@
           "title": "NASA Awards More Moon Base Science, Previews New Opportunities (RELEASE 26-053, Jun 30, 2026)",
           "publisher": "NASA",
           "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://science.nasa.gov/lunar-discovery/deliveries",
+          "title": "Commercial Lunar Payload Services (CLPS) Deliveries (page updated May 06, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
         }
       ],
       "unconfirmed_fields": [
+        "comms",
+        "descent",
         "ellipse",
         "end_of_mission",
         "lander",
         "launch",
+        "pad_id",
         "planned_surface_days",
         "region",
+        "spacecraft",
+        "t0",
         "target",
         "target_name",
         "task_order",
+        "transfer",
+        "vehicle_id",
         "vehicle_name"
       ],
       "notes": [
         "NASA did not publish a task order name, lander, or destination for this award in the release."
       ],
       "id": "moon-base-2028-astrobotic-b",
-      "name": "Moon Base science delivery (Astrobotic, second of two)"
+      "name": "Moon Base science delivery (Astrobotic, second of two)",
+      "vehicle_id": null,
+      "pad_id": null,
+      "t0": null,
+      "transfer": null,
+      "descent": null,
+      "comms": null,
+      "spacecraft": null,
+      "returns": "none",
+      "rovers": [],
+      "field_sources": {
+        "returns": "https://science.nasa.gov/lunar-discovery/deliveries"
+      }
     },
     {
       "vehicle_name": null,
@@ -1769,25 +2301,50 @@
           "title": "NASA Awards More Moon Base Science, Previews New Opportunities (RELEASE 26-053, Jun 30, 2026)",
           "publisher": "NASA",
           "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://science.nasa.gov/lunar-discovery/deliveries",
+          "title": "Commercial Lunar Payload Services (CLPS) Deliveries (page updated May 06, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
         }
       ],
       "unconfirmed_fields": [
+        "comms",
+        "descent",
         "ellipse",
         "end_of_mission",
         "lander",
         "launch",
+        "pad_id",
         "planned_surface_days",
         "region",
+        "spacecraft",
+        "t0",
         "target",
         "target_name",
         "task_order",
+        "transfer",
+        "vehicle_id",
         "vehicle_name"
       ],
       "notes": [
         "NASA did not publish a task order name, lander, or destination for this award in the release."
       ],
       "id": "moon-base-2028-firefly",
-      "name": "Moon Base science delivery (Firefly Aerospace, one delivery)"
+      "name": "Moon Base science delivery (Firefly Aerospace, one delivery)",
+      "vehicle_id": null,
+      "pad_id": null,
+      "t0": null,
+      "transfer": null,
+      "descent": null,
+      "comms": null,
+      "spacecraft": null,
+      "returns": "none",
+      "rovers": [],
+      "field_sources": {
+        "returns": "https://science.nasa.gov/lunar-discovery/deliveries"
+      }
     },
     {
       "vehicle_name": null,
@@ -1852,25 +2409,50 @@
           "title": "NASA Awards More Moon Base Science, Previews New Opportunities (RELEASE 26-053, Jun 30, 2026)",
           "publisher": "NASA",
           "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://science.nasa.gov/lunar-discovery/deliveries",
+          "title": "Commercial Lunar Payload Services (CLPS) Deliveries (page updated May 06, 2026)",
+          "publisher": "NASA",
+          "accessed": "2026-09-23"
         }
       ],
       "unconfirmed_fields": [
+        "comms",
+        "descent",
         "ellipse",
         "end_of_mission",
         "lander",
         "launch",
+        "pad_id",
         "planned_surface_days",
         "region",
+        "spacecraft",
+        "t0",
         "target",
         "target_name",
         "task_order",
+        "transfer",
+        "vehicle_id",
         "vehicle_name"
       ],
       "notes": [
         "NASA did not publish a task order name, lander, or destination for this award in the release."
       ],
       "id": "moon-base-2028-intuitive-machines",
-      "name": "Moon Base science delivery (Intuitive Machines, one delivery)"
+      "name": "Moon Base science delivery (Intuitive Machines, one delivery)",
+      "vehicle_id": null,
+      "pad_id": null,
+      "t0": null,
+      "transfer": null,
+      "descent": null,
+      "comms": null,
+      "spacecraft": null,
+      "returns": "none",
+      "rovers": [],
+      "field_sources": {
+        "returns": "https://science.nasa.gov/lunar-discovery/deliveries"
+      }
     }
   ]
 }

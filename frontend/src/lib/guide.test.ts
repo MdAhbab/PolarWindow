@@ -27,6 +27,15 @@ describe('guide', () => {
     expect(GUIDE_STEPS.slice(first).every((s) => s.path.startsWith('/missions/'))).toBe(true)
   })
 
+  it('stays short, and introduces the six mission steps in one step', async () => {
+    const { GUIDE_STEPS } = await fresh()
+    expect(GUIDE_STEPS.length).toBeLessThanOrEqual(10)
+    const journey = GUIDE_STEPS.filter((s) => s.target === 'journey')
+    expect(journey).toHaveLength(1)
+    expect(journey[0].path).toMatch(/^\/missions\/[^/]+\/(ready|launch|trip|contact|return)$/)
+    expect(journey[0].body).toMatch(/six steps/)
+  })
+
   it('remembers where it was left, and that it was closed', async () => {
     let g = await fresh()
     g.useGuide.getState().go(3)

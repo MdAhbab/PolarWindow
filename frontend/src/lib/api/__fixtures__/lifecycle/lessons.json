@@ -1,0 +1,22 @@
+{
+ "lessons": [
+  {
+   "id": "lesson-im1-lrf",
+   "text": "Verify the laser rangefinder is enabled in the flight configuration",
+   "from_mission": "IM-1",
+   "year": 2024,
+   "source_url": "https://www.nasa.gov/",
+   "checklist_item": "Rangefinder enable checked in flight configuration",
+   "adopted": true
+  },
+  {
+   "id": "lesson-im2-sun",
+   "text": "Keep a lower limit on Sun height at landing",
+   "from_mission": "IM-2",
+   "year": 2025,
+   "source_url": "https://www.nasa.gov/",
+   "checklist_item": "Landing rule for Sun height set",
+   "adopted": false
+  }
+ ]
+}
