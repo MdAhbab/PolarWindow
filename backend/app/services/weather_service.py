@@ -587,6 +587,38 @@ async def set_official_forecast(
     return {**after, "id": fid, "entered_by": who.actor, "entered_at": datetime.now(UTC)}
 
 
+class NothingToRemove(LookupError):
+    pass
+
+
+async def remove_official_forecast(
+    session: AsyncSession, who: Claims, mission_id: str
+) -> dict[str, Any]:
+    """Take back the forecast shown (the latest entered); the one entered before it, if
+    any, is shown again. Recorded in the history like any entry."""
+    m = await MissionRepository(session).get(mission_id)
+    if m is None:
+        raise MissionNotFound(mission_id)
+    pm = PmRepository(session)
+    shown = await pm.official_forecast(m.id)
+    if shown is None:
+        raise NothingToRemove(f"No official forecast is entered for {m.name}.")
+    await pm.remove_official_forecast(shown["id"])
+    now_shown = await pm.official_forecast(m.id)
+    keys = ("probability_pct", "concerns", "pdf_url")
+    await audit_service.record(
+        session,
+        who,
+        action="delete",
+        entity="forecast",
+        entity_id=m.id,
+        mission_id=m.id,
+        before={k: shown[k] for k in keys},
+        after=None if now_shown is None else {k: now_shown[k] for k in keys},
+    )
+    return {"removed_id": shown["id"], "official": now_shown}
+
+
 async def vehicle_limits(session: AsyncSession, vehicle_id: str) -> dict[str, Any]:
     try:
         catalogues.load("vehicles").get(vehicle_id)

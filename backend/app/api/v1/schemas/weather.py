@@ -106,6 +106,13 @@ class OfficialForecastOut(_M):
     entered_at: datetime
 
 
+class OfficialForecastRemoved(_M):
+    removed_id: int = Field(description="The forecast taken back.")
+    official: OfficialForecastOut | None = Field(
+        description="The forecast shown now (the one entered before), or null."
+    )
+
+
 class LimitIn(_M):
     rule_id: str
     value: float = Field(gt=0)

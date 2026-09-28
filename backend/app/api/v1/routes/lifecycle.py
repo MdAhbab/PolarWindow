@@ -25,6 +25,7 @@ from app.api.v1.schemas.weather import (
     LimitsIn,
     OfficialForecastIn,
     OfficialForecastOut,
+    OfficialForecastRemoved,
     Return,
     ReturnLimitsIn,
     VehicleLimits,
@@ -229,6 +230,15 @@ def _weather_http(exc: Exception) -> HTTPException:
             "Nothing was changed.",
             action="Adjust the request",
         )
+    if isinstance(exc, weather_service.NothingToRemove):
+        return deps.problem(
+            404,
+            "nothing-to-remove",
+            "No official forecast is entered",
+            str(exc),
+            "Nothing was changed.",
+            action="Enter a forecast first",
+        )
     return deps.to_http(exc)
 
 
@@ -265,6 +275,22 @@ async def official_forecast(
         return await weather_service.set_official_forecast(
             session, who, mission_id, body.probability_pct, body.concerns, body.pdf_url
         )
+    except Exception as exc:
+        raise _weather_http(exc) from exc
+
+
+@router.delete(
+    "/missions/{mission_id}/launch/official-forecast",
+    response_model=OfficialForecastRemoved,
+    summary="Take back the official launch weather forecast shown",
+)
+async def remove_official_forecast(
+    mission_id: str,
+    session: Any = Depends(deps.db),
+    who: auth_service.Claims = Depends(deps.named_manager),
+) -> dict[str, Any]:
+    try:
+        return await weather_service.remove_official_forecast(session, who, mission_id)
     except Exception as exc:
         raise _weather_http(exc) from exc
 

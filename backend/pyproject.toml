@@ -71,6 +71,8 @@ target-version = "py312"
 src = ["."]
 
 [tool.ruff.lint]
+# UI copy uses the typographic apostrophe (conventions: plain English).
+allowed-confusables = ["’"]
 select = ["E", "F", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF", "ASYNC", "S"]
 ignore = [
     "S101",     # assert — used in tests and in internal invariants

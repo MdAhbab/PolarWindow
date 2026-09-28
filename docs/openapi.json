@@ -2404,6 +2404,51 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "mission sections"
+        ],
+        "summary": "Take back the official launch weather forecast shown",
+        "operationId": "remove_official_forecast_api_v1_missions__mission_id__launch_official_forecast_delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfficialForecastRemoved"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/vehicles/{vehicle_id}/limits": {
@@ -8276,6 +8321,33 @@
           "entered_at"
         ],
         "title": "OfficialForecastOut"
+      },
+      "OfficialForecastRemoved": {
+        "properties": {
+          "removed_id": {
+            "type": "integer",
+            "title": "Removed Id",
+            "description": "The forecast taken back."
+          },
+          "official": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OfficialForecastOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The forecast shown now (the one entered before), or null."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "removed_id",
+          "official"
+        ],
+        "title": "OfficialForecastRemoved"
       },
       "OneForecast": {
         "properties": {

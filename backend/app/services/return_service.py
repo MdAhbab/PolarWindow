@@ -108,36 +108,42 @@ def sea_at(
     return fields, best[0], valid
 
 
-async def _next_opportunity(session: AsyncSession, mission_id: str) -> dict[str, Any] | None:
-    """The earliest designed launch opportunity still to come in the stored calendar."""
+async def _next_opportunity(
+    session: AsyncSession, mission_id: str
+) -> tuple[dict[str, Any], datetime] | None:
+    """The earliest designed launch opportunity still to come in the stored calendar,
+    with the time that calendar was worked out."""
     row = (
         await session.execute(
             text(
-                "SELECT result FROM assessments WHERE kind = 'launch' AND mission_id = :m "
-                "ORDER BY id DESC LIMIT 1"
+                "SELECT result, created_at FROM assessments WHERE kind = 'launch' "
+                "AND mission_id = :m ORDER BY id DESC LIMIT 1"
             ),
             {"m": mission_id},
         )
-    ).scalar()
+    ).first()
+    if row is None:
+        return None
     now = datetime.now(UTC).timestamp()
     ahead = [
         o
-        for o in ((row or {}).get("data") or {}).get("opportunities") or []
+        for o in ((row[0] or {}).get("data") or {}).get("opportunities") or []
         if o.get("basis") == "designed" and (o.get("t0") or {}).get("value", 0) >= now
     ]
-    return min(ahead, key=lambda o: o["t0"]["value"]) if ahead else None
+    return (min(ahead, key=lambda o: o["t0"]["value"]), row[1]) if ahead else None
 
 
 async def _droneship_sea(session: AsyncSession, m: MissionRecord) -> dict[str, Any] | None:
     """The sea where a droneship would wait for the next opportunity, from GFS-Wave."""
-    opp = await _next_opportunity(session, m.id)
+    found = await _next_opportunity(session, m.id)
     zones = [
         z.downrange_km
         for z in catalogues.load("recovery_zones").records
         if z.kind == "booster_droneship" and z.downrange_km is not None
     ]
-    if opp is None or not zones:
+    if found is None or not zones:
         return None
+    opp, worked_out = found
     site = catalogues.load("launch_sites").get(opp["pad_id"])
     if site.lat_deg is None or site.lon_deg is None:
         return None
@@ -162,7 +168,12 @@ async def _droneship_sea(session: AsyncSession, m: MissionRecord) -> dict[str, A
             if values is None
             else f"GFS-Wave does not reach the next launch opportunity ({when}) yet."
         )
-        return {"zone": zone, "note": f" Sea at {where}, for the next opportunity: {why}"}
+        return {
+            "zone": zone,
+            "note": f" Sea at {where}, for the next opportunity: {why}",
+            "times": [worked_out],
+            "sources": [],
+        }
     fields, d_km, valid = got
     assert latest.snapshot is not None and values is not None
     how = (
@@ -174,7 +185,7 @@ async def _droneship_sea(session: AsyncSession, m: MissionRecord) -> dict[str, A
     def one(key: str, unit: str) -> dict[str, Any]:
         v = fields.get(key)
         if v is None:
-            return lifecycle.missing(unit, "GFS-Wave gave no value there.", provenance="published")
+            return lifecycle.missing(unit, "GFS-Wave gave no value there.")
         return lifecycle.q(
             Quantity(
                 value=float(v),
@@ -190,6 +201,8 @@ async def _droneship_sea(session: AsyncSession, m: MissionRecord) -> dict[str, A
         "wave_height_m": one("wave_height_m", "m"),
         "wind_m_s": one("wind_m_s", "m/s"),
         "note": f" Sea shown at {where}, for the next opportunity ({when}).",
+        "times": [worked_out, latest.snapshot.fetched_at],
+        "sources": [latest.source_ref("GFS-Wave (NOAA)")],
     }
 
 
@@ -235,10 +248,10 @@ def _booster(
             else None
         )
         note = (
-            f"The booster came back to {z.name} (Launch Library 2)."
+            f"The booster came back to {z.name}."
             if land
-            else f"The booster landed on {z.name}, {z.downrange_km:.0f} km downrange (Launch "
-            "Library 2); the droneship's position is not published."
+            else f"The booster landed on {z.name}, {z.downrange_km:.0f} km downrange; the "
+            "droneship’s position is not published."
         )
         landing = "land" if land else "droneship"
     else:
@@ -257,28 +270,24 @@ def _booster(
         elif how is None:
             note = f"How the {v.name} booster is recovered is not published."
         else:
-            note = f"{v.name} boosters are usually recovered this way (Launch Library 2)."
+            note = f"{v.name} boosters are usually recovered this way."
     sea_missing = (
         past
         if flown
         else "No droneship zone is worked out for this mission: no launch opportunity to "
         "come is stored."
     )
-    wave = (
-        None if landing == "land" else lifecycle.missing("m", sea_missing, provenance="published")
-    )
+    wave = None if landing == "land" else lifecycle.missing("m", sea_missing)
     wind = lifecycle.missing(
-        "m/s",
-        past if flown else "No droneship zone is worked out for this mission.",
-        provenance="published",
+        "m/s", past if flown else "No droneship zone is worked out for this mission."
     )
     if sea is not None and not flown and landing not in ("land", "expended"):
         lat, lon = sea["zone"]
         zone = {"lat_deg": round(lat, 3), "lon_deg": round(lon, 3), "pm_km": None}
         note += sea["note"]
         why = sea["note"].split(": ", 1)[-1].strip()
-        wave = sea.get("wave_height_m") or lifecycle.missing("m", why, provenance="published")
-        wind = sea.get("wind_m_s") or lifecycle.missing("m/s", why, provenance="published")
+        wave = sea.get("wave_height_m") or lifecycle.missing("m", why)
+        wind = sea.get("wind_m_s") or lifecycle.missing("m/s", why)
     return {
         "landing": landing,
         "zone": zone,
@@ -304,7 +313,7 @@ def _capsule(m: MissionRecord, entered: dict[str, Any] | None) -> dict[str, Any]
         }
     return {
         "applicable": True,
-        "reason": "The capsule's return to Earth is not worked out yet.",
+        "reason": "The capsule’s return to Earth is not worked out yet.",
         "zone": None,
         "wave_height_m": None,
         "wind_m_s": None,
@@ -325,21 +334,17 @@ async def recovery(session: AsyncSession, mission_id: str) -> dict[str, Any]:
             r = await repo.get(mid)
             names[mid] = r.name if r else mid
     cancelled = m.status in ("cancelled", "reassigned")
+    sea = None if cancelled else await _droneship_sea(session, m)
     data = {
-        "booster": None
-        if cancelled
-        else _booster(m, entered, names, await _droneship_sea(session, m)),
+        "booster": None if cancelled else _booster(m, entered, names, sea),
         "capsule": None if cancelled else _capsule(m, entered),
     }
+    sources, times = _sources_and_times(m, cancelled, entered, sea)
     return {
         "data": data,
         "meta": lifecycle.meta(
             engines=("wx",),
-            sources=[
-                lifecycle.source_ref("Launch Library 2 landing records", z.sources[0].url)
-                for z in catalogues.load("recovery_zones").records
-                if m.id in z.used_by
-            ],
+            sources=sources,
             parts=[
                 (
                     "Recovery limits",
@@ -347,9 +352,51 @@ async def recovery(session: AsyncSession, mission_id: str) -> dict[str, Any]:
                     "recovery; only limits the team enters are shown.",
                 )
             ],
-            computed_at=datetime.now(UTC),
+            computed_at=max(times),
         ),
     }
+
+
+def _day(d: Any) -> datetime:
+    return datetime(d.year, d.month, d.day, tzinfo=UTC)
+
+
+def _sources_and_times(
+    m: MissionRecord,
+    cancelled: bool,
+    entered: dict[str, Any] | None,
+    sea: dict[str, Any] | None,
+) -> tuple[list[dict[str, Any]], list[datetime]]:
+    """Where the answer's facts come from, and when each last changed: the answer is as
+    old as its newest input (a catalogue's compile date, the stored launch calendar, the
+    sea forecast, the team's entry), not the time of the request."""
+    zones = catalogues.load("recovery_zones")
+    sources: list[dict[str, Any]] = []
+    times = [_day(zones.compiled)]
+    vid = (m.lifecycle or {}).get("vehicle_id")
+    if not cancelled and vid:
+        z = _zone_of(m)
+        if z is not None:
+            sources.append(
+                lifecycle.source_ref("Launch Library 2 landing records", z.sources[0].url)
+            )
+        else:
+            vehicles = catalogues.load("vehicles")
+            times.append(_day(vehicles.compiled))
+            try:
+                v = vehicles.get(vid)
+            except KeyError:
+                v = None
+            if v is not None:
+                src = v.sources[0]
+                url = v.field_sources.get("booster_recovery") or src.url
+                sources.append(lifecycle.source_ref(src.title, url))
+    if sea is not None:
+        times.extend(t for t in sea.get("times", []) if t is not None)
+        sources.extend(x for x in sea.get("sources", []) if x is not None)
+    if entered is not None and entered.get("entered_at") is not None:
+        times.append(entered["entered_at"])
+    return sources, times
 
 
 async def set_limits(

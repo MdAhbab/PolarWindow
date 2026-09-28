@@ -168,16 +168,40 @@ async def test_entries_are_recorded_and_show_up(client) -> None:
     assert h.status_code == 200 and h.json()["entries"]
 
 
+async def test_an_entered_forecast_can_be_taken_back(client) -> None:
+    url = f"{API}/missions/griffin-1/launch/official-forecast"
+    assert (await client.delete(url)).status_code == 404
+    first = {"probability_pct": 60, "concerns": [], "pdf_url": "https://example.test/a.pdf"}
+    second = {"probability_pct": 90, "concerns": [], "pdf_url": "https://example.test/b.pdf"}
+    assert (await client.put(url, json=first)).status_code == 200
+    assert (await client.put(url, json=second)).status_code == 200
+    r = await client.delete(url)
+    assert r.status_code == 200, r.text
+    assert r.json()["official"]["probability_pct"] == 60
+    r = await client.delete(url)
+    assert r.json()["official"] is None
+    h = await client.get(f"{API}/history", params={"entity": "forecast", "id": "griffin-1"})
+    actions = [e.get("action") for e in h.json()["entries"]]
+    assert actions.count("delete") == 2
+
+
 async def test_return_for_flown_and_planned_missions(client, anon_client) -> None:
     d = (await anon_client.get(f"{API}/missions/im-1/return")).json()["data"]
     assert d["booster"]["landing"] == "land" and d["booster"]["zone"]["lat_deg"] == pytest.approx(
         28.4857, abs=1e-3
     )
     assert d["booster"]["wave_height_m"] is None
+    assert d["booster"]["wind_m_s"]["provenance"] == "computed"
     assert d["capsule"]["applicable"] is False
-    d = (await anon_client.get(f"{API}/missions/im-2/return")).json()["data"]
+    r = (await anon_client.get(f"{API}/missions/im-2/return")).json()
+    d = r["data"]
     assert d["booster"]["landing"] == "droneship" and d["booster"]["zone"] is None
     assert "700 km" in d["booster"]["note"]
+    assert "Launch Library" not in d["booster"]["note"] and "'" not in d["booster"]["note"]
+    assert r["meta"]["sources"][0]["name"] == "Launch Library 2 landing records"
+    # As old as its newest input (the catalogue), not the request.
+    at = datetime.fromisoformat(r["meta"]["computed_at"].replace("Z", "+00:00"))
+    assert at < datetime.now(UTC) - timedelta(minutes=1)
     d = (await anon_client.get(f"{API}/missions/griffin-1/return")).json()["data"]
     assert d["booster"]["landing"] == "unknown" and "IM-1" in d["booster"]["note"]
     assert d["booster"]["limits"]["wave_height_m"]["missing_reason"]

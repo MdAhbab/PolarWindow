@@ -220,18 +220,31 @@ Bookings: `POST /missions/{id}/contact/bookings`.
 `GET /missions/{id}/return` → `Section<Return>`
 
 ```ts
+interface Zone { lat_deg: number; lon_deg: number; pm_km: number | null }  // null: size not published
+interface SeaLimits { wave_height_m: Quantity; wind_m_s: Quantity }   // never null; missing until entered
 interface Return {
   booster: { landing: "droneship" | "land" | "expended" | "unknown";
-             zone: { lat_deg: number; lon_deg: number; pm_km: number } | null;
-             wave_height_m: Quantity | null; wind_m_s: Quantity | null;
-             limits: { wave_height_m: Quantity | null; wind_m_s: Quantity | null };
-             hazard_area_seen: boolean | null } | null;
+             zone: Zone | null;                 // droneship of a flown launch: position not published
+             note: string;                      // plain words: where it came down, or the practice
+             wave_height_m: Quantity | null;    // null for a landing on land
+             wind_m_s: Quantity | null;
+             limits: SeaLimits;                 // entered by the team (providers do not publish)
+             hazard_area_seen: boolean | null } | null;   // null: cancelled, or vehicle not published
   capsule: { applicable: boolean; reason: string | null;
-             zone: { lat_deg: number; lon_deg: number; pm_km: number } | null;
+             zone: Zone | null;
              wave_height_m: Quantity | null; wind_m_s: Quantity | null;
-             daylight: boolean | null } | null;
+             daylight: boolean | null;
+             limits: SeaLimits } | null;        // null: cancelled
 }
 ```
+
+A mission still to fly whose booster may land on a droneship: `zone` is 700 km along the
+next designed opportunity's launch direction, and `wave_height_m` / `wind_m_s` are
+GFS-Wave's one forecast there (`provenance: "published"`, source the run's URL). A value
+that is not there is `provenance: "computed"` with its `missing_reason` (nothing is
+published for it). `meta.computed_at` is the time of the newest input (a catalogue's
+compile date, the stored launch calendar, the GFS-Wave fetch, the team's limits), not
+the time of the request; `meta.sources` lists where the landing or the practice is from.
 
 ## Data sources and jobs
 
@@ -468,3 +481,14 @@ that user. `GET /auth/me` returns the same `user`.
     does not pass (1 event in 682 verified runs), so it stays false; the weather answer's
     `meta.uncertainty` part "Checked against observations" gives the scores in one
     sentence, and `note` says whether any rule has passed.
+- 2026-09-28 (backend, frontend's queue):
+  - The `Return` block above now shows the shape as served (`note`, `capsule.limits`,
+    nullable `pm_km`, `SeaLimits` never null, GFS-Wave values at a planned droneship zone).
+  - A missing sea or wind value in Return is `provenance: "computed"` (was `"published"`),
+    with its `missing_reason`. `booster.note` no longer names its source inline; the source
+    is in `meta.sources` (Launch Library 2's landing records, or the vehicle's record).
+    `meta.computed_at` is the newest input's time, not the request's.
+  - `DELETE /missions/{id}/launch/official-forecast` (named session) takes back the forecast
+    shown (the latest entered) → `{removed_id, official}` where `official` is the forecast
+    entered before it, now shown again, or null. 404 `nothing-to-remove` when none is
+    entered. Recorded in `/history?entity=forecast&id={mission}` with `action: "delete"`.

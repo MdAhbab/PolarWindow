@@ -375,6 +375,9 @@ class PmRepository:
         ).scalar_one()
         return int(row)
 
+    async def remove_official_forecast(self, forecast_id: int) -> None:
+        await self._s.execute(delete(OfficialForecast).where(OfficialForecast.id == forecast_id))
+
     async def vehicle_limits(self, vehicle_id: str) -> list[dict[str, Any]]:
         rows = (
             await self._s.execute(
