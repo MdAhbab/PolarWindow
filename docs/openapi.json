@@ -5592,6 +5592,25 @@
             ],
             "title": "Relay Note"
           },
+          "orbiters": {
+            "items": {
+              "$ref": "#/components/schemas/Orbiter"
+            },
+            "type": "array",
+            "title": "Orbiters",
+            "description": "Real lunar orbiters' passes over the landing spot (could see the lander)."
+          },
+          "orbiters_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Orbiters Note"
+          },
           "link_budget_note": {
             "anyOf": [
               {
@@ -5634,6 +5653,8 @@
           "relays",
           "direct_only",
           "relay_note",
+          "orbiters",
+          "orbiters_note",
           "link_budget_note",
           "bookings",
           "light_time_s",
@@ -8970,6 +8991,227 @@
           "coast_min"
         ],
         "title": "Opportunity"
+      },
+      "Orbiter": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "operator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operator"
+          },
+          "naif_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Naif Id"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note",
+            "description": "Geometry only: none of these orbiters relays for a lander."
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrbiterSource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The recorded JPL Horizons trajectory."
+          },
+          "covered": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StretchOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The part of the dates the trajectory covers."
+          },
+          "passes": {
+            "items": {
+              "$ref": "#/components/schemas/OrbiterPass"
+            },
+            "type": "array",
+            "title": "Passes",
+            "description": "Above the landing spot's terrain skyline."
+          },
+          "pass_count": {
+            "type": "integer",
+            "title": "Pass Count"
+          },
+          "in_view_h": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "longest_pass_min": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "longest_gap_h": {
+            "$ref": "#/components/schemas/QuantityOut"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "operator",
+          "naif_id",
+          "note",
+          "source",
+          "covered",
+          "passes",
+          "pass_count",
+          "in_view_h",
+          "longest_pass_min",
+          "longest_gap_h"
+        ],
+        "title": "Orbiter"
+      },
+      "OrbiterPass": {
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End"
+          },
+          "open_start": {
+            "type": "boolean",
+            "title": "Open Start",
+            "description": "Cut by the start of the dates."
+          },
+          "open_end": {
+            "type": "boolean",
+            "title": "Open End",
+            "description": "Cut by the end of the dates."
+          },
+          "max_elevation_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Elevation Deg",
+            "description": "Highest above the flat horizon."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "open_start",
+          "open_end",
+          "max_elevation_deg"
+        ],
+        "title": "OrbiterPass"
+      },
+      "OrbiterSource": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "issued_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issued At"
+          },
+          "fetched_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetched At"
+          },
+          "licence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licence"
+          },
+          "snapshot_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "url",
+          "issued_at",
+          "fetched_at",
+          "licence",
+          "snapshot_id"
+        ],
+        "title": "OrbiterSource"
       },
       "Outlook": {
         "properties": {

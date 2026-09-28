@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import ENGINE_VERSION, engine_closure, get_settings
 from app.data import catalogues
+from app.db.repositories.feeds import FeedRepository
 from app.db.repositories.missions import MissionRecord, MissionRepository
 from app.db.repositories.pm import PmRepository
 from app.services import audit_service, job_service, lifecycle, mission_service
@@ -90,6 +91,58 @@ def _extra_relays(m: MissionRecord, asked: list[str] | None) -> list[str]:
     return sorted(out)
 
 
+async def _orbiters(
+    session: AsyncSession, mission_id: str, start: datetime, end: datetime
+) -> list[dict[str, Any]]:
+    """For each real orbiter: the recorded Horizons trajectory that covers most of the dates.
+
+    The feeds worker keeps one from a week ago to 30 days ahead, and one for
+    each flown mission's surface days; the snapshot id goes into the job key,
+    so a newer trajectory makes a new answer.
+    """
+    repo = FeedRepository(session)
+    out: list[dict[str, Any]] = []
+    for rec in catalogues.load("relays").records:
+        if rec.role != "validation_only" or rec.naif_id is None:
+            continue
+        best: tuple[timedelta, Any] | None = None
+        spans: list[str] = []
+        for key in (f"{rec.id}@{mission_id}", rec.id):
+            span = await repo.latest_ok_span("horizons", "vectors", key)
+            if span is None:
+                continue
+            sid, v0, v1, fetched = span
+            if v0 is None or v1 is None:
+                continue
+            if v1 <= v0:  # Horizons had nothing for the dates asked
+                spans.append(f"none after {v1:%Y-%m-%d}")
+                continue
+            spans.append(f"{v0:%Y-%m-%d} to {v1:%Y-%m-%d}")
+            cover = min(end, v1) - max(start, v0)
+            if cover > timedelta(0) and (best is None or cover > best[0]):
+                best = (cover, (sid, fetched))
+        if best is not None:
+            out.append(
+                {
+                    "id": rec.id,
+                    "snapshot_id": best[1][0],
+                    "fetched_at": lifecycle.iso(best[1][1]),
+                    "missing": None,
+                }
+            )
+        else:
+            out.append(
+                {
+                    "id": rec.id,
+                    "snapshot_id": None,
+                    "fetched_at": None,
+                    "missing": "No JPL Horizons trajectory is recorded for these dates"
+                    + (f" (recorded: {'; '.join(spans)})." if spans else " yet."),
+                }
+            )
+    return out
+
+
 def _params(
     m: MissionRecord, start: datetime, end: datetime, note: str, extra: list[str]
 ) -> dict[str, Any]:
@@ -144,6 +197,7 @@ async def contact(
         )
     s, e, note = window(m, start, end)
     params = _params(m, s, e, note, _extra_relays(m, relays))
+    params["orbiters"] = await _orbiters(session, m.id, s, e)
     ans = await job_service.answer_or_enqueue(
         session,
         kind=KIND,

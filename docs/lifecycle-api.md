@@ -643,3 +643,15 @@ that user. `GET /auth/me` returns the same `user`.
     (two figures in circulation), argument of periapsis assumed 85–95°; Altus-1's orbit is not
     published and is assumed from NASA's LCRNS reference constellation 3.1 (five frozen orbits:
     1745–1751 × 17391–17427 km, 52.5–59.4°, 85.4–92.5°, about 30 h).
+- 2026-09-29 (backend, real orbiters in Contact; plan F2):
+  - `Contact.orbiters[]`: `{id, name, operator, naif_id, note, source: SourceRef | null,
+    covered: Stretch | null, passes: (Stretch & {max_elevation_deg})[], pass_count, in_view_h,
+    longest_pass_min, longest_gap_h}` for LRO, Danuri, Chandrayaan-2 and CAPSTONE: when each
+    is above the landing spot's skyline (a point; 30 s grid, edges bisected), from JPL Horizons'
+    trajectory the feeds worker records. `in_view_h.pm` sums the edges' skyline timing; the
+    numbers are missing with the reason when no trajectory covers the dates (the feeds keep a
+    week ago to 30 days ahead, and each flown mission's surface days). `Contact.orbiters_note`:
+    geometry only, never a relay service; the orbiters are not `nodes` and not in any number.
+  - `GET /feeds` adds provider `horizons`, product `vectors`, one row per orbiter (location
+    = its id) and per orbiter and flown mission (`lro@im-2`); CAPSTONE's weekly row records
+    "no trajectory after 14 August 2026" as data (stale, not failing).

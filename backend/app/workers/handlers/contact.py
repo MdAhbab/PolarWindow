@@ -21,12 +21,13 @@ from app.core import intervals, network, spice, timeline, visibility
 from app.core.quantity import Quantity
 from app.core.spice import R_MOON_M
 from app.data import catalogues
+from app.db.repositories.feeds import FeedRepository
 from app.db.repositories.jobs import InputRef
 from app.db.repositories.missions import MissionRepository
 from app.db.session import session_scope
 from app.services import lifecycle, site_service
 from app.workers.compute import HandlerResult, JobContext, handler
-from app.workers.handlers import relay_sweep
+from app.workers.handlers import orbiter_passes, relay_sweep
 
 C_M_S = 299_792_458.0
 H = 3600.0
@@ -290,6 +291,64 @@ async def run(ctx: JobContext) -> HandlerResult:
             }
         )
 
+    # Real orbiters over the landing spot (F2): geometry only, never a relay.
+    orbiters = []
+    orb_sources = []
+    mask = cw.mask_record.mask
+    sky_az = mask.azimuths()
+    sky_el = np.asarray(mask.el_deg, dtype=np.float64)
+    sky_tol = np.asarray(mask.tol_deg, dtype=np.float64)
+    basis = visibility.enu_basis(site.lat_deg, site.lon_deg)
+    for o in p.get("orbiters") or []:
+        rec = rel_cat.get(o["id"])
+        snap = None
+        got = None
+        missing = o.get("missing")
+        if o.get("snapshot_id") is not None:
+            async with session_scope() as s:
+                rec_snap = await FeedRepository(s).get_snapshot(int(o["snapshot_id"]))
+            if rec_snap is None or not rec_snap.parsed:
+                missing = "The recorded trajectory is gone; it is fetched again within a week."
+            else:
+                snap = {
+                    "source": rec_snap.parsed.get("source"),
+                    "fetched_at": rec_snap.fetched_at,
+                    "snapshot_id": rec_snap.id,
+                }
+                kp = await spice.run_async(
+                    orbiter_passes.ensure_kernel,
+                    rec.id,
+                    rec_snap.id,
+                    rec_snap.content_sha256,
+                    rec_snap.parsed,
+                )
+                cov = (await spice.run_async(spice.coverage, kp, int(rec.naif_id)))[0]
+                got = await spice.run_async(
+                    orbiter_passes.passes,
+                    int(rec.naif_id),
+                    t0_et,
+                    t1,
+                    cov,
+                    site_pos,
+                    basis,
+                    sky_az,
+                    sky_el,
+                    sky_tol,
+                )
+                if got is None:
+                    missing = "The recorded trajectory does not reach into these dates."
+                orb_sources.append(
+                    lifecycle.source_ref(
+                        f"JPL Horizons: {rec.name}",
+                        "https://ssd.jpl.nasa.gov/horizons/",
+                        fetched_at=rec_snap.fetched_at,
+                        snapshot_id=rec_snap.id,
+                    )
+                )
+        orbiters.append(orbiter_passes.block(rec, snap, got, r.start, t1, missing))
+    if p.get("orbiters"):
+        ctx.progress(0.98, "Orbiter passes worked out.")
+
     links = [
         {
             "from": "lander",
@@ -332,6 +391,8 @@ async def run(ctx: JobContext) -> HandlerResult:
         "The same two numbers without the relay are given beside them.",
         "link_budget_note": "Line of sight only: the lander's radio power and data rate "
         "are not published, so no data rate or link margin is given.",
+        "orbiters": orbiters,
+        "orbiters_note": orbiter_passes.NOTE if orbiters else None,
         "light_time_s": {"min": float(rng_all.min() / C_M_S), "max": float(rng_all.max() / C_M_S)},
         "longest_wait_from": lifecycle.iso(r.start + timedelta(seconds=wait_at)),
         "sun_total_h": _hours(intervals.total(r.sun.arcs, True), sun_tol.total_s),
@@ -350,6 +411,7 @@ async def run(ctx: JobContext) -> HandlerResult:
                 "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/",
             ),
             lifecycle.source_ref("LOLA terrain skyline at the landing spot", None),
+            *orb_sources,
         ],
         parts=[
             (
@@ -377,6 +439,11 @@ async def run(ctx: JobContext) -> HandlerResult:
         InputRef("catalogue", "relays", rel_cat.version),
         InputRef("terrain", site.id, f"{cw.mask_record.dem_product}@{ENGINE_VERSION}"),
         InputRef("kernel_set", "stations", kset),
+        *[
+            InputRef("feed_snapshot", f"horizons/{o['id']}", str(o["snapshot_id"]))
+            for o in p.get("orbiters") or []
+            if o.get("snapshot_id") is not None
+        ],
     ]
     if not math.isfinite(wait_s):
         raise ValueError("message wait is not finite")

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import pytest
 from sqlalchemy import text
 
@@ -166,3 +168,47 @@ async def test_only_a_catalogued_relay_service_can_be_added(anon_client) -> None
     assert r.status_code == 422 and "no relay service" in r.json()["detail"]["detail"]
     r = await anon_client.get(f"{API}/missions/griffin-1/contact", params={"relay": "nope"})
     assert r.status_code == 422 and "lunar-pathfinder" in r.json()["detail"]["detail"]
+
+
+async def test_real_orbiters_are_passes_over_the_site_never_relays(anon_client, tmp_path) -> None:
+    """LRO's recorded Horizons trajectory over IM-2's surface days: passes above the
+    skyline, from the kernel the job writes; the others say what is missing."""
+    from pathlib import Path
+
+    from app.feeds import recorder
+    from app.feeds.adapters import horizons
+    from app.feeds.http import Fetched
+
+    fx = Path(__file__).resolve().parents[1] / "fixtures" / "feeds" / "horizons_lro_im2.txt"
+    p = horizons.products(
+        [("lro", -85)],
+        [
+            (
+                "im-2",
+                datetime(2025, 3, 6, 17, 30, tzinfo=UTC),
+                datetime(2025, 3, 7, 6, 15, tzinfo=UTC),
+            )
+        ],
+    )[1]
+    got = Fetched(p.url, 200, fx.read_bytes(), None, None, "text/plain", False, 1)
+    async with session_scope() as s:
+        await s.execute(text("DELETE FROM feed_snapshots WHERE provider = 'horizons'"))
+        out = await recorder.record(s, p, got, raw_root=tmp_path)
+    assert out.ok
+    d = (await _answer(anon_client, "im-2"))["data"]
+    assert d["orbiters_note"] and "not a service" in d["orbiters_note"]
+    by = {o["id"]: o for o in d["orbiters"]}
+    assert set(by) == {"lro", "danuri", "chandrayaan-2-orbiter", "capstone"}
+    lro = by["lro"]
+    assert lro["source"]["snapshot_id"] == out.snapshot_id
+    assert lro["covered"]["open_start"] and lro["covered"]["open_end"]
+    assert lro["pass_count"] >= 5  # a two-hour orbit over 12.75 h
+    assert 0 < lro["in_view_h"]["value"] < 12.75
+    assert len(lro["passes"]) == lro["pass_count"]
+    for q_ in ("in_view_h", "longest_pass_min", "longest_gap_h"):
+        assert lro[q_]["value"] is not None
+    assert by["danuri"]["in_view_h"]["value"] is None
+    assert "No JPL Horizons trajectory" in by["danuri"]["in_view_h"]["missing_reason"]
+    assert not any(n["id"] == "lro" for n in d["nodes"])  # never a node of the network
+    async with session_scope() as s:
+        await s.execute(text("DELETE FROM feed_snapshots WHERE provider = 'horizons'"))

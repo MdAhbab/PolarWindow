@@ -105,6 +105,34 @@ class LightTime(_M):
     max: float
 
 
+class OrbiterPass(StretchOut):
+    max_elevation_deg: float | None = Field(description="Highest above the flat horizon.")
+
+
+class OrbiterSource(_M):
+    name: str
+    url: str | None
+    issued_at: datetime | None
+    fetched_at: datetime | None
+    licence: str | None
+    snapshot_id: int | None
+
+
+class Orbiter(_M):
+    id: str
+    name: str
+    operator: str | None
+    naif_id: int | None
+    note: str = Field(description="Geometry only: none of these orbiters relays for a lander.")
+    source: OrbiterSource | None = Field(description="The recorded JPL Horizons trajectory.")
+    covered: StretchOut | None = Field(description="The part of the dates the trajectory covers.")
+    passes: list[OrbiterPass] = Field(description="Above the landing spot's terrain skyline.")
+    pass_count: int
+    in_view_h: QuantityOut
+    longest_pass_min: QuantityOut
+    longest_gap_h: QuantityOut
+
+
 class Contact(_M):
     start: datetime
     end: datetime
@@ -117,6 +145,10 @@ class Contact(_M):
         description="With a relay in the graph: the same two numbers without it. Null otherwise."
     )
     relay_note: str | None
+    orbiters: list[Orbiter] = Field(
+        description="Real lunar orbiters' passes over the landing spot (could see the lander)."
+    )
+    orbiters_note: str | None
     link_budget_note: str | None
     bookings: list[Booking]
     light_time_s: LightTime

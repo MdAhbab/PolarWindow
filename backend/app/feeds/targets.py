@@ -7,9 +7,12 @@ to start recording its weather.
 
 from __future__ import annotations
 
+import json
+from datetime import UTC, datetime, timedelta
+
 from app.config import get_settings
 from app.data import catalogues
-from app.feeds.adapters import donki, dsn_now, glm, ll2, ndbc, nomads, nws, swpc
+from app.feeds.adapters import donki, dsn_now, glm, horizons, ll2, ndbc, nomads, nws, swpc
 from app.feeds.base import Product, ProviderSpec
 
 #: Pads close enough to share one weather model point (a GEFS cell is ~50 km).
@@ -30,8 +33,38 @@ def providers() -> dict[str, ProviderSpec]:
             ll2.PROVIDER,
             nomads.PROVIDER,
             glm.PROVIDER,
+            horizons.PROVIDER,
         )
     }
+
+
+def orbiters() -> list[tuple[str, int]]:
+    """Real lunar orbiters whose trajectories are recorded (``validation_only`` relays)."""
+    return [
+        (r.id, r.naif_id)
+        for r in catalogues.load("relays").records
+        if r.role == "validation_only" and r.naif_id is not None
+    ]
+
+
+def _date(d: dict[str, str], *, end: bool) -> datetime:
+    t = d["date"].replace("Z", "+00:00")
+    at = datetime.fromisoformat(t if "T" in t else t + "T00:00:00+00:00").astimezone(UTC)
+    return at + timedelta(days=1) if end and d["precision"] == "day" else at
+
+
+def flown_surface_days() -> list[tuple[str, datetime, datetime]]:
+    """Landed missions whose landing and end of mission are published to the day or better
+    (the same span the Contact answer uses by default)."""
+    data = json.loads(get_settings().missions_path.read_text())
+    out = []
+    for m in data.get("missions") or data.get("records") or []:
+        land, eom = m.get("landing"), m.get("end_of_mission")
+        if m.get("status") not in ("completed", "partial_success") or not land or not eom:
+            continue
+        if land.get("precision") in ("minute", "day") and eom.get("precision") in ("minute", "day"):
+            out.append((m["id"], _date(land, end=False), _date(eom, end=True)))
+    return out
 
 
 def products(wanted: nomads.Wanted | None = None) -> list[Product]:
@@ -59,6 +92,7 @@ def products(wanted: nomads.Wanted | None = None) -> list[Product]:
         out += ll2.products(locations)
     out += nomads.products(regions, hrrr_regions=set(HRRR_REGIONS), wanted=wanted)
     out += glm.products(regions, wanted=wanted)
+    out += horizons.products(orbiters(), flown_surface_days())
     return out
 
 

@@ -553,6 +553,87 @@ def load_extra(paths: list[Path]) -> None:
             _extra.add(key)
 
 
+def write_spk13(
+    path: Path,
+    naif_id: int,
+    ets: npt.NDArray[np.float64],
+    states_m: npt.NDArray[np.float64],
+    *,
+    center: int = 301,
+    frame: str = J2000,
+    degree: int = 7,
+    segment: str = "orbiter",
+) -> None:
+    """Write states (m, m/s) as one SPK type 13 segment (Hermite, unequal steps).
+
+    Used for a real orbiter's trajectory from JPL Horizons (T1, F2): the file
+    is rewritten whole, then loaded with :func:`load_extra` like any other
+    kernel, so every aberration correction CSPICE offers applies to it.
+    """
+    ets = np.ascontiguousarray(ets, dtype=np.float64)
+    st = np.ascontiguousarray(np.asarray(states_m, dtype=np.float64).reshape(-1, 6) / 1000.0)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp.bsp")
+    with _lock:
+        if tmp.exists():
+            tmp.unlink()
+        h = spice.spkopn(str(tmp), "polar-window orbiter", 0)
+        try:
+            spice.spkw13(
+                h,
+                naif_id,
+                center,
+                frame,
+                float(ets[0]),
+                float(ets[-1]),
+                segment[:40],
+                degree,
+                int(ets.size),
+                st,
+                ets,
+            )
+        except Exception:
+            spice.dafcls(h)  # no segment written: SPKCLS would refuse the file
+            tmp.unlink(missing_ok=True)
+            raise
+        spice.spkcls(h)
+    tmp.replace(path)
+
+
+def site_look(
+    target: str,
+    site_me_m: npt.NDArray[np.float64],
+    ets: npt.NDArray[np.float64],
+    abcorr: Aberration = "LT+S",
+) -> npt.NDArray[np.float64]:
+    """``(n, 3)`` where ``target`` appears from a point fixed on the Moon, in MOON_ME, metres.
+
+    CSPICE's constant-position observer (``spkcpo``): the light time is from
+    the site itself, and stellar aberration is the site's own motion, as a
+    JPL Horizons observer table on the Moon gives them.
+    """
+    _require_loaded()
+    obs = np.asarray(site_me_m, dtype=np.float64).reshape(3) / 1000.0
+    out = np.empty((np.asarray(ets).size, 3), dtype=np.float64)
+    with _lock:
+        for i, et in enumerate(np.asarray(ets, dtype=np.float64)):
+            state, _lt = spice.spkcpo(
+                target, float(et), MOON_ME, "OBSERVER", abcorr, obs, "MOON", MOON_ME
+            )
+            out[i] = np.asarray(state[:3], dtype=np.float64) * 1000.0
+    return out
+
+
+def unload_extra(paths: list[Path]) -> None:
+    """Unload kernels loaded with :func:`load_extra` (validation swaps trajectories)."""
+    with _lock:
+        for p in paths:
+            key = str(Path(p).resolve())
+            if key in _extra:
+                spice.unload(key)
+                _extra.discard(key)
+
+
 def coverage(spk: Path, naif_id: int) -> list[tuple[float, float]]:
     """The time intervals (ET) an SPK file covers for one body."""
     with _lock:
