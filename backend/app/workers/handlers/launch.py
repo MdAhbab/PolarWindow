@@ -6,11 +6,14 @@ flights, beside the published liftoff. A planned mission with a pad, a
 vehicle and a landing spot gets a calendar backed out from the landing:
 the times the spot allows a landing (``core.landing_windows``), minus the
 time in lunar orbit, minus the flight, then the day's launch instant from a
-due-east climb corrected in the full force model (``core.transfer.design``).
+climb in the direction the vehicle's direct lunar flights climbed (due east
+when there are none), inside the pad's azimuth limits, corrected in the full
+force model (``core.transfer.design``).
 """
 
 from __future__ import annotations
 
+import math
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -43,15 +46,21 @@ COAST_SLACK_S = 15 * 60.0
 COAST_MAX_S = 120 * 60.0
 #: How far the corrected liftoff may move from the due-east guess.
 MAX_SHIFT_S = 3 * H
-#: The due-east instant against the flown liftoff, given the flown arrival: IM-1
-#: 9.7 min and IM-2 43.8 min late (docs/validation.md, D1). The larger is the margin.
-DESIGN_PM_S = 44 * 60.0
+#: The designed instant against the flown liftoff, given the flown arrival and climbing in
+#: the other direct flight's direction: IM-1 15.8 min early and IM-2 17.5 min late
+#: (docs/validation.md, D1).
+#: The larger is the margin.
+DESIGN_PM_S = 18 * 60.0
+#: With no direct flight of the vehicle measured, a due-east climb: IM-1 9.8 min and IM-2
+#: 43.8 min late designed that way with the arrival orbit's way round left free, as the
+#: calendar leaves it (docs/validation.md, D1).
+DUE_EAST_PM_S = 44 * 60.0
 #: Beyond this lead the ensemble forecasts do not reach.
 FORECAST_LEAD_S = 16 * DAY
 MAX_DESIGNS = 150
 #: Landing times tried in each allowed stretch: its start, then a day apart.
 LANDINGS_PER_WINDOW = 5
-#: A due-east climb's plane sweeps past the Moon's direction twice a sidereal day, once
+#: A climb's plane sweeps past the Moon's direction twice a sidereal day, once
 #: northward and once southward. Launches aimed at different landings move each instant
 #: by hours, so instants of the same sweep within half a day are one opportunity.
 SAME_OPPORTUNITY_S = 12 * H
@@ -129,6 +138,23 @@ def _landing_numbers(tr: Track, t: float, span: tuple[float, float] | None) -> d
 # ---------------------------------------------------------------------------
 # A flown mission: the launch it flew, worked out again from its TLI
 # ---------------------------------------------------------------------------
+
+
+def _flown_azimuth_reason(pad_id: str, fl: Any, gm: float) -> str:
+    pad = catalogues.load("launch_sites").get(pad_id)
+    ground = launchwin.ground_azimuth(pad.lat_deg, fl.azimuth_deg, math.sqrt(gm / fl.r_park_m))
+    lo, hi = pad.azimuth_min_deg, pad.azimuth_max_deg
+    limits = (
+        f", {'inside' if lo <= ground <= hi else 'outside'} the pad's {lo:.0f} to {hi:.0f}°"
+        if lo is not None and hi is not None
+        else ""
+    )
+    return (
+        "The climb's direction is not published. This is the inertial one worked out from "
+        "NASA's reconstruction: the plane through the pad at liftoff and the point where it "
+        f"left Earth for the Moon (an orbit inclined {fl.inc_deg:.2f} degrees to the "
+        f"equator). Over the ground it is {ground:.1f}°{limits}."
+    )
 
 
 async def _flown(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, Any]], str | None]:
@@ -237,11 +263,11 @@ async def _flown(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, Any
         "that applied; the forecasts made before it were not kept.",
         "basis": basis,
         "note": note,
-        "azimuth_deg": lifecycle.missing(
+        "azimuth_deg": _q(
+            fl.azimuth_deg,
             "deg",
-            f"The climb's direction is not published; the orbit after leaving Earth for the Moon "
-            f"was inclined "
-            f"{fl.inc_deg:.2f} degrees to the equator.",
+            provenance="computed",
+            no_margin_reason=_flown_azimuth_reason(p["pad_id"], fl, gm),
         ),
         "dv_tli_m_s": _q(
             fl.dv_tli_m_s,
@@ -293,6 +319,12 @@ def _wait(p: dict[str, Any], flights: dict[str, ascent.Flight]) -> tuple[float, 
     return 1.0, _q(1.0, "d", provenance="assumed", no_margin_reason=why, source=why)
 
 
+def climb_direction(asc: ascent.Ascent) -> float:
+    """The inertial azimuth a designed launch climbs at: the mean of the vehicle's direct
+    lunar flights (phasing loops fly their own way), due east when it has none."""
+    return asc.direct_azimuth_deg if asc.direct_azimuth_deg is not None else 90.0
+
+
 def _design_all(
     p: dict[str, Any],
     asc: ascent.Ascent,
@@ -314,10 +346,11 @@ def _design_all(
     coast_lo = min(asc.coasts_s) - COAST_SLACK_S
     coast_hi = COAST_MAX_S
     coast_nom = float(np.mean(asc.coasts_s))
+    az = climb_direction(asc)
 
     def parking_at(tl: float) -> transfer.Parking:
         ph = unit(pad_at(tl))
-        h = launchwin.climb_plane(ph, 90.0)
+        h = launchwin.climb_plane(ph, az)
         return transfer.Parking(tl, asc.r_park_m * rotate(ph, h, asc.c_rad), h, gm)
 
     out: list[dict[str, Any]] = []
@@ -339,6 +372,7 @@ def _design_all(
                 pad_at,
                 parking_at,
                 inc,
+                az,
                 (coast_lo, coast_hi, coast_nom),
                 asc,
                 (t_from, t_to),
@@ -357,13 +391,15 @@ def _design_landing(
     pad_at: Any,
     parking_at: Any,
     inc: float,
+    az: float,
     coasts: tuple[float, float, float],
     asc: ascent.Ascent,
     dates: tuple[float, float],
     out: list[dict[str, Any]],
     designs: int,
 ) -> int:
-    """Every launch that lands at ``land_t``: one design per due-east instant in reach."""
+    """Every launch that lands at ``land_t``: one design per instant in reach at which a
+    climb at ``az`` (inertial) holds the Moon's direction at arrival."""
     coast_lo, coast_hi, coast_nom = coasts
     t_from, t_to = dates
     arrive_et = start_et + land_t - wait_d * DAY
@@ -371,7 +407,7 @@ def _design_landing(
     moon = unit(forces.body_state(tables, forces.MOON, np.array([arrive_et]))[0][:3])
 
     def gap(t: float, moon: Any = moon) -> float:
-        return launchwin.due_east_gap(unit(pad_at(t)), moon)
+        return launchwin.climb_gap(unit(pad_at(t)), moon, az)
 
     lo_et = arrive_et - FLIGHT_DAYS[1] * DAY - coast_hi
     hi_et = arrive_et - FLIGHT_DAYS[0] * DAY - coast_lo
@@ -425,6 +461,16 @@ async def _designed(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, 
             "to orbit is not known and launch instants cannot be worked out."
         )
     ctx.progress(0.15, "The vehicle's climb measured from its flown launches.")
+    names: dict[str, str] = p.get("names", {})
+    az = climb_direction(asc)
+    pad = catalogues.load("launch_sites").get(p["pad_id"])
+    az_ground = launchwin.ground_azimuth(pad.lat_deg, az, math.sqrt(gm / asc.r_park_m))
+    lo_az, hi_az = pad.azimuth_min_deg, pad.azimuth_max_deg
+    if lo_az is not None and hi_az is not None and not (lo_az <= az_ground <= hi_az):
+        return [], (
+            f"The vehicle's lunar climb heads {az_ground:.1f} degrees from north over the "
+            f"ground, outside this pad's allowed {lo_az:.0f} to {hi_az:.0f} degrees."
+        )
     wait_d, wait_q = _wait(p, flights)
     rule, _ = launch_service.landing_rule(p["parameters"], p.get("surface_days"))
     t_from = lifecycle.parse_time(p["from"]).timestamp()
@@ -455,6 +501,34 @@ async def _designed(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, 
                 mine.append([o])
         clusters += mine
     clusters.sort(key=lambda g: min(x["t0"] for x in g))
+    flown_az = ", ".join(f"{names.get(m, m)} {asc.azimuths_deg[m]:.1f}°" for m in asc.direct)
+    limits = (
+        f", inside the pad's {lo_az:.0f} to {hi_az:.0f}°"
+        if lo_az is not None and hi_az is not None
+        else ""
+    )
+    if asc.direct:
+        pm_s = DESIGN_PM_S
+        climb_words = (
+            f"A climb from the pad at {az:.1f}° from north (inertial; {az_ground:.1f}° over "
+            f"the ground{limits}), the mean of the vehicle's direct lunar flights ({flown_az})."
+        )
+        az_reason = (
+            f"The direction the vehicle's direct lunar flights climbed ({flown_az}), measured "
+            f"from the pad at liftoff and where each left Earth for the Moon; over the ground "
+            f"it is {az_ground:.1f}°{limits}. Each degree moves the launch instant by about "
+            "7 minutes, which sets the margin on the liftoff."
+        )
+    else:
+        pm_s = DUE_EAST_PM_S
+        climb_words = (
+            f"A due-east climb from the pad{limits}: the vehicle has no direct lunar flight "
+            "measured here."
+        )
+        az_reason = (
+            "Due east is assumed: the vehicle has no direct lunar flight measured here "
+            "(phasing loops climb their own way)."
+        )
     opps: list[dict[str, Any]] = []
     for group in clusters:
         o = min(group, key=lambda x: (x["land_t"], x["flight_d"]))
@@ -463,9 +537,9 @@ async def _designed(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, 
         a, b = o["window"]
         when = datetime.fromtimestamp(o["t0"], UTC)
         note = (
-            "A due-east climb from the pad, the flight corrected in the full force model to "
-            "reach a 100 km lunar orbit when the landing time allows; the margin is the "
-            "largest difference from a flown liftoff seen so far."
+            f"{climb_words} The flight is corrected in the full force model to reach a "
+            "100 km lunar orbit when the landing time allows; the margin is the largest "
+            "difference from a flown liftoff seen when designing that way."
         )
         if o["long_coast"]:
             lo_c, hi_c = o["flown_coasts"]
@@ -486,7 +560,7 @@ async def _designed(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, 
                 "pad_id": p["pad_id"],
                 "pad_name": pad_name,
                 "vehicle_id": p["vehicle_id"],
-                "t0": _q(o["t0"], lifecycle.EPOCH_UNIT, provenance="computed", pm=DESIGN_PM_S),
+                "t0": _q(o["t0"], lifecycle.EPOCH_UNIT, provenance="computed", pm=pm_s),
                 "kind": "instantaneous",
                 "window_open": None,
                 "window_close": None,
@@ -517,12 +591,10 @@ async def _designed(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, 
                 "basis": "designed",
                 "note": note,
                 "azimuth_deg": _q(
-                    90.0,
+                    az,
                     "deg",
                     provenance="assumed",
-                    no_margin_reason="A due-east climb is assumed: the flown Falcon 9 "
-                    "lunar launches reached orbits inclined within 0.1 degree of the pad's "
-                    "latitude, which only a due-east climb gives.",
+                    no_margin_reason=az_reason,
                 ),
                 "dv_tli_m_s": _q(
                     o["dv"],
@@ -638,9 +710,10 @@ async def run(ctx: JobContext) -> HandlerResult:
             (
                 "Launch instant",
                 "A flown launch is worked out again from where it left Earth for the Moon "
-                "and the vehicle's other flights (within seconds); a designed one assumes a "
-                "due-east climb, which "
-                "put IM-1 10 minutes and IM-2 44 minutes after their real liftoffs.",
+                "and the vehicle's other flights (within seconds); a designed one climbs in "
+                "the direction the vehicle's direct lunar flights climbed, which put IM-1 "
+                "16 minutes before and IM-2 18 minutes after their real liftoffs when each "
+                "was designed from the other's direction.",
             ),
             (
                 "Flight",

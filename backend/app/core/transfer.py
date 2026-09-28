@@ -46,6 +46,10 @@ class Target:
     t_arrive: float  # ET of closest approach to the Moon
     r_peri_m: float  # closest-approach radius from the Moon's centre
     inc_deg: float  # to the Moon's equator (MOON_PA)
+    #: The arrival orbit's normal (J2000), when the way round it goes is wanted too. The
+    #: inclination alone allows two orbits, mirror images across the approach; near a
+    #: polar arrival they go round in nearly opposite directions.
+    normal: FloatArray | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -178,15 +182,28 @@ def bplane(
 def b_target(
     bp: dict[str, float | FloatArray], k_hat: FloatArray, target: Target, mu: float
 ) -> tuple[float, float]:
-    """``(B.T, B.R)`` for the wanted radius and inclination, the branch nearest the current one."""
+    """``(B.T, B.R)`` for the wanted radius and inclination: of the two orbits with that
+    inclination, the one going round like ``target.normal`` when it is given, else the one
+    nearest the current approach."""
     v_inf = float(bp["v_inf"])
     b = target.r_peri_m * math.sqrt(1.0 + 2.0 * mu / (target.r_peri_m * v_inf**2))
     rk = float(np.asarray(bp["r_hat"]) @ k_hat)
     c = -math.cos(math.radians(target.inc_deg)) / rk if abs(rk) > 1e-12 else 0.0
     c = max(-1.0, min(1.0, c))
     th = math.acos(c)
-    now = math.atan2(float(bp["br"]), float(bp["bt"]))
-    best = min((th, -th), key=lambda x: abs(math.remainder(x - now, 2 * math.pi)))
+    if target.normal is not None:
+        s_hat, t_hat, r_hat = (np.asarray(bp[k]) for k in ("s_hat", "t_hat", "r_hat"))
+        normal = target.normal
+
+        def along(x: float) -> float:
+            # B = b (S x h), so the orbit's normal is B_hat x S.
+            b_hat = math.cos(x) * t_hat + math.sin(x) * r_hat
+            return float(np.cross(b_hat, s_hat) @ normal)
+
+        best = max((th, -th), key=along)
+    else:
+        now = math.atan2(float(bp["br"]), float(bp["bt"]))
+        best = min((th, -th), key=lambda x: abs(math.remainder(x - now, 2 * math.pi)))
     return b * math.cos(best), b * math.sin(best)
 
 

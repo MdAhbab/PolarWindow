@@ -40,6 +40,9 @@ class FlownLaunch:
     t_arrive: float | None  # first closest approach to the Moon (ET)
     r_arrive_m: float | None
     arrival_from: str  # "reconstruction" or "propagated across a gap"
+    #: Inertial azimuth of the climb: the plane through the pad at liftoff and the TLI
+    #: point, leaving the pad (deg from north).
+    azimuth_deg: float
 
     @property
     def flight_s(self) -> float | None:
@@ -88,6 +91,7 @@ def measure(
         t_arrive=t_arr,
         r_arrive_m=r_arr,
         arrival_from=how,
+        azimuth_deg=launchwin.climb_azimuth(p, hp),
     )
 
 

@@ -3,9 +3,12 @@
 See ``validate_launch`` for the method; ``make validate-trip`` prints the table
 in docs/validation.md. The plan asks for the liftoff worked out again from a
 flown TLI within 2 minutes (IM-1, IM-2) and 5 minutes (Blue Ghost), and for
-a designed launch on the right day within 10 minutes. The designed IM-2
-launch misses that by half an hour; the test pins what is achieved so a
-change is seen, and docs/validation.md says why.
+a designed launch on the right day within 10 minutes. Designed with the
+climb in the direction each flight flew, both land within a minute; due east
+or in the other flight's direction they miss by 10 to 27 minutes, since each
+degree of direction moves the liftoff about 7.5 minutes and the arrival does
+not fix it. The test pins what is achieved so a change is seen, and
+docs/validation.md says why.
 """
 
 from __future__ import annotations
@@ -44,3 +47,13 @@ def test_designed_direct_transfers_reach_the_flown_arrival(rows) -> None:
         assert abs(r.designed_flight_d - r.flown_flight_d) < 0.05
     assert abs(rows["im-1"].designed_t0_min) < 10  # the plan's 10 minutes, met for IM-1
     assert rows["blue-ghost-m1"].designed_t0_min is None  # phasing loops: C3
+
+
+def test_the_direction_of_the_climb_decides_the_instant(rows) -> None:
+    for mid in ("im-1", "im-2"):
+        r = rows[mid]
+        assert r.flown_az_t0_min is not None and abs(r.flown_az_t0_min) < 2  # plan: 10 min
+        # Held out (the other Nova-C launch's direction): what is achieved.
+        assert r.held_az_t0_min is not None and abs(r.held_az_t0_min) < 20
+    assert 85 < rows["im-1"].flown_az_deg < 90 and 85 < rows["im-2"].flown_az_deg < 90
+    assert 105 < rows["blue-ghost-m1"].flown_az_deg < 115  # inclined 35 degrees

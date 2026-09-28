@@ -4,18 +4,19 @@ Run: ``make validate-trip`` (or ``uv run python -m app.tests.golden.validate_lau
 Prints the table in docs/validation.md; ``test_launch_vs_clps.py`` pins the
 acceptance numbers from the same code.
 
-Two checks, each with the flight being predicted left out of the vehicle's
-climb constant:
+Each flight being predicted is left out of the vehicle's climb constant:
 
 * **Worked out again from the TLI** (``ascent.hold_one_out_s``): NASA's
   reconstruction gives the TLI time and point; the liftoff is solved from
   the climb constant of the other two flights.
 * **Designed** (IM-1 and IM-2, the direct transfers): only the pad, the
   reconstructed arrival at the Moon (time, closest approach, inclination to
-  the Moon's equator) and the other flights' climb are given. A due-east
-  climb is corrected in the force model (``transfer.design``) until it
-  reaches that arrival; the liftoff, coast and TLI speed it needs are
-  compared with the flown ones.
+  the Moon's equator and the way round the orbit goes) and the other flights'
+  climb are given. A climb at a given azimuth is corrected in the force model
+  (``transfer.design``) until it reaches that arrival; the liftoff, coast and
+  TLI speed it needs are compared with the flown ones. Three azimuths: due
+  east (the assumption before), the direction the flight climbed (measured from
+  the pad at liftoff and the TLI point) and the other direct flight's (held out).
 """
 
 from __future__ import annotations
@@ -41,7 +42,8 @@ class Row:
     mission: str
     published_t0: str
     from_tli_s: float
-    designed_t0_min: float | None
+    flown_az_deg: float
+    designed_t0_min: float | None  # due east
     designed_coast_min: float | None
     flown_coast_min: float
     designed_dv_m_s: float | None
@@ -49,6 +51,9 @@ class Row:
     designed_flight_d: float | None
     flown_flight_d: float | None
     converged: bool | None
+    flown_az_t0_min: float | None  # designed at the azimuth the flight climbed
+    held_az_deg: float | None  # the vehicle's other direct flights' mean azimuth
+    held_az_t0_min: float | None
 
 
 def _flights() -> dict[str, ascent.Flight]:
@@ -60,10 +65,13 @@ def _flights() -> dict[str, ascent.Flight]:
     return ascent.measure(tuple(rows))
 
 
-def _designed(mid: str, flights: dict[str, ascent.Flight]) -> dict[str, Any] | None:
+def _designed(
+    mid: str, flights: dict[str, ascent.Flight], az_deg: float = 90.0
+) -> dict[str, Any] | None:
+    """The day's designed launch nearest the flown one, climbing at ``az_deg``."""
     f = flights[mid]
     fl = f.launch
-    if fl.t_arrive is None or fl.flight_s is None or fl.flight_s > 10 * 86_400.0:
+    if fl.t_arrive is None or not ascent.is_direct(fl):
         return None  # phasing loops are C3
     others = [o.launch.c_rad for k, o in flights.items() if k != mid]
     c = float(np.mean(others))
@@ -81,18 +89,22 @@ def _designed(mid: str, flights: dict[str, ascent.Flight]) -> dict[str, Any] | N
         rr, vv = enc.r, enc.v
     k = transfer.moon_pole(tables, fl.t_arrive)
     inc = math.degrees(math.acos(float(unit(np.cross(rr, vv)) @ k)))
-    target = transfer.Target(fl.t_arrive, float(np.linalg.norm(rr)), inc)
+    # The arrival's orbit held with the way it goes round: IM-2 arrived in a near-polar
+    # orbit, where the inclination alone also allows the mirror orbit going the other way.
+    target = transfer.Target(
+        fl.t_arrive, float(np.linalg.norm(rr)), inc, normal=unit(np.cross(rr, vv))
+    )
     pad_at = ascent.pad_j2000(f.pad_id)
 
     def parking_at(tl: float) -> transfer.Parking:
         ph = unit(pad_at(tl))
-        h = launchwin.climb_plane(ph, 90.0)
+        h = launchwin.climb_plane(ph, az_deg)
         return transfer.Parking(tl, fl.r_park_m * rotate(ph, h, c), h, tables.gm_earth)
 
     mh = unit(moon[:3])
     day0 = f.t0_et - 12 * 3600.0
     roots = launchwin.roots(
-        lambda t: launchwin.due_east_gap(unit(pad_at(t)), mh), day0, day0 + 86_400.0, 300.0
+        lambda t: launchwin.climb_gap(unit(pad_at(t)), mh, az_deg), day0, day0 + 86_400.0, 300.0
     )
     best: dict[str, Any] | None = None
     for root in roots:
@@ -123,11 +135,19 @@ def results() -> list[Row]:
     for mid in F9:
         f = flights[mid]
         d = _designed(mid, flights)
+        at_flown = _designed(mid, flights, f.launch.azimuth_deg)
+        others = [a.azimuths_deg[m] for m in a.direct if m != mid]
+        held = float(np.mean(others)) if others else None
+        at_held = None if held is None else _designed(mid, flights, held)
         out.append(
             Row(
                 mission=mid,
                 published_t0=spice.et_to_utc(f.t0_et, precision=0),
                 from_tli_s=a.hold_one_out_s[mid],
+                flown_az_deg=f.launch.azimuth_deg,
+                flown_az_t0_min=None if at_flown is None else at_flown["t0_min"],
+                held_az_deg=held,
+                held_az_t0_min=None if at_held is None else at_held["t0_min"],
                 designed_t0_min=None if d is None else d["t0_min"],
                 designed_coast_min=None if d is None else d["coast_min"],
                 flown_coast_min=f.launch.tau_s / 60.0,
@@ -141,6 +161,10 @@ def results() -> list[Row]:
     return out
 
 
+def _min(x: float | None, what: str = "phasing loops (below)") -> str:
+    return what if x is None else f"{x:+.1f} min"
+
+
 def main() -> None:
     rows = results()
     print(
@@ -149,7 +173,6 @@ def main() -> None:
     )
     print("|---|---|---|---|---|---|---|")
     for r in rows:
-        des = "phasing loops (C3)" if r.designed_t0_min is None else f"{r.designed_t0_min:+.1f} min"
         coast = (
             f"{r.flown_coast_min:.1f} min"
             if r.designed_coast_min is None
@@ -166,7 +189,25 @@ def main() -> None:
             else f"{r.designed_flight_d:.2f} / {r.flown_flight_d:.2f} d"
         )
         head = f"| {r.mission} | {r.published_t0} | {r.from_tli_s:+.0f} s"
-        print(f"{head} | {des} | {coast} | {dv} | {fl} |")
+        print(f"{head} | {_min(r.designed_t0_min)} | {coast} | {dv} | {fl} |")
+    print()
+    print(
+        "| Mission | Climbed at | Designed: due east | at the azimuth it climbed "
+        "| at the other direct flight's |"
+    )
+    print("|---|---|---|---|---|")
+    for r in rows:
+        held = (
+            "none flown"
+            if r.held_az_deg is None
+            else _min(r.held_az_t0_min)
+            if r.held_az_t0_min is None
+            else f"{_min(r.held_az_t0_min)} ({r.held_az_deg:.1f}°)"
+        )
+        print(
+            f"| {r.mission} | {r.flown_az_deg:.1f}° | {_min(r.designed_t0_min)} "
+            f"| {_min(r.flown_az_t0_min)} | {held} |"
+        )
     json.dump([asdict(r) for r in rows], sys.stderr, indent=1)
 
 

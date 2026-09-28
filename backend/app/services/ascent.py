@@ -52,6 +52,12 @@ class Ascent:
     flights: tuple[str, ...]
     #: Liftoff predicted from the other flights minus the published one, per flight (s).
     hold_one_out_s: dict[str, float]
+    #: The climb's inertial azimuth, per flight (deg).
+    azimuths_deg: dict[str, float]
+    #: Its flights that went straight to the Moon (phasing loops fly their own way).
+    direct: tuple[str, ...]
+    #: The mean climb azimuth over those, or None when there are none.
+    direct_azimuth_deg: float | None
 
 
 def pad_j2000(pad_id: str) -> Any:
@@ -128,6 +134,7 @@ def ascent(vehicle_id: str, flights: dict[str, Flight], gm_earth: float) -> Asce
             t = liftoff_from(f.launch, pad_j2000(f.pad_id), float(np.mean(others)), gm_earth)
             if t is not None:
                 hold[f.mission_id] = t - f.t0_et
+    direct = [f for f in mine if is_direct(f.launch)]
     return Ascent(
         vehicle_id=vehicle_id,
         c_rad=float(np.mean([f.launch.c_rad for f in mine])),
@@ -135,7 +142,21 @@ def ascent(vehicle_id: str, flights: dict[str, Flight], gm_earth: float) -> Asce
         coasts_s=tuple(f.launch.tau_s for f in mine),
         flights=tuple(f.mission_id for f in mine),
         hold_one_out_s=hold,
+        azimuths_deg={f.mission_id: f.launch.azimuth_deg for f in mine},
+        direct=tuple(f.mission_id for f in direct),
+        direct_azimuth_deg=(
+            float(np.mean([f.launch.azimuth_deg for f in direct])) if direct else None
+        ),
     )
+
+
+#: A flight from TLI to the Moon longer than this went round the Earth first (phasing
+#: loops, as Blue Ghost 1 flew): its climb was aimed for that, not for a direct transfer.
+DIRECT_MAX_S = 10 * 86_400.0
+
+
+def is_direct(f: FlownLaunch) -> bool:
+    return f.flight_s is not None and f.flight_s <= DIRECT_MAX_S
 
 
 def gm_earth() -> float:

@@ -242,9 +242,10 @@ Named, rather than left for someone to find:
 - No screen-reader user has tested the announcements yet.
 - The launch wind forecast shares are not checked against enough observations
   (one year at the Cape had one event), so they are shown as not checked.
-- A designed launch time for a planned mission misses the flown one by up to
-  44 min (IM-2) and more for an inclined departure; the errors in the correction
-  budget are assumed, not published.
+- A designed launch time for a planned mission climbs in the direction of the
+  vehicle's flown lunar launches; held out, IM-1 and IM-2 miss by 16 and 18 min
+  (given its own direction each lands within a minute), so the calendar gives
+  ± 18 min; the errors in the correction budget are assumed, not published.
 - The capsule entry model lands OSIRIS-REx's capsule 9.5 km from where it landed
   (limit 10 km); no CLPS mission brings anything back, so no return trajectory is
   worked out.

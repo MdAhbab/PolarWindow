@@ -145,7 +145,8 @@ def replay_check() -> ReplayResult:
     )
 
 
-def design_days(days: range = DAYS) -> LoopsResult:
+def design_days(days: range = DAYS, az_deg: float = 90.0) -> LoopsResult:
+    """The cheapest loop design of each launch day, climbing at ``az_deg`` (inertial)."""
     flights = _flights()
     f = flights[LOOPS]
     fl = f.launch
@@ -177,7 +178,7 @@ def design_days(days: range = DAYS) -> LoopsResult:
 
     def parking_at(tl: float) -> transfer.Parking:
         ph = unit(pad_at(tl))
-        h = launchwin.climb_plane(ph, 90.0)
+        h = launchwin.climb_plane(ph, az_deg)
         return transfer.Parking(tl, fl.r_park_m * rotate(ph, h, c), h, tables.gm_earth)
 
     moon = unit(forces.body_state(tables, forces.MOON, np.array([target.t_arrive]))[0][:3])
@@ -186,7 +187,7 @@ def design_days(days: range = DAYS) -> LoopsResult:
         day0 = f.t0_et - 12 * 3600.0 + dd * DAY
         tried: list[phasing.LoopDesign | str] = []
         for root in launchwin.roots(
-            lambda t: launchwin.due_east_gap(unit(pad_at(t)), moon), day0, day0 + DAY, 300.0
+            lambda t: launchwin.climb_gap(unit(pad_at(t)), moon, az_deg), day0, day0 + DAY, 300.0
         ):
             park = parking_at(root)
             t_g, _ = transfer.guess(tables, park, target.t_arrive, flight_s, root + 600.0)
@@ -239,6 +240,13 @@ def design_days(days: range = DAYS) -> LoopsResult:
         for a, b, n in phasing.launch_period(picked)
     ]
     return out
+
+
+def flown_direction() -> tuple[float, DayRow]:
+    """Blue Ghost's flown day designed with the climb in the direction it flew (plan D1:
+    its orbit was inclined 35 degrees, which a due-east climb from Florida does not give)."""
+    az = _flights()[LOOPS].launch.azimuth_deg
+    return az, design_days(range(0, 1), az_deg=az).days[0]
 
 
 def corrections(mission_id: str, samples: int = 1000, seed: int = 0) -> CorrectionRow:
@@ -299,6 +307,15 @@ def main() -> None:
                 f"{d.period_m_s:+.1f} | {d.final_m_s:.1f} | {d.total_m_s:.1f} | |"
             )
     print(f"Launch periods (first day, last day, loops): {lp.periods}")
+    az, d0 = flown_direction()
+    print(
+        f"Day 0 climbing as flown ({az:.1f}°): "
+        + (
+            f"{d0.loops} loops, liftoff {d0.t0_min:+.1f} min, total {d0.total_m_s:.1f} m/s"
+            if d0.loops is not None and d0.t0_min is not None and d0.total_m_s is not None
+            else f"no design ({d0.why_not})"
+        )
+    )
     print()
     rows = [corrections(m) for m in ("blue-ghost-m1", "im-1", "im-2")]
     print(
@@ -315,7 +332,12 @@ def main() -> None:
             f"{r.alt_spread_km[0]:.1f} to {r.alt_spread_km[1]:.1f} km | {fl} |"
         )
     json.dump(
-        {"replay": asdict(rp), "loops": asdict(lp), "corrections": [asdict(r) for r in rows]},
+        {
+            "replay": asdict(rp),
+            "loops": asdict(lp),
+            "flown_direction": {"azimuth_deg": az, "day0": asdict(d0)},
+            "corrections": [asdict(r) for r in rows],
+        },
         sys.stderr,
         indent=1,
         default=str,

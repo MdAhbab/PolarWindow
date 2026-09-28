@@ -69,6 +69,34 @@ def test_azimuth_of_a_due_east_plane() -> None:
     assert az_r == pytest.approx(90.0, abs=1e-6)  # Earth's spin is along east too
 
 
+def test_climb_azimuth_inverts_the_climb_plane_and_the_inclination_formula() -> None:
+    lat = 28.6
+    p = np.array([math.cos(math.radians(lat)), 0.0, math.sin(math.radians(lat))])
+    for az in (60.0, 87.5, 90.0, 110.0):
+        h = launchwin.climb_plane(p, az)
+        assert launchwin.climb_azimuth(p, h) == pytest.approx(az, abs=1e-9)
+        inc = math.degrees(math.acos(h[2]))
+        assert launchwin.inclination_for_azimuth(lat, az) == pytest.approx(inc, abs=1e-9)
+        pair = launchwin.azimuth_for_inclination(lat, inc)
+        assert pair is not None and min(abs(pair[0] - az), abs(pair[1] - az)) < 1e-6
+        # A climb at this azimuth holds the direction it moves in at the pad.
+        ahead = rotate(p, h, 0.3)
+        assert launchwin.climb_gap(p, ahead, az) == pytest.approx(0.0, abs=1e-12)
+    assert launchwin.azimuth_for_inclination(lat, 20.0) is None  # below the latitude
+
+
+def test_ground_azimuth_turns_away_from_east() -> None:
+    # Due east is due east over the ground too; off east the ground's speed turns it further.
+    assert launchwin.ground_azimuth(28.6, 90.0, 7800.0) == pytest.approx(90.0, abs=1e-9)
+    assert launchwin.ground_azimuth(28.6, 110.0, 7800.0) > 110.0
+    assert launchwin.ground_azimuth(28.6, 70.0, 7800.0) < 70.0
+    lat = math.radians(28.6)
+    up = np.array([math.cos(lat), 0.0, math.sin(lat)])
+    h = launchwin.climb_plane(up, 110.0)
+    _, az_r = launchwin.azimuth_deg(up, h, 7800.0, launchwin.WGS84_A)
+    assert launchwin.ground_azimuth(28.6, 110.0, 7800.0) == pytest.approx(az_r, abs=1e-6)
+
+
 def test_patched_conic_limits() -> None:
     r_park, r_moon = 6_578_000.0, 384_400_000.0
     a_h = 0.5 * (r_park + r_moon)

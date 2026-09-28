@@ -93,3 +93,12 @@ def test_a_seeded_run_repeats_bit_for_bit(ready) -> None:
     ]
     assert np.array_equal(runs[0].dv, runs[1].dv)
     assert np.array_equal(runs[0].periapsis_alt_m, runs[1].periapsis_alt_m)
+
+
+def test_blue_ghost_climbing_as_flown_lands_on_its_liftoff(ready) -> None:
+    """Due east the design lands 139 min early; in the direction it flew, within minutes."""
+    from app.tests.golden import validate_loops
+
+    az, d0 = validate_loops.flown_direction()
+    assert 105 < az < 115
+    assert d0.loops == 3 and d0.t0_min is not None and abs(d0.t0_min) < 5  # plan: 5 min

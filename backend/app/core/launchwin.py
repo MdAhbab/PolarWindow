@@ -142,12 +142,59 @@ def climb_plane(p_hat: FloatArray, azimuth_deg: float) -> FloatArray:
     return unit(np.cross(p_hat, math.cos(a) * north + math.sin(a) * east))
 
 
+def climb_gap(p_hat: FloatArray, target_hat: FloatArray, azimuth_deg: float) -> float:
+    """Zero when the plane of a climb from ``p`` at this azimuth holds ``target``
+    (``due_east_gap`` at 90 degrees)."""
+    return float(climb_plane(p_hat, azimuth_deg) @ target_hat)
+
+
+def climb_azimuth(p_hat: FloatArray, h_hat: FloatArray) -> float:
+    """The inertial azimuth (deg from north) of a climb from ``p`` in the plane with
+    normal ``h``, moving counter-clockwise about it; the inverse of ``climb_plane``."""
+    east, north = east_north(p_hat)
+    d = unit(np.cross(h_hat, p_hat))
+    return math.degrees(math.atan2(float(d @ east), float(d @ north))) % 360.0
+
+
+def azimuth_for_inclination(lat_deg: float, inc_deg: float) -> tuple[float, float] | None:
+    """The two inertial azimuths from latitude ``lat`` that reach an orbit of this
+    inclination, north-east and south-east: ``sin A = cos i / cos lat``. None when the
+    orbit is inclined less than the latitude (no climb reaches it without a turn)."""
+    s = math.cos(math.radians(inc_deg)) / math.cos(math.radians(lat_deg))
+    if abs(s) > 1.0:
+        return None
+    a = math.degrees(math.asin(s))
+    return a, 180.0 - a
+
+
+def ground_azimuth(lat_deg: float, azimuth_deg: float, v_orbit_m_s: float) -> float:
+    """The Earth-relative azimuth (deg from north) of a climb at this inertial azimuth:
+    the orbit's velocity at the pad minus the ground's eastward speed there. Pad limits
+    (range safety) are set over the ground."""
+    a = math.radians(azimuth_deg)
+    v_rot = OMEGA_EARTH * WGS84_A * math.cos(math.radians(lat_deg))
+    east = v_orbit_m_s * math.sin(a) - v_rot
+    return math.degrees(math.atan2(east, v_orbit_m_s * math.cos(a))) % 360.0
+
+
+def inclination_for_azimuth(lat_deg: float, azimuth_deg: float) -> float:
+    """The inclination a climb from latitude ``lat`` at this inertial azimuth reaches:
+    ``cos i = sin A cos lat``."""
+    c = math.sin(math.radians(azimuth_deg)) * math.cos(math.radians(lat_deg))
+    return math.degrees(math.acos(max(-1.0, min(1.0, c))))
+
+
 __all__ = [
     "Ascent",
     "angle_along",
     "azimuth_deg",
+    "azimuth_for_inclination",
+    "climb_azimuth",
+    "climb_gap",
     "climb_plane",
     "due_east_gap",
+    "ground_azimuth",
+    "inclination_for_azimuth",
     "pad_itrf",
     "plane_normal",
     "residual",

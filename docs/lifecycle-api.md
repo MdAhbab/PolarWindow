@@ -591,3 +591,11 @@ that user. `GET /auth/me` returns the same `user`.
   - A queued `JobRef.message` says the compute worker is not running only when nothing is
     ahead of the job; contact jobs are worked out before launch calendars, and those before
     trips (cheapest first).
+- 2026-09-28 (backend, D1 climb direction; engine `lw-5`):
+  - Launch: a designed `Opportunity` climbs at the mean inertial azimuth of the vehicle's
+    direct lunar flights (Falcon 9: 87.7°; due east with ± 44 min when it has none);
+    `azimuth_deg` is that value (`assumed`, the flights named in `no_margin_reason`) and
+    `t0.pm` is 18 min (was 44). A climb outside the pad's azimuth limits (over the ground)
+    gives no opportunities, with `none_reason`. A flown opportunity's `azimuth_deg` is now
+    `computed` (was missing): the inertial azimuth from NASA's reconstruction, the ground
+    azimuth and the pad's limits in `no_margin_reason`.

@@ -127,7 +127,13 @@ launch is predicted with its own flight left out of the vehicle's climb.
 |---|---|---|---|---|---|---|
 | im-1 | 2024-02-15T06:05:37Z | +15 s | +9.8 min | 41.3 / 42.0 min | 3134 / 3135 m/s | 6.32 / 6.33 d |
 | blue-ghost-m1 | 2025-01-15T06:11:39Z | -11 s | phasing loops (below) | 59.0 min | 3119 m/s | 29.78 d |
-| im-2 | 2025-02-27T00:16:30Z | -4 s | +43.8 min | 34.6 / 36.9 min | 3125 / 3126 m/s | 4.45 / 4.48 d |
+| im-2 | 2025-02-27T00:16:30Z | -4 s | +27.4 min | 35.5 / 36.9 min | 3125 / 3126 m/s | 4.46 / 4.48 d |
+
+| Mission | Climbed at (inertial / over the ground) | Designed: due east | at the azimuth it climbed | at the other direct flight's |
+|---|---|---|---|---|
+| im-1 | 88.8° / 88.7° | +9.8 min | +0.2 min | −15.8 min (86.6°) |
+| blue-ghost-m1 | 110.2° / 111.3° | −139 min (loops) | +0.6 min (loops, below) | none flown with loops |
+| im-2 | 86.6° / 86.4° | +27.4 min (+43.8 before) | −0.0 min | +17.5 min (88.8°) |
 
 **How a climb is described.** From the first reconstructed state after TLI
 the trajectory is propagated back to its perigee, where TLI fired. That gives
@@ -151,18 +157,52 @@ hundredths of a degree move the crossing by ten minutes or more.
 
 **Designed** (plan: the right day, and within 10 min). Given only the pad,
 the other flights' climb and NASA's arrival at the Moon (time, closest
-approach, inclination to the Moon's equator), the design assumes a due-east
-climb and corrects three things in the force model (Sun, Moon, Earth J2–J6;
-the Moon a point mass): the liftoff time, which turns the parking orbit's
-plane with the Earth; the coast, which moves the TLI point along it; and the
-speed TLI adds. It converges in 3–4 steps to under 0.1 km in the B-plane and
-1 s in time. The coast, TLI speed and flight time it needs agree with the
-flown ones (within 2.3 min, 2 m/s and 0.03 d), so the transfer itself is
-right; the liftoff is right to the day but lands 9.8 min (IM-1, inside the
-plan's 10 min) and 43.8 min (IM-2, outside it) after the real one. The
-difference is the climb's direction: a due-east climb is the assumption, and
-IM-2's orbit shows it did not fly exactly that. The calendar therefore gives
-a designed liftoff ± 44 min, the larger of the two misses, and says so.
+approach, inclination to the Moon's equator and the way round the orbit
+goes), the design takes a climb azimuth and corrects three things in the
+force model (Sun, Moon, Earth J2–J6; the Moon a point mass): the liftoff
+time, which turns the parking orbit's plane with the Earth; the coast, which
+moves the TLI point along it; and the speed TLI adds. It converges in 3–4
+steps to under 0.1 km in the B-plane and 1 s in time. The coast, TLI speed
+and flight time it needs agree with the flown ones (within 1.4 min, 1 m/s
+and 0.02 d), so the transfer itself is right.
+
+*Before* (a due-east climb, the arrival's inclination alone): the liftoff was
+right to the day but 9.8 min (IM-1, inside the plan's 10 min) and 43.8 min
+(IM-2) after the real one; Blue Ghost's loop design 139 min before it. Two
+things were wrong. IM-2 arrived in a near-polar orbit, where the inclination
+alone also allows the mirror orbit going round the other way; the design took
+whichever was nearer its first guess. Holding the orbit's direction as well
+(`transfer.Target.normal`) brings IM-2 to +27.4 min due east. The rest is the
+climb's direction. For a direct transfer the arrival fixes the plane through
+the Moon's direction, so the azimuth and the liftoff time trade one for the
+other: every azimuth has its own instant, about 7 min per degree here (the
+pad sits near the top of the orbit, where the plane's crossing is slow).
+
+*After* (the climb azimuth solved for, plan §D1, `sin A = cos i / cos φ`):
+the climb's direction of each flight is measured from the plane through the
+pad at liftoff and the TLI point (`launchwin.climb_azimuth`; IM-1 88.8°,
+IM-2 86.6°, Blue Ghost 110.2°: climb planes inclined 28.63°, 28.79° and 34.5°
+from a pad at 28.61°). Designed at that azimuth the liftoff lands 0.2 min (IM-1),
+0.0 min (IM-2) and 0.6 min (Blue Ghost, three loops as flown) from the
+real one, inside the plan's 2 and 5 min. That uses the flight's own
+direction. Held out, each Nova-C designed at the other's direction misses by
+15.8 min (IM-1, early) and 17.5 min (IM-2, late): outside the plan's 10 min,
+since the two flights' directions differ by 2.2°, and nothing published says
+which azimuth a flight will take. All three are inside the Eastern Range's
+assumed 35–120° over the ground (`launchwin.ground_azimuth`), and so the
+calendar's check of the pad's limits passes for them.
+
+The planned calendar therefore climbs at the mean of the vehicle's direct
+lunar flights (Falcon 9: 87.7°, 87.6° over the ground; due east with a ±44 min
+margin for a vehicle with none) and gives the liftoff ± 18 min, the larger
+held-out miss (it was ± 44 min). A launch is still an instant: no flown CLPS
+launch published a window, so the plan's widening to a window between the
+azimuth limits is not applied. Designing the calendar with the flight held out
+still puts an opportunity on each real launch day (D2 below); on that day the
+nearest one is 90 min before IM-1's liftoff (66 min due east) and 36 min after
+IM-2's (45 min due east), because the calendar aims at the landing times the
+rule allows, not at the flown arrival, and the arrival time moves the instant
+more than the direction does.
 Keeping the TLI point fixed and steering with a sideways push at TLI instead
 was tried first and fails: for a transfer of nearly 180° the push barely
 moves the arrival, and the correction found answers about 100 to 190 m/s from the
@@ -178,12 +218,11 @@ puts a launch opportunity on each one's real launch day (`test_launch.py`).
 The lunar orbit's plane passing over the landing spot (plan L4) is not
 checked: near the poles the lighting decides.
 
-**Not yet done.** The vehicle's
-azimuth limits are not applied, because the design flies due east, inside
-the Eastern Range's assumed 35–120°. Coasts longer than any flown one are
-accepted up to 120 min and flagged: with the Moon south of the equator a
-due-east climb reaches the TLI point only after most of an orbit, and upper
-stage coast limits are not published.
+**Not yet done.** Coasts longer than any flown one are accepted up to 120 min
+and flagged: with the Moon south of the equator the climb reaches the TLI point
+only after most of an orbit, and upper stage coast limits are not published.
+Which azimuth a flight takes is not predicted better than the spread of the
+flown ones (2.2°, 16–18 min).
 
 # Phasing loops and correction burns against the flown landers (plan C3, C4)
 
@@ -258,8 +297,10 @@ three-loop period (−5 to +2 days) holds the flown date. The cost curve is the
 stronger result: an eight-day loop reaches 330,000 km, where the Sun's pull
 over one loop moves the perigee by thousands of kilometres, and on the flown
 day it did most of the raising (20.8 m/s against 85 m/s in two-body terms).
-The liftoff lands 139 min before the real one, the due-east climb again (the
-real one was inclined 35°, which a due-east climb from Florida does not give).
+Due east, the liftoff lands 139 min before the real one (the real climb was
+inclined 34.5°, which a due-east climb from Florida does not give). Climbing
+at the azimuth it flew (110.2°), the flown day's design needs 3 loops and
+lands 0.6 min after the real liftoff (plan: 5 min), 55.3 m/s in all (flown 49.4).
 
 **Correction budget** (plan: linear and Monte Carlo within 10% at the 95th and
 99th percentiles; a seeded run repeats bit for bit). The flight as planned is

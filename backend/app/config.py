@@ -44,6 +44,8 @@ ENGINE_VERSION = "hz-2/vis-2"
 #: lw-3: weather "climatology" beyond 16 days where a wind climatology can be read.
 #: lw-4 / wx-2: the thunder climatology (GLM thunder hours) for the lightning rules.
 #: rad-2: Trip radiation: AE8/AP8 belts, cosmic-ray dose, solar particle events (track E).
+#: lw-5: a designed launch climbs in the direction of the vehicle's direct lunar flights,
+#:       inside the pad's azimuth limits; a flown launch's climb direction is computed.
 ENGINES: dict[str, str] = {
     "hz": "hz-2",
     "vis": "vis-2",
@@ -55,7 +57,7 @@ ENGINES: dict[str, str] = {
     "net": "net-3",
     "ready": "ready-1",
     "los": "los-1",
-    "lw": "lw-4",
+    "lw": "lw-5",
 }
 
 
