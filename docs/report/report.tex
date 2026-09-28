@@ -189,6 +189,269 @@ landing site and back. POLAR WINDOW adds that thread. Its engines are deliberate
 simpler than the specialist tools above, and every answer names the specialist tool in
 which it should be confirmed.
 
+% ---------------------------------------------------------------------------
+\section{System design}
+\label{sec:design}
+
+\subsection{Processes and data flow}
+
+The system is one Python code base run as three long-lived processes over PostgreSQL
+and Redis (\cref{fig:arch}). The \emph{API} process answers requests from the browser
+and from the agents. It reads stored answers and feed snapshots, and it never waits for
+a long computation. The \emph{compute worker} runs trajectory, launch-calendar and
+contact jobs. The \emph{feeds worker} is the only process that reaches external
+services: it fetches weather, space weather, launch schedules and DSN activity, and it
+stores each response as a snapshot with its fetch time. An import contract enforces this
+rule in code, so no module in the API, the services, the agents or the numerical core
+can import the feed package.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  font=\sffamily\small, node distance=9mm and 11mm,
+  box/.style={draw=pwtext, line width=0.5pt, minimum height=9mm, align=center,
+    inner sep=3pt, text width=#1},
+  box/.default=30mm,
+  store/.style={box=34mm, draw=pwblue, line width=0.8pt},
+  ext/.style={box=30mm, draw=pwgrey, dashed},
+  lab/.style={font=\sffamily\footnotesize, fill=white, inner sep=1pt},
+  arr/.style={-{Stealth[length=2mm]}, line width=0.5pt, draw=pwtext}]
+\node[box=24mm] (web) {Browser\\six sections};
+\node[box, right=of web] (api) {API process\\agents and guard};
+\node[store, right=of api] (pg) {PostgreSQL\\answers, jobs,\\snapshots, audit log};
+\node[box, below=of api] (cw) {Compute worker(s)\\trip, launch, contact};
+\node[box, below=of pg] (fw) {Feeds worker\\fetch, parse, store};
+\node[ext, right=11mm of fw] (ext) {NOAA, NASA,\\Launch Library 2};
+\node[box=24mm, draw=pwgrey, above=of api] (redis) {Redis cache};
+\draw[arr] (web) -- node[lab, above=2pt]{HTTP} (api);
+\draw[arr] (api) -- node[lab, above=2pt]{read} (pg);
+\draw[arr] (api) -- (redis);
+\draw[arr] (cw.east) -- node[lab, pos=0.55, above left=0pt]{jobs} (pg.south west);
+\draw[arr] (fw) -- node[lab, right=2pt]{snapshot} (pg);
+\draw[arr] (fw) -- node[lab, above=2pt]{fetch} (ext);
+\end{tikzpicture}
+\caption{Processes. Only the feeds worker has outbound network access; the API queues
+work and reads stored answers.}
+\label{fig:arch}
+\end{figure}
+
+A heavy answer is a \emph{job}. Its key is a hash of the job kind, its parameters and the
+versions of every engine it depends on, called its \emph{closure}. When a stored answer
+with that key exists, the API returns it at once. Otherwise the API queues a job and
+returns HTTP status 202 with a job reference, and the page polls until the answer is
+ready. Workers lease jobs from a PostgreSQL table with row locks that skip rows already
+taken, so several workers can run without a separate queue service. Each answer is stored
+as an \emph{assessment} together with its inputs: feed snapshot identifiers, catalogue
+versions, the kernel set, the terrain product and any values a person entered. An
+answer is therefore reused until one of its inputs or engine versions changes.
+
+\subsection{One contract for every number}
+
+Every value that leaves the service has one shape, called a \emph{quantity}. It holds the
+value, the unit, the provenance and exactly one form of margin: a symmetric $\pm$, a
+low-to-high range, or a multiplicative factor. A value without a margin carries a
+sentence that says why. A value that cannot be given is null and carries its
+\emph{missing reason}, for example that a vehicle's limit is not published. A duration
+cut short by the chosen dates is flagged as a lower bound. Probabilities use a second
+shape, a \emph{share}: $k$ of $n$ model runs, an exact binomial interval
+\citep{clopper1934} and a flag that states whether the share has been checked against
+observations.
+
+Four rules of the project govern these shapes. No section returns a verdict: there is no
+go or no-go, no readiness percentage, no risk score and no overall chance of launch.
+Every number states whether it was computed, published, entered or assumed. Every live
+number shows its age, and past its staleness budget it is replaced by the reason there
+is no number. Every probability states its sample and its verification status. A schema
+test and the agents' guard check the first rule (\cref{sec:agents}).
+
+\subsection{Layering, versions and catalogues}
+
+The numerical core has no input or output, no clock and no database access. Ten import
+contracts keep the layers apart. Among them, SPICE is reachable from one module only,
+routes reach the domain only through services, and agents reach it only through their
+tool module. Each engine carries its own version, for example \texttt{traj-3} for the
+trajectory engine and \texttt{lw-5} for launch design. A change to one engine
+invalidates only the answers whose closure contains it.
+
+Static facts live in nine cited catalogues: launch pads, vehicles, ground stations,
+relays, recovery zones, landing attempts, lessons, risk scales and weather rules. Every
+record carries its sources and compile date. A value that no source publishes is left
+empty with its reason and is never filled with a typical figure. The mission list itself
+holds 20 CLPS deliveries and 64 payloads, each payload with a source address.
+
+% ---------------------------------------------------------------------------
+\section{Methods by mission section}
+\label{sec:methods}
+
+\Cref{tab:sections} lists the six sections, the question each one answers and the
+reference against which its engine is checked. The subsections below describe the
+engines in the order of a delivery.
+
+\begin{table}[htbp]
+\centering\small
+\caption{The six mission sections and the checks behind them.}
+\label{tab:sections}
+\begin{tabularx}{\textwidth}{@{}l>{\raggedright\arraybackslash}p{0.34\textwidth}Y@{}}
+\toprule
+Section & Question answered & Engine checked against \\
+\midrule
+Ready & What is built, tested and delivered, and what is blocked? & State rules and the
+hash-chained audit log (tests) \\
+Launch & When can the vehicle leave the pad for a landing the lighting allows? & Flown
+liftoffs of IM-1, IM-2 and Blue Ghost~1 \\
+Launch weather & Which published weather rule would be broken, in how many model runs? &
+One year of station observations at the Cape \\
+Trip & Where is the spacecraft, when is it in shadow, what radiation does it meet? & NASA
+reconstructions of four CLPS trips and LRO; NOAA's event list \\
+Surface & How long are the Sun and Earth above the site's skyline? & Blue Ghost~1's
+reported end; golden fixtures \\
+Contact & When can a ground station hear the lander, and how long must a message wait? &
+DSN masks and SPICE station kernels (tests) \\
+Return & Where does the booster or a capsule come down, in what sea? & OSIRIS-REx's
+measured landing point \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Surface: the Sun and Earth above the local skyline}
+
+Terrain comes from the LOLA polar elevation models at \qty{20}{\m} (to \qty{20}{\km}
+from the site) and \qty{80}{\m} (to \qty{50}{\km}). Rays are cast on \num{1440} bearings
+with the Moon's curvature removed, giving the elevation of the skyline in every
+direction. The Sun and Earth come from SPICE in the \texttt{MOON\_ME} frame with
+light-time and stellar aberration corrections. A body is \emph{up} when its centre
+clears the skyline at its azimuth. Each skyline crossing is located by bisection between
+time samples, so its time is not rounded to the step. Four durations follow over the
+chosen dates: hours of sunlight, hours in contact with Earth, the longest time without
+sunlight and the longest time without contact. Each duration carries a $\pm$ from the
+terrain's vertical error divided by the rate at which the body crosses the skyline.
+A crossing too shallow to time is reported as \emph{grazing} instead of receiving a
+margin.
+
+\subsection{Launch: liftoff instants backed out from the landing}
+
+\paragraph{Landing rule.} A landing time is allowed when the Sun's centre is above the
+site's skyline and rising, and the Earth is up. The project manager may narrow the Sun
+elevation to a band. Landing times that satisfy the rule are moved back by the time in
+lunar orbit and the flight time to give the days on which the vehicle must leave Earth.
+
+\paragraph{Liftoff instant.} For a direct transfer the arrival at the Moon fixes the
+plane of the parking orbit. The pad must lie in that plane at liftoff, and the climb
+direction follows from $\sin A = \cos i / \cos \varphi$, where $A$ is the inertial
+azimuth, $i$ the parking orbit's inclination and $\varphi$ the pad's latitude. The
+angle a climb falls behind a circular orbit started at the pad, called here the
+\emph{climb constant}, is measured on the vehicle's flown lunar launches. A design then
+corrects three quantities in the force model until the arrival matches: the liftoff
+time, the coast in the parking orbit before trans-lunar injection (TLI), and the speed
+that TLI adds. The force model holds the Sun, the Moon as a point mass and the Earth's
+zonal harmonics J2 to J6. A candidate climb azimuth outside the range's published or
+assumed limits is refused.
+
+\paragraph{Phasing loops.} Blue Ghost~1 flew several long Earth orbits before leaving for
+the Moon. For such a mission, the design raises the perigee at the first apogee, sets
+the period of the remaining loops and leaves Earth at the last perigee. It corrects
+liftoff, coast and the three burns in the force model for each launch day and keeps the
+cheapest loop count.
+
+\subsection{Trip: propagation, shadow and correction budget}
+
+A flown trip is read from NASA's reconstruction \citep{naifclps}. A designed trip is
+propagated in the J2000 frame on the barycentric dynamical time scale with an
+eighth-order Dormand--Prince integrator at a relative tolerance of $10^{-12}$. The Sun
+and Moon are point masses from DE440 \citep{park2021}. The Earth adds zonal terms J2 to
+J6. Within ten lunar radii the Moon's field is the GRAIL model GRGM1200A
+\citep{zuber2013}, to degree 50 in cruise and degree 100 in lunar orbit. Solar radiation
+pressure is off by default, because no lander publishes its area and mass at that point
+in the flight. Shadow stretches come from conical Earth and Moon shadows with the
+overlap of the two discs \citep{montenbruck2000}, and each edge is bisected.
+
+The correction budget uses an assumed error model, since no provider publishes one.
+Errors at departure, in orbit knowledge and in each burn (the model of
+\citet{gates1963}) are pushed through the trajectory in two ways. The linear method uses
+state transition matrices of each stretch. The Monte Carlo method flies seeded runs
+through the full force model, and each correction burn aims the run's own estimated
+state at the planned arrival. The answer reports the 95th and 99th percentiles of the
+total correction and labels them a budget for the assumed errors.
+
+\subsection{Trip: radiation screening}
+
+Belt fluence along the trajectory comes from AE8 and AP8 \citep{vette1991,sawyer1976}
+through IRBEM \citep{irbem2022} in SpacePy \citep{niehof2022}, with a factor of two on
+every value. The cosmic-ray dose is CRaTER's measured rate \citep{schwadron2012} scaled
+by the change of the model of \citet{matthia2013} with solar modulation. The modulation
+parameter comes from the Oulu neutron monitor. On the surface, Chang'e-4's measured
+rate \citep{zhang2020} is scaled the same way and by the fraction of open sky above the
+site, taken from the site's own skyline. Solar particle events during a flown trip are
+listed from NASA's DONKI record. Three past large events give comparison fluences: August
+1972 from King's spectrum \citep{king1974}, and October 1989 and October 2003 integrated
+from GOES proton data. Every radiation answer states that it is screening only and names
+the tools in which a design must be confirmed.
+
+\subsection{Contact: when a station hears the lander}
+
+A ground station hears the lander when two conditions hold at once. Earth must be above
+the lander's skyline, which is the surface engine's existing number. The lander must
+also be above the station's own horizon mask, taken from the DSN handbook
+\citep{jpl810005} per degree of azimuth. The station positions come from SPICE station
+kernels. The union over the 14 catalogued DSN antennas is the \emph{time a ground station
+can hear the lander}. Contacts between nodes, each with its one-way light time, feed an
+earliest-arrival search over contacts, the simplest exact form of contact graph routing
+\citep{araniti2015}. It yields the longest time a message created on the lander waits
+before it reaches Earth. The plan can be exported in the contact-plan format of the
+Interplanetary Overlay Network or as CSV. Relays and link budgets are not computed, for
+reasons given in \cref{sec:limits}.
+
+\subsection{Launch weather}
+
+The twelve weather rules of the Falcon~9 fact sheet \citep{nasa2020wx} are stored
+verbatim as data, each with its unit, height and class. Two are \emph{model} rules,
+checked against forecast numbers. Two are \emph{proxy} rules, for which a model can
+only show the ingredients. Eight are \emph{observation} rules, such as lightning within
+a set distance in the last 30 minutes, for which no forecast probability is given. A
+model rule is evaluated per run of the 31-member GEFS ensemble \citep{guan2022}. The
+wind at the rule's height of \qty{162}{ft} is interpolated on a logarithmic profile
+between the model's \qty{10}{\m} and \qty{80}{\m} winds and is labelled as interpolated.
+The result is a share, $k$ of 31 runs, with its exact interval. Beyond the ensemble's
+range, the answer falls back to month-by-hour climatology: wind at \qty{50}{\m} from
+NASA POWER, which is based on MERRA-2 \citep{gelaro2017}, and thunder hours from GLM
+\citep{virts2025}. The range's official forecast is entered by the project manager with
+its document link and is never scraped.
+
+\subsection{Return: booster zone and capsule entry}
+
+The booster's landing type and zone come from the vehicle catalogue and Launch Library~2
+landing records. For a planned droneship landing, the zone lies along the designed launch
+direction, and the GFS-Wave forecast there is compared with limits the team enters,
+since providers do not publish them. No CLPS mission returns a capsule. The capsule
+entry model is therefore checked on OSIRIS-REx \citep{lauretta2017}. It is a point mass
+with a ballistic coefficient, falling from the entry interface through the 1976 U.S.
+Standard Atmosphere \citep{ussa1976} over a rotating Earth with J2 gravity. It has no
+lift and no parachutes.
+
+\subsection{Ready: readiness, parts, risks and the audit log}
+
+Readiness is a state machine per item: not started, in build, in test, test passed,
+delivered to the lander provider, integrated, verified on the lander and ready, or
+blocked with a reason from any state. Every change needs a date and an evidence link,
+and illegal moves are refused. Parts carry their status and a dependency path to the
+measurements they serve. Risks use a configurable likelihood and consequence scale and
+are never multiplied or summed. Every write needs a named session and is recorded in an
+append-only log in which each entry holds the hash of the previous one. A database
+trigger rejects updates and deletions of that log. The landing history lists 14 lunar
+landing attempts as counts with sourced causes, never as a success probability.
+
+\subsection{Agents}
+\label{sec:agents}
+
+Four language-model agents describe a site, rank sites against a stated requirement,
+write the same facts for three audiences and answer questions. They reach
+the system only through ten read-only tools, four of which read the mission sections. A
+section is cut to at most 200 numbers before an agent sees it, and every kept value keeps
+its margin. A guard checks every number and full date in an answer against that run's
+tool results, and it rejects verdict words such as \emph{go}, \emph{no-go} or
+\emph{safe}. After one failed repair, the answer is replaced by a summary built only from
+measured values.
+
 \bibliographystyle{unsrtnat}
 \bibliography{ref}
 
