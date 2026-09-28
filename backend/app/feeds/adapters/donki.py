@@ -106,10 +106,10 @@ def parse_sep(body: bytes) -> Parsed:
 
 def _wrap(events: list[dict[str, Any]], tkey: str) -> Parsed:
     events.sort(key=lambda x: str(x.get(tkey) or ""), reverse=True)
-    latest = next((x[tkey] for x in events if x.get(tkey)), None)
+    # No issue time: the list is as new as the request for it. Its newest event's time
+    # would make a quiet Sun (no CME for a day) look like stale data and hide the list.
     return Parsed(
-        values={"count": len(events), "events": events[:100], "days": DAYS},
-        issued_at=utc(latest) if latest else None,
+        values={"count": len(events), "events": events[:100], "days": DAYS}, issued_at=None
     )
 
 

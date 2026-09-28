@@ -124,6 +124,8 @@ def test_donki_events() -> None:
     assert f.values["events"][0]["class"]
     s = donki.parse_sep(raw("donki_sep.json"))
     assert s.values["events"][0]["time"].endswith("Z")
+    # A list is as new as the request for it, not as its newest event (a quiet Sun).
+    assert c.issued_at is None and f.issued_at is None and s.issued_at is None
 
 
 def test_donki_never_stores_the_key() -> None:
