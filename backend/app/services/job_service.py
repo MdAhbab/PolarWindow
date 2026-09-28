@@ -11,6 +11,9 @@ queued for that key is joined) and the caller gets a job reference to poll.
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
@@ -31,6 +34,24 @@ POLL_AFTER_S = {"queued": 3.0, "running": 2.0, "done": 0.0, "failed": 0.0}
 #: A queued job older than this with no worker picking it up is reported as
 #: such, rather than as quietly "queued" forever.
 STUCK_AFTER_S = 120.0
+
+
+#: Set by a read-only caller (an agent's tool): a missing answer is not queued.
+_READ_ONLY: ContextVar[bool] = ContextVar("jobs_read_only", default=False)
+
+
+class NotWorkedOut(LookupError):
+    """A read-only caller asked for an answer that is not stored; nothing was queued."""
+
+
+@contextmanager
+def read_only() -> Iterator[None]:
+    """Within this block ``answer_or_enqueue`` returns stored answers only."""
+    token = _READ_ONLY.set(True)
+    try:
+        yield
+    finally:
+        _READ_ONLY.reset(token)
 
 
 class JobNotFound(LookupError):
@@ -120,6 +141,12 @@ async def answer_or_enqueue(
         # A failed job is reported, not silently retried on every page load:
         # the failure message is the answer until the inputs change.
         return Answer(assessment=None, job=job_ref(last))
+    if _READ_ONLY.get():
+        if last is not None and last.status in ("queued", "running"):
+            raise NotWorkedOut("It is being worked out now; ask again in a few minutes.")
+        raise NotWorkedOut(
+            "It has not been worked out yet; opening this section of the mission starts it."
+        )
     job = await repo.enqueue(
         kind=kind,
         params=params,

@@ -283,3 +283,46 @@ def test_an_invented_date_is_rejected() -> None:
 def test_a_month_or_year_alone_is_not_a_date_claim() -> None:
     v = guards.check_grounding({"summary": "Launch is expected in late 2027, around March."}, [])
     assert not [x for x in v.violations if x.kind == "ungrounded_date"]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Weather is GO for launch.",
+        "It is a go.",
+        "The go/no-go call is yours.",
+        "The site looks safe.",
+        "It is not safe to launch.",
+        "The lander can land safely.",
+        "Readiness score: high.",
+        "The payload is 80% ready.",
+        "The mission is ready to launch.",
+        "Its risk score is low.",
+        "The overall chance of launch is good.",
+        "We recommend launching on the 13th.",
+        "Likelihood times consequence gives the ranking.",
+    ],
+)
+def test_a_verdict_word_is_rejected(text: str) -> None:
+    v = guards.check({"status": "ok", "answer": text}, [])
+    assert any(x.kind == "verdict_word" for x in v.violations), text
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Three readiness items are in test; one risk is on the list.",
+        "The weather rules show what the forecasts say for each rule.",
+        "The capsule entry model's safety margin is not modelled.",
+        "Seven of the rules have a forecast; the other five do not.",
+        "The flight readiness review is a milestone.",
+    ],
+)
+def test_evidence_words_are_not_verdicts(text: str) -> None:
+    v = guards.check_verdict_words({"answer": text})
+    assert v.ok, [x.detail for x in v.violations]
+
+
+def test_the_users_own_words_may_carry_a_verdict_word() -> None:
+    out = {"answer": "The wind rule is over its limit.", "question": "Is it safe to launch?"}
+    assert guards.check_verdict_words(out).ok

@@ -303,3 +303,11 @@ Considered and not taken: the Antigravity managed agent (Interactions API,
 side, which is the loop this ADR keeps in our code so that every tool call is
 bounded, logged and seen by the grounding guard.
 
+
+## Amendment, 2026-09-28: ten tools, a verdict-word guard
+
+The loop is unchanged. The tool set grows from six to ten (four read-only tools
+over the missions' sections, each result at most 200 numbers) and the guard
+gains a verdict-word check; both are described in ADR-6's amendment of the same
+date. The Asker's four rounds still suffice for a mission question: find the
+mission, see its sections, read one, answer.

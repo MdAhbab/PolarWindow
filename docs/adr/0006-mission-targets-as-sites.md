@@ -115,3 +115,44 @@ the flag is exactly what the uncertainty contract exists to carry.
 6. [ ] Tests: a smooth mask yields horizon 0°; a far-side target yields Earth
        contact 0 s with `terrain_modelled = false`; candidate goldens are
        unchanged.
+
+## Amendment, 2026-09-28: per-section mission tools, at most 200 numbers each
+
+**What changed.** Point 3 of the context ("the six agent tools are fixed by the
+brief") no longer holds: the product now answers for a mission's whole delivery
+(ready, launch, trip, contact, return), and none of that is reachable through
+`get_site` or `search_sites`. The agents get four more tools, all read-only, in
+`app/agents/tools.py`:
+
+| Tool | Reads |
+|---|---|
+| `list_missions(q?, status?)` | ids, names, providers, statuses, published dates |
+| `get_mission_sections(mission_id)` | each section's state and what it shows, in words |
+| `get_mission_section(mission_id, section, opportunity?)` | one section as its endpoint gives it (`ready`, `launch`, `launch_weather`, `trip`, `contact`, `return`) |
+| `get_space_weather()` | space weather now |
+
+**Why a cap.** A section is written for a screen: the trip alone carries 1,821
+plot samples and 3,683 numbers. Each numeric leaf a tool returns joins the pool
+the grounding guard matches claims against, and a wide pool grounds almost any
+number (D23). `app/agents/compact.py` keeps every value with its unit, provenance
+and ± (or the reason it has none), writes times as UTC times, drops plot series,
+URLs, snapshot ids and `meta.uncertainty`, cuts lists to 12 items and then halves
+the list holding the most numbers until at most **200 numbers** remain. What was
+cut is listed in `left_out`, so an answer can say that it did not see it.
+
+**Never queues work.** A tool runs inside `job_service.read_only()`: a section
+whose answer is not stored comes back `available: false` with the reason ("not
+worked out yet; opening this section starts it", or "being worked out now"),
+and nothing is queued. An agent's question cannot fill the compute queue.
+
+**No verdicts in answers.** The grounding guard gained `check_verdict_words`
+(invariant 9): "go/no-go", "safe", a readiness percentage, "ready to launch", a
+risk score, an overall chance of launch or a recommendation to launch are
+rejected anywhere in an answer except the fields that echo the user's own words
+(`question`, `interpreted_as`, `requirement_summary`), even in a denial. The
+retry is told to say what each rule or number shows instead.
+
+**The Asker** uses all ten tools; its prompt now lists what the missions'
+sections hold (it said the data knew nothing about radiation, which stopped
+being true with the trip's radiation screening) and forbids verdicts. The
+Advisor, Explainer and Writer keep the six site tools.
