@@ -8774,7 +8774,7 @@
               "none"
             ],
             "title": "Weather",
-            "description": "What numbers the weather tab can show. With none it still shows the rules and limits; weather_note says why there are no numbers."
+            "description": "What numbers the weather rules can show. With none it still shows the rules and limits; weather_note says why there are no numbers."
           },
           "weather_note": {
             "type": "string",

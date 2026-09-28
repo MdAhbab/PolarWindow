@@ -622,6 +622,10 @@ async def set_official_forecast(
     return {**after, "id": fid, "entered_by": who.actor, "entered_at": datetime.now(UTC)}
 
 
+class VehicleNotFound(LookupError):
+    """No launch vehicle with this id in the vehicles catalogue."""
+
+
 class NothingToRemove(LookupError):
     pass
 
@@ -658,7 +662,7 @@ async def vehicle_limits(session: AsyncSession, vehicle_id: str) -> dict[str, An
     try:
         catalogues.load("vehicles").get(vehicle_id)
     except KeyError as exc:
-        raise MissionNotFound(vehicle_id) from exc
+        raise VehicleNotFound(vehicle_id) from exc
     return {
         "vehicle_id": vehicle_id,
         "limits": await PmRepository(session).vehicle_limits(vehicle_id),
@@ -671,7 +675,7 @@ async def set_vehicle_limits(
     try:
         catalogues.load("vehicles").get(vehicle_id)
     except KeyError as exc:
-        raise MissionNotFound(vehicle_id) from exc
+        raise VehicleNotFound(vehicle_id) from exc
     rules = catalogues.load("weather_rules")
     clean = []
     for x in limits:

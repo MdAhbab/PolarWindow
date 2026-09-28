@@ -232,6 +232,15 @@ def _weather_http(exc: Exception) -> HTTPException:
             "Nothing was changed.",
             action="Adjust the request",
         )
+    if isinstance(exc, weather_service.VehicleNotFound):
+        return deps.problem(
+            404,
+            "vehicle-not-found",
+            "That launch vehicle isn't in the list",
+            f"'{exc.args[0]}' is not a launch vehicle in this dataset.",
+            "Every other vehicle and mission is available.",
+            action="Back to the mission",
+        )
     if isinstance(exc, weather_service.NothingToRemove):
         return deps.problem(
             404,

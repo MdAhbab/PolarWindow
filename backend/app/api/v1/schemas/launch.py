@@ -47,7 +47,7 @@ class Opportunity(_M):
     transfer: TransferOut
     landing: LandingOut
     weather: Literal["forecast", "climatology", "none"] = Field(
-        description="What numbers the weather tab can show. With none it still shows the "
+        description="What numbers the weather rules can show. With none it still shows the "
         "rules and limits; weather_note says why there are no numbers."
     )
     weather_note: str

@@ -233,7 +233,7 @@ async def _flown(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, Any
         "transfer": {"type": kind, "flight_days": flight, "orbit_wait_days": wait},
         "landing": land,
         "weather": "none",
-        "weather_note": "This launch has flown: the weather tab shows the rules and limits "
+        "weather_note": "This launch has flown: the weather rules show the rules and limits "
         "that applied; the forecasts made before it were not kept.",
         "basis": basis,
         "note": note,
@@ -564,12 +564,12 @@ def _climatologies(pad_id: str, vehicle_id: str) -> tuple[bool, bool]:
 
 
 def _weather(lead_s: float, pad_id: str, vehicle_id: str) -> tuple[str, str]:
-    """What the weather tab can show for a designed opportunity, and why."""
+    """What the weather rules can show for a designed opportunity, and why."""
     if lead_s < 0:
-        return "none", "This launch time has passed; the weather tab shows the rules and limits."
+        return "none", "This launch time has passed; the weather rules show the rules and limits."
     if lead_s <= FORECAST_LEAD_S:
         return "forecast", (
-            "Forecasts reach this launch: the weather tab shows what they say for each rule."
+            "Forecasts reach this launch: the weather rules show what they say for each rule."
         )
     wind, thunder = _climatologies(pad_id, vehicle_id)
     shows = [
@@ -586,12 +586,12 @@ def _weather(lead_s: float, pad_id: str, vehicle_id: str) -> tuple[str, str]:
     ]
     if shows:
         return "climatology", (
-            "More than 16 days away, beyond the forecasts: the weather tab shows "
+            "More than 16 days away, beyond the forecasts: the weather rules show "
             f"{' and '.join(shows)}, and the other rules."
         )
     return "none", (
         "More than 16 days away, beyond the forecasts, and there is no climatology to read "
-        "for this vehicle at this pad: the weather tab shows the rules and limits."
+        "for this vehicle at this pad: the weather rules show the rules and limits."
     )
 
 

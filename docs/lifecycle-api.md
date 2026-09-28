@@ -565,3 +565,8 @@ that user. `GET /auth/me` returns the same `user`.
   entry model against OSIRIS-REx's landing (9.5 km, limit 10 km; 99 % area 51.4 by 21.4 km
   holds the real point), with a plain-words `note`. For a mission that returns something
   (none of the CLPS ones) `applicable` is true and `reason` says no entry state is published.
+- 2026-09-28 (frontend queue): `GET/PUT /vehicles/{id}/limits` for an unknown vehicle is a
+  404 `vehicle-not-found` problem (was `mission-not-found`). `Opportunity.weather_note` and
+  `LaunchWeather` notes say "the weather rules show …" (no "tab"). `Trip.burns_note` for a
+  trip with no burn found says so for that trip (the stretches the reconstruction covers up
+  to the arrival) before the method.

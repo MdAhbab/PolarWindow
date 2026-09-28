@@ -123,6 +123,26 @@ async def _burns_and_budget(
         for b, name in named
     ]
     note = BURNS_NOTE
+    if not burns and fl.t_arrive is not None:
+        end = fl.t_arrive
+        spans = await spice.run_async(lambda: ascent.coverage(mid))
+        seen = [(a, min(b, end)) for a, b in spans if a < end] or [(end, end)]
+
+        def day(et: float) -> str:
+            return lifecycle.iso(when(et))[:16].replace("T", " ")
+
+        hours = sum(b - a for a, b in seen) / 3600.0
+        said = (
+            f"{len(seen)} stretches, {hours:.0f} h in all, between {day(seen[0][0])} and "
+            f"{day(seen[-1][1])} UTC"
+            if len(seen) > 2
+            else " and ".join(f"{day(a)} to {day(b)} UTC" for a, b in seen)
+        )
+        note = (
+            f"No burn is found for this trip in the reconstruction, which covers {said} up to "
+            "the arrival; "
+            "any burn before it starts or in its gaps is not seen. " + note
+        )
     if steady:
         a, b = min(x.start for x in steady), max(x.end for x in steady)
         note += (

@@ -170,7 +170,8 @@ async def test_entries_are_recorded_and_show_up(client) -> None:
     assert wind["units"][0] == "mph" and set(wind["units"]) == {"mph", "kt", "m/s", "km/h"}
     got = (await client.get(f"{API}/vehicles/falcon-heavy/limits")).json()
     assert got["limits"][0]["note"] == "from the provider"
-    assert (await client.get(f"{API}/vehicles/no-such-rocket/limits")).status_code == 404
+    miss = await client.get(f"{API}/vehicles/no-such-rocket/limits")
+    assert miss.status_code == 404 and miss.json()["detail"]["type"].endswith("/vehicle-not-found")
     h = await client.get(f"{API}/history", params={"entity": "limits", "id": "falcon-heavy"})
     assert h.status_code == 200 and h.json()["entries"]
 
