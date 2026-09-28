@@ -116,6 +116,10 @@ test-int: ## Integration and agent tests
 test-geo: ## Golden tests against the real kernels and DEM
 	cd $(BE) && $(UV) run pytest app/tests/golden -q
 
+load-compute: ## Load test of the compute queue: every section at once, WORKERS=2 (own database; writes data/load)
+	cd $(BE) && PW_TEST_DB_NAME=polar_window_load $(UV) run python -m app.tests.fixtures.make_test_db
+	cd $(BE) && WORKERS=$${WORKERS:-2} $(UV) run python -m app.tests.load.load_compute
+
 validate-trip: ## Propagator and shadows against NASA's reconstructed trajectories (prints the docs/validation.md table)
 	cd $(BE) && $(UV) run pytest app/tests/golden/test_propagate_vs_clps.py app/tests/golden/test_eclipse_vs_spice.py -q
 	cd $(BE) && $(UV) run python -m app.tests.golden.validate_trip

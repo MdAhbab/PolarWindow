@@ -29,6 +29,19 @@ def test_a_job_nobody_takes_says_the_worker_is_not_running() -> None:
     assert "make compute" in job_service.job_ref(_job(), now=late)["message"]
 
 
+def test_a_long_wait_behind_busy_workers_is_not_called_a_missing_worker() -> None:
+    """Found by the load test: 58 jobs on 2 workers waited up to 127 s."""
+    late = T0 + timedelta(seconds=job_service.STUCK_AFTER_S + 10)
+    ref = job_service.job_ref(_job(), now=late, ahead=3)
+    assert "3 answers are being worked out first" in ref["message"]
+    assert "make compute" not in ref["message"]
+
+
+def test_cheaper_kinds_are_worked_out_first() -> None:
+    p = job_service.PRIORITY
+    assert p["contact"] > p["launch"] > p["trip"]
+
+
 def test_a_failed_job_says_why() -> None:
     ref = job_service.job_ref(_job("failed", "ValueError: no reconstruction\nTraceback"), now=T0)
     assert ref["message"] == "Could not be worked out: ValueError: no reconstruction"

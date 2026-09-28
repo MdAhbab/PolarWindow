@@ -35,6 +35,12 @@ POLL_AFTER_S = {"queued": 3.0, "running": 2.0, "done": 0.0, "failed": 0.0}
 #: such, rather than as quietly "queued" forever.
 STUCK_AFTER_S = 120.0
 
+#: Cheapest kind first. Measured by ``make load-compute`` (58 jobs, 2 workers):
+#: a contact plan runs in ~0.1 s, a launch calendar ~10 s, a trip ~50 s. In
+#: arrival order a contact plan waited behind every trip asked before it
+#: (median wait 95 s for a 0.1 s answer); cheapest first, it does not.
+PRIORITY = {"contact": 2, "launch": 1, "trip": 0}
+
 
 #: Set by a read-only caller (an agent's tool): a missing answer is not queued.
 _READ_ONLY: ContextVar[bool] = ContextVar("jobs_read_only", default=False)
@@ -86,7 +92,9 @@ def job_ref(
             f"Waiting for a compute worker; {ahead} "
             f"{'answer is' if ahead == 1 else 'answers are'} being worked out first."
         )
-    if job.status == "queued" and (now - job.created_at).total_seconds() > STUCK_AFTER_S:
+    elif job.status == "queued" and (now - job.created_at).total_seconds() > STUCK_AFTER_S:
+        # Only with nothing ahead of it: under a long queue a job waits past
+        # this while both workers are busy, and "not running" would be false.
         message = (
             "Still waiting for a compute worker. If this does not change, the compute "
             "worker is not running (make compute)."
@@ -128,7 +136,7 @@ async def answer_or_enqueue(
     params: dict[str, Any],
     mission_id: str | None,
     requested_by: int | None = None,
-    priority: int = 0,
+    priority: int | None = None,
 ) -> Answer:
     """The stored answer for this key, or a job that will produce it."""
     key = params_hash(kind, closure, params)
@@ -154,7 +162,7 @@ async def answer_or_enqueue(
         closure=closure,
         mission_id=mission_id,
         requested_by=requested_by,
-        priority=priority,
+        priority=PRIORITY.get(kind, 0) if priority is None else priority,
     )
     return Answer(assessment=None, job=job_ref(job, ahead=await _ahead(session, job)))
 
