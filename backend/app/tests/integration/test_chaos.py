@@ -10,6 +10,7 @@ that section and every other section are unaffected, and ``/healthz`` says
 
 from __future__ import annotations
 
+import functools
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -197,7 +198,7 @@ async def test_after_a_parser_change_the_worker_asks_for_the_whole_body(tmp_path
             products=[product],
             providers={"swpc": swpc.PROVIDER},
             raw_root=tmp_path,
-            now=lambda when=when: when,
+            now=functools.partial(lambda t: t, when),
             sleep=lambda _s: None,
         )
         await sch.sync()
