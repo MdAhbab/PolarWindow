@@ -25,7 +25,7 @@ import { coverageGaps, tripStretches } from './TripStrip'
 import { CorrectionsRow, shadowAndContact } from '../../screens/sections/TripSection'
 import { climatologyWords, observedWords, percentWords } from './WeatherRules'
 import { RadiationRow, radiationSentence, screeningFigure } from './Radiation'
-import { outlookSentence, readingAge, spaceWeatherSentence } from './SpaceWeather'
+import { alertsHeldBack, outlookSentence, readingAge, spaceWeatherSentence } from './SpaceWeather'
 import spaceWeatherFixture from '../../lib/api/__fixtures__/lifecycle/space-weather.json'
 import type { RadiationDTO, SpaceWeatherDTO } from '../../lib/api/lifecycle'
 import { forecastChangeWords, limitDraft, limitsToSend, shownForecast } from '../../screens/sections/LaunchSection'
@@ -550,6 +550,18 @@ describe('Space weather now', () => {
     expect(spaceWeatherSentence(sw, meta)).toBe(
       'Now: Kp 1, protons above 10 MeV at 0.23 pfu, X-ray flares class B4.7, solar wind at 456 km/s; 2 alerts in the last 24 hours.',
     )
+  })
+  it('an empty alert list is "none" only when SWPC issued none in the last 24 hours', () => {
+    const quiet = { ...sw, now: { ...sw.now, alerts: [] } }
+    const at = (h: number) => ({
+      ...meta,
+      sources: meta.sources.map((x) => (/alerts\.json$/.test(x.url ?? '') ? { ...x, issued_at: new Date(Date.now() - h * 3600_000).toISOString() } : x)),
+    })
+    expect(alertsHeldBack(quiet, at(30))).toBeNull()
+    expect(spaceWeatherSentence(quiet, at(30))).toMatch(/; no alerts in the last 24 hours\.$/)
+    expect(alertsHeldBack(quiet, at(11))?.url).toBe('https://services.swpc.noaa.gov/products/alerts.json')
+    expect(spaceWeatherSentence(quiet, at(11))).toMatch(/; SWPC’s alerts of the last 24 hours are not shown here\.$/)
+    expect(alertsHeldBack(sw, at(11))).toBeNull()
   })
   it('says when no reading is recent enough, once', () => {
     const missing = { ...sw.now.kp, value: null, missing_reason: 'Old.' }

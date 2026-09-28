@@ -259,7 +259,11 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   newest is from {time}."). Then each reading with its age from its own
   source ("· as of 2 h ago") or why it is not shown: Kp, protons above 10 and
   100 MeV, solar wind, the Sun's field north–south (Bz), X-ray class, the
-  alerts as headlines. "The next three days": NOAA's outlook in one sentence,
+  alerts as headlines. No alert listed is "None" only when SWPC's alerts
+  source was issued more than 24 hours ago; issued within them, the list was
+  held back, and the row says "Not shown here, though NOAA SWPC issued one
+  {age}: SWPC's alerts" (a link) and the line ends "SWPC's alerts of the last
+  24 hours are not shown here." "The next three days": NOAA's outlook in one sentence,
   numbers as issued (chance of a radiation storm, S1 or greater, day by day;
   largest Kp expected), and the forecast word for word behind "NOAA's
   forecast as issued". "Newest events on the Sun (NASA DONKI)": the three

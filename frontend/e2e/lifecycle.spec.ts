@@ -813,10 +813,40 @@ test('radiation and space weather (live API): Blue Ghost’s screening with its 
   await expect(page.locator('[data-guide="section-answer"]')).toContainText('It launched on', { timeout: 90_000 })
   await openRow(page, 'Space weather now')
   const sw = row('Space weather now')
-  await expect(sw).toContainText(/(Now: .+ in the last 24 hours\.|No reading is recent enough to show: |No reading has been recorded yet\.)/, { timeout: 30_000 })
-  for (const label of ['Geomagnetic activity (Kp, 0 to 9)', 'Protons above 10 MeV', 'Solar wind speed']) {
-    await expect(sw.locator('dt', { hasText: label }).locator('xpath=following-sibling::dd[1]')).toContainText(/( · as of .+ ago|not shown|recorded yet)/)
+  // The feeds worker records SWPC every few minutes, so every reading is shown, each with its age.
+  await expect(sw.getByText(/^Now: /)).toHaveText(
+    /^Now: Kp [\d.]+, protons above 10 MeV at [\d.]+ pfu, X-ray flares class [ABCMX][\d.]+, solar wind at [\d.]+ km\/s; (no alerts in the last 24 hours|\d+ alerts? in the last 24 hours|SWPC’s alerts of the last 24 hours are not shown here)\.$/,
+    { timeout: 30_000 },
+  )
+  const reading = (label: string) => sw.locator('dt', { hasText: label }).locator('xpath=following-sibling::dd[1]')
+  for (const label of [
+    'Geomagnetic activity (Kp, 0 to 9)',
+    'Protons above 10 MeV',
+    'Protons above 100 MeV',
+    'Solar wind speed',
+    'Magnetic field from the Sun, north–south (Bz)',
+    'X-ray flares (class)',
+  ]) {
+    await expect(reading(label), label).toHaveText(/^-?[\w.]+ (pfu |km\/s |nT )?· as of (just now|\d+ min ago|\d+ h ago)$/)
   }
-  await expect(sw).toContainText('The next three days')
+  // "None" only when SWPC issued none in the last 24 hours; a list the service holds back says so, with SWPC's own.
+  const live = (await (await page.request.get(`${API}/space-weather`)).json()) as {
+    data: { now: { alerts: string[] } }
+    meta: { sources: { url: string | null; issued_at: string | null }[] }
+  }
+  const alertsSource = live.meta.sources.find((x) => /\/alerts\.json$/.test(x.url ?? ''))
+  const heldBack = !live.data.now.alerts.length && Boolean(alertsSource?.issued_at && Date.now() - Date.parse(alertsSource.issued_at) < 86_400_000)
+  await expect(reading('Alerts in the last 24 hours')).toHaveText(
+    live.data.now.alerts.length ? live.data.now.alerts.join('; ') : heldBack ? /^Not shown here, though NOAA SWPC issued one .+ ago: SWPC’s alerts$/ : 'None',
+  )
+  // NOAA's outlook as numbers, and the forecast word for word.
+  await expect(sw).toContainText(
+    /NOAA’s outlook for .+, issued .+ UTC: a \d+%, \d+% and \d+% chance of a radiation storm \(S1 or greater\), day by day; the largest Kp expected is [\d.]+\./,
+  )
+  await sw.locator('summary', { hasText: 'NOAA’s forecast as issued' }).click()
+  await expect(sw.getByRole('region', { name: 'NOAA’s three-day forecast as issued' })).toContainText(':Product: 3-Day Forecast')
+  // DONKI: its newest events with their records, or why they are not shown (with its age).
   await expect(sw).toContainText('(NASA DONKI)')
+  await expect(sw).toContainText(/(Clouds thrown off the Sun \(coronal mass ejections\)|The latest data from NASA space weather database \(DONKI\) is \d+ (days?|hours?) old)/)
+  await expectNoSeriousAxe(page, 'space weather now (live) with the forecast open')
 })

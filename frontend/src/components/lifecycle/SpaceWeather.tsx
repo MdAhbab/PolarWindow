@@ -17,12 +17,32 @@ const NUMBERS: { key: Exclude<keyof Now, 'xray_class' | 'alerts'>; label: string
 
 const shown = (q: QuantityDTO) => q.value !== null
 
-function alertWords(n: number): string {
+/**
+ * When the service lists no alert but SWPC's alerts, as recorded, were issued
+ * within the last 24 hours: that time. The list is then held back (out of
+ * date by the service's rule), not empty, so "no alerts" would be untrue.
+ */
+export function alertsHeldBack(
+  sw: SpaceWeatherDTO,
+  meta: { sources?: LifecycleMetaDTO['sources'] },
+  nowMs: number = Date.now(),
+): { issued: number; url: string } | null {
+  if (sw.now.alerts.length) return null
+  const src = meta.sources?.find((s) => /\/alerts\.json$/.test(s.url ?? ''))
+  const t = src?.issued_at ? Date.parse(src.issued_at) : NaN
+  return src?.url && !Number.isNaN(t) && nowMs - t < 24 * 3600_000 ? { issued: t, url: src.url } : null
+}
+
+function alertWords(n: number, held: boolean): string {
+  if (held) return 'SWPC’s alerts of the last 24 hours are not shown here'
   return n === 0 ? 'no alerts in the last 24 hours' : `${n} alert${n === 1 ? '' : 's'} in the last 24 hours`
 }
 
 /** The answer: the readings shown now in one line, or why none is. */
-export function spaceWeatherSentence(sw: SpaceWeatherDTO, meta: Pick<LifecycleMetaDTO, 'computed_at' | 'stale'>): string {
+export function spaceWeatherSentence(
+  sw: SpaceWeatherDTO,
+  meta: Pick<LifecycleMetaDTO, 'computed_at' | 'stale'> & { sources?: LifecycleMetaDTO['sources'] },
+): string {
   const parts = NUMBERS.filter((n) => n.key !== 'proton_100mev_pfu' && n.key !== 'bz_nt' && shown(sw.now[n.key])).map(
     (n) => `${n.words} ${quantityText(sw.now[n.key])}`,
   )
@@ -34,7 +54,7 @@ export function spaceWeatherSentence(sw: SpaceWeatherDTO, meta: Pick<LifecycleMe
       : 'No reading has been recorded yet. Each says why below.'
   }
   const line = parts.join(', ')
-  return `Now: ${line.charAt(0).toUpperCase()}${line.slice(1)}; ${alertWords(sw.now.alerts.length)}.`
+  return `Now: ${line.charAt(0).toUpperCase()}${line.slice(1)}; ${alertWords(sw.now.alerts.length, Boolean(alertsHeldBack(sw, meta)))}.`
 }
 
 /** NOAA's three-day outlook in one sentence, its numbers as issued. */
@@ -98,6 +118,20 @@ function EventList({ title, items, empty }: { title: string; items: { key: strin
   )
 }
 
+function Alerts({ sw, meta }: { sw: SpaceWeatherDTO; meta: LifecycleMetaDTO }) {
+  if (sw.now.alerts.length) return <>{sw.now.alerts.join('; ')}</>
+  const held = alertsHeldBack(sw, meta)
+  if (!held) return <>None</>
+  return (
+    <span className="text-ink-2">
+      Not shown here, though NOAA SWPC issued one {ageWords(held.issued)}:{' '}
+      <a href={held.url} target="_blank" rel="noreferrer" className="underline underline-offset-2">
+        SWPC’s alerts
+      </a>
+    </span>
+  )
+}
+
 const when = (t: string | null) => (t ? dateTimeWords(Date.parse(t)) : 'time not given')
 
 /**
@@ -143,7 +177,9 @@ export function SpaceWeatherRow() {
               )}
             </dd>
             <dt className="text-ink-3">Alerts in the last 24 hours</dt>
-            <dd className="text-ink">{sw.now.alerts.length ? sw.now.alerts.join('; ') : 'None'}</dd>
+            <dd className="text-ink">
+              <Alerts sw={sw} meta={meta} />
+            </dd>
           </dl>
           <div className="flex flex-col gap-1.5">
             <h4 className="text-small font-semibold text-ink">The next three days</h4>
