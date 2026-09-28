@@ -498,27 +498,41 @@ def station_look_to(
     mask's 0.1 degree. Per epoch only the ITRF93-to-J2000 rotation is asked
     of CSPICE; the stations are fixed in ITRF93.
     """
-    _require_lifecycle(STATION_KERNELS)
-    ets = np.asarray(ets, dtype=np.float64)
-    target = np.asarray(target_geo_j2k_m, dtype=np.float64).reshape(-1, 3) / 1000.0
-    r_i2j = rotations("ITRF93", "J2000", ets)
-    st_itrf = {}
-    r_topo = {}
-    with _lock:
-        for st in stations:
-            p, _ = spice.spkpos(st, float(ets[0]), "ITRF93", "NONE", "EARTH")
-            st_itrf[st] = np.asarray(p, dtype=np.float64)
-            r_topo[st] = np.asarray(spice.pxform("ITRF93", f"{st}_TOPO", float(ets[0])))
+    target = np.asarray(target_geo_j2k_m, dtype=np.float64).reshape(-1, 3)
     out = []
-    for st in stations:
-        st_j2k = np.einsum("nij,j->ni", r_i2j, st_itrf[st])
-        rel_j2k = target - st_j2k
-        rel_itrf = np.einsum("nji,nj->ni", r_i2j, rel_j2k)  # transpose: J2000 -> ITRF93
-        v = rel_itrf @ r_topo[st].T
+    for st, (pos, rot) in zip(stations, station_frames(stations, ets), strict=True):
+        v = np.einsum("nij,nj->ni", rot, target - pos) / 1000.0
         rng = np.linalg.norm(v, axis=1)
         el = np.degrees(np.arcsin(np.clip(v[:, 2] / rng, -1.0, 1.0)))
         az = np.mod(np.degrees(np.arctan2(-v[:, 1], v[:, 0])), 360.0)
         out.append(StationLook(station=st, az_deg=az, el_deg=el, range_m=rng * 1000.0))
+    return out
+
+
+def station_frames(
+    stations: list[str], ets: npt.NDArray[np.float64]
+) -> list[tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]]:
+    """Per station: ``(n, 3)`` position from Earth's centre in J2000 (metres) and
+    ``(n, 3, 3)`` rotations J2000 -> ``{station}_TOPO`` (x north, y west, z up).
+
+    Worked out once per answer so a relay sweep can ask where a station looks
+    thousands of times without calling CSPICE again.
+    """
+    _require_lifecycle(STATION_KERNELS)
+    ets = np.asarray(ets, dtype=np.float64)
+    r_i2j = rotations("ITRF93", "J2000", ets)
+    out = []
+    with _lock:
+        fixed = []
+        for st in stations:
+            p, _ = spice.spkpos(st, float(ets[0]), "ITRF93", "NONE", "EARTH")
+            topo = np.asarray(spice.pxform("ITRF93", f"{st}_TOPO", float(ets[0])))
+            fixed.append((np.asarray(p, dtype=np.float64) * 1000.0, topo))
+    for p_itrf, topo in fixed:
+        pos = np.einsum("nij,j->ni", r_i2j, p_itrf)
+        # J2000 -> ITRF93 is the transpose of r_i2j; then ITRF93 -> TOPO.
+        rot = np.einsum("ij,nkj->nik", topo, r_i2j)
+        out.append((np.asarray(pos, dtype=np.float64), np.asarray(rot, dtype=np.float64)))
     return out
 
 
@@ -537,6 +551,87 @@ def load_extra(paths: list[Path]) -> None:
                 raise KernelError(f"kernel not on disk: {p} (polar-data sync)")
             spice.furnsh(key)
             _extra.add(key)
+
+
+def write_spk13(
+    path: Path,
+    naif_id: int,
+    ets: npt.NDArray[np.float64],
+    states_m: npt.NDArray[np.float64],
+    *,
+    center: int = 301,
+    frame: str = J2000,
+    degree: int = 7,
+    segment: str = "orbiter",
+) -> None:
+    """Write states (m, m/s) as one SPK type 13 segment (Hermite, unequal steps).
+
+    Used for a real orbiter's trajectory from JPL Horizons (T1, F2): the file
+    is rewritten whole, then loaded with :func:`load_extra` like any other
+    kernel, so every aberration correction CSPICE offers applies to it.
+    """
+    ets = np.ascontiguousarray(ets, dtype=np.float64)
+    st = np.ascontiguousarray(np.asarray(states_m, dtype=np.float64).reshape(-1, 6) / 1000.0)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp.bsp")
+    with _lock:
+        if tmp.exists():
+            tmp.unlink()
+        h = spice.spkopn(str(tmp), "polar-window orbiter", 0)
+        try:
+            spice.spkw13(
+                h,
+                naif_id,
+                center,
+                frame,
+                float(ets[0]),
+                float(ets[-1]),
+                segment[:40],
+                degree,
+                int(ets.size),
+                st,
+                ets,
+            )
+        except Exception:
+            spice.dafcls(h)  # no segment written: SPKCLS would refuse the file
+            tmp.unlink(missing_ok=True)
+            raise
+        spice.spkcls(h)
+    tmp.replace(path)
+
+
+def site_look(
+    target: str,
+    site_me_m: npt.NDArray[np.float64],
+    ets: npt.NDArray[np.float64],
+    abcorr: Aberration = "LT+S",
+) -> npt.NDArray[np.float64]:
+    """``(n, 3)`` where ``target`` appears from a point fixed on the Moon, in MOON_ME, metres.
+
+    CSPICE's constant-position observer (``spkcpo``): the light time is from
+    the site itself, and stellar aberration is the site's own motion, as a
+    JPL Horizons observer table on the Moon gives them.
+    """
+    _require_loaded()
+    obs = np.asarray(site_me_m, dtype=np.float64).reshape(3) / 1000.0
+    out = np.empty((np.asarray(ets).size, 3), dtype=np.float64)
+    with _lock:
+        for i, et in enumerate(np.asarray(ets, dtype=np.float64)):
+            state, _lt = spice.spkcpo(
+                target, float(et), MOON_ME, "OBSERVER", abcorr, obs, "MOON", MOON_ME
+            )
+            out[i] = np.asarray(state[:3], dtype=np.float64) * 1000.0
+    return out
+
+
+def unload_extra(paths: list[Path]) -> None:
+    """Unload kernels loaded with :func:`load_extra` (validation swaps trajectories)."""
+    with _lock:
+        for p in paths:
+            key = str(Path(p).resolve())
+            if key in _extra:
+                spice.unload(key)
+                _extra.discard(key)
 
 
 def coverage(spk: Path, naif_id: int) -> list[tuple[float, float]]:

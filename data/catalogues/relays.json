@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "catalogue": "relays",
- "compiled": "2026-09-27",
+ "compiled": "2026-09-29",
  "about": "Relay satellites that may carry a lander's data to Earth, with their launch status, and real lunar orbiters used only to check the pass calculation. A relay's contribution is worked out only from a published or entered orbit, and is shown as a range 'if it flies as planned'. Queqiao-2 is not listed: it publishes no orbit a CLPS mission could book.",
  "records": [
   {
@@ -23,6 +23,18 @@
      "title": "Blue Ghost Mission 2 Gets Stacked at JPL (PIA26598, 16 December 2025)",
      "publisher": "NASA JPL",
      "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://spacefinland.fi/documents/60305973/0/ESA+-+Moonlight_LP_and_LCNS_Slides+(1).pdf/d5399da8-26d6-016b-2cda-703c8ac70f16?t=1695736353872",
+     "title": "Lunar Communication & Navigation Network: Lunar Pathfinder orbit (ESA Moonlight slides, hosted by Space Finland)",
+     "publisher": "ESA",
+     "accessed": "2026-09-29"
+    },
+    {
+     "url": "https://digitalcommons.usu.edu/cgi/viewcontent.cgi?article=5633&context=smallsat",
+     "title": "Commercial Data Relay Services in the Cis-Lunar Environment with SSTL's Lunar Pathfinder (Small Satellite Conference paper)",
+     "publisher": "Surrey Satellite Technology Ltd, via Utah State University DigitalCommons",
+     "accessed": "2026-09-29"
     }
    ],
    "field_sources": {
@@ -31,16 +43,32 @@
     "launch_note": "https://bsgn.esa.int/service/lunar-pathfinder/",
     "orbit_note": "https://www.sstl.co.uk/space-portfolio/missions-in-build/2025/lunar-pathfinder",
     "serves_missions": "https://www.jpl.nasa.gov/images/pia26598-blue-ghost-mission-2-gets-stacked-at-jpl/",
-    "bands": "https://www.sstl.co.uk/space-portfolio/missions-in-build/2025/lunar-pathfinder"
+    "bands": "https://www.sstl.co.uk/space-portfolio/missions-in-build/2025/lunar-pathfinder",
+    "periapsis_km": "https://spacefinland.fi/documents/60305973/0/ESA+-+Moonlight_LP_and_LCNS_Slides+(1).pdf/d5399da8-26d6-016b-2cda-703c8ac70f16?t=1695736353872",
+    "apoapsis_km": "https://spacefinland.fi/documents/60305973/0/ESA+-+Moonlight_LP_and_LCNS_Slides+(1).pdf/d5399da8-26d6-016b-2cda-703c8ac70f16?t=1695736353872"
    },
-   "assumed_fields": {},
-   "unconfirmed_fields": [
-    "apoapsis_km",
-    "inclination_deg",
-    "periapsis_km",
-    "period_h"
+   "assumed_fields": {
+    "inclination_deg": {
+     "reason": "Two inclinations are given for it: 46.8 deg (ESA's slides) and 54.9 deg (SSTL's Small Satellite Conference paper), neither with its reference plane. Both ends are swept; the value is their middle.",
+     "url": "https://spacefinland.fi/documents/60305973/0/ESA+-+Moonlight_LP_and_LCNS_Slides+(1).pdf/d5399da8-26d6-016b-2cda-703c8ac70f16?t=1695736353872",
+     "lo": 46.8,
+     "hi": 54.9
+    },
+    "arg_periapsis_deg": {
+     "reason": "Not published. ESA and SSTL describe an orbit favouring the south pole, which puts the far point over the south pole: an argument of periapsis near 90 deg (NASA's reference frozen orbits for the south pole keep it between 85.4 and 92.5 deg). Swept from 85 to 95 deg.",
+     "url": "https://ntrs.nasa.gov/api/citations/20250002698/downloads/LCRNS_Reference_Constellation_White_Paper_03_2025.docx",
+     "lo": 85.0,
+     "hi": 95.0
+    },
+    "period_h": {
+     "reason": "Worked out from the perilune and apolune heights by Kepler's third law (the Moon's GM from DE440); not stated as a figure to check against.",
+     "url": null
+    }
+   },
+   "unconfirmed_fields": [],
+   "notes": [
+    "The perilune and apolune heights (673.4 and 7331.8 km) and the two inclinations were read from the search index of ESA's slides and SSTL's paper: both files sit behind a bot check from this network, so they are to be checked against the documents themselves."
    ],
-   "notes": [],
    "id": "lunar-pathfinder",
    "name": "Lunar Pathfinder",
    "role": "relay",
@@ -48,11 +76,12 @@
    "naif_id": null,
    "status": "planned",
    "launch_note": "To fly on Firefly's Blue Ghost Mission 2, integrated into its Elytra Dark orbital vehicle. ESA: launch not earlier than November 2026; SSTL: due to launch 2027.",
-   "periapsis_km": null,
-   "apoapsis_km": null,
-   "inclination_deg": null,
-   "period_h": null,
-   "orbit_note": "ESA and SSTL publish only 'a stable elliptical orbit to provide long duration visibility of the Southern Lunar Hemisphere each day' (an elliptical lunar frozen orbit); no orbital elements are published, so no relay timeline is worked out until they are published or entered.",
+   "periapsis_km": 673.4,
+   "apoapsis_km": 7331.8,
+   "inclination_deg": 50.85,
+   "arg_periapsis_deg": 90.0,
+   "period_h": 10.84,
+   "orbit_note": "SSTL: 'a stable elliptical orbit to provide long duration visibility of the Southern Lunar Hemisphere each day' (an elliptical lunar frozen orbit). Its heights are ESA's; where its node and its place along the orbit will be is not published, so both are swept.",
    "serves_missions": [
     "blue-ghost-m2"
    ],
@@ -69,22 +98,55 @@
      "title": "NASA Provides Updates on Moon Base Cargo Landers, Tech Demonstrations (Aug 04, 2026)",
      "publisher": "NASA",
      "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://ntrs.nasa.gov/api/citations/20250002698/downloads/LCRNS_Reference_Constellation_White_Paper_03_2025.docx",
+     "title": "NASA Lunar Communications Relay and Navigation Systems (LCRNS) Reference Constellation 3.1 (G. Ryden, M. Volle, NASA GSFC)",
+     "publisher": "NASA",
+     "accessed": "2026-09-29"
     }
    ],
    "field_sources": {
     "operator": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/",
     "status": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/",
     "launch_note": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/",
-    "serves_missions": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/"
+    "serves_missions": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/",
+    "orbit_note": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/"
    },
-   "assumed_fields": {},
+   "assumed_fields": {
+    "periapsis_km": {
+     "reason": "Altus-1's orbit is not published (NASA: deployed 'in lunar orbit'). Assumed to be one of the five elliptical frozen orbits of NASA's reference design for the lunar relay constellation (LCRNS 3.1, Table 1, Moon principal-axis frame), whose final design belongs to Intuitive Machines under its Near Space Network contract; the range covers all five.",
+     "url": "https://ntrs.nasa.gov/api/citations/20250002698/downloads/LCRNS_Reference_Constellation_White_Paper_03_2025.docx",
+     "lo": 1744.9,
+     "hi": 1751.3
+    },
+    "apoapsis_km": {
+     "reason": "Altus-1's orbit is not published (NASA: deployed 'in lunar orbit'). Assumed to be one of the five elliptical frozen orbits of NASA's reference design for the lunar relay constellation (LCRNS 3.1, Table 1, Moon principal-axis frame), whose final design belongs to Intuitive Machines under its Near Space Network contract; the range covers all five.",
+     "url": "https://ntrs.nasa.gov/api/citations/20250002698/downloads/LCRNS_Reference_Constellation_White_Paper_03_2025.docx",
+     "lo": 17391.2,
+     "hi": 17426.5
+    },
+    "inclination_deg": {
+     "reason": "Altus-1's orbit is not published (NASA: deployed 'in lunar orbit'). Assumed to be one of the five elliptical frozen orbits of NASA's reference design for the lunar relay constellation (LCRNS 3.1, Table 1, Moon principal-axis frame), whose final design belongs to Intuitive Machines under its Near Space Network contract; the range covers all five.",
+     "url": "https://ntrs.nasa.gov/api/citations/20250002698/downloads/LCRNS_Reference_Constellation_White_Paper_03_2025.docx",
+     "lo": 52.51,
+     "hi": 59.37
+    },
+    "arg_periapsis_deg": {
+     "reason": "Altus-1's orbit is not published (NASA: deployed 'in lunar orbit'). Assumed to be one of the five elliptical frozen orbits of NASA's reference design for the lunar relay constellation (LCRNS 3.1, Table 1, Moon principal-axis frame), whose final design belongs to Intuitive Machines under its Near Space Network contract; the range covers all five.",
+     "url": "https://ntrs.nasa.gov/api/citations/20250002698/downloads/LCRNS_Reference_Constellation_White_Paper_03_2025.docx",
+     "lo": 85.44,
+     "hi": 92.51
+    },
+    "period_h": {
+     "reason": "Altus-1's orbit is not published (NASA: deployed 'in lunar orbit'). Assumed to be one of the five elliptical frozen orbits of NASA's reference design for the lunar relay constellation (LCRNS 3.1, Table 1, Moon principal-axis frame), whose final design belongs to Intuitive Machines under its Near Space Network contract; the range covers all five. NASA gives about 30 hours on average.",
+     "url": "https://ntrs.nasa.gov/api/citations/20250002698/downloads/LCRNS_Reference_Constellation_White_Paper_03_2025.docx",
+     "lo": 29.96,
+     "hi": 30.05
+    }
+   },
    "unconfirmed_fields": [
-    "apoapsis_km",
-    "bands",
-    "inclination_deg",
-    "orbit_note",
-    "periapsis_km",
-    "period_h"
+    "bands"
    ],
    "notes": [],
    "id": "altus-1",
@@ -94,11 +156,12 @@
    "naif_id": null,
    "status": "planned",
    "launch_note": "Planned to fly alongside IM-3 (NASA, August 2026).",
-   "periapsis_km": null,
-   "apoapsis_km": null,
-   "inclination_deg": null,
-   "period_h": null,
-   "orbit_note": null,
+   "periapsis_km": 1747.7,
+   "apoapsis_km": 17406.9,
+   "inclination_deg": 55.94,
+   "arg_periapsis_deg": 88.97,
+   "period_h": 30.0,
+   "orbit_note": "NASA says only that Altus-1 is deployed 'in lunar orbit'. The orbit used here is assumed from NASA's reference design; where its node and its place along the orbit will be is swept.",
    "serves_missions": [
     "im-3"
    ],
@@ -122,6 +185,7 @@
    "assumed_fields": {},
    "unconfirmed_fields": [
     "apoapsis_km",
+    "arg_periapsis_deg",
     "bands",
     "inclination_deg",
     "launch_note",
@@ -142,6 +206,7 @@
    "periapsis_km": null,
    "apoapsis_km": null,
    "inclination_deg": null,
+   "arg_periapsis_deg": null,
    "period_h": null,
    "orbit_note": "Real orbit from JPL Horizons (the trajectory, not published elements).",
    "serves_missions": [],
@@ -165,6 +230,7 @@
    "assumed_fields": {},
    "unconfirmed_fields": [
     "apoapsis_km",
+    "arg_periapsis_deg",
     "bands",
     "inclination_deg",
     "launch_note",
@@ -185,6 +251,7 @@
    "periapsis_km": null,
    "apoapsis_km": null,
    "inclination_deg": null,
+   "arg_periapsis_deg": null,
    "period_h": null,
    "orbit_note": "Real orbit from JPL Horizons (the trajectory, not published elements).",
    "serves_missions": [],
@@ -208,6 +275,7 @@
    "assumed_fields": {},
    "unconfirmed_fields": [
     "apoapsis_km",
+    "arg_periapsis_deg",
     "bands",
     "inclination_deg",
     "launch_note",
@@ -228,6 +296,7 @@
    "periapsis_km": null,
    "apoapsis_km": null,
    "inclination_deg": null,
+   "arg_periapsis_deg": null,
    "period_h": null,
    "orbit_note": "Real orbit from JPL Horizons (the trajectory, not published elements).",
    "serves_missions": [],
@@ -251,6 +320,7 @@
    "assumed_fields": {},
    "unconfirmed_fields": [
     "apoapsis_km",
+    "arg_periapsis_deg",
     "bands",
     "inclination_deg",
     "launch_note",
@@ -271,6 +341,7 @@
    "periapsis_km": null,
    "apoapsis_km": null,
    "inclination_deg": null,
+   "arg_periapsis_deg": null,
    "period_h": null,
    "orbit_note": "Real orbit from JPL Horizons (the trajectory, not published elements).",
    "serves_missions": [],

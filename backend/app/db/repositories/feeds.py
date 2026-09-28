@@ -185,6 +185,31 @@ class FeedRepository:
         ).scalar_one_or_none()
         return None if row is None else _snap(row)
 
+    async def latest_ok_span(
+        self, provider: str, product: str, location_key: str = ""
+    ) -> tuple[int, datetime | None, datetime | None, datetime] | None:
+        """``(id, valid_from, valid_to, fetched_at)`` of the newest good snapshot,
+        without reading its body (a trajectory's is megabytes)."""
+        row = (
+            await self._s.execute(
+                select(
+                    FeedSnapshot.id,
+                    FeedSnapshot.valid_from,
+                    FeedSnapshot.valid_to,
+                    FeedSnapshot.fetched_at,
+                )
+                .where(
+                    FeedSnapshot.provider == provider,
+                    FeedSnapshot.product == product,
+                    FeedSnapshot.location_key == location_key,
+                    FeedSnapshot.status == "ok",
+                )
+                .order_by(FeedSnapshot.fetched_at.desc(), FeedSnapshot.id.desc())
+                .limit(1)
+            )
+        ).first()
+        return None if row is None else (row[0], row[1], row[2], row[3])
+
     async def get_snapshot(self, snapshot_id: int) -> SnapshotRecord | None:
         row = await self._s.get(FeedSnapshot, snapshot_id)
         return None if row is None else _snap(row)

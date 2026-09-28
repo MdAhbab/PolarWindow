@@ -1888,6 +1888,22 @@
               ],
               "title": "End"
             }
+          },
+          {
+            "name": "relay",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 3,
+              "description": "Planned relays (catalogue ids, e.g. `lunar-pathfinder`) to add to the mission's own, to see what each would add. Repeat for more than one.",
+              "default": [],
+              "title": "Relay"
+            },
+            "description": "Planned relays (catalogue ids, e.g. `lunar-pathfinder`) to add to the mission's own, to see what each would add. Repeat for more than one."
           }
         ],
         "responses": {
@@ -1897,6 +1913,148 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Section_Contact_"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Being worked out; poll the job.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRefOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/missions/{mission_id}/contact/rover": {
+      "get": {
+        "tags": [
+          "mission sections"
+        ],
+        "summary": "Can the rover and the lander see each other, over the terrain around the lander",
+        "operationId": "contact_rover_api_v1_missions__mission_id__contact_rover_get",
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          },
+          {
+            "name": "rover",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Rover id, e.g. `im-2/yaoki`. Default: the first.",
+              "title": "Rover"
+            },
+            "description": "Rover id, e.g. `im-2/yaoki`. Default: the first."
+          },
+          {
+            "name": "radius_m",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "How far from the lander (default 500 m).",
+              "title": "Radius M"
+            },
+            "description": "How far from the lander (default 500 m)."
+          },
+          {
+            "name": "lander_antenna_m",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Default 2 m (assumed).",
+              "title": "Lander Antenna M"
+            },
+            "description": "Default 2 m (assumed)."
+          },
+          {
+            "name": "rover_antenna_m",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Default 0.5 m (assumed).",
+              "title": "Rover Antenna M"
+            },
+            "description": "Default 0.5 m (assumed)."
+          },
+          {
+            "name": "freq_mhz",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Default 2400 MHz (assumed).",
+              "title": "Freq Mhz"
+            },
+            "description": "Default 2400 MHz (assumed)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Section_RoverOut_"
                 }
               }
             }
@@ -5554,6 +5712,47 @@
             "type": "array",
             "title": "Relays"
           },
+          "direct_only": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DirectOnly"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "With a relay in the graph: the same two numbers without it. Null otherwise."
+          },
+          "relay_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relay Note"
+          },
+          "orbiters": {
+            "items": {
+              "$ref": "#/components/schemas/Orbiter"
+            },
+            "type": "array",
+            "title": "Orbiters",
+            "description": "Real lunar orbiters' passes over the landing spot (could see the lander)."
+          },
+          "orbiters_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Orbiters Note"
+          },
           "link_budget_note": {
             "anyOf": [
               {
@@ -5594,6 +5793,10 @@
           "links",
           "numbers",
           "relays",
+          "direct_only",
+          "relay_note",
+          "orbiters",
+          "orbiters_note",
           "link_budget_note",
           "bookings",
           "light_time_s",
@@ -5853,6 +6056,23 @@
           "earth_required"
         ],
         "title": "Descent"
+      },
+      "DirectOnly": {
+        "properties": {
+          "longest_unheard_h": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "longest_message_wait_min": {
+            "$ref": "#/components/schemas/QuantityOut"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "longest_unheard_h",
+          "longest_message_wait_min"
+        ],
+        "title": "DirectOnly"
       },
       "Donki": {
         "properties": {
@@ -8914,6 +9134,227 @@
         ],
         "title": "Opportunity"
       },
+      "Orbiter": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "operator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operator"
+          },
+          "naif_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Naif Id"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note",
+            "description": "Geometry only: none of these orbiters relays for a lander."
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrbiterSource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The recorded JPL Horizons trajectory."
+          },
+          "covered": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StretchOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The part of the dates the trajectory covers."
+          },
+          "passes": {
+            "items": {
+              "$ref": "#/components/schemas/OrbiterPass"
+            },
+            "type": "array",
+            "title": "Passes",
+            "description": "Above the landing spot's terrain skyline."
+          },
+          "pass_count": {
+            "type": "integer",
+            "title": "Pass Count"
+          },
+          "in_view_h": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "longest_pass_min": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "longest_gap_h": {
+            "$ref": "#/components/schemas/QuantityOut"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "operator",
+          "naif_id",
+          "note",
+          "source",
+          "covered",
+          "passes",
+          "pass_count",
+          "in_view_h",
+          "longest_pass_min",
+          "longest_gap_h"
+        ],
+        "title": "Orbiter"
+      },
+      "OrbiterPass": {
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End"
+          },
+          "open_start": {
+            "type": "boolean",
+            "title": "Open Start",
+            "description": "Cut by the start of the dates."
+          },
+          "open_end": {
+            "type": "boolean",
+            "title": "Open End",
+            "description": "Cut by the end of the dates."
+          },
+          "max_elevation_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Elevation Deg",
+            "description": "Highest above the flat horizon."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "open_start",
+          "open_end",
+          "max_elevation_deg"
+        ],
+        "title": "OrbiterPass"
+      },
+      "OrbiterSource": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "issued_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issued At"
+          },
+          "fetched_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetched At"
+          },
+          "licence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Licence"
+          },
+          "snapshot_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "url",
+          "issued_at",
+          "fetched_at",
+          "licence",
+          "snapshot_id"
+        ],
+        "title": "OrbiterSource"
+      },
       "Outlook": {
         "properties": {
           "issued": {
@@ -10192,6 +10633,39 @@
         ],
         "title": "RefreshOut"
       },
+      "RelayOrbit": {
+        "properties": {
+          "periapsis_km": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Height of the near point above the mean radius."
+          },
+          "apoapsis_km": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Height of the far point above the mean radius."
+          },
+          "inclination_deg": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "To the lunar equator."
+          },
+          "arg_periapsis_deg": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "About 90 degrees puts the far point over the south pole."
+          },
+          "period_h": {
+            "$ref": "#/components/schemas/QuantityOut"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "periapsis_km",
+          "apoapsis_km",
+          "inclination_deg",
+          "arg_periapsis_deg",
+          "period_h"
+        ],
+        "title": "RelayOrbit"
+      },
       "RelayRow": {
         "properties": {
           "id": {
@@ -10203,11 +10677,58 @@
             "title": "Name"
           },
           "adds_h": {
-            "$ref": "#/components/schemas/QuantityOut"
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Time it adds to direct contact, as a range."
+          },
+          "via_h": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Time the lander can reach Earth through it, as a range."
           },
           "status": {
             "type": "string",
-            "title": "Status"
+            "title": "Status",
+            "description": "Its launch note, or its status when there is none."
+          },
+          "launch_status": {
+            "type": "string",
+            "enum": [
+              "operating",
+              "planned",
+              "not_launched",
+              "launched_not_operating"
+            ],
+            "title": "Launch Status"
+          },
+          "for_this_mission": {
+            "type": "boolean",
+            "title": "For This Mission",
+            "description": "False for a relay added to compare what it would add; not planned for this mission."
+          },
+          "orbit": {
+            "$ref": "#/components/schemas/RelayOrbit"
+          },
+          "orbit_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Orbit Note"
+          },
+          "sweep_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sweep Note",
+            "description": "What was swept to get the ranges; null when nothing was worked out."
           }
         },
         "additionalProperties": false,
@@ -10216,7 +10737,13 @@
           "id",
           "name",
           "adds_h",
-          "status"
+          "via_h",
+          "status",
+          "launch_status",
+          "for_this_mission",
+          "orbit",
+          "orbit_note",
+          "sweep_note"
         ],
         "title": "RelayRow"
       },
@@ -10842,6 +11369,176 @@
         ],
         "title": "Rover"
       },
+      "RoverAssumptions": {
+        "properties": {
+          "lander_antenna_m": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "rover_antenna_m": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "radio_mhz": {
+            "$ref": "#/components/schemas/QuantityOut"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "lander_antenna_m",
+          "rover_antenna_m",
+          "radio_mhz"
+        ],
+        "title": "RoverAssumptions"
+      },
+      "RoverOut": {
+        "properties": {
+          "rover": {
+            "$ref": "#/components/schemas/RoverRef"
+          },
+          "share_basis": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "drive",
+                  "ground"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share Basis",
+            "description": "What the shares are over: the planned drive, or the ground within radius_m when no drive is published. Null when not resolvable."
+          },
+          "radius_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Radius M"
+          },
+          "viewshed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Viewshed"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "viewshed_tile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Viewshed Tile"
+          },
+          "out_of_sight_share": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Percent out of sight; a range when uncertain cells could go either way."
+          },
+          "radio_not_clear_share": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Percent where the radio path is not clear (first Fresnel zone)."
+          },
+          "longest_out_of_sight_m": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "resolvable": {
+            "type": "boolean",
+            "title": "Resolvable"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "assumptions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoverAssumptions"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "terrain": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Terrain"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rover",
+          "share_basis",
+          "radius_m",
+          "viewshed",
+          "viewshed_tile",
+          "out_of_sight_share",
+          "radio_not_clear_share",
+          "longest_out_of_sight_m",
+          "resolvable",
+          "reason",
+          "assumptions",
+          "terrain",
+          "note"
+        ],
+        "title": "RoverOut"
+      },
+      "RoverRef": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "RoverRef"
+      },
       "RuleRow": {
         "properties": {
           "id": {
@@ -11131,6 +11828,23 @@
           "meta"
         ],
         "title": "Section[Return]"
+      },
+      "Section_RoverOut_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RoverOut"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/LifecycleMeta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Section[RoverOut]"
       },
       "Section_SpaceWeather_": {
         "properties": {
@@ -12244,6 +12958,30 @@
         ],
         "title": "TargetSite"
       },
+      "Terrain": {
+        "properties": {
+          "product": {
+            "type": "string",
+            "title": "Product"
+          },
+          "post_m": {
+            "type": "number",
+            "title": "Post M"
+          },
+          "vertical_error_m": {
+            "type": "number",
+            "title": "Vertical Error M"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "product",
+          "post_m",
+          "vertical_error_m"
+        ],
+        "title": "Terrain"
+      },
       "TestIn": {
         "properties": {
           "kind": {
@@ -12983,6 +13721,67 @@
           "limits"
         ],
         "title": "VehicleLimits"
+      },
+      "Viewshed": {
+        "properties": {
+          "bearings_deg": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Bearings Deg",
+            "description": "From north, clockwise, every 5 degrees."
+          },
+          "ranges_m": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Ranges M",
+            "description": "Distance from the lander, 20 steps to radius_m."
+          },
+          "sight": {
+            "items": {
+              "items": {
+                "type": "string",
+                "enum": [
+                  "clear",
+                  "blocked",
+                  "uncertain"
+                ]
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Sight",
+            "description": "Clear line of sight, [bearing][range]."
+          },
+          "radio": {
+            "items": {
+              "items": {
+                "type": "string",
+                "enum": [
+                  "clear",
+                  "blocked",
+                  "uncertain"
+                ]
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Radio",
+            "description": "Radio path clear: the first Fresnel zone as well, [bearing][range]."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bearings_deg",
+          "ranges_m",
+          "sight",
+          "radio"
+        ],
+        "title": "Viewshed"
       },
       "Who": {
         "properties": {

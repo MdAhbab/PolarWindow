@@ -339,8 +339,20 @@ into the hub header.
 
 - **Question:** "How often can the lander talk to Earth?"
 - **Answer:** "A ground station can hear it for {h} hours over these dates.
-  Through a relay it could add {lo} to {hi} hours, if it flies as planned. The
-  longest time without contact is {h} hours." With no gap at all: "A ground
+  Through {relay} ({launch status}) it could reach Earth for {lo} to {hi}
+  hours, if it flies as planned; that adds {lo} to {hi} hours to direct
+  contact. The longest time without contact is {h} hours directly, or {lo} to
+  {hi} hours with the relay, if it flies as planned" (`direct_only` gives the
+  direct waits, net-4). The relay's
+  launch status stands beside its name ("not launched", "planned, not
+  launched", "in orbit"); a relay that adds nothing because Earth is already
+  in view says "it adds no time to direct contact" (IM-3's Altus-1); with more
+  than one relay, "Through a relay … if they
+  fly as planned". A planned relay whose orbit is not published is named, not
+  counted: "{relay} ({status}) could relay for it, but time through it is not
+  worked out yet" (the tile says why). A wait that counts the relay is a range
+  and says "with the relay, if it flies as planned", in the answer and under
+  its tile. With no gap at all: "A ground
   station can hear it for all {h} of these dates." `window_note` shows only
   when the server used other dates than the ones asked for. A wait under a
   minute reads in seconds, one of two hours or more in hours.
@@ -352,17 +364,60 @@ into the hub header.
 - **Chart: the contact chart.** One row per link (lander to each station,
   lander to each relay, relay to station), bars where the link is up. A
   planned relay has no real timeline, so its row is the −45° hatch across the
-  dates with "{lo}–{hi} h somewhere in these dates, if it flies as planned".
-  Booked passes are outlined boxes labelled "booked". The antennas of one Deep
+  dates with "{lo}–{hi} h somewhere in these dates, if it flies as planned"
+  (what it adds), or "Not worked out: {reason}"; since net-4 the links are
+  direct only, so each relay's row comes from `relays`.
+  Booked passes are outlined boxes labelled "booked". Orbiters already flying
+  (LRO, Danuri, …) come last, their passes as dashed outlines captioned "could
+  see the lander; not a relay": geometry only, no agreement carries a lander's
+  data, so they count in no number. Only orbiters with a trajectory for these
+  dates get a row (an empty row would read as never in view); where the
+  trajectory stops early, the rest is a dashed grey "No trajectory recorded"
+  box, in the legend and the table twin. The antennas of one Deep
   Space Network complex share a row ("Goldstone, California · Deep Space
   Network, 4 antennas"); the twin keeps each antenna. Twin: link, start, end,
   length, booked or not.
-- **Rows:** Relays (each with its launch status) · Booked ground-station
-  passes · Rover and lander line of sight · More numbers · Download the
+- **Rows:** Relays (`relay_note` first; each with its operator, launch status
+  as glyph and words, its launch plan, what it adds to direct contact and the
+  time through it as ranges or why they are not worked out, its orbit in plain
+  words, each figure "published" or "assumed", `orbit_note`, `sweep_note`;
+  "Added to compare" when `for_this_mission` is false) ·
+  Orbiters that could see the lander (`Contact.orbiters`, F2: `orbiters_note`
+  first; each with its operator, "{n} passes over these dates, {h} in view in
+  all; the longest pass {min}, the longest wait between passes {h}", a
+  trajectory that covers only part of the dates says so, one with none says
+  "Not known: {reason}" (never "no pass"), its own note when it differs, and
+  its JPL Horizons source with its age) · Booked ground-station
+  passes · Rover and lander line of sight · More numbers (either way as a range
+  "if the relay flies as planned"; the two waits directly; a missing number
+  gives its reason) · Download the
   contact plan (ION, CSV) · Change the dates (the same dates as Landing) ·
   How sure is this? · Where does this come from? "Line of sight only: the
   lander's radio power is not published" changes what every number means,
   so it is a one-line note under the answer, not a row.
+- **Rover and lander line of sight** (`GET /missions/{id}/contact/rover?rover=`,
+  asked for when the row opens; shown only for a mission that carries a rover
+  as the service lists them (payloads that move, then listed rovers: IM-2's
+  Yaoki, Griffin-1's FLIP, IM-3's Lunar Vertex and CADRE); a select when there
+  is more than one; a
+  202 shows the working panel). Answer first: "{rover} would be out of the
+  lander's sight for {share} of its drive. The longest stretch out of sight is
+  {m}." When no drive is published the share is over the ground: "Within {r} m
+  of the lander, {lo}–{hi}% of the ground is out of its sight; the radio path is
+  not clear over {lo}–{hi}%." (ranges where uncertain cells could go either
+  way), then the reason the longest stretch is missing. The served `note` (what
+  clear, blocked and uncertain mean) sits under the map, and a row "Antennas,
+  radio and terrain" gives the antenna heights and frequency (each "assumed"
+  with its reason unless given) and the elevation model with its post spacing
+  and height error. `resolvable: false` → "Cannot be said here." and the served reason,
+  no map. The viewshed is a map layer around the lander, north up, rings every
+  100 m, the lander an ink square: in sight filled (earth), blocked the 45°
+  hatch, uncertain the −45° hatch on a light wash; each state in the legend
+  with a glyph (● ✕ ?) and words. A switch shows the line of sight or the
+  radio path (the first Fresnel zone needs a wider corridor). Table twin, from
+  the same rays: each direction ("270° (west)") with its runs in words for both
+  ("In sight 25–275 m; uncertain 300 m; blocked 325–425 m; in sight 450–500 m").
+  Without `viewshed` the row says there is no map.
 - **Dates:** the hub sets the dates to the mission's time on the surface
   when the mission is first opened, whichever step comes first, so Contact
   and Landing always answer for the same dates.

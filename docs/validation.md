@@ -487,3 +487,121 @@ The result is written to `data/capsule/orex_check.json` and served in
 **Not done.** The Moon-to-Earth return trajectory to the entry interface (C1/C2 reversed)
 is not built: no CLPS mission brings anything back, and no planned one publishes an entry
 state. A capsule's zone weather (B2) waits for the same.
+
+# Real orbiters over the landing sites against JPL Horizons (plan T1, F2)
+
+`make validate-orbiters` (`app/tests/golden/validate_orbiters.py`; needs the network,
+about 30 requests to Horizons; writes `data/contact/orbiters_check.json`). LRO, Danuri,
+Chandrayaan-2 and CAPSTONE fly over the sites. The Contact answer shows their passes as
+"could see the lander", never as a relay: none of them offers to relay for a lander.
+
+**The trajectory the product uses.** The feeds worker records each orbiter's Horizons
+VECTORS (Moon-centred, ICRF, geometric) every 5 minutes, weekly from a week ago to 30 days
+ahead, and once for each flown mission's surface days. The compute worker writes them as
+an SPK type 13 kernel (Hermite, degree 7). Against Horizons' own 1-minute vectors for LRO
+(64–116 km above the Moon, the hardest case), 5-minute knots miss by at most 1.8 m
+(10-minute knots by up to 18 m, which is why 5 was chosen).
+
+**Azimuth and elevation** (plan: 0.02° against Horizons). From each landed site, on the
+1737.4 km sphere as Horizons places a lunar site at height 0, with the light time and
+aberration seen from the site (CSPICE `spkcpo`), against Horizons' observer table ("airless
+apparent", Moon mean-Earth frame), every minute the orbiter is up. **Rise and set** (plan:
+2 s): over the flat horizon (a point, angular radius 0), ours from a 30 s grid refined by
+bisection, as the Contact answer does over the terrain skyline; Horizons' from its table
+every 2 seconds, interpolated.
+
+| Site (dates) | Orbiter | Minutes up | Largest angle (°) | Rises and sets | Largest Δt (s) |
+|---|---|---:|---:|---:|---:|
+| IM-2, Mons Mouton (surface days, 12.75 h) | LRO | 82 | 0.0002 | 14 | 0.002 |
+| | Danuri | 57 | 0.0004 | 13 | 0.002 |
+| | Chandrayaan-2 | 84 | 0.0002 | 14 | 0.002 |
+| | CAPSTONE | 766 (always up) | 0.0000 | 0 | – |
+| IM-1, Malapert A (23 Feb 2024, 12 h) | LRO | 82 | 0.0001 | 14 | 0.002 |
+| | Danuri | 87 | 0.0001 | 13 | 0.002 |
+| | Chandrayaan-2 | 64 | 0.0002 | 12 | 0.002 |
+| | CAPSTONE | 721 (always up) | 0.0000 | 0 | – |
+| Blue Ghost 1, Mare Crisium (3 Mar 2025, 12 h) | LRO | 64 | 0.0010 | 12 | 0.003 |
+| | Chandrayaan-2 | 71 | 0.0001 | 13 | 0.001 |
+| | Danuri, CAPSTONE | 0 | – | 0 | – |
+
+Every rise and set Horizons gives has one of ours within 0.003 s, none unmatched; the
+largest angle is 0.001°, twenty times inside the plan's 0.02°.
+
+**Against NAIF's LRO reconstruction** (plan: 0.01°, its WebGeocalc tolerance; WebGeocalc
+itself was not used). The same azimuth and elevation from IM-2's site on 1 April 2025,
+from NAIF's reconstructed kernel `lrorg_2025074_2025166_v01.bsp` and from ours built from
+Horizons: at most 0.00018° apart (71 minutes up in 12 hours).
+
+**What this does not check.** The terrain skyline the answer uses instead of the flat
+horizon (the surface engine's own validation covers it), and trajectories Horizons
+predicts: the weekly window reaches 30 days ahead, where LRO's and Danuri's orbits are
+predictions that later reconstructions will move. CAPSTONE's Horizons trajectory ends on
+14 August 2026, and Chandrayaan-2's on 23 October 2026; after that the answer says so.
+
+# Planned relays (plan T1, F3 and F4)
+
+A planned relay publishes an orbit's shape but never where its node will sit or where it
+will be along the orbit on a given day, so those two are swept on a 36 × 36 grid and every
+number through a relay is a range. No flown relay exists to check against; the geometry is
+checked on analytic cases (`app/tests/unit/test_relay.py`), each exact to the sampling:
+
+* A circular polar relay seen from the pole over a flat skyline is up for
+  (π − 2 asin(R/r)) / 2π of each orbit: matched to 1e-5.
+* An equatorial relay seen from Earth is behind the Moon for asin(R/r)/π of each orbit
+  (the relay-to-station ray–sphere test): matched to 2e-3, the difference being Earth at
+  384,400 km rather than at infinity.
+* Earliest arrival through lander → relay → Earth equals a general search over the same
+  contacts on 40 random sets; the longest wait also catches a message that reaches the
+  relay just as its link down closes, which the general search's candidate instants miss.
+* Kepler's equation to 1e-11 rad for eccentricities up to 0.95; an argument of periapsis of
+  90° puts the far point over the south pole.
+
+An example over the reference lunar day at Griffin-1's south pole site (Earth above the
+skyline 422.6 of 708.8 h; with direct contact alone, nobody hears the lander for up to
+286.1 h at a stretch), over all 5,184 placements of each relay: Lunar Pathfinder, if it
+flies as planned, would add 194–210 h and bring the longest time unheard to 3.0–3.8 h (a
+message waits 182–230 min at most); Altus-1 in NASA's reference orbit would add 236–245 h
+(4.7–5.5 h unheard, 282–326 min wait). At IM-3's near-side site, where Earth never sets,
+Altus-1 adds nothing. About 50 s of compute per relay for a lunar day.
+
+# Rover-to-lander line of sight (plan T1, F5)
+
+`app/core/viewshed.py`, served by `GET /missions/{id}/contact/rover`. For each bearing (every
+5°) a ray is sampled outward from the lander; a rover at each of 20 ranges is in clear sight
+when the terrain between the antennas stays below the line joining them (the running maximum
+of the terrain's elevation angle), and on a clear radio path when it also stays out of the
+first Fresnel zone. Each is clear, blocked or uncertain: the elevation model's height error
+at each blocker, as the angle atan(σ / distance), and at the rover's ground, makes the band.
+Ground within two posts of either end is not a blocker (the skyline's noise rule).
+
+**Analytic surfaces** (plan: exact; `app/tests/unit/test_viewshed.py`). A ring wall
+shadows exactly the rovers whose antenna sits below the line over its near edge, and a taller
+mast ends the shadow where the line clears the wall; with a 2 m height error every cell is
+either that exact state or uncertain, uncertain exactly where the clearance is inside the
+band; a 2.5 m wall half way along a 500 m path at 30 GHz leaves the line clear and cuts the
+Fresnel zone (1.12 m at mid-path), and at 2.4 GHz the zone (3.95 m) reaches flat ground.
+
+**Real terrain** (`make validate-viewshed`; plan: 99 % agreement with `gdal_viewshed`
+outside the uncertain band). GDAL is not installed here, so `gdal_viewshed` was not run.
+The nearest check that could be: the engine's states with the height error set to zero,
+against a brute-force test written separately (the terrain every metre along each straight
+line, compared in heights, not angles), on the 20 m polar model around each rover site,
+antennas 2 m (lander) and 0.5 m (rover), counted where the 2 m error does not make a cell
+uncertain:
+
+| Site | Radius | Cells | Outside the band | Agree | Share out of sight (lo–hi) |
+|---|---:|---:|---:|---:|---|
+| IM-2 (Yaoki) | 500 m | 1440 | 221 | 100.00 % | 0.7–97.1 % |
+| IM-2 (Yaoki) | 2000 m | 1440 | 826 | 100.00 % | 76.8–100.0 % |
+| Griffin-1 (FLIP) | 500 m | 1440 | 481 | 100.00 % | 12.0–85.7 % |
+| Griffin-1 (FLIP) | 2000 m | 1440 | 742 | 100.00 % | 51.8–90.2 % |
+
+This checks the running maximum, not the terrain model or the method against an independent
+tool. **What it shows about the answer:** within 500 m most cells are uncertain (IM-2: 1,219
+of 1,440): a 2 m height error at 100 m is 1.1°, more than the angles between a 2 m and a
+0.5 m antenna, so the 20 m polar model cannot say whether a small rover near the lander is in
+its sight, and the shares come as wide ranges. The error is taken as independent at every
+post, as for the skyline; LOLA's errors between nearby posts are partly shared, so the band is
+if anything too wide. No rover drive is published, so the share is over the ground within
+the radius, and the longest stretch out of sight is missing with that reason. Reiner Gamma
+(CADRE, Lunar Vertex) is outside the polar model and answers "not resolvable".

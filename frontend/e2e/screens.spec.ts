@@ -185,7 +185,9 @@ test('settings on a phone: every project row and a parameter form fit, with no s
   await page.getByRole('button', { name: 'Settings' }).click()
   const sheet = page.getByRole('dialog', { name: 'Settings' })
   await expect(sheet.locator('summary', { hasText: 'Parameters' })).toContainText(/\d of \d entered/)
-  for (const s of await sheet.locator('summary').all()) await s.click()
+  // Open every row, never closing one already open (a click toggles).
+  for (const s of await sheet.locator('summary').all()) if ((await s.locator('xpath=..').getAttribute('open')) === null) await s.click()
+  await openRow(page, /^Parameters/)
   await sheet.getByRole('button', { name: /for Lowest Sun height/ }).click()
   const value = sheet.getByLabel('Value, in degrees')
   await expect(value).toBeVisible()

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import pytest
 from sqlalchemy import text
 
@@ -55,7 +57,7 @@ async def test_im1_contact_over_its_surface_days(anon_client) -> None:
     assert len(stations) == 14
     assert d["link_budget_note"].startswith("Line of sight only")
     assert 1.1 < d["light_time_s"]["min"] < d["light_time_s"]["max"] < 1.5
-    assert body["meta"]["engines"] == {"link": "link-1", "net": "net-3", "vis": "vis-2"}
+    assert body["meta"]["engines"] == {"link": "link-1", "net": "net-4", "vis": "vis-2"}
     assert any("mask" in p["source"].lower() for p in body["meta"]["uncertainty"]["parts"])
 
 
@@ -118,3 +120,136 @@ async def test_a_lander_lost_before_landing_has_no_contact(anon_client) -> None:
     r = await anon_client.get(f"{API}/missions/peregrine-m1/contact")
     assert r.status_code == 409
     assert "lost before" in r.json()["detail"]["detail"]
+
+
+async def test_a_planned_relay_added_to_a_south_pole_site(anon_client) -> None:
+    """Griffin-1's pole site with Lunar Pathfinder added to compare: every number
+    through the relay is a range over its unknown node and phase."""
+    q = {"start": "2027-03-20T00:00:00Z", "end": "2027-03-22T00:00:00Z"}
+    body = await _answer(anon_client, "griffin-1", **q, relay="lunar-pathfinder")
+    d = body["data"]
+    n = d["numbers"]
+    (row,) = d["relays"]
+    assert row["id"] == "lunar-pathfinder" and row["for_this_mission"] is False
+    assert row["launch_status"] == "planned"
+    assert row["orbit"]["periapsis_km"]["provenance"] == "published"
+    assert row["orbit"]["periapsis_km"]["value"] == pytest.approx(673.4)
+    inc = row["orbit"]["inclination_deg"]
+    assert inc["provenance"] == "assumed" and (inc["lo"], inc["hi"]) == (46.8, 54.9)
+    assert "5184 placements" in row["sweep_note"]
+    for q_ in (row["adds_h"], row["via_h"], n["via_relay_h"], n["either_h"]):
+        assert q_["provenance"] == "assumed"
+        assert q_["lo"] <= q_["value"] <= q_["hi"]
+    assert n["either_h"]["lo"] >= n["direct_h"]["value"] - 1e-9
+    assert n["either_h"]["hi"] <= 48.0 + 1e-9
+    # A relay can only shorten the time nobody hears the lander.
+    alone = d["direct_only"]
+    assert alone is not None and d["relay_note"]
+    assert n["longest_unheard_h"]["hi"] <= alone["longest_unheard_h"]["value"] + 1e-9
+    assert n["longest_message_wait_min"]["hi"] <= alone["longest_message_wait_min"]["value"] + 1e-6
+    relay_node = next(x for x in d["nodes"] if x["kind"] == "relay")
+    assert relay_node["orbit"] == "planned" and relay_node["launch_note"]
+    assert body["meta"]["engines"]["net"] == "net-4"
+
+
+async def test_a_mission_s_own_relay_over_a_near_side_site(anon_client) -> None:
+    """IM-3's Altus-1 over Reiner Gamma, where Earth never sets: the relay adds nothing."""
+    q = {"start": "2027-03-20T00:00:00Z", "end": "2027-03-21T00:00:00Z"}
+    d = (await _answer(anon_client, "im-3", **q))["data"]
+    (row,) = d["relays"]
+    assert row["id"] == "altus-1" and row["for_this_mission"] is True
+    assert row["orbit"]["periapsis_km"]["provenance"] == "assumed"
+    assert row["adds_h"]["hi"] == pytest.approx(0.0, abs=1e-6)
+    assert d["numbers"]["either_h"]["value"] == pytest.approx(d["numbers"]["direct_h"]["value"])
+
+
+async def test_only_a_catalogued_relay_service_can_be_added(anon_client) -> None:
+    r = await anon_client.get(f"{API}/missions/griffin-1/contact", params={"relay": "lro"})
+    assert r.status_code == 422 and "no relay service" in r.json()["detail"]["detail"]
+    r = await anon_client.get(f"{API}/missions/griffin-1/contact", params={"relay": "nope"})
+    assert r.status_code == 422 and "lunar-pathfinder" in r.json()["detail"]["detail"]
+
+
+async def test_real_orbiters_are_passes_over_the_site_never_relays(anon_client, tmp_path) -> None:
+    """LRO's recorded Horizons trajectory over IM-2's surface days: passes above the
+    skyline, from the kernel the job writes; the others say what is missing."""
+    from pathlib import Path
+
+    from app.feeds import recorder
+    from app.feeds.adapters import horizons
+    from app.feeds.http import Fetched
+
+    fx = Path(__file__).resolve().parents[1] / "fixtures" / "feeds" / "horizons_lro_im2.txt"
+    p = horizons.products(
+        [("lro", -85)],
+        [
+            (
+                "im-2",
+                datetime(2025, 3, 6, 17, 30, tzinfo=UTC),
+                datetime(2025, 3, 7, 6, 15, tzinfo=UTC),
+            )
+        ],
+    )[1]
+    got = Fetched(p.url, 200, fx.read_bytes(), None, None, "text/plain", False, 1)
+    async with session_scope() as s:
+        await s.execute(text("DELETE FROM feed_snapshots WHERE provider = 'horizons'"))
+        out = await recorder.record(s, p, got, raw_root=tmp_path)
+    assert out.ok
+    d = (await _answer(anon_client, "im-2"))["data"]
+    assert d["orbiters_note"] and "not a service" in d["orbiters_note"]
+    by = {o["id"]: o for o in d["orbiters"]}
+    assert set(by) == {"lro", "danuri", "chandrayaan-2-orbiter", "capstone"}
+    lro = by["lro"]
+    assert lro["source"]["snapshot_id"] == out.snapshot_id
+    assert lro["covered"]["open_start"] and lro["covered"]["open_end"]
+    assert lro["pass_count"] >= 5  # a two-hour orbit over 12.75 h
+    assert 0 < lro["in_view_h"]["value"] < 12.75
+    assert len(lro["passes"]) == lro["pass_count"]
+    for q_ in ("in_view_h", "longest_pass_min", "longest_gap_h"):
+        assert lro[q_]["value"] is not None
+    assert by["danuri"]["in_view_h"]["value"] is None
+    assert "No JPL Horizons trajectory" in by["danuri"]["in_view_h"]["missing_reason"]
+    assert not any(n["id"] == "lro" for n in d["nodes"])  # never a node of the network
+    async with session_scope() as s:
+        await s.execute(text("DELETE FROM feed_snapshots WHERE provider = 'horizons'"))
+
+
+async def test_rover_line_of_sight_at_a_polar_site(anon_client) -> None:
+    r = await anon_client.get(f"{API}/missions/im-2/contact/rover")
+    assert r.status_code == 202, r.text
+    ran = await Worker(owner="test", handlers=HANDLERS).run_once()
+    assert ran is not None
+    r = await anon_client.get(f"{API}/missions/im-2/contact/rover")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    d = body["data"]
+    assert d["rover"] == {"id": "im-2/yaoki", "name": "Yaoki"}
+    assert d["resolvable"] is True and d["share_basis"] == "ground" and d["radius_m"] == 500
+    vs = d["viewshed"]
+    assert len(vs["bearings_deg"]) == 72 and len(vs["ranges_m"]) == 20
+    assert len(vs["sight"]) == 72 and all(len(row) == 20 for row in vs["sight"])
+    states = {c for row in vs["sight"] + vs["radio"] for c in row}
+    assert states <= {"clear", "blocked", "uncertain"}
+    share = d["out_of_sight_share"]
+    assert share["unit"] == "%" and 0.0 <= share["value"] <= 100.0
+    radio = d["radio_not_clear_share"]
+    # The radio path needs more than the line: never clearer than the sight.
+    assert radio["value"] >= share["value"] - 1e-9
+    assert d["longest_out_of_sight_m"]["value"] is None
+    assert "No drive is published for Yaoki" in d["longest_out_of_sight_m"]["missing_reason"]
+    a = d["assumptions"]
+    assert a["lander_antenna_m"]["provenance"] == "assumed" and a["radio_mhz"]["value"] == 2400
+    assert d["terrain"]["post_m"] == 20.0
+    assert body["meta"]["engines"] == {"los": "los-1"}
+
+
+async def test_rover_outside_the_polar_terrain_is_not_resolvable(anon_client) -> None:
+    r = await anon_client.get(f"{API}/missions/im-3/contact/rover", params={"rover": "im-3/cadre"})
+    assert r.status_code == 200, r.text
+    d = r.json()["data"]
+    assert d["resolvable"] is False and "polar terrain" in d["reason"]
+    assert d["viewshed"] is None and d["out_of_sight_share"]["missing_reason"]
+    r = await anon_client.get(f"{API}/missions/im-1/contact/rover")
+    assert r.status_code == 409 and r.json()["detail"]["type"].endswith("no-rover")
+    r = await anon_client.get(f"{API}/missions/im-2/contact/rover", params={"rover": "x"})
+    assert r.status_code == 422 and "im-2/yaoki" in r.json()["detail"]["detail"]

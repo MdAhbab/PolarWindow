@@ -1,23 +1,22 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { useShallow } from 'zustand/react/shallow'
-import { API_BASE, api } from '../../lib/api/client'
+import { API_BASE, ApiError, api } from '../../lib/api/client'
 import type { MissionDetail } from '../../lib/api/adapters'
-import type { ContactDTO, LifecycleMetaDTO } from '../../lib/api/lifecycle'
+import type { ContactDTO, LifecycleMetaDTO, OrbiterDTO, QuantityDTO, RelayOrbitDTO, RoverSightDTO } from '../../lib/api/lifecycle'
 import { useHistory, useLifecycleWrite, useSection, useSectionStatus } from '../../lib/api/lifecycleQueries'
-import { keys } from '../../lib/api/queries'
 import { useWindowParams } from '../../lib/mission'
 import { useMission as useStore } from '../../lib/store'
 import { hasSite } from '../../lib/sites'
 import { dateTimeWords, msFromModelH, windowLine } from '../../lib/format'
-import { quantityText } from '../../lib/lifecycle/quantity'
+import { ageWords, formatValue, quantityText, quantityView } from '../../lib/lifecycle/quantity'
 import { NumberRow, QuantityTile } from '../../components/lifecycle/QuantityTile'
-import { Answer, ChartPanel, HowSure, Legend, Rows, SectionLayout, SectionStates, SourcesRow } from '../../components/lifecycle/Section'
-import { ContactChart, ContactTable, contactRows } from '../../components/lifecycle/ContactChart'
+import { Answer, ChartPanel, HowSure, Legend, Rows, SectionLayout, SectionStates, SourcesRow, WorkingPanel } from '../../components/lifecycle/Section'
+import { ContactChart, ContactTable, contactRows, relayState } from '../../components/lifecycle/ContactChart'
 import { Field, FormSheet, HistoryList, Select, TextInput } from '../../components/lifecycle/Forms'
 import { WindowPicker } from '../../components/WindowPicker'
 import { Button, Disclosure } from '../../components/ui'
 import { UncertaintyNote } from '../../components/States'
+import { ViewshedPanel, roverSentence } from '../../components/lifecycle/RoverSight'
 import { Icon } from '../../components/Icon'
 import { useCanWrite } from './ReadySection'
 
@@ -52,6 +51,106 @@ export function ContactSection({ mission: m }: { mission: MissionDetail }) {
   )
 }
 
+/** A number given as a lo–hi range: with a relay, one that counts the relay if it flies as planned. */
+const isRange = (q: QuantityDTO) => q.lo !== null && q.hi !== null
+
+/**
+ * Each relay with its launch status: `state` in words with a glyph (the
+ * catalogue's status, else its node's); `launch` the served status line (its
+ * launch plan), or the node's note.
+ */
+export function relayList(c: ContactDTO) {
+  return c.relays.map((r) => {
+    const node = c.nodes.find((n) => n.id === r.id)
+    return { ...r, operator: node?.operator ?? null, state: relayState(c, r.id), launch: r.status || node?.launch_note || null }
+  })
+}
+
+/** A relay's orbit in plain words, each figure with where it comes from. */
+const ORBIT_WORDS: [keyof RelayOrbitDTO, string][] = [
+  ['periapsis_km', 'Lowest point above the surface'],
+  ['apoapsis_km', 'Highest point above the surface'],
+  ['inclination_deg', 'Tilt to the Moon’s equator'],
+  ['arg_periapsis_deg', 'Where the highest point sits (about 90° is over the south pole)'],
+  ['period_h', 'One orbit takes'],
+]
+
+export function orbitWords(q: QuantityDTO): string {
+  const w = numberWords(q)
+  if (q.provenance === 'assumed' && !w.startsWith('Not worked out')) return `${w}, assumed`
+  if (q.provenance === 'published' && !w.startsWith('Not worked out')) return `${w}, published`
+  return w
+}
+
+/**
+ * The answer in words (design-lifecycle.md, Contact): what a ground station
+ * hears, the time through a relay as a range with its launch status beside it
+ * and what that adds to direct contact,
+ * and the longest time without contact, saying when that counts the relay.
+ */
+export function contactAnswer(c: ContactDTO): string {
+  const n = c.numbers
+  const relays = relayList(c)
+  const heardThroughout = n.longest_unheard_h.value === 0
+  const out = [
+    heardThroughout
+      ? `A ground station can hear it for all ${quantityText(n.station_hears_h)} of these dates.`
+      : `A ground station can hear it for ${quantityText(n.station_hears_h)} over these dates.`,
+  ]
+  const one = relays.length === 1 ? relays[0] : null
+  const named = one ? `${one.name}${one.state ? ` (${one.state.words.toLowerCase()})` : ''}` : null
+  if (relays.length && isRange(n.via_relay_h)) {
+    out.push(
+      one
+        ? `Through ${named} it could reach Earth for ${quantityText(n.via_relay_h)}, if it flies as planned${
+            !isRange(one.adds_h) ? '' : one.adds_h.hi === 0 ? '; it adds no time to direct contact' : `; that adds ${quantityText(one.adds_h)} to direct contact`
+          }.`
+        : `Through a relay it could reach Earth for ${quantityText(n.via_relay_h)}, if they fly as planned.`,
+    )
+  } else if (relays.length) {
+    out.push(
+      one
+        ? `${named} could relay for it, but time through it is not worked out yet.`
+        : `${relays.map((r) => r.name).join(' and ')} could relay for it, but time through them is not worked out yet.`,
+    )
+  }
+  if (!heardThroughout) {
+    const withRelay = relays.length > 0 && isRange(n.longest_unheard_h)
+    const direct = c.direct_only?.longest_unheard_h
+    out.push(
+      withRelay && direct
+        ? `The longest time without contact is ${quantityText(direct)} directly, or ${quantityText(n.longest_unheard_h)} with the relay, if it flies as planned.`
+        : `The longest time without contact is ${quantityText(n.longest_unheard_h)}${withRelay ? ' with the relay, if it flies as planned' : ''}.`,
+    )
+  }
+  return out.join(' ')
+}
+
+/** An orbiter's passes in words: how many, time in view, the longest pass and the longest wait between passes. */
+export function orbiterWords(o: OrbiterDTO): string {
+  const passes = `${o.pass_count} pass${o.pass_count === 1 ? '' : 'es'} over these dates`
+  // No trajectory for these dates: not known, which is not the same as no pass.
+  if (quantityView(o.in_view_h).kind === 'missing') return `Not known: ${o.in_view_h.missing_reason ?? 'no trajectory is recorded for these dates.'}`
+  if (!o.pass_count) return 'No pass over these dates.'
+  return `${passes}, ${quantityText(o.in_view_h)} in view in all; the longest pass ${quantityText(o.longest_pass_min)}, the longest wait between passes ${quantityText(o.longest_gap_h)}.`
+}
+
+/** Says so when the recorded trajectory covers only part of the dates. */
+export function coveredWords(o: OrbiterDTO, start: number, end: number): string | null {
+  if (!o.covered) return null
+  const a = Date.parse(o.covered.start)
+  const b = Date.parse(o.covered.end)
+  if (a <= start + 60_000 && b >= end - 60_000) return null
+  return `Its recorded trajectory covers ${dateTimeWords(a)} to ${dateTimeWords(b)} only; passes outside that are not known.`
+}
+
+/** A number for a list: the figure, or "Not worked out: {reason}". */
+export function numberWords(q: QuantityDTO, rangeNote?: string): string {
+  const v = quantityView(q)
+  if (v.kind === 'missing') return `Not worked out: ${v.missingReason}`
+  return v.kind === 'range' && rangeNote ? `${v.sentence}, ${rangeNote}` : v.sentence
+}
+
 /** True when the answer covers dates other than the ones asked for. */
 function servedOtherDates(c: Pick<ContactDTO, 'start' | 'end'>, asked: { start: string; end: string }): boolean {
   const differs = (served: string | undefined, want: string) => served !== undefined && Date.parse(served) !== Date.parse(want)
@@ -78,18 +177,14 @@ function ContactAnswer({
   const rows = contactRows(contact)
   const planned = rows.some((r) => r.planned)
   const { windowStartH, windowHours } = useStore(useShallow((s) => ({ windowStartH: s.windowStartH, windowHours: s.windowHours })))
-  const relayRange = n.via_relay_h.lo !== null || n.via_relay_h.value !== null
-  // No gap at all: one sentence says so, instead of a zero-hour gap.
-  const heardThroughout = n.longest_unheard_h.value === 0
+  const relays = relayList(contact)
+  const orbiters = contact.orbiters ?? []
+  // A wait that counts a planned relay is a range, and says so.
+  const relayNote = (q: QuantityDTO, direct?: QuantityDTO) =>
+    relays.length && isRange(q) ? `with the relay, if it flies as planned${direct ? `; ${quantityText(direct)} directly` : ''}` : undefined
   return (
     <>
-      <Answer meta={meta}>
-        {heardThroughout
-          ? <>A ground station can hear it for all {quantityText(n.station_hears_h)} of these dates.</>
-          : <>A ground station can hear it for {quantityText(n.station_hears_h)} over these dates.</>}
-        {relayRange && contact.relays.length > 0 && <> Through a relay it could add {quantityText(n.via_relay_h)}, if it flies as planned.</>}
-        {!heardThroughout && <> The longest time without contact is {quantityText(n.longest_unheard_h)}.</>}
-      </Answer>
+      <Answer meta={meta}>{contactAnswer(contact)}</Answer>
       {contact.link_budget_note && <UncertaintyNote className="-mt-3">{contact.link_budget_note}</UncertaintyNote>}
       <NumberRow>
         <QuantityTile term="stationHears" q={n.station_hears_h} tone="earth" icon="earth" scale={hours} />
@@ -104,8 +199,8 @@ function ContactAnswer({
           scale={hours}
           note={contact.relays.length ? 'if it flies as planned' : undefined}
         />
-        <QuantityTile term="contactUnheard" q={n.longest_unheard_h} scale={hours} />
-        <QuantityTile term="messageWait" q={n.longest_message_wait_min} />
+        <QuantityTile term="contactUnheard" q={n.longest_unheard_h} scale={hours} note={relayNote(n.longest_unheard_h, contact.direct_only?.longest_unheard_h)} />
+        <QuantityTile term="messageWait" q={n.longest_message_wait_min} note={relayNote(n.longest_message_wait_min, contact.direct_only?.longest_message_wait_min)} />
       </NumberRow>
       <ChartPanel
         title={`Who can hear the lander, ${windowLine(start, hours)}`}
@@ -115,6 +210,8 @@ function ContactAnswer({
             items={[
               { swatch: <span className="h-3 w-5 bg-earth-fill" />, label: 'Can hear the lander' },
               ...(planned ? [{ swatch: <span className="hatch-uncertain h-3 w-5 border border-uncertain" />, label: 'A range: if it flies as planned' }] : []),
+              ...(rows.some((r) => r.orbiter) ? [{ swatch: <span className="h-3 w-5 border border-dashed border-earth" />, label: 'Could see the lander (an orbiter, not a relay)' }] : []),
+              ...(rows.some((r) => r.noData?.length) ? [{ swatch: <span className="h-3 w-5 border border-dashed border-line-strong" />, label: 'No trajectory recorded' }] : []),
               ...(contact.bookings.length ? [{ swatch: <span className="h-3 w-5 border-2 border-ink" />, label: 'Booked pass' }] : []),
             ]}
           />
@@ -123,30 +220,101 @@ function ContactAnswer({
       />
       {datesNote && <p className="-mt-3 text-caption leading-caption text-ink-3">{datesNote}</p>}
       <Rows>
-        {contact.relays.length > 0 && (
-          <Disclosure title="Relays" meta={contact.relays.map((r) => r.name).join(', ')}>
+        {relays.length > 0 && (
+          <Disclosure title="Relays" meta={relays.map((r) => (r.state ? `${r.name} · ${r.state.words.toLowerCase()}` : r.name)).join(', ')}>
+            {contact.relay_note && <p className="text-body text-ink-2">{contact.relay_note}</p>}
             <ul className="flex flex-col divide-y divide-line border-y border-line">
-              {contact.relays.map((r) => (
+              {relays.map((r) => (
                 <li key={r.id} className="flex flex-col gap-0.5 py-2.5">
-                  <span className="text-body font-semibold text-ink">{r.name}</span>
-                  <span className="text-small text-ink-2">
-                    Adds {quantityText(r.adds_h)}, if it flies as planned. {r.status}
+                  <span className="text-body font-semibold text-ink">
+                    {r.name}
+                    {r.operator && <span className="font-normal text-ink-3"> · {r.operator}</span>}
                   </span>
+                  <span className="text-small text-ink">
+                    {r.state && (
+                      <>
+                        <span aria-hidden="true">{r.state.glyph} </span>
+                        {r.state.words}.{' '}
+                      </>
+                    )}
+                    {r.launch}
+                  </span>
+                  {r.for_this_mission === false && <span className="text-small text-ink-2">Added to compare: not planned for this mission.</span>}
+                  <span className="text-small text-ink-2">
+                    {isRange(r.adds_h)
+                      ? `${r.adds_h.hi === 0 ? 'Adds no time to direct contact' : `Adds ${quantityText(r.adds_h)} to direct contact`}${
+                          r.via_h && isRange(r.via_h) ? `, ${quantityText(r.via_h)} in all through it` : ''
+                        }, if it flies as planned.`
+                      : `Time through it: ${numberWords(r.adds_h).replace(/^Not worked out: /, 'not worked out. ')}`}
+                  </span>
+                  {r.orbit && (
+                    <dl className="mt-1.5 grid grid-cols-1 gap-x-6 gap-y-1 text-small sm:grid-cols-[max-content_1fr]">
+                      {ORBIT_WORDS.map(([k, label]) => (
+                        <div key={k} className="contents">
+                          <dt className="text-ink-3">{label}</dt>
+                          <dd className="text-ink">{orbitWords(r.orbit![k])}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  )}
+                  {r.orbit_note && <span className="text-small text-ink-2">{r.orbit_note}</span>}
+                  {r.sweep_note && <span className="text-small text-ink-2">{r.sweep_note}</span>}
+                </li>
+              ))}
+            </ul>
+          </Disclosure>
+        )}
+        {orbiters.length > 0 && (
+          <Disclosure title="Orbiters that could see the lander" meta={orbiters.map((o) => o.name).join(', ')}>
+            <p className="text-body text-ink-2">
+              {contact.orbiters_note ??
+                'These orbiters already fly over the Moon and could see the lander. None is a relay for it: no agreement carries its data, so they count in no number above.'}
+            </p>
+            <ul className="flex flex-col divide-y divide-line border-y border-line">
+              {orbiters.map((o) => (
+                <li key={o.id} className="flex flex-col gap-0.5 py-2.5">
+                  <span className="text-body font-semibold text-ink">
+                    {o.name}
+                    {o.operator && <span className="font-normal text-ink-3"> · {o.operator}</span>}
+                  </span>
+                  <span className="text-small text-ink">{orbiterWords(o)}</span>
+                  {coveredWords(o, start, end) && <span className="text-small text-ink-2">{coveredWords(o, start, end)}</span>}
+                  {o.note !== contact.orbiters_note && <span className="text-small text-ink-2">{o.note}</span>}
+                  {o.source && (
+                    <span className="text-small text-ink-3">
+                      {o.source.url ? (
+                        <a href={o.source.url} className="text-ink-2 underline">
+                          {o.source.name}
+                        </a>
+                      ) : (
+                        o.source.name
+                      )}
+                      {o.source.fetched_at ? `, fetched ${ageWords(Date.parse(o.source.fetched_at))}` : ''}
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>
           </Disclosure>
         )}
         <BookingsRow contact={contact} missionId={m.id} />
-        <RoverRow missionId={m.id} />
+        <RoverRow mission={m} />
         <Disclosure title="More numbers">
           <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-body sm:grid-cols-[max-content_1fr]">
             <dt className="text-ink-3">Time in contact with Earth (Earth above the skyline)</dt>
-            <dd className="text-ink">{quantityText(n.direct_h)}</dd>
+            <dd className="text-ink">{numberWords(n.direct_h)}</dd>
             <dt className="text-ink-3">In contact either way, directly or through a relay</dt>
-            <dd className="text-ink">{quantityText(n.either_h)}</dd>
+            <dd className="text-ink">{numberWords(n.either_h, 'if the relay flies as planned')}</dd>
+            {contact.direct_only && (
+              <>
+                <dt className="text-ink-3">Longest time without contact, directly</dt>
+                <dd className="text-ink">{numberWords(contact.direct_only.longest_unheard_h)}</dd>
+                <dt className="text-ink-3">Longest message wait, directly</dt>
+                <dd className="text-ink">{numberWords(contact.direct_only.longest_message_wait_min)}</dd>
+              </>
+            )}
             <dt className="text-ink-3">Dark and out of contact at once</dt>
-            <dd className="text-ink">{quantityText(n.dark_and_unheard_h)}</dd>
+            <dd className="text-ink">{numberWords(n.dark_and_unheard_h, 'with the relay, if it flies as planned')}</dd>
           </dl>
         </Disclosure>
         <Disclosure title="Download the contact plan" meta="ION, spreadsheet">
@@ -261,32 +429,92 @@ function BookingsRow({ contact, missionId }: { contact: ContactDTO; missionId: s
   )
 }
 
-/** Whether the rover stays in sight of the lander (asked for when the row opens). */
-function RoverRow({ missionId }: { missionId: string }) {
+/**
+ * Whether a rover stays in sight of the lander (asked for when the row
+ * opens): the answer first, then the viewshed as a map with its table twin.
+ * Shown only for a mission that carries a rover.
+ */
+function RoverRow({ mission: m }: { mission: MissionDetail }) {
   const [open, setOpen] = useState(false)
-  const q = useQuery({
-    queryKey: keys.lifecycle('rover', missionId),
-    enabled: open,
-    retry: false,
-    queryFn: ({ signal }) => api.rover(missionId, undefined, signal),
-  })
-  const d = q.data?.data
+  const [roverId, setRoverId] = useState(m.rovers[0]?.id)
+  const view = useSection<RoverSightDTO>('rover', m.id, (signal) => api.rover(m.id, roverId, signal), [roverId], open)
+  if (!m.rovers.length) return null
+  const rover = m.rovers.find((r) => r.id === roverId) ?? m.rovers[0]
   return (
-    <Disclosure title="Rover and lander line of sight" onOpen={() => setOpen(true)}>
-      {q.isPending ? (
+    <Disclosure title="Rover and lander line of sight" meta={m.rovers.map((r) => r.name).join(', ')} onOpen={() => setOpen(true)}>
+      {m.rovers.length > 1 && (
+        <Field label="Rover">
+          {(p) => <Select {...p} value={rover.id} onChange={(e) => setRoverId(e.target.value)} options={m.rovers.map((r) => ({ value: r.id, label: r.name }))} />}
+        </Field>
+      )}
+      {view.status === 'pending' ? (
         <p className="text-small text-ink-3">Loading…</p>
-      ) : q.error ? (
-        <p className="text-body text-ink-2">Not available for this mission.</p>
-      ) : d && !d.resolvable ? (
-        <p className="text-body text-ink-2">{d.reason ?? 'Not resolvable with the terrain available.'}</p>
-      ) : d ? (
-        <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-body sm:grid-cols-[max-content_1fr]">
-          <dt className="text-ink-3">Share of the planned drive out of the lander’s sight</dt>
-          <dd className="text-ink">{quantityText(d.out_of_sight_share)}</dd>
-          <dt className="text-ink-3">Longest stretch out of sight</dt>
-          <dd className="text-ink">{quantityText(d.longest_out_of_sight_m)}</dd>
-        </dl>
-      ) : null}
+      ) : view.status === 'working' ? (
+        <WorkingPanel job={view.job} />
+      ) : view.status === 'error' ? (
+        <p className="text-body text-ink-2">
+          Not available: {view.error instanceof ApiError ? view.error.detail : 'the service did not answer.'}
+        </p>
+      ) : (
+        <RoverAnswer d={view.section.data} meta={view.section.meta} roverName={view.section.data.rover?.name ?? rover.name} />
+      )}
     </Disclosure>
+  )
+}
+
+function RoverAnswer({ d, meta, roverName }: { d: RoverSightDTO; meta: LifecycleMetaDTO; roverName: string }) {
+  return (
+    <div className="flex flex-col gap-4" data-testid="rover-sight">
+      <p className="text-control leading-7 text-ink">
+        {!d.resolvable && (
+          <span className="font-semibold">
+            <span aria-hidden="true">? </span>Cannot be said here.{' '}
+          </span>
+        )}
+        {roverSentence(d, roverName)}
+      </p>
+      {d.resolvable && d.viewshed ? (
+        <ViewshedPanel v={d.viewshed} roverName={roverName} />
+      ) : d.resolvable ? (
+        <p className="text-small text-ink-2">The directions around the lander are not served yet, so there is no map to draw.</p>
+      ) : null}
+      {d.note && <p className="text-small text-ink-2">{d.note}</p>}
+      <Rows>
+        {(d.assumptions || d.terrain) && (
+          <Disclosure title="Antennas, radio and terrain" meta={d.assumptions ? 'assumed unless given' : undefined}>
+            <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-small sm:grid-cols-[max-content_1fr]">
+              {d.assumptions &&
+                (
+                  [
+                    ['lander_antenna_m', 'Lander’s antenna above the ground'],
+                    ['rover_antenna_m', 'Rover’s antenna above the ground'],
+                    ['radio_mhz', 'Radio frequency'],
+                  ] as const
+                ).map(([k, label]) => (
+                  <div key={k} className="contents">
+                    <dt className="text-ink-3">{label}</dt>
+                    <dd className="text-ink">
+                      {orbitWords(d.assumptions![k])}
+                      {d.assumptions![k].provenance === 'assumed' && d.assumptions![k].no_margin_reason && (
+                        <span className="block text-ink-2">{d.assumptions![k].no_margin_reason}</span>
+                      )}
+                    </dd>
+                  </div>
+                ))}
+              {d.terrain && (
+                <>
+                  <dt className="text-ink-3">Terrain</dt>
+                  <dd className="text-ink">
+                    {d.terrain.product}: a height every {formatValue(d.terrain.post_m)} m, each good to ±{formatValue(d.terrain.vertical_error_m)} m
+                  </dd>
+                </>
+              )}
+            </dl>
+          </Disclosure>
+        )}
+        <HowSure meta={meta} />
+        <SourcesRow meta={meta} />
+      </Rows>
+    </div>
   )
 }

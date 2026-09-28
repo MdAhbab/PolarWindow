@@ -1,0 +1,467 @@
+% POLAR WINDOW: technical paper.
+% Build from the repository root:  tectonic docs/paper/paper.tex
+% Numbers come from docs/paper/data/ (export_data.py, measure_timing.py) and
+% from `make test`, `make test-fe` and `make lint`, run on 2026-09-24.
+% IEEEtran asks for the Type 1 families ptm, phv and pcr, which XeTeX cannot
+% use; declare them in XeTeX's TU encoding over the TeX Gyre equivalents.
+\DeclareFontFamily{TU}{ptm}{}
+\DeclareFontShape{TU}{ptm}{m}{n}{<->"[texgyretermes-regular.otf]:mapping=tex-text"}{}
+\DeclareFontShape{TU}{ptm}{m}{it}{<->"[texgyretermes-italic.otf]:mapping=tex-text"}{}
+\DeclareFontShape{TU}{ptm}{m}{sc}{<->"[texgyretermes-regular.otf]:mapping=tex-text;+smcp"}{}
+\DeclareFontShape{TU}{ptm}{m}{sl}{<->ssub * ptm/m/it}{}
+\DeclareFontShape{TU}{ptm}{b}{n}{<->"[texgyretermes-bold.otf]:mapping=tex-text"}{}
+\DeclareFontShape{TU}{ptm}{b}{it}{<->"[texgyretermes-bolditalic.otf]:mapping=tex-text"}{}
+\DeclareFontShape{TU}{ptm}{b}{sc}{<->"[texgyretermes-bold.otf]:mapping=tex-text;+smcp"}{}
+\DeclareFontShape{TU}{ptm}{b}{sl}{<->ssub * ptm/b/it}{}
+\DeclareFontShape{TU}{ptm}{m}{scit}{<->"[texgyretermes-italic.otf]:mapping=tex-text;+smcp"}{}
+\DeclareFontShape{TU}{ptm}{b}{scit}{<->"[texgyretermes-bolditalic.otf]:mapping=tex-text;+smcp"}{}
+\DeclareFontShape{TU}{ptm}{bx}{scit}{<->ssub * ptm/b/scit}{}
+\DeclareFontShape{TU}{ptm}{bx}{n}{<->ssub * ptm/b/n}{}
+\DeclareFontShape{TU}{ptm}{bx}{it}{<->ssub * ptm/b/it}{}
+\DeclareFontShape{TU}{ptm}{bx}{sc}{<->ssub * ptm/b/sc}{}
+\DeclareFontShape{TU}{ptm}{bx}{sl}{<->ssub * ptm/b/it}{}
+\DeclareFontFamily{TU}{phv}{}
+\DeclareFontShape{TU}{phv}{m}{n}{<->"[texgyreheros-regular.otf]:mapping=tex-text"}{}
+\DeclareFontShape{TU}{phv}{m}{it}{<->"[texgyreheros-italic.otf]:mapping=tex-text"}{}
+\DeclareFontShape{TU}{phv}{b}{n}{<->"[texgyreheros-bold.otf]:mapping=tex-text"}{}
+\DeclareFontShape{TU}{phv}{b}{it}{<->"[texgyreheros-bolditalic.otf]:mapping=tex-text"}{}
+\DeclareFontShape{TU}{phv}{bx}{n}{<->ssub * phv/b/n}{}
+\DeclareFontShape{TU}{phv}{bx}{it}{<->ssub * phv/b/it}{}
+\DeclareFontFamily{TU}{pcr}{\hyphenchar\font=-1}
+\DeclareFontShape{TU}{pcr}{m}{n}{<->"[texgyrecursor-regular.otf]"}{}
+\DeclareFontShape{TU}{pcr}{m}{it}{<->"[texgyrecursor-italic.otf]"}{}
+\DeclareFontShape{TU}{pcr}{b}{n}{<->"[texgyrecursor-bold.otf]"}{}
+\DeclareFontShape{TU}{pcr}{b}{it}{<->"[texgyrecursor-bolditalic.otf]"}{}
+\DeclareFontShape{TU}{pcr}{bx}{n}{<->ssub * pcr/b/n}{}
+\DeclareFontShape{TU}{pcr}{bx}{it}{<->ssub * pcr/b/it}{}
+\DeclareFontShape{TU}{pcr}{m}{sc}{<->ssub * pcr/m/n}{}
+\DeclareFontShape{TU}{pcr}{b}{sc}{<->ssub * pcr/b/n}{}
+\DeclareFontShape{TU}{pcr}{bx}{sc}{<->ssub * pcr/b/n}{}
+\documentclass[conference]{IEEEtran}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{newtxmath}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage[per-mode=symbol]{siunitx}
+\sisetup{
+  uncertainty-mode = separate,
+  group-minimum-digits = 4,
+  range-units = single,
+}
+% algorithm2e.sty carries Latin-1 bytes; read it as Latin-1 so XeTeX does not
+% warn about each one, then return to UTF-8 for everything that follows.
+\XeTeXdefaultencoding "iso-8859-1"
+\usepackage[ruled,linesnumbered,vlined]{algorithm2e}
+\XeTeXdefaultencoding "utf-8"
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{microtype}
+\usepackage[backend=biber,style=ieee]{biblatex}
+\addbibresource{references.bib}
+% Let long URLs break anywhere rather than leave gaps in a narrow column.
+\setcounter{biburlnumpenalty}{9000}
+\setcounter{biburlucpenalty}{9000}
+\setcounter{biburllcpenalty}{9000}
+\AtBeginBibliography{\raggedright}
+\usepackage{cleveref}
+\crefname{algocf}{Algorithm}{Algorithms}
+\Crefname{algocf}{Algorithm}{Algorithms}
+
+% An external figure, or a framed notice naming the file while it is pending.
+\newcommand{\extfig}[2]{%
+  \IfFileExists{figures/#1}%
+    {\includegraphics[width=\columnwidth]{figures/#1}}%
+    {\fbox{\parbox[c][#2][c]{0.94\columnwidth}{\centering\footnotesize
+      Figure pending: \texttt{figures/#1}}}}}
+
+\pgfplotsset{
+  pw/.style={
+    width=\columnwidth, height=0.62\columnwidth,
+    tick label style={font=\footnotesize},
+    label style={font=\footnotesize},
+    legend style={font=\footnotesize, draw=none, fill=none},
+    axis line style={black!70}, tick style={black!70},
+  },
+}
+
+\begin{document}
+
+\title{Terrain, Not Latitude: Sunlight and Earth Contact at South-Polar Landing
+Sites, With the Uncertainty Each Number Carries}
+
+\author{\IEEEauthorblockN{Md Ahbab}
+\IEEEauthorblockA{POLAR WINDOW\\NASA Space Apps Challenge 2026,
+CLPS Lunar Mission Browser}}
+
+\maketitle
+
+\begin{abstract}
+Commercial Lunar Payload Services (CLPS) deliveries are converging on the lunar
+south pole, where the Sun circles within a few degrees of the horizon and
+terrain, not latitude, decides whether a lander has power and a line of sight to
+Earth. We describe the geometry engine of POLAR WINDOW, a CLPS mission browser
+that reports four numbers for any site and window: hours of sunlight, hours of
+Earth contact, the longest unbroken dark gap and the longest unbroken radio
+blackout, never combined into a score. Each skyline is ray-marched once from
+Lunar Orbiter Laser Altimeter terrain; everything after is a lookup and one
+vectorised SPICE call per body. The contribution is the uncertainty model:
+per-bearing elevation error, a near-field noise floor, grazing crossings reported
+as untimeable, and window-censored gaps reported as lower bounds. We also measure
+what the tolerance omits: a tuning constant moves a summit's sunlight from
+\qty{574.399}{\hour} to \qty{482.33}{\hour}.
+\end{abstract}
+
+\section{Problem}
+
+At Connecting Ridge (\ang{-89.438} latitude) the Sun never rises: across the
+\qty{708.75}{\hour} window from 2027-03-14 used throughout, its elevation stays
+between \ang{-1.607} and \ang{-0.7031} (\Cref{fig:sunskyline}). A sun calculator
+with a level horizon reports no sunlight. Yet the site is sunlit for
+\qty{81.04}{\percent} of the window, because it stands \qty{1957.5}{\metre} above
+the \qty{1737.4}{\kilo\metre} reference sphere and looks \emph{down} at its
+skyline, whose mean over \num{1440} bearings is \ang{-2.3681}. At the pole the
+horizon decides~\cite{mazarico2011illumination,bussey2010kaguya,speyerer2013persistently,glaser2014illumination}.
+
+The second trap is the coordinate. A crater's published coordinate is its
+centre, which is its floor: the \qty{80}{\metre} LOLA model returns
+\qty{-2767.3}{\metre}, \qty{-3315.9}{\metre} and \qty{-3931.7}{\metre} at the
+anchors for Shackleton, Haworth and Shoemaker. The \num{15} candidate sites are
+therefore resolved from terrain: the most open-skied post, sloped at most
+\ang{12}, in the top elevation decile around each anchor. Eight of the \num{20}
+records in the project's CLPS dataset target the south pole.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[pw,
+  xlabel={Hours since 2027-03-14 00:00 UTC},
+  ylabel={Elevation (\si{\degree})},
+  xmin=0, xmax=708.75, ymin=-4.6, ymax=0.4,
+  xtick={0,100,200,300,400,500,600,700},
+  legend style={at={(0.5,1.03)}, anchor=south, legend columns=2,
+    /tikz/every even column/.append style={column sep=8pt}},
+  legend cell align=left]
+\addplot[black!45, thin, densely dotted, forget plot] coordinates {(0,0) (708.75,0)};
+\addplot[black!55, thick, dashed] table[x=t_h, y=sun_skyline_deg] {sun_vs_skyline.dat};
+\addlegendentry{Skyline at the Sun's azimuth}
+\addplot[black, thick] table[x=t_h, y=sun_el_deg] {sun_vs_skyline.dat};
+\addlegendentry{Sun elevation}
+\end{axis}
+\end{tikzpicture}
+\caption{At Connecting Ridge the Sun stays below level (dotted) for the whole
+window, yet it clears the site's own skyline for \qty{81.04}{\percent} of it,
+because that skyline lies below level on every bearing. Data:
+\texttt{sun\_vs\_skyline.dat}, \num{2836} samples at \qty{900}{\second}.}
+\label{fig:sunskyline}
+\end{figure}
+
+\section{Method}
+
+\paragraph{Horizon mask} \Cref{alg:raymarch} marches \num{1440} rays at
+\ang{0.25} to \qty{50}{\kilo\metre}, \num{555} samples each, starting two posts
+out, beyond the site's own pixel. Each elevation angle
+subtracts the curvature drop,
+\begin{equation}
+\theta_k = \arctan\frac{h(d_k) - h_0 - d_k^2/2R}{d_k},\qquad
+R = \qty{1737.4}{\kilo\metre},
+\label{eq:theta}
+\end{equation}
+which is \qty{115.11}{\metre} at \qty{20}{\kilo\metre}, and is never clamped at
+zero (\Cref{fig:raymarch}). Terrain is LDEM\_80S\_20M within
+\qty{20}{\kilo\metre} and LDEM\_80S\_80M beyond~\cite{lola_gdr_polar,smith2010lola}.
+
+\paragraph{Visibility} One SPICE~\cite{acton1996naif,acton2018spice}
+\texttt{spkpos} call per body, through SpiceyPy~\cite{annex2020spiceypy}, gives
+Sun and Earth from DE440~\cite{park2021de440} in MOON\_ME~\cite{naif_moon_fk},
+projected onto the site's east, north and up unit vectors, which stay exact at
+the pole. The margin $m = e - H(a)$ subtracts the mask at the body's azimuth
+from its elevation. Discs are finite: the angular radius $\rho$ spans
+\ang{0.2660} to \ang{0.2683} for the Sun and \ang{0.9025} to \ang{0.9963} for
+Earth, so a sample is lit if $m > \rho$, dark if $m < -\rho$ and otherwise
+penumbral (\Cref{fig:states}), as a median \qty{8.44}{\percent} of samples are.
+
+\paragraph{Intervals and metrics} Sign changes of $m$ are bracketed at
+\qty{900}{\second} and bisected \num{40} times; half-open runs partition the
+window. The four numbers are two totals and two longest runs, never combined.
+
+\paragraph{Why precompute} The mask depends only on the site and costs a median
+\qty{128.653}{\milli\second}; a cold \texttt{/metrics} request costs
+\qty{10.162}{\milli\second} (\Cref{tab:timing}; \Cref{fig:timing}). The mask is
+built once per site and engine version, and a request is a lookup plus one
+ephemeris call.
+
+\begin{algorithm}[t]
+\caption{Horizon mask for one site}
+\label{alg:raymarch}
+\DontPrintSemicolon
+\KwIn{height sampler $h(x,y)$, vertical-error sampler $\sigma(x,y)$, site
+height $h_0$, post spacing $p$}
+\KwOut{per bearing $a$: skyline $\theta^*(a)$, range $r^*(a)$, tolerance $\delta(a)$}
+$d_1 \gets 2p$;\ $d_{k+1} \gets d_k + \max(\qty{5}{\metre},\, 0.01\,d_k)$ while
+$d_{k+1} \le \qty{50}{\kilo\metre}$\;
+\For{$a \in \{0, \ang{0.25}, \dots, \ang{359.75}\}$}{
+  $(x_k, y_k) \gets d_k(\sin a, \cos a)$ for all $k$\;
+  \lIf{no $h(x_k,y_k)$ is defined}{$\theta^*(a) \gets$ smooth-sphere dip; \textbf{continue}}
+  $\theta_k \gets$ \Cref{eq:theta};\quad $\phi_k \gets \arctan(\sigma_k / d_k)$\;
+  $E \gets \{k : \theta_k > \phi_k \ \lor\ \phi_k < \ang{0.25}\}$\;
+  $k^* \gets \arg\max_{k \in E} \theta_k$\;
+  $\theta^*(a) \gets \theta_{k^*}$;\ $r^*(a) \gets d_{k^*}$;\
+  $\delta(a) \gets \arctan(\sigma_{k^*}/d_{k^*})$\;
+}
+\end{algorithm}
+
+\begin{figure}[t]
+\centering
+\extfig{raymarch-geometry.pdf}{0.55\columnwidth}
+\caption{Each sample's elevation angle is measured after the surface has curved
+away by $d^2/2R$, so a site above its surroundings has a skyline below level,
+and the mask keeps that negative angle.}
+\label{fig:raymarch}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\extfig{state-decision.pdf}{0.5\columnwidth}
+\caption{A sample is lit or dark only when the whole disc is clear of, or hidden
+by, the skyline; the band in between is reported as penumbral, not rounded to
+either side.}
+\label{fig:states}
+\end{figure}
+
+\begin{table}[t]
+\centering
+\caption{Precompute versus request cost, Connecting Ridge, reference window at
+\qty{900}{\second}. Apple M3 (Mac15,12), macOS 27.0, Python 3.12.14.
+Values as written to \texttt{data/timing.csv}.}
+\label{tab:timing}
+\footnotesize
+\begin{tabular}{@{}l S[table-format=3.3] S[table-format=3.3] S[table-format=2.0]@{}}
+\toprule
+Stage & {Median (\si{\milli\second})} & {p95 (\si{\milli\second})} & {$N$} \\
+\midrule
+\multicolumn{4}{@{}l}{\emph{Once per site (worker)}} \\
+Ray-march, \num{1440} bearings & 128.653 & 130.154 & 75 \\
+Load \qty{20}{\metre} window & 22.223 & 25.435 & 45 \\
+Load \qty{80}{\metre} product & 399.12 & 420.001 & 3 \\
+Fetch \qty{20}{\metre} window from PDS & \multicolumn{3}{c}{not measured} \\
+\midrule
+\multicolumn{4}{@{}l}{\emph{Per request (API)}} \\
+Ephemeris, two bodies & 6.552 & 6.704 & 50 \\
+Sun track and crossings & 1.938 & 2.067 & 50 \\
+Earth track and crossings & 0.694 & 0.707 & 50 \\
+Four numbers and autonomy & 0.008 & 0.010 & 50 \\
+HTTP \texttt{/metrics}, cache miss & 10.162 & 11.249 & 30 \\
+HTTP \texttt{/metrics}, cache hit & 0.782 & 0.884 & 30 \\
+HTTP \texttt{/timeline}, cache miss & 14.369 & 14.930 & 30 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\extfig{timing-breakdown.pdf}{0.5\columnwidth}
+\caption{The mask costs \num{12.66} times a complete cold request and depends
+only on the site, so it is built once; every request is a lookup and an
+ephemeris call.}
+\label{fig:timing}
+\end{figure}
+
+\section{Uncertainty}
+
+\paragraph{Per-tier error} Each bearing carries the vertical error $\sigma$ of
+the tier that set its skyline, \qty{2}{\metre} on the \qty{20}{\metre} tier or
+\qty{4}{\metre} on the \qty{80}{\metre} tier, as $\delta(a) = \arctan(\sigma/r^*)$.
+At Connecting Ridge \num{746} of \num{1440} bearings are set on the coarse tier,
+so the site reports \qty{4}{\metre}, not the finest tier's figure.
+
+\paragraph{Near-field noise floor} A \qty{2}{\metre} error at \qty{40}{\metre} is
+\ang{2.8624} of apparent skyline (\Cref{fig:noisefloor}). A sample may set the
+skyline only if it clears that floor, or if the floor is below \ang{0.25}, which
+holds beyond \qty{458.4}{\metre} for \qty{2}{\metre}.
+
+\paragraph{Grazing crossings} An edge's timing tolerance is
+$\delta t = \delta(a)/\lvert \mathrm{d}m/\mathrm{d}t \rvert$ (\Cref{fig:polar}).
+Below a crossing rate of \qty{0.0025}{\degree\per\hour}, or with $\delta t$ above
+\qty{24}{\hour}, the crossing time
+is not knowable from these data, and the edge is reported as \emph{grazing},
+without a tolerance, rather than with a large one. Faustini rim's longest dark
+gap and blackout both graze (\Cref{tab:three}; \Cref{fig:four}).
+
+\paragraph{Censoring} A run touching the window edge was ended by the window,
+so its duration is a lower bound. Five of the \num{15} sites have a censored
+longest night. A bound claims $[v, \infty)$; an estimate claims $[v-u, v+u]$. A
+site beats another only when its interval clears the other's, so on longest
+night Connecting Ridge (\qty{121.57 \pm 17.09}{\hour}) ranks 1--2, de Gerlache
+rim ($\geqslant$\,\qty{112.17}{\hour}) 1--3 and Malapert massif
+($\geqslant$\,\qty{287.76}{\hour}) 2--3. Reading the bound as an estimate would
+make de Gerlache rim the best site and size its battery for a night shorter than
+the real one.
+
+\paragraph{What the tolerance omits} On \num{424} of Connecting Ridge's bearings
+the ground falls away from the summit, so the skyline is set at
+\qty{460}{\metre}, the first sample the floor trusts: the rule, not a ridge,
+fixes it. Both edges of the longest night lie there, hence
+\qty{\pm 17.09}{\hour}. Moving the threshold to \ang{0.125} or \ang{0.5} changes
+sunlight to \qty{611.823}{\hour} or \qty{482.33}{\hour} (\Cref{tab:sensitivity}),
+far outside that tolerance.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{loglogaxis}[pw,
+  xlabel={Range from site (\si{\metre})},
+  ylabel={Angular noise floor (\si{\degree})},
+  xmin=20, xmax=5000, ymin=0.02, ymax=12,
+  legend pos=north east, legend cell align=left]
+\addplot[black, thick] table[x=range_m, y=floor2] {noise_floor.dat};
+\addlegendentry{$\sigma = \qty{2}{\metre}$}
+\addplot[black!55, thick, dashed] table[x=range_m, y=floor4] {noise_floor.dat};
+\addlegendentry{$\sigma = \qty{4}{\metre}$}
+\addplot[black!45, densely dotted, forget plot] coordinates {(20,0.25) (5000,0.25)};
+\addplot[only marks, mark=*, mark size=1.5pt, black, forget plot] coordinates {(40,2.86241)};
+\draw[black!60, thin] (axis cs:40,2.86241) -- (axis cs:40,0.54);
+\node[anchor=west, font=\footnotesize, fill=white, inner sep=1pt] at (axis cs:26,0.45) {\ang{2.8624} at \qty{40}{\metre}};
+\node[anchor=south east, font=\footnotesize] at (axis cs:4800,0.25) {\ang{0.25}};
+\end{loglogaxis}
+\end{tikzpicture}
+\caption{Close to the site, elevation error alone produces skylines of several
+degrees. Samples are trusted unconditionally only where the floor
+$\arctan(\sigma/r)$ falls below \ang{0.25} (dotted): beyond \qty{458.4}{\metre}
+for \qty{2}{\metre} and \qty{916.7}{\metre} for \qty{4}{\metre}. Data:
+\texttt{noise\_floor.dat}.}
+\label{fig:noisefloor}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\extfig{horizon-polar-connecting-ridge.pdf}{0.9\columnwidth}
+\caption{Connecting Ridge's skyline lies below level on every bearing. The
+crossings that bound its longest night fall where the skyline tolerance is
+largest, so they carry the widest timing bands.}
+\label{fig:polar}
+\end{figure}
+
+\begin{table}[t]
+\centering
+\caption{The four numbers for three contrasting sites over the reference window,
+in hours, rounded to two decimals from \texttt{data/sites\_four\_numbers.csv}.
+$\geqslant$ marks a lower bound; \emph{grazing} marks an edge that cannot be timed.}
+\label{tab:three}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\newcommand{\hd}[1]{\begin{tabular}[b]{@{}l@{}}#1\end{tabular}}
+\begin{tabular}{@{}llll@{}}
+\toprule
+Metric (\si{\hour}) & \hd{Connecting\\Ridge} & \hd{Malapert\\massif} & \hd{Faustini\\rim} \\
+\midrule
+Sunlight & \num{574.40 \pm 17.09} & \num{394.16 \pm 7.25} & \num{103.07 \pm 24.00} \\
+Earth contact & \num{430.28 \pm 5.26} & \num{570.61 \pm 7.63} & \num{278.57 \pm 33.94} \\
+Longest dark & \num{121.57 \pm 17.09} & $\geqslant$\,\num{287.76} & \num{605.68}, grazing \\
+Longest blackout & \num{278.47 \pm 5.26} & \num{138.14 \pm 7.63} & \num{430.18}, grazing \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\extfig{four-numbers-three-sites.pdf}{0.6\columnwidth}
+\caption{A measured value carries an error bar, a censored value is drawn as a
+bound with an open end, and a grazing value has no bar at all: three different
+claims that a single point would hide.}
+\label{fig:four}
+\end{figure}
+
+\begin{table}[t]
+\centering
+\caption{Connecting Ridge under three values of the near-field threshold, as
+written to \texttt{data/sensitivity.json}. The engine uses \ang{0.25}.}
+\label{tab:sensitivity}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}S[table-format=1.3] S[table-format=3.1] S[table-format=-1.4]
+  S[table-format=3.3] S[table-format=3.3]@{}}
+\toprule
+{Threshold} & {Trusted from} & {Mean skyline} & {Sunlight} & {Longest dark} \\
+{(\si{\degree})} & {(\si{\metre})} & {(\si{\degree})} & {(\si{\hour})} & {(\si{\hour})} \\
+\midrule
+0.125 & 916.7 & -2.6566 & 611.823 & 84.145 \\
+0.25 & 458.4 & -2.3681 & 574.399 & 121.569 \\
+0.5 & 229.2 & -1.7756 & 482.33 & 206.515 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Validation}
+
+\paragraph{Golden fixtures} Three sites chosen for different physics are rebuilt
+from terrain on disk, not compared with a stored mask, to \ang{0.05}
+on the skyline, \qty{72}{\second} on arc edges and the larger of
+\qty{360}{\second} and \qty{0.1}{\percent} on the four numbers. Connecting
+Ridge's rebuilt mask is identical to the stored one.
+
+\paragraph{Properties} Interval code knows no astronomy, so
+Hypothesis~\cite{maciver2019hypothesis} draws up to \num{300} boolean series per
+property and checks partition, alternation, contiguity, inversion symmetry and
+monotonicity, with degenerate shapes pinned.
+
+\paragraph{Adapter} The browser's adapter tests assert its hours against the
+seconds the backend golden pins.
+
+\paragraph{Engine stamp} The engine version, hz-2/vis-2, is in every cache key,
+stored mask and response, so geometry from another engine is a readable 409,
+not a stale answer. \Cref{tab:tests} lists the results; the one failure is the
+OpenAPI snapshot, stale against uncommitted schema changes.
+
+\begin{table}[t]
+\centering
+\caption{What \texttt{make test}, \texttt{make test-fe} and \texttt{make lint}
+printed on 2026-09-24, with the backend suites also run per directory.}
+\label{tab:tests}
+\footnotesize
+\begin{tabular}{@{}l l S[table-format=3.0] S[table-format=1.0]@{}}
+\toprule
+Command & Suite & {Passed} & {Failed} \\
+\midrule
+\texttt{make test} & unit & 159 & 0 \\
+ & integration & 56 & 1 \\
+ & golden & 16 & 0 \\
+ & total, \qty{6.41}{\second} & 231 & 1 \\
+\texttt{make test-fe} & adapter, keys, exports & 41 & 0 \\
+\midrule
+\texttt{make lint} & \multicolumn{3}{l}{ruff: no findings, \num{80} files formatted} \\
+ & \multicolumn{3}{l}{mypy strict: no issues in \num{80} files} \\
+ & \multicolumn{3}{l}{import contracts: \num{8} kept, \num{0} broken} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Limitations}
+
+The \qty{120}{\hour} survival limit is a browser placeholder for a thermal model
+the system does not have; a per-lander thermal and battery model would replace
+it. Elevation error is constant per tier, not per pixel; the LOLA count products
+(LDEC\_80S\_20M and LDEC\_80S\_80M~\cite{lola_gdr_polar}) would localise it. At
+summits the near-field threshold outweighs the reported tolerance; a
+lander-height term and \qty{5}{\metre} site maps~\cite{barker2021improved} would
+bound it. Illumination and shadow tiles use a five-ring horizon proxy and are
+labelled so; per-pixel masks on the \qty{80}{\metre} grid mean \num{57760000}
+ray-marches, \qty{86.0}{\day} single-threaded. No screen-reader user has tested
+the arc announcements; only such users can. Fetching a \qty{20}{\metre} window
+from PDS was not timed; timing \texttt{make seed} on an empty volume would.
+
+\section{Conclusion}
+
+POLAR WINDOW answers a CLPS planner with four numbers per site and window, each
+carrying a tolerance, the word \emph{grazing}, or a lower bound, and none folded
+into a score. Geometry costs \qty{128.653}{\milli\second} once per site; a cold
+request then takes \qty{10.162}{\milli\second}. The uncertainty model separates
+crossings the data can time from those they cannot, and bounds from estimates,
+which changes how sites rank. Its own sensitivity test names the next step: at
+summits the near-field rule moves sunlight by more than the reported tolerance,
+and that must be bounded before these numbers choose a landing site.
+
+\printbibliography
+
+\end{document}

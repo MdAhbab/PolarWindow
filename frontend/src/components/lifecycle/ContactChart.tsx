@@ -1,4 +1,4 @@
-import type { ContactDTO, LinkDTO, NodeDTO } from '../../lib/api/lifecycle'
+import type { ContactDTO, LinkDTO, NodeDTO, RelayLaunchStatus, RelayRowDTO } from '../../lib/api/lifecycle'
 import { dateTimeWords, shortDate } from '../../lib/format'
 import { formatValue, quantityText } from '../../lib/lifecycle/quantity'
 import { ScrollRegion } from '../ui'
@@ -16,7 +16,36 @@ export interface ContactRow {
   /** A relay with no real orbit: its time is a range, not a timeline (ADR-16). */
   planned: boolean
   relayId?: string
+  /** An orbiter already flying: it could see the lander, but carries none of its data. */
+  orbiter?: boolean
+  /** Parts of the dates with no recorded trajectory: unknown, not out of view. */
+  noData?: { start: number; end: number }[]
 }
+
+/** A relay's launch status in words, with a glyph beside them (never the glyph alone). */
+export const RELAY_STATUS: Record<RelayLaunchStatus, { words: string; glyph: string }> = {
+  operating: { words: 'In orbit', glyph: '●' },
+  planned: { words: 'Planned, not launched', glyph: '○' },
+  not_launched: { words: 'Not launched', glyph: '○' },
+  launched_not_operating: { words: 'Launched, not working', glyph: '◐' },
+}
+
+/** A relay's launch status: the catalogue's (`launch_status`), else its node's. */
+export function relayState(c: ContactDTO, id: string): { words: string; glyph: string } | null {
+  const s = c.relays.find((r) => r.id === id)?.launch_status ?? c.nodes.find((n) => n.id === id)?.status
+  return s ? RELAY_STATUS[s] : null
+}
+
+/** A planned relay's row in words: its range "if it flies as planned", or why it is not worked out. */
+export function plannedWords(r: RelayRowDTO | undefined): string {
+  if (!r) return 'If it flies as planned'
+  const q = r.adds_h
+  if (q.value === null && (q.lo === null || q.hi === null)) return `Not worked out: ${q.missing_reason ?? 'no orbit to work from'}`
+  return `${quantityText(q)} somewhere in these dates, if it flies as planned`
+}
+
+/** The words that say an orbiter is not a relay for this lander. */
+export const ORBITER_CAPTION = 'could see the lander; not a relay'
 
 /**
  * The Deep Space Network's three complexes, by antenna number (DSS-1x and
@@ -34,7 +63,10 @@ export function complexOf(n: NodeDTO | undefined): { key: string; name: string }
   return null
 }
 
-/** The chart's rows, in the order they are drawn: ground stations, then relays. */
+/**
+ * The chart's rows, in the order they are drawn: ground stations, then
+ * relays, then orbiters that could see the lander (they carry none of its data).
+ */
 export function contactRows(c: ContactDTO): ContactRow[] {
   const node = (id: string) => c.nodes.find((n) => n.id === id)
   const rows = new Map<string, ContactRow>()
@@ -58,7 +90,7 @@ export function contactRows(c: ContactDTO): ContactRow[] {
       caption: complex
         ? 'Deep Space Network, 1 antenna'
         : relay
-          ? `relay${from?.kind === 'relay' ? ` to ${to?.name ?? link.to}` : ''}`
+          ? `relay${from?.kind === 'relay' ? ` to ${to?.name ?? link.to}` : ''} · ${(relayState(c, relay.id)?.words ?? relay.status).toLowerCase()}`
           : (to?.operator ?? ''),
       links: [link],
       stations: to?.kind === 'station' ? [to.id] : [],
@@ -66,7 +98,39 @@ export function contactRows(c: ContactDTO): ContactRow[] {
       relayId: relay?.id,
     })
   }
-  return [...rows.values()].sort((a, b) => Number(a.planned) - Number(b.planned) || Number(Boolean(a.relayId)) - Number(Boolean(b.relayId)))
+  // Links are direct only once relays are worked out (net-4): a relay with no link is its own planned row.
+  for (const r of c.relays) {
+    if ([...rows.values()].some((x) => x.relayId === r.id)) continue
+    rows.set(`relay-${r.id}`, {
+      key: `relay-${r.id}`,
+      label: r.name,
+      caption: `relay · ${(relayState(c, r.id)?.words ?? 'status not given').toLowerCase()}`,
+      links: [],
+      stations: [],
+      planned: true,
+      relayId: r.id,
+    })
+  }
+  // Orbiters already flying: their passes are the row's one link, lander to orbiter.
+  // One with no trajectory for these dates has no row: an empty row would read as never in view.
+  const [t0, t1] = [Date.parse(c.start ?? ''), Date.parse(c.end ?? '')]
+  for (const o of c.orbiters ?? []) {
+    if (!o.covered) continue
+    const [a, b] = [Date.parse(o.covered.start), Date.parse(o.covered.end)]
+    const noData = Number.isNaN(t0) || Number.isNaN(t1) ? [] : [{ start: t0, end: a }, { start: b, end: t1 }].filter((g) => g.end - g.start > 60_000)
+    rows.set(`orbiter-${o.id}`, {
+      key: `orbiter-${o.id}`,
+      label: o.name,
+      caption: ORBITER_CAPTION,
+      links: [{ from: 'lander', to: o.id, stretches: o.passes, data_rate_kbps: null, margin_db: null }],
+      stations: [],
+      planned: false,
+      orbiter: true,
+      noData,
+    })
+  }
+  const rank = (r: ContactRow) => (r.orbiter ? 3 : r.planned ? 2 : r.relayId ? 1 : 0)
+  return [...rows.values()].sort((a, b) => rank(a) - rank(b))
 }
 
 /** Every stretch of a row's links, merged where they overlap: when any antenna on the row can hear. */
@@ -99,8 +163,10 @@ export function ContactChart({ contact, rows, start, end }: { contact: ContactDT
   const label = `Who can hear the lander over ${formatValue(span / HOUR)} hours from ${dateTimeWords(start)}: ${rows
     .map((r) =>
       r.planned
-        ? `${r.label}, ${quantityText(relayFor(r)?.adds_h)} somewhere in these dates if it flies as planned`
-        : `${r.label}, ${rowStretches(r).length} stretch${rowStretches(r).length === 1 ? '' : 'es'}`,
+        ? `${r.label}, ${plannedWords(relayFor(r))}`
+        : `${r.label}${r.orbiter ? ` (${ORBITER_CAPTION})` : ''}, ${rowStretches(r).length} ${r.orbiter ? 'pass' : 'stretch'}${rowStretches(r).length === 1 ? '' : 'es'}${
+            r.noData?.length ? ', no trajectory recorded for part of the dates' : ''
+          }`,
     )
     .join('; ')}. ${contact.bookings.length} booked passes. The table lists every pass of every antenna.`
 
@@ -122,7 +188,7 @@ export function ContactChart({ contact, rows, start, end }: { contact: ContactDT
                     <span className="hatch-uncertain absolute inset-0 border border-uncertain" />
                     <span className="absolute inset-y-0 left-2 flex items-center">
                       <span className="bg-panel px-1.5 text-caption font-semibold text-ink">
-                        {relay ? `${quantityText(relay.adds_h)} somewhere in these dates, if it flies as planned` : 'If it flies as planned'}
+                        {plannedWords(relay)}
                       </span>
                     </span>
                   </>
@@ -131,13 +197,22 @@ export function ContactChart({ contact, rows, start, end }: { contact: ContactDT
                     return (
                       <span
                         key={a}
-                        className="absolute inset-y-1 bg-earth-fill"
+                        // An orbiter's pass is an outline: it could see the lander, but carries none of its data.
+                        className={`absolute inset-y-1 ${r.orbiter ? 'border border-dashed border-earth' : 'bg-earth-fill'}`}
                         style={{ left: pct(a), width: width(a, b) }}
-                        title={`${r.label}: ${dateTimeWords(a)} to ${dateTimeWords(b)}, ${formatValue((b - a) / HOUR)} h`}
+                        title={`${r.label}${r.orbiter ? ' could see the lander' : ''}: ${dateTimeWords(a)} to ${dateTimeWords(b)}, ${formatValue((b - a) / HOUR)} h`}
                       />
                     )
                   })
                 )}
+                {r.noData?.map((g) => (
+                  <span
+                    key={`nodata${g.start}`}
+                    className="absolute inset-y-1 border border-dashed border-line-strong"
+                    style={{ left: pct(g.start), width: width(g.start, g.end) }}
+                    title={`${r.label}: no trajectory recorded, ${dateTimeWords(g.start)} to ${dateTimeWords(g.end)}`}
+                  />
+                ))}
                 {booked.map((b) => {
                   const a = Date.parse(b.start)
                   const z = Date.parse(b.end)
@@ -205,7 +280,8 @@ export function ContactTable({ contact, rows }: { contact: ContactDTO; rows: Con
         const a = Date.parse(s.start)
         const b = Date.parse(s.end)
         const booked = contact.bookings.some((x) => (x.station === l.to || x.station === l.from) && Date.parse(x.start) < b && Date.parse(x.end) > a)
-        return { label: `${name(l.from)} to ${name(l.to)}`, a, b, s, booked }
+        const label = r.orbiter ? `${r.label} could see the lander (not a relay)` : `${name(l.from)} to ${name(l.to)}`
+        return { label, a, b, s, booked }
       }),
     ),
   )
@@ -237,14 +313,28 @@ export function ContactTable({ contact, rows }: { contact: ContactDTO; rows: Con
                 <td className={cell}>{booked ? 'Booked' : '—'}</td>
               </tr>
             ))}
+          {rows.flatMap((r) =>
+            (r.noData ?? []).map((g) => (
+              <tr key={`${r.key}nodata${g.start}`} className="border-t border-line">
+                <th scope="row" className={`${cell} font-semibold text-ink`}>
+                  {r.label}: no trajectory recorded
+                </th>
+                <td className={cell}>{dateTimeWords(g.start)}</td>
+                <td className={cell}>{dateTimeWords(g.end)}</td>
+                <td className={`${cell} font-mono text-ink`}>{formatValue((g.end - g.start) / HOUR)} h</td>
+                <td className={cell}>—</td>
+              </tr>
+            )),
+          )}
           {rows
             .filter((r) => r.planned)
             .map((r) => (
               <tr key={`${r.label}planned`} className="border-t border-line">
-                <th scope="row" className={`${cell} font-semibold text-ink`}>{r.label}</th>
+                <th scope="row" className={`${cell} font-semibold text-ink`}>
+                  {r.label}, {r.caption}
+                </th>
                 <td className={cell} colSpan={3}>
-                  {quantityText(contact.relays.find((x) => x.id === r.relayId)?.adds_h)} somewhere in
-                  these dates, if it flies as planned
+                  {plannedWords(contact.relays.find((x) => x.id === r.relayId))}
                 </td>
                 <td className={cell}>—</td>
               </tr>

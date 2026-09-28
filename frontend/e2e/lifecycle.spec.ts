@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { API, expectNoSeriousAxe, openRow, returningVisitor, watchConsole } from './helpers'
+import { API, expectNoSeriousAxe, openRow, openRow as openRowOf, returningVisitor, watchConsole } from './helpers'
 import { fulfillWrite, serveLifecycleFixtures } from './lifecycleFixtures'
 
 /**
@@ -83,9 +83,9 @@ test('each number says its margin, or why it has none (contract fixtures)', asyn
   await page.goto('/missions/im-2/contact')
   // A relay is a range, "if it flies as planned".
   const relay = page.locator('div.border.bg-panel', { hasText: 'Through a relay' }).first()
-  await expect(relay).toContainText('12–31')
+  await expect(relay).toContainText('60–95')
   await expect(relay).toContainText('if it flies as planned')
-  await expect(relay).toContainText('12 to 31 hours')
+  await expect(relay).toContainText('60 to 95 hours')
   // The caveat that changes what the numbers mean stays on screen.
   await expect(page.locator('main')).toContainText('Line of sight only')
 
@@ -321,6 +321,110 @@ test('space weather now (contract fixtures): the readings in a sentence, each wi
   await page.locator('summary', { hasText: 'NOAA’s forecast as issued' }).click()
   await expectNoSeriousAxe(page, 'space weather now, open (light, 375 px)')
   expect(await page.evaluate(() => document.documentElement.scrollWidth), 'space weather scrolls sideways at 375 px').toBeLessThanOrEqual(375)
+})
+
+test('contact through a relay (contract fixtures): a range with its launch status, waits that count it, orbiters that could see the lander', async ({
+  page,
+  context,
+}) => {
+  await returningVisitor(context)
+  await serveLifecycleFixtures(context)
+  await page.goto('/missions/im-2/contact')
+  const main = page.locator('main')
+  const answer = page.locator('[data-guide="section-answer"]')
+  await expect(answer).toContainText('Through Lunar Pathfinder (not launched) it could reach Earth for 60–95 h, if it flies as planned; that adds 1.5–4 h to direct contact.')
+  await expect(answer).toContainText('The longest time without contact is 1.0 ±0.1 h directly, or 0.4–1 h with the relay, if it flies as planned.')
+  const tile = (label: string) => page.locator('div.border.bg-panel', { hasText: label }).first()
+  const openRow = async (title: string) => {
+    await openRowOf(page, title)
+    return page.locator('details').filter({ has: page.locator('summary', { hasText: title }) }).first()
+  }
+  await expect(tile('Longest time without contact')).toContainText('with the relay, if it flies as planned; 1.0 ±0.1 h directly')
+  await expect(tile('Longest message wait')).toContainText('24–61')
+  // Each relay with its launch status beside it, in words.
+  const relays = await openRow('Relays')
+  await expect(page.locator('summary', { hasText: 'Relays' })).toContainText('Lunar Pathfinder · not launched')
+  await expect(relays).toContainText('Not launched. To fly on Firefly')
+  await expect(relays).toContainText('Adds 1.5–4 h to direct contact, 60–95 h in all through it, if it flies as planned.')
+  await expect(relays).toContainText('Numbers that use the relay are ranges over what its orbit could be')
+  await expect(relays.locator('dt', { hasText: 'Tilt to the Moon’s equator' }).locator('xpath=following-sibling::dd[1]')).toHaveText('46.8–54.9°, assumed')
+  await expect(relays).toContainText('Swept over 36 places')
+  // Orbiters already flying could see the lander, and are never called relays.
+  const orbiters = await openRow('Orbiters that could see the lander')
+  await expect(orbiters).toContainText('None of these orbiters offers to relay for a lander; this is geometry, not a service.')
+  await expect(orbiters).toContainText('Lunar Reconnaissance Orbiter · NASA')
+  await expect(orbiters).toContainText(
+    '14 passes over these dates, 5.60 ±0.01 h in view in all; the longest pass 24.00 ±0.05 min, the longest wait between passes 11.60 ±0.01 h.',
+  )
+  // A trajectory that stops before the dates end says so.
+  await expect(orbiters).toContainText('Its recorded trajectory covers 6 March 2025, 17:30 UTC to 11 March 2025 only; passes outside that are not known.')
+  await expect(orbiters.getByRole('link', { name: 'JPL Horizons trajectory' }).first()).toBeVisible()
+  await expect(main).toContainText('Could see the lander (an orbiter, not a relay)')
+  const more = await openRow('More numbers')
+  await expect(more).toContainText('166–168 h, if the relay flies as planned')
+  await expect(more.locator('dt', { hasText: 'Longest message wait, directly' }).locator('xpath=following-sibling::dd[1]')).toHaveText('61 min')
+  await page.getByRole('button', { name: 'Read the chart as a table' }).click()
+  await expect(main.getByRole('table').first()).toContainText('Lunar Reconnaissance Orbiter could see the lander (not a relay)')
+  await expect(main.getByRole('table').first()).toContainText('Lunar Pathfinder, relay · not launched')
+  await expectNoSeriousAxe(page, 'contact with its relay and orbiter rows open (dark)')
+  await page.evaluate(() => localStorage.setItem('pw-prefs', JSON.stringify({ theme: 'light', motion: 'full', shortcuts: true })))
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.reload()
+  await openRow('Relays')
+  await openRow('Orbiters that could see the lander')
+  await expectNoSeriousAxe(page, 'contact with its relay and orbiter rows open (light, 375 px)')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth), 'contact scrolls sideways at 375 px').toBeLessThanOrEqual(375)
+})
+
+test('rover line of sight (contract fixtures): the answer first, the map in three states with its table twin, both themes, a phone', async ({
+  page,
+  context,
+}) => {
+  await returningVisitor(context)
+  await serveLifecycleFixtures(context)
+  await page.goto('/missions/im-2/contact')
+  const summary = page.locator('summary', { hasText: 'Rover and lander line of sight' })
+  await expect(summary).toContainText('Yaoki')
+  await summary.click()
+  const row = page.getByTestId('rover-sight')
+  await expect(row.locator('p').first()).toHaveText(
+    'Within 500 m of the lander, 18–26% of the ground is out of its sight; the radio path is not clear over 25–33%. No drive is published for Yaoki, so no stretch of it can be measured.',
+  )
+  await expect(row.getByRole('img', { name: /^Line of sight between Yaoki and the lander, out to 500 m in 36 directions/ })).toBeVisible()
+  // Three states, each in a glyph and words beside its swatch.
+  for (const words of ['In sight', 'Blocked by the ground', 'Uncertain: the terrain map’s error could tip it either way']) await expect(row).toContainText(words)
+  // What the states mean, and what is assumed about the antennas and the radio.
+  await expect(row).toContainText('uncertain: the model cannot tell.')
+  await row.locator('summary', { hasText: 'Antennas, radio and terrain' }).click()
+  await expect(row.locator('dt', { hasText: 'Radio frequency' }).locator('xpath=following-sibling::dd[1]')).toContainText('2,400 MHz, assumed')
+  await expect(row).toContainText('LDEM_83S_5M: a height every 5 m, each good to ±0.5 m')
+  await row.getByRole('button', { name: 'Radio path' }).click()
+  await expect(row.getByRole('button', { name: 'Radio path' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(row.getByRole('img', { name: /^Radio path between Yaoki and the lander/ })).toBeVisible()
+  // The table twin, from the same rays: both the line of sight and the radio path.
+  await row.getByRole('button', { name: 'Read the chart as a table' }).click()
+  const ray = row.getByRole('row', { name: /^100°/ })
+  await expect(ray).toContainText('In sight 25–125 m; uncertain 150–175 m; blocked 200–500 m')
+  await expect(ray).toContainText('In sight 25–100 m; uncertain 125–150 m; blocked 175–500 m')
+  await expect(row.getByRole('row', { name: /^270° \(west\)/ })).toContainText('uncertain 300 m; blocked 325–425 m; in sight 450–500 m')
+  await expectNoSeriousAxe(page, 'rover line of sight open with its table (dark)')
+  await page.evaluate(() => localStorage.setItem('pw-prefs', JSON.stringify({ theme: 'light', motion: 'full', shortcuts: true })))
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.reload()
+  await page.locator('summary', { hasText: 'Rover and lander line of sight' }).click()
+  await expect(page.getByTestId('rover-sight').getByRole('img')).toBeVisible()
+  await expectNoSeriousAxe(page, 'rover line of sight open (light, 375 px)')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the rover row scrolls sideways at 375 px').toBeLessThanOrEqual(375)
+})
+
+test('rover line of sight (contract fixtures): a site outside the terrain map says why, with no map', async ({ page, context }) => {
+  await returningVisitor(context)
+  await serveLifecycleFixtures(context, { swap: { 'rover.json': 'rover-unresolvable.json' } })
+  await page.goto('/missions/im-2/contact')
+  await page.locator('summary', { hasText: 'Rover and lander line of sight' }).click()
+  const row = page.getByTestId('rover-sight')
+  await expect(row).toContainText('Cannot be said here. Reiner Gamma is outside the polar terrain map (south of 80°S)')
+  await expect(row.getByRole('img')).toHaveCount(0)
 })
 
 test('team sea limits (contract fixtures): the form starts from what is entered, and sends both parts', async ({ page, context }) => {
@@ -888,4 +992,65 @@ test('radiation and space weather (live API): Blue Ghost’s screening with its 
   await expect(sw).toContainText('(NASA DONKI)')
   await expect(sw).toContainText(/(Clouds thrown off the Sun \(coronal mass ejections\)|The latest data from NASA space weather database \(DONKI\) is \d+ (days?|hours?) old)/)
   await expectNoSeriousAxe(page, 'space weather now (live) with the forecast open')
+})
+
+test('relays, orbiters and rovers (live API): IM-3’s planned relay as a range, IM-2’s orbiter passes and Yaoki’s line of sight, a rover off the polar map', async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(240_000)
+  await returningVisitor(context)
+  const answer = page.locator('[data-guide="section-answer"]')
+  const row = async (title: string) => {
+    await openRow(page, title)
+    return page.locator('details').filter({ has: page.locator('summary', { hasText: title }) }).first()
+  }
+
+  // IM-3: Altus-1 flies alongside it, its orbit assumed from NASA's reference relay orbits.
+  await page.goto('/missions/im-3/contact')
+  await expect(answer).toContainText(/Through Altus-1 data-relay satellite \(planned, not launched\) it could reach Earth for [\d,.]+–[\d,.]+ h, if it flies as planned/, {
+    timeout: 120_000,
+  })
+  await expect(answer).toContainText(/The longest time without contact is [\d.]+ h directly, or [\d.]+–[\d.]+ h with the relay, if it flies as planned\./)
+  const relays = await row('Relays')
+  await expect(relays).toContainText('Planned, not launched.')
+  await expect(relays).toContainText(/in all through it, if it flies as planned\./)
+  await expect(relays.locator('dt', { hasText: 'Tilt to the Moon’s equator' }).locator('xpath=following-sibling::dd[1]')).toHaveText(/°, assumed$/)
+  // Its dates are past the recorded orbiter trajectories: not known, never "no pass".
+  const orbiters = await row('Orbiters that could see the lander')
+  await expect(orbiters).toContainText('Not known: No JPL Horizons trajectory is recorded for these dates')
+  await expect(orbiters).not.toContainText('No pass over these dates')
+  // Its rovers are off the polar terrain map, and it says so.
+  const rover = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Rover and lander line of sight' }) })
+  await rover.locator('summary').click()
+  await expect(rover.getByTestId('rover-sight')).toContainText(/^\? Cannot be said here\. .*outside the polar terrain model/, { timeout: 60_000 })
+  await expect(rover.getByLabel('Rover')).toBeVisible()
+  await expectNoSeriousAxe(page, 'IM-3 contact with relays, orbiters and rover open (dark)')
+
+  // IM-2: LRO and Danuri passed over the landing spot; Yaoki's line of sight on the polar map.
+  await page.goto('/missions/im-2/contact')
+  await expect(answer).toContainText('A ground station can hear it', { timeout: 120_000 })
+  const passes = await row('Orbiters that could see the lander')
+  await expect(passes).toContainText(/Lunar Reconnaissance Orbiter · NASA\d+ passes over these dates, [\d.]+ ±[\d.]+ h in view in all/)
+  await page.getByRole('button', { name: 'Read the chart as a table' }).first().click()
+  await expect(page.locator('main').getByRole('table').first()).toContainText('Lunar Reconnaissance Orbiter could see the lander (not a relay)')
+  await page.locator('summary', { hasText: 'Rover and lander line of sight' }).click()
+  const yaoki = page.getByTestId('rover-sight')
+  await expect(yaoki.locator('p').first()).toContainText(
+    /^Within 500 m of the lander, [\d.]+–[\d.]+% of the ground is out of its sight; the radio path is not clear over [\d.]+–[\d.]+%\. No drive is published for Yaoki/,
+    { timeout: 120_000 },
+  )
+  await expect(yaoki.getByRole('img', { name: /^Line of sight between Yaoki and the lander, out to 500 m in 72 directions/ })).toBeVisible()
+  await expect(yaoki.getByRole('row', { name: /^90° \(east\)/ })).toBeVisible()
+  await yaoki.locator('summary', { hasText: 'Antennas, radio and terrain' }).click()
+  await expect(yaoki).toContainText(/LOLA_LDEM_80S_20M: a height every 20 m, each good to ±2 m/)
+  await expectNoSeriousAxe(page, 'IM-2 contact with orbiters and Yaoki open (dark)')
+  await page.evaluate(() => localStorage.setItem('pw-prefs', JSON.stringify({ theme: 'light', motion: 'full', shortcuts: true })))
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.reload()
+  await openRow(page, 'Orbiters that could see the lander')
+  await page.locator('summary', { hasText: 'Rover and lander line of sight' }).click()
+  await expect(page.getByTestId('rover-sight').getByRole('img')).toBeVisible({ timeout: 60_000 })
+  await expectNoSeriousAxe(page, 'IM-2 contact with orbiters and Yaoki open (light, 375 px)')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth), 'IM-2 contact scrolls sideways at 375 px').toBeLessThanOrEqual(375)
 })

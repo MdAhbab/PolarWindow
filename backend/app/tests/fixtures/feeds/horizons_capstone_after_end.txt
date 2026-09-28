@@ -1,0 +1,5 @@
+API VERSION: 1.2
+API SOURCE: NASA/JPL Horizons API
+
+
+No ephemeris for target "CAPSTONE (spacecraft)" after A.D. 2026-AUG-14 11:58:59.9999 TDB

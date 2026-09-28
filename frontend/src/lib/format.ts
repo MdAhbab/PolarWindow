@@ -280,7 +280,7 @@ Object.assign(TERM, {
   },
   viaRelay: {
     label: 'Through a relay',
-    means: 'Extra hours a relay satellite could add. A range, because the relay has no published position in its orbit yet.',
+    means: 'Hours the lander could reach Earth through a relay satellite: the relay in view of the lander and of Earth at once. A range, because the relay has no published position in its orbit yet.',
     also: 'relayed contact',
   },
   contactUnheard: {

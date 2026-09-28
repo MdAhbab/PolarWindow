@@ -1,0 +1,71 @@
+{
+  "near_field_threshold": {
+    "0.125": {
+      "resolved_range_2m_m": 916.7,
+      "mask_mean_el_deg": -2.6566,
+      "sunlit_h": 611.823,
+      "earth_contact_h": 486.759,
+      "longest_dark_h": 84.145,
+      "longest_blackout_h": 221.991
+    },
+    "0.25": {
+      "resolved_range_2m_m": 458.4,
+      "mask_mean_el_deg": -2.3681,
+      "sunlit_h": 574.399,
+      "earth_contact_h": 430.284,
+      "longest_dark_h": 121.569,
+      "longest_blackout_h": 278.466
+    },
+    "0.5": {
+      "resolved_range_2m_m": 229.2,
+      "mask_mean_el_deg": -1.7756,
+      "sunlit_h": 482.33,
+      "earth_contact_h": 401.877,
+      "longest_dark_h": 206.515,
+      "longest_blackout_h": 306.873
+    }
+  },
+  "environment": {
+    "cpu": "Apple M3",
+    "model": "Mac15,12",
+    "python": "3.12.14",
+    "os": "macOS-27.0-arm64-arm-64bit",
+    "per_site_mask_median_ms": {
+      "shackleton-rim": 127.92,
+      "connecting-ridge": 127.73,
+      "peak-near-shackleton": 128.12,
+      "de-gerlache-rim": 128.86,
+      "de-gerlache-kocher-massif": 128.87,
+      "haworth-rim": 128.94,
+      "malapert-massif": 129.09,
+      "shoemaker-rim": 128.62,
+      "faustini-rim": 128.56,
+      "nobile-rim-1": 128.58,
+      "nobile-rim-2": 129.23,
+      "amundsen-rim": 129.35,
+      "leibnitz-beta-plateau": 129.43,
+      "sverdrup-rim": 128.41,
+      "cabeus-rim": 129.01
+    },
+    "http": {
+      "metrics": {
+        "cold_states": [
+          "miss"
+        ],
+        "warm_states": [
+          "hit"
+        ],
+        "body_bytes": 1579
+      },
+      "timeline": {
+        "cold_states": [
+          "miss"
+        ],
+        "warm_states": [
+          "hit"
+        ],
+        "body_bytes": 209961
+      }
+    }
+  }
+}

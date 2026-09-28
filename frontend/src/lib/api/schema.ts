@@ -567,6 +567,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/missions/{mission_id}/contact/rover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Can the rover and the lander see each other, over the terrain around the lander */
+        get: operations["contact_rover_api_v1_missions__mission_id__contact_rover_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/missions/{mission_id}/contact/plan": {
         parameters: {
             query?: never;
@@ -1862,6 +1879,17 @@ export interface components {
             numbers: components["schemas"]["ContactNumbers"];
             /** Relays */
             relays: components["schemas"]["RelayRow"][];
+            /** @description With a relay in the graph: the same two numbers without it. Null otherwise. */
+            direct_only: components["schemas"]["DirectOnly"] | null;
+            /** Relay Note */
+            relay_note: string | null;
+            /**
+             * Orbiters
+             * @description Real lunar orbiters' passes over the landing spot (could see the lander).
+             */
+            orbiters: components["schemas"]["Orbiter"][];
+            /** Orbiters Note */
+            orbiters_note: string | null;
             /** Link Budget Note */
             link_budget_note: string | null;
             /** Bookings */
@@ -1966,6 +1994,11 @@ export interface components {
             sun_el_max_deg: number | null;
             /** Earth Required */
             earth_required: boolean | null;
+        };
+        /** DirectOnly */
+        DirectOnly: {
+            longest_unheard_h: components["schemas"]["QuantityOut"];
+            longest_message_wait_min: components["schemas"]["QuantityOut"];
         };
         /** Donki */
         Donki: {
@@ -2984,6 +3017,79 @@ export interface components {
             dv_tli_m_s: components["schemas"]["QuantityOut"];
             coast_min: components["schemas"]["QuantityOut"];
         };
+        /** Orbiter */
+        Orbiter: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Operator */
+            operator: string | null;
+            /** Naif Id */
+            naif_id: number | null;
+            /**
+             * Note
+             * @description Geometry only: none of these orbiters relays for a lander.
+             */
+            note: string;
+            /** @description The recorded JPL Horizons trajectory. */
+            source: components["schemas"]["OrbiterSource"] | null;
+            /** @description The part of the dates the trajectory covers. */
+            covered: components["schemas"]["StretchOut"] | null;
+            /**
+             * Passes
+             * @description Above the landing spot's terrain skyline.
+             */
+            passes: components["schemas"]["OrbiterPass"][];
+            /** Pass Count */
+            pass_count: number;
+            in_view_h: components["schemas"]["QuantityOut"];
+            longest_pass_min: components["schemas"]["QuantityOut"];
+            longest_gap_h: components["schemas"]["QuantityOut"];
+        };
+        /** OrbiterPass */
+        OrbiterPass: {
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /**
+             * Open Start
+             * @description Cut by the start of the dates.
+             */
+            open_start: boolean;
+            /**
+             * Open End
+             * @description Cut by the end of the dates.
+             */
+            open_end: boolean;
+            /**
+             * Max Elevation Deg
+             * @description Highest above the flat horizon.
+             */
+            max_elevation_deg: number | null;
+        };
+        /** OrbiterSource */
+        OrbiterSource: {
+            /** Name */
+            name: string;
+            /** Url */
+            url: string | null;
+            /** Issued At */
+            issued_at: string | null;
+            /** Fetched At */
+            fetched_at: string | null;
+            /** Licence */
+            licence: string | null;
+            /** Snapshot Id */
+            snapshot_id: number | null;
+        };
         /** Outlook */
         Outlook: {
             /** Issued */
@@ -3381,15 +3487,51 @@ export interface components {
             /** Message */
             message: string;
         };
+        /** RelayOrbit */
+        RelayOrbit: {
+            /** @description Height of the near point above the mean radius. */
+            periapsis_km: components["schemas"]["QuantityOut"];
+            /** @description Height of the far point above the mean radius. */
+            apoapsis_km: components["schemas"]["QuantityOut"];
+            /** @description To the lunar equator. */
+            inclination_deg: components["schemas"]["QuantityOut"];
+            /** @description About 90 degrees puts the far point over the south pole. */
+            arg_periapsis_deg: components["schemas"]["QuantityOut"];
+            period_h: components["schemas"]["QuantityOut"];
+        };
         /** RelayRow */
         RelayRow: {
             /** Id */
             id: string;
             /** Name */
             name: string;
+            /** @description Time it adds to direct contact, as a range. */
             adds_h: components["schemas"]["QuantityOut"];
-            /** Status */
+            /** @description Time the lander can reach Earth through it, as a range. */
+            via_h: components["schemas"]["QuantityOut"];
+            /**
+             * Status
+             * @description Its launch note, or its status when there is none.
+             */
             status: string;
+            /**
+             * Launch Status
+             * @enum {string}
+             */
+            launch_status: "operating" | "planned" | "not_launched" | "launched_not_operating";
+            /**
+             * For This Mission
+             * @description False for a relay added to compare what it would add; not planned for this mission.
+             */
+            for_this_mission: boolean;
+            orbit: components["schemas"]["RelayOrbit"];
+            /** Orbit Note */
+            orbit_note: string | null;
+            /**
+             * Sweep Note
+             * @description What was swept to get the ranges; null when nothing was worked out.
+             */
+            sweep_note: string | null;
         };
         /**
          * Resolution
@@ -3573,6 +3715,46 @@ export interface components {
             /** Source Url */
             source_url: string;
         };
+        /** RoverAssumptions */
+        RoverAssumptions: {
+            lander_antenna_m: components["schemas"]["QuantityOut"];
+            rover_antenna_m: components["schemas"]["QuantityOut"];
+            radio_mhz: components["schemas"]["QuantityOut"];
+        };
+        /** RoverOut */
+        RoverOut: {
+            rover: components["schemas"]["RoverRef"];
+            /**
+             * Share Basis
+             * @description What the shares are over: the planned drive, or the ground within radius_m when no drive is published. Null when not resolvable.
+             */
+            share_basis: ("drive" | "ground") | null;
+            /** Radius M */
+            radius_m: number | null;
+            viewshed: components["schemas"]["Viewshed"] | null;
+            /** Viewshed Tile */
+            viewshed_tile: string | null;
+            /** @description Percent out of sight; a range when uncertain cells could go either way. */
+            out_of_sight_share: components["schemas"]["QuantityOut"];
+            /** @description Percent where the radio path is not clear (first Fresnel zone). */
+            radio_not_clear_share: components["schemas"]["QuantityOut"];
+            longest_out_of_sight_m: components["schemas"]["QuantityOut"];
+            /** Resolvable */
+            resolvable: boolean;
+            /** Reason */
+            reason: string | null;
+            assumptions: components["schemas"]["RoverAssumptions"] | null;
+            terrain: components["schemas"]["Terrain"] | null;
+            /** Note */
+            note: string | null;
+        };
+        /** RoverRef */
+        RoverRef: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
         /** RuleRow */
         RuleRow: {
             /** Id */
@@ -3664,6 +3846,11 @@ export interface components {
         /** Section[Return] */
         Section_Return_: {
             data: components["schemas"]["Return"];
+            meta: components["schemas"]["LifecycleMeta"];
+        };
+        /** Section[RoverOut] */
+        Section_RoverOut_: {
+            data: components["schemas"]["RoverOut"];
             meta: components["schemas"]["LifecycleMeta"];
         };
         /** Section[SpaceWeather] */
@@ -4113,6 +4300,15 @@ export interface components {
             /** Source Note */
             source_note: string;
         };
+        /** Terrain */
+        Terrain: {
+            /** Product */
+            product: string;
+            /** Post M */
+            post_m: number;
+            /** Vertical Error M */
+            vertical_error_m: number;
+        };
         /** TestIn */
         TestIn: {
             /**
@@ -4379,6 +4575,29 @@ export interface components {
             vehicle_id: string;
             /** Limits */
             limits: components["schemas"]["LimitOut"][];
+        };
+        /** Viewshed */
+        Viewshed: {
+            /**
+             * Bearings Deg
+             * @description From north, clockwise, every 5 degrees.
+             */
+            bearings_deg: number[];
+            /**
+             * Ranges M
+             * @description Distance from the lander, 20 steps to radius_m.
+             */
+            ranges_m: number[];
+            /**
+             * Sight
+             * @description Clear line of sight, [bearing][range].
+             */
+            sight: ("clear" | "blocked" | "uncertain")[][];
+            /**
+             * Radio
+             * @description Radio path clear: the first Fresnel zone as well, [bearing][range].
+             */
+            radio: ("clear" | "blocked" | "uncertain")[][];
         };
         /**
          * Who
@@ -5431,6 +5650,8 @@ export interface operations {
                 /** @description Default: the mission's surface dates. */
                 start?: string | null;
                 end?: string | null;
+                /** @description Planned relays (catalogue ids, e.g. `lunar-pathfinder`) to add to the mission's own, to see what each would add. Repeat for more than one. */
+                relay?: string[];
             };
             header?: never;
             path: {
@@ -5447,6 +5668,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Section_Contact_"];
+                };
+            };
+            /** @description Being worked out; poll the job. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobRefOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    contact_rover_api_v1_missions__mission_id__contact_rover_get: {
+        parameters: {
+            query?: {
+                /** @description Rover id, e.g. `im-2/yaoki`. Default: the first. */
+                rover?: string | null;
+                /** @description How far from the lander (default 500 m). */
+                radius_m?: number | null;
+                /** @description Default 2 m (assumed). */
+                lander_antenna_m?: number | null;
+                /** @description Default 0.5 m (assumed). */
+                rover_antenna_m?: number | null;
+                /** @description Default 2400 MHz (assumed). */
+                freq_mhz?: number | null;
+            };
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Section_RoverOut_"];
                 };
             };
             /** @description Being worked out; poll the job. */

@@ -42,7 +42,7 @@ STUCK_AFTER_S = 120.0
 #: a contact plan runs in ~0.1 s, a launch calendar ~10 s, a trip ~50 s. In
 #: arrival order a contact plan waited behind every trip asked before it
 #: (median wait 95 s for a 0.1 s answer); cheapest first, it does not.
-PRIORITY = {"contact": 2, "launch": 1, "trip": 0}
+PRIORITY = {"rover": 3, "contact": 2, "launch": 1, "trip": 0}
 
 
 #: Set by a read-only caller (an agent's tool): a missing answer is not queued.

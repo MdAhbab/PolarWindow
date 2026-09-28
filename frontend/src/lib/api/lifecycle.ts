@@ -494,6 +494,54 @@ export interface LinkDTO {
   margin_db: QuantityDTO | null
 }
 
+/** A relay's published or assumed orbit: heights above the mean radius. */
+export interface RelayOrbitDTO {
+  periapsis_km: QuantityDTO
+  apoapsis_km: QuantityDTO
+  inclination_deg: QuantityDTO
+  arg_periapsis_deg: QuantityDTO
+  period_h: QuantityDTO
+}
+
+export type RelayLaunchStatus = 'operating' | 'planned' | 'not_launched' | 'launched_not_operating'
+
+export interface RelayRowDTO {
+  id: string
+  name: string
+  /** Time it adds to direct contact, as a range. */
+  adds_h: QuantityDTO
+  /** Its launch note, or its status when there is none. */
+  status: string
+  /** Time the lander can reach Earth through it, as a range (net-4). */
+  via_h?: QuantityDTO
+  launch_status?: RelayLaunchStatus
+  /** False for a relay added to compare (`?relay=`), not planned for this mission. */
+  for_this_mission?: boolean
+  orbit?: RelayOrbitDTO
+  orbit_note?: string | null
+  /** What was swept to get the ranges; null when nothing was worked out. */
+  sweep_note?: string | null
+}
+
+/** A real lunar orbiter's passes over the landing spot: geometry only, never a relay service (F2). */
+export interface OrbiterDTO {
+  id: string
+  name: string
+  operator: string | null
+  naif_id: number | null
+  note: string
+  /** The recorded JPL Horizons trajectory. */
+  source: { name: string; url: string | null; issued_at: string | null; fetched_at: string | null; licence: string | null; snapshot_id: number | null } | null
+  /** The part of the dates the trajectory covers. */
+  covered: StretchDTO | null
+  /** Above the landing spot's terrain skyline. */
+  passes: (StretchDTO & { max_elevation_deg: number | null })[]
+  pass_count: number
+  in_view_h: QuantityDTO
+  longest_pass_min: QuantityDTO
+  longest_gap_h: QuantityDTO
+}
+
 export interface ContactDTO {
   /** The dates this answer covers, and how they were chosen. */
   start?: string
@@ -510,8 +558,16 @@ export interface ContactDTO {
     longest_message_wait_min: QuantityDTO
     dark_and_unheard_h: QuantityDTO
   }
-  relays: { id: string; name: string; adds_h: QuantityDTO; status: string }[]
+  relays: RelayRowDTO[]
+  /** With a relay in the graph: the two waits without it. Null otherwise. */
+  direct_only?: { longest_unheard_h: QuantityDTO; longest_message_wait_min: QuantityDTO } | null
+  /** One plain sentence on what "through the relay" means. */
+  relay_note?: string | null
   link_budget_note: string | null
+  /** Real lunar orbiters' passes over the landing spot: they could see the lander, and relay for none. */
+  orbiters?: OrbiterDTO[]
+  /** Why the orbiters that could see the lander are not relays for it. */
+  orbiters_note?: string | null
   bookings: { station: string; start: string; end: string; entered_by: string; note?: string | null }[]
   /** One-way light time between the Moon and Earth over these dates, seconds. */
   light_time_s?: { min: number; max: number }
@@ -521,9 +577,37 @@ export interface ContactDTO {
   sun_total_h?: QuantityDTO
 }
 
+/** Whether a rover at a spot and the lander can see each other; uncertain when the terrain's error could tip it. */
+export type SightState = 'clear' | 'blocked' | 'uncertain'
+
+/**
+ * The line of sight around the lander, ray by ray: `sight[i][j]` is the state
+ * at `bearings_deg[i]` (clockwise from north) and `ranges_m[j]` from the
+ * lander. `radio` is the same for the first Fresnel zone, which needs more room.
+ */
+export interface ViewshedDTO {
+  bearings_deg: number[]
+  ranges_m: number[]
+  sight: SightState[][]
+  radio: SightState[][]
+}
+
 export interface RoverSightDTO {
+  /** The rover, the rays and what the shares are over (F5). */
+  rover?: { id: string; name: string } | null
+  share_basis?: 'drive' | 'ground' | null
+  radius_m?: number | null
+  viewshed?: ViewshedDTO | null
   viewshed_tile: string | null
   out_of_sight_share: QuantityDTO
+  /** Percent where the radio path is not clear (first Fresnel zone). */
+  radio_not_clear_share?: QuantityDTO
+  /** Antenna heights and the radio frequency: assumed unless given. */
+  assumptions?: { lander_antenna_m: QuantityDTO; rover_antenna_m: QuantityDTO; radio_mhz: QuantityDTO } | null
+  /** The elevation model the rays are read from. */
+  terrain?: { product: string; post_m: number; vertical_error_m: number } | null
+  /** What clear, blocked and uncertain mean here, in one plain paragraph. */
+  note?: string | null
   longest_out_of_sight_m: QuantityDTO
   resolvable: boolean
   reason: string | null
@@ -678,6 +762,9 @@ export type ContractChecks = [
   Fits<Present<S['QuantityOut']>, QuantityDTO>,
   Fits<Present<S['Parameter']>, ParameterDTO>,
   Fits<Present<S['Contact']>, ContactDTO>,
+  Fits<Present<S['RelayRow']>, RelayRowDTO>,
+  Fits<Present<S['Orbiter']>, OrbiterDTO>,
+  Fits<Present<S['RoverOut']>, RoverSightDTO>,
   Fits<Present<S['Trip']>, TripDTO>,
   Fits<Present<S['LaunchCalendar']>, LaunchCalendarDTO>,
   Fits<Present<S['LaunchWeather']>, LaunchWeatherDTO>,

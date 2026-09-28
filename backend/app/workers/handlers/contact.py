@@ -21,11 +21,13 @@ from app.core import intervals, network, spice, timeline, visibility
 from app.core.quantity import Quantity
 from app.core.spice import R_MOON_M
 from app.data import catalogues
+from app.db.repositories.feeds import FeedRepository
 from app.db.repositories.jobs import InputRef
 from app.db.repositories.missions import MissionRepository
 from app.db.session import session_scope
 from app.services import lifecycle, site_service
 from app.workers.compute import HandlerResult, JobContext, handler
+from app.workers.handlers import orbiter_passes, relay_sweep
 
 C_M_S = 299_792_458.0
 H = 3600.0
@@ -133,13 +135,41 @@ async def run(ctx: JobContext) -> HandlerResult:
     du_s, du_open = du.longest(True)
 
     earth_up_s = intervals.total(r.earth.arcs, True)
-    relays = p.get("relays") or []
+    rel_cat = catalogues.load("relays")
+    own = list(p.get("relays") or [])
+    specs: list[relay_sweep.Spec] = []
+    for rid in own + [x for x in p.get("extra_relays") or [] if x not in own]:
+        try:
+            rec = rel_cat.get(rid)
+        except KeyError:
+            continue
+        if rec.role == "relay":
+            specs.append(relay_sweep.spec(rec, rid in own))
+    usable = [s for s in specs if s.orbits]
+    rng_all = np.concatenate([ranges[g.id] for g in stations])
+    unheard_q = _hours(
+        unheard_s,
+        None,
+        open_=unheard_open,
+        no_margin="Its edges are set by station masks, which are published without a tolerance.",
+    )
+    wait_q = lifecycle.q(
+        Quantity(
+            value=wait_s / 60.0,
+            unit="min",
+            provenance="computed",
+            open=wait_open,
+            no_margin_reason="Set by the same edges as the longest time unheard, plus the "
+            "light time to Earth.",
+        )
+    )
     via_relay: dict[str, Any]
     either: dict[str, Any]
-    if not relays:
+    sweep: relay_sweep.Result | None = None
+    if not specs:
         via_relay = lifecycle.missing("h", "No relay is planned for this mission.")
         either = _hours(earth_up_s, earth_tol.total_s)
-    else:
+    elif not usable:
         via_relay = lifecycle.missing(
             "h",
             "The planned relay's orbit is not published, so time through it is not "
@@ -150,6 +180,32 @@ async def run(ctx: JobContext) -> HandlerResult:
             "Needs the relay's orbit; time in contact with Earth directly is "
             f"{earth_up_s / H:.1f} hours.",
         )
+    else:
+        ctx.progress(0.65, "Placing the relay over every node and phase it could have.")
+        geom = await spice.run_async(
+            relay_sweep.geometry,
+            t0_et,
+            t1,
+            site_pos,
+            site.lat_deg,
+            site.lon_deg,
+            cw.mask_record.mask.azimuths(),
+            np.asarray(cw.mask_record.mask.el_deg, dtype=np.float64),
+            stations,
+        )
+        res: relay_sweep.Result = await spice.run_async(
+            relay_sweep.sweep,
+            geom,
+            usable,
+            t1,
+            r.earth.arcs,
+            heard_any,
+            float(rng_all.max()) / C_M_S,
+            lambda f: ctx.progress(0.65 + 0.3 * f),
+        )
+        sweep = res
+        via_relay = relay_sweep.spread_q(res.via_any, H, "h")
+        either = relay_sweep.spread_q(res.either, H, "h")
 
     nodes: list[dict[str, Any]] = [
         {
@@ -184,31 +240,42 @@ async def run(ctx: JobContext) -> HandlerResult:
             }
         )
     relay_rows = []
-    rel_cat = catalogues.load("relays")
-    for rid in relays:
-        try:
-            rec = rel_cat.get(rid)
-        except KeyError:
-            continue
+    note = relay_sweep.sweep_note(usable, sweep.n) if sweep is not None else None
+    for sp in specs:
+        rec = sp.rec
         nodes.append(
             {
-                "id": rid,
+                "id": rec.id,
                 "kind": "relay",
                 "name": rec.name,
                 "operator": rec.operator,
                 "status": "planned"
                 if rec.status == "planned"
                 else ("operating" if rec.status == "operating" else "not_launched"),
-                "orbit": "planned" if rec.periapsis_km else None,
+                "orbit": "planned" if sp.orbits else None,
                 "launch_note": rec.launch_note,
             }
         )
+        if sweep is not None and sp.orbits:
+            k = usable.index(sp)
+            adds = relay_sweep.spread_q(sweep.adds[k], H, "h")
+            via = relay_sweep.spread_q(sweep.via[k], H, "h")
+        else:
+            why = sp.missing or "The relay's orbit is not published."
+            adds = lifecycle.missing("h", why)
+            via = lifecycle.missing("h", why)
         relay_rows.append(
             {
-                "id": rid,
+                "id": rec.id,
                 "name": rec.name,
-                "adds_h": lifecycle.missing("h", "The relay's orbit is not published."),
+                "adds_h": adds,
+                "via_h": via,
                 "status": rec.launch_note or rec.status,
+                "launch_status": rec.status,
+                "for_this_mission": sp.for_this_mission,
+                "orbit": relay_sweep.orbit_block(rec),
+                "orbit_note": rec.orbit_note,
+                "sweep_note": note if sp.orbits else None,
             }
         )
     for rv in p.get("rovers") or []:
@@ -224,6 +291,64 @@ async def run(ctx: JobContext) -> HandlerResult:
             }
         )
 
+    # Real orbiters over the landing spot (F2): geometry only, never a relay.
+    orbiters = []
+    orb_sources = []
+    mask = cw.mask_record.mask
+    sky_az = mask.azimuths()
+    sky_el = np.asarray(mask.el_deg, dtype=np.float64)
+    sky_tol = np.asarray(mask.tol_deg, dtype=np.float64)
+    basis = visibility.enu_basis(site.lat_deg, site.lon_deg)
+    for o in p.get("orbiters") or []:
+        rec = rel_cat.get(o["id"])
+        snap = None
+        got = None
+        missing = o.get("missing")
+        if o.get("snapshot_id") is not None:
+            async with session_scope() as s:
+                rec_snap = await FeedRepository(s).get_snapshot(int(o["snapshot_id"]))
+            if rec_snap is None or not rec_snap.parsed:
+                missing = "The recorded trajectory is gone; it is fetched again within a week."
+            else:
+                snap = {
+                    "source": rec_snap.parsed.get("source"),
+                    "fetched_at": rec_snap.fetched_at,
+                    "snapshot_id": rec_snap.id,
+                }
+                kp = await spice.run_async(
+                    orbiter_passes.ensure_kernel,
+                    rec.id,
+                    rec_snap.id,
+                    rec_snap.content_sha256,
+                    rec_snap.parsed,
+                )
+                cov = (await spice.run_async(spice.coverage, kp, int(rec.naif_id)))[0]
+                got = await spice.run_async(
+                    orbiter_passes.passes,
+                    int(rec.naif_id),
+                    t0_et,
+                    t1,
+                    cov,
+                    site_pos,
+                    basis,
+                    sky_az,
+                    sky_el,
+                    sky_tol,
+                )
+                if got is None:
+                    missing = "The recorded trajectory does not reach into these dates."
+                orb_sources.append(
+                    lifecycle.source_ref(
+                        f"JPL Horizons: {rec.name}",
+                        "https://ssd.jpl.nasa.gov/horizons/",
+                        fetched_at=rec_snap.fetched_at,
+                        snapshot_id=rec_snap.id,
+                    )
+                )
+        orbiters.append(orbiter_passes.block(rec, snap, got, r.start, t1, missing))
+    if p.get("orbiters"):
+        ctx.progress(0.98, "Orbiter passes worked out.")
+
     links = [
         {
             "from": "lander",
@@ -234,7 +359,6 @@ async def run(ctx: JobContext) -> HandlerResult:
         }
         for g in stations
     ]
-    rng_all = np.concatenate([ranges[g.id] for g in stations])
     data = {
         "start": lifecycle.iso(r.start),
         "end": lifecycle.iso(r.end),
@@ -246,30 +370,29 @@ async def run(ctx: JobContext) -> HandlerResult:
             "via_relay_h": via_relay,
             "either_h": either,
             "station_hears_h": _hours(hs.total_s, heard_tol),
-            "longest_unheard_h": _hours(
-                unheard_s,
-                None,
-                open_=unheard_open,
-                no_margin="Its edges are set by station masks, which "
-                "are published without a tolerance.",
-            ),
-            "longest_message_wait_min": lifecycle.q(
-                Quantity(
-                    value=wait_s / 60.0,
-                    unit="min",
-                    provenance="computed",
-                    open=wait_open,
-                    no_margin_reason="Set by the same edges as the longest time unheard, plus the "
-                    "light time to Earth.",
-                )
-            ),
+            "longest_unheard_h": unheard_q
+            if sweep is None
+            else relay_sweep.spread_q(sweep.unheard, H, "h"),
+            "longest_message_wait_min": wait_q
+            if sweep is None
+            else relay_sweep.spread_q(sweep.wait, 60.0, "min"),
             "dark_and_unheard_h": _hours(
                 du_s, None, open_=du_open, no_margin="Edges from the Sun and the station masks."
             ),
         },
         "relays": relay_rows,
+        "direct_only": None
+        if sweep is None
+        else {"longest_unheard_h": unheard_q, "longest_message_wait_min": wait_q},
+        "relay_note": None
+        if sweep is None
+        else "Numbers that use the relay are ranges over what its orbit could be, if it flies as "
+        "planned; a message may wait on the relay until a ground station can hear it. "
+        "The same two numbers without the relay are given beside them.",
         "link_budget_note": "Line of sight only: the lander's radio power and data rate "
         "are not published, so no data rate or link margin is given.",
+        "orbiters": orbiters,
+        "orbiters_note": orbiter_passes.NOTE if orbiters else None,
         "light_time_s": {"min": float(rng_all.min() / C_M_S), "max": float(rng_all.max() / C_M_S)},
         "longest_wait_from": lifecycle.iso(r.start + timedelta(seconds=wait_at)),
         "sun_total_h": _hours(intervals.total(r.sun.arcs, True), sun_tol.total_s),
@@ -288,6 +411,7 @@ async def run(ctx: JobContext) -> HandlerResult:
                 "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/",
             ),
             lifecycle.source_ref("LOLA terrain skyline at the landing spot", None),
+            *orb_sources,
         ],
         parts=[
             (
@@ -315,6 +439,11 @@ async def run(ctx: JobContext) -> HandlerResult:
         InputRef("catalogue", "relays", rel_cat.version),
         InputRef("terrain", site.id, f"{cw.mask_record.dem_product}@{ENGINE_VERSION}"),
         InputRef("kernel_set", "stations", kset),
+        *[
+            InputRef("feed_snapshot", f"horizons/{o['id']}", str(o["snapshot_id"]))
+            for o in p.get("orbiters") or []
+            if o.get("snapshot_id") is not None
+        ],
     ]
     if not math.isfinite(wait_s):
         raise ValueError("message wait is not finite")
