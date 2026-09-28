@@ -281,7 +281,8 @@ holds 20 CLPS deliveries and 64 payloads, each payload with a source address.
 
 \Cref{tab:sections} lists the six sections, the question each one answers and the
 reference against which its engine is checked. The subsections below describe the
-engines in the order of a delivery.
+engines in the order of a delivery. \Cref{fig:screens} shows two sections as the project
+manager sees them. Each number carries its margin, or a sentence stating why it has none.
 
 \begin{table}[htbp]
 \centering\small
@@ -308,6 +309,24 @@ measured landing point \\
 \bottomrule
 \end{tabularx}
 \end{table}
+
+\begin{figure}[tbp]
+\centering
+\begin{subfigure}{\linewidth}
+\centering
+\includegraphics[width=0.88\linewidth]{fig-screen-hub.png}
+\caption{IM-2: the six sections above the open Landing section and its four numbers.}
+\end{subfigure}
+\par\medskip
+\begin{subfigure}{\linewidth}
+\centering
+\includegraphics[width=0.88\linewidth]{fig-screen-launch.png}
+\caption{Griffin-1's Launch section: the next liftoff carries the larger held-out miss,
+\qty{\pm 18}{\minute}.}
+\end{subfigure}
+\caption{Two screens at commit \texttt{f1d5667}, 1440 pixels wide, dark theme, cropped.}
+\label{fig:screens}
+\end{figure}
 
 \subsection{Landing: the Sun and Earth above the local skyline}
 
@@ -943,6 +962,8 @@ Shadow edges against SPICE & \texttt{test\_eclipse\_vs\_spice.py}, printed by th
 Landing hindcast & \texttt{test\_hindcast.py}; the report's \texttt{hindcast\_surface.py} \\
 \Cref{tab:perf} & the report's \texttt{measure\_timing.py} and \texttt{sections.py -{}-timing} \\
 The compute queue & \texttt{make load-compute} \\
+\Cref{fig:screens} & \texttt{frontend/scripts/screens.ts} in a clean checkout, run by the
+report's \texttt{screens.sh} and cropped by \texttt{make\_fig\_screens.py} \\
 Test counts & \texttt{make lint}, \texttt{make test}, \texttt{npx vitest run},
 \texttt{npx playwright test} \\
 \bottomrule
