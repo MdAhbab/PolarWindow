@@ -1,0 +1,1 @@
+{"data":{"booster":null,"capsule":null},"meta":{"computed_at":"2026-09-27T00:00:00Z","uncertainty":{"kind":"composite","parts":[{"source":"Recovery limits","note":"Launch providers do not publish their sea and wind limits for booster recovery; only limits the team enters are shown."}]},"engines":{"wx":"wx-2"},"sources":[],"stale":false,"compute_ms":null}}
