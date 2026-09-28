@@ -77,21 +77,40 @@ function RuleCell({ row }: { row: RuleRowDTO }) {
   )
 }
 
+/** A share as a percentage with enough digits to tell a small one from none: "0.4%", "12%". */
+export function percentWords(share: number): string {
+  const pct = share * 100
+  if (pct === 0) return '0%'
+  return `${pct < 10 ? pct.toFixed(1) : Math.round(pct)}%`
+}
+
+/** What was seen (lightning from space: clear or seen now, never at the launch time), in words. */
+export function observedWords(o: NonNullable<RuleRowDTO['observed']>): { lead: string; detail: string } {
+  if (o.state === 'clear') return { lead: 'Seen now: clear.', detail: o.detail }
+  if (o.state === 'seen') return { lead: 'Seen now:', detail: o.detail }
+  return { lead: 'Not seen here.', detail: o.detail }
+}
+
 function OtherCell({ row }: { row: RuleRowDTO }) {
-  const lines: string[] = []
-  for (const f of row.one_forecast) lines.push(`${f.system} forecast: ${quantityText(f.value)}, ${f.over ? 'over the limit' : 'under the limit'}`)
-  if (row.observed) {
-    lines.push(
-      row.observed.state === 'clear' ? `Seen: clear. ${row.observed.detail}` : row.observed.state === 'seen' ? `Seen: ${row.observed.detail}` : `Seen: no data. ${row.observed.detail}`,
-    )
+  const lines: { key: string; lead?: string; text: string; strong?: boolean }[] = []
+  for (const f of row.one_forecast) {
+    lines.push({ key: f.system, text: `${f.system} forecast: ${quantityText(f.value)}, ${f.over ? 'over the limit' : 'under the limit'}` })
   }
-  if (row.climatology) lines.push(`In past years: ${Math.round(row.climatology.share * 100)}% of the time (${row.climatology.years}, ${row.climatology.source})`)
+  if (row.observed) {
+    const w = observedWords(row.observed)
+    lines.push({ key: 'observed', lead: w.lead, text: w.detail, strong: row.observed.state === 'seen' })
+  }
+  if (row.climatology) {
+    const c = row.climatology
+    lines.push({ key: 'climatology', lead: `Past years (${c.years}): over the limit ${percentWords(c.share)} of the time.`, text: c.source })
+  }
   if (!lines.length) return <span className="text-small text-ink-3">—</span>
   return (
-    <ul className="flex flex-col gap-1">
+    <ul className="flex flex-col gap-1.5">
       {lines.map((l) => (
-        <li key={l} className="text-small leading-5 text-ink-2">
-          {l}
+        <li key={l.key} className="text-small leading-5 text-ink-2">
+          {l.lead && <span className={`font-semibold ${l.strong ? 'text-ink' : 'text-ink-2'}`}>{l.lead} </span>}
+          {l.text}
         </li>
       ))}
     </ul>

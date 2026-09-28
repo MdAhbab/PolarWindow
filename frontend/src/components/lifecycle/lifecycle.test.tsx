@@ -22,7 +22,8 @@ import { JourneyBar } from './JourneyBar'
 import { ReadinessList, RiskTable, sortItems } from './Readiness'
 import { LimitBars, LimitTable } from './LimitBars'
 import { coverageGaps, tripStretches } from './TripStrip'
-import { shadowAndContact } from '../../screens/sections/TripSection'
+import { CorrectionsRow, shadowAndContact } from '../../screens/sections/TripSection'
+import { observedWords, percentWords } from './WeatherRules'
 import { seaWords, zoneWords } from '../../screens/sections/ReturnSection'
 import { calendarDays } from './LaunchCalendar'
 import { axisTicks, complexOf, contactRows } from './ContactChart'
@@ -356,6 +357,36 @@ describe('the charts’ arrays, shared with their tables', () => {
     expect(shadowAndContact({ ...n, longest_shadow_h: zero, longest_unheard_h: zero }, 30.1)).toBe(
       'In the 30.1 hours NASA’s reconstruction covers, it is never in shadow, and a ground station can hear it the whole time.',
     )
+  })
+
+  it('trip corrections: a budget, never a prediction, each size with its sample and every assumption', () => {
+    const c = trip.data.corrections!
+    render(<CorrectionsRow c={c} note={null} />)
+    expect(screen.getByText('Corrections on the way')).toBeTruthy()
+    expect(screen.getByText(c.label)).toBeTruthy()
+    const text = document.body.textContent ?? ''
+    expect(text).toContain('a budget: 18.1 m/s in 99 of 100 runs')
+    expect(text).toContain('In 1,000 runs of the flight as planned')
+    expect(text).toContain('(16.5–19.9 m/s, allowing for the number of runs)')
+    expect(text).toContain('Every run passed close to the Moon.')
+    const table = screen.getByRole('table')
+    // Three corrections and their total, each at 95 and at 99 of 100 runs.
+    expect(within(table).getAllByRole('row')).toHaveLength(5)
+    expect(within(table).getByRole('rowheader', { name: 'All 3 together' })).toBeTruthy()
+    for (const a of c.assumptions) expect(screen.getByText(a.value)).toBeTruthy()
+    cleanup()
+    render(<CorrectionsRow c={null} note="No trip has been worked out." />)
+    expect(screen.getByText('No trip has been worked out.')).toBeTruthy()
+    expect(screen.queryByRole('table')).toBeNull()
+  })
+
+  it('weather rules: a small share keeps a digit, and lightning is seen now, not at the launch', () => {
+    expect(percentWords(0.0099)).toBe('1.0%')
+    expect(percentWords(0.004)).toBe('0.4%')
+    expect(percentWords(0.123)).toBe('12%')
+    expect(percentWords(0)).toBe('0%')
+    expect(observedWords({ state: 'clear', detail: 'None within 10 nmi.' }).lead).toBe('Seen now: clear.')
+    expect(observedWords({ state: 'seen', detail: '3 flashes within 10 nmi.' })).toEqual({ lead: 'Seen now:', detail: '3 flashes within 10 nmi.' })
   })
 
   it('launch calendar: days with opportunities, and runs of empty days as one line', () => {

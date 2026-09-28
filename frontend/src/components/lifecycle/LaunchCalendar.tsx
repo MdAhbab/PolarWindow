@@ -181,7 +181,7 @@ export function LaunchTable({ opportunities }: { opportunities: OpportunityDTO[]
               <td className={`${cell} font-mono`}>{quantityText(o.landing.sun_elevation_deg)}</td>
               <td className={`${cell} font-mono`}>{quantityText(o.landing.sunlight_after_h)}</td>
               <td className={cell}>{o.landing.earth_up ? 'Yes' : 'No'}</td>
-              <td className={cell}>{o.weather === 'forecast' ? 'Forecast' : o.weather === 'climatology' ? 'History only' : 'None'}</td>
+              <td className={cell}>{o.weather === 'forecast' ? 'Forecast' : o.weather === 'climatology' ? 'Past years only' : 'None'}</td>
             </tr>
           ))}
         </tbody>

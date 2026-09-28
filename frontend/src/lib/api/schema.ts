@@ -693,7 +693,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Weather limits the team entered for a vehicle, with their notes */
+        get: operations["read_vehicle_limits_api_v1_vehicles__vehicle_id__limits_get"];
         /** Enter weather limits the vehicle maker does not publish */
         put: operations["vehicle_limits_api_v1_vehicles__vehicle_id__limits_put"];
         post?: never;
@@ -1304,6 +1305,13 @@ export interface components {
             /** Question */
             question: string;
         };
+        /** Assumption */
+        Assumption: {
+            /** What */
+            what: string;
+            /** Value */
+            value: string;
+        };
         /** Attempt */
         Attempt: {
             /** Mission */
@@ -1818,6 +1826,48 @@ export interface components {
             longest_message_wait_min: components["schemas"]["QuantityOut"];
             /** @description The longest single stretch that is dark and out of contact at once. */
             dark_and_unheard_h: components["schemas"]["QuantityOut"];
+        };
+        /** CorrectionBurn */
+        CorrectionBurn: {
+            /** Name */
+            name: string;
+            /**
+             * T
+             * Format: date-time
+             */
+            t: string;
+            p95_m_s: components["schemas"]["QuantityOut"];
+            p99_m_s: components["schemas"]["QuantityOut"];
+        };
+        /** Corrections */
+        Corrections: {
+            /**
+             * Label
+             * @description Always says these sizes are a budget for assumed errors.
+             */
+            label: string;
+            /** Burns */
+            burns: components["schemas"]["CorrectionBurn"][];
+            total_p95_m_s: components["schemas"]["QuantityOut"];
+            /** @description lo/hi: its 95 % interval (bootstrap). */
+            total_p99_m_s: components["schemas"]["QuantityOut"];
+            /** @description The same total worked out linearly. */
+            linear_p99_m_s: components["schemas"]["QuantityOut"];
+            /** @description Median; lo/hi the 1st and 99th %. */
+            arrival_altitude_km: components["schemas"]["QuantityOut"];
+            /** Runs */
+            runs: number;
+            /**
+             * Missed
+             * @description Runs with no close pass of the Moon (counted, not hidden).
+             */
+            missed: number;
+            /** Assumptions */
+            assumptions: components["schemas"]["Assumption"][];
+            /** Plan Note */
+            plan_note: string;
+            /** Flown Note */
+            flown_note: string;
         };
         /** Counts */
         Counts: {
@@ -2772,9 +2822,12 @@ export interface components {
             landing: components["schemas"]["LandingOut"];
             /**
              * Weather
+             * @description What numbers the weather tab can show. With none it still shows the rules and limits; weather_note says why there are no numbers.
              * @enum {string}
              */
             weather: "forecast" | "climatology" | "none";
+            /** Weather Note */
+            weather_note: string;
             /**
              * Basis
              * @description How t0 was worked out: again from a flown trajectory, designed, or as published.
@@ -3359,6 +3412,16 @@ export interface components {
              */
             class: "model" | "proxy" | "observation";
             limit: components["schemas"]["QuantityOut"];
+            /**
+             * Units
+             * @description Units a limit for this rule can be entered in, the published one first; empty when no unit is published (any unit is taken).
+             */
+            units: string[];
+            /**
+             * Limit Note
+             * @description The team's note with an entered limit.
+             */
+            limit_note: string | null;
             /** Per System */
             per_system: components["schemas"]["SystemShare"][];
             /** One Forecast */
@@ -3960,6 +4023,12 @@ export interface components {
             burns: components["schemas"]["Burn"][];
             /** Burns Note */
             burns_note: string | null;
+            corrections: components["schemas"]["Corrections"] | null;
+            /**
+             * Corrections Note
+             * @description Why there is no correction budget.
+             */
+            corrections_note: string | null;
             moon_pull: components["schemas"]["MoonPull"] | null;
             radiation: components["schemas"]["Radiation"] | null;
         };
@@ -5420,6 +5489,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OfficialForecastOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_vehicle_limits_api_v1_vehicles__vehicle_id__limits_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vehicle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VehicleLimits"];
                 };
             };
             /** @description Validation Error */

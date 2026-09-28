@@ -188,10 +188,15 @@ function ReturnAnswer({ ret, meta, missionId, status }: { ret: ReturnDTO; meta: 
       )}
       <Rows>
         {b && (
-          <Disclosure title="Booster landing zone" meta={b.zone ? zoneWords(b.zone) : NO_ZONE[b.landing]}>
+          <Disclosure title="Booster landing zone" meta={b.zone && b.landing !== 'unknown' ? zoneWords(b.zone) : NO_ZONE[b.landing]}>
             <p className="text-body leading-6 text-ink-2">
               {b.note}{' '}
-              {b.zone ? `The zone is ${zoneWords(b.zone)}${b.zone.pm_km == null ? '; its size is not published' : ''}.` : ''}{' '}
+              {/* Not published yet: the zone is where the sea is read (as the note says), not a published zone. */}
+              {b.zone
+                ? b.landing === 'unknown'
+                  ? `The sea is read ${zoneWords(b.zone)}.`
+                  : `The zone is ${zoneWords(b.zone)}${b.zone.pm_km == null ? '; its size is not published' : ''}.`
+                : ''}{' '}
               {b.hazard_area_seen === true
                 ? 'A published hazard area at sea matches this zone.'
                 : b.hazard_area_seen === false

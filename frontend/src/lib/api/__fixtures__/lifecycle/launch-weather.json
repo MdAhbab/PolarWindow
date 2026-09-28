@@ -23,6 +23,13 @@
      "missing_reason": null,
      "source": "https://www.nasa.gov/"
     },
+    "units": [
+     "m/s",
+     "mph",
+     "kt",
+     "km/h"
+    ],
+    "limit_note": null,
     "per_system": [
      {
       "system": "GEFS",
@@ -74,9 +81,9 @@
     "disagreement": false,
     "observed": null,
     "climatology": {
-     "share": 0.08,
-     "years": "2001–2024",
-     "source": "NASA POWER"
+     "share": 0.0099,
+     "years": "2001-2024",
+     "source": "NASA POWER hourly wind at 50 m from the MERRA-2 reanalysis (the rule's 162 ft is 49 m), the 678 hours of February at 00 UTC in those years; a reanalysis cell's hourly mean is smoother than the pad's tower."
     },
     "class": "model"
    },
@@ -97,6 +104,10 @@
      "missing_reason": null,
      "source": null
     },
+    "units": [
+     "mm/h"
+    ],
+    "limit_note": null,
     "per_system": [
      {
       "system": "GEFS",
@@ -155,6 +166,10 @@
      "missing_reason": null,
      "source": null
     },
+    "units": [
+     "ft"
+    ],
+    "limit_note": null,
     "per_system": [
      {
       "system": "GEFS",
@@ -207,6 +222,10 @@
      "missing_reason": null,
      "source": null
     },
+    "units": [
+     "nmi"
+    ],
+    "limit_note": null,
     "per_system": [],
     "one_forecast": [],
     "disagreement": false,
@@ -214,11 +233,7 @@
      "state": "clear",
      "detail": "No lightning seen by GOES within 10 nautical miles in the last 30 minutes"
     },
-    "climatology": {
-     "share": 0.11,
-     "years": "2018–2024",
-     "source": "GOES GLM thunder hours"
-    },
+    "climatology": null,
     "class": "observation"
    },
    {
@@ -239,6 +254,8 @@
      "missing_reason": "The limit is not published; the team can enter the one it is given.",
      "source": null
     },
+    "units": [],
+    "limit_note": null,
     "per_system": [
      {
       "system": "GEFS",
@@ -279,6 +296,11 @@
      "missing_reason": null,
      "source": "Nadia Karim"
     },
+    "units": [
+     "ft",
+     "m"
+    ],
+    "limit_note": "As given by the range weather officer for this campaign.",
     "per_system": [
      {
       "system": "GEFS",

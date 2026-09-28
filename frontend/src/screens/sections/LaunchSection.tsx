@@ -183,7 +183,7 @@ function LaunchAnswer({ cal, meta, missionId }: { cal: LaunchCalendarDTO; meta: 
           }
         >
           {wx ? (
-            <WeatherBody wx={wx.data} meta={wx.meta} />
+            <WeatherBody wx={wx.data} meta={wx.meta} note={o.weather_note} />
           ) : weather.status === 'error' ? (
             <p className="text-body text-ink-2">The weather could not be loaded: {(weather.error as Error).message}</p>
           ) : weather.status === 'working' ? (
@@ -296,11 +296,12 @@ function leadWords(h: number): string {
   return `${formatValue(h / 24)} days from now`
 }
 
-function WeatherBody({ wx, meta }: { wx: LaunchWeatherDTO; meta: LifecycleMetaDTO }) {
+function WeatherBody({ wx, meta, note }: { wx: LaunchWeatherDTO; meta: LifecycleMetaDTO; note: string }) {
   const fetched = meta.sources.map((s) => (s.fetched_at ? Date.parse(s.fetched_at) : NaN)).filter((n) => !Number.isNaN(n))
   const oldest = fetched.length ? Math.min(...fetched) : null
   return (
     <>
+      {note && <p className="text-body leading-6 text-ink">{note}</p>}
       <p className="text-small leading-5 text-ink-2">
         For a launch at {dateTimeWords(Date.parse(wx.t0))}, {leadWords(wx.lead_time_h)}. {wx.note}
         {oldest !== null && wx.lead_time_h >= 0 && ` The oldest forecast here was fetched ${ageWords(oldest)}.`} Nothing is

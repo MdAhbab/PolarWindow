@@ -263,6 +263,8 @@ export interface OpportunityDTO {
   /** `time` is the landing; for a designed opportunity its `lo`/`hi` are the allowed landing stretch it falls in. */
   landing: { time: QuantityDTO; sun_elevation_deg: QuantityDTO; sunlight_after_h: QuantityDTO; earth_up: boolean }
   weather: 'forecast' | 'climatology' | 'none'
+  /** What the weather rules can show for this opportunity, and why there are no forecast numbers when there are none. */
+  weather_note: string
   /** How `t0` was worked out: again from NASA's reconstruction, designed from the pad, or as published. */
   basis: 'reconstructed' | 'designed' | 'published'
   /** One or two plain sentences: how, and anything unusual (a coast longer than any flown one). */
@@ -302,11 +304,31 @@ export interface RuleRowDTO {
   source_url: string
   class: 'model' | 'proxy' | 'observation'
   limit: QuantityDTO
+  /** Units a limit can be entered in, the published one first; empty when none is published (any unit is taken). */
+  units: string[]
+  /** The team's note with an entered limit. */
+  limit_note: string | null
   per_system: { system: ModelSystem; share: ShareDTO | null; missing_reason: string | null }[]
   one_forecast: { system: 'NWS' | 'HRRR' | 'GEOS-FP'; value: QuantityDTO; over: boolean }[]
   disagreement: boolean
   observed: { state: 'clear' | 'seen' | 'no_data'; detail: string } | null
+  /** How often the limit was broken in past years at the launch's month and hour (wind rules with a known limit). */
   climatology: { share: number; years: string; source: string } | null
+}
+
+/** A limit the team entered for a vehicle (`GET /vehicles/{id}/limits`), with its note. */
+export interface EnteredLimitDTO {
+  rule_id: string
+  value: number
+  unit: string
+  note: string | null
+  entered_by: string
+  entered_at: string
+}
+
+export interface VehicleLimitsDTO {
+  vehicle_id: string
+  limits: EnteredLimitDTO[]
 }
 
 /** The official launch forecast as the team entered it, quoted as issued. */
@@ -360,6 +382,9 @@ export interface TripDTO {
   burns: { t: string; name: string; dv_m_s: QuantityDTO }[]
   /** Why `burns` is empty, when it is. */
   burns_note?: string | null
+  /** A budget for corrections on the way under assumed errors; null with `corrections_note` saying why. */
+  corrections: CorrectionsDTO | null
+  corrections_note: string | null
   moon_pull: { equal_pull_km: number; sphere_of_influence_km: number; t_equal_pull: string | null } | null
   radiation: {
     belt_hours: QuantityDTO
@@ -368,6 +393,25 @@ export interface TripDTO {
     screening_note: string
     confirm_in: string[]
   } | null
+}
+
+/** Never a prediction: sizes of the corrections under the listed assumed errors, over many runs. */
+export interface CorrectionsDTO {
+  label: string
+  burns: { name: string; t: string; p95_m_s: QuantityDTO; p99_m_s: QuantityDTO }[]
+  total_p95_m_s: QuantityDTO
+  /** `lo`/`hi`: its 95 % interval. */
+  total_p99_m_s: QuantityDTO
+  /** The same total worked out linearly, as a check. */
+  linear_p99_m_s: QuantityDTO
+  /** Median; `lo`/`hi` the 1st and 99th percentile. */
+  arrival_altitude_km: QuantityDTO
+  runs: number
+  /** Runs with no close pass of the Moon. */
+  missed: number
+  assumptions: { what: string; value: string }[]
+  plan_note: string
+  flown_note: string
 }
 
 // ---------------------------------------------------------------------------
@@ -561,6 +605,7 @@ export type ContractChecks = [
   Fits<Present<S['Return']>, ReturnDTO>,
   Fits<Present<S['OfficialForecast']>, OfficialForecastDTO>,
   Fits<Present<S['OfficialForecastOut']>, StoredForecastDTO>,
+  Fits<Present<S['VehicleLimits']>, VehicleLimitsDTO>,
   // `counts` is typed as a plain map in the schema; its keys are checked in the fixture tests.
   Fits<Present<Omit<S['Ready'], 'counts'>>, Omit<ReadyDTO, 'counts'>>,
 ]

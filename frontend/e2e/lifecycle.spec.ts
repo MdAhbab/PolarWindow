@@ -493,11 +493,18 @@ test('return (live API): where each flown booster came down, and a planned one n
   await expect(answer).toContainText('700 km downrange')
   await expect(row('Booster landing zone').locator('summary')).toContainText('droneship, position not published')
 
-  // Griffin-1 has not flown: the vehicle's practice and the flown landings, and why there is no forecast yet.
+  // Griffin-1 has not flown: the vehicle's practice and the flown landings, and the sea (GFS-Wave) where a
+  // droneship would wait for the next opportunity, drawn with no limit beside it.
   await page.goto('/missions/griffin-1/return')
   await expect(answer).toContainText('decided for each launch and not yet published for this one', { timeout: 30_000 })
   await expect(answer).toContainText('IM-1 on Landing Zone 1')
-  await expect(main).toContainText('not recorded yet')
+  await expect(answer).toContainText(/Waves there are forecast at [\d.]+ m\. Wind there is forecast at [\d.]+ m\/s\./)
+  await expect(main).toContainText('GFS-Wave, run of')
+  await expect(row('Booster landing zone').locator('summary')).toContainText('not published yet')
+  await row('Booster landing zone').locator('summary').click()
+  await expect(row('Booster landing zone')).toContainText(/The sea is read near [\d.]+°N [\d.]+°W\./)
+  await page.getByRole('button', { name: 'Read the chart as a table' }).click()
+  await expect(main).toContainText(/Waves at the booster landing zone[\d.]+ m; no limit entered by the team/)
   await row('Team limits').locator('summary').click()
   await expect(row('Team limits')).toContainText('Booster landing zone: waves none entered, wind none entered.')
   await expectNoSeriousAxe(page, '/missions/griffin-1/return (live) with its limits open')

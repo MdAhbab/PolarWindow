@@ -215,6 +215,9 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   weather constraints", with who entered it and the PDF. One per mission,
   the latest; a save answers with the forecast as stored, which the row shows
   at once (the later-entered of it and the weather answer's `official`).
+- **Weather rules** row opens with the opportunity's `weather_note` (what
+  the rules can show, and why there are no forecast numbers when there are
+  none).
 - **Weather rules** (`WeatherRuleTable`): rule rows × systems (GEFS, ECMWF
   ENS, AIFS ENS), each cell "{k} of {n} runs" with a small bar and its
   interval as a hatch; missing cells give their reason. A rule's class is in
@@ -222,7 +225,10 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   "observation only: no forecast number". "Models disagree" with the
   uncertain glyph when the intervals do not overlap. One forecast: "over" or
   "under", never a probability. Each rule links its source. Nothing adds them
-  up.
+  up. The last column also has what was seen ("Seen now: clear." or "Seen
+  now:" with the count, for lightning within six hours; said to be now, not
+  at the launch) and past years for a wind rule ("Past years (2001-2024):
+  over the limit 1.0% of the time." with its source and hours counted).
 
 ### Trip (`/trip`, `GET /missions/{id}/trip`)
 
@@ -246,7 +252,14 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   in `covered`; a seam under a second is not a gap) break both lines and leave both lanes empty with a dashed outline, keyed
   "No data" and listed in the twin; a gap is never counted as out of contact.
 - **Rows:** Radiation on the way (screening only, and where to confirm) ·
-  Burns ({n}, or "none listed" with `burns_note`) · Where the Moon's pull wins
+  Burns ({n}, or "none listed"; each burn is one instant with its
+  `no_margin_reason` under it, and `burns_note` says what is not seen) ·
+  Corrections on the way (meta "a budget: {total} in 99 of 100 runs"; the
+  service's `label` first, "not a prediction"; one sentence with the runs,
+  95 and 99 of 100, the interval allowing for the number of runs, the linear
+  check, runs that missed the Moon, the arrival height; a table of the three
+  corrections and their total, taken run by run; every assumed error; the
+  plan and flown notes. None: `corrections_note`) · Where the Moon's pull wins
   (only when `moon_pull` is given) · Download the trip (flown trips only: CCSDS
   OEM and CSV, one block per stretch NASA's reconstruction covers, said in the
   row when there is more than one; SPK is not served) · How sure is this? · Where does this
@@ -319,6 +332,10 @@ into the hub header.
 - **Team limits form:** starts from the limits entered (the PUT replaces both
   parts, so a part not shown is sent as it stands); a field left empty is no
   limit; its history is `entity=limits&id=return:{mission}`.
+- **Booster landing zone** not published yet (a mission still to fly): the
+  row's meta stays "not published yet" and the body says where the sea is
+  read ("The sea is read near {lat} {lon}."), since that point is chosen, not
+  a published zone.
 - **Rows:** Booster landing zone · Splashdown zone · Team limits · How sure
   is this? · Where does this come from?
 

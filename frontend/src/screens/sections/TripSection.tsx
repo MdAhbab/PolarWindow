@@ -126,18 +126,25 @@ function TripAnswer({ trip, meta, missionId }: { trip: TripDTO; meta: LifecycleM
           {trip.burns.length === 0 ? (
             <p className="text-body leading-6 text-ink-2">{trip.burns_note ?? 'No burns are listed for this trip.'}</p>
           ) : (
-            <ol className="flex flex-col gap-2">
-              {trip.burns.map((b, i) => (
-                <li key={b.t} className="flex flex-wrap items-baseline gap-x-3 text-body">
-                  <span className="font-mono text-caption text-ink-3">{i + 1}</span>
-                  <span className="font-semibold text-ink">{b.name}</span>
-                  <span className="text-ink-2">{dateTimeWords(Date.parse(b.t))}</span>
-                  <span className="font-mono text-small text-ink">{quantityText(b.dv_m_s)}</span>
-                </li>
-              ))}
-            </ol>
+            <>
+              <ol className="flex flex-col gap-2.5">
+                {trip.burns.map((b, i) => (
+                  <li key={b.t} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-body">
+                    <span className="font-mono text-caption text-ink-3">{i + 1}</span>
+                    <span className="font-semibold text-ink">{b.name}</span>
+                    <span className="text-ink-2">{dateTimeWords(Date.parse(b.t))}</span>
+                    <span className="font-mono text-small text-ink">{quantityText(b.dv_m_s)}</span>
+                    {b.dv_m_s.pm === null && b.dv_m_s.no_margin_reason && (
+                      <span className="basis-full text-caption leading-caption text-ink-3">{b.dv_m_s.no_margin_reason}</span>
+                    )}
+                  </li>
+                ))}
+              </ol>
+              {trip.burns_note && <p className="text-small leading-5 text-ink-2">{trip.burns_note}</p>}
+            </>
           )}
         </Disclosure>
+        <CorrectionsRow c={trip.corrections} note={trip.corrections_note} />
         {trip.moon_pull && <MoonPullRow pull={trip.moon_pull} />}
         {/* Only a flown trip can be exported; a designed one answers 409 no-export. */}
         {trip.source === 'flown' && <TripDownloads trip={trip} missionId={missionId} />}
@@ -175,6 +182,95 @@ function TripDownloads({ trip, missionId }: { trip: TripDTO; missionId: string }
           </li>
         ))}
       </ul>
+    </Disclosure>
+  )
+}
+
+/** "18.1 m/s": the figure alone, for a value whose spread is said in words beside it. */
+function figure(q: QuantityDTO): string {
+  return q.value === null ? quantityText(q) : `${formatValue(q.value)} ${q.unit}`
+}
+
+/** "16.5–19.9 m/s", when the quantity carries a range beside its value. */
+function spread(q: QuantityDTO): string | null {
+  return q.lo === null || q.hi === null ? null : `${formatValue(q.lo)}–${formatValue(q.hi)} ${q.unit}`
+}
+
+/**
+ * How much the corrections on the way could need under assumed errors: a
+ * budget over many runs, never a prediction (the service's `label` says so
+ * first). Each size says its sample ("in 99 of 100 runs", of how many).
+ */
+export function CorrectionsRow({ c, note }: { c: TripDTO['corrections']; note: string | null }) {
+  if (!c) {
+    return (
+      <Disclosure title="Corrections on the way" meta="no budget">
+        <p className="text-body leading-6 text-ink-2">{note ?? 'No correction budget is worked out for this trip.'}</p>
+      </Disclosure>
+    )
+  }
+  const interval = spread(c.total_p99_m_s)
+  const arrival = spread(c.arrival_altitude_km)
+  const cell = 'px-3 py-2 text-small text-ink-2 align-top'
+  const num = `${cell} text-right font-mono tnum text-ink`
+  const head = 'px-3 py-2.5 text-tag font-semibold tracking-caps-md text-ink-3 uppercase align-bottom'
+  return (
+    <Disclosure title="Corrections on the way" meta={`a budget: ${figure(c.total_p99_m_s)} in 99 of 100 runs`}>
+      <p className="text-body leading-6 font-semibold text-ink">{c.label}</p>
+      <p className="text-body leading-6 text-ink-2">
+        In {formatValue(c.runs)} runs of the flight as planned with the errors below, the {c.burns.length} corrections
+        together needed at most {figure(c.total_p95_m_s)} in 95 of 100 runs and at most {figure(c.total_p99_m_s)} in 99 of 100
+        {interval ? ` (${interval}, allowing for the number of runs)` : ''}. Worked out linearly instead: {figure(c.linear_p99_m_s)} in 99 of
+        100. {c.missed ? `${c.missed} of the runs did not pass close to the Moon; they are counted, not dropped.` : 'Every run passed close to the Moon.'}{' '}
+        On arrival it passes {figure(c.arrival_altitude_km)} above the Moon in the middle run
+        {arrival ? `, and ${arrival} in 98 of 100` : ''}.
+      </p>
+      <table className="w-full border-collapse border border-line text-left">
+        <caption className="sr-only">Each correction, when it is made, and the speed it needs in 95 and in 99 of 100 runs.</caption>
+        <thead>
+          <tr className="bg-inset">
+            <th scope="col" className={head}>Correction</th>
+            <th scope="col" className={`${head} text-right`}>95 of 100 runs</th>
+            <th scope="col" className={`${head} text-right`}>99 of 100 runs</th>
+          </tr>
+        </thead>
+        <tbody>
+          {c.burns.map((b) => (
+            <tr key={b.t} className="border-t border-line">
+              <th scope="row" className={`${cell} font-normal`}>
+                <span className="block font-semibold text-ink">{b.name}</span>
+                {dateTimeWords(Date.parse(b.t))}
+              </th>
+              <td className={num}>at most {figure(b.p95_m_s)}</td>
+              <td className={num}>at most {figure(b.p99_m_s)}</td>
+            </tr>
+          ))}
+          <tr className="border-t border-line-strong">
+            <th scope="row" className={`${cell} font-semibold text-ink`}>
+              All {c.burns.length} together
+            </th>
+            <td className={num}>at most {figure(c.total_p95_m_s)}</td>
+            <td className={num}>at most {figure(c.total_p99_m_s)}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p className="text-caption leading-caption text-ink-3">
+        The total is taken run by run, not by adding up the sizes above.
+      </p>
+      <div className="flex flex-col gap-2">
+        <h4 className="text-small font-semibold text-ink">Every error here is assumed</h4>
+        <dl className="grid grid-cols-1 gap-x-6 gap-y-1.5 text-small sm:grid-cols-[max-content_1fr]">
+          {c.assumptions.map((a) => (
+            <div key={a.what} className="contents">
+              <dt className="text-ink-3">{a.what}</dt>
+              <dd className="text-ink">{a.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+      <p className="text-small leading-5 text-ink-2">
+        {c.plan_note} {c.flown_note}
+      </p>
     </Disclosure>
   )
 }

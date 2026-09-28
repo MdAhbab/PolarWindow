@@ -107,6 +107,7 @@
      "earth_up": true
     },
     "weather": "forecast",
+    "weather_note": "Forecasts reach this launch: the weather rules show what they say for each rule.",
     "basis": "designed",
     "note": "A due-east climb from the pad, the flight corrected in the full force model; the margin is the largest difference from a flown liftoff seen so far.",
     "azimuth_deg": {
@@ -242,6 +243,7 @@
      "earth_up": true
     },
     "weather": "forecast",
+    "weather_note": "Forecasts reach this launch: the weather rules show what they say for each rule.",
     "basis": "designed",
     "note": "A due-east climb from the pad, the flight corrected in the full force model; the margin is the largest difference from a flown liftoff seen so far.",
     "azimuth_deg": {
@@ -377,6 +379,7 @@
      "earth_up": true
     },
     "weather": "climatology",
+    "weather_note": "More than 16 days away, beyond the forecasts: the wind rule shows how often its limit was broken in past years at this month and hour.",
     "basis": "designed",
     "note": "A due-east climb from the pad, the flight corrected in the full force model; the margin is the largest difference from a flown liftoff seen so far.",
     "azimuth_deg": {
@@ -512,6 +515,7 @@
      "earth_up": true
     },
     "weather": "climatology",
+    "weather_note": "More than 16 days away, beyond the forecasts: the wind rule shows how often its limit was broken in past years at this month and hour.",
     "basis": "designed",
     "note": "A due-east climb from the pad, the flight corrected in the full force model; the margin is the largest difference from a flown liftoff seen so far.",
     "azimuth_deg": {
@@ -647,6 +651,7 @@
      "earth_up": true
     },
     "weather": "climatology",
+    "weather_note": "More than 16 days away, beyond the forecasts: the wind rule shows how often its limit was broken in past years at this month and hour.",
     "basis": "designed",
     "note": "A due-east climb from the pad, the flight corrected in the full force model; the margin is the largest difference from a flown liftoff seen so far.",
     "azimuth_deg": {
@@ -782,6 +787,7 @@
      "earth_up": true
     },
     "weather": "climatology",
+    "weather_note": "More than 16 days away, beyond the forecasts: the wind rule shows how often its limit was broken in past years at this month and hour.",
     "basis": "designed",
     "note": "A due-east climb from the pad, the flight corrected in the full force model; the margin is the largest difference from a flown liftoff seen so far.",
     "azimuth_deg": {

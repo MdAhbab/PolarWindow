@@ -1277,7 +1277,7 @@
     }
    }
   ],
-  "burns_note": null,
+  "burns_note": "Found where NASA's reconstruction leaves the force model by more than 0.05 m/s in half an hour, up to the arrival at the Moon; each is shown as one instant. Burns in lunar orbit are not listed.",
   "moon_pull": {
    "equal_pull_km": 38400,
    "sphere_of_influence_km": 66100,
@@ -1329,7 +1329,177 @@
     "OLTARIS",
     "CREME-MC"
    ]
-  }
+  },
+  "corrections": {
+   "label": "A budget for these assumed errors, not a prediction of what the mission needed.",
+   "burns": [
+    {
+     "name": "First correction, a day after leaving Earth",
+     "t": "2025-02-28T01:06:00Z",
+     "p95_m_s": {
+      "value": 13.7,
+      "unit": "m/s",
+      "provenance": "computed",
+      "pm": null,
+      "lo": null,
+      "hi": null,
+      "factor": null,
+      "open": false,
+      "no_margin_reason": "95th percentile of 1000 runs.",
+      "missing_reason": null,
+      "source": null
+     },
+     "p99_m_s": {
+      "value": 17.5,
+      "unit": "m/s",
+      "provenance": "computed",
+      "pm": null,
+      "lo": null,
+      "hi": null,
+      "factor": null,
+      "open": false,
+      "no_margin_reason": "99th percentile of 1000 runs.",
+      "missing_reason": null,
+      "source": null
+     }
+    },
+    {
+     "name": "Second correction, half-way",
+     "t": "2025-03-01T20:00:00Z",
+     "p95_m_s": {
+      "value": 0.55,
+      "unit": "m/s",
+      "provenance": "computed",
+      "pm": null,
+      "lo": null,
+      "hi": null,
+      "factor": null,
+      "open": false,
+      "no_margin_reason": "95th percentile of 1000 runs.",
+      "missing_reason": null,
+      "source": null
+     },
+     "p99_m_s": {
+      "value": 0.84,
+      "unit": "m/s",
+      "provenance": "computed",
+      "pm": null,
+      "lo": null,
+      "hi": null,
+      "factor": null,
+      "open": false,
+      "no_margin_reason": "99th percentile of 1000 runs.",
+      "missing_reason": null,
+      "source": null
+     }
+    },
+    {
+     "name": "Third correction, a day before arriving",
+     "t": "2025-03-02T19:00:00Z",
+     "p95_m_s": {
+      "value": 0.085,
+      "unit": "m/s",
+      "provenance": "computed",
+      "pm": null,
+      "lo": null,
+      "hi": null,
+      "factor": null,
+      "open": false,
+      "no_margin_reason": "95th percentile of 1000 runs.",
+      "missing_reason": null,
+      "source": null
+     },
+     "p99_m_s": {
+      "value": 0.104,
+      "unit": "m/s",
+      "provenance": "computed",
+      "pm": null,
+      "lo": null,
+      "hi": null,
+      "factor": null,
+      "open": false,
+      "no_margin_reason": "99th percentile of 1000 runs.",
+      "missing_reason": null,
+      "source": null
+     }
+    }
+   ],
+   "total_p95_m_s": {
+    "value": 14.2,
+    "unit": "m/s",
+    "provenance": "computed",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": "95th percentile of the runs.",
+    "missing_reason": null,
+    "source": null
+   },
+   "total_p99_m_s": {
+    "value": 18.1,
+    "unit": "m/s",
+    "provenance": "computed",
+    "pm": null,
+    "lo": 16.5,
+    "hi": 19.9,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": null,
+    "source": null
+   },
+   "linear_p99_m_s": {
+    "value": 19.2,
+    "unit": "m/s",
+    "provenance": "computed",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": "The same errors pushed through the motion linearised about the plan.",
+    "missing_reason": null,
+    "source": null
+   },
+   "arrival_altitude_km": {
+    "value": 158.3,
+    "unit": "km",
+    "provenance": "computed",
+    "pm": null,
+    "lo": 156.2,
+    "hi": 160.2,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": null,
+    "source": null
+   },
+   "runs": 1000,
+   "missed": 0,
+   "assumptions": [
+    {
+     "what": "Leaving Earth, position",
+     "value": "1 km in each direction"
+    },
+    {
+     "what": "Leaving Earth, speed",
+     "value": "0.5 m/s up or down, 1 m/s along the path, 0.5 m/s sideways"
+    },
+    {
+     "what": "Where the team thinks the lander is, at each correction",
+     "value": "1 km and 1 mm/s"
+    },
+    {
+     "what": "How well a burn fires",
+     "value": "1 % of its size and 1 degree of pointing, plus 1 cm/s"
+    }
+   ],
+   "plan_note": "The flight as planned: NASA's reconstruction just before entering lunar orbit, propagated back to where it passed closest to Earth. Forward from there it arrives where and when the flown one did, with no burn on the way.",
+   "flown_note": "The reconstruction shows corrections of 3.2 m/s after leaving Earth (any in its gaps are not seen)."
+  },
+  "corrections_note": null
  },
  "meta": {
   "computed_at": "2026-09-27T08:00:00Z",
