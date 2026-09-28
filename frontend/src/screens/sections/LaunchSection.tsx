@@ -2,15 +2,24 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../../lib/api/client'
 import type { MissionDetail } from '../../lib/api/adapters'
-import type { LaunchCalendarDTO, LaunchWeatherDTO, LifecycleMetaDTO, OfficialForecastDTO, OpportunityDTO, QuantityDTO, RuleRowDTO } from '../../lib/api/lifecycle'
-import { useHistory, useLifecycleWrite, useSection, useSectionStatus } from '../../lib/api/lifecycleQueries'
+import type {
+  EnteredLimitDTO,
+  LaunchCalendarDTO,
+  LaunchWeatherDTO,
+  LifecycleMetaDTO,
+  OfficialForecastDTO,
+  OpportunityDTO,
+  QuantityDTO,
+  RuleRowDTO,
+} from '../../lib/api/lifecycle'
+import { useEnteredLimits, useHistory, useLifecycleWrite, useSection, useSectionStatus } from '../../lib/api/lifecycleQueries'
 import { dateTimeWords, dateWords } from '../../lib/format'
 import { ageWords, formatValue, hostWords, quantityText } from '../../lib/lifecycle/quantity'
 import { NumberRow, QuantityTile } from '../../components/lifecycle/QuantityTile'
 import { Answer, ChartPanel, HowSure, Legend, Rows, SectionLayout, SectionStates, SourcesRow, StatePanel } from '../../components/lifecycle/Section'
 import { LaunchCalendar, LaunchTable, opportunityName } from '../../components/lifecycle/LaunchCalendar'
 import { WeatherRuleTable, rulesSummary } from '../../components/lifecycle/WeatherRules'
-import { Field, FormSheet, HistoryList, TextArea, TextInput, isHttpUrl } from '../../components/lifecycle/Forms'
+import { Field, FormSheet, HistoryList, Select, TextArea, TextInput, isHttpUrl } from '../../components/lifecycle/Forms'
 import { Button, Disclosure } from '../../components/ui'
 import { Icon } from '../../components/Icon'
 import { UncertaintyNote } from '../../components/States'
@@ -426,23 +435,67 @@ function OfficialRow({ wx, missionId }: { wx: LaunchWeatherDTO | null; missionId
   )
 }
 
+/** One rule's fields in the team limits form. */
+export interface LimitDraft {
+  value: string
+  unit: string
+  note: string
+}
+
+/** A rule's starting fields: the limit as entered (with its note), else empty in the rule's first unit. */
+export function limitDraft(r: RuleRowDTO, entered: EnteredLimitDTO | undefined): LimitDraft {
+  if (entered) return { value: String(entered.value), unit: entered.unit, note: entered.note ?? '' }
+  return { value: '', unit: r.units[0] ?? '', note: '' }
+}
+
+/**
+ * The list a save sends. The service replaces the vehicle's whole list, so a
+ * limit entered for a rule not in this form (another range's rule) is sent
+ * again as it stands, note and all. A field left empty is no limit.
+ */
+export function limitsToSend(
+  editable: RuleRowDTO[],
+  drafts: Record<string, LimitDraft>,
+  entered: EnteredLimitDTO[],
+): { limits: { rule_id: string; value: number; unit: string; note: string | null }[]; errors: Record<string, string> } {
+  const errors: Record<string, string> = {}
+  const limits = []
+  for (const r of editable) {
+    const d = drafts[r.id]
+    const typed = d.value.trim()
+    if (!typed) continue
+    const n = Number(typed)
+    const unit = d.unit.trim()
+    if (!Number.isFinite(n) || n <= 0) errors[r.id] = 'A number above zero.'
+    else if (!unit) errors[`${r.id}-unit`] = 'The unit the limit is given in.'
+    else limits.push({ rule_id: r.id, value: n, unit, note: d.note.trim() || null })
+  }
+  const shown = new Set(editable.map((r) => r.id))
+  for (const e of entered) if (!shown.has(e.rule_id)) limits.push({ rule_id: e.rule_id, value: e.value, unit: e.unit, note: e.note })
+  return { limits, errors }
+}
+
 /**
  * The team's own weather limits, for rules whose limit the vehicle maker does
  * not publish (ADR-14): each is shown as "a limit the team entered", with who
- * and when. The service replaces the vehicle's whole list on each save, so
- * every limit already entered is sent again with the ones changed here.
+ * and its note. The form starts from the limits as entered (read back with
+ * their notes); the service replaces the vehicle's whole list on each save.
  */
 function LimitsRow({ rules, vehicleId }: { rules: RuleRowDTO[]; vehicleId: string | null | undefined }) {
   const canWrite = useCanWrite()
   const [open, setOpen] = useState(false)
   const history = useHistory('limits', open && vehicleId ? vehicleId : null)
+  const stored = useEnteredLimits(vehicleId, open)
   const editable = rules.filter((r) => r.limit.provenance !== 'published')
-  const [values, setValues] = useState<Record<string, string>>({})
-  const [units, setUnits] = useState<Record<string, string>>({})
+  const [edits, setEdits] = useState<Record<string, Partial<LimitDraft>>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
   const write = useLifecycleWrite((b: Parameters<typeof api.vehicleLimits>[1]) => api.vehicleLimits(vehicleId as string, b))
   const entered = rules.filter((r) => r.limit.provenance === 'entered' && r.limit.value !== null).length
   const notPublished = editable.length - entered
+  const drafts: Record<string, LimitDraft> = Object.fromEntries(
+    editable.map((r) => [r.id, { ...limitDraft(r, stored.data?.limits.find((e) => e.rule_id === r.id)), ...edits[r.id] }]),
+  )
+  const edit = (id: string, part: Partial<LimitDraft>) => setEdits({ ...edits, [id]: { ...edits[id], ...part } })
   return (
     <Disclosure
       title="Team weather limits"
@@ -460,6 +513,7 @@ function LimitsRow({ rules, vehicleId }: { rules: RuleRowDTO[]; vehicleId: strin
                       r.limit.provenance === 'entered' ? `entered by ${r.limit.source ?? 'the team'}` : r.limit.provenance === 'published' ? 'published' : r.limit.provenance
                     }`}
               </span>
+              {r.limit_note && <span className="basis-full text-small leading-5 text-ink-2">Team’s note: {r.limit_note}</span>}
             </li>
           ))}
         </ul>
@@ -468,7 +522,13 @@ function LimitsRow({ rules, vehicleId }: { rules: RuleRowDTO[]; vehicleId: strin
       )}
       {canWrite && vehicleId && editable.length > 0 && (
         <div>
-          <Button onClick={() => setOpen(true)}>
+          <Button
+            onClick={() => {
+              setEdits({})
+              setErrors({})
+              setOpen(true)
+            }}
+          >
             <Icon name="pencil" size={15} />
             Enter the team’s limits
           </Button>
@@ -478,58 +538,67 @@ function LimitsRow({ rules, vehicleId }: { rules: RuleRowDTO[]; vehicleId: strin
         open={open}
         onClose={() => setOpen(false)}
         title="Team weather limits"
-        intro="For the rules whose limit the vehicle maker does not publish. Leave a field empty to keep the limit as it is. A wind limit takes mph, kt, m/s or km/h."
+        intro="For the rules whose limit the vehicle maker does not publish. Each starts from the limit as entered; empty a field to remove that limit."
         saving={write.isPending}
         error={write.error}
         history={<HistoryList entries={history.data} pending={history.isPending} error={history.error} />}
         onSave={async () => {
-          const e: Record<string, string> = {}
-          const limits = []
-          for (const r of editable) {
-            const typed = values[r.id]?.trim()
-            const unit = (units[r.id] ?? r.limit.unit).trim()
-            if (typed) {
-              const n = Number(typed)
-              if (!Number.isFinite(n) || n <= 0) e[r.id] = 'A number above zero.'
-              else if (!unit) e[`${r.id}-unit`] = 'The unit the limit is given in.'
-              else limits.push({ rule_id: r.id, value: n, unit, note: null })
-            } else if (r.limit.value !== null) {
-              // Already entered and not changed here: sent again so it is kept.
-              limits.push({ rule_id: r.id, value: r.limit.value, unit: r.limit.unit, note: null })
-            }
-          }
+          // Without the list as stored, a save could drop a limit entered elsewhere.
+          if (!stored.data) return false
+          const { limits, errors: e } = limitsToSend(editable, drafts, stored.data.limits)
+          if (!limits.length && !stored.data.limits.length) e[editable[0].id] = 'Enter a limit, or close the form.'
           setErrors(e)
-          if (Object.keys(e).length || !limits.length) return false
+          if (Object.keys(e).length) return false
           try {
             await write.mutateAsync({ limits })
+            setEdits({})
             return true
           } catch {
             return false
           }
         }}
       >
-        {editable.map((r) => (
-          <div key={r.id} className="flex flex-wrap items-end gap-3">
-            <Field label={r.text} hint={r.limit.value === null ? 'Not entered yet.' : `Now ${quantityText(r.limit)}.`} error={errors[r.id]}>
-              {(p) => (
-                <TextInput
-                  {...p}
-                  inputMode="decimal"
-                  className="w-40"
-                  value={values[r.id] ?? ''}
-                  onChange={(e) => setValues({ ...values, [r.id]: e.target.value })}
-                />
-              )}
-            </Field>
-            {!r.limit.unit && (
-              <Field label="Unit" error={errors[`${r.id}-unit`]}>
-                {(p) => (
-                  <TextInput {...p} className="w-28" value={units[r.id] ?? ''} onChange={(e) => setUnits({ ...units, [r.id]: e.target.value })} />
-                )}
-              </Field>
-            )}
-          </div>
-        ))}
+        {stored.isPending ? (
+          <p className="text-small text-ink-3">Reading the limits already entered…</p>
+        ) : stored.error ? (
+          <p className="text-small font-semibold text-alert">
+            The limits already entered could not be read, so saving now could lose them: {(stored.error as Error).message}
+          </p>
+        ) : (
+          editable.map((r) => {
+            const d = drafts[r.id]
+            const was = stored.data?.limits.find((e) => e.rule_id === r.id)
+            const units = d.unit && !r.units.includes(d.unit) ? [d.unit, ...r.units] : r.units
+            return (
+              <fieldset key={r.id} className="flex flex-col gap-3 border-t border-line pt-4">
+                <legend className="text-small font-semibold text-ink">{r.text}</legend>
+                <div className="flex flex-wrap items-start gap-3">
+                  <Field
+                    label="Limit"
+                    hint={was ? `Entered by ${was.entered_by}, ${dateTimeWords(Date.parse(was.entered_at))}.` : 'Not entered yet.'}
+                    error={errors[r.id]}
+                  >
+                    {(p) => (
+                      <TextInput {...p} inputMode="decimal" className="w-40" value={d.value} onChange={(e) => edit(r.id, { value: e.target.value })} />
+                    )}
+                  </Field>
+                  <Field label="Unit" hint={units.length ? undefined : 'None is published for this rule.'} error={errors[`${r.id}-unit`]}>
+                    {(p) =>
+                      units.length ? (
+                        <Select {...p} value={d.unit} options={units.map((u) => ({ value: u, label: u }))} onChange={(e) => edit(r.id, { unit: e.target.value })} />
+                      ) : (
+                        <TextInput {...p} className="w-28" value={d.unit} onChange={(e) => edit(r.id, { unit: e.target.value })} />
+                      )
+                    }
+                  </Field>
+                </div>
+                <Field label="Note (optional)" hint="Where the limit comes from, or anything the launch team should know.">
+                  {(p) => <TextInput {...p} value={d.note} onChange={(e) => edit(r.id, { note: e.target.value })} />}
+                </Field>
+              </fieldset>
+            )
+          })
+        )}
       </FormSheet>
     </Disclosure>
   )

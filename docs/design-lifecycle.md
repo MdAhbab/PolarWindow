@@ -207,9 +207,16 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   under the calendar, not a row. The weather is asked for every opportunity,
   a flown one too: the rules and the team's limits stand where no forecast
   reaches, and each empty cell says why.
-- **Team weather limits** offers only the rules whose limit is not
-  published; one with no unit asks for its unit. The service replaces the
-  vehicle's list on each save, so every limit already entered is sent again.
+- **Team weather limits** lists each rule's limit with who entered it and
+  the team's note (`limit_note`). The form offers only the rules whose limit
+  is not published, one group per rule (Limit, Unit, Note): it starts from
+  the limits as entered, read back with their notes (`GET
+  /vehicles/{id}/limits`); the unit is a choice from `RuleRow.units` (the
+  published one first), or typed when the rule takes any unit. An emptied
+  field removes that limit. The service replaces the vehicle's list on each
+  save, so every limit entered for a rule not in the form (another range's)
+  is sent again as it stands, note and all; the form does not save until
+  that list is read.
 - **Official forecast** is quoted as issued: "{n}% chance the weather breaks
   a launch rule", the 45th Weather Squadron's "probability of violating
   weather constraints", with who entered it and the PDF. One per mission,

@@ -194,6 +194,17 @@ export function useHistory(entity: HistoryEntity, id: string | null) {
   })
 }
 
+/** The limits the team entered for a vehicle, with their notes; asked for again after any write. */
+export function useEnteredLimits(vehicleId: string | null | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: keys.lifecycle('limits', vehicleId ?? undefined),
+    enabled: Boolean(vehicleId) && enabled,
+    staleTime: 0,
+    retry: retryServerErrors,
+    queryFn: ({ signal }) => api.enteredLimits(vehicleId as string, signal),
+  })
+}
+
 export function useFeeds(enabled: boolean) {
   return useQuery({
     queryKey: keys.feeds(),

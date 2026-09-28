@@ -34,6 +34,7 @@ const ROUTES: [RegExp, string][] = [
   [/\/history$/, 'history.json'],
   [/\/feeds$/, 'feeds.json'],
   [/\/parameters$/, 'parameters.json'],
+  [/\/vehicles\/[^/]+\/limits$/, 'vehicle-limits.json'],
   [/\/jobs\/\d+$/, 'job-running.json'],
 ]
 

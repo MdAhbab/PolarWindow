@@ -1,0 +1,21 @@
+{
+ "vehicle_id": "falcon-9",
+ "limits": [
+  {
+   "rule_id": "cumulus-tops",
+   "value": 10000,
+   "unit": "ft",
+   "note": "As given by the range weather officer for this campaign.",
+   "entered_by": "Nadia Karim",
+   "entered_at": "2026-09-20T14:05:00Z"
+  },
+  {
+   "rule_id": "wr-upper-shear",
+   "value": 30,
+   "unit": "kt",
+   "note": "Vandenberg campaign, from the launch provider.",
+   "entered_by": "Nadia Karim",
+   "entered_at": "2026-09-21T09:30:00Z"
+  }
+ ]
+}

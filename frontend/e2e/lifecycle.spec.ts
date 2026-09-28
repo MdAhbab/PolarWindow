@@ -117,7 +117,7 @@ test('launch (contract fixtures): choosing an opportunity sets the four numbers;
   await expectNoSeriousAxe(page, '/missions/im-2/launch with the weather open')
 })
 
-test('team weather limits (contract fixtures): an unpublished limit takes a unit, and every entered limit is sent again', async ({
+test('team weather limits (contract fixtures): the form starts from the limits as entered, with their notes, and sends every one again', async ({
   page,
   context,
 }) => {
@@ -131,6 +131,8 @@ test('team weather limits (contract fixtures): an unpublished limit takes a unit
     await route.fulfill({ response: real, json: { ...body, user: { id: 7, name: 'Nadia Karim', team: 'Launch' } } })
   })
   await context.route(/localhost:8000\/api\/v1\/vehicles\/falcon-9\/limits$/, async (route) => {
+    // The read-back comes from the fixture; the save is caught here.
+    if (route.request().method() === 'GET') return route.fallback()
     if (route.request().method() === 'PUT') put = route.request().postDataJSON()
     await fulfillWrite(route, { vehicle_id: 'falcon-9', limits: [] })
   })
@@ -139,24 +141,37 @@ test('team weather limits (contract fixtures): an unpublished limit takes a unit
   await row.locator('summary').click()
   await expect(row.locator('summary')).toContainText('1 entered by the team, 1 not published')
   await expect(row).toContainText('The limit is not published; the team can enter the one it is given.')
+  await expect(row).toContainText('Team’s note: As given by the range weather officer for this campaign.')
   await row.getByRole('button', { name: 'Enter the team’s limits' }).click()
   const sheet = page.getByRole('dialog', { name: 'Team weather limits' })
-  // The published limits are not offered; the unpublished one asks for its unit.
-  await expect(sheet.getByLabel(/sustained wind at the 162-foot level/)).toHaveCount(0)
-  await sheet.getByLabel(/upper-level conditions containing wind shear/).fill('25')
+  // The published limits are not offered.
+  await expect(sheet.getByRole('group', { name: /Sustained wind at 162 ft/ })).toHaveCount(0)
+  // The entered one starts as entered, in a unit its rule takes, with its note.
+  const tops = sheet.getByRole('group', { name: /cumulus/i })
+  await expect(tops.getByLabel('Limit')).toHaveValue('10000')
+  await expect(tops.getByLabel('Unit')).toHaveValue('ft')
+  await expect(tops.getByLabel('Unit').locator('option')).toHaveText(['ft', 'm'])
+  await expect(tops.getByLabel('Note (optional)')).toHaveValue('As given by the range weather officer for this campaign.')
+  await expect(tops).toContainText('Entered by Nadia Karim')
+  // A rule with no published unit asks for one.
+  const shear = sheet.getByRole('group', { name: /upper-level conditions containing wind shear/ })
+  await shear.getByLabel('Limit').fill('25')
   await sheet.getByRole('button', { name: 'Save' }).click()
   await expect(sheet).toContainText('Enter your name')
   await sheet.getByLabel('Your name').fill('Nadia Karim')
   await sheet.getByRole('button', { name: 'Save' }).click()
   await expect(sheet).toContainText('The unit the limit is given in.')
-  await sheet.getByLabel('Unit').fill('kt')
+  await shear.getByLabel('Unit').fill('kt')
+  await shear.getByLabel('Note (optional)').fill('From the launch provider.')
   await sheet.getByRole('button', { name: 'Save' }).click()
   await expect(sheet.getByText('Saved.')).toBeVisible()
-  // The service replaces the vehicle's list, so the limit already entered goes with the new one.
+  // The service replaces the vehicle's list: the entered limits go again with their notes, the one for a
+  // rule not on this range's list too.
   expect(put).toEqual({
     limits: [
-      { rule_id: 'upper-shear', value: 25, unit: 'kt', note: null },
-      { rule_id: 'cumulus-tops', value: 10000, unit: 'ft', note: null },
+      { rule_id: 'upper-shear', value: 25, unit: 'kt', note: 'From the launch provider.' },
+      { rule_id: 'cumulus-tops', value: 10000, unit: 'ft', note: 'As given by the range weather officer for this campaign.' },
+      { rule_id: 'wr-upper-shear', value: 30, unit: 'kt', note: 'Vandenberg campaign, from the launch provider.' },
     ],
   })
   await expectNoSeriousAxe(page, 'the team weather limits sheet')

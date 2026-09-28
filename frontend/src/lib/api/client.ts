@@ -33,6 +33,7 @@ import type {
   RoverSightDTO,
   SectionDTO,
   StoredForecastDTO,
+  VehicleLimitsDTO,
   SectionStatusDTO,
   TripDTO,
   UserDTO,
@@ -435,6 +436,9 @@ export const api = {
 
   feeds: (signal?: AbortSignal) => request<FeedsDTO>('/feeds', { signal }),
 
+  /** Every limit the team entered for a vehicle, with its note (the list a save replaces). */
+  enteredLimits: (vehicleId: string, signal?: AbortSignal) => request<VehicleLimitsDTO>(`/vehicles/${enc(vehicleId)}/limits`, { signal }),
+
   parameters: async (signal?: AbortSignal) =>
     fillQuantities(await request<{ parameters: ParameterDTO[] }>('/parameters', { signal })),
 
@@ -470,7 +474,7 @@ export const api = {
     request<StoredForecastDTO>(`/missions/${enc(missionId)}/launch/official-forecast`, { body, method: 'PUT' }),
 
   vehicleLimits: (vehicleId: string, body: { limits: { rule_id: string; value: number; unit: string; note: string | null }[] }) =>
-    request<unknown>(`/vehicles/${enc(vehicleId)}/limits`, { body, method: 'PUT' }),
+    request<VehicleLimitsDTO>(`/vehicles/${enc(vehicleId)}/limits`, { body, method: 'PUT' }),
 
   bookPass: (missionId: string, body: { station: string; start: string; end: string; note?: string | null }) =>
     request<unknown>(`/missions/${enc(missionId)}/contact/bookings`, { body, method: 'POST' }),

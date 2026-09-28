@@ -24,6 +24,8 @@ import { LimitBars, LimitTable } from './LimitBars'
 import { coverageGaps, tripStretches } from './TripStrip'
 import { CorrectionsRow, shadowAndContact } from '../../screens/sections/TripSection'
 import { observedWords, percentWords } from './WeatherRules'
+import { limitDraft, limitsToSend } from '../../screens/sections/LaunchSection'
+import type { EnteredLimitDTO, RuleRowDTO } from '../../lib/api/lifecycle'
 import { seaWords, zoneWords } from '../../screens/sections/ReturnSection'
 import { calendarDays } from './LaunchCalendar'
 import { axisTicks, complexOf, contactRows } from './ContactChart'
@@ -387,6 +389,30 @@ describe('the charts’ arrays, shared with their tables', () => {
     expect(percentWords(0)).toBe('0%')
     expect(observedWords({ state: 'clear', detail: 'None within 10 nmi.' }).lead).toBe('Seen now: clear.')
     expect(observedWords({ state: 'seen', detail: '3 flashes within 10 nmi.' })).toEqual({ lead: 'Seen now:', detail: '3 flashes within 10 nmi.' })
+  })
+
+  it('team weather limits: start as entered; an empty field is no limit; a limit for a rule not shown is sent as it stands', () => {
+    const rule = (id: string, units: string[]) => ({ id, units }) as unknown as RuleRowDTO
+    const e = (rule_id: string, value: number, unit: string, note: string | null): EnteredLimitDTO => ({
+      rule_id, value, unit, note, entered_by: 'N', entered_at: '2026-09-20T00:00:00Z',
+    })
+    const shear = rule('shear', [])
+    const tops = rule('tops', ['ft', 'm'])
+    const stored = [e('tops', 10000, 'ft', 'From the range.'), e('elsewhere', 30, 'kt', null)]
+    expect(limitDraft(tops, stored[0])).toEqual({ value: '10000', unit: 'ft', note: 'From the range.' })
+    expect(limitDraft(tops, undefined)).toEqual({ value: '', unit: 'ft', note: '' })
+    expect(limitDraft(shear, undefined).unit).toBe('')
+    const drafts = { shear: { value: '25', unit: '', note: '' }, tops: { value: '', unit: 'ft', note: 'From the range.' } }
+    expect(limitsToSend([shear, tops], drafts, stored).errors).toEqual({ 'shear-unit': 'The unit the limit is given in.' })
+    drafts.shear.unit = 'kt'
+    expect(limitsToSend([shear, tops], drafts, stored)).toEqual({
+      limits: [
+        { rule_id: 'shear', value: 25, unit: 'kt', note: null },
+        { rule_id: 'elsewhere', value: 30, unit: 'kt', note: null },
+      ],
+      errors: {},
+    })
+    expect(limitsToSend([shear], { shear: { value: '-1', unit: 'kt', note: '' } }, []).errors).toEqual({ shear: 'A number above zero.' })
   })
 
   it('launch calendar: days with opportunities, and runs of empty days as one line', () => {
