@@ -603,3 +603,52 @@ never pointed at the dev database. New HTTP tests:
 | `data/ingest_missions.py`, `data/ingest_sites.py` | ≥ 85 %; both are back in coverage |
 | services and routes | ≥ 85 % |
 | frontend logic (`lib/`) | ≥ 80 %; components through state tests, not line coverage |
+
+## 11. The mission lifecycle (2026-09-28)
+
+**Baseline** (2026-09-28): `make test-fast` 459 passed in ~10 s (unit and synthetic
+golden), integration 162 (`make test-int`, against `polar_window_test`), golden 36
+collected (`make test-geo`; the reconstruction-based ones skip without the data).
+
+### 11.1 What each part is checked against
+
+| Part | Tests | Checked against (plan tolerance; result in `docs/validation.md`) |
+|---|---|---|
+| Propagator, shadows (C1) | `test_propagate.py`, `golden/test_propagate_vs_clps.py`, `test_eclipse_vs_spice.py` | NASA's reconstructed CLPS trajectories (≤ 1 km after 24 h) |
+| Launch instants, transfers (C2, D1, D2) | `test_launch_core.py`, `golden/test_launch_vs_clps.py` | the flown launches (2 min from TLI; designed: right day) |
+| Loops and correction budget (C3, C4) | `test_phasing_lincov.py`, `golden/test_loops_vs_clps.py` | the flown burns; linear against Monte Carlo (≤ 10 %) |
+| Launch weather (T4) | `test_weather_rules.py`, `test_verification.py`, `golden/test_hindcast.py`, `test_gefs_targeted.py` | the rules verbatim; GEFS against the Cape's station (Brier skill) |
+| Radiation (E) | `test_radiation.py`, `make validate-radiation` | IRBEM against SPDF (5 %), CRaTER (±30 %), NOAA's event list (10 %) |
+| Contact (T1) | `test_contact_core.py`, `integration/test_contact.py` | DSN station kernels, horizon masks |
+| Capsule entry (H) | `test_entry.py`, `golden/test_capsule_vs_orex.py`, `make validate-capsule` | the U.S. Standard Atmosphere 1976 tables; OSIRIS-REx's landing (≤ 10 km) |
+| Readiness, parts, risks (T3) | `test_readiness.py`, `integration/test_ready.py`, `test_audit_and_sign_in.py` | the state machine; every write audited and hash-chained |
+| Jobs (ADR-12) | `integration/test_jobs.py`, `test_job_ref.py` | one claim per job, leases, back-off, the waiting messages |
+| Feeds (ADR-8) | `test_feed_parsers.py`, `test_feed_http.py`, `integration/test_feeds.py` | recorded responses; breaker, retries, secrets never stored |
+
+### 11.2 Chaos (`integration/test_chaos.py`)
+
+For a space weather feed that is **down** (connection refused), **slow** (read
+timeout) or **malformed** (an HTML page): the section answers 200, the number is
+missing with "the last attempt to fetch it failed", the section's other feed
+(DONKI) still answers, Ready, Sections and Return are unchanged, and `/healthz`
+says `degraded` (200), never `down`. **Stale** (recorded three days ago): the
+number is replaced by its age and limit, `meta.stale` is true, `/healthz` is not
+degraded by it. **No feed recorded at all**: space weather, launch weather,
+Return and the other sections all answer 200, and every space weather value says
+no data has been recorded. The first run found a real fault: DONKI's lists took
+their newest event's time as their age, so a quiet Sun hid them as stale.
+
+### 11.3 Agents over the missions (`test_compact.py`, `test_guards.py`, `integration/test_agents.py`)
+
+- A section reaches the model with at most 200 numbers, each value with its ±,
+  times as UTC times, plot series and list tails named in `left_out`.
+- The tools never queue a job (`read_only`: the job count does not change).
+- Verdict words are rejected in any answer field, even in a denial; the user's
+  own words (`question`, `interpreted_as`) are not.
+- The tool set is exactly ten names.
+
+### 11.4 Not tested yet
+
+A load test of the compute queue (many sections asked at once), a security
+review of the project manager's writes beyond the audit tests, and the live
+end-to-end runs against the real feeds (they are recorded responses here).

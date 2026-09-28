@@ -9,10 +9,21 @@ how much sunlight a lander gets, how long it can talk to Earth, and the longest
 stretch it has to survive alone. The numbers are computed from real NASA terrain
 and real Sun and Earth positions, and each one shows how far it could be off.
 
+Each mission is also followed through its delivery, section by section: **Ready**
+(readiness items, parts, risks, as the team enters them), **Launch** (the flown
+launch, or opportunities backed out from the landing, with each launch weather
+rule and what the forecasts say), **Trip** (distance, shadow, burns, correction
+budget, a radiation screening), **Contact** (who can hear the lander), **Return**
+(where the booster comes down, sea and wind) and space weather now. No section
+gives a verdict: the evidence is shown rule by rule and people decide
+(`docs/lifecycle-api.md`).
+
 ```bash
 make install     # backend and frontend dependencies
 make seed        # SPICE kernels, LOLA terrain, 15 sites, horizon masks (about 10 min, once)
 make dev         # postgres, redis, API on :8000, frontend on :5173
+make compute     # the compute worker: trip, contact and launch answers
+make feeds       # the feeds worker: weather, space weather, launch schedules
 ```
 
 Or `python3 run.py`: it starts Postgres and Redis, installs what is missing, and
@@ -172,8 +183,10 @@ layer, services import no FastAPI, `spiceypy` is reached only through
 
 ## The AI helpers
 
-Four agents over the same numbers, reachable only through six declared tools,
-running on Google Gemini models with a fallback order set in Settings:
+Four agents over the same numbers, reachable only through ten declared tools
+(six over the sites, four read-only ones over the missions' sections, each result
+cut to at most 200 numbers), running on Google Gemini models with a fallback
+order set in Settings:
 
 - **What is it like at this site?** (A1): one plain paragraph about a site.
 - **Find sites that meet a requirement** (A2): ranks sites against a stated need,
@@ -184,15 +197,16 @@ running on Google Gemini models with a fallback order set in Settings:
 **Every number in an answer must trace to a tool result.** An answer with a
 number that is not in the tool outputs is rejected, the model is told which one,
 and it gets one retry. Fail twice, time out, or have no model configured, and
-the answer is replaced by a summary built directly from the measurements. The
-four numbers never depend on an API key. Every run, rejections included, is
+the answer is replaced by a summary built directly from the measurements. An
+answer with a verdict word (go/no-go, "safe", a readiness percentage, a risk
+score) is rejected the same way. The four numbers never depend on an API key. Every run, rejections included, is
 recorded and shown in the AI activity log (Settings → Project).
 
 ## Tests
 
 ```bash
 make test-fast               # unit, property and synthetic golden tests; no services
-make test                    # all 316 backend tests: unit, integration, golden
+make test                    # all backend tests: 459 fast, 162 integration, 36 golden
 make test-fe                 # 140 frontend unit and component tests
 cd frontend && npm run e2e   # 20 browser tests with axe (WCAG 2.1 AA); API on :8000
 make lint                    # ruff, mypy --strict, import-linter
@@ -204,7 +218,12 @@ make lint                    # ruff, mypy --strict, import-linter
   tolerances; `make golden-update` refuses without `GOLDEN_UPDATE_REASON`.
 - **The ray-march is tested against analytic surfaces** whose skyline can be
   worked out by hand: a plane, a cone, a wall, a ramp and a crater bowl.
-- **Hindcast against flown landers** in `docs/validation.md`.
+- **Hindcast against flown landers** in `docs/validation.md`, with the trip,
+  launch, loops, radiation and capsule entry checked against NASA's
+  reconstructions and published results (`make validate-trip`,
+  `validate-radiation`, `validate-capsule`).
+- **Chaos**: a live feed down, slow, malformed or stale leaves its number missing
+  with the reason and every other section working (`test_chaos.py`).
 - **No test reaches the real Gemini API**: the transport is blocked in tests.
 
 ## Known limits
@@ -221,6 +240,14 @@ Named, rather than left for someone to find:
 - Outside 80°S there is no terrain data, so a skyline there is a flat horizon and
   says so on screen.
 - No screen-reader user has tested the announcements yet.
+- The launch wind forecast shares are not checked against enough observations
+  (one year at the Cape had one event), so they are shown as not checked.
+- A designed launch time for a planned mission misses the flown one by up to
+  44 min (IM-2) and more for an inclined departure; the errors in the correction
+  budget are assumed, not published.
+- The capsule entry model lands OSIRIS-REx's capsule 9.5 km from where it landed
+  (limit 10 km); no CLPS mission brings anything back, so no return trajectory is
+  worked out.
 
 More in `docs/report/report.pdf` (Limitations) and `docs/validation.md`.
 
@@ -241,8 +268,9 @@ Single-key shortcuts can be switched off in Settings (WCAG 2.1.4).
 | `docs/system-design.md` | Architecture, data model, API design, performance |
 | `docs/adr/` | Eighteen decision records (8 to 18 cover the launch, trip, contact, readiness and data work) |
 | `docs/api.md`, `docs/openapi.json` | The REST API |
+| `docs/lifecycle-api.md` | The mission sections' contract (Ready to Return), with its changes |
 | `docs/data-sources.md` | Every dataset and where it comes from |
-| `docs/validation.md` | Hindcast of flown landers |
+| `docs/validation.md` | Hindcast of flown landers; the trip, launch, weather, radiation and capsule checks |
 | `docs/test-plan.md` | What is tested and why |
 | `docs/accessibility.md` | WCAG audit and fixes |
 | `docs/runbook.md`, `docs/deploy-checklist.md` | Running and deploying it |
