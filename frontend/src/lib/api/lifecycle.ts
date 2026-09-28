@@ -565,7 +565,28 @@ export interface ReturnDTO {
     wind_m_s: QuantityDTO | null
     daylight: boolean | null
     limits: SeaLimitsDTO
+    /** The capsule entry model against OSIRIS-REx's landing; null when that check has not been run here. */
+    model_check: CapsuleModelCheckDTO | null
   } | null
+}
+
+/** The capsule entry model flown from OSIRIS-REx's reconstructed entry state, against where its capsule landed. */
+export interface CapsuleModelCheckDTO {
+  case: string
+  distance_km: number
+  /** Over the published drag range. */
+  distance_range_km: number[]
+  limit_km: number
+  passed: boolean
+  /** The mission's own simulation. */
+  mission_team_km: number
+  /** The 99 % area, long by wide. */
+  ellipse_99_km: number[]
+  measured_inside_ellipse: boolean
+  checked_at: string
+  sources: string[]
+  /** Plain words. */
+  note: string
 }
 
 // ---------------------------------------------------------------------------
@@ -657,6 +678,7 @@ export type ContractChecks = [
   Fits<Present<S['LaunchCalendar']>, LaunchCalendarDTO>,
   Fits<Present<S['LaunchWeather']>, LaunchWeatherDTO>,
   Fits<Present<S['Return']>, ReturnDTO>,
+  Fits<Present<S['CapsuleModelCheck']>, CapsuleModelCheckDTO>,
   Fits<Present<S['OfficialForecast']>, OfficialForecastDTO>,
   Fits<Present<S['OfficialForecastOut']>, StoredForecastDTO>,
   Fits<Present<S['OfficialForecastRemoved']>, RemovedForecastDTO>,

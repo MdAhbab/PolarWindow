@@ -1614,6 +1614,36 @@ export interface components {
             /** Daylight */
             daylight: boolean | null;
             limits: components["schemas"]["SeaLimits"];
+            model_check: components["schemas"]["CapsuleModelCheck"] | null;
+        };
+        /**
+         * CapsuleModelCheck
+         * @description The capsule entry model (3-DOF, U.S. Standard Atmosphere 1976) flown from
+         *     OSIRIS-REx's reconstructed entry state, against where its capsule landed.
+         */
+        CapsuleModelCheck: {
+            /** Case */
+            case: string;
+            /** Distance Km */
+            distance_km: number;
+            /** Distance Range Km */
+            distance_range_km: number[];
+            /** Limit Km */
+            limit_km: number;
+            /** Passed */
+            passed: boolean;
+            /** Mission Team Km */
+            mission_team_km: number;
+            /** Ellipse 99 Km */
+            ellipse_99_km: number[];
+            /** Measured Inside Ellipse */
+            measured_inside_ellipse: boolean;
+            /** Checked At */
+            checked_at: string;
+            /** Sources */
+            sources: string[];
+            /** Note */
+            note: string;
         };
         /** Cleared */
         Cleared: {
@@ -2905,7 +2935,7 @@ export interface components {
             landing: components["schemas"]["LandingOut"];
             /**
              * Weather
-             * @description What numbers the weather tab can show. With none it still shows the rules and limits; weather_note says why there are no numbers.
+             * @description What numbers the weather rules can show. With none it still shows the rules and limits; weather_note says why there are no numbers.
              * @enum {string}
              */
             weather: "forecast" | "climatology" | "none";

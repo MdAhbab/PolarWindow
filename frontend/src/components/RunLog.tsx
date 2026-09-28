@@ -7,7 +7,7 @@ import { shortDate } from '../lib/format'
 import { Sheet } from './Sheet'
 import { ProblemPanel } from './States'
 import { SectionLabel } from './ui'
-import { toolWords } from '../lib/fieldWords'
+import { toolWords, verdictWord } from '../lib/fieldWords'
 
 /**
  * "How the AI got this" (§10.6): every agent run, newest first, with the tool
@@ -163,12 +163,17 @@ interface GuardFailure {
   model?: string
 }
 
-function guardLine(g: GuardFailure): string {
+export function guardLine(g: GuardFailure): string {
   if ((g.kind === 'ungrounded_number' || g.kind === 'ungrounded_no_tools') && typeof g.value === 'number') {
     return `Rejected: ${g.value} is not in the data it looked up`
   }
   // Not a rejection: the run moved on to the next model in its chain.
   if (g.kind === 'model_unavailable') return `Skipped ${g.model ?? 'a model'}: ${g.detail ?? 'unavailable'}`
+  // The detail is written to the model; people get the word and the rule.
+  if (g.kind === 'verdict_word') {
+    const w = verdictWord(g.detail)
+    return `Rejected: ${w ? `“${w}” judges` : 'it judged'} the whole instead of saying what each number shows`
+  }
   return `Rejected: ${g.detail ?? g.kind ?? 'a check failed'}`
 }
 

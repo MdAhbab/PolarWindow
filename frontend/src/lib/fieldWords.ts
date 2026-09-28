@@ -12,6 +12,10 @@ const TOOLS: Record<string, string> = {
   get_horizon_profile: 'Skyline',
   search_sites: 'Site search',
   compare_sites: 'Site comparison',
+  list_missions: 'Mission list',
+  get_mission_sections: 'A mission’s sections',
+  get_mission_section: 'One section of a mission',
+  get_space_weather: 'Space weather now',
   user_request: 'Your request',
 }
 
@@ -59,7 +63,11 @@ const NAMES: Record<string, string> = {
 
 const UNITS: [RegExp, string][] = [
   // Longest first: "wind_m_s" is a speed, not "wind m" in seconds.
+  [/_km_s$/, 'kilometres a second'],
   [/_m_s$/, 'metres a second'],
+  [/_mgy_d$/, 'milligray a day'],
+  [/_mgy$/, 'milligray'],
+  [/_nt$/, 'nanotesla'],
   [/_s$/, 'seconds'],
   [/_deg$/, 'degrees'],
   [/_m$/, 'metres'],
@@ -70,8 +78,33 @@ const UNITS: [RegExp, string][] = [
   [/_pct$/, 'percent'],
 ]
 
-/** `longest_dark_s` → "longest night (seconds)"; an unknown name loses its underscores. */
+const PART_OF: Record<string, string> = { pm: 'margin on ', lo: 'low end of ', hi: 'high end of ', factor: 'factor on ' }
+
+/**
+ * `longest_dark_s` → "longest night (seconds)"; an unknown name loses its
+ * underscores. A path into a mission section or the space weather
+ * (`data.booster.wave_height_m.value`) reads as the field with where it sits:
+ * "booster: wave height (metres)"; a list item keeps its place ("opportunities 3").
+ */
 export function fieldWords(key: string): string {
+  if (!/[.[]/.test(key)) return flatWords(key)
+  const parts = key.split('.').filter(Boolean)
+  if (parts[0] === 'data') parts.shift()
+  let prefix = ''
+  const tail = parts[parts.length - 1]
+  if (parts.length > 1 && (tail === 'value' || tail in PART_OF)) {
+    prefix = PART_OF[tail] ?? ''
+    parts.pop()
+  }
+  const place = (p: string) => p.replace(/_/g, ' ').replace(/\[(\d+)\]/g, (_, i: string) => ` ${Number(i) + 1}`)
+  const last = parts.pop() ?? key
+  const name = last.replace(/\[(\d+)\]/g, '')
+  const at = last.match(/\[(\d+)\]/)
+  const words = `${prefix}${flatWords(name)}${at ? ` ${Number(at[1]) + 1}` : ''}`
+  return parts.length ? `${parts.map(place).join(', ')}: ${words}` : words
+}
+
+function flatWords(key: string): string {
   for (const [re, unit] of UNITS) {
     if (re.test(key)) {
       const base = key.replace(re, '')
@@ -83,4 +116,13 @@ export function fieldWords(key: string): string {
 
 export function toolWords(tool: string): string {
   return TOOLS[tool] ?? tool.replace(/_/g, ' ')
+}
+
+/**
+ * The word a `verdict_word` guard caught, from its detail ("'safe' in
+ * summary is a verdict. …"); null when the detail does not quote one.
+ */
+export function verdictWord(detail: string | undefined | null): string | null {
+  const m = detail?.match(/^'([^']+)'/)
+  return m ? m[1] : null
 }

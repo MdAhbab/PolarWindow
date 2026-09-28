@@ -27,6 +27,15 @@ its header moving up into the hub.
 `/missions/:id` is the hub. It shows the mission's header, the six steps, and
 one section at a time.
 
+When `/healthz` says `degraded` and its `feeds` count any out of date or
+failing, one quiet line under the steps names them by provider (`GET /feeds`):
+"Some live data is older than usual: {providers}." and, for a provider whose
+data is still recent but whose last tries failed, "{provider} is not answering
+right now; its data is still recent.", then "Each number from them says how old
+it is, or why it is missing." and "See the data sources" (opens Settings). The
+uncertain glyph, never the alert colour: nothing is wrong with the numbers
+shown, each already carries its age.
+
 ```
 ← All CLPS missions
 IM-2 · Athena                                        h1 (unchanged style)
@@ -381,8 +390,18 @@ into the hub header.
   row's meta stays "not published yet" and the body says where the sea is
   read ("The sea is read near {lat} {lon}."), since that point is chosen, not
   a published zone.
-- **Rows:** Booster landing zone · Splashdown zone · Team limits · How sure
-  is this? · Where does this come from?
+- **The capsule model, checked against a real landing** (`capsule.model_check`,
+  shown whenever it is served, capsule or not): meta "{d} km from it; the limit
+  is {l} km"; the body is the service's `note` first, then the case, the
+  distance with its range over the published drag range, the limit, the
+  mission's own simulation, the 99 % landing area and whether it holds the real
+  point, when it was checked, and its sources (a URL as a link by its host).
+  Over the limit: "{x} km over the limit." with the triangle (invariant 4).
+  With a capsule and no check served, the splashdown zone says "The capsule
+  model has not been checked against a real landing here."
+- **Rows:** Booster landing zone · Splashdown zone · The capsule model, checked
+  against a real landing · Team limits · How sure is this? · Where does this
+  come from?
 
 ---
 

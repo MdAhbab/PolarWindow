@@ -30,7 +30,10 @@ import spaceWeatherFixture from '../../lib/api/__fixtures__/lifecycle/space-weat
 import type { RadiationDTO, SpaceWeatherDTO } from '../../lib/api/lifecycle'
 import { forecastChangeWords, limitDraft, limitsToSend, shownForecast } from '../../screens/sections/LaunchSection'
 import type { EnteredLimitDTO, RuleRowDTO } from '../../lib/api/lifecycle'
-import { seaWords, zoneWords } from '../../screens/sections/ReturnSection'
+import { CapsuleCheckRow, seaWords, zoneWords } from '../../screens/sections/ReturnSection'
+import returnFixture from '../../lib/api/__fixtures__/lifecycle/return.json'
+import { oldFeedsWords } from './OldFeeds'
+import type { CapsuleModelCheckDTO, FeedDTO } from '../../lib/api/lifecycle'
 import { calendarDays } from './LaunchCalendar'
 import { axisTicks, complexOf, contactRows } from './ContactChart'
 import sectionsFixture from '../../lib/api/__fixtures__/lifecycle/sections.json'
@@ -572,5 +575,46 @@ describe('Weather rules: past years', () => {
   it('reads a lightning rule as thunder at the pad, a wind rule as over the limit', () => {
     expect(climatologyWords({ class: 'observation', climatology: c })).toBe('Past years (2019-2025): thunder could be heard at the pad 1.0% of the time.')
     expect(climatologyWords({ class: 'model', climatology: { ...c, years: '2001-2024' } })).toBe('Past years (2001-2024): over the limit 1.0% of the time.')
+  })
+})
+
+describe('Return: the capsule model, checked against a real landing', () => {
+  const check = (returnFixture.data.capsule as { model_check: CapsuleModelCheckDTO }).model_check
+  it('says the service’s words first, then the numbers, the date and the sources', () => {
+    render(<CapsuleCheckRow check={check} />)
+    expect(screen.getByText('The capsule model, checked against a real landing')).toBeTruthy()
+    expect(screen.getByText('9.5 km from it; the limit is 10 km')).toBeTruthy()
+    expect(screen.getByText(check.note)).toBeTruthy()
+    expect(screen.getByText('9.5 km (6.7 to 12.2 km over the published drag range)')).toBeTruthy()
+    expect(screen.getByText('51.4 by 21.4 km; holds the real landing point')).toBeTruthy()
+    expect(screen.getByText('28 September 2026, 15:19 UTC')).toBeTruthy()
+    expect(screen.getByRole('link', { name: /naif\.jpl\.nasa\.gov/ }).getAttribute('href')).toBe(check.sources[0])
+    expect(screen.queryByText(/over the limit/)).toBeNull()
+  })
+  it('a check over its limit says by how much, in words and a shape', () => {
+    render(<CapsuleCheckRow check={{ ...check, distance_km: 12.5, passed: false, measured_inside_ellipse: false }} />)
+    expect(screen.getByText('2.5 km over the limit.')).toBeTruthy()
+    expect(screen.getByText('51.4 by 21.4 km; does not hold the real landing point')).toBeTruthy()
+  })
+})
+
+describe('The hub’s note on old live data', () => {
+  const base = { provider: 'swpc', provider_name: 'NOAA Space Weather Prediction Center', product: 'kp', stale: false, breaker: 'closed', errors: 0, age_s: 60 }
+  const f = (over: Partial<FeedDTO>) => ({ ...base, ...over }) as FeedDTO
+  it('names each provider once, old first, then one not answering whose data is still recent', () => {
+    expect(
+      oldFeedsWords([
+        f({ stale: true }),
+        f({ product: 'alerts', stale: true }),
+        f({ provider: 'donki', provider_name: 'NASA space weather database (DONKI)', stale: true }),
+        f({ provider: 'nomads', provider_name: 'NOAA weather models', errors: 1 }),
+        f({ provider: 'nws', provider_name: 'US National Weather Service' }),
+      ]),
+    ).toBe(
+      'Some live data is older than usual: NOAA Space Weather Prediction Center and NASA space weather database (DONKI). NOAA weather models is not answering right now; its data is still recent. Each number from them says how old it is, or why it is missing.',
+    )
+  })
+  it('says nothing when every feed is recent', () => {
+    expect(oldFeedsWords([f({}), f({ product: 'alerts' })])).toBeNull()
   })
 })

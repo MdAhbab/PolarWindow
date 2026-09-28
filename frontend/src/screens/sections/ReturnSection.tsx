@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { api } from '../../lib/api/client'
 import type { MissionDetail } from '../../lib/api/adapters'
-import type { LifecycleMetaDTO, QuantityDTO, ReturnDTO, SeaLimitsDTO, SectionStatusDTO, ZoneDTO } from '../../lib/api/lifecycle'
+import type { CapsuleModelCheckDTO, LifecycleMetaDTO, QuantityDTO, ReturnDTO, SeaLimitsDTO, SectionStatusDTO, ZoneDTO } from '../../lib/api/lifecycle'
 import { useHistory, useLifecycleWrite, useSection, useSectionStatus } from '../../lib/api/lifecycleQueries'
-import { ageWords, formatValue, quantityText } from '../../lib/lifecycle/quantity'
+import { ageWords, formatValue, hostWords, quantityText } from '../../lib/lifecycle/quantity'
+import { dateTimeWords } from '../../lib/format'
 import { NumberRow, QuantityTile } from '../../components/lifecycle/QuantityTile'
 import { Answer, ChartPanel, HowSure, Rows, SectionLayout, SectionStates, SourcesRow, StatePanel } from '../../components/lifecycle/Section'
 import { LimitBars, LimitTable, overBy, type LimitRow } from '../../components/lifecycle/LimitBars'
@@ -210,15 +211,80 @@ function ReturnAnswer({ ret, meta, missionId, status }: { ret: ReturnDTO; meta: 
             {capsule
               ? `${c?.zone ? `Splashdown ${zoneWords(c.zone)}.` : 'The zone is not known yet.'}${
                   c?.daylight === true ? ' In daylight at splashdown.' : c?.daylight === false ? ' In darkness at splashdown.' : ''
-                }`
+                }${c?.model_check ? '' : ' The capsule model has not been checked against a real landing here.'}`
               : (c?.reason ?? 'No capsule returns on this mission.')}
           </p>
         </Disclosure>
+        {c?.model_check && <CapsuleCheckRow check={c.model_check} />}
         {(recovered || capsule) && <LimitsRow ret={ret} missionId={missionId} />}
         <HowSure meta={meta} />
         <SourcesRow meta={meta} />
       </Rows>
     </>
+  )
+}
+
+/**
+ * The capsule entry model against a real landing (OSIRIS-REx): the service's
+ * own words first, then the numbers they rest on, when it was checked and
+ * where the entry state and the landing are from.
+ */
+export function CapsuleCheckRow({ check: k }: { check: CapsuleModelCheckDTO }) {
+  const km = (v: number) => `${formatValue(v)} km`
+  const [lo, hi] = k.distance_range_km
+  const [long, wide] = k.ellipse_99_km
+  const over = k.passed ? null : k.distance_km - k.limit_km
+  const rows: [string, string][] = [
+    ['The case', k.case],
+    ['From the real landing point', `${km(k.distance_km)}${lo != null && hi != null ? ` (${formatValue(lo)} to ${km(hi)} over the published drag range)` : ''}`],
+    ['The limit', km(k.limit_km)],
+    ['The mission’s own simulation', `${km(k.mission_team_km)} from it`],
+    [
+      'Its 99 % landing area',
+      `${long != null && wide != null ? `${formatValue(long)} by ${km(wide)}; ` : ''}${k.measured_inside_ellipse ? 'holds the real landing point' : 'does not hold the real landing point'}`,
+    ],
+    ['Checked', dateTimeWords(Date.parse(k.checked_at))],
+  ]
+  return (
+    <Disclosure title="The capsule model, checked against a real landing" meta={`${km(k.distance_km)} from it; the limit is ${km(k.limit_km)}`}>
+      <div className="flex flex-col gap-3">
+        <p className="text-body leading-6 text-ink-2">{k.note}</p>
+        {over !== null && (
+          <p className="flex items-start gap-2 text-small font-semibold text-alert">
+            <Icon name="alert" size={15} strokeWidth={2.2} className="mt-0.5 shrink-0" />
+            {km(over)} over the limit.
+          </p>
+        )}
+        <dl className="flex flex-col gap-2 text-small leading-5">
+          {rows.map(([label, value]) => (
+            <div key={label}>
+              <dt className="font-semibold text-ink-2">{label}</dt>
+              <dd className="text-ink-2">{value}</dd>
+            </div>
+          ))}
+          {k.sources.length > 0 && (
+            <div>
+              <dt className="font-semibold text-ink-2">Where the entry state and the landing are from</dt>
+              <dd className="text-ink-2">
+                <ul className="flex flex-col gap-1">
+                  {k.sources.map((s) =>
+                    /^https?:\/\//.test(s) ? (
+                      <li key={s}>
+                        <a href={s} target="_blank" rel="noreferrer">
+                          {hostWords(s)}: {s.split('/').pop()}
+                        </a>
+                      </li>
+                    ) : (
+                      <li key={s}>{s}</li>
+                    ),
+                  )}
+                </ul>
+              </dd>
+            </div>
+          )}
+        </dl>
+      </div>
+    </Disclosure>
   )
 }
 

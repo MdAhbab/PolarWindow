@@ -86,6 +86,8 @@ export class ApiError extends Error {
   readonly action: string | null
   /** The server sent its own problem detail (a title and what still works), not a bare status. */
   readonly problem: boolean
+  /** The problem's kind, the last part of its `type` ("vehicle-not-found"); null without one. */
+  readonly kind: string | null
 
   constructor(status: number, body: unknown) {
     const raw = (body as { detail?: unknown })?.detail
@@ -103,6 +105,7 @@ export class ApiError extends Error {
     this.retryable = Boolean(ui.retryable ?? status >= 500)
     this.action = (ui.action as string) ?? null
     this.problem = typeof p.title === 'string'
+    this.kind = typeof p.type === 'string' ? (p.type.split('/').pop() ?? null) : null
   }
 }
 

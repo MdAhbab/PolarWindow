@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { AgentCard } from './Agents'
+import { guardLine } from './RunLog'
 import { ApiUnreachable, type AgentDTO } from '../lib/api/client'
 import { useMission } from '../lib/store'
 import { renderApp } from '../test/render'
@@ -88,6 +89,28 @@ describe('AgentCard', () => {
     expect(screen.getByText(/included a number we couldn't trace to a measurement/)).toBeTruthy()
   })
 
+  it('guard rejected for a verdict word: names the word and leaves the decision to people', () => {
+    const detail = "'no-go' in summary is a verdict. Do not judge the whole, not even to deny it."
+    const data = answer({ status: 'degraded', run_status: 'guard_rejected', guard_failures: [{ kind: 'verdict_word', detail, value: null }] } as Partial<AgentDTO>)
+    renderApp(<AgentCard kind="explain" agent={{ ...idle, data }} />)
+    expect(screen.getByText(/judged the whole \(“no-go”\) instead of saying what each number shows/)).toBeTruthy()
+    expect(screen.queryByText(/couldn't trace/)).toBeNull()
+    expect(screen.queryByText(/Do not judge/)).toBeNull()
+  })
+
+  it('guard rejected for both: says both reasons', () => {
+    const data = answer({
+      status: 'degraded',
+      run_status: 'guard_rejected',
+      guard_failures: [
+        { kind: 'ungrounded_number', detail: '42 not found', value: 42 },
+        { kind: 'verdict_word', detail: "'safe' in summary is a verdict.", value: null },
+      ],
+    } as Partial<AgentDTO>)
+    renderApp(<AgentCard kind="explain" agent={{ ...idle, data }} />)
+    expect(screen.getByText(/couldn't trace to a measurement and judged the whole \(“safe”\)/)).toBeTruthy()
+  })
+
   it('loading: says what is being checked, and Cancel aborts', () => {
     const cancel = vi.fn()
     renderApp(<AgentCard kind="ask" agent={{ ...idle, isPending: true, cancel }} />)
@@ -101,5 +124,14 @@ describe('AgentCard', () => {
     expect(screen.getByText('Cannot reach the service that does the calculations')).toBeTruthy()
     expect(screen.getByText('What still works')).toBeTruthy()
     expect(screen.queryByText(/Failed to fetch/)).toBeNull()
+  })
+})
+
+describe('How the AI got this: a guard in words', () => {
+  it('a verdict word is named, not the instruction written to the model', () => {
+    expect(guardLine({ kind: 'verdict_word', detail: "'go for launch' in summary is a verdict. Do not judge the whole." })).toBe(
+      'Rejected: “go for launch” judges the whole instead of saying what each number shows',
+    )
+    expect(guardLine({ kind: 'ungrounded_number', value: 42 })).toBe('Rejected: 42 is not in the data it looked up')
   })
 })

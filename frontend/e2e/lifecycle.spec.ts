@@ -177,6 +177,58 @@ test('team weather limits (contract fixtures): the form starts from the limits a
   await expectNoSeriousAxe(page, 'the team weather limits sheet')
 })
 
+test('team weather limits (contract fixtures): a vehicle the service does not know says so and offers no save', async ({ page, context }) => {
+  await returningVisitor(context)
+  await serveLifecycleFixtures(context)
+  await context.route(/localhost:8000\/api\/v1\/auth\/demo$/, async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback()
+    const real = await route.fetch()
+    const body = await real.json()
+    await route.fulfill({ response: real, json: { ...body, user: { id: 7, name: 'Nadia Karim', team: 'Launch' } } })
+  })
+  await context.route(/localhost:8000\/api\/v1\/vehicles\/falcon-9\/limits$/, (route) =>
+    route.fulfill({
+      status: 404,
+      json: {
+        detail: {
+          type: 'https://polar-window.dev/errors/vehicle-not-found',
+          title: 'That launch vehicle isn’t in the list',
+          status: 404,
+          detail: "'falcon-9' is not a launch vehicle in this dataset.",
+          ui: { still_works: 'Every other vehicle and mission is available.', retryable: false, action: 'Back to the mission' },
+        },
+      },
+    }),
+  )
+  await page.goto('/missions/im-2/launch')
+  const row = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Team weather limits' }) })
+  await row.locator('summary').click()
+  await row.getByRole('button', { name: 'Enter the team’s limits' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Team weather limits' })
+  await expect(sheet).toContainText('This launch vehicle is not in the service’s list, so no limits can be entered for it.')
+  await expect(sheet.getByLabel('Limit', { exact: true })).toHaveCount(0)
+})
+
+test('old live data (contract fixtures): a degraded service names the old feeds under the steps, quietly, and opens the data sources', async ({ page, context }) => {
+  await returningVisitor(context)
+  await serveLifecycleFixtures(context)
+  await context.route(/localhost:8000\/api\/v1\/healthz$/, async (route) => {
+    const real = await route.fetch()
+    const body = await real.json()
+    await route.fulfill({ response: real, json: { ...body, status: 'degraded', feeds: { ok: 2, stale: 1, failing: 1 } } })
+  })
+  await page.goto('/missions/im-2/contact')
+  const note = page.getByText(/^Some live data is older than usual/)
+  await expect(note).toHaveText(
+    'Some live data is older than usual: NOAA NDBC and DSN Now. Each number from them says how old it is, or why it is missing. See the data sources',
+  )
+  await page.setViewportSize({ width: 375, height: 812 })
+  await expectNoSeriousAxe(page, 'the old live data note at 375 px')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the hub scrolls sideways at 375 px').toBeLessThanOrEqual(375)
+  await page.getByRole('button', { name: 'See the data sources' }).click()
+  await expect(page.getByRole('dialog')).toContainText('Data sources')
+})
+
 test('official launch forecast (contract fixtures): a save shows the forecast as stored, not the one before; taking it back shows the one before again', async ({ page, context }) => {
   await returningVisitor(context)
   await serveLifecycleFixtures(context)
@@ -631,7 +683,14 @@ test('return (live API): where each flown booster came down, and a planned one n
   await expect(row('Where does this come from?').locator('summary')).toContainText('1 source')
   await row('Where does this come from?').locator('summary').click()
   await expect(row('Where does this come from?')).toContainText('Launch Library 2 landing records')
-  await expectNoSeriousAxe(page, '/missions/im-1/return (live) with a row open')
+  // The capsule model's check against OSIRIS-REx: the service's words, then the numbers and where they are from.
+  const check = row('The capsule model, checked against a real landing')
+  await expect(check.locator('summary')).toContainText(/[\d.]+ km from it; the limit is 10 km/)
+  await check.locator('summary').click()
+  await expect(check).toContainText('where the recovery team found it')
+  await expect(check).toContainText('OSIRIS-REx sample return capsule')
+  await expect(check.getByRole('link', { name: /naif\.jpl\.nasa\.gov/ })).toHaveCount(1)
+  await expectNoSeriousAxe(page, '/missions/im-1/return (live) with rows open')
 
   // IM-2's landed on a droneship 700 km downrange, whose position is not published.
   await page.goto('/missions/im-2/return')

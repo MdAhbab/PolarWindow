@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { api } from '../../lib/api/client'
+import { api, ApiError } from '../../lib/api/client'
 import type { MissionDetail } from '../../lib/api/adapters'
 import type {
   AuditEntryDTO,
@@ -622,6 +622,10 @@ function LimitsRow({ rules, vehicleId }: { rules: RuleRowDTO[]; vehicleId: strin
       >
         {stored.isPending ? (
           <p className="text-small text-ink-3">Reading the limits already entered…</p>
+        ) : stored.error instanceof ApiError && stored.error.kind === 'vehicle-not-found' ? (
+          <p className="text-small leading-5 text-ink-2">
+            This launch vehicle is not in the service’s list, so no limits can be entered for it. {stored.error.stillWorks}
+          </p>
         ) : stored.error ? (
           <p className="text-small font-semibold text-alert">
             The limits already entered could not be read, so saving now could lose them: {(stored.error as Error).message}

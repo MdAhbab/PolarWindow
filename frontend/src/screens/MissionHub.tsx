@@ -6,6 +6,7 @@ import { ApiError } from '../lib/api/client'
 import type { SectionId } from '../lib/api/lifecycle'
 import type { MissionDetail } from '../lib/api/adapters'
 import { JourneyBar, SECTIONS } from '../components/lifecycle/JourneyBar'
+import { OldFeedsNote } from '../components/lifecycle/OldFeeds'
 import { LoadingPanel, ProblemPanel } from '../components/States'
 import { LandingSection, initialWindow } from './MissionDetailScreen'
 import { useMission as useStore } from '../lib/store'
@@ -108,6 +109,7 @@ export function MissionHub() {
         loading={sections.isPending}
         problem={problem}
       />
+      <OldFeedsNote />
       <div className="flex min-w-0 grow flex-col pt-1">
         {section === 'landing' && <LandingSection mission={m} />}
         <Suspense fallback={<div className="h-8 w-2/3 max-w-xl bg-inset" aria-hidden="true" />}>

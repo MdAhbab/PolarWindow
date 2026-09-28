@@ -6,7 +6,7 @@ import { useMission } from '../lib/store'
 import { hasSite, siteById } from '../lib/sites'
 import { Button, Disclosure, Panel, ScrollRegion, SectionLabel } from './ui'
 import { Icon } from './Icon'
-import { fieldWords, toolWords } from '../lib/fieldWords'
+import { fieldWords, toolWords, verdictWord } from '../lib/fieldWords'
 import { ProblemPanel, UncertaintyNote } from './States'
 
 /**
@@ -35,6 +35,20 @@ interface Agent {
 
 const GUARD_COPY =
   "The AI's answer included a number we couldn't trace to a measurement, so we replaced it with a summary built from the measurements."
+
+/**
+ * Why the answer was replaced, from the guards that fired: a number that
+ * could not be traced, a verdict word ("safe", "go"), or both.
+ */
+export function guardCopy(failures: AgentDTO['guard_failures']): string {
+  const kinds = (failures ?? []).map((g) => g.kind)
+  const verdict = (failures ?? []).find((g) => g.kind === 'verdict_word')
+  if (!verdict) return GUARD_COPY
+  const w = verdictWord(typeof verdict.detail === 'string' ? verdict.detail : null)
+  const judged = `judged the whole${w ? ` (“${w}”)` : ''} instead of saying what each number shows`
+  const number = kinds.some((k) => typeof k === 'string' && k.startsWith('ungrounded'))
+  return `The AI's answer ${number ? `included a number we couldn't trace to a measurement and ${judged}` : judged}, so we replaced it with a summary built from the measurements. The decision is yours.`
+}
 const DEGRADED_COPY = "The AI didn't respond, so this summary was built directly from the measurements."
 const NO_MODEL_COPY =
   'No AI model is set up on this server, so this summary was built directly from the measurements. Every number in it still comes from those measurements.'
@@ -343,7 +357,7 @@ export function AgentCard({
       {replaced && (
         <UncertaintyNote title="Built from the measurements" hatchKey={false}>
           {r.run_status === 'guard_rejected'
-            ? GUARD_COPY
+            ? guardCopy(r.guard_failures)
             : notConfigured(r)
               ? NO_MODEL_COPY
               : DEGRADED_COPY}
