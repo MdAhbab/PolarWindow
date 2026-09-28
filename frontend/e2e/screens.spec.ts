@@ -48,7 +48,8 @@ for (const theme of ['dark', 'light'] as const) {
       await expectNoSeriousAxe(page, `${r} (${theme})`)
     }
     // The newest answers with every row open: the correction budget, the weather notes, the sea at Griffin-1's zone.
-    for (const r of ['/missions/blue-ghost-m1/trip', '/missions/im-1/launch', '/missions/griffin-1/return']) {
+    // IM-1's belts not counted and Griffin-1's assumed climb, too.
+    for (const r of ['/missions/blue-ghost-m1/trip', '/missions/im-1/launch', '/missions/griffin-1/return', '/missions/im-1/trip', '/missions/griffin-1/launch']) {
       await page.goto(r)
       await page.waitForLoadState('networkidle')
       for (const s of await page.locator('main summary').all()) await s.click()
@@ -60,7 +61,14 @@ for (const theme of ['dark', 'light'] as const) {
     const sheet = page.getByRole('dialog', { name: 'Settings' })
     await expect(sheet.locator('summary', { hasText: 'Parameters' })).toContainText(/\d of \d entered/)
     for (const s of await sheet.locator('summary').all()) await s.click()
-    await sheet.getByRole('button', { name: /for Battery limit/ }).click()
+    // Data sources grows as its list arrives, so a click on a row below it can land elsewhere: make sure Parameters is open.
+    const params = sheet.locator('details').filter({ has: page.locator('summary', { hasText: /^Parameters/ }) })
+    const battery = sheet.getByRole('button', { name: /for Battery limit/ })
+    await expect(async () => {
+      if (!(await params.evaluate((d) => (d as HTMLDetailsElement).open))) await params.locator('summary').first().click()
+      await expect(battery).toBeVisible({ timeout: 2_000 })
+    }).toPass({ timeout: 30_000 })
+    await battery.click()
     await expect(sheet.getByText('Change history')).toBeVisible()
     await expectNoSeriousAxe(page, `settings with every row open (${theme})`)
     expect(problems).toEqual([])
@@ -99,6 +107,8 @@ test('a number says what it means when its label is pressed', async ({ page, con
 })
 
 test('axe and the fixed tab bar on a phone', async ({ page, context }) => {
+  // Seventeen routes and six with every row open, each read by axe.
+  test.setTimeout(180_000)
   await returningVisitor(context)
   await page.setViewportSize({ width: 375, height: 812 })
   const tabs = page.getByRole('navigation', { name: 'Views' }).last()
@@ -126,9 +136,17 @@ test('axe and the fixed tab bar on a phone', async ({ page, context }) => {
     // Nothing runs off the side: no sideways scroll on a phone.
     expect(await page.evaluate(() => document.documentElement.scrollWidth), `${r} scrolls sideways at 375 px`).toBeLessThanOrEqual(375)
   }
-  // Rows open on a phone: the correction budget's table, the weather notes and space weather, and the capsule
-  // model's check with its source links still fit; so does the limits form.
-  for (const r of ['/missions/blue-ghost-m1/trip', '/missions/griffin-1/return', '/missions/im-1/launch']) {
+  // Rows open on a phone: the correction budget's table, the weather notes and space weather, the capsule
+  // model's check with its source links, the climb's direction and each radiation case still fit; so does the limits form.
+  // IM-1's launch last: its limits form is opened next.
+  for (const r of [
+    '/missions/blue-ghost-m1/trip',
+    '/missions/griffin-1/return',
+    '/missions/griffin-1/launch',
+    '/missions/im-1/trip',
+    '/missions/peregrine-m1/trip',
+    '/missions/im-1/launch',
+  ]) {
     await page.goto(r)
     await page.waitForLoadState('networkidle')
     for (const s of await page.locator('main summary').all()) await s.click()

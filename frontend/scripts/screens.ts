@@ -6,7 +6,10 @@
  *
  * A step still being worked out (202) is waited for, so each picture shows
  * the answer, not the progress panel. APP_URL and API_BASE override the two
- * addresses; SCREENS_OUT writes the pictures somewhere else.
+ * addresses; SCREENS_OUT writes the pictures somewhere else; SCREENS_ONLY
+ * (names, comma-separated) retakes only those.
+ *
+ *   SCREENS_ONLY=trip-im-1-radiation,launch-im-1-space-weather npm run screens
  */
 import { mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -16,6 +19,7 @@ import { chromium, type Page } from '@playwright/test'
 const APP = process.env.APP_URL ?? 'http://localhost:5174'
 const API = process.env.API_BASE ?? 'http://localhost:8000/api/v1'
 const OUT = process.env.SCREENS_OUT ?? join(dirname(fileURLToPath(import.meta.url)), '..', 'e2e', '__screens__')
+const ONLY = process.env.SCREENS_ONLY?.split(',').map((x) => x.trim()).filter(Boolean)
 
 /** The hub (Landing open, the surface stay) and the steps the service answers; some with rows open. */
 const PAGES: [name: string, path: string, open?: string[]][] = [
@@ -29,6 +33,10 @@ const PAGES: [name: string, path: string, open?: string[]][] = [
   ['launch-im-1-weather-rules', '/missions/im-1/launch', ['Weather rules for this launch', 'Team weather limits']],
   ['trip-blue-ghost-m1-radiation', '/missions/blue-ghost-m1/trip', ['Radiation on the way', 'How each was worked out']],
   ['launch-im-1-space-weather', '/missions/im-1/launch', ['Space weather now']],
+  ['launch-im-1-flight', '/missions/im-1/launch', ['The flight as launched']],
+  ['launch-griffin-1-flight', '/missions/griffin-1/launch', ['The flight for this opportunity']],
+  ['trip-im-1-radiation', '/missions/im-1/trip', ['Radiation on the way']],
+  ['trip-peregrine-m1-radiation', '/missions/peregrine-m1/trip', ['Radiation on the way']],
   ['contact-im-2', '/missions/im-2/contact'],
   ['return-im-1-land', '/missions/im-1/return'],
   ['return-im-2-droneship', '/missions/im-2/return'],
@@ -72,7 +80,7 @@ async function main() {
       localStorage.setItem('pw-prefs', JSON.stringify({ face: 'planner', theme: 'dark', motion: 'reduced', shortcuts: true }))
     }, session)
     const page = await context.newPage()
-    for (const [name, path, open = []] of PAGES) {
+    for (const [name, path, open = []] of PAGES.filter(([n]) => !ONLY || ONLY.includes(n))) {
       await page.goto(`${APP}${path}`)
       await settle(page)
       for (const title of open) await page.locator('main summary', { hasText: title }).first().click()
@@ -80,6 +88,10 @@ async function main() {
       await page.screenshot({ path: join(OUT, `${name}.${device}.png`), fullPage: true })
     }
     // Settings → Project, the parameters and the risk scale open.
+    if (ONLY && !ONLY.includes('settings-project')) {
+      await context.close()
+      continue
+    }
     await page.goto(`${APP}/missions`)
     await settle(page)
     await page.getByRole('button', { name: 'Settings' }).click()
@@ -91,7 +103,8 @@ async function main() {
     await context.close()
   }
   await browser.close()
-  console.log(`Saved ${(PAGES.length + 1) * 2} screenshots to ${OUT}`)
+  const n = ONLY ? ONLY.length : PAGES.length + 1
+  console.log(`Saved ${n * 2} screenshots to ${OUT}`)
 }
 
 main().catch((e) => {
