@@ -495,6 +495,35 @@ export interface LinkDTO {
   margin_db: QuantityDTO | null
 }
 
+/** A relay's published or assumed orbit: heights above the mean radius. */
+export interface RelayOrbitDTO {
+  periapsis_km: QuantityDTO
+  apoapsis_km: QuantityDTO
+  inclination_deg: QuantityDTO
+  arg_periapsis_deg: QuantityDTO
+  period_h: QuantityDTO
+}
+
+export type RelayLaunchStatus = 'operating' | 'planned' | 'not_launched' | 'launched_not_operating'
+
+export interface RelayRowDTO {
+  id: string
+  name: string
+  /** Time it adds to direct contact, as a range. */
+  adds_h: QuantityDTO
+  /** Its launch note, or its status when there is none. */
+  status: string
+  /** Time the lander can reach Earth through it, as a range (net-4). */
+  via_h?: QuantityDTO
+  launch_status?: RelayLaunchStatus
+  /** False for a relay added to compare (`?relay=`), not planned for this mission. */
+  for_this_mission?: boolean
+  orbit?: RelayOrbitDTO
+  orbit_note?: string | null
+  /** What was swept to get the ranges; null when nothing was worked out. */
+  sweep_note?: string | null
+}
+
 export interface ContactDTO {
   /** The dates this answer covers, and how they were chosen. */
   start?: string
@@ -511,7 +540,11 @@ export interface ContactDTO {
     longest_message_wait_min: QuantityDTO
     dark_and_unheard_h: QuantityDTO
   }
-  relays: { id: string; name: string; adds_h: QuantityDTO; status: string }[]
+  relays: RelayRowDTO[]
+  /** With a relay in the graph: the two waits without it. Null otherwise. */
+  direct_only?: { longest_unheard_h: QuantityDTO; longest_message_wait_min: QuantityDTO } | null
+  /** One plain sentence on what "through the relay" means. */
+  relay_note?: string | null
   link_budget_note: string | null
   /** Why the orbiters that could see the lander are not relays for it. */
   orbiters_note?: string | null

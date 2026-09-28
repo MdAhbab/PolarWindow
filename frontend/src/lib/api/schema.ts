@@ -1862,6 +1862,10 @@ export interface components {
             numbers: components["schemas"]["ContactNumbers"];
             /** Relays */
             relays: components["schemas"]["RelayRow"][];
+            /** @description With a relay in the graph: the same two numbers without it. Null otherwise. */
+            direct_only: components["schemas"]["DirectOnly"] | null;
+            /** Relay Note */
+            relay_note: string | null;
             /** Link Budget Note */
             link_budget_note: string | null;
             /** Bookings */
@@ -1966,6 +1970,11 @@ export interface components {
             sun_el_max_deg: number | null;
             /** Earth Required */
             earth_required: boolean | null;
+        };
+        /** DirectOnly */
+        DirectOnly: {
+            longest_unheard_h: components["schemas"]["QuantityOut"];
+            longest_message_wait_min: components["schemas"]["QuantityOut"];
         };
         /** Donki */
         Donki: {
@@ -3381,15 +3390,51 @@ export interface components {
             /** Message */
             message: string;
         };
+        /** RelayOrbit */
+        RelayOrbit: {
+            /** @description Height of the near point above the mean radius. */
+            periapsis_km: components["schemas"]["QuantityOut"];
+            /** @description Height of the far point above the mean radius. */
+            apoapsis_km: components["schemas"]["QuantityOut"];
+            /** @description To the lunar equator. */
+            inclination_deg: components["schemas"]["QuantityOut"];
+            /** @description About 90 degrees puts the far point over the south pole. */
+            arg_periapsis_deg: components["schemas"]["QuantityOut"];
+            period_h: components["schemas"]["QuantityOut"];
+        };
         /** RelayRow */
         RelayRow: {
             /** Id */
             id: string;
             /** Name */
             name: string;
+            /** @description Time it adds to direct contact, as a range. */
             adds_h: components["schemas"]["QuantityOut"];
-            /** Status */
+            /** @description Time the lander can reach Earth through it, as a range. */
+            via_h: components["schemas"]["QuantityOut"];
+            /**
+             * Status
+             * @description Its launch note, or its status when there is none.
+             */
             status: string;
+            /**
+             * Launch Status
+             * @enum {string}
+             */
+            launch_status: "operating" | "planned" | "not_launched" | "launched_not_operating";
+            /**
+             * For This Mission
+             * @description False for a relay added to compare what it would add; not planned for this mission.
+             */
+            for_this_mission: boolean;
+            orbit: components["schemas"]["RelayOrbit"];
+            /** Orbit Note */
+            orbit_note: string | null;
+            /**
+             * Sweep Note
+             * @description What was swept to get the ranges; null when nothing was worked out.
+             */
+            sweep_note: string | null;
         };
         /**
          * Resolution
@@ -5431,6 +5476,8 @@ export interface operations {
                 /** @description Default: the mission's surface dates. */
                 start?: string | null;
                 end?: string | null;
+                /** @description Planned relays (catalogue ids, e.g. `lunar-pathfinder`) to add to the mission's own, to see what each would add. Repeat for more than one. */
+                relay?: string[];
             };
             header?: never;
             path: {

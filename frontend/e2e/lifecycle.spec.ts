@@ -83,9 +83,9 @@ test('each number says its margin, or why it has none (contract fixtures)', asyn
   await page.goto('/missions/im-2/contact')
   // A relay is a range, "if it flies as planned".
   const relay = page.locator('div.border.bg-panel', { hasText: 'Through a relay' }).first()
-  await expect(relay).toContainText('12–31')
+  await expect(relay).toContainText('60–95')
   await expect(relay).toContainText('if it flies as planned')
-  await expect(relay).toContainText('12 to 31 hours')
+  await expect(relay).toContainText('60 to 95 hours')
   // The caveat that changes what the numbers mean stays on screen.
   await expect(page.locator('main')).toContainText('Line of sight only')
 
@@ -332,20 +332,23 @@ test('contact through a relay (contract fixtures): a range with its launch statu
   await page.goto('/missions/im-2/contact')
   const main = page.locator('main')
   const answer = page.locator('[data-guide="section-answer"]')
-  await expect(answer).toContainText('Through Lunar Pathfinder (not launched) it could add 12–31 h, if it flies as planned.')
-  await expect(answer).toContainText('The longest time without contact is 0.4–1 h with the relay, if it flies as planned.')
+  await expect(answer).toContainText('Through Lunar Pathfinder (not launched) it could reach Earth for 60–95 h, if it flies as planned; that adds 1.5–4 h to direct contact.')
+  await expect(answer).toContainText('The longest time without contact is 1.0 ±0.1 h directly, or 0.4–1 h with the relay, if it flies as planned.')
   const tile = (label: string) => page.locator('div.border.bg-panel', { hasText: label }).first()
   const openRow = async (title: string) => {
     await openRowOf(page, title)
     return page.locator('details').filter({ has: page.locator('summary', { hasText: title }) }).first()
   }
-  await expect(tile('Longest time without contact')).toContainText('with the relay, if it flies as planned')
+  await expect(tile('Longest time without contact')).toContainText('with the relay, if it flies as planned; 1.0 ±0.1 h directly')
   await expect(tile('Longest message wait')).toContainText('24–61')
   // Each relay with its launch status beside it, in words.
   const relays = await openRow('Relays')
   await expect(page.locator('summary', { hasText: 'Relays' })).toContainText('Lunar Pathfinder · not launched')
   await expect(relays).toContainText('Not launched. To fly on Firefly')
-  await expect(relays).toContainText('Adds 12–31 h through it, if it flies as planned.')
+  await expect(relays).toContainText('Adds 1.5–4 h to direct contact, 60–95 h in all through it, if it flies as planned.')
+  await expect(relays).toContainText('Numbers that use the relay are ranges over what its orbit could be')
+  await expect(relays.locator('dt', { hasText: 'Tilt to the Moon’s equator' }).locator('xpath=following-sibling::dd[1]')).toHaveText('46.8–54.9°, assumed')
+  await expect(relays).toContainText('Swept over 36 places')
   // Orbiters already flying could see the lander, and are never called relays.
   const orbiters = await openRow('Orbiters that could see the lander')
   await expect(orbiters).toContainText('none carries a lander')
@@ -353,7 +356,8 @@ test('contact through a relay (contract fixtures): a range with its launch statu
   await expect(orbiters).toContainText('14 passes over these dates · could see the lander; not a relay')
   await expect(main).toContainText('Could see the lander (an orbiter, not a relay)')
   const more = await openRow('More numbers')
-  await expect(more).toContainText('171–190 h, if the relay flies as planned')
+  await expect(more).toContainText('166–168 h, if the relay flies as planned')
+  await expect(more.locator('dt', { hasText: 'Longest message wait, directly' }).locator('xpath=following-sibling::dd[1]')).toHaveText('61 min')
   await page.getByRole('button', { name: 'Read the chart as a table' }).click()
   await expect(main.getByRole('table').first()).toContainText('Lunar Reconnaissance Orbiter could see the lander (not a relay)')
   await expect(main.getByRole('table').first()).toContainText('Lunar Pathfinder, relay · not launched')

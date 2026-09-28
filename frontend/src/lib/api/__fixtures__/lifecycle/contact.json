@@ -238,13 +238,6 @@
     "from": "lander"
    },
    {
-    "to": "pathfinder",
-    "stretches": [],
-    "data_rate_kbps": null,
-    "margin_db": null,
-    "from": "lander"
-   },
-   {
     "from": "lander",
     "to": "lro",
     "stretches": [
@@ -389,7 +382,7 @@
   ],
   "numbers": {
    "direct_h": {
-    "value": 168,
+    "value": 164.0,
     "unit": "h",
     "provenance": "computed",
     "pm": 0.2,
@@ -402,12 +395,12 @@
     "source": null
    },
    "via_relay_h": {
-    "value": null,
+    "value": 77.5,
     "unit": "h",
-    "provenance": "computed",
+    "provenance": "assumed",
     "pm": null,
-    "lo": 12,
-    "hi": 31,
+    "lo": 60,
+    "hi": 95,
     "factor": null,
     "open": false,
     "no_margin_reason": null,
@@ -415,12 +408,12 @@
     "source": null
    },
    "either_h": {
-    "value": null,
+    "value": 166.75,
     "unit": "h",
-    "provenance": "computed",
+    "provenance": "assumed",
     "pm": null,
-    "lo": 171,
-    "hi": 190,
+    "lo": 165.5,
+    "hi": 168,
     "factor": null,
     "open": false,
     "no_margin_reason": null,
@@ -441,9 +434,9 @@
     "source": null
    },
    "longest_unheard_h": {
-    "value": null,
+    "value": 0.7,
     "unit": "h",
-    "provenance": "computed",
+    "provenance": "assumed",
     "pm": null,
     "lo": 0.4,
     "hi": 1.0,
@@ -454,9 +447,9 @@
     "source": null
    },
    "longest_message_wait_min": {
-    "value": null,
+    "value": 42.5,
     "unit": "min",
-    "provenance": "computed",
+    "provenance": "assumed",
     "pm": null,
     "lo": 24,
     "hi": 61,
@@ -485,19 +478,103 @@
     "id": "pathfinder",
     "name": "Lunar Pathfinder",
     "adds_h": {
-     "value": null,
+     "value": 2.75,
      "unit": "h",
-     "provenance": "computed",
+     "provenance": "assumed",
      "pm": null,
-     "lo": 12,
-     "hi": 31,
+     "lo": 1.5,
+     "hi": 4,
      "factor": null,
      "open": false,
      "no_margin_reason": null,
      "missing_reason": null,
      "source": null
     },
-    "status": "To fly on Firefly's Blue Ghost Mission 2; ESA: launch not earlier than November 2026."
+    "status": "To fly on Firefly's Blue Ghost Mission 2; ESA: launch not earlier than November 2026.",
+    "via_h": {
+     "value": 77.5,
+     "unit": "h",
+     "provenance": "assumed",
+     "pm": null,
+     "lo": 60,
+     "hi": 95,
+     "factor": null,
+     "open": false,
+     "no_margin_reason": null,
+     "missing_reason": null,
+     "source": null
+    },
+    "launch_status": "not_launched",
+    "for_this_mission": true,
+    "orbit": {
+     "periapsis_km": {
+      "value": 673.4,
+      "unit": "km",
+      "provenance": "published",
+      "pm": null,
+      "lo": null,
+      "hi": null,
+      "factor": null,
+      "open": false,
+      "no_margin_reason": "Published without a tolerance.",
+      "missing_reason": null,
+      "source": "https://bsgn.esa.int/service/lunar-pathfinder/"
+     },
+     "apoapsis_km": {
+      "value": 7331.8,
+      "unit": "km",
+      "provenance": "published",
+      "pm": null,
+      "lo": null,
+      "hi": null,
+      "factor": null,
+      "open": false,
+      "no_margin_reason": "Published without a tolerance.",
+      "missing_reason": null,
+      "source": "https://bsgn.esa.int/service/lunar-pathfinder/"
+     },
+     "inclination_deg": {
+      "value": 50.85,
+      "unit": "deg",
+      "provenance": "assumed",
+      "pm": null,
+      "lo": 46.8,
+      "hi": 54.9,
+      "factor": null,
+      "open": false,
+      "no_margin_reason": null,
+      "missing_reason": null,
+      "source": null
+     },
+     "arg_periapsis_deg": {
+      "value": 90.0,
+      "unit": "deg",
+      "provenance": "assumed",
+      "pm": null,
+      "lo": 85,
+      "hi": 95,
+      "factor": null,
+      "open": false,
+      "no_margin_reason": null,
+      "missing_reason": null,
+      "source": null
+     },
+     "period_h": {
+      "value": 10.84,
+      "unit": "h",
+      "provenance": "published",
+      "pm": null,
+      "lo": null,
+      "hi": null,
+      "factor": null,
+      "open": false,
+      "no_margin_reason": "Published without a tolerance.",
+      "missing_reason": null,
+      "source": "https://bsgn.esa.int/service/lunar-pathfinder/"
+     }
+    },
+    "orbit_note": "ESA publishes the heights; its inclination is given as 46.8° and as 54.9°, and where its far point sits is not published, so both are swept.",
+    "sweep_note": "Swept over 36 places where the orbit crosses the equator and 36 places along it, and both ends of each assumed figure."
    }
   ],
   "link_budget_note": "Line of sight only: the lander’s radio power is not published.",
@@ -509,7 +586,36 @@
     "entered_by": "A. Rahman"
    }
   ],
-  "orbiters_note": "These orbiters could see the lander; none carries a lander's data, as no agreement is in place."
+  "orbiters_note": "These orbiters could see the lander; none carries a lander's data, as no agreement is in place.",
+  "direct_only": {
+   "longest_unheard_h": {
+    "value": 1.0,
+    "unit": "h",
+    "provenance": "computed",
+    "pm": 0.1,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": null,
+    "missing_reason": null,
+    "source": null
+   },
+   "longest_message_wait_min": {
+    "value": 61,
+    "unit": "min",
+    "provenance": "computed",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": "Set by the same edges as the longest time unheard, plus the light time to Earth.",
+    "missing_reason": null,
+    "source": null
+   }
+  },
+  "relay_note": "Numbers that use the relay are ranges over what its orbit could be, if it flies as planned; a message may wait on the relay until a ground station can hear it. The same two numbers without the relay are given beside them."
  },
  "meta": {
   "computed_at": "2026-09-27T08:00:00Z",

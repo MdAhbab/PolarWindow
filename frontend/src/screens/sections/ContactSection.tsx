@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { API_BASE, ApiError, api } from '../../lib/api/client'
 import type { MissionDetail } from '../../lib/api/adapters'
-import type { ContactDTO, LifecycleMetaDTO, QuantityDTO, RoverSightDTO } from '../../lib/api/lifecycle'
+import type { ContactDTO, LifecycleMetaDTO, QuantityDTO, RelayOrbitDTO, RoverSightDTO } from '../../lib/api/lifecycle'
 import { useHistory, useLifecycleWrite, useSection, useSectionStatus } from '../../lib/api/lifecycleQueries'
 import { useWindowParams } from '../../lib/mission'
 import { useMission as useStore } from '../../lib/store'
@@ -11,7 +11,7 @@ import { dateTimeWords, msFromModelH, windowLine } from '../../lib/format'
 import { quantityText, quantityView } from '../../lib/lifecycle/quantity'
 import { NumberRow, QuantityTile } from '../../components/lifecycle/QuantityTile'
 import { Answer, ChartPanel, HowSure, Legend, Rows, SectionLayout, SectionStates, SourcesRow, WorkingPanel } from '../../components/lifecycle/Section'
-import { ContactChart, ContactTable, ORBITER_CAPTION, RELAY_STATUS, contactRows, rowStretches } from '../../components/lifecycle/ContactChart'
+import { ContactChart, ContactTable, ORBITER_CAPTION, contactRows, relayState, rowStretches } from '../../components/lifecycle/ContactChart'
 import { Field, FormSheet, HistoryList, Select, TextInput } from '../../components/lifecycle/Forms'
 import { WindowPicker } from '../../components/WindowPicker'
 import { Button, Disclosure } from '../../components/ui'
@@ -55,26 +55,37 @@ export function ContactSection({ mission: m }: { mission: MissionDetail }) {
 const isRange = (q: QuantityDTO) => q.lo !== null && q.hi !== null
 
 /**
- * Each relay with its launch status: `state` in words with a glyph, from its
- * node; `launch` the served status line (its launch plan), or the node's note.
+ * Each relay with its launch status: `state` in words with a glyph (the
+ * catalogue's status, else its node's); `launch` the served status line (its
+ * launch plan), or the node's note.
  */
 export function relayList(c: ContactDTO) {
   return c.relays.map((r) => {
     const node = c.nodes.find((n) => n.id === r.id)
-    return {
-      id: r.id,
-      name: r.name,
-      adds_h: r.adds_h,
-      operator: node?.operator ?? null,
-      state: node ? RELAY_STATUS[node.status] : null,
-      launch: r.status || node?.launch_note || null,
-    }
+    return { ...r, operator: node?.operator ?? null, state: relayState(c, r.id), launch: r.status || node?.launch_note || null }
   })
+}
+
+/** A relay's orbit in plain words, each figure with where it comes from. */
+const ORBIT_WORDS: [keyof RelayOrbitDTO, string][] = [
+  ['periapsis_km', 'Lowest point above the surface'],
+  ['apoapsis_km', 'Highest point above the surface'],
+  ['inclination_deg', 'Tilt to the Moon’s equator'],
+  ['arg_periapsis_deg', 'Where the highest point sits (about 90° is over the south pole)'],
+  ['period_h', 'One orbit takes'],
+]
+
+export function orbitWords(q: QuantityDTO): string {
+  const w = numberWords(q)
+  if (q.provenance === 'assumed' && !w.startsWith('Not worked out')) return `${w}, assumed`
+  if (q.provenance === 'published' && !w.startsWith('Not worked out')) return `${w}, published`
+  return w
 }
 
 /**
  * The answer in words (design-lifecycle.md, Contact): what a ground station
- * hears, what a relay could add as a range with its launch status beside it,
+ * hears, the time through a relay as a range with its launch status beside it
+ * and what that adds to direct contact,
  * and the longest time without contact, saying when that counts the relay.
  */
 export function contactAnswer(c: ContactDTO): string {
@@ -91,8 +102,10 @@ export function contactAnswer(c: ContactDTO): string {
   if (relays.length && isRange(n.via_relay_h)) {
     out.push(
       one
-        ? `Through ${named} it could add ${quantityText(n.via_relay_h)}, if it flies as planned.`
-        : `Through a relay it could add ${quantityText(n.via_relay_h)}, if they fly as planned.`,
+        ? `Through ${named} it could reach Earth for ${quantityText(n.via_relay_h)}, if it flies as planned${
+            isRange(one.adds_h) ? `; that adds ${quantityText(one.adds_h)} to direct contact` : ''
+          }.`
+        : `Through a relay it could reach Earth for ${quantityText(n.via_relay_h)}, if they fly as planned.`,
     )
   } else if (relays.length) {
     out.push(
@@ -103,7 +116,12 @@ export function contactAnswer(c: ContactDTO): string {
   }
   if (!heardThroughout) {
     const withRelay = relays.length > 0 && isRange(n.longest_unheard_h)
-    out.push(`The longest time without contact is ${quantityText(n.longest_unheard_h)}${withRelay ? ' with the relay, if it flies as planned' : ''}.`)
+    const direct = c.direct_only?.longest_unheard_h
+    out.push(
+      withRelay && direct
+        ? `The longest time without contact is ${quantityText(direct)} directly, or ${quantityText(n.longest_unheard_h)} with the relay, if it flies as planned.`
+        : `The longest time without contact is ${quantityText(n.longest_unheard_h)}${withRelay ? ' with the relay, if it flies as planned' : ''}.`,
+    )
   }
   return out.join(' ')
 }
@@ -144,7 +162,8 @@ function ContactAnswer({
   const relays = relayList(contact)
   const orbiters = rows.filter((r) => r.orbiter)
   // A wait that counts a planned relay is a range, and says so.
-  const relayNote = (q: QuantityDTO) => (relays.length && isRange(q) ? 'with the relay, if it flies as planned' : undefined)
+  const relayNote = (q: QuantityDTO, direct?: QuantityDTO) =>
+    relays.length && isRange(q) ? `with the relay, if it flies as planned${direct ? `; ${quantityText(direct)} directly` : ''}` : undefined
   return (
     <>
       <Answer meta={meta}>{contactAnswer(contact)}</Answer>
@@ -162,8 +181,8 @@ function ContactAnswer({
           scale={hours}
           note={contact.relays.length ? 'if it flies as planned' : undefined}
         />
-        <QuantityTile term="contactUnheard" q={n.longest_unheard_h} scale={hours} note={relayNote(n.longest_unheard_h)} />
-        <QuantityTile term="messageWait" q={n.longest_message_wait_min} note={relayNote(n.longest_message_wait_min)} />
+        <QuantityTile term="contactUnheard" q={n.longest_unheard_h} scale={hours} note={relayNote(n.longest_unheard_h, contact.direct_only?.longest_unheard_h)} />
+        <QuantityTile term="messageWait" q={n.longest_message_wait_min} note={relayNote(n.longest_message_wait_min, contact.direct_only?.longest_message_wait_min)} />
       </NumberRow>
       <ChartPanel
         title={`Who can hear the lander, ${windowLine(start, hours)}`}
@@ -184,6 +203,7 @@ function ContactAnswer({
       <Rows>
         {relays.length > 0 && (
           <Disclosure title="Relays" meta={relays.map((r) => (r.state ? `${r.name} · ${r.state.words.toLowerCase()}` : r.name)).join(', ')}>
+            {contact.relay_note && <p className="text-body text-ink-2">{contact.relay_note}</p>}
             <ul className="flex flex-col divide-y divide-line border-y border-line">
               {relays.map((r) => (
                 <li key={r.id} className="flex flex-col gap-0.5 py-2.5">
@@ -200,11 +220,24 @@ function ContactAnswer({
                     )}
                     {r.launch}
                   </span>
+                  {r.for_this_mission === false && <span className="text-small text-ink-2">Added to compare: not planned for this mission.</span>}
                   <span className="text-small text-ink-2">
                     {isRange(r.adds_h)
-                      ? `Adds ${quantityText(r.adds_h)} through it, if it flies as planned.`
+                      ? `Adds ${quantityText(r.adds_h)} to direct contact${r.via_h && isRange(r.via_h) ? `, ${quantityText(r.via_h)} in all through it` : ''}, if it flies as planned.`
                       : `Time through it: ${numberWords(r.adds_h).replace(/^Not worked out: /, 'not worked out. ')}`}
                   </span>
+                  {r.orbit && (
+                    <dl className="mt-1.5 grid grid-cols-1 gap-x-6 gap-y-1 text-small sm:grid-cols-[max-content_1fr]">
+                      {ORBIT_WORDS.map(([k, label]) => (
+                        <div key={k} className="contents">
+                          <dt className="text-ink-3">{label}</dt>
+                          <dd className="text-ink">{orbitWords(r.orbit![k])}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  )}
+                  {r.orbit_note && <span className="text-small text-ink-2">{r.orbit_note}</span>}
+                  {r.sweep_note && <span className="text-small text-ink-2">{r.sweep_note}</span>}
                 </li>
               ))}
             </ul>
@@ -243,6 +276,14 @@ function ContactAnswer({
             <dd className="text-ink">{numberWords(n.direct_h)}</dd>
             <dt className="text-ink-3">In contact either way, directly or through a relay</dt>
             <dd className="text-ink">{numberWords(n.either_h, 'if the relay flies as planned')}</dd>
+            {contact.direct_only && (
+              <>
+                <dt className="text-ink-3">Longest time without contact, directly</dt>
+                <dd className="text-ink">{numberWords(contact.direct_only.longest_unheard_h)}</dd>
+                <dt className="text-ink-3">Longest message wait, directly</dt>
+                <dd className="text-ink">{numberWords(contact.direct_only.longest_message_wait_min)}</dd>
+              </>
+            )}
             <dt className="text-ink-3">Dark and out of contact at once</dt>
             <dd className="text-ink">{numberWords(n.dark_and_unheard_h, 'with the relay, if it flies as planned')}</dd>
           </dl>
