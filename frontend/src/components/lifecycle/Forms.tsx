@@ -172,7 +172,9 @@ export function FormSheet({
   const [saved, setSaved] = useState(false)
   return (
     <Sheet open={open} onClose={onClose} title={title} wide>
+      {/* Our own messages, beside the field they are about, instead of the browser's bubble. */}
       <form
+        noValidate
         className="flex flex-col gap-5 p-5"
         onSubmit={async (e) => {
           e.preventDefault()

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { API, expectNoSeriousAxe, returningVisitor, watchConsole } from './helpers'
+import { API, expectNoSeriousAxe, openRow, returningVisitor, watchConsole } from './helpers'
 import { fulfillWrite, serveLifecycleFixtures } from './lifecycleFixtures'
 
 /**
@@ -195,7 +195,8 @@ test('official launch forecast (contract fixtures): a save shows the forecast as
   const sheet = page.getByRole('dialog', { name: 'Official launch forecast' })
   await sheet.getByLabel('Your name').fill('Nadia Karim')
   await sheet.getByLabel('Chance the weather breaks a launch rule (%)').fill('150')
-  await sheet.getByLabel('Link to the forecast PDF').fill('ftp://example.test/l-1.pdf')
+  // Not a web address: our own message shows beside the field, not the browser's bubble.
+  await sheet.getByLabel('Link to the forecast PDF').fill('l-1.pdf')
   await sheet.getByRole('button', { name: 'Save' }).click()
   await expect(sheet).toContainText('A whole percent from 0 to 100.')
   await expect(sheet).toContainText('The web address of the forecast PDF.')
@@ -479,6 +480,72 @@ test('launch (live API): a flown launch worked out again, and a planned mission�
   await expect(dates).toContainText('At most 180 days at once.')
   await expect(page).not.toHaveURL(/from=/)
   await expectNoSeriousAxe(page, '/missions/griffin-1/launch (live) with its table and rows open')
+})
+
+test('trip corrections and launch weather words (live API): Blue Ghost’s burns and budget, IM-1’s past years, Griffin-1’s weather notes', async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(240_000)
+  await returningVisitor(context)
+  const main = page.locator('main')
+  const answer = page.locator('[data-guide="section-answer"]')
+  const row = (title: string) => page.locator('details').filter({ has: page.locator('summary', { hasText: title }) })
+
+  // Blue Ghost: the burns in plain words, each one instant with why it has no margin, and what is not seen.
+  await page.goto('/missions/blue-ghost-m1/trip')
+  await expect(answer).toContainText('The trip takes', { timeout: 90_000 })
+  await openRow(page, 'Burns')
+  await expect(row('Burns')).toContainText('Leaving Earth for the Moon')
+  await expect(row('Burns')).toContainText('Entering lunar orbit')
+  await expect(row('Burns')).toContainText('One instant stands for the burn')
+  await expect(row('Burns')).toContainText('Burns in lunar orbit are not listed')
+  await expect(main).not.toContainText('TLI')
+  // A budget for corrections under assumed errors, never a prediction; each size says its sample.
+  await openRow(page, 'Corrections on the way')
+  const budget = row('Corrections on the way')
+  await expect(budget.locator('summary')).toContainText(/a budget: [\d.]+ m\/s in 99 of 100 runs/)
+  await expect(budget).toContainText('not a prediction')
+  await expect(budget).toContainText(/In 1,000 runs of the flight as planned/)
+  await expect(budget).toContainText('allowing for the number of runs')
+  await expect(budget.getByRole('table').getByRole('row')).toHaveCount(5)
+  await expect(budget).toContainText('Every error here is assumed')
+  await expectNoSeriousAxe(page, '/missions/blue-ghost-m1/trip (live) with its burns and corrections open')
+
+  // IM-1: no burn found outside the gaps in the reconstruction, and a budget all the same.
+  await page.goto('/missions/im-1/trip')
+  await expect(answer).toContainText('The trip takes', { timeout: 90_000 })
+  await expect(row('Burns').locator('summary')).toContainText('none listed')
+  await expect(row('Corrections on the way').locator('summary')).toContainText('in 99 of 100 runs')
+
+  // IM-1's launch: the weather row says first what it can show; the wind rule has its past years.
+  await page.goto('/missions/im-1/launch')
+  await expect(answer).toContainText('It launched on', { timeout: 90_000 })
+  await openRow(page, 'Weather rules for this launch')
+  const rules = row('Weather rules for this launch')
+  await expect(rules).toContainText('This launch has flown', { timeout: 30_000 })
+  await expect(rules).toContainText(/Past years \(2001-2024\): over the limit [\d.]+% of the time\./)
+  await expect(rules).toContainText('GOES lightning mapper')
+  // The team's limits form starts from what is entered, read back from the service.
+  await openRow(page, 'Team weather limits')
+  await row('Team weather limits').getByRole('button', { name: 'Enter the team’s limits' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Team weather limits' })
+  await expect(sheet.getByLabel('Note (optional)').first()).toBeVisible()
+  await expect(sheet).not.toContainText('could not be read')
+  await expectNoSeriousAxe(page, 'the team weather limits sheet (live)')
+  await sheet.getByRole('button', { name: 'Close' }).first().click()
+
+  // Griffin-1: each opportunity's weather row starts with its own note, as the service words it.
+  await page.goto('/missions/griffin-1/launch')
+  await expect(answer).toContainText('The next is', { timeout: 90_000 })
+  const cal = (await (await page.request.get(`${API}/missions/griffin-1/launch`)).json()).data as {
+    opportunities: { id: string; weather_note: string }[]
+  }
+  await openRow(page, 'Weather rules for this opportunity')
+  await expect(row('Weather rules for this opportunity')).toContainText(cal.opportunities[0].weather_note, { timeout: 30_000 })
+  const opps = page.getByRole('group', { name: 'Launch opportunities by day' }).getByRole('button')
+  await opps.last().click()
+  await expect(row('Weather rules for this opportunity')).toContainText(cal.opportunities.at(-1)!.weather_note, { timeout: 30_000 })
 })
 
 test('return (live API): where each flown booster came down, and a planned one not published yet', async ({ page, context }) => {

@@ -538,7 +538,7 @@ function LimitsRow({ rules, vehicleId }: { rules: RuleRowDTO[]; vehicleId: strin
         open={open}
         onClose={() => setOpen(false)}
         title="Team weather limits"
-        intro="For the rules whose limit the vehicle maker does not publish. Each starts from the limit as entered; empty a field to remove that limit."
+        intro="For the rules whose limit the vehicle maker does not publish. Each starts from the limit as entered; empty a field to remove that limit. A note says where a limit comes from."
         saving={write.isPending}
         error={write.error}
         history={<HistoryList entries={history.data} pending={history.isPending} error={history.error} />}
@@ -592,7 +592,7 @@ function LimitsRow({ rules, vehicleId }: { rules: RuleRowDTO[]; vehicleId: strin
                     }
                   </Field>
                 </div>
-                <Field label="Note (optional)" hint="Where the limit comes from, or anything the launch team should know.">
+                <Field label="Note (optional)">
                   {(p) => <TextInput {...p} value={d.note} onChange={(e) => edit(r.id, { note: e.target.value })} />}
                 </Field>
               </fieldset>

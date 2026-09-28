@@ -351,7 +351,8 @@ into the hub header.
 ## 5. Entering records (the project manager)
 
 Every write is one small form in a `Sheet`, opened by a secondary button next
-to what it changes. Forms share `Field` (visible label, hint, error),
+to what it changes. The browser's own checks are off (`noValidate`), so each
+message is ours and sits under the field it is about. Forms share `Field` (visible label, hint, error),
 48 px controls, and one primary button ("Save"). The server's refusal is shown
 as it comes (a 409 on an illegal readiness move lists the allowed next
 states).

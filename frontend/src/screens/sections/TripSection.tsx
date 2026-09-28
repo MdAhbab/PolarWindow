@@ -212,7 +212,7 @@ export function CorrectionsRow({ c, note }: { c: TripDTO['corrections']; note: s
   const interval = spread(c.total_p99_m_s)
   const arrival = spread(c.arrival_altitude_km)
   const cell = 'px-3 py-2 text-small text-ink-2 align-top'
-  const num = `${cell} text-right font-mono tnum text-ink`
+  const num = `${cell} text-right font-mono tnum whitespace-nowrap text-ink`
   const head = 'px-3 py-2.5 text-tag font-semibold tracking-caps-md text-ink-3 uppercase align-bottom'
   return (
     <Disclosure title="Corrections on the way" meta={`a budget: ${figure(c.total_p99_m_s)} in 99 of 100 runs`}>
@@ -230,8 +230,8 @@ export function CorrectionsRow({ c, note }: { c: TripDTO['corrections']; note: s
         <thead>
           <tr className="bg-inset">
             <th scope="col" className={head}>Correction</th>
-            <th scope="col" className={`${head} text-right`}>95 of 100 runs</th>
-            <th scope="col" className={`${head} text-right`}>99 of 100 runs</th>
+            <th scope="col" className={`${head} text-right`}>Enough in 95 of 100 runs</th>
+            <th scope="col" className={`${head} text-right`}>Enough in 99 of 100 runs</th>
           </tr>
         </thead>
         <tbody>
@@ -241,16 +241,16 @@ export function CorrectionsRow({ c, note }: { c: TripDTO['corrections']; note: s
                 <span className="block font-semibold text-ink">{b.name}</span>
                 {dateTimeWords(Date.parse(b.t))}
               </th>
-              <td className={num}>at most {figure(b.p95_m_s)}</td>
-              <td className={num}>at most {figure(b.p99_m_s)}</td>
+              <td className={num}>{figure(b.p95_m_s)}</td>
+              <td className={num}>{figure(b.p99_m_s)}</td>
             </tr>
           ))}
           <tr className="border-t border-line-strong">
             <th scope="row" className={`${cell} font-semibold text-ink`}>
               All {c.burns.length} together
             </th>
-            <td className={num}>at most {figure(c.total_p95_m_s)}</td>
-            <td className={num}>at most {figure(c.total_p99_m_s)}</td>
+            <td className={num}>{figure(c.total_p95_m_s)}</td>
+            <td className={num}>{figure(c.total_p99_m_s)}</td>
           </tr>
         </tbody>
       </table>

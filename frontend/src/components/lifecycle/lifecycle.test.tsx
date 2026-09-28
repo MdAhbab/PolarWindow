@@ -389,6 +389,7 @@ describe('the charts’ arrays, shared with their tables', () => {
     expect(percentWords(0)).toBe('0%')
     expect(observedWords({ state: 'clear', detail: 'None within 10 nmi.' }).lead).toBe('Seen now: clear.')
     expect(observedWords({ state: 'seen', detail: '3 flashes within 10 nmi.' })).toEqual({ lead: 'Seen now:', detail: '3 flashes within 10 nmi.' })
+    expect(observedWords({ state: 'no_data', detail: 'Watched by the range.' })).toEqual({ detail: 'Watched by the range.' })
   })
 
   it('team weather limits: start as entered; an empty field is no limit; a limit for a rule not shown is sent as it stands', () => {

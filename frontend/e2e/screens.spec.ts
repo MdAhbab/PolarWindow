@@ -45,6 +45,13 @@ for (const theme of ['dark', 'light'] as const) {
       await page.waitForLoadState('networkidle')
       await expectNoSeriousAxe(page, `${r} (${theme})`)
     }
+    // The newest answers with every row open: the correction budget, the weather notes, the sea at Griffin-1's zone.
+    for (const r of ['/missions/blue-ghost-m1/trip', '/missions/im-1/launch', '/missions/griffin-1/return']) {
+      await page.goto(r)
+      await page.waitForLoadState('networkidle')
+      for (const s of await page.locator('main summary').all()) await s.click()
+      await expectNoSeriousAxe(page, `${r} with every row open (${theme})`)
+    }
     // Settings with every project row open, a parameter's form and history among them.
     await page.goto('/missions')
     await page.getByRole('button', { name: 'Settings' }).click()
@@ -117,6 +124,21 @@ test('axe and the fixed tab bar on a phone', async ({ page, context }) => {
     // Nothing runs off the side: no sideways scroll on a phone.
     expect(await page.evaluate(() => document.documentElement.scrollWidth), `${r} scrolls sideways at 375 px`).toBeLessThanOrEqual(375)
   }
+  // Rows open on a phone: the correction budget's table and the weather notes still fit; so does the limits form.
+  for (const r of ['/missions/blue-ghost-m1/trip', '/missions/im-1/launch']) {
+    await page.goto(r)
+    await page.waitForLoadState('networkidle')
+    for (const s of await page.locator('main summary').all()) await s.click()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth), `${r} with rows open scrolls sideways at 375 px`).toBeLessThanOrEqual(375)
+  }
+  await page.getByRole('button', { name: 'Enter the team’s limits' }).click()
+  const limits = page.getByRole('dialog', { name: 'Team weather limits' })
+  await expect(limits.getByLabel('Note (optional)').first()).toBeVisible()
+  expect(await limits.evaluate((d) => d.scrollWidth - d.clientWidth), 'the limits form scrolls sideways at 375 px').toBeLessThanOrEqual(0)
+  await expectNoSeriousAxe(page, 'the team weather limits form at 375 px')
+  await limits.getByRole('button', { name: 'Close' }).first().click()
+  await page.goto('/compare')
+  await page.waitForLoadState('networkidle')
   // The last line of the page is never under the tab bar.
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
   const footer = page.getByText('Estimates from a terrain map', { exact: false })

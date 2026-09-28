@@ -17,14 +17,16 @@ const APP = process.env.APP_URL ?? 'http://localhost:5174'
 const API = process.env.API_BASE ?? 'http://localhost:8000/api/v1'
 const OUT = process.env.SCREENS_OUT ?? join(dirname(fileURLToPath(import.meta.url)), '..', 'e2e', '__screens__')
 
-/** The hub (Landing open, the surface stay) and the steps the service answers. */
-const PAGES: [name: string, path: string][] = [
+/** The hub (Landing open, the surface stay) and the steps the service answers; some with rows open. */
+const PAGES: [name: string, path: string, open?: string[]][] = [
   ['hub-im-2', '/missions/im-2'],
   ['ready-im-2', '/missions/im-2/ready'],
   ['launch-im-1-flown', '/missions/im-1/launch'],
   ['launch-griffin-1-calendar', '/missions/griffin-1/launch'],
   ['trip-im-2', '/missions/im-2/trip'],
   ['trip-im-1-with-gaps', '/missions/im-1/trip'],
+  ['trip-blue-ghost-m1-corrections', '/missions/blue-ghost-m1/trip', ['Burns', 'Corrections on the way']],
+  ['launch-im-1-weather-rules', '/missions/im-1/launch', ['Weather rules for this launch', 'Team weather limits']],
   ['contact-im-2', '/missions/im-2/contact'],
   ['return-im-1-land', '/missions/im-1/return'],
   ['return-im-2-droneship', '/missions/im-2/return'],
@@ -67,9 +69,11 @@ async function main() {
       localStorage.setItem('pw-prefs', JSON.stringify({ face: 'planner', theme: 'dark', motion: 'reduced', shortcuts: true }))
     }, session)
     const page = await context.newPage()
-    for (const [name, path] of PAGES) {
+    for (const [name, path, open = []] of PAGES) {
       await page.goto(`${APP}${path}`)
       await settle(page)
+      for (const title of open) await page.locator('main summary', { hasText: title }).first().click()
+      if (open.length) await settle(page)
       await page.screenshot({ path: join(OUT, `${name}.${device}.png`), fullPage: true })
     }
     // Settings → Project, the parameters and the risk scale open.

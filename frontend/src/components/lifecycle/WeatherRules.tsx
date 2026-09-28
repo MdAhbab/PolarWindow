@@ -84,11 +84,11 @@ export function percentWords(share: number): string {
   return `${pct < 10 ? pct.toFixed(1) : Math.round(pct)}%`
 }
 
-/** What was seen (lightning from space: clear or seen now, never at the launch time), in words. */
-export function observedWords(o: NonNullable<RuleRowDTO['observed']>): { lead: string; detail: string } {
+/** What was seen (lightning from space: clear or seen now, never at the launch time); with nothing seen, only why. */
+export function observedWords(o: NonNullable<RuleRowDTO['observed']>): { lead?: string; detail: string } {
   if (o.state === 'clear') return { lead: 'Seen now: clear.', detail: o.detail }
   if (o.state === 'seen') return { lead: 'Seen now:', detail: o.detail }
-  return { lead: 'Not seen here.', detail: o.detail }
+  return { detail: o.detail }
 }
 
 function OtherCell({ row }: { row: RuleRowDTO }) {
