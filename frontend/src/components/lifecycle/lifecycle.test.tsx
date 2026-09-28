@@ -36,6 +36,7 @@ import { oldFeedsWords } from './OldFeeds'
 import type { CapsuleModelCheckDTO, FeedDTO } from '../../lib/api/lifecycle'
 import { calendarDays } from './LaunchCalendar'
 import { axisTicks, complexOf, contactRows } from './ContactChart'
+import { contactAnswer, numberWords, relayList } from '../../screens/sections/ContactSection'
 import sectionsFixture from '../../lib/api/__fixtures__/lifecycle/sections.json'
 import readyFixture from '../../lib/api/__fixtures__/lifecycle/ready.json'
 import tripFixture from '../../lib/api/__fixtures__/lifecycle/trip.json'
@@ -454,10 +455,15 @@ describe('the charts’ arrays, shared with their tables', () => {
     expect(long.slice(1).map((t) => t.label)).toEqual(['Day 2', 'Day 4', 'Day 6', 'Day 8', 'Day 10', 'Day 12'])
   })
 
-  it('contact: a relay with no real orbit is a range row, drawn after the real links', () => {
+  it('contact: a relay with no real orbit is a range row after the real links; orbiters come last, never as relays', () => {
     const rows = contactRows(contact)
-    expect(rows[rows.length - 1].planned).toBe(true)
+    const planned = rows.findIndex((r) => r.planned)
     expect(rows.filter((r) => r.planned)).toHaveLength(1)
+    expect(rows[planned].caption).toBe('relay · not launched')
+    expect(rows.slice(0, planned).every((r) => !r.planned && !r.orbiter)).toBe(true)
+    const orbiters = rows.slice(planned + 1)
+    expect(orbiters.map((r) => r.label)).toEqual(['Lunar Reconnaissance Orbiter', 'Danuri'])
+    expect(orbiters.every((r) => r.orbiter && !r.relayId && r.caption === 'could see the lander; not a relay')).toBe(true)
   })
 })
 
@@ -667,5 +673,37 @@ describe('The hub’s note on old live data', () => {
   })
   it('says nothing when every feed is recent', () => {
     expect(oldFeedsWords([f({}), f({ product: 'alerts' })])).toBeNull()
+  })
+})
+
+describe('Contact through a relay', () => {
+  const q = (o: Partial<QuantityDTO>): QuantityDTO => ({ ...contact.numbers.direct_h, value: null, pm: null, lo: null, hi: null, missing_reason: null, ...o })
+
+  it('the relay is a range with its launch status beside it; waits that count it say so', () => {
+    expect(contactAnswer(contact)).toBe(
+      'A ground station can hear it for 159.0 ±0.5 h over these dates. Through Lunar Pathfinder (not launched) it could add 12–31 h, if it flies as planned. ' +
+        'The longest time without contact is 0.4–1 h with the relay, if it flies as planned.',
+    )
+    const [r] = relayList(contact)
+    expect(r.state?.words).toBe('Not launched')
+    expect(r.launch).toMatch(/^To fly on Firefly's Blue Ghost Mission 2/)
+    expect(numberWords(contact.numbers.either_h, 'if the relay flies as planned')).toBe('171–190 h, if the relay flies as planned')
+  })
+
+  it('a planned relay with no published orbit is named, not counted; with no relay the waits are plain', () => {
+    const reason = "The planned relay's orbit is not published, so time through it is not worked out."
+    const unpublished = {
+      ...contact,
+      relays: [{ ...contact.relays[0], adds_h: q({ missing_reason: "The relay's orbit is not published." }) }],
+      nodes: contact.nodes.map((n) => (n.kind === 'relay' ? { ...n, status: 'planned' as const } : n)),
+      numbers: { ...contact.numbers, via_relay_h: q({ missing_reason: reason }), either_h: q({ missing_reason: reason }), longest_unheard_h: q({ value: 0.23 }) },
+    }
+    expect(contactAnswer(unpublished)).toBe(
+      'A ground station can hear it for 159.0 ±0.5 h over these dates. Lunar Pathfinder (planned, not launched) could relay for it, but time through it is not worked out yet. ' +
+        'The longest time without contact is 0.23 h.',
+    )
+    expect(numberWords(unpublished.numbers.either_h)).toBe(`Not worked out: ${reason}`)
+    const none = { ...contact, relays: [], numbers: { ...contact.numbers, longest_unheard_h: q({ value: 0 }) } }
+    expect(contactAnswer(none)).toBe('A ground station can hear it for all 159.0 ±0.5 h of these dates.')
   })
 })

@@ -3,17 +3,17 @@ import { useQuery } from '@tanstack/react-query'
 import { useShallow } from 'zustand/react/shallow'
 import { API_BASE, api } from '../../lib/api/client'
 import type { MissionDetail } from '../../lib/api/adapters'
-import type { ContactDTO, LifecycleMetaDTO } from '../../lib/api/lifecycle'
+import type { ContactDTO, LifecycleMetaDTO, QuantityDTO } from '../../lib/api/lifecycle'
 import { useHistory, useLifecycleWrite, useSection, useSectionStatus } from '../../lib/api/lifecycleQueries'
 import { keys } from '../../lib/api/queries'
 import { useWindowParams } from '../../lib/mission'
 import { useMission as useStore } from '../../lib/store'
 import { hasSite } from '../../lib/sites'
 import { dateTimeWords, msFromModelH, windowLine } from '../../lib/format'
-import { quantityText } from '../../lib/lifecycle/quantity'
+import { quantityText, quantityView } from '../../lib/lifecycle/quantity'
 import { NumberRow, QuantityTile } from '../../components/lifecycle/QuantityTile'
 import { Answer, ChartPanel, HowSure, Legend, Rows, SectionLayout, SectionStates, SourcesRow } from '../../components/lifecycle/Section'
-import { ContactChart, ContactTable, contactRows } from '../../components/lifecycle/ContactChart'
+import { ContactChart, ContactTable, ORBITER_CAPTION, RELAY_STATUS, contactRows, rowStretches } from '../../components/lifecycle/ContactChart'
 import { Field, FormSheet, HistoryList, Select, TextInput } from '../../components/lifecycle/Forms'
 import { WindowPicker } from '../../components/WindowPicker'
 import { Button, Disclosure } from '../../components/ui'
@@ -52,6 +52,70 @@ export function ContactSection({ mission: m }: { mission: MissionDetail }) {
   )
 }
 
+/** A number given as a lo–hi range: with a relay, one that counts the relay if it flies as planned. */
+const isRange = (q: QuantityDTO) => q.lo !== null && q.hi !== null
+
+/**
+ * Each relay with its launch status: `state` in words with a glyph, from its
+ * node; `launch` the served status line (its launch plan), or the node's note.
+ */
+export function relayList(c: ContactDTO) {
+  return c.relays.map((r) => {
+    const node = c.nodes.find((n) => n.id === r.id)
+    return {
+      id: r.id,
+      name: r.name,
+      adds_h: r.adds_h,
+      operator: node?.operator ?? null,
+      state: node ? RELAY_STATUS[node.status] : null,
+      launch: r.status || node?.launch_note || null,
+    }
+  })
+}
+
+/**
+ * The answer in words (design-lifecycle.md, Contact): what a ground station
+ * hears, what a relay could add as a range with its launch status beside it,
+ * and the longest time without contact, saying when that counts the relay.
+ */
+export function contactAnswer(c: ContactDTO): string {
+  const n = c.numbers
+  const relays = relayList(c)
+  const heardThroughout = n.longest_unheard_h.value === 0
+  const out = [
+    heardThroughout
+      ? `A ground station can hear it for all ${quantityText(n.station_hears_h)} of these dates.`
+      : `A ground station can hear it for ${quantityText(n.station_hears_h)} over these dates.`,
+  ]
+  const one = relays.length === 1 ? relays[0] : null
+  const named = one ? `${one.name}${one.state ? ` (${one.state.words.toLowerCase()})` : ''}` : null
+  if (relays.length && isRange(n.via_relay_h)) {
+    out.push(
+      one
+        ? `Through ${named} it could add ${quantityText(n.via_relay_h)}, if it flies as planned.`
+        : `Through a relay it could add ${quantityText(n.via_relay_h)}, if they fly as planned.`,
+    )
+  } else if (relays.length) {
+    out.push(
+      one
+        ? `${named} could relay for it, but time through it is not worked out yet.`
+        : `${relays.map((r) => r.name).join(' and ')} could relay for it, but time through them is not worked out yet.`,
+    )
+  }
+  if (!heardThroughout) {
+    const withRelay = relays.length > 0 && isRange(n.longest_unheard_h)
+    out.push(`The longest time without contact is ${quantityText(n.longest_unheard_h)}${withRelay ? ' with the relay, if it flies as planned' : ''}.`)
+  }
+  return out.join(' ')
+}
+
+/** A number for a list: the figure, or "Not worked out: {reason}". */
+export function numberWords(q: QuantityDTO, rangeNote?: string): string {
+  const v = quantityView(q)
+  if (v.kind === 'missing') return `Not worked out: ${v.missingReason}`
+  return v.kind === 'range' && rangeNote ? `${v.sentence}, ${rangeNote}` : v.sentence
+}
+
 /** True when the answer covers dates other than the ones asked for. */
 function servedOtherDates(c: Pick<ContactDTO, 'start' | 'end'>, asked: { start: string; end: string }): boolean {
   const differs = (served: string | undefined, want: string) => served !== undefined && Date.parse(served) !== Date.parse(want)
@@ -78,18 +142,13 @@ function ContactAnswer({
   const rows = contactRows(contact)
   const planned = rows.some((r) => r.planned)
   const { windowStartH, windowHours } = useStore(useShallow((s) => ({ windowStartH: s.windowStartH, windowHours: s.windowHours })))
-  const relayRange = n.via_relay_h.lo !== null || n.via_relay_h.value !== null
-  // No gap at all: one sentence says so, instead of a zero-hour gap.
-  const heardThroughout = n.longest_unheard_h.value === 0
+  const relays = relayList(contact)
+  const orbiters = rows.filter((r) => r.orbiter)
+  // A wait that counts a planned relay is a range, and says so.
+  const relayNote = (q: QuantityDTO) => (relays.length && isRange(q) ? 'with the relay, if it flies as planned' : undefined)
   return (
     <>
-      <Answer meta={meta}>
-        {heardThroughout
-          ? <>A ground station can hear it for all {quantityText(n.station_hears_h)} of these dates.</>
-          : <>A ground station can hear it for {quantityText(n.station_hears_h)} over these dates.</>}
-        {relayRange && contact.relays.length > 0 && <> Through a relay it could add {quantityText(n.via_relay_h)}, if it flies as planned.</>}
-        {!heardThroughout && <> The longest time without contact is {quantityText(n.longest_unheard_h)}.</>}
-      </Answer>
+      <Answer meta={meta}>{contactAnswer(contact)}</Answer>
       {contact.link_budget_note && <UncertaintyNote className="-mt-3">{contact.link_budget_note}</UncertaintyNote>}
       <NumberRow>
         <QuantityTile term="stationHears" q={n.station_hears_h} tone="earth" icon="earth" scale={hours} />
@@ -104,8 +163,8 @@ function ContactAnswer({
           scale={hours}
           note={contact.relays.length ? 'if it flies as planned' : undefined}
         />
-        <QuantityTile term="contactUnheard" q={n.longest_unheard_h} scale={hours} />
-        <QuantityTile term="messageWait" q={n.longest_message_wait_min} />
+        <QuantityTile term="contactUnheard" q={n.longest_unheard_h} scale={hours} note={relayNote(n.longest_unheard_h)} />
+        <QuantityTile term="messageWait" q={n.longest_message_wait_min} note={relayNote(n.longest_message_wait_min)} />
       </NumberRow>
       <ChartPanel
         title={`Who can hear the lander, ${windowLine(start, hours)}`}
@@ -115,6 +174,7 @@ function ContactAnswer({
             items={[
               { swatch: <span className="h-3 w-5 bg-earth-fill" />, label: 'Can hear the lander' },
               ...(planned ? [{ swatch: <span className="hatch-uncertain h-3 w-5 border border-uncertain" />, label: 'A range: if it flies as planned' }] : []),
+              ...(orbiters.length ? [{ swatch: <span className="h-3 w-5 border border-dashed border-earth" />, label: 'Could see the lander (an orbiter, not a relay)' }] : []),
               ...(contact.bookings.length ? [{ swatch: <span className="h-3 w-5 border-2 border-ink" />, label: 'Booked pass' }] : []),
             ]}
           />
@@ -123,17 +183,56 @@ function ContactAnswer({
       />
       {datesNote && <p className="-mt-3 text-caption leading-caption text-ink-3">{datesNote}</p>}
       <Rows>
-        {contact.relays.length > 0 && (
-          <Disclosure title="Relays" meta={contact.relays.map((r) => r.name).join(', ')}>
+        {relays.length > 0 && (
+          <Disclosure title="Relays" meta={relays.map((r) => (r.state ? `${r.name} · ${r.state.words.toLowerCase()}` : r.name)).join(', ')}>
             <ul className="flex flex-col divide-y divide-line border-y border-line">
-              {contact.relays.map((r) => (
+              {relays.map((r) => (
                 <li key={r.id} className="flex flex-col gap-0.5 py-2.5">
-                  <span className="text-body font-semibold text-ink">{r.name}</span>
+                  <span className="text-body font-semibold text-ink">
+                    {r.name}
+                    {r.operator && <span className="font-normal text-ink-3"> · {r.operator}</span>}
+                  </span>
+                  <span className="text-small text-ink">
+                    {r.state && (
+                      <>
+                        <span aria-hidden="true">{r.state.glyph} </span>
+                        {r.state.words}.{' '}
+                      </>
+                    )}
+                    {r.launch}
+                  </span>
                   <span className="text-small text-ink-2">
-                    Adds {quantityText(r.adds_h)}, if it flies as planned. {r.status}
+                    {isRange(r.adds_h)
+                      ? `Adds ${quantityText(r.adds_h)} through it, if it flies as planned.`
+                      : `Time through it: ${numberWords(r.adds_h).replace(/^Not worked out: /, 'not worked out. ')}`}
                   </span>
                 </li>
               ))}
+            </ul>
+          </Disclosure>
+        )}
+        {orbiters.length > 0 && (
+          <Disclosure title="Orbiters that could see the lander" meta={orbiters.map((r) => r.label).join(', ')}>
+            <p className="text-body text-ink-2">
+              {contact.orbiters_note ??
+                'These orbiters already fly over the Moon and could see the lander. None is a relay for it: no agreement carries its data, so they count in no number above.'}
+            </p>
+            <ul className="flex flex-col divide-y divide-line border-y border-line">
+              {orbiters.map((r) => {
+                const node = contact.nodes.find((x) => x.kind === 'orbiter' && (x.id === r.links[0]?.to || x.id === r.links[0]?.from))
+                const passes = rowStretches(r).length
+                return (
+                  <li key={r.key} className="flex flex-wrap items-baseline justify-between gap-x-4 py-2.5">
+                    <span className="text-body text-ink">
+                      {r.label}
+                      {node?.operator ? <span className="text-small text-ink-3"> · {node.operator}</span> : null}
+                    </span>
+                    <span className="text-small text-ink-2">
+                      {passes} pass{passes === 1 ? '' : 'es'} over these dates · {ORBITER_CAPTION}
+                    </span>
+                  </li>
+                )
+              })}
             </ul>
           </Disclosure>
         )}
@@ -142,11 +241,11 @@ function ContactAnswer({
         <Disclosure title="More numbers">
           <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-body sm:grid-cols-[max-content_1fr]">
             <dt className="text-ink-3">Time in contact with Earth (Earth above the skyline)</dt>
-            <dd className="text-ink">{quantityText(n.direct_h)}</dd>
+            <dd className="text-ink">{numberWords(n.direct_h)}</dd>
             <dt className="text-ink-3">In contact either way, directly or through a relay</dt>
-            <dd className="text-ink">{quantityText(n.either_h)}</dd>
+            <dd className="text-ink">{numberWords(n.either_h, 'if the relay flies as planned')}</dd>
             <dt className="text-ink-3">Dark and out of contact at once</dt>
-            <dd className="text-ink">{quantityText(n.dark_and_unheard_h)}</dd>
+            <dd className="text-ink">{numberWords(n.dark_and_unheard_h, 'with the relay, if it flies as planned')}</dd>
           </dl>
         </Disclosure>
         <Disclosure title="Download the contact plan" meta="ION, spreadsheet">

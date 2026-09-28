@@ -62,10 +62,28 @@
     "id": "pathfinder",
     "kind": "relay",
     "name": "Lunar Pathfinder",
-    "operator": "ESA / SSTL",
+    "operator": "ESA, built and operated by Surrey Satellite Technology Ltd",
     "status": "not_launched",
     "orbit": "planned",
-    "launch_note": "Planned on Blue Ghost M2, 2027"
+    "launch_note": "To fly on Firefly's Blue Ghost Mission 2; ESA: launch not earlier than November 2026."
+   },
+   {
+    "id": "lro",
+    "kind": "orbiter",
+    "name": "Lunar Reconnaissance Orbiter",
+    "operator": "NASA",
+    "status": "operating",
+    "orbit": "real",
+    "launch_note": null
+   },
+   {
+    "id": "danuri",
+    "kind": "orbiter",
+    "name": "Danuri",
+    "operator": "KARI",
+    "status": "operating",
+    "orbit": "real",
+    "launch_note": null
    }
   ],
   "links": [
@@ -225,6 +243,148 @@
     "data_rate_kbps": null,
     "margin_db": null,
     "from": "lander"
+   },
+   {
+    "from": "lander",
+    "to": "lro",
+    "stretches": [
+     {
+      "start": "2025-03-06T18:10:00Z",
+      "end": "2025-03-06T18:34:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-07T06:10:00Z",
+      "end": "2025-03-07T06:34:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-07T18:10:00Z",
+      "end": "2025-03-07T18:34:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-08T06:10:00Z",
+      "end": "2025-03-08T06:34:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-08T18:10:00Z",
+      "end": "2025-03-08T18:34:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-09T06:10:00Z",
+      "end": "2025-03-09T06:34:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-09T18:10:00Z",
+      "end": "2025-03-09T18:34:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-10T06:10:00Z",
+      "end": "2025-03-10T06:34:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-10T18:10:00Z",
+      "end": "2025-03-10T18:34:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-11T06:10:00Z",
+      "end": "2025-03-11T06:34:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-11T18:10:00Z",
+      "end": "2025-03-11T18:34:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-12T06:10:00Z",
+      "end": "2025-03-12T06:34:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-12T18:10:00Z",
+      "end": "2025-03-12T18:34:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-13T06:10:00Z",
+      "end": "2025-03-13T06:34:00Z",
+      "open_start": false,
+      "open_end": false
+     }
+    ],
+    "data_rate_kbps": null,
+    "margin_db": null
+   },
+   {
+    "from": "lander",
+    "to": "danuri",
+    "stretches": [
+     {
+      "start": "2025-03-06T21:40:00Z",
+      "end": "2025-03-06T21:58:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-07T21:40:00Z",
+      "end": "2025-03-07T21:58:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-08T21:40:00Z",
+      "end": "2025-03-08T21:58:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-09T21:40:00Z",
+      "end": "2025-03-09T21:58:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-10T21:40:00Z",
+      "end": "2025-03-10T21:58:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-11T21:40:00Z",
+      "end": "2025-03-11T21:58:00Z",
+      "open_start": false,
+      "open_end": false
+     },
+     {
+      "start": "2025-03-12T21:40:00Z",
+      "end": "2025-03-12T21:58:00Z",
+      "open_start": false,
+      "open_end": false
+     }
+    ],
+    "data_rate_kbps": null,
+    "margin_db": null
    }
   ],
   "numbers": {
@@ -281,12 +441,12 @@
     "source": null
    },
    "longest_unheard_h": {
-    "value": 1.0,
+    "value": null,
     "unit": "h",
     "provenance": "computed",
-    "pm": 0.1,
-    "lo": null,
-    "hi": null,
+    "pm": null,
+    "lo": 0.4,
+    "hi": 1.0,
     "factor": null,
     "open": false,
     "no_margin_reason": null,
@@ -294,12 +454,12 @@
     "source": null
    },
    "longest_message_wait_min": {
-    "value": 61,
+    "value": null,
     "unit": "min",
     "provenance": "computed",
-    "pm": 2,
-    "lo": null,
-    "hi": null,
+    "pm": null,
+    "lo": 24,
+    "hi": 61,
     "factor": null,
     "open": false,
     "no_margin_reason": null,
@@ -337,10 +497,10 @@
      "missing_reason": null,
      "source": null
     },
-    "status": "Not launched: planned on Blue Ghost M2, 2027"
+    "status": "To fly on Firefly's Blue Ghost Mission 2; ESA: launch not earlier than November 2026."
    }
   ],
-  "link_budget_note": "Line of sight only: the lander\u2019s radio power is not published.",
+  "link_budget_note": "Line of sight only: the lander’s radio power is not published.",
   "bookings": [
    {
     "station": "dss-14",
@@ -348,7 +508,8 @@
     "end": "2025-03-06T23:30:00Z",
     "entered_by": "A. Rahman"
    }
-  ]
+  ],
+  "orbiters_note": "These orbiters could see the lander; none carries a lander's data, as no agreement is in place."
  },
  "meta": {
   "computed_at": "2026-09-27T08:00:00Z",

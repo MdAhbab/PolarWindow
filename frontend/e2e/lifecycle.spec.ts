@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { API, expectNoSeriousAxe, openRow, returningVisitor, watchConsole } from './helpers'
+import { API, expectNoSeriousAxe, openRow, openRow as openRowOf, returningVisitor, watchConsole } from './helpers'
 import { fulfillWrite, serveLifecycleFixtures } from './lifecycleFixtures'
 
 /**
@@ -321,6 +321,50 @@ test('space weather now (contract fixtures): the readings in a sentence, each wi
   await page.locator('summary', { hasText: 'NOAA’s forecast as issued' }).click()
   await expectNoSeriousAxe(page, 'space weather now, open (light, 375 px)')
   expect(await page.evaluate(() => document.documentElement.scrollWidth), 'space weather scrolls sideways at 375 px').toBeLessThanOrEqual(375)
+})
+
+test('contact through a relay (contract fixtures): a range with its launch status, waits that count it, orbiters that could see the lander', async ({
+  page,
+  context,
+}) => {
+  await returningVisitor(context)
+  await serveLifecycleFixtures(context)
+  await page.goto('/missions/im-2/contact')
+  const main = page.locator('main')
+  const answer = page.locator('[data-guide="section-answer"]')
+  await expect(answer).toContainText('Through Lunar Pathfinder (not launched) it could add 12–31 h, if it flies as planned.')
+  await expect(answer).toContainText('The longest time without contact is 0.4–1 h with the relay, if it flies as planned.')
+  const tile = (label: string) => page.locator('div.border.bg-panel', { hasText: label }).first()
+  const openRow = async (title: string) => {
+    await openRowOf(page, title)
+    return page.locator('details').filter({ has: page.locator('summary', { hasText: title }) }).first()
+  }
+  await expect(tile('Longest time without contact')).toContainText('with the relay, if it flies as planned')
+  await expect(tile('Longest message wait')).toContainText('24–61')
+  // Each relay with its launch status beside it, in words.
+  const relays = await openRow('Relays')
+  await expect(page.locator('summary', { hasText: 'Relays' })).toContainText('Lunar Pathfinder · not launched')
+  await expect(relays).toContainText('Not launched. To fly on Firefly')
+  await expect(relays).toContainText('Adds 12–31 h through it, if it flies as planned.')
+  // Orbiters already flying could see the lander, and are never called relays.
+  const orbiters = await openRow('Orbiters that could see the lander')
+  await expect(orbiters).toContainText('none carries a lander')
+  await expect(orbiters).toContainText('Lunar Reconnaissance Orbiter')
+  await expect(orbiters).toContainText('14 passes over these dates · could see the lander; not a relay')
+  await expect(main).toContainText('Could see the lander (an orbiter, not a relay)')
+  const more = await openRow('More numbers')
+  await expect(more).toContainText('171–190 h, if the relay flies as planned')
+  await page.getByRole('button', { name: 'Read the chart as a table' }).click()
+  await expect(main.getByRole('table').first()).toContainText('Lunar Reconnaissance Orbiter could see the lander (not a relay)')
+  await expect(main.getByRole('table').first()).toContainText('Lunar Pathfinder, relay · not launched')
+  await expectNoSeriousAxe(page, 'contact with its relay and orbiter rows open (dark)')
+  await page.evaluate(() => localStorage.setItem('pw-prefs', JSON.stringify({ theme: 'light', motion: 'full', shortcuts: true })))
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.reload()
+  await openRow('Relays')
+  await openRow('Orbiters that could see the lander')
+  await expectNoSeriousAxe(page, 'contact with its relay and orbiter rows open (light, 375 px)')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth), 'contact scrolls sideways at 375 px').toBeLessThanOrEqual(375)
 })
 
 test('team sea limits (contract fixtures): the form starts from what is entered, and sends both parts', async ({ page, context }) => {

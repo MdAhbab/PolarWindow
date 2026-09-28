@@ -478,7 +478,8 @@ export interface CorrectionsDTO {
 
 export interface NodeDTO {
   id: string
-  kind: 'station' | 'relay' | 'lander' | 'rover' | 'earth'
+  /** `orbiter`: a lunar orbiter already flying that could see the lander. It is not a relay: no agreement carries a lander's data. */
+  kind: 'station' | 'relay' | 'lander' | 'rover' | 'earth' | 'orbiter'
   name: string
   operator: string | null
   status: 'operating' | 'planned' | 'not_launched'
@@ -512,6 +513,8 @@ export interface ContactDTO {
   }
   relays: { id: string; name: string; adds_h: QuantityDTO; status: string }[]
   link_budget_note: string | null
+  /** Why the orbiters that could see the lander are not relays for it. */
+  orbiters_note?: string | null
   bookings: { station: string; start: string; end: string; entered_by: string; note?: string | null }[]
   /** One-way light time between the Moon and Earth over these dates, seconds. */
   light_time_s?: { min: number; max: number }

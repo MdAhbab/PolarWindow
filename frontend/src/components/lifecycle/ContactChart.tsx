@@ -16,7 +16,19 @@ export interface ContactRow {
   /** A relay with no real orbit: its time is a range, not a timeline (ADR-16). */
   planned: boolean
   relayId?: string
+  /** An orbiter already flying: it could see the lander, but carries none of its data. */
+  orbiter?: boolean
 }
+
+/** A relay's launch status in words, with a glyph beside them (never the glyph alone). */
+export const RELAY_STATUS: Record<NodeDTO['status'], { words: string; glyph: string }> = {
+  operating: { words: 'In orbit', glyph: '●' },
+  planned: { words: 'Planned, not launched', glyph: '○' },
+  not_launched: { words: 'Not launched', glyph: '○' },
+}
+
+/** The words that say an orbiter is not a relay for this lander. */
+export const ORBITER_CAPTION = 'could see the lander; not a relay'
 
 /**
  * The Deep Space Network's three complexes, by antenna number (DSS-1x and
@@ -34,7 +46,10 @@ export function complexOf(n: NodeDTO | undefined): { key: string; name: string }
   return null
 }
 
-/** The chart's rows, in the order they are drawn: ground stations, then relays. */
+/**
+ * The chart's rows, in the order they are drawn: ground stations, then
+ * relays, then orbiters that could see the lander (they carry none of its data).
+ */
 export function contactRows(c: ContactDTO): ContactRow[] {
   const node = (id: string) => c.nodes.find((n) => n.id === id)
   const rows = new Map<string, ContactRow>()
@@ -42,6 +57,7 @@ export function contactRows(c: ContactDTO): ContactRow[] {
     const from = node(link.from)
     const to = node(link.to)
     const relay = [from, to].find((n) => n?.kind === 'relay')
+    const orbiter = [from, to].find((n) => n?.kind === 'orbiter')
     const planned = Boolean(relay && relay.orbit !== 'real')
     const complex = complexOf(to)
     const key = complex ? complex.key : `${link.from}-${link.to}`
@@ -54,19 +70,23 @@ export function contactRows(c: ContactDTO): ContactRow[] {
     }
     rows.set(key, {
       key,
-      label: complex ? complex.name : relay ? relay.name : (to?.name ?? link.to),
+      label: complex ? complex.name : relay ? relay.name : orbiter ? orbiter.name : (to?.name ?? link.to),
       caption: complex
         ? 'Deep Space Network, 1 antenna'
         : relay
-          ? `relay${from?.kind === 'relay' ? ` to ${to?.name ?? link.to}` : ''}`
-          : (to?.operator ?? ''),
+          ? `relay${from?.kind === 'relay' ? ` to ${to?.name ?? link.to}` : ''} · ${RELAY_STATUS[relay.status].words.toLowerCase()}`
+          : orbiter
+            ? ORBITER_CAPTION
+            : (to?.operator ?? ''),
       links: [link],
       stations: to?.kind === 'station' ? [to.id] : [],
       planned,
       relayId: relay?.id,
+      orbiter: Boolean(orbiter),
     })
   }
-  return [...rows.values()].sort((a, b) => Number(a.planned) - Number(b.planned) || Number(Boolean(a.relayId)) - Number(Boolean(b.relayId)))
+  const rank = (r: ContactRow) => (r.orbiter ? 3 : r.planned ? 2 : r.relayId ? 1 : 0)
+  return [...rows.values()].sort((a, b) => rank(a) - rank(b))
 }
 
 /** Every stretch of a row's links, merged where they overlap: when any antenna on the row can hear. */
@@ -100,7 +120,7 @@ export function ContactChart({ contact, rows, start, end }: { contact: ContactDT
     .map((r) =>
       r.planned
         ? `${r.label}, ${quantityText(relayFor(r)?.adds_h)} somewhere in these dates if it flies as planned`
-        : `${r.label}, ${rowStretches(r).length} stretch${rowStretches(r).length === 1 ? '' : 'es'}`,
+        : `${r.label}${r.orbiter ? ` (${ORBITER_CAPTION})` : ''}, ${rowStretches(r).length} ${r.orbiter ? 'pass' : 'stretch'}${rowStretches(r).length === 1 ? '' : 'es'}`,
     )
     .join('; ')}. ${contact.bookings.length} booked passes. The table lists every pass of every antenna.`
 
@@ -131,9 +151,10 @@ export function ContactChart({ contact, rows, start, end }: { contact: ContactDT
                     return (
                       <span
                         key={a}
-                        className="absolute inset-y-1 bg-earth-fill"
+                        // An orbiter's pass is an outline: it could see the lander, but carries none of its data.
+                        className={`absolute inset-y-1 ${r.orbiter ? 'border border-dashed border-earth' : 'bg-earth-fill'}`}
                         style={{ left: pct(a), width: width(a, b) }}
-                        title={`${r.label}: ${dateTimeWords(a)} to ${dateTimeWords(b)}, ${formatValue((b - a) / HOUR)} h`}
+                        title={`${r.label}${r.orbiter ? ' could see the lander' : ''}: ${dateTimeWords(a)} to ${dateTimeWords(b)}, ${formatValue((b - a) / HOUR)} h`}
                       />
                     )
                   })
@@ -205,7 +226,8 @@ export function ContactTable({ contact, rows }: { contact: ContactDTO; rows: Con
         const a = Date.parse(s.start)
         const b = Date.parse(s.end)
         const booked = contact.bookings.some((x) => (x.station === l.to || x.station === l.from) && Date.parse(x.start) < b && Date.parse(x.end) > a)
-        return { label: `${name(l.from)} to ${name(l.to)}`, a, b, s, booked }
+        const label = r.orbiter ? `${r.label} could see the lander (not a relay)` : `${name(l.from)} to ${name(l.to)}`
+        return { label, a, b, s, booked }
       }),
     ),
   )
@@ -241,7 +263,9 @@ export function ContactTable({ contact, rows }: { contact: ContactDTO; rows: Con
             .filter((r) => r.planned)
             .map((r) => (
               <tr key={`${r.label}planned`} className="border-t border-line">
-                <th scope="row" className={`${cell} font-semibold text-ink`}>{r.label}</th>
+                <th scope="row" className={`${cell} font-semibold text-ink`}>
+                  {r.label}, {r.caption}
+                </th>
                 <td className={cell} colSpan={3}>
                   {quantityText(contact.relays.find((x) => x.id === r.relayId)?.adds_h)} somewhere in
                   these dates, if it flies as planned

@@ -339,8 +339,15 @@ into the hub header.
 
 - **Question:** "How often can the lander talk to Earth?"
 - **Answer:** "A ground station can hear it for {h} hours over these dates.
-  Through a relay it could add {lo} to {hi} hours, if it flies as planned. The
-  longest time without contact is {h} hours." With no gap at all: "A ground
+  Through {relay} ({launch status}) it could add {lo} to {hi} hours, if it
+  flies as planned. The longest time without contact is {h} hours." The relay's
+  launch status stands beside its name ("not launched", "planned, not
+  launched", "in orbit"); with more than one relay, "Through a relay … if they
+  fly as planned". A planned relay whose orbit is not published is named, not
+  counted: "{relay} ({status}) could relay for it, but time through it is not
+  worked out yet" (the tile says why). A wait that counts the relay is a range
+  and says "with the relay, if it flies as planned", in the answer and under
+  its tile. With no gap at all: "A ground
   station can hear it for all {h} of these dates." `window_note` shows only
   when the server used other dates than the ones asked for. A wait under a
   minute reads in seconds, one of two hours or more in hours.
@@ -353,12 +360,19 @@ into the hub header.
   lander to each relay, relay to station), bars where the link is up. A
   planned relay has no real timeline, so its row is the −45° hatch across the
   dates with "{lo}–{hi} h somewhere in these dates, if it flies as planned".
-  Booked passes are outlined boxes labelled "booked". The antennas of one Deep
+  Booked passes are outlined boxes labelled "booked". Orbiters already flying
+  (LRO, Danuri, …) come last, their passes as dashed outlines captioned "could
+  see the lander; not a relay": geometry only, no agreement carries a lander's
+  data, so they count in no number. The antennas of one Deep
   Space Network complex share a row ("Goldstone, California · Deep Space
   Network, 4 antennas"); the twin keeps each antenna. Twin: link, start, end,
   length, booked or not.
-- **Rows:** Relays (each with its launch status) · Booked ground-station
-  passes · Rover and lander line of sight · More numbers · Download the
+- **Rows:** Relays (each with its operator, launch status as glyph and words,
+  its launch plan, and what it adds as a range or why it is not worked out) ·
+  Orbiters that could see the lander (served `orbiters_note` or our words, each
+  with its operator and number of passes) · Booked ground-station
+  passes · Rover and lander line of sight · More numbers (either way as a range
+  "if the relay flies as planned"; a missing number gives its reason) · Download the
   contact plan (ION, CSV) · Change the dates (the same dates as Landing) ·
   How sure is this? · Where does this come from? "Line of sight only: the
   lander's radio power is not published" changes what every number means,
