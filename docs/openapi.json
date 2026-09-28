@@ -4902,6 +4902,16 @@
           },
           "limits": {
             "$ref": "#/components/schemas/SeaLimits"
+          },
+          "model_check": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CapsuleModelCheck"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -4913,9 +4923,84 @@
           "wave_height_m",
           "wind_m_s",
           "daylight",
-          "limits"
+          "limits",
+          "model_check"
         ],
         "title": "Capsule"
+      },
+      "CapsuleModelCheck": {
+        "properties": {
+          "case": {
+            "type": "string",
+            "title": "Case"
+          },
+          "distance_km": {
+            "type": "number",
+            "title": "Distance Km"
+          },
+          "distance_range_km": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Distance Range Km"
+          },
+          "limit_km": {
+            "type": "number",
+            "title": "Limit Km"
+          },
+          "passed": {
+            "type": "boolean",
+            "title": "Passed"
+          },
+          "mission_team_km": {
+            "type": "number",
+            "title": "Mission Team Km"
+          },
+          "ellipse_99_km": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Ellipse 99 Km"
+          },
+          "measured_inside_ellipse": {
+            "type": "boolean",
+            "title": "Measured Inside Ellipse"
+          },
+          "checked_at": {
+            "type": "string",
+            "title": "Checked At"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "case",
+          "distance_km",
+          "distance_range_km",
+          "limit_km",
+          "passed",
+          "mission_team_km",
+          "ellipse_99_km",
+          "measured_inside_ellipse",
+          "checked_at",
+          "sources",
+          "note"
+        ],
+        "title": "CapsuleModelCheck",
+        "description": "The capsule entry model (3-DOF, U.S. Standard Atmosphere 1976) flown from\nOSIRIS-REx's reconstructed entry state, against where its capsule landed."
       },
       "Cleared": {
         "properties": {

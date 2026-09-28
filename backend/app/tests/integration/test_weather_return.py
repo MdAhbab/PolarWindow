@@ -200,6 +200,9 @@ async def test_return_for_flown_and_planned_missions(client, anon_client) -> Non
     assert d["booster"]["wave_height_m"] is None
     assert d["booster"]["wind_m_s"]["provenance"] == "computed"
     assert d["capsule"]["applicable"] is False
+    check = d["capsule"]["model_check"]
+    assert check["passed"] and check["distance_km"] <= check["limit_km"] == 10.0
+    assert "OSIRIS-REx" in check["note"] and "'" not in check["note"]
     r = (await anon_client.get(f"{API}/missions/im-2/return")).json()
     d = r["data"]
     assert d["booster"]["landing"] == "droneship" and d["booster"]["zone"] is None
@@ -310,7 +313,11 @@ async def test_space_weather_now_says_what_is_recorded_and_what_is_not(anon_clie
         "donki",
         "flr",
         "",
-        {"count": 1, "days": 30, "events": [{"id": "f1", "peak": now, "class": "X1.1", "link": "l"}]},
+        {
+            "count": 1,
+            "days": 30,
+            "events": [{"id": "f1", "peak": now, "class": "X1.1", "link": "l"}],
+        },
     )
     r = await anon_client.get(f"{API}/space-weather")
     assert r.status_code == 200, r.text

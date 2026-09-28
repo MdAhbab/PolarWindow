@@ -234,7 +234,16 @@ interface Return {
              zone: Zone | null;
              wave_height_m: Quantity | null; wind_m_s: Quantity | null;
              daylight: boolean | null;
-             limits: SeaLimits } | null;        // null: cancelled
+             limits: SeaLimits;
+             model_check: CapsuleModelCheck | null } | null;  // null: cancelled
+}
+// The capsule entry model flown from OSIRIS-REx's reconstructed entry state, against where
+// its capsule landed (make validate-capsule); null when that check has not been run here.
+interface CapsuleModelCheck {
+  case: string; distance_km: number; distance_range_km: [number, number];
+  limit_km: number; passed: boolean; mission_team_km: number;   // the mission's own simulation
+  ellipse_99_km: [number, number]; measured_inside_ellipse: boolean;
+  checked_at: string; sources: string[]; note: string;         // note: plain words
 }
 ```
 
@@ -552,4 +561,7 @@ that user. `GET /auth/me` returns the same `user`.
     Each `now` number is `published` with the SWPC URL, or missing with the feed's reason;
     `meta.computed_at` is the newest reading's time and `meta.stale` says if any is past its
     budget. No dose here: doses are in `Trip.radiation`.
-
+- 2026-09-28 (H): `Return.capsule.model_check` (`CapsuleModelCheck | null`): the capsule
+  entry model against OSIRIS-REx's landing (9.5 km, limit 10 km; 99 % area 51.4 by 21.4 km
+  holds the real point), with a plain-words `note`. For a mission that returns something
+  (none of the CLPS ones) `applicable` is true and `reason` says no entry state is published.

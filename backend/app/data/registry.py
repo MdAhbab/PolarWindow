@@ -117,6 +117,10 @@ _GOLDSTONE: Final[str] = (
     "https://pds-geosciences.wustl.edu/lunar/gdscc-l-dss14_dss13_dss15_dss25-5-v1/lram_10xx/data"
 )
 
+#: NAIF's PDS archive of the OSIRIS-REx SPICE kernels.
+_OREX_SPK: Final[str] = (
+    "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/orex/orex_spice/spice_kernels/spk"
+)
 _SPECIFIC: Final[tuple[Dataset, ...]] = (
     Dataset(
         id="lola:ldem_80s_80m",
@@ -329,6 +333,22 @@ _SPECIFIC: Final[tuple[Dataset, ...]] = (
         licence="US government work (public domain)",
         catalogue=f"{DATA_NASA}/goldstone-moon-dss14-dss13-dss15-dss25-5-altimetry-v1-0",
         min_bytes=2_000,
+    ),
+    Dataset(
+        id="naif:orex-src-entry",
+        title="OSIRIS-REx sample return capsule, reconstructed from release to entry "
+        "interface (OD 383a), 24 September 2023",
+        provider="NASA NAIF / PDS (OSIRIS-REx SPICE archive)",
+        tier="validation",
+        method="file",
+        urls=(f"{_OREX_SPK}/src_230924_230924_230930_od383a_v1.bsp",),
+        dest="validation/orex/src_230924_230924_230930_od383a_v1.bsp",
+        size_bytes=58368,
+        used_for="The entry state the capsule entry model starts from, to check its landing "
+        "point against the measured one.",
+        licence="US government work (public domain)",
+        sha256="f88348853506cec44525b0f6b3d75da67c58d43f7ddc77d1f842cffb6d354270",
+        min_bytes=50_000,
     ),
     Dataset(
         id="spdf:omni2-hourly",

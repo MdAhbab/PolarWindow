@@ -4,11 +4,13 @@ The booster's landing is read from the cited recovery zones (Launch Library
 2's landing records of the flown launches) or, for a launch still to come,
 from the vehicle's usual practice. Sea and wind limits for recovery are not
 published by the launch providers; the team enters them. Nothing returns
-from the Moon on the CLPS missions, so the capsule part says so.
+from the Moon on the CLPS missions, so the capsule part says so; it carries the
+capsule entry model's check against OSIRIS-REx (``make validate-capsule``).
 """
 
 from __future__ import annotations
 
+import json
 import math
 from datetime import UTC, datetime
 from typing import Any
@@ -16,6 +18,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import get_settings
 from app.core.quantity import Quantity
 from app.data import catalogues
 from app.db.repositories.missions import MissionRecord, MissionRepository
@@ -299,27 +302,60 @@ def _booster(
     }
 
 
+#: The capsule entry model's check, written by ``make validate-capsule``.
+CAPSULE_CHECK = "capsule/orex_check.json"
+
+
+def model_check() -> dict[str, Any] | None:
+    """The capsule entry model against OSIRIS-REx's landing, in numbers and words; None
+    when the check has not been run here."""
+    try:
+        c = json.loads((get_settings().data_dir / CAPSULE_CHECK).read_text())
+    except (OSError, ValueError):
+        return None
+    lo, hi = c["distance_range_km"]
+    a, b = c["ellipse_99_km"]
+    note = (
+        f"From OSIRIS-REx’s reconstructed entry state, the entry model lands its capsule "
+        f"{c['distance_km']:g} km from where the recovery team found it ({lo:g} to {hi:g} km "
+        f"over the published drag range; the limit is {c['limit_km']:g} km). The mission’s own "
+        f"simulation from the same state, before the day’s atmosphere was known, was "
+        f"{c['edl_team_km']:g} km off. Its 99 % landing area, {a:g} by {b:g} km, "
+        f"{'holds' if c['measured_inside_ellipse'] else 'misses'} the real landing point."
+    )
+    return {
+        "case": c["case"],
+        "distance_km": c["distance_km"],
+        "distance_range_km": [lo, hi],
+        "limit_km": c["limit_km"],
+        "passed": c["passed"],
+        "mission_team_km": c["edl_team_km"],
+        "ellipse_99_km": [a, b],
+        "measured_inside_ellipse": c["measured_inside_ellipse"],
+        "checked_at": c["checked_at"],
+        "sources": c["sources"],
+        "note": note,
+    }
+
+
 def _capsule(m: MissionRecord, entered: dict[str, Any] | None) -> dict[str, Any]:
     returns = (m.lifecycle or {}).get("returns")
-    if returns in (None, "none"):
-        return {
-            "applicable": False,
-            "reason": "Nothing comes back to Earth on this mission.",
-            "zone": None,
-            "wave_height_m": None,
-            "wind_m_s": None,
-            "daylight": None,
-            "limits": _limits(entered, "capsule"),
-        }
-    return {
-        "applicable": True,
-        "reason": "The capsule’s return to Earth is not worked out yet.",
+    part = {
+        "applicable": returns not in (None, "none"),
+        "reason": "Nothing comes back to Earth on this mission.",
         "zone": None,
         "wave_height_m": None,
         "wind_m_s": None,
         "daylight": None,
         "limits": _limits(entered, "capsule"),
+        "model_check": model_check(),
     }
+    if part["applicable"]:
+        part["reason"] = (
+            "No entry state is published for this mission’s return, so where the capsule "
+            "comes down is not worked out."
+        )
+    return part
 
 
 async def recovery(session: AsyncSession, mission_id: str) -> dict[str, Any]:

@@ -393,3 +393,56 @@ above 30 MeV). Fluences take the flux as arriving evenly from every direction. O
 merged proton record was not used for these: it has gaps at both peaks and no proton
 values after March 2020, so the events during a flown trip are listed from NASA DONKI (NOAA's
 10 pfu threshold at GOES) without a fluence.
+
+# Capsule entry against OSIRIS-REx (plan track H)
+
+`make validate-capsule` (`app/tests/golden/validate_capsule.py`; the model is
+`app/core/entry.py` with `app/core/atmosphere.py`). The model is a point mass with a
+ballistic coefficient β, falling from the entry interface through the U.S. Standard
+Atmosphere 1976 (equations to 86 km, its Table I densities from 86 to 150 km) that turns
+with the Earth, under gravity with J2; no lift, no parachutes, and a wind only in the
+footprint. Nothing returns to Earth on a CLPS mission, so the model is checked on the one
+recent sample return with a published entry state and a measured landing point.
+
+**Entry state.** The sample return capsule's reconstructed trajectory in NAIF's PDS
+archive (`src_230924_230924_230930_od383a_v1.bsp`, in the registry as
+`naif:orex-src-entry`) ends at the entry interface, 6,503.142 km from the Earth's centre,
+at 14:41:55.072 UTC on 24 September 2023. Its state there matches the navigation team's
+reconstructed entry state (Wibben et al., AAS 24-058, Table 12) to the table's last digit:
+flight path angle −8.184°, heading 66.396°, Earth-relative speed 12.361 km/s, 37.339° N,
+237.216° E.
+
+**Landing** (plan: within 10 km of the measured point). β from published numbers: the
+capsule's mass at entry (49.64 kg as built plus the 121.6 g sample), Stardust's diameter
+(0.8128 m, the same forebody) and its hypersonic axial force coefficient, 1.48 to 1.56
+(Mitcheltree et al. 1997). Flown to the touchdown height, 1,288 m, and compared with the
+recovery team's measured point, 40.3719° N, 113.24° W:
+
+| C_A | β (kg/m²) | Landing | From the measured point | Entry to ground | Peak deceleration |
+|---|---|---|---|---|---|
+| 1.48 | 64.8 | 40.3609 N, 113.3176 W | 6.7 km | 524 s | 30.8 g |
+| 1.52 | 63.1 | 40.3532 N, 113.3491 W | **9.5 km** | 530 s | 31.0 g |
+| 1.56 | 61.5 | 40.3456 N, 113.3797 W | 12.2 km | 535 s | 31.2 g |
+
+The middle value passes, with little room; the published drag range spans 6.7 to 12.2 km.
+Every case lands short (west-southwest), as the mission's own simulation did: from the
+same reconstructed state with its pre-flight atmosphere and winds, it was 8.9 km off, and
+3.5 km with the day's reconstructed atmosphere (Francis et al., AAS 24, comparison
+table), so most of the miss is the day's upper atmosphere, which a standard atmosphere
+cannot know. The time to the ground (530 s) is not comparable with the observed 615 s:
+the model has no parachutes, which change the time and not the place.
+
+**Footprint.** A seeded Monte Carlo of 200 runs: the flight path angle from TCM-12's
+delivery accuracy (0.073° at 3σ, AAS 24-058 Table 5), heading and speed from the E-1 day
+solution (Table 12), β ±2.6 % (the published C_A range as one sigma), and, assumed, the
+density ±5 % and a wind below 30 km of 10 m/s in each direction. Its 99 % ellipse is 51.4
+by 21.4 km, long axis 77° from north, and holds the measured point (the mission's design
+ellipse was 84 by 20 km). Without the wind the ellipse was 0.3 km wide and missed the
+measured point, which lies about 0.9 km across the track: the wind is what sets the width.
+
+The result is written to `data/capsule/orex_check.json` and served in
+`GET /missions/{id}/return` as `capsule.model_check`.
+
+**Not done.** The Moon-to-Earth return trajectory to the entry interface (C1/C2 reversed)
+is not built: no CLPS mission brings anything back, and no planned one publishes an entry
+state. A capsule's zone weather (B2) waits for the same.

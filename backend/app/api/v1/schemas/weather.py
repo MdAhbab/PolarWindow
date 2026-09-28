@@ -162,6 +162,23 @@ class Booster(_M):
     hazard_area_seen: bool | None
 
 
+class CapsuleModelCheck(_M):
+    """The capsule entry model (3-DOF, U.S. Standard Atmosphere 1976) flown from
+    OSIRIS-REx's reconstructed entry state, against where its capsule landed."""
+
+    case: str
+    distance_km: float
+    distance_range_km: list[float]
+    limit_km: float
+    passed: bool
+    mission_team_km: float
+    ellipse_99_km: list[float]
+    measured_inside_ellipse: bool
+    checked_at: str
+    sources: list[str]
+    note: str
+
+
 class Capsule(_M):
     applicable: bool
     reason: str | None
@@ -170,6 +187,7 @@ class Capsule(_M):
     wind_m_s: QuantityOut | None
     daylight: bool | None
     limits: SeaLimits
+    model_check: CapsuleModelCheck | None
 
 
 class Return(_M):

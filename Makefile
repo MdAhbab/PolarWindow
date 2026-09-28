@@ -10,7 +10,7 @@ FE    := frontend
 DATA  := data
 
 .DEFAULT_GOAL := help
-.PHONY: missions climatology thunder-climatology space-climate validate-radiation hindcast-weather validate-trip test-db help install kernels dem sites seed tiles services db-up migrate dev api worker \
+.PHONY: missions climatology thunder-climatology space-climate validate-radiation validate-capsule hindcast-weather validate-trip test-db help install kernels dem sites seed tiles services db-up migrate dev api worker \
         compute feeds feeds-once catalogues \
         frontend test test-fast test-int test-geo lint fmt typecheck contracts \
         golden-update openapi codegen clean nuke check
@@ -86,6 +86,9 @@ space-climate: ## Oulu neutron monitor (NMDB), past solar particle events (GOES,
 
 validate-radiation: ## Belts (IRBEM against NASA SPDF's AE8/AP8), cosmic rays against CRaTER, past events against NOAA's list (prints the docs/validation.md tables)
 	cd $(BE) && $(UV) run python -m app.tests.golden.validate_radiation 2>/dev/null
+
+validate-capsule: ## Capsule entry against OSIRIS-REx (landing within 10 km; writes data/capsule/orex_check.json and prints the docs/validation.md tables)
+	cd $(BE) && $(UV) run python -m app.tests.golden.validate_capsule 2>/dev/null
 
 hindcast-weather: ## GEFS wind shares against the Cape's weather station for a year (AWS open data + IEM; ~30 min, cached)
 	cd $(BE) && $(UV) run python -m app.feeds.hindcast
