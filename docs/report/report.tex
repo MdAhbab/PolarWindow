@@ -85,7 +85,7 @@ response times, test counts and screens on \texttt{f1d5667}, whose engines are u
 \end{center}
 
 \begin{abstract}
-NASA's Commercial Lunar Payload Services (CLPS) programme buys the delivery of science payloads to the Moon from commercial providers. Planning one delivery draws on separate tools for launch design, weather, trajectory, radiation, communications and recovery, each with its own conventions. This report describes POLAR WINDOW, an open planner that follows one CLPS delivery through six sections: readiness, launch, trip, landing, contact with Earth and return. Every number it serves states its source, its margin or the reason it has none, and the age of any live input. No section returns a verdict or a combined score. The engines are checked against the public record of flown missions. The references are NASA's reconstructed trajectories of four CLPS landers, their published liftoff times and NOAA's list of solar particle events. Measured lunar radiation doses and the landing point of the OSIRIS-REx capsule complete the set. Designed at the direction each vehicle climbed, the launch instants of the three flown Falcon 9 missions fall within one minute of the published liftoffs. One day of propagation from a reconstructed state stays within one kilometre in all but one case. Unmet planned tolerances are reported with their measured values. When the climb direction is not known in advance, a designed launch instant misses by about 16 to 18 minutes. The wind ensemble shows no skill against one year of station observations, so its shares are marked not checked. Relays, link budgets and the return from the Moon remain unbuilt, because their inputs are not published.
+NASA's Commercial Lunar Payload Services (CLPS) programme buys the delivery of science payloads to the Moon from commercial providers. Planning one delivery draws on separate tools for launch design, weather, trajectory, radiation, communications and recovery, each with its own conventions. This report describes POLAR WINDOW, an open planner that follows one CLPS delivery through six sections: readiness, launch, trip, landing, contact with Earth and return. Every number it serves states its source, its margin or the reason it has none. It also carries the age of any live input. No section returns a verdict or a combined score. The engines are checked against the public record of flown missions. The references are NASA's reconstructed trajectories of four CLPS landers, their published liftoff times and NOAA's list of solar particle events. Measured lunar radiation doses and the landing point of the OSIRIS-REx capsule complete the set. Designed at the direction each vehicle climbed, the launch instants of the three flown Falcon 9 missions fall within one minute of the published liftoffs. One day of propagation from a reconstructed state stays within one kilometre in all but one case. Unmet planned tolerances are reported with their measured values. When the climb direction is not known in advance, a designed launch instant misses by about 16 to 18 minutes. The wind ensemble shows no skill against one year of station observations, so its shares are marked not checked. Relays, link budgets and the return from the Moon remain unbuilt, because their inputs are not published.
 \end{abstract}
 
 % ---------------------------------------------------------------------------
@@ -111,12 +111,12 @@ This report describes the extension of POLAR WINDOW into a planner that follows 
 delivery through six sections: \emph{Ready}, \emph{Launch}, \emph{Trip}, \emph{Landing},
 \emph{Contact} and \emph{Return}. The work makes four contributions.
 \begin{enumerate}
-\item A single contract for every number. Each value states its provenance: computed, published, entered by a named person, or assumed. It carries a margin (a $\pm$, a range or a multiplicative factor) or the reason it has none, and the age of any live input. No
+\item A single contract for every number. Each value states its provenance: computed, published, entered by a named person, or assumed. It carries a margin (a $\pm$, a range or a multiplicative factor) or the reason it has none. It also carries the age of any live input. No
   section returns a verdict, a readiness percentage or a combined score.
 \item Trajectory, launch, radiation and entry engines checked against flown missions.
   The references are NASA's reconstructions of the four CLPS trips and the measured
   landing of the OSIRIS-REx sample capsule.
-\item A process design that separates network access, heavy computation and request
+\item A process design that separates network access, long computations and request
   handling. Every stored answer records the inputs and engine versions it came from.
   \Cref{sec:perf} measures its response times and its job queue under load.
 \item A disclosure of every planned acceptance tolerance that the engines do not meet,
@@ -167,9 +167,9 @@ chance of a rule being broken. They rarely state the sample behind it or whether
 chance has been checked against observations.
 
 \paragraph{Radiation screening.} Trapped belt fluxes are commonly taken from the AE8 and
-AP8 models \citep{vette1991,sawyer1976}, implemented in the IRBEM
-library\footnote{\url{https://prbem.github.io/IRBEM/}} and exposed in Python by SpacePy
-\citep{niehof2022}. Galactic cosmic
+AP8 models \citep{vette1991,sawyer1976}. The IRBEM
+library\footnote{\url{https://prbem.github.io/IRBEM/}} implements them, and SpacePy
+exposes them in Python \citep{niehof2022}. Galactic cosmic
 rays (GCR) can be modelled with one solar modulation parameter \citep{matthia2013}. Measured doses exist in lunar orbit from CRaTER \citep{schwadron2012} and on the far-side
 surface from Chang'e-4 \citep{zhang2020}. Large solar particle events are described by
 published spectra \citep{king1974}. Engineering tools such as OLTARIS compute dose behind
@@ -234,12 +234,12 @@ work and reads stored answers.}
 \label{fig:arch}
 \end{figure}
 
-A heavy answer is a \emph{job}. Its key is a hash of the job kind, its parameters and the
+An answer that takes seconds or minutes to compute is a \emph{job}. Its key is a hash of the job kind, its parameters and the
 versions of every engine it depends on, called its \emph{closure}. When a stored answer
 with that key exists, the API returns it at once. Otherwise the API queues a job and
 returns HTTP status 202 with a job reference, and the page polls until the answer is
 ready. Workers lease jobs from a PostgreSQL table with row locks that skip rows already
-taken, so several workers can run without a separate queue service. Each answer is stored
+taken. Several workers can therefore run without a separate queue service. Each answer is stored
 as an \emph{assessment} together with its inputs. These are the feed snapshot identifiers,
 the catalogue versions, the kernel set, the terrain product and any values a person entered. An
 answer is therefore reused until one of its inputs or engine versions changes.
@@ -263,8 +263,8 @@ test and the agents' guard check the first rule (\cref{sec:agents}).
 \subsection{Layering, versions and catalogues}
 
 The numerical core has no input or output, no clock and no database access. Ten import
-contracts keep the layers apart. Among them, SPICE is reachable from one module only,
-routes reach the domain only through services, and agents reach it only through their
+contracts keep the layers apart. Among them, SPICE is reachable from one module only.
+Routes reach the domain only through services, and agents reach it only through their
 tool module. Each engine carries its own version, for example \texttt{traj-3} for the
 trajectory engine and \texttt{lw-5} for launch design. A change to one engine
 invalidates only the answers whose closure contains it.
@@ -378,8 +378,8 @@ The correction budget uses an assumed error model, since no provider publishes o
 Errors at departure, in orbit knowledge and in each burn (the model of
 \citet{gates1963}) are pushed through the trajectory in two ways. The linear method uses
 state transition matrices of each stretch. The Monte Carlo method flies seeded runs
-through the full force model, and each correction burn aims the run's own estimated
-state at the planned arrival. The answer reports the 95th and 99th percentiles of the
+through the full force model. In each run, every correction burn aims the run's own
+estimated state at the planned arrival. The answer reports the 95th and 99th percentiles of the
 total correction and labels them a budget for the assumed errors.
 
 \subsection{Trip: radiation screening}
@@ -419,7 +419,7 @@ only show the ingredients. Eight are \emph{observation} rules, such as lightning
 a set distance in the last 30 minutes, for which no forecast probability is given. A
 model rule is evaluated per run of the 31-member GEFS ensemble \citep{guan2022}. The
 wind at the rule's height of \qty{162}{ft} is interpolated on a logarithmic profile
-between the model's \qty{10}{\m} and \qty{80}{\m} winds and is labelled as interpolated.
+between the model's \qty{10}{\m} and \qty{80}{\m} winds. The value is labelled as interpolated.
 The result is a share, $k$ of 31 runs, with its exact interval. Beyond the ensemble's range, the answer falls back to month-by-hour climatology. Wind at \qty{50}{\m} comes from NASA POWER, which is based on MERRA-2 \citep{gelaro2017}, and thunder hours come from GLM \citep{virts2025}. The range's official forecast is entered by the project manager with
 its document link and is never scraped.
 
@@ -734,8 +734,8 @@ the measured point.
 
 \subsection{Launch weather against station observations}
 
-No public station measures the wind at the rule's \qty{162}{ft}, so the check was made at
-\qty{10}{\m} at the Cape Canaveral Skid Strip (station KXMR). The limit of
+No public station measures the wind at the rule's \qty{162}{ft}. The check was therefore
+made at \qty{10}{\m} at the Cape Canaveral Skid Strip (station KXMR). The limit of
 \qty{30}{mph} at \qty{49}{\m} becomes \qty{23.5}{mph} at \qty{10}{\m} on a neutral
 logarithmic profile with a roughness length of \qty{0.03}{\m}. One GEFS run per day in
 2025, with 31 members, gave the share of members above the limit 24 and 48 hours ahead.
@@ -811,7 +811,7 @@ cold request is therefore spent on the ephemeris, not on the terrain.
 
 A trip, launch calendar or contact answer that is not yet stored is computed as a job
 (\cref{sec:design}). The load test asks for these three sections of all 20 missions in
-one burst, with extra launch and contact windows: 138 requests in all. It runs against
+one burst. Extra launch and contact windows bring the burst to 138 requests. It runs against
 its own copy of the database, with two compute workers on the eight-core machine and the
 backend at \texttt{f421298}. The API answered 43 requests from stored answers and queued
 58 jobs. It refused 37 contact requests with status 409 and a reason. The 13 missions
@@ -822,7 +822,7 @@ lost before reaching the Moon, or the delivery was cancelled. With all 138 reque
 No job failed or was retried. At the median a contact job ran for \qty{0.19}{\s}, a
 launch calendar for \qty{13.3}{\s} and a trip for \qty{55.0}{\s}. The longest wait in
 the queue was a trip's, \qty{160.7}{\s}. The same burst repeated afterwards found every
-answer stored and received 101 answers and the same 37 refusals, at a median of
+answer stored. It received 101 answers and the same 37 refusals, at a median of
 \qty{318}{\ms} per request.
 
 \subsection{Tests and accessibility}
@@ -855,9 +855,9 @@ cruise propagation misses by \qty{4.61}{\km} against \qty{1}{\km}, because its
 reconstruction contains an acceleration of unpublished origin. The weather ensemble has
 negative Brier skill at both leads, so no wind share is marked as checked. IM-2's belt
 protons differ by \qty{40.5}{\percent} between two implementations of AP8, against a
-planned \qty{5}{\percent}. The capsule check passes at the middle drag coefficient, but
-the published drag range moves the miss from 6.7 to \qty{12.2}{\km}, partly outside the
-limit.
+planned \qty{5}{\percent}. The capsule check passes at the middle drag coefficient.
+Over the published drag range the miss moves from 6.7 to \qty{12.2}{\km}, partly outside
+the limit.
 
 \begin{table}[htbp]
 \centering\small
