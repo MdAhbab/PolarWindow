@@ -786,7 +786,7 @@ test('official launch forecast (live API, writes): a signed-in save is stored, s
   await expect(page.getByRole('dialog', { name: 'Official launch forecast' }).locator('li').first()).toContainText(`Took back ${pct}%`)
 })
 
-test('radiation and space weather (live API): Blue Ghost’s screening with its particle event, IM-1’s belts not counted, the Sun now', async ({
+test('radiation and space weather (live API): Blue Ghost’s screening with its particle event, IM-1’s belts not counted, Peregrine’s surface, the Sun now', async ({
   page,
   context,
 }) => {
@@ -802,8 +802,12 @@ test('radiation and space weather (live API): Blue Ghost’s screening with its 
   await expect(rad).toContainText('Screening only:')
   await expect(rad).toContainText('Confirm in SPENVIS, OLTARIS or CREME-MC')
   await expect(rad).toContainText(/Electrons above 1 MeV, whole trip≥[\d.]+ × 10¹⁰ ×\/÷2 per cm²/)
-  await expect(rad).toContainText('% of the sky open)')
-  // The one solar particle event during the trip, with its record.
+  // No elevation data at its site: the open sky is a flat horizon, assumed, and it says so.
+  const dd = (label: string) => rad.locator('dl').first().locator('dt', { hasText: label }).locator('xpath=following-sibling::dd[1]')
+  await expect(dd('Cosmic-ray dose at the landing spot')).toHaveText(/^[\d.]+ ±[\d.]+ mGy a day \(100% of the sky open, assumed\)$/)
+  await expect(rad).toContainText('The elevation model does not cover this landing site, so its horizon is taken as flat (open sky 1)')
+  // The one solar particle event during the trip, in the singular, with its record.
+  await expect(rad).toContainText("One solar particle event crossed NOAA's threshold (10 pfu above 10 MeV at GOES) during the trip, from NASA DONKI; its fluence is not worked out.")
   await expect(rad).toContainText('25 February 2025, 00:20 UTC')
   await expect(rad.getByRole('link', { name: 'NASA DONKI record' })).toHaveAttribute('href', /DONKI\/view\/SEP/)
   // Three past large events for comparison, each with its measurements.
@@ -812,13 +816,31 @@ test('radiation and space weather (live API): Blue Ghost’s screening with its 
   await rad.locator('summary', { hasText: 'How each was worked out' }).click()
   await expect(rad).toContainText('AE8/AP8')
   await expect(rad).toContainText('CRaTER')
+  await expect(rad).toContainText('A flat horizon, assumed: the elevation model does not cover this site.')
 
-  // IM-1: NASA's reconstruction starts past the belts, so none is counted (never "≥0").
+  // IM-1: NASA's reconstruction starts past the belts, so they are not counted, and it says why once (never "≥0" or "0 ×/÷2").
   await page.goto('/missions/im-1/trip')
   await expect(page.locator('[data-guide="section-answer"]')).toContainText('The trip takes', { timeout: 90_000 })
   await openRow(page, 'Radiation on the way')
-  await expect(row('Radiation on the way')).toContainText('No time in the radiation belts is counted (the climb out is not in NASA’s reconstruction).')
-  await expect(row('Radiation on the way')).not.toContainText('≥0')
+  const im1 = row('Radiation on the way')
+  const why = "NASA's reconstruction starts 242,208 km above Earth, beyond the belts, so the crossing of them is not in it and is not counted."
+  await expect(im1.locator('p').first()).toHaveText(new RegExp(`^${why.replace(/[.()]/g, '\\$&')} Cosmic rays give [\\d.]+ ±[\\d.]+ mGy a day on the way and [\\d.]+ ±[\\d.]+ mGy a day at the landing spot, before any shielding\\.$`))
+  const im1dd = (label: string) => im1.locator('dl').first().locator('dt', { hasText: label }).locator('xpath=following-sibling::dd[1]')
+  await expect(im1dd('Time in the radiation belts')).toHaveText(why)
+  await expect(im1dd('Electrons above 1 MeV, whole trip')).toHaveText('Not counted, as above')
+  await expect(im1dd('Protons above 10 MeV in the belts, whole trip')).toHaveText('Not counted, as above')
+  await expect(im1).not.toContainText('≥0')
+  await expect(im1).not.toContainText(/\b0 ×\/÷2/)
+
+  // Peregrine was lost before reaching the Moon: no surface dose, and it says why.
+  await page.goto('/missions/peregrine-m1/trip')
+  await expect(page.locator('[data-guide="section-answer"]')).toContainText('The trip takes', { timeout: 90_000 })
+  await openRow(page, 'Radiation on the way')
+  const per = row('Radiation on the way')
+  await expect(per.locator('p').first()).toHaveText(/ in the radiation belts over 2 passes\. Cosmic rays give [\d.]+ ±[\d.]+ mGy a day on the way, before any shielding\.$/)
+  await expect(per).toContainText('It was lost before reaching the Moon, so there is no surface dose.')
+  await expect(per.locator('dt', { hasText: 'Cosmic-ray dose at the landing spot' })).toHaveCount(0)
+  await expectNoSeriousAxe(page, '/missions/peregrine-m1/trip (live) with radiation open')
 
   // The Sun now, from the service: each reading with its age, or why it is not shown.
   await page.goto('/missions/im-1/launch')

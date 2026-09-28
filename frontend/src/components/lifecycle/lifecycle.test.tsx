@@ -540,6 +540,31 @@ describe('Radiation on the way: screening only', () => {
       /^No time in the radiation belts is counted \(the climb out is not in NASA’s reconstruction\)\. Cosmic rays give .+ on the way, before any shielding\.$/,
     )
   })
+  it('says why the belts are not counted, once, when the reconstruction starts beyond them (IM-1)', () => {
+    const why = 'NASA’s reconstruction starts 242,208 km above Earth, beyond the belts, so the crossing of them is not in it and is not counted.'
+    const gone = (x: QuantityDTO) => ({ ...x, value: null, factor: null, open: false, missing_reason: why })
+    const im1 = { ...rad, belt_hours: gone(rad.belt_hours), belt_passes: 0, electron_fluence_gt1mev: gone(rad.electron_fluence_gt1mev), fluence_gt10mev: gone(rad.fluence_gt10mev) }
+    expect(radiationSentence(im1)).toMatch(/^NASA’s reconstruction starts 242,208 km above Earth, beyond the belts, so the crossing of them is not in it and is not counted\. Cosmic rays give /)
+    renderApp(<RadiationRow r={im1} note={null} />)
+    fireEvent.click(screen.getByText('Radiation on the way'))
+    expect(screen.getAllByText('Not counted, as above')).toHaveLength(2)
+    expect(screen.queryByText(/≥0|×\/÷2 per cm²/)).toBeNull()
+  })
+  it('a lander lost on the way has no surface dose, and says why (Peregrine)', () => {
+    const lost = { ...rad, surface: null, surface_note: 'It was lost before reaching the Moon, so there is no surface dose.' }
+    expect(radiationSentence(lost)).toMatch(/ on the way, before any shielding\.$/)
+    renderApp(<RadiationRow r={lost} note={null} />)
+    fireEvent.click(screen.getByText('Radiation on the way'))
+    expect(screen.getByText('It was lost before reaching the Moon, so there is no surface dose.')).toBeTruthy()
+    expect(screen.queryByText('Cosmic-ray dose at the landing spot')).toBeNull()
+  })
+  it('an open sky taken as flat says it is assumed, and why (Blue Ghost 1)', () => {
+    renderApp(<RadiationRow r={rad} note={null} />)
+    fireEvent.click(screen.getByText('Radiation on the way'))
+    expect(screen.getByText(/mGy a day \(100% of the sky open, assumed\)$/)).toBeTruthy()
+    expect(screen.getByText(/^The elevation model does not cover this landing site, so its horizon is taken as flat/)).toBeTruthy()
+    expect(screen.getByText(/^One solar particle event crossed NOAA's threshold .+; its fluence is not worked out\.$/)).toBeTruthy()
+  })
   it('shows the fluences as powers of ten with their factor, and why there is none', () => {
     expect(screeningFigure(rad.electron_fluence_gt1mev)).toMatch(/^≥[\d.]+ × 10¹⁰ ×\/÷2 per cm²$/)
     renderApp(<RadiationRow r={null} note="No trip has been worked out." />)

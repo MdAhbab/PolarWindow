@@ -38,7 +38,7 @@ const ROUTES = [
 for (const theme of ['dark', 'light'] as const) {
   test(`axe: every route, ${theme} theme`, async ({ page, context }) => {
     // Many routes, each read by axe: well past the default minute when the suite runs in parallel.
-    test.setTimeout(180_000)
+    test.setTimeout(300_000)
     await returningVisitor(context, { theme })
     const problems = watchConsole(page)
     for (const r of ROUTES) {

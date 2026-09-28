@@ -19,12 +19,12 @@ function eventFigure(q: QuantityDTO): string {
   return q.value === null ? (q.missing_reason ?? 'Not given') : formatValue(q.value)
 }
 
-/** The row's opening sentence: the belts, then cosmic rays on the way and at the landing spot. */
+/** The row's opening sentence: the belts (or why they are not counted), then cosmic rays on the way and at the landing spot. */
 export function radiationSentence(r: RadiationDTO): string {
   const b = r.belt_hours
   const belts =
     b.value === null
-      ? 'The time in the radiation belts is not worked out'
+      ? (b.missing_reason?.replace(/\.$/, '') ?? 'The time in the radiation belts is not worked out')
       : b.value === 0
         ? b.open
           ? 'No time in the radiation belts is counted (the climb out is not in NASA’s reconstruction)'
@@ -34,23 +34,34 @@ export function radiationSentence(r: RadiationDTO): string {
   return `${belts}. Cosmic rays give ${quantityText(r.gcr_dose_mgy_day)} on the way${surface}, before any shielding.`
 }
 
-/** The measures of the screening, each with how it was worked out. */
+/** The open sky at the landing spot, in the dose's figure: "(91% of the sky open)", or "(… , assumed)". */
+function skyWords(q: QuantityDTO): string {
+  if (q.value === null) return ''
+  return ` (${Math.round(q.value * 100)}% of the sky open${q.provenance === 'assumed' ? ', assumed' : ''})`
+}
+
+/**
+ * The measures of the screening, each with how it was worked out. A belt figure
+ * missing for the same reason as the time in the belts says so briefly: the
+ * reason is given once, in the sentence and the first row.
+ */
 function measures(r: RadiationDTO): { label: string; figure: string; how: string | null }[] {
+  const beltWhy = r.belt_hours.value === null ? r.belt_hours.missing_reason : null
+  const belt = (q: QuantityDTO) => (beltWhy && q.value === null && q.missing_reason === beltWhy ? 'Not counted, as above' : screeningFigure(q))
   const rows = [
     {
       label: 'Time in the radiation belts',
       figure: `${screeningFigure(r.belt_hours)}${r.belt_hours.value ? `, ${r.belt_passes} pass${r.belt_passes === 1 ? '' : 'es'}` : ''}`,
       how: r.belt_hours.source,
     },
-    { label: 'Electrons above 1 MeV, whole trip', figure: screeningFigure(r.electron_fluence_gt1mev), how: r.electron_fluence_gt1mev.source },
-    { label: 'Protons above 10 MeV in the belts, whole trip', figure: screeningFigure(r.fluence_gt10mev), how: r.fluence_gt10mev.source },
+    { label: 'Electrons above 1 MeV, whole trip', figure: belt(r.electron_fluence_gt1mev), how: r.electron_fluence_gt1mev.source },
+    { label: 'Protons above 10 MeV in the belts, whole trip', figure: belt(r.fluence_gt10mev), how: r.fluence_gt10mev.source },
     { label: 'Cosmic-ray dose on the way', figure: screeningFigure(r.gcr_dose_mgy_day), how: r.gcr_dose_mgy_day.source },
   ]
   if (r.surface) {
-    const sky = r.surface.open_sky.value
     rows.push({
       label: 'Cosmic-ray dose at the landing spot',
-      figure: `${screeningFigure(r.surface.gcr_dose_mgy_day)}${sky !== null ? ` (${Math.round(sky * 100)}% of the sky open)` : ''}`,
+      figure: `${screeningFigure(r.surface.gcr_dose_mgy_day)}${skyWords(r.surface.open_sky)}`,
       how: [r.surface.gcr_dose_mgy_day.source, r.surface.open_sky.no_margin_reason].filter(Boolean).join(' '),
     })
   }
@@ -92,7 +103,7 @@ export function RadiationRow({ r, note }: { r: RadiationDTO | null; note: string
           </div>
         ))}
       </dl>
-      {!r.surface && r.surface_note && <p className="text-small leading-5 text-ink-2">{r.surface_note}</p>}
+      {r.surface_note && <p className="text-small leading-5 text-ink-2">{r.surface_note}</p>}
       <div className="flex flex-col gap-1.5">
         <h4 className="text-small font-semibold text-ink">Solar particle events during the trip</h4>
         <p className="text-small leading-5 text-ink-2">{r.sep_note}</p>

@@ -1342,13 +1342,13 @@
     "open_sky": {
      "value": 1.0,
      "unit": "",
-     "provenance": "computed",
+     "provenance": "assumed",
      "pm": null,
      "lo": null,
      "hi": null,
      "factor": null,
      "open": false,
-     "no_margin_reason": "From the site's skyline, the cosmic rays taken as arriving evenly from every direction; 1 is a flat horizon.",
+     "no_margin_reason": "A flat horizon, assumed: the elevation model does not cover this site.",
      "missing_reason": null,
      "source": null
     },
@@ -1366,14 +1366,14 @@
      "source": "From 13.2 ± 1 µGy an hour in silicon, measured on the surface by Chang'e-4's LND from January 2019 (Zhang et al. 2020, Science Advances 6, eaaz1334), its horizon taken as flat, scaled by the cosmic-ray model's change between then (W = 16) and 2025-03 (W = 105): ×0.37 (Matthiä et al. 2013, W from the Oulu neutron monitor, NMDB). ±30 % covers the scaling. Times the site's open sky (1.000)."
     }
    },
-   "surface_note": null,
+   "surface_note": "The elevation model does not cover this landing site, so its horizon is taken as flat (open sky 1); the surface dose is an assumption to that extent.",
    "sep_events": [
     {
      "t": "2025-02-25T00:20Z",
      "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/37527/-1"
     }
    ],
-   "sep_note": "1 solar particle event(s) crossed NOAA's threshold (10 pfu above 10 MeV at GOES) during the trip, from NASA DONKI; their fluence is not worked out.",
+   "sep_note": "One solar particle event crossed NOAA's threshold (10 pfu above 10 MeV at GOES) during the trip, from NASA DONKI; its fluence is not worked out.",
    "scenarios": [
     {
      "id": "oct-1989",

@@ -204,7 +204,10 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   The opportunity's `note` (how it was worked out, and anything unusual such
   as a coast longer than any flown one) sits under the four numbers.
 - **Rows:** The flight for this opportunity (meta: how it was worked out;
-  launch time, direction of the climb, coasting in Earth orbit, speed added
+  launch time, direction of the climb (with where it comes from: worked out
+  from NASA's reconstruction for a flown launch, assumed for a designed one
+  as the vehicle's flown lunar climbs averaged, which sets the ± on its
+  time), coasting in Earth orbit, speed added
   to leave Earth for the Moon, flight time, time in orbit around the Moon
   with what is assumed, the landing and the stretch the landing rule allows)
   · Weather rules for this opportunity (meta: "{n} rules; models disagree on
@@ -258,18 +261,19 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   hours." (none recent enough: "No reading is recent enough to show: the
   newest is from {time}."). Then each reading with its age from its own
   source ("· as of 2 h ago") or why it is not shown: Kp, protons above 10 and
-  100 MeV, solar wind, the Sun's field north–south (Bz), X-ray class, the
-  alerts as headlines. No alert listed is "None" only when SWPC's alerts
-  source was issued more than 24 hours ago; issued within them, the list was
-  held back, and the row says "Not shown here, though NOAA SWPC issued one
-  {age}: SWPC's alerts" (a link) and the line ends "SWPC's alerts of the last
-  24 hours are not shown here." "The next three days": NOAA's outlook in one sentence,
+  100 MeV, solar wind, the Sun's field north–south (Bz), X-ray class (or
+  `xray_missing_reason`), the alerts as headlines. No alert listed is "None"
+  only when `alerts_missing_reason` is null (the list is current); otherwise
+  the row gives that reason with a link to SWPC's alerts, and the line ends
+  "SWPC's alerts of the last 24 hours are not shown here." Never "None" for no
+  data. "The next three days": NOAA's outlook in one sentence,
   numbers as issued (chance of a radiation storm, S1 or greater, day by day;
   largest Kp expected), and the forecast word for word behind "NOAA's
   forecast as issued". "Newest events on the Sun (NASA DONKI)": the three
   newest clouds thrown off the Sun (coronal mass ejections; speed, Earth
   arrival if estimated), flares (class, peak) and solar particle events, each
-  with its record. No dose here: the service's `note` points to Trip.
+  with its record; a kind DONKI gave more of says "· 3 newest of {n}"
+  (`donki.counts`). No dose here: the service's `note` points to Trip.
 
 ### Trip (`/trip`, `GET /missions/{id}/trip`)
 
@@ -308,13 +312,16 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
 - **Radiation on the way** (`Trip.radiation`; null: `radiation_note`). One
   sentence first: "{h ×/÷2} in the radiation belts over {n} passes. Cosmic
   rays give {mGy a day ±} on the way and {…} at the landing spot, before any
-  shielding." A lower bound of zero (the climb out is not in NASA's
-  reconstruction) reads "No time in the radiation belts is counted …" and
-  "none counted", never "≥0". Then `screening_note` (it names where to
+  shielding." Belts not counted because NASA's reconstruction starts beyond
+  them (IM-1): the sentence opens with the reason (`belt_hours.missing_reason`),
+  the belt time row gives it, and the two belt fluences read "Not counted, as
+  above"; never "≥0" or "0 ×/÷2". Then `screening_note` (it names where to
   confirm; `confirm_in` is added only for a tool it does not name), the
   numbers as a list (belts and passes, electrons above 1 MeV, protons above
   10 MeV in the belts, cosmic-ray dose on the way and at the landing spot with
-  the share of open sky), the solar particle events during the trip
+  the share of open sky, ", assumed" when it is), `surface_note` under the
+  list (a flat horizon assumed where there is no elevation data; or, with no
+  surface dose, why: Peregrine was lost on the way), the solar particle events during the trip
   (`sep_note`, each with its DONKI record), "Past large events, for
   comparison" (a table: Oct 1989, Oct 2003, Aug 1972, protons above 10 and 30
   MeV per cm², each linking its measurements) and "How each was worked out"
