@@ -97,7 +97,11 @@ async def _burns_and_budget(
         why = "The launch record this needs (pad, vehicle, liftoff) is not published."
         return [], why, None, why
     fl = f.launch
-    cover_end = (fl.t_arrive or f.t0_et) + 4 * DAY
+    # The burns are looked for up to an hour past the arrival, or over the whole
+    # reconstruction for a lander that never arrived (Peregrine): the body tables must
+    # cover either.
+    last = await spice.run_async(lambda: ascent.coverage(mid)[-1][1])
+    cover_end = max((fl.t_arrive or f.t0_et) + 4 * DAY, float(last) + 60.0)
     tables = await spice.run_async(propagate.environment, f.t0_et - DAY, cover_end)
     named, steady = await spice.run_async(flown_burns.burns, mid, fl, tables)
     ctx.progress(0.45, "Burns found in the reconstruction.")
