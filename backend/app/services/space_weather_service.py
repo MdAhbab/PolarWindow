@@ -85,9 +85,16 @@ async def now(session: AsyncSession) -> dict[str, Any]:
                 got["protons"], (prot.get(">=100 MeV") or {}).get("pfu"), "pfu"
             ),
             "xray_class": xr.get("class"),
+            "xray_missing_reason": None
+            if xr.get("class")
+            else got["xrays"].missing_reason
+            or "SWPC's latest X-ray reading carries no flare class.",
             "solar_wind_km_s": _pub(got["wind"], None if speed is None else speed / 1000.0, "km/s"),
             "bz_nt": _pub(got["mag"], None if bz is None else bz * 1e9, "nT"),
             "alerts": [h for h in alerts if h],
+            "alerts_missing_reason": None
+            if got["alerts"].values is not None
+            else got["alerts"].missing_reason,
         },
         "outlook": outlook,
         "donki": {
@@ -96,6 +103,12 @@ async def now(session: AsyncSession) -> dict[str, Any]:
             ),
             "flares": _events(got["flr"], ("id", "peak", "class", "link")),
             "sep": _events(got["sep"], ("id", "time", "instruments", "link")),
+            "counts": {
+                kind: None
+                if got[key].values is None
+                else int((got[key].values or {}).get("count") or 0)
+                for kind, key in (("cme", "cme"), ("flares", "flr"), ("sep", "sep"))
+            },
             "days": int((got["sep"].values or {}).get("days") or 0) or None,
             "missing_reason": donki_missing,
         },
@@ -109,7 +122,8 @@ async def now(session: AsyncSession) -> dict[str, Any]:
         if (ref := v.source_ref(DONKI if k in ("cme", "flr", "sep") else SWPC)) is not None
     ]
     stale = any(v.stale for v in got.values() if v.snapshot is not None)
-    newest = max((feed_service.data_time(v.snapshot) for _, v in used), default=None)  # type: ignore[arg-type]
+    times = [v.snapshot.issued_at or v.fetched_at for _, v in used if v.snapshot is not None]
+    newest = max((t for t in times if t is not None), default=None)
     return {
         "data": data,
         "meta": lifecycle.meta(

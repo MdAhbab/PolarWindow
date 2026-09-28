@@ -5861,21 +5861,28 @@
               "$ref": "#/components/schemas/Cme"
             },
             "type": "array",
-            "title": "Cme"
+            "title": "Cme",
+            "description": "The newest 20."
           },
           "flares": {
             "items": {
               "$ref": "#/components/schemas/Flare"
             },
             "type": "array",
-            "title": "Flares"
+            "title": "Flares",
+            "description": "The newest 20."
           },
           "sep": {
             "items": {
               "$ref": "#/components/schemas/Sep"
             },
             "type": "array",
-            "title": "Sep"
+            "title": "Sep",
+            "description": "The newest 20."
+          },
+          "counts": {
+            "$ref": "#/components/schemas/DonkiCounts",
+            "description": "How many DONKI gave per kind over `days` (the lists show the newest 20); null for a kind not shown."
           },
           "days": {
             "anyOf": [
@@ -5907,10 +5914,56 @@
           "cme",
           "flares",
           "sep",
+          "counts",
           "days",
           "missing_reason"
         ],
         "title": "Donki"
+      },
+      "DonkiCounts": {
+        "properties": {
+          "cme": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cme"
+          },
+          "flares": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flares"
+          },
+          "sep": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sep"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "cme",
+          "flares",
+          "sep"
+        ],
+        "title": "DonkiCounts"
       },
       "ExplainRequest": {
         "properties": {
@@ -6891,9 +6944,6 @@
               }
             ]
           },
-          "space_weather_now": {
-            "$ref": "#/components/schemas/SpaceWeatherNow"
-          },
           "range_conflicts": {
             "items": {
               "$ref": "#/components/schemas/RangeConflict"
@@ -6916,7 +6966,6 @@
           "note",
           "rules",
           "official",
-          "space_weather_now",
           "range_conflicts",
           "range_note"
         ],
@@ -8493,6 +8542,18 @@
             ],
             "title": "Xray Class"
           },
+          "xray_missing_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Xray Missing Reason",
+            "description": "Why there is no X-ray class (no reading recorded, or too old); null when there is one."
+          },
           "solar_wind_km_s": {
             "$ref": "#/components/schemas/QuantityOut"
           },
@@ -8506,6 +8567,18 @@
             "type": "array",
             "title": "Alerts",
             "description": "SWPC alert headlines of the last 24 hours."
+          },
+          "alerts_missing_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alerts Missing Reason",
+            "description": "Why the alert list is not shown (not recorded, or too old); null when it is current, so an empty list means SWPC issued no alert in the last 24 hours."
           }
         },
         "additionalProperties": false,
@@ -8515,9 +8588,11 @@
           "proton_10mev_pfu",
           "proton_100mev_pfu",
           "xray_class",
+          "xray_missing_reason",
           "solar_wind_km_s",
           "bz_nt",
-          "alerts"
+          "alerts",
+          "alerts_missing_reason"
         ],
         "title": "Now"
       },
@@ -8547,6 +8622,10 @@
       },
       "OfficialForecast": {
         "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
           "probability_pct": {
             "type": "number",
             "title": "Probability Pct"
@@ -8575,6 +8654,7 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "id",
           "probability_pct",
           "concerns",
           "pdf_url",
@@ -11854,43 +11934,6 @@
           "note"
         ],
         "title": "SpaceWeather"
-      },
-      "SpaceWeatherNow": {
-        "properties": {
-          "kp": {
-            "$ref": "#/components/schemas/QuantityOut"
-          },
-          "proton_10mev_pfu": {
-            "$ref": "#/components/schemas/QuantityOut"
-          },
-          "xray_class": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Xray Class"
-          },
-          "alerts": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Alerts"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "kp",
-          "proton_10mev_pfu",
-          "xray_class",
-          "alerts"
-        ],
-        "title": "SpaceWeatherNow"
       },
       "Spacecraft": {
         "properties": {

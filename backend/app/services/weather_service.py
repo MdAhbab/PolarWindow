@@ -343,42 +343,6 @@ def _glm(
     }
 
 
-def _space_weather(
-    kp: feed_service.Latest,
-    protons: feed_service.Latest,
-    xrays: feed_service.Latest,
-    alerts: feed_service.Latest,
-) -> dict[str, Any]:
-    def pub(latest: feed_service.Latest, value: float | None, unit: str) -> dict[str, Any]:
-        if value is None or latest.snapshot is None:
-            return lifecycle.missing(
-                unit, latest.missing_reason or "Not recorded yet.", provenance="published"
-            )
-        return _q(
-            value,
-            unit,
-            provenance="published",
-            no_margin_reason="As NOAA's Space Weather Prediction Center reports it.",
-            source=latest.snapshot.url,
-        )
-
-    kv = (kp.values or {}).get("latest") or {}
-    pv = ((protons.values or {}).get("latest") or {}).get(">=10 MeV") or {}
-    xv = (xrays.values or {}).get("latest") or {}
-    now = datetime.now(UTC)
-    recent = [
-        a.get("headline") or ""
-        for a in (alerts.values or {}).get("alerts") or []
-        if a.get("issued") and now - lifecycle.parse_time(a["issued"]) < timedelta(hours=24)
-    ]
-    return {
-        "kp": pub(kp, kv.get("kp"), "Kp"),
-        "proton_10mev_pfu": pub(protons, pv.get("pfu"), "pfu"),
-        "xray_class": xv.get("class"),
-        "alerts": [h for h in recent if h],
-    }
-
-
 def _conflicts(ll2: feed_service.Latest, pad_id: str, t0: datetime) -> tuple[list[Any], str]:
     sites = catalogues.load("launch_sites")
     rng = sites.get(pad_id).launch_range
@@ -486,12 +450,6 @@ async def launch_weather(
     conflicts, range_note = _conflicts(
         await feed_service.latest(session, "ll2", "upcoming"), pad_id, when
     )
-    sw = _space_weather(
-        await feed_service.latest(session, "swpc", "kp"),
-        await feed_service.latest(session, "swpc", "goes_protons"),
-        await feed_service.latest(session, "swpc", "goes_xrays"),
-        await feed_service.latest(session, "swpc", "alerts"),
-    )
     used = [s for s in [*gefs, hrrr, nws, glm] if s.snapshot is not None]
     names = {
         "nomads": "NOAA NCEP model output (NOMADS)",
@@ -548,13 +506,13 @@ async def launch_weather(
         "official": None
         if off is None
         else {
+            "id": off["id"],
             "probability_pct": off["probability_pct"],
             "concerns": off["concerns"],
             "pdf_url": off["pdf_url"],
             "entered_by": off["entered_by"],
             "entered_at": off["entered_at"],
         },
-        "space_weather_now": sw,
         "range_conflicts": conflicts,
         "range_note": range_note,
     }
@@ -605,7 +563,9 @@ async def set_official_forecast(
         raise MissionNotFound(mission_id)
     pm = PmRepository(session)
     before = await pm.official_forecast(m.id)
-    fid = await pm.add_official_forecast(m.id, probability_pct, concerns, pdf_url, who.actor)
+    fid, entered_at = await pm.add_official_forecast(
+        m.id, probability_pct, concerns, pdf_url, who.actor
+    )
     after = {"probability_pct": probability_pct, "concerns": concerns, "pdf_url": pdf_url}
     await audit_service.record(
         session,
@@ -619,7 +579,7 @@ async def set_official_forecast(
         else {k: before[k] for k in ("probability_pct", "concerns", "pdf_url")},
         after=after,
     )
-    return {**after, "id": fid, "entered_by": who.actor, "entered_at": datetime.now(UTC)}
+    return {**after, "id": fid, "entered_by": who.actor, "entered_at": entered_at}
 
 
 class VehicleNotFound(LookupError):

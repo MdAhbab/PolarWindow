@@ -84,6 +84,19 @@ def test_magnetic_field_in_tesla() -> None:
 def test_alerts_and_the_three_day_forecast_verbatim() -> None:
     a = swpc.parse_alerts(raw("swpc_alerts.json"))
     assert a.values["alerts"][0]["headline"]
+    assert a.issued_at is None  # as new as the request: a quiet Sun is not stale data
+    cont = json.dumps(
+        [
+            {
+                "product_id": "EF3A",
+                "issue_datetime": "2026-09-28 05:00:00.000",
+                "message": "Space Weather Message Code: ALTEF3\r\nSerial Number: 3747\r\n\r\n"
+                "CONTINUED ALERT: Electron 2MeV Integral Flux exceeded 1,000pfu\r\n",
+            }
+        ]
+    ).encode()
+    head = swpc.parse_alerts(cont).values["alerts"][0]["headline"]
+    assert head == "CONTINUED ALERT: Electron 2MeV Integral Flux exceeded 1,000pfu"
     f = swpc.parse_3day(raw("swpc_3day.txt"))
     assert f.issued_at == datetime(2026, 9, 26, 12, 30, tzinfo=UTC)
     assert f.values["s1_or_greater_pct"] == [1, 1, 1]

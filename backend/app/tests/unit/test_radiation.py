@@ -84,3 +84,37 @@ def test_donki_keeps_only_goes_threshold_crossings() -> None:
 
     rows = [row("a", "GOES-P: SEISS >10 MeV"), row("b", "SOHO: COSTEP 15.8-39.8 MeV")]
     assert [e["id"] for e in space_climate.goes_events(rows)] == ["a"]
+
+
+def _tr(hours: float, open_: bool) -> dict:
+    return {"hours": hours, "passes": 1 if hours else 0, "e": 3e9 if hours else 0.0,
+            "p": 2e6 if hours else 0.0, "e_other": 1e9, "p_other": 1e6, "open": open_,
+            "other": "min"}  # fmt: skip
+
+
+def test_belts_not_in_the_reconstruction_are_missing_not_zero() -> None:
+    # IM-1's reconstruction starts 242,208 km out: nothing counted, and a zero x/÷2 is empty.
+    got = radiation.belt_numbers(_tr(0.0, True), 248_579.0, "maps.", "")
+    for k in ("belt_hours", "electron_fluence_gt1mev", "fluence_gt10mev"):
+        assert got[k]["value"] is None and "242,208 km" in got[k]["missing_reason"]
+    # Counted but the start unseen: a lower bound, as before.
+    got = radiation.belt_numbers(_tr(3.0, True), 10_000.0, "maps.", "")
+    assert got["belt_hours"]["value"] == 3.0 and got["belt_hours"]["open"]
+    assert got["belt_hours"]["factor"] == belts.FACTOR
+
+
+def test_solar_particle_events_in_words() -> None:
+    assert radiation.sep_note(0).startswith("No solar particle event crossed")
+    one = radiation.sep_note(1)
+    assert one.startswith("One solar particle event crossed") and "its fluence" in one
+    two = radiation.sep_note(2)
+    assert two.startswith("2 solar particle events crossed") and "their fluence" in two
+
+
+def test_the_surface_note_says_why_there_is_no_or_an_assumed_surface_dose() -> None:
+    lost = {"none_reason": "It was lost before reaching the Moon, so there is no surface dose."}
+    assert radiation._surface_note(lost, None, lost["none_reason"]) == lost["none_reason"]
+    assert "No skyline" in (radiation._surface_note(None, None, None) or "")
+    assert radiation._surface_note({"site_id": "x"}, {"site_id": "x"}, None) is None
+    flat = "The elevation model does not cover this landing site"
+    assert radiation._surface_note({"site_id": "x"}, {"site_id": "x"}, flat + ".") == flat + "."

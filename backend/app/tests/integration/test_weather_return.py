@@ -148,6 +148,7 @@ async def test_entries_are_recorded_and_show_up(client) -> None:
     }
     r = await client.put(f"{API}/missions/griffin-1/launch/official-forecast", json=body)
     assert r.status_code == 200, r.text
+    put = r.json()
     lim = {
         "limits": [
             {"rule_id": "f9-wind-162ft", "value": 25, "unit": "kt", "note": "from the provider"}
@@ -164,6 +165,9 @@ async def test_entries_are_recorded_and_show_up(client) -> None:
     )
     d = r.json()["data"]
     assert d["official"]["probability_pct"] == 80
+    # The stored row's id and time, the same in both answers.
+    assert d["official"]["id"] == put["id"] and d["official"]["entered_at"] == put["entered_at"]
+    assert "space_weather_now" not in d
     wind = next(x for x in d["rules"] if x["id"] == "f9-wind-162ft")
     assert wind["limit"]["provenance"] == "entered" and wind["limit"]["unit"] == "kt"
     assert wind["limit_note"] == "from the provider"
@@ -210,6 +214,7 @@ async def test_return_for_flown_and_planned_missions(client, anon_client) -> Non
     assert "700 km" in d["booster"]["note"]
     assert "Launch Library" not in d["booster"]["note"] and "'" not in d["booster"]["note"]
     assert r["meta"]["sources"][0]["name"] == "Launch Library 2 landing records"
+    assert r["meta"]["sources"][0]["fetched_at"]  # the date the record was read
     # As old as its newest input (the catalogue), not the request.
     at = datetime.fromisoformat(r["meta"]["computed_at"].replace("Z", "+00:00"))
     assert at < datetime.now(UTC) - timedelta(minutes=1)
@@ -327,5 +332,14 @@ async def test_space_weather_now_says_what_is_recorded_and_what_is_not(anon_clie
     assert d["now"]["proton_10mev_pfu"]["value"] == 0.4
     assert d["now"]["bz_nt"]["value"] is None and d["now"]["bz_nt"]["missing_reason"]
     assert d["donki"]["flares"][0]["class"] == "X1.1"
+    assert d["donki"]["counts"] == {"cme": None, "flares": 1, "sep": None}
+    # Not recorded: said, so an empty list does not read as a quiet Sun.
+    assert d["now"]["xray_class"] is None and d["now"]["xray_missing_reason"]
+    assert d["now"]["alerts"] == [] and d["now"]["alerts_missing_reason"]
     assert d["outlook"]["text"] is None and d["outlook"]["missing_reason"]
-    assert r.json()["meta"]["engines"] == {"rad": "rad-2"}
+    await _snap("swpc", "alerts", "", {"alerts": []})
+    await _snap("swpc", "goes_xrays", "", {"latest": {"t": now, "class": "C1.2"}})
+    d = (await anon_client.get(f"{API}/space-weather")).json()["data"]
+    assert d["now"]["alerts"] == [] and d["now"]["alerts_missing_reason"] is None
+    assert d["now"]["xray_class"] == "C1.2" and d["now"]["xray_missing_reason"] is None
+    assert r.json()["meta"]["engines"] == {"rad": "rad-3"}

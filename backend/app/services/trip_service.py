@@ -62,6 +62,8 @@ def _none(reason: str) -> dict[str, Any]:
 async def _sky(session: AsyncSession, m: MissionRecord) -> dict[str, Any] | None:
     """The landing site's share of open sky from its skyline (for the surface cosmic-ray
     dose), and the month of the landing; None when no skyline is worked out."""
+    if m.status in NOT_LANDED:
+        return {"none_reason": NOT_LANDED[m.status]}
     if not m.site_id:
         return None
     rec = await MaskRepository(session).get(m.site_id, ENGINE_VERSION)
@@ -71,8 +73,17 @@ async def _sky(session: AsyncSession, m: MissionRecord) -> dict[str, Any] | None
     return {
         "site_id": m.site_id,
         "open_fraction": round(gcr.open_sky_fraction(rec.mask.el_deg), 5),
+        # No elevation data at the site: the skyline is a flat fallback.
+        "skyline_covered": bool(rec.mask.coverage > 0.0),
         "month": landed,
     }
+
+
+#: A lander that never stood on the surface has no surface dose.
+NOT_LANDED = {
+    "lost_before_landing": "It was lost before reaching the Moon, so there is no surface dose.",
+    "landing_failed": "It did not land intact, so there is no surface dose.",
+}
 
 
 async def trip(session: AsyncSession, mission_id: str) -> tuple[int, dict[str, Any]]:

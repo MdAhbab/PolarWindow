@@ -414,7 +414,11 @@ def _sources_and_times(
         z = _zone_of(m)
         if z is not None:
             sources.append(
-                lifecycle.source_ref("Launch Library 2 landing records", z.sources[0].url)
+                lifecycle.source_ref(
+                    "Launch Library 2 landing records",
+                    z.sources[0].url,
+                    fetched_at=_day(z.sources[0].accessed),
+                )
             )
         else:
             vehicles = catalogues.load("vehicles")
@@ -426,7 +430,7 @@ def _sources_and_times(
             if v is not None:
                 src = v.sources[0]
                 url = v.field_sources.get("booster_recovery") or src.url
-                sources.append(lifecycle.source_ref(src.title, url))
+                sources.append(lifecycle.source_ref(src.title, url, fetched_at=_day(src.accessed)))
     if sea is not None:
         times.extend(t for t in sea.get("times", []) if t is not None)
         sources.extend(x for x in sea.get("sources", []) if x is not None)

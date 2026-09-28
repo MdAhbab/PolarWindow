@@ -359,7 +359,8 @@ class PmRepository:
 
     async def add_official_forecast(
         self, mission_id: str, pct: float, concerns: list[str], pdf_url: str, by: str
-    ) -> int:
+    ) -> tuple[int, datetime]:
+        """The new row's id and its stored ``entered_at``."""
         row = (
             await self._s.execute(
                 insert(OfficialForecast)
@@ -370,10 +371,10 @@ class PmRepository:
                     pdf_url=pdf_url,
                     entered_by=by,
                 )
-                .returning(OfficialForecast.id)
+                .returning(OfficialForecast.id, OfficialForecast.entered_at)
             )
-        ).scalar_one()
-        return int(row)
+        ).one()
+        return int(row[0]), row[1]
 
     async def remove_official_forecast(self, forecast_id: int) -> None:
         await self._s.execute(delete(OfficialForecast).where(OfficialForecast.id == forecast_id))

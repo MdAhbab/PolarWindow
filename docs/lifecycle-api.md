@@ -152,10 +152,8 @@ interface RuleRow {
 interface LaunchWeather {
   t0: string; lead_time_h: number;
   rules: RuleRow[];
-  official: { probability_pct: number; concerns: string[]; pdf_url: string;
+  official: { id: number; probability_pct: number; concerns: string[]; pdf_url: string;
               entered_by: string; entered_at: string } | null;
-  space_weather_now: { kp: Quantity; proton_10mev_pfu: Quantity; xray_class: string | null;
-                       alerts: string[] };
   range_conflicts: { name: string; t0: string; pad: string }[];
 }
 ```
@@ -527,7 +525,8 @@ that user. `GET /auth/me` returns the same `user`.
       gcr_dose_mgy_day: Quantity;         // mGy/d in silicon, ± 30 %, before shielding
       surface: { site_id: string; open_sky: Quantity;        // 1 = flat horizon
                  gcr_dose_mgy_day: Quantity } | null;        // at the landing site
-      surface_note: string | null;        // why no surface dose (no skyline for the site)
+      surface_note: string | null;        // why no surface dose (no skyline for the site;
+                                          // it did not land), or why it is assumed
       sep_events: { t: string; link: string }[];   // NOAA >10 MeV threshold crossings
       sep_note: string;                             // during the trip (NASA DONKI)
       scenarios: { id: string; name: string; fluence_gt10mev: Quantity;
@@ -546,7 +545,9 @@ that user. `GET /auth/me` returns the same `user`.
     interface SpaceWeather {
       now: { kp: Quantity; proton_10mev_pfu: Quantity; proton_100mev_pfu: Quantity;
              xray_class: string | null; solar_wind_km_s: Quantity; bz_nt: Quantity;
-             alerts: string[] };                        // SWPC headlines of the last 24 h
+             alerts: string[];                          // SWPC headlines of the last 24 h
+             xray_missing_reason: string | null;        // why no xray_class
+             alerts_missing_reason: string | null };    // null: the list is current
       outlook: { issued: string | null; days: string | null;
                  s1_or_greater_pct: number[] | null;   // SWPC's day 1-3 chance, verbatim
                  kp_max_expected: number | null; text: string | null;  // the 3-day forecast
@@ -554,7 +555,8 @@ that user. `GET /auth/me` returns the same `user`.
       donki: { cme: { id; start; speed_m_s; earth_arrival_estimates; link }[];
                flares: { id; peak; class; link }[];
                sep: { id; time; instruments; link }[];
-               days: number | null; missing_reason: string | null };
+               counts: { cme: number | null; flares: number | null; sep: number | null };
+               days: number | null; missing_reason: string | null };  // lists: newest 20
       note: string;
     }
     ```
@@ -599,3 +601,20 @@ that user. `GET /auth/me` returns the same `user`.
     gives no opportunities, with `none_reason`. A flown opportunity's `azimuth_deg` is now
     `computed` (was missing): the inertial azimuth from NASA's reconstruction, the ground
     azimuth and the pad's limits in `no_margin_reason`.
+- 2026-09-28 (backend, the frontend's queue; engine `rad-3`):
+  - `LaunchWeather.space_weather_now` is dropped (use `GET /space-weather`);
+    `LaunchWeather.official` adds `id`. `PUT .../official-forecast` answers the stored row's
+    `entered_at` (was the request time), so both answers carry the same time.
+  - `GET /space-weather`: `now.xray_missing_reason`, `now.alerts_missing_reason` (null when
+    the list is current, so `[]` means no alert in 24 h), `donki.counts {cme, flares, sep}`
+    (how many DONKI gave; the lists keep the newest 20). SWPC's alert list and DONKI's lists
+    have no `issued_at`: they are as new as the last fetch that found them current, which a
+    source's `fetched_at` now gives (an unchanged body adds no snapshot).
+  - `Return.meta.sources`: the Launch Library 2 and vehicle catalogue sources carry
+    `fetched_at`, the date the record was read.
+  - `Trip.radiation`: `belt_hours`, `electron_fluence_gt1mev` and `fluence_gt10mev` are
+    missing with the reason when nothing is counted and the reconstruction starts beyond the
+    belts (IM-1); `surface` is null with `surface_note` for a lander that did not land
+    (Peregrine); `surface.open_sky` is `assumed` and `surface_note` says so where the
+    elevation model does not cover the site (Blue Ghost 1); `sep_note` says "One solar
+    particle event … its" / "2 … events … their".

@@ -283,7 +283,9 @@ def parse_alerts(body: bytes) -> Parsed:
             (
                 ln.strip()
                 for ln in msg.splitlines()
-                if ln.startswith(("ALERT", "WARNING", "WATCH", "SUMMARY", "EXTENDED", "CANCEL"))
+                if ln.startswith(
+                    ("ALERT", "WARNING", "WATCH", "SUMMARY", "EXTENDED", "CANCEL", "CONTINUED")
+                )
             ),
             msg.splitlines()[0] if msg else "",
         )
@@ -296,8 +298,9 @@ def parse_alerts(body: bytes) -> Parsed:
             }
         )
     out.sort(key=lambda a: str(a["issued"]), reverse=True)
-    issued = utc(str(out[0]["issued"])) if out else None
-    return Parsed(values={"alerts": out[:50]}, issued_at=issued)
+    # No issue time: the list is as new as the request for it. Its newest alert's time
+    # would make a quiet Sun (no alert for six hours) look like stale data and hide it.
+    return Parsed(values={"alerts": out[:50]}, issued_at=None)
 
 
 _ISSUED = re.compile(r":Issued:\s+(\d{4}) (\w{3}) (\d{1,2}) (\d{2})(\d{2}) UTC")

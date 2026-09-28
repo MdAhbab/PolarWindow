@@ -255,6 +255,70 @@ def gcr_dose(month: str, ref: dict[str, Any], rate_mgy_day: float) -> tuple[floa
     )
 
 
+def belt_numbers(tr: dict[str, Any], r0_km: float, why_maps: str, before: str) -> dict[str, Any]:
+    """Belt hours, passes and fluences. When nothing is counted and the reconstruction
+    starts beyond the belts, the crossing is not in it: a zero times or over two means
+    nothing, so the numbers are missing with that reason."""
+    unseen = (
+        f"NASA's reconstruction starts {r0_km - belts.RE_KM:,.0f} km above Earth, beyond the "
+        "belts, so the crossing of them is not in it and is not counted."
+        if tr["open"] and tr["hours"] == 0.0
+        else None
+    )
+
+    def belt_q(value: float, unit: str, source: str) -> dict[str, Any]:
+        if unseen is not None:
+            return lifecycle.missing(unit, unseen)
+        return _q(value, unit, factor=belts.FACTOR, open=tr["open"], source=source)
+
+    return {
+        "belt_hours": belt_q(
+            tr["hours"],
+            "h",
+            f"Inside the belts: where the maps hold electrons above 1 MeV or protons "
+            f"above 10 MeV. {why_maps}{before}",
+        ),
+        "belt_passes": tr["passes"],
+        "electron_fluence_gt1mev": belt_q(
+            tr["e"],
+            "cm^-2",
+            f"{why_maps} The solar-{tr['other']}imum maps give {tr['e_other']:.2g}.",
+        ),
+        "fluence_gt10mev": belt_q(
+            tr["p"],
+            "cm^-2",
+            f"Trapped protons above 10 MeV. {why_maps} The solar-{tr['other']}imum maps "
+            f"give {tr['p_other']:.2g}.",
+        ),
+    }
+
+
+def sep_note(n: int) -> str:
+    if n == 0:
+        return (
+            "No solar particle event crossed NOAA's threshold (10 pfu above 10 MeV at GOES) "
+            "during the trip (NASA DONKI)."
+        )
+    events = "One solar particle event" if n == 1 else f"{n} solar particle events"
+    return (
+        f"{events} crossed NOAA's threshold (10 pfu above 10 MeV at GOES) during the trip, "
+        f"from NASA DONKI; {'its' if n == 1 else 'their'} fluence is not worked out."
+    )
+
+
+def _surface_note(
+    sky: dict[str, Any] | None, surface: dict[str, Any] | None, sky_note: str | None
+) -> str | None:
+    if sky is None:
+        return "No skyline is worked out for this landing site, so the surface dose is not given."
+    if surface is None and not sky.get("none_reason"):
+        return (
+            "The Oulu neutron monitor table does not reach the landing month, so the surface "
+            "dose is not given."
+        )
+    return sky_note
+
+
 def along_trip(
     sc: str,
     cover: list[tuple[float, float]],
@@ -315,15 +379,34 @@ def along_trip(
         v, words = trip_dose
         gcr_q = _q(v, "mGy/d", pm=v * GCR_PM, source=words)
     surface = None
-    if sky is not None:
+    sky_note: str | None = None
+    if sky is not None and sky.get("none_reason"):
+        sky_note = str(sky["none_reason"])
+    elif sky is not None:
         land_month = str(sky.get("month") or month)
         sd = gcr_dose(land_month, LND, float(LND["ugy_per_hour"]) * 24.0 / 1000.0)
         frac = float(sky["open_fraction"])
+        flat = not sky.get("skyline_covered", True)
+        if flat:
+            sky_note = (
+                "The elevation model does not cover this landing site, so its horizon is "
+                "taken as flat (open sky 1); the surface dose is an assumption to that extent."
+            )
         if sd is not None:
             v, words = sd
             surface = {
                 "site_id": sky["site_id"],
-                "open_sky": _q(
+                "open_sky": lifecycle.q(
+                    Quantity(
+                        value=frac,
+                        unit="",
+                        provenance="assumed",
+                        no_margin_reason="A flat horizon, assumed: the elevation model does "
+                        "not cover this site.",
+                    )
+                )
+                if flat
+                else _q(
                     frac,
                     "",
                     no_margin_reason="From the site's skyline, the cosmic rays taken as arriving "
@@ -346,44 +429,12 @@ def along_trip(
         )
     )
     block = {
-        "belt_hours": _q(
-            tr["hours"],
-            "h",
-            factor=belts.FACTOR,
-            open=tr["open"],
-            source=f"Inside the belts: where the maps hold electrons above 1 MeV or protons "
-            f"above 10 MeV. {why_maps}{before}",
-        ),
-        "belt_passes": tr["passes"],
-        "electron_fluence_gt1mev": _q(
-            tr["e"],
-            "cm^-2",
-            factor=belts.FACTOR,
-            open=tr["open"],
-            source=f"{why_maps} The solar-{tr['other']}imum maps give {tr['e_other']:.2g}.",
-        ),
-        "fluence_gt10mev": _q(
-            tr["p"],
-            "cm^-2",
-            factor=belts.FACTOR,
-            open=tr["open"],
-            source=f"Trapped protons above 10 MeV. {why_maps} The solar-{tr['other']}imum maps "
-            f"give {tr['p_other']:.2g}.",
-        ),
+        **belt_numbers(tr, r0_km, why_maps, before),
         "gcr_dose_mgy_day": gcr_q,
         "surface": surface,
-        "surface_note": None
-        if surface is not None
-        else "No skyline is worked out for this landing site, so the surface dose is not given.",
+        "surface_note": _surface_note(sky, surface, sky_note),
         "sep_events": [{"t": e["t"], "link": e["link"]} for e in during],
-        "sep_note": events_why
-        or (
-            f"{len(during)} solar particle event(s) crossed NOAA's threshold (10 pfu above "
-            "10 MeV at GOES) during the trip, from NASA DONKI; their fluence is not worked out."
-            if during
-            else "No solar particle event crossed NOAA's threshold (10 pfu above 10 MeV at GOES) "
-            "during the trip (NASA DONKI)."
-        ),
+        "sep_note": events_why or sep_note(len(during)),
         "scenarios": _scenarios(),
         "screening_note": SCREENING_NOTE,
         "confirm_in": CONFIRM_IN,

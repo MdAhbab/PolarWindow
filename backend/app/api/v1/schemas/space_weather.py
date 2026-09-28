@@ -18,9 +18,17 @@ class Now(_M):
     proton_10mev_pfu: QuantityOut
     proton_100mev_pfu: QuantityOut
     xray_class: str | None
+    xray_missing_reason: str | None = Field(
+        description="Why there is no X-ray class (no reading recorded, or too old); null "
+        "when there is one."
+    )
     solar_wind_km_s: QuantityOut
     bz_nt: QuantityOut
     alerts: list[str] = Field(description="SWPC alert headlines of the last 24 hours.")
+    alerts_missing_reason: str | None = Field(
+        description="Why the alert list is not shown (not recorded, or too old); null when "
+        "it is current, so an empty list means SWPC issued no alert in the last 24 hours."
+    )
 
 
 class Outlook(_M):
@@ -58,10 +66,20 @@ class Sep(_M):
     link: str | None
 
 
+class DonkiCounts(_M):
+    cme: int | None
+    flares: int | None
+    sep: int | None
+
+
 class Donki(_M):
-    cme: list[Cme]
-    flares: list[Flare]
-    sep: list[Sep]
+    cme: list[Cme] = Field(description="The newest 20.")
+    flares: list[Flare] = Field(description="The newest 20.")
+    sep: list[Sep] = Field(description="The newest 20.")
+    counts: DonkiCounts = Field(
+        description="How many DONKI gave per kind over `days` (the lists show the newest "
+        "20); null for a kind not shown."
+    )
     days: int | None = Field(description="How many days back DONKI was asked.")
     missing_reason: str | None
 

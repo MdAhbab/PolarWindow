@@ -58,18 +58,12 @@ class RuleRow(_M):
 
 
 class OfficialForecast(_M):
+    id: int
     probability_pct: float
     concerns: list[str]
     pdf_url: str
     entered_by: str
     entered_at: datetime
-
-
-class SpaceWeatherNow(_M):
-    kp: QuantityOut
-    proton_10mev_pfu: QuantityOut
-    xray_class: str | None
-    alerts: list[str]
 
 
 class RangeConflict(_M):
@@ -86,7 +80,6 @@ class LaunchWeather(_M):
     note: str
     rules: list[RuleRow]
     official: OfficialForecast | None
-    space_weather_now: SpaceWeatherNow
     range_conflicts: list[RangeConflict]
     range_note: str
 

@@ -48,6 +48,15 @@ class Latest:
     stale: bool
     missing_reason: str | None
     staleness_budget_s: int | None
+    #: The last fetch that found this snapshot current (an unchanged body adds none).
+    checked_at: datetime | None = None
+
+    @property
+    def fetched_at(self) -> datetime | None:
+        s = self.snapshot
+        if s is None:
+            return None
+        return max(s.fetched_at, self.checked_at) if self.checked_at else s.fetched_at
 
     @property
     def values(self) -> dict[str, Any] | None:
@@ -63,18 +72,32 @@ class Latest:
             "name": name,
             "url": s.url,
             "issued_at": s.issued_at,
-            "fetched_at": s.fetched_at,
+            "fetched_at": self.fetched_at,
             "licence": s.licence,
             "snapshot_id": s.id,
         }
 
 
-def data_time(s: SnapshotRecord) -> datetime:
-    return s.issued_at or s.fetched_at
+def data_time(s: SnapshotRecord, health: HealthRecord | None = None) -> datetime:
+    """When the snapshot's data is from: its issue time; with none (a list such as
+    DONKI's is as new as the request for it), the last fetch that found it current,
+    since an unchanged body adds no snapshot."""
+    if s.issued_at is not None:
+        return s.issued_at
+    if (
+        health is not None
+        and health.last_snapshot_id == s.id
+        and health.last_ok_at is not None
+        and health.last_ok_at > s.fetched_at
+    ):
+        return health.last_ok_at
+    return s.fetched_at
 
 
-def _age(s: SnapshotRecord | None, now: datetime) -> float | None:
-    return None if s is None else max(0.0, (now - data_time(s)).total_seconds())
+def _age(
+    s: SnapshotRecord | None, now: datetime, health: HealthRecord | None = None
+) -> float | None:
+    return None if s is None else max(0.0, (now - data_time(s, health)).total_seconds())
 
 
 def _words(seconds: float) -> str:
@@ -113,8 +136,11 @@ async def latest(
             "; the last attempt to fetch it failed." if health and health.last_error else "."
         )
         return Latest(None, None, True, reason, budget)
-    age = _age(snap, now)
+    age = _age(snap, now, health)
     assert age is not None
+    checked = (
+        health.last_ok_at if health is not None and health.last_snapshot_id == snap.id else None
+    )
     if budget is not None and age > budget:
         return Latest(
             snap,
@@ -123,8 +149,9 @@ async def latest(
             f"The latest data from {name} is {_words(age)} old, past its {_words(budget)} limit, "
             "so it is not shown.",
             budget,
+            checked,
         )
-    return Latest(snap, age, False, None, budget)
+    return Latest(snap, age, False, None, budget, checked)
 
 
 def _row(
@@ -160,7 +187,7 @@ async def list_feeds(session: AsyncSession, now: datetime | None = None) -> dict
         rows.append(
             _row(
                 h,
-                data_time(snap) if snap else None,
+                data_time(snap, h) if snap else None,
                 limits[h.provider].breaker if h.provider in limits else "closed",
                 now,
             )
