@@ -399,7 +399,7 @@ def products() -> list[Product]:
         p("goes_xrays", "json/goes/primary/xrays-6-hour.json", parse_xrays, 300, 3600, "xray-1"),
         p("rtsw_wind", "json/rtsw/rtsw_wind_1m.json", parse_rtsw_wind, 900, 3 * 3600, "rtsw-1"),
         p("rtsw_mag", "json/rtsw/rtsw_mag_1m.json", parse_rtsw_mag, 900, 3 * 3600, "rtsw-1"),
-        p("alerts", "products/alerts.json", parse_alerts, 900, 6 * 3600, "alerts-1"),
+        p("alerts", "products/alerts.json", parse_alerts, 900, 6 * 3600, "alerts-2"),
         p("forecast_3day", "text/3-day-forecast.txt", parse_3day, 3 * 3600, 36 * 3600, "3day-1"),
         p("f107", "json/f107_cm_flux.json", parse_f107, 6 * 3600, 48 * 3600, "f107-1"),
     ]

@@ -146,3 +146,37 @@ async def test_with_no_feed_recorded_every_section_still_answers(anon_client) ->
     sea = (await anon_client.get(f"{API}/missions/griffin-1/return")).json()["data"]["booster"]
     if sea["wave_height_m"] is not None:
         assert sea["wave_height_m"]["value"] is None and sea["wave_height_m"]["missing_reason"]
+
+
+async def test_a_parser_fix_reaches_a_body_that_has_not_changed(tmp_path) -> None:
+    from dataclasses import replace
+
+    from app.feeds.http import Fetched
+    from app.feeds.recorder import record
+
+    alerts = next(p for p in swpc.products() if p.product == "alerts")
+    body = (
+        b'[{"product_id":"EF3A","issue_datetime":"2026-09-28 12:00:00.000",'
+        b'"message":"Space Weather Message Code: ALTEF3\\r\\nSerial Number: 1\\r\\n'
+        b"Issue Time: 2026 Sep 28 1200 UTC\\r\\n\\r\\n"
+        b'CONTINUED ALERT: Electron 2MeV Integral Flux exceeded 1000pfu\\r\\n"}]'
+    )
+    got = Fetched("https://example.test/alerts.json", 200, body, None, None, None, False, 1)
+    old = replace(alerts, parser_version="alerts-0")
+    async with session_scope() as s:
+        first = await record(s, old, got, raw_root=tmp_path)
+        again = await record(s, old, got, raw_root=tmp_path)
+        fixed = await record(s, alerts, got, raw_root=tmp_path)
+        once_more = await record(s, alerts, got, raw_root=tmp_path)
+        kept = (
+            await s.execute(
+                text(
+                    "SELECT count(*), max(parser_version) FROM feed_snapshots "
+                    "WHERE product = 'alerts'"
+                )
+            )
+        ).one()
+    assert (first.status, again.status) == ("new", "unchanged")
+    assert fixed.status == "reparsed" and fixed.snapshot_id == first.snapshot_id
+    assert once_more.status == "unchanged"
+    assert tuple(kept) == (1, alerts.parser_version)

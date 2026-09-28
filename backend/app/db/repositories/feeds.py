@@ -143,10 +143,11 @@ class FeedRepository:
 
     async def find_same_body(
         self, provider: str, product: str, location_key: str, sha: str
-    ) -> int | None:
+    ) -> tuple[int, str] | None:
+        """The newest good snapshot with this body, and the parser version that read it."""
         row = (
             await self._s.execute(
-                select(FeedSnapshot.id)
+                select(FeedSnapshot.id, FeedSnapshot.parser_version)
                 .where(
                     FeedSnapshot.provider == provider,
                     FeedSnapshot.product == product,
@@ -157,8 +158,14 @@ class FeedRepository:
                 .order_by(FeedSnapshot.id.desc())
                 .limit(1)
             )
-        ).scalar_one_or_none()
-        return None if row is None else int(row)
+        ).one_or_none()
+        return None if row is None else (int(row.id), str(row.parser_version))
+
+    async def reparse_snapshot(self, snapshot_id: int, values: dict[str, Any]) -> None:
+        """Replace a kept snapshot's reading after its parser changed; the body stays as fetched."""
+        await self._s.execute(
+            update(FeedSnapshot).where(FeedSnapshot.id == snapshot_id).values(**values)
+        )
 
     async def latest_ok(
         self, provider: str, product: str, location_key: str = ""

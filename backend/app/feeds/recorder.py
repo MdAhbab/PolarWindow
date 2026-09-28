@@ -2,7 +2,9 @@
 
 * An unchanged product (HTTP 304, or a body byte-identical to the last good
   one) adds no snapshot: health records the successful check, and the
-  current snapshot stays current.
+  current snapshot stays current. When the body is the same but its parser
+  has changed since it was kept, the kept snapshot is read again in place, so
+  a parser fix reaches a product whose body does not change.
 * A body the parser refuses is kept with status ``rejected`` and its reason,
   and the previous good snapshot stays current.
 * Raw bodies are compressed with zstd. Up to 256 KB compressed they are kept
@@ -32,7 +34,7 @@ _compressor = zstd.ZstdCompressor(level=9)
 class Outcome:
     ok: bool
     snapshot_id: int | None
-    status: str  # "new" | "unchanged" | "rejected"
+    status: str  # "new" | "unchanged" | "reparsed" | "rejected"
     message: str
 
 
@@ -72,8 +74,8 @@ async def record(
 
     sha = hashlib.sha256(got.body).hexdigest()
     same = await repo.find_same_body(product.provider, product.product, product.location_key, sha)
-    if same is not None:
-        return Outcome(True, same, "unchanged", "same body as the last good snapshot")
+    if same is not None and same[1] == product.parser_version:
+        return Outcome(True, same[0], "unchanged", "same body as the last good snapshot")
 
     parsed: Parsed | None = None
     issues: list[str] = []
@@ -87,6 +89,30 @@ async def record(
     except (ValueError, KeyError, TypeError, IndexError) as exc:
         status = "rejected"
         issues = [f"rejected: the parser failed ({type(exc).__name__}: {exc})"]
+
+    if same is not None:
+        # The body is the one already kept, read by an older parser: read it again in place.
+        if parsed is None:
+            return Outcome(
+                True,
+                same[0],
+                "unchanged",
+                f"same body; parser {product.parser_version} refused it, the kept reading stays",
+            )
+        await repo.reparse_snapshot(
+            same[0],
+            {
+                "issued_at": parsed.issued_at,
+                "valid_from": parsed.valid_from,
+                "valid_to": parsed.valid_to,
+                "parsed": parsed.values,
+                "parser_version": product.parser_version,
+                "issues": issues,
+            },
+        )
+        return Outcome(
+            True, same[0], "reparsed", f"same body, read again by parser {product.parser_version}"
+        )
 
     raw: bytes | None = None
     raw_ref: str | None = None
@@ -119,8 +145,8 @@ async def record(
     if status == "rejected":
         return Outcome(False, sid, "rejected", issues[0])
     if sid is None:  # a concurrent writer stored the identical body first
-        sid = await repo.find_same_body(
+        hit = await repo.find_same_body(
             product.provider, product.product, product.location_key, sha
         )
-        return Outcome(True, sid, "unchanged", "same body stored concurrently")
+        return Outcome(True, hit[0] if hit else None, "unchanged", "same body stored concurrently")
     return Outcome(True, sid, "new", f"{len(got.body)} bytes, {len(issues)} issues")
