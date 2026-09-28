@@ -27,6 +27,11 @@ interface Entry {
 }
 const entries: Record<string, Entry> = {}
 let n = 0
+/** Answers whose bodies are still being read: settle() waits for them before the page moves on. */
+const reading = new Set<Promise<void>>()
+const pendingKeys = new Set<string>()
+/** Seconds the service asked us to wait after refusing a request for our pace (429); null when none. */
+let limited: number | null = null
 
 function keyOf(method: string, url: string, body: string | null): string | null {
   if (!url.startsWith(API)) return null
@@ -52,13 +57,33 @@ async function record(page: Page) {
         return
       }
       const key = keyOf(req.method(), url, req.postData())
-      if (!key || entries[key] || !(res.headers()['content-type'] ?? '').includes('json')) return
+      if (!key || entries[key] || pendingKeys.has(key) || !(res.headers()['content-type'] ?? '').includes('json')) return
+      // Refused for this script's own pace (site comparison: 60 a minute), not an answer:
+      // not saved, and the step is asked again once the wait is over.
+      if (res.status() === 429) {
+        limited = Math.max(limited ?? 0, Number(res.headers()['retry-after'] ?? 60) || 60)
+        return
+      }
       // A section still being worked out (202) is not an answer; the copy
       // keeps only finished ones, so it never shows a job it cannot follow.
       if (res.status() === 202 || key.startsWith('GET /jobs/')) return
-      const file = `r/${String(++n).padStart(4, '0')}.json`
-      entries[key] = { file, status: res.status() }
-      writeFileSync(join(OUT, file), JSON.stringify(await res.json()))
+      // The entry is written only once its body is saved, so the index never
+      // points at a file that is not there (a body the page dropped is asked again).
+      pendingKeys.add(key)
+      const read = (async () => {
+        try {
+          const body = await res.json()
+          const file = `r/${String(++n).padStart(4, '0')}.json`
+          writeFileSync(join(OUT, file), JSON.stringify(body))
+          entries[key] = { file, status: res.status() }
+        } catch {
+          console.warn(`${key.slice(0, 100)}: its body was gone before it could be read; not saved`)
+        } finally {
+          pendingKeys.delete(key)
+        }
+      })()
+      reading.add(read)
+      void read.finally(() => reading.delete(read))
     } catch {
       /* a response the page abandoned (a superseded request): not saved */
     }
@@ -68,6 +93,8 @@ async function record(page: Page) {
 async function settle(page: Page) {
   await page.waitForLoadState('networkidle')
   await page.waitForTimeout(400)
+  // Every answer's body read before the page moves on and the browser drops it.
+  await Promise.allSettled([...reading])
 }
 
 /**
@@ -147,12 +174,23 @@ async function main() {
       }, path)
       await settle(page)
     }
-    await visit(page, `/missions/${m.id}`)
-    await page.getByRole('button', { name: 'Compare with nearby sites' }).click()
-    await settle(page)
-    for (const rank of ['Time in sunlight', 'Time in contact with Earth', 'Longest time without contact', 'Longest night']) {
-      await page.getByRole('button', { name: rank, exact: true }).click()
+    const compare = async () => {
+      await visit(page, `/missions/${m.id}`)
+      await page.getByRole('button', { name: 'Compare with nearby sites' }).click()
       await settle(page)
+      for (const rank of ['Time in sunlight', 'Time in contact with Earth', 'Longest time without contact', 'Longest night']) {
+        await page.getByRole('button', { name: rank, exact: true }).click()
+        await settle(page)
+      }
+    }
+    await compare()
+    // Asked too fast: wait as told, then ask again, so the copy holds answers, not refusals.
+    for (let tries = 0; limited !== null && tries < 3; tries++) {
+      const wait = limited
+      limited = null
+      console.warn(`/missions/${m.id}: comparison refused for pace; waiting ${wait} s`)
+      await page.waitForTimeout(wait * 1000 + 500)
+      await compare()
     }
   }
   await visit(page, '/missions/nope')
@@ -166,6 +204,17 @@ async function main() {
     for (const step of STEPS) {
       await visit(page, `/missions/${m.id}/${step}`)
       await answered(page, `/missions/${m.id}/${step}`)
+      // The rover row asks only when opened: open it, so the copy holds its answer too.
+      const rover = page.locator('main summary', { hasText: 'Rover and lander line of sight' })
+      if (step === 'contact' && (await rover.count())) {
+        await rover.first().click()
+        try {
+          await page.getByTestId('rover-sight').or(page.getByText(/^Not available:/)).first().waitFor({ timeout: 300_000 })
+        } catch {
+          console.warn(`/missions/${m.id}/contact: the rover's line of sight did not come in 5 minutes; not saved`)
+        }
+        await settle(page)
+      }
     }
   }
 
