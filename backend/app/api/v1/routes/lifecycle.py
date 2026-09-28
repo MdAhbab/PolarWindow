@@ -19,6 +19,7 @@ from app.api.v1.schemas.jobs import JobRefOut
 from app.api.v1.schemas.launch import LaunchCalendar
 from app.api.v1.schemas.ready import Section
 from app.api.v1.schemas.sections import SectionStatus
+from app.api.v1.schemas.space_weather import SpaceWeather
 from app.api.v1.schemas.trip import Trip
 from app.api.v1.schemas.weather import (
     LaunchWeather,
@@ -36,6 +37,7 @@ from app.services import (
     launch_service,
     return_service,
     sections_service,
+    space_weather_service,
     trip_service,
     weather_service,
 )
@@ -355,3 +357,13 @@ async def return_limits(
         )
     except Exception as exc:
         raise _weather_http(exc) from exc
+
+
+@router.get(
+    "/space-weather",
+    response_model=Section[SpaceWeather],
+    response_model_by_alias=True,
+    summary="What the Sun is doing now (NOAA SWPC, NASA DONKI), each number with its age",
+)
+async def space_weather(session: Any = Depends(deps.db)) -> dict[str, Any]:
+    return await space_weather_service.now(session)

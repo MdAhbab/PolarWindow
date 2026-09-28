@@ -2647,6 +2647,27 @@
         }
       }
     },
+    "/api/v1/space-weather": {
+      "get": {
+        "tags": [
+          "mission sections"
+        ],
+        "summary": "What the Sun is doing now (NOAA SWPC, NASA DONKI), each number with its age",
+        "operationId": "space_weather_api_v1_space_weather_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Section_SpaceWeather_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/missions/{mission_id}/ready": {
       "get": {
         "tags": [
@@ -4952,6 +4973,71 @@
         ],
         "title": "Climatology"
       },
+      "Cme": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "speed_m_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Speed M S"
+          },
+          "earth_arrival_estimates": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Earth Arrival Estimates"
+          },
+          "link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "start",
+          "speed_m_s",
+          "earth_arrival_estimates",
+          "link"
+        ],
+        "title": "Cme"
+      },
       "Comms": {
         "properties": {
           "bands": {
@@ -5681,6 +5767,64 @@
         ],
         "title": "Descent"
       },
+      "Donki": {
+        "properties": {
+          "cme": {
+            "items": {
+              "$ref": "#/components/schemas/Cme"
+            },
+            "type": "array",
+            "title": "Cme"
+          },
+          "flares": {
+            "items": {
+              "$ref": "#/components/schemas/Flare"
+            },
+            "type": "array",
+            "title": "Flares"
+          },
+          "sep": {
+            "items": {
+              "$ref": "#/components/schemas/Sep"
+            },
+            "type": "array",
+            "title": "Sep"
+          },
+          "days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days",
+            "description": "How many days back DONKI was asked."
+          },
+          "missing_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Missing Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "cme",
+          "flares",
+          "sep",
+          "days",
+          "missing_reason"
+        ],
+        "title": "Donki"
+      },
       "ExplainRequest": {
         "properties": {
           "site_id": {
@@ -5898,6 +6042,56 @@
           "feeds"
         ],
         "title": "FeedsOut"
+      },
+      "Flare": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "peak": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Peak"
+          },
+          "class": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Class"
+          },
+          "link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "peak",
+          "class",
+          "link"
+        ],
+        "title": "Flare"
       },
       "HTTPValidationError": {
         "properties": {
@@ -8187,6 +8381,56 @@
         ],
         "title": "Node"
       },
+      "Now": {
+        "properties": {
+          "kp": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "proton_10mev_pfu": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "proton_100mev_pfu": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "xray_class": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Xray Class"
+          },
+          "solar_wind_km_s": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "bz_nt": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "alerts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Alerts",
+            "description": "SWPC alert headlines of the last 24 hours."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kp",
+          "proton_10mev_pfu",
+          "proton_100mev_pfu",
+          "xray_class",
+          "solar_wind_km_s",
+          "bz_nt",
+          "alerts"
+        ],
+        "title": "Now"
+      },
       "Observed": {
         "properties": {
           "state": {
@@ -8497,6 +8741,93 @@
           "coast_min"
         ],
         "title": "Opportunity"
+      },
+      "Outlook": {
+        "properties": {
+          "issued": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issued"
+          },
+          "days": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days"
+          },
+          "s1_or_greater_pct": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "S1 Or Greater Pct",
+            "description": "SWPC's chance of a solar radiation storm (S1 or more), day 1-3, verbatim."
+          },
+          "kp_max_expected": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kp Max Expected"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text",
+            "description": "SWPC's 3-day forecast as issued."
+          },
+          "missing_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Missing Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "issued",
+          "days",
+          "s1_or_greater_pct",
+          "kp_max_expected",
+          "text",
+          "missing_reason"
+        ],
+        "title": "Outlook"
       },
       "Pad": {
         "properties": {
@@ -10614,6 +10945,23 @@
         ],
         "title": "Section[Return]"
       },
+      "Section_SpaceWeather_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SpaceWeather"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/LifecycleMeta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Section[SpaceWeather]"
+      },
       "Section_Trip_": {
         "properties": {
           "data": {
@@ -10651,6 +10999,66 @@
           "meta"
         ],
         "title": "Section[list[SectionStatus]]"
+      },
+      "Sep": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time"
+          },
+          "instruments": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instruments"
+          },
+          "link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "time",
+          "instruments",
+          "link"
+        ],
+        "title": "Sep"
       },
       "SepEvent": {
         "properties": {
@@ -11313,6 +11721,32 @@
         ],
         "title": "SourceRef",
         "description": "Where one input to an answer came from, and when."
+      },
+      "SpaceWeather": {
+        "properties": {
+          "now": {
+            "$ref": "#/components/schemas/Now"
+          },
+          "outlook": {
+            "$ref": "#/components/schemas/Outlook"
+          },
+          "donki": {
+            "$ref": "#/components/schemas/Donki"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "now",
+          "outlook",
+          "donki",
+          "note"
+        ],
+        "title": "SpaceWeather"
       },
       "SpaceWeatherNow": {
         "properties": {

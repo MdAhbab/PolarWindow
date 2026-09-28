@@ -295,3 +295,29 @@ async def test_lightning_rules_say_how_often_thunder_was_heard_at_the_pad(
     assert got["share"] == pytest.approx(0.2) and got["years"] == "2019-2025"
     assert "42 of the 210 hours" in got["source"]
     assert any("Thunder Hour" in s["name"] for s in body["meta"]["sources"])
+
+
+async def test_space_weather_now_says_what_is_recorded_and_what_is_not(anon_client) -> None:
+    now = datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    await _snap("swpc", "kp", "", {"latest": {"t": now, "kp": 4.33}, "series": []})
+    await _snap(
+        "swpc",
+        "goes_protons",
+        "",
+        {"latest": {">=10 MeV": {"t": now, "pfu": 0.4}, ">=100 MeV": {"t": now, "pfu": 0.1}}},
+    )
+    await _snap(
+        "donki",
+        "flr",
+        "",
+        {"count": 1, "days": 30, "events": [{"id": "f1", "peak": now, "class": "X1.1", "link": "l"}]},
+    )
+    r = await anon_client.get(f"{API}/space-weather")
+    assert r.status_code == 200, r.text
+    d = r.json()["data"]
+    assert d["now"]["kp"]["value"] == 4.33 and d["now"]["kp"]["provenance"] == "published"
+    assert d["now"]["proton_10mev_pfu"]["value"] == 0.4
+    assert d["now"]["bz_nt"]["value"] is None and d["now"]["bz_nt"]["missing_reason"]
+    assert d["donki"]["flares"][0]["class"] == "X1.1"
+    assert d["outlook"]["text"] is None and d["outlook"]["missing_reason"]
+    assert r.json()["meta"]["engines"] == {"rad": "rad-2"}

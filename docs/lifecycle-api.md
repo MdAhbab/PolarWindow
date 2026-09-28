@@ -531,4 +531,25 @@ that user. `GET /auth/me` returns the same `user`.
     A past event's `no_margin_reason` gives the measurement and NOAA's listed peak.
   - `make space-climate` rebuilds `data/radiation/{oulu_nm_monthly,sep_scenarios,
     donki_sep_goes}.json`; `make validate-radiation` prints the docs/validation.md tables.
+- 2026-09-28 (backend, space weather now):
+  - `GET /space-weather` → `Section<SpaceWeather>` (public, answers at once, no job):
+    ```ts
+    interface SpaceWeather {
+      now: { kp: Quantity; proton_10mev_pfu: Quantity; proton_100mev_pfu: Quantity;
+             xray_class: string | null; solar_wind_km_s: Quantity; bz_nt: Quantity;
+             alerts: string[] };                        // SWPC headlines of the last 24 h
+      outlook: { issued: string | null; days: string | null;
+                 s1_or_greater_pct: number[] | null;   // SWPC's day 1-3 chance, verbatim
+                 kp_max_expected: number | null; text: string | null;  // the 3-day forecast
+                 missing_reason: string | null };
+      donki: { cme: { id; start; speed_m_s; earth_arrival_estimates; link }[];
+               flares: { id; peak; class; link }[];
+               sep: { id; time; instruments; link }[];
+               days: number | null; missing_reason: string | null };
+      note: string;
+    }
+    ```
+    Each `now` number is `published` with the SWPC URL, or missing with the feed's reason;
+    `meta.computed_at` is the newest reading's time and `meta.stale` says if any is past its
+    budget. No dose here: doses are in `Trip.radiation`.
 
