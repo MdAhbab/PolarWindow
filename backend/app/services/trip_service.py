@@ -13,10 +13,11 @@ from typing import Any
 import numpy as np
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import engine_closure, get_settings
-from app.core import oem, spice
+from app.config import ENGINE_VERSION, engine_closure, get_settings
+from app.core import gcr, oem, spice
 from app.data import catalogues, registry
-from app.db.repositories.missions import MissionRepository
+from app.db.repositories.missions import MissionRecord, MissionRepository
+from app.db.repositories.sites import MaskRepository
 from app.services import ascent, job_service, launch_service, lifecycle
 from app.services.mission_service import MissionNotFound
 
@@ -52,8 +53,25 @@ def _none(reason: str) -> dict[str, Any]:
             "corrections_note": reason,
             "moon_pull": None,
             "radiation": None,
+            "radiation_note": reason,
         },
         "meta": lifecycle.meta(engines=("traj",), sources=[], parts=[("No trip", reason)]),
+    }
+
+
+async def _sky(session: AsyncSession, m: MissionRecord) -> dict[str, Any] | None:
+    """The landing site's share of open sky from its skyline (for the surface cosmic-ray
+    dose), and the month of the landing; None when no skyline is worked out."""
+    if not m.site_id:
+        return None
+    rec = await MaskRepository(session).get(m.site_id, ENGINE_VERSION)
+    if rec is None:
+        return None
+    landed = ((m.landing or {}).get("date") or "")[:7] or None
+    return {
+        "site_id": m.site_id,
+        "open_fraction": round(gcr.open_sky_fraction(rec.mask.el_deg), 5),
+        "month": landed,
     }
 
 
@@ -88,9 +106,14 @@ async def trip(session: AsyncSession, mission_id: str) -> tuple[int, dict[str, A
         "url": ds.source,
         "step_s": STEP_S,
         "stations": catalogues.load("ground_stations").version,
+        "sky": await _sky(session, m),
     }
     ans = await job_service.answer_or_enqueue(
-        session, kind=KIND, closure=engine_closure("traj", "ecl"), params=params, mission_id=m.id
+        session,
+        kind=KIND,
+        closure=engine_closure("traj", "ecl", "rad"),
+        params=params,
+        mission_id=m.id,
     )
     if ans.assessment is None:
         assert ans.job is not None

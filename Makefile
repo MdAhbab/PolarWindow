@@ -10,7 +10,7 @@ FE    := frontend
 DATA  := data
 
 .DEFAULT_GOAL := help
-.PHONY: missions climatology thunder-climatology hindcast-weather validate-trip test-db help install kernels dem sites seed tiles services db-up migrate dev api worker \
+.PHONY: missions climatology thunder-climatology space-climate validate-radiation hindcast-weather validate-trip test-db help install kernels dem sites seed tiles services db-up migrate dev api worker \
         compute feeds feeds-once catalogues \
         frontend test test-fast test-int test-geo lint fmt typecheck contracts \
         golden-update openapi codegen clean nuke check
@@ -80,6 +80,12 @@ climatology: ## Wind at 50 m per month and hour at the pads, from NASA POWER (ke
 
 thunder-climatology: ## Thunder hours per month and hour at the pads, from GLM (GHRC DAAC via OPeNDAP; needs PW_EARTHDATA_TOKEN; ~1.5 h, cached)
 	cd $(BE) && $(UV) run python -m app.data.thunder_climatology
+
+space-climate: ## Oulu neutron monitor (NMDB), past solar particle events (GOES, NCEI) and DONKI's GOES events, for the radiation screening (writes data/radiation)
+	cd $(BE) && $(UV) run python -m app.data.space_climate
+
+validate-radiation: ## Belts (IRBEM against NASA SPDF's AE8/AP8), cosmic rays against CRaTER, past events against NOAA's list (prints the docs/validation.md tables)
+	cd $(BE) && $(UV) run python -m app.tests.golden.validate_radiation 2>/dev/null
 
 hindcast-weather: ## GEFS wind shares against the Cape's weather station for a year (AWS open data + IEM; ~30 min, cached)
 	cd $(BE) && $(UV) run python -m app.feeds.hindcast

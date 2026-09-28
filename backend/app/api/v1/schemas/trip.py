@@ -68,10 +68,36 @@ class MoonPull(_M):
     t_equal_pull: datetime | None = Field(description="When the Moon's pull overtook Earth's.")
 
 
+class SurfaceDose(_M):
+    site_id: str
+    open_sky: QuantityOut = Field(description="The site's share of open sky, 1 = flat horizon.")
+    gcr_dose_mgy_day: QuantityOut
+
+
+class SepEvent(_M):
+    t: str = Field(description="When NOAA's >10 MeV threshold was crossed (NASA DONKI).")
+    link: str
+
+
+class SepScenario(_M):
+    id: str
+    name: str
+    fluence_gt10mev: QuantityOut
+    fluence_gt30mev: QuantityOut
+    source_url: str
+
+
 class Radiation(_M):
     belt_hours: QuantityOut
-    fluence_gt10mev: QuantityOut
+    belt_passes: int
+    electron_fluence_gt1mev: QuantityOut
+    fluence_gt10mev: QuantityOut = Field(description="Trapped protons above 10 MeV (AP8).")
     gcr_dose_mgy_day: QuantityOut
+    surface: SurfaceDose | None
+    surface_note: str | None
+    sep_events: list[SepEvent]
+    sep_note: str
+    scenarios: list[SepScenario]
     screening_note: str
     confirm_in: list[str]
 
@@ -95,3 +121,4 @@ class Trip(_M):
     corrections_note: str | None = Field(description="Why there is no correction budget.")
     moon_pull: MoonPull | None
     radiation: Radiation | None
+    radiation_note: str | None = Field(default=None, description="Why there is no radiation block.")

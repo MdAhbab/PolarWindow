@@ -58,7 +58,7 @@ async def test_im2_flown_trip(anon_client, settings, monkeypatch) -> None:
     mp = d["moon_pull"]
     assert 30_000 < mp["equal_pull_km"] < 45_000 and mp["t_equal_pull"] is not None
     assert {s["light"] for s in d["samples"]} <= {"lit", "penumbral", "dark"}
-    assert r.json()["meta"]["engines"] == {"ecl": "ecl-1", "traj": "traj-3"}
+    assert r.json()["meta"]["engines"] == {"ecl": "ecl-1", "traj": "traj-3", "rad": "rad-2"}
     assert len(d["covered"]) >= 1 and d["covered"][0]["start"] == d["start"]
     # Burns found in the reconstruction: corrections on the way, then lunar orbit.
     names = [b["name"] for b in d["burns"]]
@@ -74,6 +74,16 @@ async def test_im2_flown_trip(anon_client, settings, monkeypatch) -> None:
     p99 = c["total_p99_m_s"]
     assert p99["lo"] <= p99["value"] <= p99["hi"] and c["assumptions"]
     assert d["corrections_note"] is None
+    # Radiation, a screening estimate: one pass through the belts on the way out.
+    rad = d["radiation"]
+    assert rad["belt_passes"] == 1 and 1 < rad["belt_hours"]["value"] < 10
+    assert rad["belt_hours"]["factor"] == 2.0
+    assert 1e9 < rad["electron_fluence_gt1mev"]["value"] < 1e11
+    g = rad["gcr_dose_mgy_day"]
+    assert 0.05 < g["value"] < 0.5 and g["pm"] == pytest.approx(0.3 * g["value"])
+    assert rad["sep_events"] == [] and "No solar particle event" in rad["sep_note"]
+    assert {s["id"] for s in rad["scenarios"]} == {"oct-1989", "oct-2003", "aug-1972"}
+    assert "SPENVIS" in rad["screening_note"] and len(rad["confirm_in"]) == 3
 
 
 @pytest.mark.requires_kernels

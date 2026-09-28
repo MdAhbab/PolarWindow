@@ -505,3 +505,30 @@ that user. `GET /auth/me` returns the same `user`.
   - `make thunder-climatology` (needs `PW_EARTHDATA_TOKEN`) rebuilds
     `data/climatology/glm_thunder_{region}.json` through NASA Earthdata's OPeNDAP (only the
     pads' cells are read; a day's file is 600 MB).
+- 2026-09-28 (backend, radiation screening; engine `rad-2`):
+  - `Trip.radiation` is filled for a flown trip (and `Trip` adds `radiation_note: string |
+    null`, why there is none). It keeps the contract's fields and adds:
+    ```ts
+    interface Radiation {
+      belt_hours: Quantity;               // factor 2; open = the climb out before NASA's
+                                          // reconstruction is not counted (a lower bound)
+      belt_passes: number;
+      electron_fluence_gt1mev: Quantity;  // cm^-2, AE8, factor 2
+      fluence_gt10mev: Quantity;          // cm^-2, trapped protons (AP8), factor 2
+      gcr_dose_mgy_day: Quantity;         // mGy/d in silicon, ± 30 %, before shielding
+      surface: { site_id: string; open_sky: Quantity;        // 1 = flat horizon
+                 gcr_dose_mgy_day: Quantity } | null;        // at the landing site
+      surface_note: string | null;        // why no surface dose (no skyline for the site)
+      sep_events: { t: string; link: string }[];   // NOAA >10 MeV threshold crossings
+      sep_note: string;                             // during the trip (NASA DONKI)
+      scenarios: { id: string; name: string; fluence_gt10mev: Quantity;
+                   fluence_gt30mev: Quantity; source_url: string }[];  // Oct 1989, Oct 2003, Aug 1972
+      screening_note: string; confirm_in: string[];  // SPENVIS, OLTARIS, CREME-MC
+    }
+    ```
+    Each computed Quantity's `source` says in words how it was worked out (the maps and why
+    MIN or MAX, the other maps' value; the measured reference and the modulation scaling).
+    A past event's `no_margin_reason` gives the measurement and NOAA's listed peak.
+  - `make space-climate` rebuilds `data/radiation/{oulu_nm_monthly,sep_scenarios,
+    donki_sep_goes}.json`; `make validate-radiation` prints the docs/validation.md tables.
+

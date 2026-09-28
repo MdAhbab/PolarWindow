@@ -331,3 +331,65 @@ is partly sea, where the wind runs stronger than at a station a few kilometres i
 other than the lowest (669 cases, mean share 0.002, observed 0) holds 30 cases. A year
 cannot check a limit this rarely reached; several years, or the pad's own tower record,
 would be needed.
+
+**Lightning climatology** (`make thunder-climatology`, `app/data/thunder_climatology.py`).
+NASA MSFC's Combined GLM Hourly Thunder Hour data (GHRC DAAC, doi:10.5067/GLM/HTH/DATA301),
+2019–2025, 2,557 days: for each hour, whether thunder could be heard in each 0.05° cell.
+A day's file is 600 MB, so only the pads' cells are read through NASA Earthdata's OPeNDAP;
+for one day the pads' cells matched the whole file hour for hour. At LC-39A thunder was heard
+in about 21 % of July's 20 UTC hours and none of January's.
+
+# Radiation screening (plan track E)
+
+`make validate-radiation` (`app/tests/golden/validate_radiation.py`) prints these tables;
+`test_radiation.py` pins the cosmic-ray and past-event checks.
+
+**Belts: the engine against a second implementation** (plan: IRBEM within 5 % of SPENVIS
+running AE8/AP8). SPENVIS is a web service and was not run here. Instead, along each flown
+trajectory (one-minute samples within 15 Earth radii, from NASA's reconstruction), the
+fluence from IRBEM (the engine, compiled in spacepy's wheel; its own magnetic shells from
+IGRF) is compared with NASA SPDF's own AE8/AP8 code (`radbelt`; its own shells from its
+IGRF). Solar-maximum maps for all four (the year before each launch was near the cycle's
+peak in OMNI's sunspot record).
+
+| Mission | 1-min samples | e >1 MeV IRBEM | SPDF | diff | p >10 MeV IRBEM | SPDF | diff |
+|---|---|---|---|---|---|---|---|
+| IM-1 | 0 | – | – | – | – | – | – |
+| IM-2 | 437 | 1.09e10 | 1.13e10 | −2.8 % | 8.55e5 | 1.44e6 | −40.5 % |
+| Blue Ghost 1 | 3,311 | 2.04e10 | 2.15e10 | −5.0 % | 8.00e8 | 7.94e8 | +0.7 % |
+| Peregrine | 867 | 2.35e10 | 2.33e10 | +0.8 % | 2.67e8 | 2.80e8 | −4.8 % |
+
+Electrons agree within 5 % on every trip; protons on the two trips that spend hours in
+the inner belt (Blue Ghost's four passes, Peregrine's two). IM-2's proton fluence, a
+thousand times smaller, differs by 40 %: it comes from minutes at the inner belt's lower
+edge, where the flux changes steeply with B/B0 and the two codes' shells differ most.
+IM-1's reconstruction starts 242,000 km out, a day and a half after launch, past the
+belts, so it has none; the answer
+says the climb out is not counted (a lower bound). The maps themselves are read as good
+to a factor of two (×/÷2 on every number).
+
+**Cosmic rays** (plan: ±30 %). The dose on the trip is CRaTER's measured rate scaled by
+the model's change with the Sun's modulation (Matthiä et al. 2013, W from the Oulu
+neutron monitor via NMDB). As an absolute check, the model's dose in a thin silicon layer
+in free space (Bethe stopping power, nuclei Z = 1–28 above 10 MeV/n) in June 2009 (W = 5)
+is 14.1 cGy a year, against CRaTER's 18.9 (microdosimeter, −26 %) and 16.5 (D1–D2,
+−15 %) at 10,000 km from the Moon (Schwadron et al. 2012). Both are inside ±30 %. How
+the dose changes between solar minimum and maximum is the model's alone and has not been
+checked against a second measurement here. Scaled this way the trip dose was 0.21 mGy a
+day for IM-1 (February 2024, W = 91) and 0.17 for Blue Ghost 1 (January 2025, W = 108),
+before any shielding; on the surface, Chang'e-4's 13.2 µGy an hour (January 2019) scaled
+the same way and by the site's open sky.
+
+**Past events** (plan: within 10 % of NOAA's list). The >10 MeV peak from the GOES
+detector's 5-minute averages (NOAA NCEI) against NOAA SWPC's list of solar proton events:
+
+| Event | GOES peak (pfu) | at | NOAA list | at | diff | fluence >10 MeV (cm⁻²) |
+|---|---|---|---|---|---|---|
+| October 1989, 19–31 Oct (GOES-7) | 42,200 | 20 Oct 16:00 | 40,000 | 20 Oct 16:00 | +5.5 % | 1.92e10 |
+| Late October 2003, 28–31 Oct (GOES-11) | 29,500 | 29 Oct 06:15 | 29,500 | 29 Oct 06:15 | 0.0 % | 1.39e10 |
+
+August 1972 comes from King's (1974) fitted spectrum as SPENVIS gives it (7.9e9 cm⁻²
+above 30 MeV). Fluences take the flux as arriving evenly from every direction. OMNI's
+merged proton record was not used for these: it has gaps at both peaks and no proton
+values after March 2020, so the events during a flown trip are listed from NASA DONKI (NOAA's
+10 pfu threshold at GOES) without a fluence.

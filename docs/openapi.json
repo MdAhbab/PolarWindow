@@ -9327,11 +9327,58 @@
           "belt_hours": {
             "$ref": "#/components/schemas/QuantityOut"
           },
-          "fluence_gt10mev": {
+          "belt_passes": {
+            "type": "integer",
+            "title": "Belt Passes"
+          },
+          "electron_fluence_gt1mev": {
             "$ref": "#/components/schemas/QuantityOut"
+          },
+          "fluence_gt10mev": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Trapped protons above 10 MeV (AP8)."
           },
           "gcr_dose_mgy_day": {
             "$ref": "#/components/schemas/QuantityOut"
+          },
+          "surface": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SurfaceDose"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "surface_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Surface Note"
+          },
+          "sep_events": {
+            "items": {
+              "$ref": "#/components/schemas/SepEvent"
+            },
+            "type": "array",
+            "title": "Sep Events"
+          },
+          "sep_note": {
+            "type": "string",
+            "title": "Sep Note"
+          },
+          "scenarios": {
+            "items": {
+              "$ref": "#/components/schemas/SepScenario"
+            },
+            "type": "array",
+            "title": "Scenarios"
           },
           "screening_note": {
             "type": "string",
@@ -9349,8 +9396,15 @@
         "type": "object",
         "required": [
           "belt_hours",
+          "belt_passes",
+          "electron_fluence_gt1mev",
           "fluence_gt10mev",
           "gcr_dose_mgy_day",
+          "surface",
+          "surface_note",
+          "sep_events",
+          "sep_note",
+          "scenarios",
           "screening_note",
           "confirm_in"
         ],
@@ -10598,6 +10652,58 @@
         ],
         "title": "Section[list[SectionStatus]]"
       },
+      "SepEvent": {
+        "properties": {
+          "t": {
+            "type": "string",
+            "title": "T",
+            "description": "When NOAA's >10 MeV threshold was crossed (NASA DONKI)."
+          },
+          "link": {
+            "type": "string",
+            "title": "Link"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "t",
+          "link"
+        ],
+        "title": "SepEvent"
+      },
+      "SepScenario": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "fluence_gt10mev": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "fluence_gt30mev": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "fluence_gt10mev",
+          "fluence_gt30mev",
+          "source_url"
+        ],
+        "title": "SepScenario"
+      },
       "SessionOut": {
         "properties": {
           "subject": {
@@ -11323,6 +11429,29 @@
         ],
         "title": "StretchOut"
       },
+      "SurfaceDose": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "open_sky": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "The site's share of open sky, 1 = flat horizon."
+          },
+          "gcr_dose_mgy_day": {
+            "$ref": "#/components/schemas/QuantityOut"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "open_sky",
+          "gcr_dose_mgy_day"
+        ],
+        "title": "SurfaceDose"
+      },
       "SurfaceWindow": {
         "properties": {
           "start": {
@@ -11959,6 +12088,18 @@
                 "type": "null"
               }
             ]
+          },
+          "radiation_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Radiation Note",
+            "description": "Why there is no radiation block."
           }
         },
         "additionalProperties": false,

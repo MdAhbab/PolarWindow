@@ -25,7 +25,7 @@ from app.core.quantity import Quantity
 from app.core.spice import R_EARTH_M, R_MOON_M, R_SUN_M
 from app.data import catalogues
 from app.db.repositories.jobs import InputRef
-from app.services import ascent, flown_burns, lifecycle
+from app.services import ascent, flown_burns, lifecycle, radiation
 from app.workers.compute import HandlerResult, JobContext, handler
 
 H = 3600.0
@@ -322,6 +322,10 @@ async def run(ctx: JobContext) -> HandlerResult:
     burns, burns_note, corrections, corrections_note = await _burns_and_budget(
         ctx, p, at, et_origin
     )
+    ctx.progress(0.9, "Working out the radiation along the trip.")
+    rad, rad_why, rad_sources = await spice.run_async(
+        radiation.along_trip, sc, cover, start_dt, at(t_end), p.get("sky")
+    )
     shadow_s = intervals.total(shadow_runs, True)
     shadow_wide_s = intervals.total(shadow_wide, True)
     heard_s = intervals.total(heard_runs, True)
@@ -377,10 +381,11 @@ async def run(ctx: JobContext) -> HandlerResult:
             "sphere_of_influence_km": core_trip.sphere_of_influence_m(d_em, mu_e, mu_m) / 1000.0,
             "t_equal_pull": None if pull_t is None else lifecycle.iso(at(pull_t)),
         },
-        "radiation": None,
+        "radiation": rad,
+        "radiation_note": rad_why,
     }
     meta = lifecycle.meta(
-        engines=("ecl", "traj"),
+        engines=("ecl", "traj", "rad"),
         sources=[
             lifecycle.source_ref(p["title"], p["url"]),
             lifecycle.source_ref(
@@ -391,8 +396,14 @@ async def run(ctx: JobContext) -> HandlerResult:
                 "DSN 810-005 module 301 Rev. O horizon masks",
                 stations[0].sources[1].url if stations else None,
             ),
+            *rad_sources,
         ],
         parts=[
+            (
+                "Radiation",
+                "A screening estimate: belt maps good to about a factor of two, cosmic-ray "
+                "dose ±30 %; confirm in SPENVIS, OLTARIS or CREME-MC.",
+            ),
             (
                 "Reconstructed trajectory",
                 "NASA's reconstruction as archived; its own accuracy " "is not published with it.",
