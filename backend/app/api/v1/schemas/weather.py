@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from app.api.v1.schemas.common import QuantityOut, ShareOut
 
@@ -92,9 +92,13 @@ class LaunchWeather(_M):
 
 
 class OfficialForecastIn(_M):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+
     probability_pct: float = Field(ge=0, le=100)
-    concerns: list[str] = Field(default_factory=list, max_length=20)
-    pdf_url: str = Field(pattern=r"^https://\S+$")
+    concerns: list[Annotated[str, StringConstraints(max_length=500)]] = Field(
+        default_factory=list, max_length=20
+    )
+    pdf_url: str = Field(pattern=r"^https://\S+$", max_length=2000)
 
 
 class OfficialForecastOut(_M):
@@ -114,8 +118,10 @@ class OfficialForecastRemoved(_M):
 
 
 class LimitIn(_M):
-    rule_id: str
-    value: float = Field(gt=0)
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+
+    rule_id: str = Field(max_length=64)
+    value: float = Field(gt=0, le=1e6)
     unit: str = Field(min_length=1, max_length=24)
     note: str | None = Field(default=None, max_length=2000)
 
@@ -196,8 +202,11 @@ class Return(_M):
 
 
 class SeaLimitsIn(_M):
-    wave_height_m: float | None = None
-    wind_m_s: float | None = None
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+
+    #: Upper bounds are sanity only: above any sea state or surface wind on record.
+    wave_height_m: float | None = Field(default=None, le=30)
+    wind_m_s: float | None = Field(default=None, le=100)
 
 
 class ReturnLimitsIn(_M):

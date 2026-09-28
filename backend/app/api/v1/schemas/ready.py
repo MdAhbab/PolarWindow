@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Generic, Literal, TypeVar
+from typing import Annotated, Any, Generic, Literal, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from app.api.v1.schemas.common import LifecycleMeta, QuantityOut
 
@@ -85,14 +85,17 @@ class Milestone(_M):
 
 class RiskRating(_M):
     category: RiskCategory
-    likelihood: int = Field(ge=1)
-    consequence: int = Field(ge=1)
+    likelihood: int = Field(ge=1, le=100)
+    consequence: int = Field(ge=1, le=100)
+
+
+_Id = Annotated[str, StringConstraints(max_length=160)]
 
 
 class RiskLinks(_M):
-    readiness_items: list[str] = Field(default_factory=list)
-    parts: list[str] = Field(default_factory=list)
-    lessons: list[str] = Field(default_factory=list)
+    readiness_items: list[_Id] = Field(default_factory=list, max_length=200)
+    parts: list[_Id] = Field(default_factory=list, max_length=200)
+    lessons: list[_Id] = Field(default_factory=list, max_length=200)
 
 
 class Risk(_M):
@@ -216,8 +219,8 @@ class RiskIn(_M):
     title: str = Field(min_length=1, max_length=300)
     cause: str = Field(min_length=1, max_length=4000)
     consequence_text: str = Field(min_length=1, max_length=4000)
-    scale_id: str
-    ratings: list[RiskRating] = Field(min_length=1)
+    scale_id: str = Field(max_length=64)
+    ratings: list[RiskRating] = Field(min_length=1, max_length=20)
     trend: Literal["rising", "steady", "falling"]
     owner: str | None = Field(default=None, max_length=200)
     mitigation: str | None = Field(default=None, max_length=4000)
@@ -228,8 +231,8 @@ class RiskPatch(_M):
     title: str | None = Field(default=None, min_length=1, max_length=300)
     cause: str | None = Field(default=None, max_length=4000)
     consequence_text: str | None = Field(default=None, max_length=4000)
-    scale_id: str | None = None
-    ratings: list[RiskRating] | None = None
+    scale_id: str | None = Field(default=None, max_length=64)
+    ratings: list[RiskRating] | None = Field(default=None, min_length=1, max_length=20)
     trend: Literal["rising", "steady", "falling"] | None = None
     owner: str | None = Field(default=None, max_length=200)
     mitigation: str | None = Field(default=None, max_length=4000)
@@ -319,5 +322,7 @@ class Parameters(_M):
 
 
 class ParameterIn(_M):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+
     value: float
     note: str | None = Field(default=None, max_length=2000)

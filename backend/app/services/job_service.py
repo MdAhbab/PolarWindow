@@ -21,12 +21,15 @@ from typing import Any
 import orjson
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import get_settings
 from app.db.repositories.jobs import (
     AssessmentRecord,
     AssessmentRepository,
     JobRecord,
     JobRepository,
 )
+from app.services import audit_service
+from app.services.auth_service import Claims
 
 #: How long a client should wait before polling again, by state.
 POLL_AFTER_S = {"queued": 3.0, "running": 2.0, "done": 0.0, "failed": 0.0}
@@ -62,6 +65,14 @@ def read_only() -> Iterator[None]:
 
 class JobNotFound(LookupError):
     pass
+
+
+class QueueFull(RuntimeError):
+    """``max_queued_jobs`` jobs are already waiting; nothing new is queued."""
+
+    def __init__(self, queued: int) -> None:
+        super().__init__(queued)
+        self.queued = queued
 
 
 def params_hash(kind: str, closure: str, params: dict[str, Any]) -> str:
@@ -155,6 +166,10 @@ async def answer_or_enqueue(
         raise NotWorkedOut(
             "It has not been worked out yet; opening this section of the mission starts it."
         )
+    if last is None or last.status not in ("queued", "running"):
+        waiting = await repo.queued_count()
+        if waiting >= get_settings().max_queued_jobs:
+            raise QueueFull(waiting)
     job = await repo.enqueue(
         kind=kind,
         params=params,
@@ -174,20 +189,42 @@ async def get_job(session: AsyncSession, job_id: int) -> dict[str, Any]:
     return job_ref(job, ahead=await _ahead(session, job))
 
 
-async def retry(session: AsyncSession, job_id: int, requested_by: int | None) -> dict[str, Any]:
-    """Queue a failed job's key again (the person asked; inputs may have been fixed)."""
+def _first_line(text_: str | None) -> str | None:
+    lines = (text_ or "").splitlines()
+    return lines[0][:300] if lines else None
+
+
+async def retry(session: AsyncSession, job_id: int, who: Claims) -> dict[str, Any]:
+    """Queue a failed job's key again (the person asked; inputs may have been fixed).
+
+    Recorded in the change history (``entity=job``) against the person who asked.
+    """
     repo = JobRepository(session)
     job = await repo.get(job_id)
     if job is None:
         raise JobNotFound(job_id)
     if job.status != "failed":
         return job_ref(job)
+    waiting = await repo.queued_count()
+    if waiting >= get_settings().max_queued_jobs:
+        raise QueueFull(waiting)
     again = await repo.enqueue(
         kind=job.kind,
         params=job.params,
         params_hash=job.params_hash,
         closure=job.closure,
         mission_id=job.mission_id,
-        requested_by=requested_by,
+        requested_by=who.user_id,
+        priority=job.priority,
+    )
+    await audit_service.record(
+        session,
+        who,
+        action="retry",
+        entity="job",
+        entity_id=str(job.id),
+        before={"status": job.status, "error": _first_line(job.error)},
+        after={"job_id": again.id, "status": again.status},
+        mission_id=job.mission_id,
     )
     return job_ref(again)

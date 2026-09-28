@@ -2937,10 +2937,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "description": "ready_item, part, risk, booking, forecast, limits, parameter, lesson, feed",
+              "description": "ready_item, part, risk, booking, forecast, limits, parameter, lesson, milestone, feed, job, settings",
               "title": "Entity"
             },
-            "description": "ready_item, part, risk, booking, forecast, limits, parameter, lesson, feed"
+            "description": "ready_item, part, risk, booking, forecast, limits, parameter, lesson, milestone, feed, job, settings"
           },
           {
             "name": "id",
@@ -4502,6 +4502,7 @@
         "properties": {
           "station": {
             "type": "string",
+            "maxLength": 64,
             "title": "Station",
             "description": "Ground station id from the catalogue, e.g. `dss-14`."
           },
@@ -4669,6 +4670,7 @@
         "properties": {
           "site_id": {
             "type": "string",
+            "maxLength": 160,
             "title": "Site Id"
           },
           "start": {
@@ -5914,6 +5916,7 @@
         "properties": {
           "site_id": {
             "type": "string",
+            "maxLength": 160,
             "title": "Site Id"
           },
           "start": {
@@ -7057,10 +7060,12 @@
         "properties": {
           "rule_id": {
             "type": "string",
+            "maxLength": 64,
             "title": "Rule Id"
           },
           "value": {
             "type": "number",
+            "maximum": 1000000.0,
             "exclusiveMinimum": 0.0,
             "title": "Value"
           },
@@ -8588,7 +8593,8 @@
           },
           "concerns": {
             "items": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 500
             },
             "type": "array",
             "maxItems": 20,
@@ -8596,6 +8602,7 @@
           },
           "pdf_url": {
             "type": "string",
+            "maxLength": 2000,
             "pattern": "^https://\\S+$",
             "title": "Pdf Url"
           }
@@ -10356,6 +10363,7 @@
           },
           "scale_id": {
             "type": "string",
+            "maxLength": 64,
             "title": "Scale Id"
           },
           "ratings": {
@@ -10363,6 +10371,7 @@
               "$ref": "#/components/schemas/RiskRating"
             },
             "type": "array",
+            "maxItems": 20,
             "minItems": 1,
             "title": "Ratings"
           },
@@ -10438,23 +10447,29 @@
         "properties": {
           "readiness_items": {
             "items": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 160
             },
             "type": "array",
+            "maxItems": 200,
             "title": "Readiness Items"
           },
           "parts": {
             "items": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 160
             },
             "type": "array",
+            "maxItems": 200,
             "title": "Parts"
           },
           "lessons": {
             "items": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 160
             },
             "type": "array",
+            "maxItems": 200,
             "title": "Lessons"
           }
         },
@@ -10504,7 +10519,8 @@
           "scale_id": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 64
               },
               {
                 "type": "null"
@@ -10518,7 +10534,9 @@
                 "items": {
                   "$ref": "#/components/schemas/RiskRating"
                 },
-                "type": "array"
+                "type": "array",
+                "maxItems": 20,
+                "minItems": 1
               },
               {
                 "type": "null"
@@ -10595,11 +10613,13 @@
           },
           "likelihood": {
             "type": "integer",
+            "maximum": 100.0,
             "minimum": 1.0,
             "title": "Likelihood"
           },
           "consequence": {
             "type": "integer",
+            "maximum": 100.0,
             "minimum": 1.0,
             "title": "Consequence"
           }
@@ -10868,7 +10888,8 @@
           "wave_height_m": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "maximum": 30.0
               },
               {
                 "type": "null"
@@ -10879,7 +10900,8 @@
           "wind_m_s": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "maximum": 100.0
               },
               {
                 "type": "null"

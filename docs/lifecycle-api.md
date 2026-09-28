@@ -570,3 +570,24 @@ that user. `GET /auth/me` returns the same `user`.
   `LaunchWeather` notes say "the weather rules show …" (no "tab"). `Trip.burns_note` for a
   trip with no burn found says so for that trip (the stretches the reconstruction covers up
   to the arrival) before the method.
+- 2026-09-28 (hardening, track I):
+  - Every write is refused past its allowance with **429** `too-many-requests` and
+    `Retry-After` (seconds), per client address in a sliding minute: sign-in 60, AI
+    assistant 20, site comparison 60, every other change 120. Reads are never limited.
+  - A request body over 64 KB is refused with **413** `too-large`.
+  - A section that needs a new job while 200 jobs already wait answers **503** `queue-full`
+    with `Retry-After: 60` (joining a job already queued for the same key still works).
+  - Settings changes and job retries are in the history: `GET /history?entity=settings&id=ai|agent_runs|cache`
+    (`action`: `set`, `reset`, `retry`, `delete`) and `GET /history?entity=job&id={job_id}`
+    (`action: "retry"`, `after.job_id` the new job). `entity` also takes `parameter`,
+    `lesson`, `milestone`, `feed`.
+  - Input bounds (422 `invalid-request` past them): numbers must be finite; sea limits
+    `wave_height_m` ≤ 30, `wind_m_s` ≤ 100; vehicle limit `value` ≤ 10^6 and `rule_id` ≤ 64
+    chars; forecast `concerns[]` ≤ 500 chars each, `pdf_url` ≤ 2,000; risk `scale_id` ≤ 64,
+    `ratings` 1–20, each link list ≤ 200 ids of ≤ 160 chars; booking `station` ≤ 64 chars
+    and a booked pass at most 24 hours (a longer one is a 422 `bad-request`); agents'
+    `site_id` ≤ 160.
+  - CORS now allows `PATCH` (readiness items, parts, risks); browsers were refused it.
+  - A queued `JobRef.message` says the compute worker is not running only when nothing is
+    ahead of the job; contact jobs are worked out before launch calendars, and those before
+    trips (cheapest first).

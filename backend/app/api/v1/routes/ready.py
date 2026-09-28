@@ -187,7 +187,8 @@ async def item_history(item_id: str, session: Any = Depends(deps.db)) -> dict[st
 @router.get("/history", response_model=History, summary="Change history of any entered record")
 async def history(
     entity: str = Query(
-        description="ready_item, part, risk, booking, forecast, limits, " "parameter, lesson, feed"
+        description="ready_item, part, risk, booking, forecast, limits, parameter, lesson, "
+        "milestone, feed, job, settings"
     ),
     record_id: str = Query(alias="id"),
     session: Any = Depends(deps.db),

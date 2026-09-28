@@ -93,7 +93,9 @@ class Contact(_M):
 
 
 class BookingIn(_M):
-    station: str = Field(description="Ground station id from the catalogue, e.g. `dss-14`.")
+    station: str = Field(
+        max_length=64, description="Ground station id from the catalogue, e.g. `dss-14`."
+    )
     start: datetime
     end: datetime
     note: str | None = Field(default=None, max_length=2000)

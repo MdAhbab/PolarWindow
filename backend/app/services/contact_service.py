@@ -30,6 +30,11 @@ STEP_S = 120
 SITE_STEP_S = 900
 
 
+#: The longest single booking taken: a Deep Space Network track is a few hours,
+#: so anything longer is a typing slip, not a pass.
+MAX_BOOKING = timedelta(hours=24)
+
+
 class NoContact(ValueError):
     """Contact cannot be worked out for this mission; the message says why."""
 
@@ -196,6 +201,8 @@ async def add_booking(
         raise BadRequest(f"'{station}' is not a ground station in the catalogue")
     if end <= start:
         raise BadRequest("a booked pass ends after it starts")
+    if end - start > MAX_BOOKING:
+        raise BadRequest("a booked pass is at most 24 hours; book a longer track as several")
     bid = await PmRepository(session).add_booking(m.id, station, start, end, note, who.actor)
     after = {
         "station": station,

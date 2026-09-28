@@ -7,6 +7,7 @@ import asyncio
 import pytest
 from sqlalchemy import text
 
+from app.config import get_settings
 from app.db.repositories.jobs import InputRef, JobRepository
 from app.db.session import session_scope
 from app.services import job_service
@@ -171,3 +172,57 @@ async def test_a_job_out_of_attempts_with_a_dead_lease_is_failed() -> None:
 async def test_back_off_doubles_and_is_capped() -> None:
     assert [backoff_s(a) for a in (1, 2, 3)] == [30.0, 60.0, 120.0]
     assert backoff_s(20) == 900.0
+
+
+async def _failed_job() -> dict:
+    job = await _enqueue(params={"x": "fails"})
+    async with session_scope() as s:
+        await s.execute(
+            text("UPDATE jobs SET status = 'failed', error = :e WHERE id = :i"),
+            {"i": job["job_id"], "e": "RuntimeError: no kernels\nTraceback ..."},
+        )
+    return job
+
+
+async def test_a_retry_is_recorded_against_the_person_who_asked(client) -> None:
+    job = await _failed_job()
+    r = await client.post(f"/api/v1/jobs/{job['job_id']}/retry")
+    assert r.status_code == 200, r.text
+    again = r.json()
+    assert again["status"] == "queued" and again["job_id"] != job["job_id"]
+    h = await client.get("/api/v1/history", params={"entity": "job", "id": str(job["job_id"])})
+    (entry,) = h.json()["entries"]
+    assert entry["action"] == "retry" and entry["by"].startswith("Test manager")
+    assert entry["before"] == {"status": "failed", "error": "RuntimeError: no kernels"}
+    assert entry["after"]["job_id"] == again["job_id"]
+
+
+@pytest.fixture
+def queue_of_one(monkeypatch):
+    monkeypatch.setenv("PW_MAX_QUEUED_JOBS", "1")
+    get_settings.cache_clear()
+    yield
+    monkeypatch.delenv("PW_MAX_QUEUED_JOBS")
+    get_settings.cache_clear()
+
+
+async def test_a_full_queue_takes_no_new_job(queue_of_one) -> None:
+    """Asking for arbitrary windows cannot grow the queue without end."""
+    first = await _enqueue()
+    # Joining the job already queued for the same key is still fine.
+    assert (await _enqueue())["job_id"] == first["job_id"]
+    with pytest.raises(job_service.QueueFull) as exc:
+        await _enqueue(params={"x": 2})
+    assert exc.value.queued == 1
+
+
+async def test_a_full_queue_answers_503_with_a_wait(queue_of_one, anon_client) -> None:
+    await _enqueue()
+    r = await anon_client.get(
+        "/api/v1/missions/im-2/contact",
+        params={"start": "2025-03-07T00:00:00Z", "end": "2025-03-09T00:00:00Z"},
+    )
+    assert r.status_code == 503, r.text
+    assert r.headers["retry-after"] == "60"
+    d = r.json()["detail"]
+    assert d["type"].endswith("/queue-full") and d["ui"]["retryable"] is True

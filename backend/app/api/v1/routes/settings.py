@@ -1,7 +1,8 @@
 """The project manager's settings: the AI assistant, the run log and the cache.
 
-Every route here needs the project manager's session. Each change applies to
-everyone using this server, so each one can be undone or is harmless to
+Every route here needs the project manager's session, and every change a
+named one; each change is recorded in the change history. Each change applies
+to everyone using this server, so each one can be undone or is harmless to
 repeat: the AI settings reset to the configured defaults, cached results are
 worked out again on the next request, and the run log only ever records.
 """
@@ -63,7 +64,7 @@ async def save_ai(
 ) -> dict[str, Any]:
     try:
         await settings_service.save_ai_settings(
-            session, body.enabled, body.models, body.models_light, who.actor[:64]
+            session, who, body.enabled, body.models, body.models_light
         )
     except settings_service.BadSetting as exc:
         raise deps.problem(
@@ -77,37 +78,32 @@ async def save_ai(
     return await _view(session)
 
 
-@router.post(
-    "/ai/reset",
-    response_model=SettingsOut,
-    summary="Back to the configured defaults",
-    dependencies=[Depends(deps.named_manager)],
-)
-async def reset_ai(session: Any = Depends(deps.db)) -> dict[str, Any]:
-    await settings_service.reset_ai_settings(session)
+@router.post("/ai/reset", response_model=SettingsOut, summary="Back to the configured defaults")
+async def reset_ai(
+    session: Any = Depends(deps.db),
+    who: auth_service.Claims = Depends(deps.named_manager),
+) -> dict[str, Any]:
+    await settings_service.reset_ai_settings(session, who)
     return await _view(session)
 
 
-@router.post(
-    "/ai/retry",
-    response_model=SettingsOut,
-    summary="Try skipped models again now",
-    dependencies=[Depends(deps.named_manager)],
-)
-async def retry_models(session: Any = Depends(deps.db)) -> dict[str, Any]:
+@router.post("/ai/retry", response_model=SettingsOut, summary="Try skipped models again now")
+async def retry_models(
+    session: Any = Depends(deps.db),
+    who: auth_service.Claims = Depends(deps.named_manager),
+) -> dict[str, Any]:
     """Forget every model's cooldown, e.g. after the key's quota was raised."""
     base.reset_model_cooldowns()
+    await settings_service.models_retried(session, who)
     return await _view(session)
 
 
-@router.delete(
-    "/agent-runs",
-    response_model=Cleared,
-    summary="Clear the AI activity log",
-    dependencies=[Depends(deps.named_manager)],
-)
-async def clear_run_log(session: Any = Depends(deps.db)) -> dict[str, Any]:
-    runs, calls = await settings_service.clear_run_log(session)
+@router.delete("/agent-runs", response_model=Cleared, summary="Clear the AI activity log")
+async def clear_run_log(
+    session: Any = Depends(deps.db),
+    who: auth_service.Claims = Depends(deps.named_manager),
+) -> dict[str, Any]:
+    runs, calls = await settings_service.clear_run_log(session, who)
     return {
         "what": "agent_runs",
         "removed": runs,
@@ -115,14 +111,12 @@ async def clear_run_log(session: Any = Depends(deps.db)) -> dict[str, Any]:
     }
 
 
-@router.delete(
-    "/cache",
-    response_model=Cleared,
-    summary="Clear cached results",
-    dependencies=[Depends(deps.named_manager)],
-)
-async def clear_cache() -> dict[str, Any]:
-    n = await settings_service.clear_cache()
+@router.delete("/cache", response_model=Cleared, summary="Clear cached results")
+async def clear_cache(
+    session: Any = Depends(deps.db),
+    who: auth_service.Claims = Depends(deps.named_manager),
+) -> dict[str, Any]:
+    n = await settings_service.clear_cache(session, who)
     return {
         "what": "cache",
         "removed": n,

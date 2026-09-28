@@ -418,7 +418,7 @@ Named so that absences are decisions rather than oversights:
 
 - **Load/performance testing.** N1 is verified by a single timed assertion in
   `test_concurrent_slider_burst` (p95 under 150 ms warm on CI hardware, generous
-  bound). A real load suite is not a hackathon deliverable.
+  bound). The compute queue has its own load run (§11.4); the rest has none.
 - **Chaos / failover.** N6 says single-node. There is nothing to fail over to.
 - **Tile rendering pixel output.** Tested for existence, content-type, extent
   behaviour and ETag — not for pixel values. Pinning a colour ramp adds
@@ -647,8 +647,67 @@ their newest event's time as their age, so a quiet Sun hid them as stale.
   own words (`question`, `interpreted_as`) are not.
 - The tool set is exactly ten names.
 
-### 11.4 Not tested yet
+### 11.4 Load on the compute queue (`make load-compute`)
 
-A load test of the compute queue (many sections asked at once), a security
-review of the project manager's writes beyond the audit tests, and the live
-end-to-end runs against the real feeds (they are recorded responses here).
+`app/tests/load/load_compute.py` builds its own database (`polar_window_load`, the
+migrations and the seeded rows), starts the API on :8011 and two compute workers
+against it, and asks for the trip, contact and launch sections of all 20 missions at
+once, with six more contact windows per landed mission and twelve more launch windows
+per planned one: 138 requests, 58 jobs (37 contact, 17 launch, 4 trip). It waits for the
+queue to empty and reads the times from the jobs table; the result is
+`data/load/compute_queue.json`. Measured 2026-09-28 on an 8-core laptop, two workers:
+
+| | In arrival order | Cheapest first (now) |
+|---|---|---|
+| Queue empty after | 170 s | 180 s |
+| Jobs per minute | 20.4 | 19.3 |
+| Workers busy | 86 % | 86 % |
+| Wait, all jobs: median / 95 % / longest | 95 / 117 / 127 s | 2.8 / 65 / 123 s |
+| Wait, contact (runs 0.1 s) | median 115 s, longest 127 s | median 1.9 s, longest 3.1 s |
+| Wait, launch (runs ~10 s) | median 73 s | median 21 s |
+| Wait, trip (runs ~55 s) | median 1.8 s | median 71 s |
+
+The API answered every request in the burst within 0.34 s (median 0.21 s; it only
+queues), and the same 138 requests again, all stored, within 0.46 s (median 0.37 s,
+all at once on one API process). Two workers are the limit: throughput is set by the
+four trips (a minute each), so a third worker would shorten the queue, not the longest
+job. Two findings, both fixed: jobs were taken in arrival order, so a 0.1 s contact plan
+waited two minutes behind trips (now contact before launch before trip); and a job
+queued longer than two minutes said "the compute worker is not running" while both
+workers were busy (now said only when nothing is ahead of it). The queue holds at most
+200 waiting jobs; past that a section answers 503 with `Retry-After`
+(`test_jobs.py::test_a_full_queue_*`), because the contact and launch sections take
+any window and each new window is a new job.
+
+### 11.5 The project manager's writes (security review)
+
+Checked on every route that is not a read (`unit/test_request_limits.py`,
+`integration/test_jobs.py`, `integration/test_settings_http.py`,
+`integration/test_contact.py`):
+
+- **Sign-in on every write.** Each of the 26 non-GET routes needs a named project
+  manager, except signing in, the site comparison (computed on the request, nothing
+  stored) and the four AI helpers (a project manager's session, no name needed: they
+  read). A test walks the app's routes, so a new write without it fails.
+- **History on every change.** Settings (the AI model order, its reset, the model retry,
+  clearing the run log, clearing the cache) and job retries were not in the change
+  history; they are now (`entity=settings`, `entity=job`), in the same transaction as
+  the change.
+- **Input bounds.** Numbers must be finite (NaN or infinity was accepted for the sea
+  limits and stored); sea limits, vehicle limits, forecast concerns and link, risk
+  scale, ratings and links, booking station and agents' site ids have length or size
+  limits; a booked pass is at most 24 hours. Request bodies over 64 KB are refused
+  (413) before they are read, or while they are read when sent without a length.
+- **Rate limits.** Per address, per sliding minute: 60 sign-ins, 20 AI questions, 60
+  site comparisons, 120 other changes; past them 429 with `Retry-After`. Reads are not
+  limited. The counts are per API process.
+- **Browsers could not PATCH.** CORS allowed GET, POST, PUT and DELETE only, so moving a
+  readiness item and changing a part or a risk failed from the dashboard (another
+  origin); PATCH is allowed now.
+- Not an issue: tokens travel in the `Authorization` header, not cookies, so a
+  cross-site request carries none (no CSRF); a 500 returns a problem detail without the
+  trace.
+
+### 11.6 Not tested yet
+
+The live end-to-end runs against the real feeds (they are recorded responses here).

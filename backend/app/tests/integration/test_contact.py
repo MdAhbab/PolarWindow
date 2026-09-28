@@ -101,6 +101,11 @@ async def test_bookings_and_exports(client) -> None:
         json={"station": "nowhere", "start": "2024-02-23T10:00:00Z", "end": "2024-02-23T14:00:00Z"},
     )
     assert bad.status_code == 422
+    too_long = await client.post(
+        f"{API}/missions/im-1/contact/bookings",
+        json={"station": "dss-43", "start": "2024-02-23T10:00:00Z", "end": "2024-02-24T10:00:01Z"},
+    )
+    assert too_long.status_code == 422 and "24 hours" in too_long.json()["detail"]["detail"]
 
 
 async def test_no_landing_spot_says_why(anon_client) -> None:

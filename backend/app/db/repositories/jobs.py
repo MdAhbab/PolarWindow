@@ -155,6 +155,12 @@ class JobRepository:
         row = await self._s.get(Job, job_id)
         return None if row is None else _job(row)
 
+    async def queued_count(self) -> int:
+        """Jobs waiting for a worker (not those being worked on)."""
+        stmt = select(func.count()).select_from(Job).where(Job.status == "queued")
+        n = (await self._s.execute(stmt)).scalar_one()
+        return int(n)
+
     async def latest_for(self, kind: str, params_hash: str, closure: str) -> JobRecord | None:
         row = (
             await self._s.execute(

@@ -298,7 +298,19 @@ host does not answer.
 
 **A job failed.** Its message is the answer until the inputs change (a failed job
 is not retried on every page load). `POST /api/v1/jobs/{id}/retry` (signed in)
-queues it again; `GET /api/v1/jobs/{id}` shows its progress.
+queues it again (recorded in `/history?entity=job`); `GET /api/v1/jobs/{id}` shows
+its progress.
+
+**Sections answer 503 "Too many answers are being worked out".** 200 jobs are
+waiting (`PW_MAX_QUEUED_JOBS`); stored answers still read. Start more compute
+workers (`POLAR_COMPUTE_WORKERS`) or wait; `make load-compute` measures what two
+workers get through (docs/test-plan.md §11.4).
+
+**A write answers 429.** One address made more changes in a minute than its
+allowance (`PW_RATE_SIGN_IN_PER_MIN` 60, `PW_RATE_AGENTS_PER_MIN` 20,
+`PW_RATE_COMPARE_PER_MIN` 60, `PW_RATE_WRITES_PER_MIN` 120; `PW_RATE_LIMITS=off` turns
+them off). `Retry-After` says when to try again. The counts live in the API process
+and reset when it restarts. Bodies over `PW_MAX_BODY_BYTES` (64 KB) are refused (413).
 
 **Long commands**, cached where they can be: `make hindcast-weather` (~40 min),
 `make thunder-climatology` (~1.5 h), `make validate-trip` (~7 min with the loops),

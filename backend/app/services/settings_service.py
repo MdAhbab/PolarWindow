@@ -3,7 +3,9 @@
 Stored in ``app_settings`` so a change applies to every process and survives a
 restart. Every change can be undone: the AI settings have a reset to the
 configured defaults, and the two clears only remove records that are rebuilt
-(cached results) or that exist to be read and thrown away (the run log).
+(cached results) or that exist to be read and thrown away (the run log). Each
+change is recorded in the change history (``entity=settings``) against the
+person who made it, like every other change (ADR-17).
 """
 
 from __future__ import annotations
@@ -18,7 +20,8 @@ from app.db.repositories.agent_runs import AgentRunRepository
 from app.db.repositories.app_settings import AppSettingRepository
 from app.db.repositories.missions import MissionRepository
 from app.db.repositories.sites import SiteRepository
-from app.services import cache, site_service
+from app.services import audit_service, cache, site_service
+from app.services.auth_service import Claims
 
 AI_KEY = "ai_assistant"
 
@@ -76,31 +79,76 @@ def _check_chain(name: str, chain: list[str], allowed: tuple[str, ...]) -> tuple
     return tuple(chain)
 
 
+def _view(ai: AiSettings) -> dict[str, Any]:
+    return {
+        "enabled": ai.enabled,
+        "models": list(ai.models),
+        "models_light": list(ai.models_light),
+        "customised": ai.customised,
+    }
+
+
+async def _record(
+    session: AsyncSession,
+    who: Claims,
+    action: str,
+    what: str,
+    before: dict[str, Any] | None,
+    after: dict[str, Any] | None,
+) -> None:
+    await audit_service.record(
+        session,
+        who,
+        action=action,
+        entity="settings",
+        entity_id=what,
+        before=before,
+        after=after,
+        note="Changed in Settings",
+    )
+
+
 async def save_ai_settings(
-    session: AsyncSession, enabled: bool, models: list[str], models_light: list[str], by: str
+    session: AsyncSession, who: Claims, enabled: bool, models: list[str], models_light: list[str]
 ) -> AiSettings:
     s = get_settings()
     chain = _check_chain("the main list", models, s.agent_models)
     light = _check_chain("the list for short explanations", models_light, s.agent_models_light)
+    before = await ai_settings(session)
     await AppSettingRepository(session).put(
-        AI_KEY, {"enabled": enabled, "models": list(chain), "models_light": list(light)}, by
-    )
-    return AiSettings(enabled, chain, light, customised=True)
+        AI_KEY, {"enabled": enabled, "models": list(chain), "models_light": list(light)},
+        who.actor[:64],
+    )  # fmt: skip
+    after = AiSettings(enabled, chain, light, customised=True)
+    await _record(session, who, "set", "ai", _view(before), _view(after))
+    return after
 
 
-async def reset_ai_settings(session: AsyncSession) -> AiSettings:
+async def reset_ai_settings(session: AsyncSession, who: Claims) -> AiSettings:
+    before = await ai_settings(session)
     await AppSettingRepository(session).remove(AI_KEY)
-    return _defaults()
+    after = _defaults()
+    await _record(session, who, "reset", "ai", _view(before), _view(after))
+    return after
 
 
-async def clear_run_log(session: AsyncSession) -> tuple[int, int]:
-    return await AgentRunRepository(session).clear()
+async def models_retried(session: AsyncSession, who: Claims) -> None:
+    """Every model's cooldown was forgotten (the caller did it; this records it)."""
+    await _record(session, who, "retry", "ai", None, {"cooldowns": "cleared"})
 
 
-async def clear_cache() -> int | None:
+async def clear_run_log(session: AsyncSession, who: Claims) -> tuple[int, int]:
+    runs, calls = await AgentRunRepository(session).clear()
+    await _record(session, who, "delete", "agent_runs", None, {"runs": runs, "calls": calls})
+    return runs, calls
+
+
+async def clear_cache(session: AsyncSession, who: Claims) -> int | None:
     """Every cached result, in Redis and in this process's memo."""
     site_service.clear_memo()
-    return await cache.clear()
+    n = await cache.clear()
+    await _record(session, who, "delete", "cache", None, {"removed": n})
+    return n
 
 
 async def counts(session: AsyncSession) -> dict[str, Any]:

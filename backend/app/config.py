@@ -187,6 +187,22 @@ class Settings(BaseSettings):
     #: real, so it can be turned off.
     demo_sign_in: bool = True
 
+    # --- request limits (app/api/limits.py) ----------------------------------
+    #: The largest request body taken, in bytes. The largest real one (a risk
+    #: with every text field full) is under 20 KB.
+    max_body_bytes: int = 64 * 1024
+    #: Requests that are not reads, per client address per minute. Off (for a
+    #: load test) with PW_RATE_LIMITS=off.
+    rate_limits: bool = True
+    rate_sign_in_per_min: int = 60
+    rate_agents_per_min: int = 20
+    rate_compare_per_min: int = 60
+    rate_writes_per_min: int = 120
+    #: Jobs waiting for a compute worker. Past this a section that needs a new
+    #: job answers 503 with Retry-After instead of queueing it, so asking for
+    #: arbitrary windows cannot grow the queue without end.
+    max_queued_jobs: int = 200
+
     # --- data providers -----------------------------------------------------
     #: Free keys that make some downloads possible or faster. Every feature
     #: works without them (ADR-8): a missing key skips that source and says so.

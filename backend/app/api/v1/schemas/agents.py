@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class ExplainRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    site_id: str
+    site_id: str = Field(max_length=160)
     start: datetime | None = None
     end: datetime | None = None
 
@@ -32,7 +32,7 @@ class AdviseRequest(BaseModel):
 class BriefRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    site_id: str
+    site_id: str = Field(max_length=160)
     start: datetime | None = None
     end: datetime | None = None
 

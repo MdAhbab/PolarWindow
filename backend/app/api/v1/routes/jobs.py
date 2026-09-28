@@ -38,7 +38,7 @@ async def retry_job(
     who: auth_service.Claims = Depends(deps.named_manager),
 ) -> dict[str, Any]:
     try:
-        return await job_service.retry(session, job_id, who.user_id)
+        return await job_service.retry(session, job_id, who)
     except job_service.JobNotFound as exc:
         raise deps.problem(
             404,
