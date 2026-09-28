@@ -180,3 +180,44 @@ async def test_a_parser_fix_reaches_a_body_that_has_not_changed(tmp_path) -> Non
     assert fixed.status == "reparsed" and fixed.snapshot_id == first.snapshot_id
     assert once_more.status == "unchanged"
     assert tuple(kept) == (1, alerts.parser_version)
+
+
+async def test_after_a_parser_change_the_worker_asks_for_the_whole_body(tmp_path) -> None:
+    from dataclasses import replace
+
+    alerts = next(p for p in swpc.products() if p.product == "alerts")
+    body = b'[{"product_id":"EF3A","issue_datetime":"2026-09-28 12:00:00.000","message":"x"}]'
+    t0 = datetime.now(UTC)
+    sent: list[str | None] = []
+    for product, when in (
+        (replace(alerts, parser_version="alerts-0"), t0),
+        (alerts, t0 + timedelta(hours=1)),
+    ):
+        sch = scheduler.Scheduler(
+            products=[product],
+            providers={"swpc": swpc.PROVIDER},
+            raw_root=tmp_path,
+            now=lambda when=when: when,
+            sleep=lambda _s: None,
+        )
+        await sch.sync()
+        with respx.mock() as rx:
+
+            def answer(request: httpx.Request) -> httpx.Response:
+                sent.append(request.headers.get("if-none-match"))
+                return httpx.Response(200, content=body, headers={"ETag": '"v1"'})
+
+            rx.get(alerts.url).mock(side_effect=answer)
+            await sch.run_once()
+    assert sent == [None, None]
+    async with session_scope() as s:
+        kept = (
+            (
+                await s.execute(
+                    text("SELECT parser_version FROM feed_snapshots WHERE product = 'alerts'")
+                )
+            )
+            .scalars()
+            .all()
+        )
+    assert kept == [alerts.parser_version]

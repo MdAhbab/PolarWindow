@@ -154,8 +154,11 @@ class Scheduler:
 
         async with session_scope() as s:
             last = await FeedRepository(s).latest_ok(p.provider, p.product, p.location_key)
-        etag = last.etag if last else None
-        lm = last.last_modified if last else None
+        # A kept body read by an older parser is asked for in full, so the recorder can
+        # read it again (a 304 carries no body to read).
+        current = last is not None and last.parser_version == p.parser_version
+        etag = last.etag if current and last else None
+        lm = last.last_modified if current and last else None
         try:
             if p.custom_fetch is not None:
                 got = await p.custom_fetch(client, etag, lm)
