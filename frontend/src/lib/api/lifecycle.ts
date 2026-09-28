@@ -478,8 +478,7 @@ export interface CorrectionsDTO {
 
 export interface NodeDTO {
   id: string
-  /** `orbiter`: a lunar orbiter already flying that could see the lander. It is not a relay: no agreement carries a lander's data. */
-  kind: 'station' | 'relay' | 'lander' | 'rover' | 'earth' | 'orbiter'
+  kind: 'station' | 'relay' | 'lander' | 'rover' | 'earth'
   name: string
   operator: string | null
   status: 'operating' | 'planned' | 'not_launched'
@@ -524,6 +523,25 @@ export interface RelayRowDTO {
   sweep_note?: string | null
 }
 
+/** A real lunar orbiter's passes over the landing spot: geometry only, never a relay service (F2). */
+export interface OrbiterDTO {
+  id: string
+  name: string
+  operator: string | null
+  naif_id: number | null
+  note: string
+  /** The recorded JPL Horizons trajectory. */
+  source: { name: string; url: string | null; issued_at: string | null; fetched_at: string | null; licence: string | null; snapshot_id: number | null } | null
+  /** The part of the dates the trajectory covers. */
+  covered: StretchDTO | null
+  /** Above the landing spot's terrain skyline. */
+  passes: (StretchDTO & { max_elevation_deg: number | null })[]
+  pass_count: number
+  in_view_h: QuantityDTO
+  longest_pass_min: QuantityDTO
+  longest_gap_h: QuantityDTO
+}
+
 export interface ContactDTO {
   /** The dates this answer covers, and how they were chosen. */
   start?: string
@@ -546,6 +564,8 @@ export interface ContactDTO {
   /** One plain sentence on what "through the relay" means. */
   relay_note?: string | null
   link_budget_note: string | null
+  /** Real lunar orbiters' passes over the landing spot: they could see the lander, and relay for none. */
+  orbiters?: OrbiterDTO[]
   /** Why the orbiters that could see the lander are not relays for it. */
   orbiters_note?: string | null
   bookings: { station: string; start: string; end: string; entered_by: string; note?: string | null }[]
@@ -734,6 +754,8 @@ export type ContractChecks = [
   Fits<Present<S['QuantityOut']>, QuantityDTO>,
   Fits<Present<S['Parameter']>, ParameterDTO>,
   Fits<Present<S['Contact']>, ContactDTO>,
+  Fits<Present<S['RelayRow']>, RelayRowDTO>,
+  Fits<Present<S['Orbiter']>, OrbiterDTO>,
   Fits<Present<S['Trip']>, TripDTO>,
   Fits<Present<S['LaunchCalendar']>, LaunchCalendarDTO>,
   Fits<Present<S['LaunchWeather']>, LaunchWeatherDTO>,

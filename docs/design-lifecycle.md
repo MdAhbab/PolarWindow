@@ -377,8 +377,11 @@ into the hub header.
   time through it as ranges or why they are not worked out, its orbit in plain
   words, each figure "published" or "assumed", `orbit_note`, `sweep_note`;
   "Added to compare" when `for_this_mission` is false) ·
-  Orbiters that could see the lander (served `orbiters_note` or our words, each
-  with its operator and number of passes) · Booked ground-station
+  Orbiters that could see the lander (`Contact.orbiters`, F2: `orbiters_note`
+  first; each with its operator, "{n} passes over these dates, {h} in view in
+  all; the longest pass {min}, the longest wait between passes {h}", a
+  trajectory that covers only part of the dates says so, its own note when it
+  differs, and its JPL Horizons source with its age) · Booked ground-station
   passes · Rover and lander line of sight · More numbers (either way as a range
   "if the relay flies as planned"; the two waits directly; a missing number
   gives its reason) · Download the

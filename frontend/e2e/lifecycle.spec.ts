@@ -351,9 +351,14 @@ test('contact through a relay (contract fixtures): a range with its launch statu
   await expect(relays).toContainText('Swept over 36 places')
   // Orbiters already flying could see the lander, and are never called relays.
   const orbiters = await openRow('Orbiters that could see the lander')
-  await expect(orbiters).toContainText('none carries a lander')
-  await expect(orbiters).toContainText('Lunar Reconnaissance Orbiter')
-  await expect(orbiters).toContainText('14 passes over these dates · could see the lander; not a relay')
+  await expect(orbiters).toContainText('None of these orbiters offers to relay for a lander; this is geometry, not a service.')
+  await expect(orbiters).toContainText('Lunar Reconnaissance Orbiter · NASA')
+  await expect(orbiters).toContainText(
+    '14 passes over these dates, 5.60 ±0.01 h in view in all; the longest pass 24.00 ±0.05 min, the longest wait between passes 11.60 ±0.01 h.',
+  )
+  // A trajectory that stops before the dates end says so.
+  await expect(orbiters).toContainText('Its recorded trajectory covers 6 March 2025, 17:30 UTC to 11 March 2025 only; passes outside that are not known.')
+  await expect(orbiters.getByRole('link', { name: 'JPL Horizons trajectory' }).first()).toBeVisible()
   await expect(main).toContainText('Could see the lander (an orbiter, not a relay)')
   const more = await openRow('More numbers')
   await expect(more).toContainText('166–168 h, if the relay flies as planned')

@@ -1866,6 +1866,13 @@ export interface components {
             direct_only: components["schemas"]["DirectOnly"] | null;
             /** Relay Note */
             relay_note: string | null;
+            /**
+             * Orbiters
+             * @description Real lunar orbiters' passes over the landing spot (could see the lander).
+             */
+            orbiters: components["schemas"]["Orbiter"][];
+            /** Orbiters Note */
+            orbiters_note: string | null;
             /** Link Budget Note */
             link_budget_note: string | null;
             /** Bookings */
@@ -2992,6 +2999,79 @@ export interface components {
             azimuth_deg: components["schemas"]["QuantityOut"];
             dv_tli_m_s: components["schemas"]["QuantityOut"];
             coast_min: components["schemas"]["QuantityOut"];
+        };
+        /** Orbiter */
+        Orbiter: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Operator */
+            operator: string | null;
+            /** Naif Id */
+            naif_id: number | null;
+            /**
+             * Note
+             * @description Geometry only: none of these orbiters relays for a lander.
+             */
+            note: string;
+            /** @description The recorded JPL Horizons trajectory. */
+            source: components["schemas"]["OrbiterSource"] | null;
+            /** @description The part of the dates the trajectory covers. */
+            covered: components["schemas"]["StretchOut"] | null;
+            /**
+             * Passes
+             * @description Above the landing spot's terrain skyline.
+             */
+            passes: components["schemas"]["OrbiterPass"][];
+            /** Pass Count */
+            pass_count: number;
+            in_view_h: components["schemas"]["QuantityOut"];
+            longest_pass_min: components["schemas"]["QuantityOut"];
+            longest_gap_h: components["schemas"]["QuantityOut"];
+        };
+        /** OrbiterPass */
+        OrbiterPass: {
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /**
+             * Open Start
+             * @description Cut by the start of the dates.
+             */
+            open_start: boolean;
+            /**
+             * Open End
+             * @description Cut by the end of the dates.
+             */
+            open_end: boolean;
+            /**
+             * Max Elevation Deg
+             * @description Highest above the flat horizon.
+             */
+            max_elevation_deg: number | null;
+        };
+        /** OrbiterSource */
+        OrbiterSource: {
+            /** Name */
+            name: string;
+            /** Url */
+            url: string | null;
+            /** Issued At */
+            issued_at: string | null;
+            /** Fetched At */
+            fetched_at: string | null;
+            /** Licence */
+            licence: string | null;
+            /** Snapshot Id */
+            snapshot_id: number | null;
         };
         /** Outlook */
         Outlook: {

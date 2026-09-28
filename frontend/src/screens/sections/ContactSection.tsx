@@ -2,16 +2,16 @@ import { useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { API_BASE, ApiError, api } from '../../lib/api/client'
 import type { MissionDetail } from '../../lib/api/adapters'
-import type { ContactDTO, LifecycleMetaDTO, QuantityDTO, RelayOrbitDTO, RoverSightDTO } from '../../lib/api/lifecycle'
+import type { ContactDTO, LifecycleMetaDTO, OrbiterDTO, QuantityDTO, RelayOrbitDTO, RoverSightDTO } from '../../lib/api/lifecycle'
 import { useHistory, useLifecycleWrite, useSection, useSectionStatus } from '../../lib/api/lifecycleQueries'
 import { useWindowParams } from '../../lib/mission'
 import { useMission as useStore } from '../../lib/store'
 import { hasSite } from '../../lib/sites'
 import { dateTimeWords, msFromModelH, windowLine } from '../../lib/format'
-import { quantityText, quantityView } from '../../lib/lifecycle/quantity'
+import { ageWords, quantityText, quantityView } from '../../lib/lifecycle/quantity'
 import { NumberRow, QuantityTile } from '../../components/lifecycle/QuantityTile'
 import { Answer, ChartPanel, HowSure, Legend, Rows, SectionLayout, SectionStates, SourcesRow, WorkingPanel } from '../../components/lifecycle/Section'
-import { ContactChart, ContactTable, ORBITER_CAPTION, contactRows, relayState, rowStretches } from '../../components/lifecycle/ContactChart'
+import { ContactChart, ContactTable, contactRows, relayState } from '../../components/lifecycle/ContactChart'
 import { Field, FormSheet, HistoryList, Select, TextInput } from '../../components/lifecycle/Forms'
 import { WindowPicker } from '../../components/WindowPicker'
 import { Button, Disclosure } from '../../components/ui'
@@ -126,6 +126,22 @@ export function contactAnswer(c: ContactDTO): string {
   return out.join(' ')
 }
 
+/** An orbiter's passes in words: how many, time in view, the longest pass and the longest wait between passes. */
+export function orbiterWords(o: OrbiterDTO): string {
+  const passes = `${o.pass_count} pass${o.pass_count === 1 ? '' : 'es'} over these dates`
+  if (!o.pass_count) return `No pass over these dates. ${quantityView(o.in_view_h).kind === 'missing' ? (o.in_view_h.missing_reason ?? '') : ''}`.trim()
+  return `${passes}, ${quantityText(o.in_view_h)} in view in all; the longest pass ${quantityText(o.longest_pass_min)}, the longest wait between passes ${quantityText(o.longest_gap_h)}.`
+}
+
+/** Says so when the recorded trajectory covers only part of the dates. */
+export function coveredWords(o: OrbiterDTO, start: number, end: number): string | null {
+  if (!o.covered) return null
+  const a = Date.parse(o.covered.start)
+  const b = Date.parse(o.covered.end)
+  if (a <= start + 60_000 && b >= end - 60_000) return null
+  return `Its recorded trajectory covers ${dateTimeWords(a)} to ${dateTimeWords(b)} only; passes outside that are not known.`
+}
+
 /** A number for a list: the figure, or "Not worked out: {reason}". */
 export function numberWords(q: QuantityDTO, rangeNote?: string): string {
   const v = quantityView(q)
@@ -160,7 +176,7 @@ function ContactAnswer({
   const planned = rows.some((r) => r.planned)
   const { windowStartH, windowHours } = useStore(useShallow((s) => ({ windowStartH: s.windowStartH, windowHours: s.windowHours })))
   const relays = relayList(contact)
-  const orbiters = rows.filter((r) => r.orbiter)
+  const orbiters = contact.orbiters ?? []
   // A wait that counts a planned relay is a range, and says so.
   const relayNote = (q: QuantityDTO, direct?: QuantityDTO) =>
     relays.length && isRange(q) ? `with the relay, if it flies as planned${direct ? `; ${quantityText(direct)} directly` : ''}` : undefined
@@ -244,27 +260,35 @@ function ContactAnswer({
           </Disclosure>
         )}
         {orbiters.length > 0 && (
-          <Disclosure title="Orbiters that could see the lander" meta={orbiters.map((r) => r.label).join(', ')}>
+          <Disclosure title="Orbiters that could see the lander" meta={orbiters.map((o) => o.name).join(', ')}>
             <p className="text-body text-ink-2">
               {contact.orbiters_note ??
                 'These orbiters already fly over the Moon and could see the lander. None is a relay for it: no agreement carries its data, so they count in no number above.'}
             </p>
             <ul className="flex flex-col divide-y divide-line border-y border-line">
-              {orbiters.map((r) => {
-                const node = contact.nodes.find((x) => x.kind === 'orbiter' && (x.id === r.links[0]?.to || x.id === r.links[0]?.from))
-                const passes = rowStretches(r).length
-                return (
-                  <li key={r.key} className="flex flex-wrap items-baseline justify-between gap-x-4 py-2.5">
-                    <span className="text-body text-ink">
-                      {r.label}
-                      {node?.operator ? <span className="text-small text-ink-3"> · {node.operator}</span> : null}
+              {orbiters.map((o) => (
+                <li key={o.id} className="flex flex-col gap-0.5 py-2.5">
+                  <span className="text-body font-semibold text-ink">
+                    {o.name}
+                    {o.operator && <span className="font-normal text-ink-3"> · {o.operator}</span>}
+                  </span>
+                  <span className="text-small text-ink">{orbiterWords(o)}</span>
+                  {coveredWords(o, start, end) && <span className="text-small text-ink-2">{coveredWords(o, start, end)}</span>}
+                  {o.note !== contact.orbiters_note && <span className="text-small text-ink-2">{o.note}</span>}
+                  {o.source && (
+                    <span className="text-small text-ink-3">
+                      {o.source.url ? (
+                        <a href={o.source.url} className="text-ink-2 underline">
+                          {o.source.name}
+                        </a>
+                      ) : (
+                        o.source.name
+                      )}
+                      {o.source.fetched_at ? `, fetched ${ageWords(Date.parse(o.source.fetched_at))}` : ''}
                     </span>
-                    <span className="text-small text-ink-2">
-                      {passes} pass{passes === 1 ? '' : 'es'} over these dates · {ORBITER_CAPTION}
-                    </span>
-                  </li>
-                )
-              })}
+                  )}
+                </li>
+              ))}
             </ul>
           </Disclosure>
         )}

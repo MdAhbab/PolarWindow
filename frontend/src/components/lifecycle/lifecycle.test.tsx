@@ -36,7 +36,7 @@ import { oldFeedsWords } from './OldFeeds'
 import type { CapsuleModelCheckDTO, FeedDTO } from '../../lib/api/lifecycle'
 import { calendarDays } from './LaunchCalendar'
 import { axisTicks, complexOf, contactRows, plannedWords } from './ContactChart'
-import { contactAnswer, numberWords, orbitWords, relayList } from '../../screens/sections/ContactSection'
+import { contactAnswer, coveredWords, numberWords, orbiterWords, orbitWords, relayList } from '../../screens/sections/ContactSection'
 import { bearingWords, rayRuns, rayWords, roverSentence } from './RoverSight'
 import roverFixture from '../../lib/api/__fixtures__/lifecycle/rover.json'
 import roverUnresolvable from '../../lib/api/__fixtures__/lifecycle/rover-unresolvable.json'
@@ -468,6 +468,7 @@ describe('the charts’ arrays, shared with their tables', () => {
     const orbiters = rows.slice(planned + 1)
     expect(orbiters.map((r) => r.label)).toEqual(['Lunar Reconnaissance Orbiter', 'Danuri'])
     expect(orbiters.every((r) => r.orbiter && !r.relayId && r.caption === 'could see the lander; not a relay')).toBe(true)
+    expect(orbiters[0].links[0].stretches).toHaveLength(contact.orbiters!.find((o) => o.id === 'lro')!.pass_count)
   })
 })
 
@@ -696,6 +697,14 @@ describe('Contact through a relay', () => {
     expect(orbitWords(r.orbit!.apoapsis_km)).toBe('7,332 km, published')
     expect(orbitWords(r.orbit!.inclination_deg)).toBe('46.8–54.9°, assumed')
     expect(plannedWords(r)).toBe('1.5–4 h somewhere in these dates, if it flies as planned')
+    // Orbiters: their passes in words, and a trajectory that stops early says so.
+    const [lro, danuri] = contact.orbiters!
+    expect(orbiterWords({ ...lro, pass_count: 0, passes: [], in_view_h: { ...lro.in_view_h, value: null, pm: null, missing_reason: 'No trajectory is recorded for these dates.' } })).toBe(
+      'No pass over these dates. No trajectory is recorded for these dates.',
+    )
+    const t = (x: string) => Date.parse(x)
+    expect(coveredWords(lro, t(contact.start!), t(contact.end!))).toBeNull()
+    expect(coveredWords(danuri, t(contact.start!), t(contact.end!))).toMatch(/to 11 March 2025 only; passes outside that are not known\.$/)
   })
 
   it('a planned relay with no published orbit is named, not counted; with no relay the waits are plain', () => {

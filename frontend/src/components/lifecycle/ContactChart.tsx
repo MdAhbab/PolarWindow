@@ -72,7 +72,6 @@ export function contactRows(c: ContactDTO): ContactRow[] {
     const from = node(link.from)
     const to = node(link.to)
     const relay = [from, to].find((n) => n?.kind === 'relay')
-    const orbiter = [from, to].find((n) => n?.kind === 'orbiter')
     const planned = Boolean(relay && relay.orbit !== 'real')
     const complex = complexOf(to)
     const key = complex ? complex.key : `${link.from}-${link.to}`
@@ -85,19 +84,16 @@ export function contactRows(c: ContactDTO): ContactRow[] {
     }
     rows.set(key, {
       key,
-      label: complex ? complex.name : relay ? relay.name : orbiter ? orbiter.name : (to?.name ?? link.to),
+      label: complex ? complex.name : relay ? relay.name : (to?.name ?? link.to),
       caption: complex
         ? 'Deep Space Network, 1 antenna'
         : relay
           ? `relay${from?.kind === 'relay' ? ` to ${to?.name ?? link.to}` : ''} · ${(relayState(c, relay.id)?.words ?? relay.status).toLowerCase()}`
-          : orbiter
-            ? ORBITER_CAPTION
-            : (to?.operator ?? ''),
+          : (to?.operator ?? ''),
       links: [link],
       stations: to?.kind === 'station' ? [to.id] : [],
       planned,
       relayId: relay?.id,
-      orbiter: Boolean(orbiter),
     })
   }
   // Links are direct only once relays are worked out (net-4): a relay with no link is its own planned row.
@@ -111,6 +107,18 @@ export function contactRows(c: ContactDTO): ContactRow[] {
       stations: [],
       planned: true,
       relayId: r.id,
+    })
+  }
+  // Orbiters already flying: their passes are the row's one link, lander to orbiter.
+  for (const o of c.orbiters ?? []) {
+    rows.set(`orbiter-${o.id}`, {
+      key: `orbiter-${o.id}`,
+      label: o.name,
+      caption: ORBITER_CAPTION,
+      links: [{ from: 'lander', to: o.id, stretches: o.passes, data_rate_kbps: null, margin_db: null }],
+      stations: [],
+      planned: false,
+      orbiter: true,
     })
   }
   const rank = (r: ContactRow) => (r.orbiter ? 3 : r.planned ? 2 : r.relayId ? 1 : 0)
