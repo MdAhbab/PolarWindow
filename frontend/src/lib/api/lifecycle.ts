@@ -524,7 +524,27 @@ export interface ContactDTO {
   sun_total_h?: QuantityDTO
 }
 
+/** Whether a rover at a spot and the lander can see each other; uncertain when the terrain's error could tip it. */
+export type SightState = 'clear' | 'blocked' | 'uncertain'
+
+/**
+ * The line of sight around the lander, ray by ray: `sight[i][j]` is the state
+ * at `bearings_deg[i]` (clockwise from north) and `ranges_m[j]` from the
+ * lander. `radio` is the same for the first Fresnel zone, which needs more room.
+ */
+export interface ViewshedDTO {
+  bearings_deg: number[]
+  ranges_m: number[]
+  sight: SightState[][]
+  radio: SightState[][]
+}
+
 export interface RoverSightDTO {
+  /** Proposed to the backend (queue-backend.md, 29 Sep): the rover, the rays and what the share is over. */
+  rover?: { id: string; name: string } | null
+  share_basis?: 'drive' | 'ground' | null
+  radius_m?: number | null
+  viewshed?: ViewshedDTO | null
   viewshed_tile: string | null
   out_of_sight_share: QuantityDTO
   longest_out_of_sight_m: QuantityDTO

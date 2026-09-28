@@ -37,6 +37,10 @@ import type { CapsuleModelCheckDTO, FeedDTO } from '../../lib/api/lifecycle'
 import { calendarDays } from './LaunchCalendar'
 import { axisTicks, complexOf, contactRows } from './ContactChart'
 import { contactAnswer, numberWords, relayList } from '../../screens/sections/ContactSection'
+import { bearingWords, rayRuns, rayWords, roverSentence } from './RoverSight'
+import roverFixture from '../../lib/api/__fixtures__/lifecycle/rover.json'
+import roverUnresolvable from '../../lib/api/__fixtures__/lifecycle/rover-unresolvable.json'
+import type { RoverSightDTO } from '../../lib/api/lifecycle'
 import sectionsFixture from '../../lib/api/__fixtures__/lifecycle/sections.json'
 import readyFixture from '../../lib/api/__fixtures__/lifecycle/ready.json'
 import tripFixture from '../../lib/api/__fixtures__/lifecycle/trip.json'
@@ -705,5 +709,36 @@ describe('Contact through a relay', () => {
     expect(numberWords(unpublished.numbers.either_h)).toBe(`Not worked out: ${reason}`)
     const none = { ...contact, relays: [], numbers: { ...contact.numbers, longest_unheard_h: q({ value: 0 }) } }
     expect(contactAnswer(none)).toBe('A ground station can hear it for all 159.0 ±0.5 h of these dates.')
+  })
+})
+
+describe('Rover and lander line of sight', () => {
+  const rover = (roverFixture as unknown as SectionDTO<RoverSightDTO>).data
+  const v = rover.viewshed!
+
+  it('a ray reads as runs of one state, from the first sample to the last', () => {
+    expect(rayRuns(['clear', 'clear', 'uncertain', 'blocked', 'blocked'], [25, 50, 75, 100, 125]).map((r) => [r.state, r.from, r.to])).toEqual([
+      ['clear', 25, 50],
+      ['uncertain', 75, 75],
+      ['blocked', 100, 125],
+    ])
+    expect(rayWords(v.sight[27], v.ranges_m)).toBe('In sight 25–275 m; uncertain 300 m; blocked 325–425 m; in sight 450–500 m')
+    expect(bearingWords(270)).toBe('270° (west)')
+    expect(bearingWords(10)).toBe('10°')
+  })
+
+  it('the answer first: the share over the ground or the drive, the longest stretch or why not, and a site the terrain map does not cover', () => {
+    expect(roverSentence(rover, 'Yaoki')).toBe(
+      'Within 500 m of the lander, 18–26% of the ground is out of its sight. No drive is published for Yaoki, so no stretch of it can be measured.',
+    )
+    const drive = {
+      ...rover,
+      share_basis: 'drive' as const,
+      out_of_sight_share: { ...rover.out_of_sight_share, lo: null, hi: null, value: 12, no_margin_reason: 'every sample is clear or blocked' },
+      longest_out_of_sight_m: { ...rover.longest_out_of_sight_m, value: 140, pm: 25, missing_reason: null },
+    }
+    expect(roverSentence(drive, 'FLIP')).toBe('FLIP would be out of the lander’s sight for 12% of its drive. The longest stretch out of sight is 140 ±25 m.')
+    const bad = (roverUnresolvable as unknown as SectionDTO<RoverSightDTO>).data
+    expect(roverSentence(bad, 'CADRE')).toMatch(/^Reiner Gamma is outside the polar terrain map/)
   })
 })

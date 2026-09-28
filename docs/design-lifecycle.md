@@ -377,6 +377,24 @@ into the hub header.
   How sure is this? · Where does this come from? "Line of sight only: the
   lander's radio power is not published" changes what every number means,
   so it is a one-line note under the answer, not a row.
+- **Rover and lander line of sight** (`GET /missions/{id}/contact/rover?rover=`,
+  asked for when the row opens; shown only for a mission that carries a rover,
+  IM-2's Yaoki and Griffin-1's FLIP; a select when there is more than one; a
+  202 shows the working panel). Answer first: "{rover} would be out of the
+  lander's sight for {share} of its drive. The longest stretch out of sight is
+  {m}." When no drive is published the share is over the ground: "Within {r} m
+  of the lander, {lo}–{hi}% of the ground is out of its sight." (a range where
+  uncertain cells could go either way), then the reason the longest stretch is
+  missing. `resolvable: false` → "Cannot be said here." and the served reason,
+  no map. The viewshed is a map layer around the lander, north up, rings every
+  100 m, the lander an ink square: in sight filled (earth), blocked the 45°
+  hatch, uncertain the −45° hatch on a light wash; each state in the legend
+  with a glyph (● ✕ ?) and words. A switch shows the line of sight or the
+  radio path (the first Fresnel zone needs a wider corridor). Table twin, from
+  the same rays: each direction ("270° (west)") with its runs in words for both
+  ("In sight 25–275 m; uncertain 300 m; blocked 325–425 m; in sight 450–500 m").
+  The rays (`viewshed`), `share_basis` and `radius_m` are proposed to the
+  backend (queue-backend.md); without `viewshed` the row says there is no map.
 - **Dates:** the hub sets the dates to the mission's time on the surface
   when the mission is first opened, whichever step comes first, so Contact
   and Landing always answer for the same dates.

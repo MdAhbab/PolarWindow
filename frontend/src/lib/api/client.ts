@@ -411,7 +411,7 @@ export const api = {
     section<ContactDTO>(`/missions/${enc(missionId)}/contact`, q, signal),
 
   rover: (missionId: string, rover: string | undefined, signal?: AbortSignal) =>
-    request<SectionDTO<RoverSightDTO>>(`/missions/${enc(missionId)}/contact/rover`, { query: { rover }, signal }),
+    section<RoverSightDTO>(`/missions/${enc(missionId)}/contact/rover`, { rover }, signal),
 
   returnSection: (missionId: string, signal?: AbortSignal) =>
     section<ReturnDTO>(`/missions/${enc(missionId)}/return`, undefined, signal),

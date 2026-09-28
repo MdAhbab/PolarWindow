@@ -367,6 +367,52 @@ test('contact through a relay (contract fixtures): a range with its launch statu
   expect(await page.evaluate(() => document.documentElement.scrollWidth), 'contact scrolls sideways at 375 px').toBeLessThanOrEqual(375)
 })
 
+test('rover line of sight (contract fixtures): the answer first, the map in three states with its table twin, both themes, a phone', async ({
+  page,
+  context,
+}) => {
+  await returningVisitor(context)
+  await serveLifecycleFixtures(context)
+  await page.goto('/missions/im-2/contact')
+  const summary = page.locator('summary', { hasText: 'Rover and lander line of sight' })
+  await expect(summary).toContainText('Yaoki')
+  await summary.click()
+  const row = page.getByTestId('rover-sight')
+  await expect(row.locator('p').first()).toHaveText(
+    'Within 500 m of the lander, 18–26% of the ground is out of its sight. No drive is published for Yaoki, so no stretch of it can be measured.',
+  )
+  await expect(row.getByRole('img', { name: /^Line of sight between Yaoki and the lander, out to 500 m in 36 directions/ })).toBeVisible()
+  // Three states, each in a glyph and words beside its swatch.
+  for (const words of ['In sight', 'Blocked by the ground', 'Uncertain: the terrain map’s error could tip it either way']) await expect(row).toContainText(words)
+  await row.getByRole('button', { name: 'Radio path' }).click()
+  await expect(row.getByRole('button', { name: 'Radio path' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(row.getByRole('img', { name: /^Radio path between Yaoki and the lander/ })).toBeVisible()
+  // The table twin, from the same rays: both the line of sight and the radio path.
+  await row.getByRole('button', { name: 'Read the chart as a table' }).click()
+  const ray = row.getByRole('row', { name: /^100°/ })
+  await expect(ray).toContainText('In sight 25–125 m; uncertain 150–175 m; blocked 200–500 m')
+  await expect(ray).toContainText('In sight 25–100 m; uncertain 125–150 m; blocked 175–500 m')
+  await expect(row.getByRole('row', { name: /^270° \(west\)/ })).toContainText('uncertain 300 m; blocked 325–425 m; in sight 450–500 m')
+  await expectNoSeriousAxe(page, 'rover line of sight open with its table (dark)')
+  await page.evaluate(() => localStorage.setItem('pw-prefs', JSON.stringify({ theme: 'light', motion: 'full', shortcuts: true })))
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.reload()
+  await page.locator('summary', { hasText: 'Rover and lander line of sight' }).click()
+  await expect(page.getByTestId('rover-sight').getByRole('img')).toBeVisible()
+  await expectNoSeriousAxe(page, 'rover line of sight open (light, 375 px)')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the rover row scrolls sideways at 375 px').toBeLessThanOrEqual(375)
+})
+
+test('rover line of sight (contract fixtures): a site outside the terrain map says why, with no map', async ({ page, context }) => {
+  await returningVisitor(context)
+  await serveLifecycleFixtures(context, { swap: { 'rover.json': 'rover-unresolvable.json' } })
+  await page.goto('/missions/im-2/contact')
+  await page.locator('summary', { hasText: 'Rover and lander line of sight' }).click()
+  const row = page.getByTestId('rover-sight')
+  await expect(row).toContainText('Cannot be said here. Reiner Gamma is outside the polar terrain map (south of 80°S)')
+  await expect(row.getByRole('img')).toHaveCount(0)
+})
+
 test('team sea limits (contract fixtures): the form starts from what is entered, and sends both parts', async ({ page, context }) => {
   await returningVisitor(context)
   await serveLifecycleFixtures(context)

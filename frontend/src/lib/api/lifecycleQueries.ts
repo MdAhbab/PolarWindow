@@ -56,7 +56,7 @@ export type SectionView<T> =
  * the chosen opportunity); they go into the key.
  */
 export function useSection<T>(
-  section: Exclude<SectionId, 'landing'> | 'launch-weather',
+  section: Exclude<SectionId, 'landing'> | 'launch-weather' | 'rover',
   missionId: string | undefined,
   fetcher: (signal: AbortSignal) => Promise<SectionResult<T>>,
   params: unknown[] = [],

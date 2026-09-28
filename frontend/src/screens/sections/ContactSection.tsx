@@ -1,23 +1,22 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { useShallow } from 'zustand/react/shallow'
-import { API_BASE, api } from '../../lib/api/client'
+import { API_BASE, ApiError, api } from '../../lib/api/client'
 import type { MissionDetail } from '../../lib/api/adapters'
-import type { ContactDTO, LifecycleMetaDTO, QuantityDTO } from '../../lib/api/lifecycle'
+import type { ContactDTO, LifecycleMetaDTO, QuantityDTO, RoverSightDTO } from '../../lib/api/lifecycle'
 import { useHistory, useLifecycleWrite, useSection, useSectionStatus } from '../../lib/api/lifecycleQueries'
-import { keys } from '../../lib/api/queries'
 import { useWindowParams } from '../../lib/mission'
 import { useMission as useStore } from '../../lib/store'
 import { hasSite } from '../../lib/sites'
 import { dateTimeWords, msFromModelH, windowLine } from '../../lib/format'
 import { quantityText, quantityView } from '../../lib/lifecycle/quantity'
 import { NumberRow, QuantityTile } from '../../components/lifecycle/QuantityTile'
-import { Answer, ChartPanel, HowSure, Legend, Rows, SectionLayout, SectionStates, SourcesRow } from '../../components/lifecycle/Section'
+import { Answer, ChartPanel, HowSure, Legend, Rows, SectionLayout, SectionStates, SourcesRow, WorkingPanel } from '../../components/lifecycle/Section'
 import { ContactChart, ContactTable, ORBITER_CAPTION, RELAY_STATUS, contactRows, rowStretches } from '../../components/lifecycle/ContactChart'
 import { Field, FormSheet, HistoryList, Select, TextInput } from '../../components/lifecycle/Forms'
 import { WindowPicker } from '../../components/WindowPicker'
 import { Button, Disclosure } from '../../components/ui'
 import { UncertaintyNote } from '../../components/States'
+import { ViewshedPanel, roverSentence } from '../../components/lifecycle/RoverSight'
 import { Icon } from '../../components/Icon'
 import { useCanWrite } from './ReadySection'
 
@@ -237,7 +236,7 @@ function ContactAnswer({
           </Disclosure>
         )}
         <BookingsRow contact={contact} missionId={m.id} />
-        <RoverRow missionId={m.id} />
+        <RoverRow mission={m} />
         <Disclosure title="More numbers">
           <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-body sm:grid-cols-[max-content_1fr]">
             <dt className="text-ink-3">Time in contact with Earth (Earth above the skyline)</dt>
@@ -360,32 +359,59 @@ function BookingsRow({ contact, missionId }: { contact: ContactDTO; missionId: s
   )
 }
 
-/** Whether the rover stays in sight of the lander (asked for when the row opens). */
-function RoverRow({ missionId }: { missionId: string }) {
+/**
+ * Whether a rover stays in sight of the lander (asked for when the row
+ * opens): the answer first, then the viewshed as a map with its table twin.
+ * Shown only for a mission that carries a rover.
+ */
+function RoverRow({ mission: m }: { mission: MissionDetail }) {
   const [open, setOpen] = useState(false)
-  const q = useQuery({
-    queryKey: keys.lifecycle('rover', missionId),
-    enabled: open,
-    retry: false,
-    queryFn: ({ signal }) => api.rover(missionId, undefined, signal),
-  })
-  const d = q.data?.data
+  const [roverId, setRoverId] = useState(m.rovers[0]?.id)
+  const view = useSection<RoverSightDTO>('rover', m.id, (signal) => api.rover(m.id, roverId, signal), [roverId], open)
+  if (!m.rovers.length) return null
+  const rover = m.rovers.find((r) => r.id === roverId) ?? m.rovers[0]
   return (
-    <Disclosure title="Rover and lander line of sight" onOpen={() => setOpen(true)}>
-      {q.isPending ? (
+    <Disclosure title="Rover and lander line of sight" meta={m.rovers.map((r) => r.name).join(', ')} onOpen={() => setOpen(true)}>
+      {m.rovers.length > 1 && (
+        <Field label="Rover">
+          {(p) => <Select {...p} value={rover.id} onChange={(e) => setRoverId(e.target.value)} options={m.rovers.map((r) => ({ value: r.id, label: r.name }))} />}
+        </Field>
+      )}
+      {view.status === 'pending' ? (
         <p className="text-small text-ink-3">Loading…</p>
-      ) : q.error ? (
-        <p className="text-body text-ink-2">Not available for this mission.</p>
-      ) : d && !d.resolvable ? (
-        <p className="text-body text-ink-2">{d.reason ?? 'Not resolvable with the terrain available.'}</p>
-      ) : d ? (
-        <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-body sm:grid-cols-[max-content_1fr]">
-          <dt className="text-ink-3">Share of the planned drive out of the lander’s sight</dt>
-          <dd className="text-ink">{quantityText(d.out_of_sight_share)}</dd>
-          <dt className="text-ink-3">Longest stretch out of sight</dt>
-          <dd className="text-ink">{quantityText(d.longest_out_of_sight_m)}</dd>
-        </dl>
-      ) : null}
+      ) : view.status === 'working' ? (
+        <WorkingPanel job={view.job} />
+      ) : view.status === 'error' ? (
+        <p className="text-body text-ink-2">
+          Not available: {view.error instanceof ApiError ? view.error.detail : 'the service did not answer.'}
+        </p>
+      ) : (
+        <RoverAnswer d={view.section.data} meta={view.section.meta} roverName={view.section.data.rover?.name ?? rover.name} />
+      )}
     </Disclosure>
+  )
+}
+
+function RoverAnswer({ d, meta, roverName }: { d: RoverSightDTO; meta: LifecycleMetaDTO; roverName: string }) {
+  return (
+    <div className="flex flex-col gap-4" data-testid="rover-sight">
+      <p className="text-control leading-7 text-ink">
+        {!d.resolvable && (
+          <span className="font-semibold">
+            <span aria-hidden="true">? </span>Cannot be said here.{' '}
+          </span>
+        )}
+        {roverSentence(d, roverName)}
+      </p>
+      {d.resolvable && d.viewshed ? (
+        <ViewshedPanel v={d.viewshed} roverName={roverName} />
+      ) : d.resolvable ? (
+        <p className="text-small text-ink-2">The directions around the lander are not served yet, so there is no map to draw.</p>
+      ) : null}
+      <Rows>
+        <HowSure meta={meta} />
+        <SourcesRow meta={meta} />
+      </Rows>
+    </div>
   )
 }

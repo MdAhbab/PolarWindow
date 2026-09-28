@@ -556,6 +556,8 @@ export interface MissionDetail extends Mission {
   /** Published landing ellipse as [lat, lon] vertices; null when none is published. */
   ellipseRing: [number, number][] | null
   site: TargetSite | null
+  /** Rovers the lander carries (schema v2 facts); empty when none is listed. */
+  rovers: { id: string; name: string; organisation: string | null }[]
   meta: Meta
 }
 
@@ -651,6 +653,7 @@ export function adaptMissionDetail(dto: MissionDetailDTO): MissionDetail {
           sourceNote: dto.site.source_note,
         }
       : null,
+    rovers: (dto.lifecycle?.rovers ?? []).map((r) => ({ id: r.id, name: r.name, organisation: r.organisation })),
     meta: adaptMeta(dto.meta),
   }
 }
