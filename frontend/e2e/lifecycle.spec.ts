@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import { API, expectNoSeriousAxe, openRow, returningVisitor, watchConsole } from './helpers'
 import { fulfillWrite, serveLifecycleFixtures } from './lifecycleFixtures'
 
@@ -104,7 +104,7 @@ test('launch (contract fixtures): choosing an opportunity sets the four numbers;
   await returningVisitor(context)
   await serveLifecycleFixtures(context)
   await page.goto('/missions/im-2/launch')
-  const opp = page.getByRole('button', { name: /^28 February 2025, 01:56 UTC ±4 min, from LC-39A/ })
+  const opp = page.getByRole('button', { name: /^28 February 2025, 01:56 UTC ±18 min, from LC-39A/ })
   await opp.click()
   await expect(opp).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('main')).toContainText('Numbers for the opportunity on 28 February 2025, 01:56 UTC')
@@ -306,6 +306,9 @@ test('space weather now (contract fixtures): the readings in a sentence, each wi
   // DONKI: the three newest of each kind, each with its record.
   await expect(row).toContainText('Newest events on the Sun, last 30 days (NASA DONKI)')
   await expect(row.getByRole('link', { name: 'record' })).toHaveCount(3 + 3 + 2)
+  // How many DONKI gave, when more than are shown.
+  await expect(row.locator('h5', { hasText: 'Clouds thrown off the Sun' })).toHaveText('Clouds thrown off the Sun (coronal mass ejections) · 3 newest of 133')
+  await expect(row.locator('h5', { hasText: 'Flares' })).toHaveText('Flares')
   await expect(row).toContainText('26 September 2026, 15:24 UTC, 449 km/s; no Earth arrival estimated')
   await expect(row).toContainText('C3.3, peak 19 September 2026, 18:17 UTC')
   await expect(row).toContainText('Doses along a trip are in the Trip section')
@@ -550,7 +553,11 @@ test('launch (live API): a flown launch worked out again, and a planned mission�
   await expect(main).toContainText('after the published liftoff')
   const flight = await openRow('The flight as launched')
   await expect(flight).toContainText('worked out again from NASA’s reconstruction')
-  await expect(flight).toContainText("The climb's direction is not published")
+  // The climb's direction is worked out from the reconstruction (inertial), with its heading over the ground.
+  const dd = (row: Locator, label: string) => row.locator('dt', { hasText: label }).locator('xpath=following-sibling::dd[1]')
+  await expect(dd(flight, 'Direction of the climb')).toHaveText(
+    /^88\.8°Worked out by POLAR WINDOW: The climb's direction is not published\. This is the inertial one worked out from NASA's reconstruction.+Over the ground it is [\d.]+°, inside the pad's 35 to 120°\.$/,
+  )
   await expect(flight).toContainText('(published)')
   const rules = await openRow('Weather rules for this launch')
   await expect(rules.locator('summary')).toContainText('no forecast for this date')
@@ -577,6 +584,11 @@ test('launch (live API): a flown launch worked out again, and a planned mission�
   await expect(designed).toContainText('designed here from the pad and the landing')
   await expect(designed).toContainText('The landing rule allows a landing from')
   await expect(designed).toContainText('Assumed:')
+  // A designed launch climbs the way the vehicle's flown lunar launches did, averaged; that sets the ± on its time.
+  await expect(dd(designed, 'Direction of the climb')).toHaveText(
+    /^87\.7°Assumed: The direction the vehicle's direct lunar flights climbed \(IM-1 88\.8°, IM-2 86\.6°\).+Each degree moves the launch instant by about 7 minutes, which sets the margin on the liftoff\.$/,
+  )
+  await expect(dd(designed, 'Launch time')).toContainText('±18 min')
   await page.getByRole('button', { name: 'Read the chart as a table' }).click()
   await expect(main.getByRole('table').first()).toContainText('Launch Complex 39A')
   const dates = await openRow('Change the dates')
@@ -829,16 +841,21 @@ test('radiation and space weather (live API): Blue Ghost’s screening with its 
   ]) {
     await expect(reading(label), label).toHaveText(/^-?[\w.]+ (pfu |km\/s |nT )?· as of (just now|\d+ min ago|\d+ h ago)$/)
   }
-  // "None" only when SWPC issued none in the last 24 hours; a list the service holds back says so, with SWPC's own.
+  // "None" only when the service says its list is current and empty; a list it cannot show says why, with SWPC's own.
   const live = (await (await page.request.get(`${API}/space-weather`)).json()) as {
-    data: { now: { alerts: string[] } }
-    meta: { sources: { url: string | null; issued_at: string | null }[] }
+    data: {
+      now: { xray_class: string | null; xray_missing_reason: string | null; alerts: string[]; alerts_missing_reason: string | null }
+      donki: { cme: unknown[]; counts: { cme: number | null } }
+    }
   }
-  const alertsSource = live.meta.sources.find((x) => /\/alerts\.json$/.test(x.url ?? ''))
-  const heldBack = !live.data.now.alerts.length && Boolean(alertsSource?.issued_at && Date.now() - Date.parse(alertsSource.issued_at) < 86_400_000)
+  const now = live.data.now
   await expect(reading('Alerts in the last 24 hours')).toHaveText(
-    live.data.now.alerts.length ? live.data.now.alerts.join('; ') : heldBack ? /^Not shown here, though NOAA SWPC issued one .+ ago: SWPC’s alerts$/ : 'None',
+    now.alerts.length ? now.alerts.join('; ') : now.alerts_missing_reason ? `${now.alerts_missing_reason} SWPC’s alerts` : 'None',
   )
+  if (!now.xray_class) await expect(reading('X-ray flares (class)')).toHaveText(now.xray_missing_reason ?? 'Not reported')
+  // DONKI: "3 newest of {n}" when it gave more than three.
+  const cmes = live.data.donki.counts.cme ?? live.data.donki.cme.length
+  if (cmes > 3) await expect(sw.locator('h5', { hasText: 'Clouds thrown off the Sun' })).toContainText(`· 3 newest of ${cmes}`)
   // NOAA's outlook as numbers, and the forecast word for word.
   await expect(sw).toContainText(
     /NOAA’s outlook for .+, issued .+ UTC: a \d+%, \d+% and \d+% chance of a radiation storm \(S1 or greater\), day by day; the largest Kp expected is [\d.]+\./,

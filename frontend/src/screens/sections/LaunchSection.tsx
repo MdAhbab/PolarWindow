@@ -15,7 +15,7 @@ import type {
 } from '../../lib/api/lifecycle'
 import { useEnteredLimits, useHistory, useLifecycleWrite, useSection, useSectionStatus } from '../../lib/api/lifecycleQueries'
 import { dateTimeWords, dateWords } from '../../lib/format'
-import { ageWords, formatValue, hostWords, quantityText } from '../../lib/lifecycle/quantity'
+import { ageWords, formatValue, hostWords, provenanceWords, quantityText } from '../../lib/lifecycle/quantity'
 import { NumberRow, QuantityTile } from '../../components/lifecycle/QuantityTile'
 import { Answer, ChartPanel, HowSure, Legend, Rows, SectionLayout, SectionStates, SourcesRow, StatePanel } from '../../components/lifecycle/Section'
 import { LaunchCalendar, LaunchTable, opportunityName } from '../../components/lifecycle/LaunchCalendar'
@@ -253,6 +253,25 @@ function QuantityLine({ q }: { q: QuantityDTO }) {
   )
 }
 
+/**
+ * The climb's direction, with where it comes from and how: worked out from NASA's
+ * reconstruction for a flown launch, assumed for a designed one (the vehicle's
+ * flown lunar climbs averaged; it sets the launch time's margin).
+ */
+function ClimbLine({ q }: { q: QuantityDTO }) {
+  if (q.value === null) return <>{q.missing_reason ?? 'Not available'}</>
+  const how = q.no_margin_reason ?? q.source
+  return (
+    <>
+      {quantityText(q)}
+      <span className="block text-small leading-5 text-ink-2">
+        {provenanceWords(q.provenance, null).lead}
+        {how ? `: ${how}` : '.'}
+      </span>
+    </>
+  )
+}
+
 /** How this launch reaches the Moon: the climb, the coast, leaving Earth, the flight and the landing. */
 function FlightRow({ o, flown }: { o: OpportunityDTO; flown: boolean }) {
   const land = o.landing.time
@@ -265,7 +284,7 @@ function FlightRow({ o, flown }: { o: OpportunityDTO; flown: boolean }) {
         <dd className="text-ink">{quantityText(o.t0)}</dd>
         <dt className="text-ink-3">Direction of the climb (compass heading)</dt>
         <dd className="text-ink">
-          <QuantityLine q={o.azimuth_deg} />
+          <ClimbLine q={o.azimuth_deg} />
         </dd>
         <dt className="text-ink-3">Coasting in Earth orbit before leaving for the Moon</dt>
         <dd className="text-ink">
@@ -326,20 +345,14 @@ function WeatherBody({ wx, meta, note }: { wx: LaunchWeatherDTO; meta: Lifecycle
 /** The later-entered of two forecasts (the one a save answered with, and the one the weather answer carries). */
 export function newestForecast(a: OfficialForecastDTO | null, b: OfficialForecastDTO | null): OfficialForecastDTO | null {
   if (!a || !b) return a ?? b
-  return Date.parse(b.entered_at) > Date.parse(a.entered_at) ? b : a
+  const ta = Date.parse(a.entered_at)
+  const tb = Date.parse(b.entered_at)
+  return tb > ta || (tb === ta && b.id > a.id) ? b : a
 }
 
-/**
- * The same entered forecast, as two answers carry it: a save answers with the
- * time it was sent, the weather answer with the time it was stored, a moment apart.
- */
+/** The same entered forecast, as two answers carry it (a save's, the weather answer's): the stored row's id. */
 export function sameForecast(a: OfficialForecastDTO, b: OfficialForecastDTO): boolean {
-  return (
-    a.probability_pct === b.probability_pct &&
-    a.pdf_url === b.pdf_url &&
-    a.entered_by === b.entered_by &&
-    Math.abs(Date.parse(a.entered_at) - Date.parse(b.entered_at)) < 5_000
-  )
+  return a.id === b.id
 }
 
 /** The forecast to show: the newest of those at hand, leaving out any taken back. */

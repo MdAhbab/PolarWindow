@@ -325,6 +325,7 @@
    }
   ],
   "official": {
+   "id": 41,
    "probability_pct": 10,
    "concerns": [
     "Cumulus cloud rule",
@@ -333,36 +334,6 @@
    "pdf_url": "https://www.patrick.spaceforce.mil/",
    "entered_by": "A. Rahman",
    "entered_at": "2026-09-26T12:00:00Z"
-  },
-  "space_weather_now": {
-   "kp": {
-    "value": 2.3,
-    "unit": "Kp",
-    "provenance": "published",
-    "pm": null,
-    "lo": null,
-    "hi": null,
-    "factor": null,
-    "open": false,
-    "no_margin_reason": "An index, reported without a margin.",
-    "missing_reason": null,
-    "source": "https://www.swpc.noaa.gov/"
-   },
-   "proton_10mev_pfu": {
-    "value": 0.4,
-    "unit": "pfu",
-    "provenance": "published",
-    "pm": null,
-    "lo": null,
-    "hi": null,
-    "factor": null,
-    "open": false,
-    "no_margin_reason": "A measurement, reported without a margin.",
-    "missing_reason": null,
-    "source": "https://www.swpc.noaa.gov/"
-   },
-   "xray_class": "B5.1",
-   "alerts": []
   },
   "range_conflicts": [
    {

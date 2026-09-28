@@ -41,6 +41,7 @@
     "source": "https://services.swpc.noaa.gov/json/goes/primary/integral-protons-6-hour.json"
    },
    "xray_class": "B4.7",
+   "xray_missing_reason": null,
    "solar_wind_km_s": {
     "value": 456.2,
     "unit": "km/s",
@@ -70,7 +71,8 @@
    "alerts": [
     "ALERT: Electron 2MeV Integral Flux exceeded 1,000pfu",
     "ALERT: Geomagnetic K-index of 4"
-   ]
+   ],
+   "alerts_missing_reason": null
   },
   "outlook": {
    "issued": "2026-09-26T12:30:00Z",
@@ -153,6 +155,11 @@
      "link": "https://webtools.ccmc.gsfc.nasa.gov/DONKI/view/SEP/48555/-1"
     }
    ],
+   "counts": {
+    "cme": 133,
+    "flares": 3,
+    "sep": 2
+   },
    "days": 30,
    "missing_reason": null
   },
@@ -216,7 +223,7 @@
    {
     "name": "NOAA Space Weather Prediction Center",
     "url": "https://services.swpc.noaa.gov/products/alerts.json",
-    "issued_at": "2026-09-26T15:51:34Z",
+    "issued_at": null,
     "fetched_at": "2026-09-26T20:20:30Z",
     "licence": "NOAA SWPC, US government work (public domain)",
     "snapshot_id": 15
@@ -232,7 +239,7 @@
    {
     "name": "NASA DONKI (CCMC)",
     "url": "https://api.nasa.gov/DONKI/CME?startDate=2026-08-27&endDate=2026-09-26",
-    "issued_at": "2026-09-26T15:24:00Z",
+    "issued_at": null,
     "fetched_at": "2026-09-26T20:20:34Z",
     "licence": "NASA CCMC DONKI, US government work (public domain)",
     "snapshot_id": 27
@@ -240,7 +247,7 @@
    {
     "name": "NASA DONKI (CCMC)",
     "url": "https://api.nasa.gov/DONKI/FLR?startDate=2026-08-27&endDate=2026-09-26",
-    "issued_at": "2026-09-19T18:17:00Z",
+    "issued_at": null,
     "fetched_at": "2026-09-26T20:20:36Z",
     "licence": "NASA CCMC DONKI, US government work (public domain)",
     "snapshot_id": 28
@@ -248,7 +255,7 @@
    {
     "name": "NASA DONKI (CCMC)",
     "url": "https://api.nasa.gov/DONKI/SEP?startDate=2026-08-27&endDate=2026-09-26",
-    "issued_at": "2026-09-05T16:30:00Z",
+    "issued_at": null,
     "fetched_at": "2026-09-26T20:20:36Z",
     "licence": "NASA CCMC DONKI, US government work (public domain)",
     "snapshot_id": 29

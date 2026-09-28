@@ -7,7 +7,7 @@ import { Disclosure } from '../ui'
 
 type Now = SpaceWeatherDTO['now']
 
-const NUMBERS: { key: Exclude<keyof Now, 'xray_class' | 'alerts'>; label: string; words: string }[] = [
+const NUMBERS: { key: Exclude<keyof Now, 'xray_class' | 'xray_missing_reason' | 'alerts' | 'alerts_missing_reason'>; label: string; words: string }[] = [
   { key: 'kp', label: 'Geomagnetic activity (Kp, 0 to 9)', words: 'Kp' },
   { key: 'proton_10mev_pfu', label: 'Protons above 10 MeV', words: 'protons above 10 MeV at' },
   { key: 'proton_100mev_pfu', label: 'Protons above 100 MeV', words: 'above 100 MeV at' },
@@ -17,32 +17,14 @@ const NUMBERS: { key: Exclude<keyof Now, 'xray_class' | 'alerts'>; label: string
 
 const shown = (q: QuantityDTO) => q.value !== null
 
-/**
- * When the service lists no alert but SWPC's alerts, as recorded, were issued
- * within the last 24 hours: that time. The list is then held back (out of
- * date by the service's rule), not empty, so "no alerts" would be untrue.
- */
-export function alertsHeldBack(
-  sw: SpaceWeatherDTO,
-  meta: { sources?: LifecycleMetaDTO['sources'] },
-  nowMs: number = Date.now(),
-): { issued: number; url: string } | null {
-  if (sw.now.alerts.length) return null
-  const src = meta.sources?.find((s) => /\/alerts\.json$/.test(s.url ?? ''))
-  const t = src?.issued_at ? Date.parse(src.issued_at) : NaN
-  return src?.url && !Number.isNaN(t) && nowMs - t < 24 * 3600_000 ? { issued: t, url: src.url } : null
-}
-
-function alertWords(n: number, held: boolean): string {
-  if (held) return 'SWPC’s alerts of the last 24 hours are not shown here'
+function alertWords(now: Now): string {
+  if (now.alerts_missing_reason) return 'SWPC’s alerts of the last 24 hours are not shown here'
+  const n = now.alerts.length
   return n === 0 ? 'no alerts in the last 24 hours' : `${n} alert${n === 1 ? '' : 's'} in the last 24 hours`
 }
 
 /** The answer: the readings shown now in one line, or why none is. */
-export function spaceWeatherSentence(
-  sw: SpaceWeatherDTO,
-  meta: Pick<LifecycleMetaDTO, 'computed_at' | 'stale'> & { sources?: LifecycleMetaDTO['sources'] },
-): string {
+export function spaceWeatherSentence(sw: SpaceWeatherDTO, meta: Pick<LifecycleMetaDTO, 'computed_at' | 'stale'>): string {
   const parts = NUMBERS.filter((n) => n.key !== 'proton_100mev_pfu' && n.key !== 'bz_nt' && shown(sw.now[n.key])).map(
     (n) => `${n.words} ${quantityText(sw.now[n.key])}`,
   )
@@ -54,7 +36,7 @@ export function spaceWeatherSentence(
       : 'No reading has been recorded yet. Each says why below.'
   }
   const line = parts.join(', ')
-  return `Now: ${line.charAt(0).toUpperCase()}${line.slice(1)}; ${alertWords(sw.now.alerts.length, Boolean(alertsHeldBack(sw, meta)))}.`
+  return `Now: ${line.charAt(0).toUpperCase()}${line.slice(1)}; ${alertWords(sw.now)}.`
 }
 
 /** NOAA's three-day outlook in one sentence, its numbers as issued. */
@@ -91,10 +73,31 @@ function Reading({ q, age }: { q: QuantityDTO; age: string | null }) {
 
 const SHOWN_EVENTS = 3
 
-function EventList({ title, items, empty }: { title: string; items: { key: string; text: string; link: string | null }[]; empty: string }) {
+/** "3 newest of 133" when DONKI gave more than are shown; null when every one is shown. */
+export function eventCountWords(listed: number, count: number | null): string | null {
+  const shownN = Math.min(listed, SHOWN_EVENTS)
+  const total = Math.max(count ?? listed, listed)
+  return total > shownN ? `${shownN} newest of ${formatValue(total)}` : null
+}
+
+function EventList({
+  title,
+  items,
+  count,
+  empty,
+}: {
+  title: string
+  items: { key: string; text: string; link: string | null }[]
+  count: number | null
+  empty: string
+}) {
+  const of = eventCountWords(items.length, count)
   return (
     <div className="flex flex-col gap-1">
-      <h5 className="text-small font-semibold text-ink-2">{title}</h5>
+      <h5 className="text-small font-semibold text-ink-2">
+        {title}
+        {of && <span className="font-normal text-ink-3"> · {of}</span>}
+      </h5>
       {items.length ? (
         <ul className="flex flex-col gap-1">
           {items.slice(0, SHOWN_EVENTS).map((e) => (
@@ -118,16 +121,22 @@ function EventList({ title, items, empty }: { title: string; items: { key: strin
   )
 }
 
+/** The alert list: SWPC's headlines, "None" only when the list is current and empty, or why it is not shown. */
 function Alerts({ sw, meta }: { sw: SpaceWeatherDTO; meta: LifecycleMetaDTO }) {
   if (sw.now.alerts.length) return <>{sw.now.alerts.join('; ')}</>
-  const held = alertsHeldBack(sw, meta)
-  if (!held) return <>None</>
+  if (!sw.now.alerts_missing_reason) return <>None</>
+  const url = meta.sources.find((s) => /\/alerts\.json$/.test(s.url ?? ''))?.url
   return (
     <span className="text-ink-2">
-      Not shown here, though NOAA SWPC issued one {ageWords(held.issued)}:{' '}
-      <a href={held.url} target="_blank" rel="noreferrer" className="underline underline-offset-2">
-        SWPC’s alerts
-      </a>
+      {sw.now.alerts_missing_reason}
+      {url && (
+        <>
+          {' '}
+          <a href={url} target="_blank" rel="noreferrer" className="underline underline-offset-2">
+            SWPC’s alerts
+          </a>
+        </>
+      )}
     </span>
   )
 }
@@ -148,7 +157,9 @@ export function SpaceWeatherRow() {
   const kp = sw?.now.kp
   const summary = !sw
     ? undefined
-    : `${kp && shown(kp) ? `Kp ${quantityText(kp)}` : 'no current reading'}${sw.now.alerts.length ? `, ${sw.now.alerts.length} alert${sw.now.alerts.length === 1 ? '' : 's'}` : ''}`
+    : `${kp && shown(kp) ? `Kp ${quantityText(kp)}` : 'no current reading'}${
+        sw.now.alerts.length ? `, ${sw.now.alerts.length} alert${sw.now.alerts.length === 1 ? '' : 's'}` : ''
+      }`
   return (
     <Disclosure title="Space weather now" meta={summary}>
       {q.isPending ? (
@@ -171,7 +182,7 @@ export function SpaceWeatherRow() {
             ))}
             <dt className="text-ink-3">X-ray flares (class)</dt>
             <dd className="text-ink">
-              {sw.now.xray_class ?? <span className="text-ink-2">Not reported</span>}
+              {sw.now.xray_class ?? <span className="text-ink-2">{sw.now.xray_missing_reason ?? 'Not reported'}</span>}
               {sw.now.xray_class && readingAge(meta, (u) => /xray/i.test(u)) && (
                 <span className="text-small text-ink-3"> · {readingAge(meta, (u) => /xray/i.test(u))}</span>
               )}
@@ -208,6 +219,7 @@ export function SpaceWeatherRow() {
                 <EventList
                   title="Clouds thrown off the Sun (coronal mass ejections)"
                   empty="None listed."
+                  count={sw.donki.counts.cme}
                   items={sw.donki.cme.map((c) => ({
                     key: c.id,
                     text: `${when(c.start)}${c.speed_m_s !== null ? `, ${formatValue(Math.round(c.speed_m_s / 1000))} km/s` : ''}${
@@ -221,11 +233,13 @@ export function SpaceWeatherRow() {
                 <EventList
                   title="Flares"
                   empty="None listed."
+                  count={sw.donki.counts.flares}
                   items={sw.donki.flares.map((f) => ({ key: f.id, text: `${f.class ?? 'Class not given'}, peak ${when(f.peak)}`, link: f.link }))}
                 />
                 <EventList
                   title="Solar particle events"
                   empty="None listed."
+                  count={sw.donki.counts.sep}
                   items={sw.donki.sep.map((e) => ({ key: e.id, text: when(e.time), link: e.link }))}
                 />
               </div>

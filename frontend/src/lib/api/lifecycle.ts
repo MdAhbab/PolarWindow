@@ -333,6 +333,7 @@ export interface VehicleLimitsDTO {
 
 /** The official launch forecast as the team entered it, quoted as issued. */
 export interface OfficialForecastDTO {
+  id: number
   probability_pct: number
   concerns: string[]
   pdf_url: string
@@ -340,10 +341,8 @@ export interface OfficialForecastDTO {
   entered_at: string
 }
 
-/** `PUT /launch/official-forecast` answers with the forecast as stored. */
-export interface StoredForecastDTO extends OfficialForecastDTO {
-  id: number
-}
+/** `PUT /launch/official-forecast` answers with the forecast as stored (the same shape the weather answer carries). */
+export type StoredForecastDTO = OfficialForecastDTO
 
 /** `DELETE /launch/official-forecast`: the forecast taken back, and the one entered before it (now shown), if any. */
 export interface RemovedForecastDTO {
@@ -361,7 +360,6 @@ export interface LaunchWeatherDTO {
   note: string
   rules: RuleRowDTO[]
   official: OfficialForecastDTO | null
-  space_weather_now: { kp: QuantityDTO; proton_10mev_pfu: QuantityDTO; xray_class: string | null; alerts: string[] }
   range_conflicts: { name: string; t0: string; pad: string }[]
   /** Where `range_conflicts` come from, or why they are not known. */
   range_note: string
@@ -424,10 +422,14 @@ export interface SpaceWeatherDTO {
     proton_10mev_pfu: QuantityDTO
     proton_100mev_pfu: QuantityDTO
     xray_class: string | null
+    /** Why there is no X-ray class; null when there is one. */
+    xray_missing_reason: string | null
     solar_wind_km_s: QuantityDTO
     bz_nt: QuantityDTO
     /** SWPC headlines of the last 24 h. */
     alerts: string[]
+    /** Why the alert list is not shown; null when it is current, so `[]` means no alert in 24 h. */
+    alerts_missing_reason: string | null
   }
   outlook: {
     issued: string | null
@@ -443,6 +445,8 @@ export interface SpaceWeatherDTO {
     cme: { id: string; start: string | null; speed_m_s: number | null; earth_arrival_estimates: string[] | null; link: string | null }[]
     flares: { id: string; peak: string | null; class: string | null; link: string | null }[]
     sep: { id: string; time: string | null; instruments: (string | null)[] | null; link: string | null }[]
+    /** How many DONKI gave per kind over `days` (the lists keep the newest 20); null for a kind not shown. */
+    counts: { cme: number | null; flares: number | null; sep: number | null }
     days: number | null
     missing_reason: string | null
   }

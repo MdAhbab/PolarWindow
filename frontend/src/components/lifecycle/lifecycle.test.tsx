@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render, renderHook, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, renderHook, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { renderApp } from '../../test/render'
@@ -25,7 +25,7 @@ import { coverageGaps, tripStretches } from './TripStrip'
 import { CorrectionsRow, shadowAndContact } from '../../screens/sections/TripSection'
 import { climatologyWords, observedWords, percentWords } from './WeatherRules'
 import { RadiationRow, radiationSentence, screeningFigure } from './Radiation'
-import { alertsHeldBack, outlookSentence, readingAge, spaceWeatherSentence } from './SpaceWeather'
+import { eventCountWords, outlookSentence, readingAge, spaceWeatherSentence, SpaceWeatherRow } from './SpaceWeather'
 import spaceWeatherFixture from '../../lib/api/__fixtures__/lifecycle/space-weather.json'
 import type { RadiationDTO, SpaceWeatherDTO } from '../../lib/api/lifecycle'
 import { forecastChangeWords, limitDraft, limitsToSend, shownForecast } from '../../screens/sections/LaunchSection'
@@ -492,25 +492,29 @@ describe('useSection follows a 202 through its job', () => {
 })
 
 describe('Official forecast: the one shown, and taking it back', () => {
-  const f = (pct: number, at: string, by = 'A. Rahman') => ({
+  const f = (id: number, pct: number, at: string, by = 'A. Rahman') => ({
+    id,
     probability_pct: pct,
     concerns: ['Cumulus cloud rule'],
     pdf_url: `https://example.test/${pct}.pdf`,
     entered_by: by,
     entered_at: at,
   })
-  const older = f(10, '2026-09-28T10:00:00Z')
-  const saved = f(20, '2026-09-28T11:00:00.400Z')
-  const stored = f(20, '2026-09-28T11:00:00.100Z')
+  const older = f(7, 10, '2026-09-28T10:00:00Z')
+  const saved = f(8, 20, '2026-09-28T11:00:00Z')
+  // The weather answer carries the same stored row (same id), as a separate object.
+  const stored = { ...saved }
   it('shows the newest at hand', () => {
     expect(shownForecast([older, saved, null], [])).toBe(saved)
     expect(shownForecast([null, undefined], [])).toBeNull()
   })
-  it('leaves out one taken back, whichever answer still carries it (times a moment apart)', () => {
+  it('leaves out one taken back, whichever answer still carries it (by its id)', () => {
     expect(shownForecast([stored, null, older], [saved])).toBe(older)
     expect(shownForecast([stored, null, null], [saved])).toBeNull()
-    // Another forecast of the same percent entered later is not the one taken back.
-    expect(shownForecast([f(20, '2026-09-28T12:00:00Z')], [saved])?.entered_at).toBe('2026-09-28T12:00:00Z')
+    // Another forecast of the same percent, entered at the same second, is not the one taken back.
+    expect(shownForecast([f(9, 20, '2026-09-28T11:00:00Z')], [saved])?.id).toBe(9)
+    // Two entered at the same time: the later row.
+    expect(shownForecast([saved, f(9, 30, '2026-09-28T11:00:00Z')], [])?.id).toBe(9)
   })
   it('says what each history entry did', () => {
     const e = { at: '', by: 'A', note: null }
@@ -551,17 +555,27 @@ describe('Space weather now', () => {
       'Now: Kp 1, protons above 10 MeV at 0.23 pfu, X-ray flares class B4.7, solar wind at 456 km/s; 2 alerts in the last 24 hours.',
     )
   })
-  it('an empty alert list is "none" only when SWPC issued none in the last 24 hours', () => {
+  it('an empty alert list is "no alerts" only when the service says the list is current', () => {
     const quiet = { ...sw, now: { ...sw.now, alerts: [] } }
-    const at = (h: number) => ({
-      ...meta,
-      sources: meta.sources.map((x) => (/alerts\.json$/.test(x.url ?? '') ? { ...x, issued_at: new Date(Date.now() - h * 3600_000).toISOString() } : x)),
-    })
-    expect(alertsHeldBack(quiet, at(30))).toBeNull()
-    expect(spaceWeatherSentence(quiet, at(30))).toMatch(/; no alerts in the last 24 hours\.$/)
-    expect(alertsHeldBack(quiet, at(11))?.url).toBe('https://services.swpc.noaa.gov/products/alerts.json')
-    expect(spaceWeatherSentence(quiet, at(11))).toMatch(/; SWPC’s alerts of the last 24 hours are not shown here\.$/)
-    expect(alertsHeldBack(sw, at(11))).toBeNull()
+    expect(spaceWeatherSentence(quiet, meta)).toMatch(/; no alerts in the last 24 hours\.$/)
+    const held = { ...sw, now: { ...sw.now, alerts: [], alerts_missing_reason: 'SWPC’s alert list was last read 3 days ago.' } }
+    expect(spaceWeatherSentence(held, meta)).toMatch(/; SWPC’s alerts of the last 24 hours are not shown here\.$/)
+  })
+  it('says how many DONKI gave when more than three', () => {
+    expect(eventCountWords(20, 133)).toBe('3 newest of 133')
+    expect(eventCountWords(4, null)).toBe('3 newest of 4')
+    expect(eventCountWords(3, 3)).toBeNull()
+    expect(eventCountWords(2, 2)).toBeNull()
+    expect(eventCountWords(0, 0)).toBeNull()
+  })
+  it('says why the X-ray class and the alerts are not shown, never "None" for no data', async () => {
+    const why = { ...sw, now: { ...sw.now, xray_class: null, xray_missing_reason: 'The X-ray reading is 2 days old.', alerts: [], alerts_missing_reason: 'The alert list is 2 days old.' } }
+    vi.spyOn(api, 'spaceWeather').mockResolvedValue({ ...spaceWeatherFixture, data: why } as never)
+    renderApp(<SpaceWeatherRow />)
+    fireEvent.click(screen.getByText('Space weather now'))
+    expect(await screen.findByText('The X-ray reading is 2 days old.')).toBeTruthy()
+    expect(screen.getByText(/The alert list is 2 days old\./)).toBeTruthy()
+    expect(screen.queryByText('None')).toBeNull()
   })
   it('says when no reading is recent enough, once', () => {
     const missing = { ...sw.now.kp, value: null, missing_reason: 'Old.' }

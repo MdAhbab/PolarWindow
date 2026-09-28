@@ -23,7 +23,7 @@
      "value": 1740528960,
      "unit": "s since epoch",
      "provenance": "computed",
-     "pm": 240,
+     "pm": 1080,
      "lo": null,
      "hi": null,
      "factor": null,
@@ -111,7 +111,7 @@
     "basis": "designed",
     "note": "A due-east climb from the pad, the flight corrected in the full force model; the margin is the largest difference from a flown liftoff seen so far.",
     "azimuth_deg": {
-     "value": 90.0,
+     "value": 87.70570877869727,
      "unit": "deg",
      "provenance": "assumed",
      "pm": null,
@@ -119,9 +119,9 @@
      "hi": null,
      "factor": null,
      "open": false,
-     "no_margin_reason": "A due-east climb is assumed.",
+     "no_margin_reason": "The direction the vehicle's direct lunar flights climbed (IM-1 88.8°, IM-2 86.6°), measured from the pad at liftoff and where each left Earth for the Moon; over the ground it is 87.6°, inside the pad's 35 to 120°. Each degree moves the launch instant by about 7 minutes, which sets the margin on the liftoff.",
      "missing_reason": null,
-     "source": "A due-east climb is assumed."
+     "source": null
     },
     "dv_tli_m_s": {
      "value": 3140.0,
@@ -159,7 +159,7 @@
      "value": 1740618360,
      "unit": "s since epoch",
      "provenance": "computed",
-     "pm": 240,
+     "pm": 1080,
      "lo": null,
      "hi": null,
      "factor": null,
@@ -247,7 +247,7 @@
     "basis": "designed",
     "note": "A due-east climb from the pad, the flight corrected in the full force model; the margin is the largest difference from a flown liftoff seen so far.",
     "azimuth_deg": {
-     "value": 90.0,
+     "value": 87.70570877869727,
      "unit": "deg",
      "provenance": "assumed",
      "pm": null,
@@ -255,9 +255,9 @@
      "hi": null,
      "factor": null,
      "open": false,
-     "no_margin_reason": "A due-east climb is assumed.",
+     "no_margin_reason": "The direction the vehicle's direct lunar flights climbed (IM-1 88.8°, IM-2 86.6°), measured from the pad at liftoff and where each left Earth for the Moon; over the ground it is 87.6°, inside the pad's 35 to 120°. Each degree moves the launch instant by about 7 minutes, which sets the margin on the liftoff.",
      "missing_reason": null,
-     "source": "A due-east climb is assumed."
+     "source": null
     },
     "dv_tli_m_s": {
      "value": 3140.0,
@@ -295,7 +295,7 @@
      "value": 1740707760,
      "unit": "s since epoch",
      "provenance": "computed",
-     "pm": 240,
+     "pm": 1080,
      "lo": null,
      "hi": null,
      "factor": null,
@@ -383,7 +383,7 @@
     "basis": "designed",
     "note": "A due-east climb from the pad, the flight corrected in the full force model; the margin is the largest difference from a flown liftoff seen so far.",
     "azimuth_deg": {
-     "value": 90.0,
+     "value": 87.70570877869727,
      "unit": "deg",
      "provenance": "assumed",
      "pm": null,
@@ -391,9 +391,9 @@
      "hi": null,
      "factor": null,
      "open": false,
-     "no_margin_reason": "A due-east climb is assumed.",
+     "no_margin_reason": "The direction the vehicle's direct lunar flights climbed (IM-1 88.8°, IM-2 86.6°), measured from the pad at liftoff and where each left Earth for the Moon; over the ground it is 87.6°, inside the pad's 35 to 120°. Each degree moves the launch instant by about 7 minutes, which sets the margin on the liftoff.",
      "missing_reason": null,
-     "source": "A due-east climb is assumed."
+     "source": null
     },
     "dv_tli_m_s": {
      "value": 3140.0,
@@ -431,7 +431,7 @@
      "value": 1740797160,
      "unit": "s since epoch",
      "provenance": "computed",
-     "pm": 240,
+     "pm": 1080,
      "lo": null,
      "hi": null,
      "factor": null,
@@ -519,7 +519,7 @@
     "basis": "designed",
     "note": "A due-east climb from the pad, the flight corrected in the full force model; the margin is the largest difference from a flown liftoff seen so far.",
     "azimuth_deg": {
-     "value": 90.0,
+     "value": 87.70570877869727,
      "unit": "deg",
      "provenance": "assumed",
      "pm": null,
@@ -527,9 +527,9 @@
      "hi": null,
      "factor": null,
      "open": false,
-     "no_margin_reason": "A due-east climb is assumed.",
+     "no_margin_reason": "The direction the vehicle's direct lunar flights climbed (IM-1 88.8°, IM-2 86.6°), measured from the pad at liftoff and where each left Earth for the Moon; over the ground it is 87.6°, inside the pad's 35 to 120°. Each degree moves the launch instant by about 7 minutes, which sets the margin on the liftoff.",
      "missing_reason": null,
-     "source": "A due-east climb is assumed."
+     "source": null
     },
     "dv_tli_m_s": {
      "value": 3140.0,
@@ -567,7 +567,7 @@
      "value": 1740972960,
      "unit": "s since epoch",
      "provenance": "computed",
-     "pm": 240,
+     "pm": 1080,
      "lo": null,
      "hi": null,
      "factor": null,
@@ -655,7 +655,7 @@
     "basis": "designed",
     "note": "A due-east climb from the pad, the flight corrected in the full force model; the margin is the largest difference from a flown liftoff seen so far.",
     "azimuth_deg": {
-     "value": 90.0,
+     "value": 87.70570877869727,
      "unit": "deg",
      "provenance": "assumed",
      "pm": null,
@@ -663,9 +663,9 @@
      "hi": null,
      "factor": null,
      "open": false,
-     "no_margin_reason": "A due-east climb is assumed.",
+     "no_margin_reason": "The direction the vehicle's direct lunar flights climbed (IM-1 88.8°, IM-2 86.6°), measured from the pad at liftoff and where each left Earth for the Moon; over the ground it is 87.6°, inside the pad's 35 to 120°. Each degree moves the launch instant by about 7 minutes, which sets the margin on the liftoff.",
      "missing_reason": null,
-     "source": "A due-east climb is assumed."
+     "source": null
     },
     "dv_tli_m_s": {
      "value": 3140.0,
@@ -703,7 +703,7 @@
      "value": 1741062360,
      "unit": "s since epoch",
      "provenance": "computed",
-     "pm": 240,
+     "pm": 1080,
      "lo": null,
      "hi": null,
      "factor": null,
@@ -791,7 +791,7 @@
     "basis": "designed",
     "note": "A due-east climb from the pad, the flight corrected in the full force model; the margin is the largest difference from a flown liftoff seen so far.",
     "azimuth_deg": {
-     "value": 90.0,
+     "value": 87.70570877869727,
      "unit": "deg",
      "provenance": "assumed",
      "pm": null,
@@ -799,9 +799,9 @@
      "hi": null,
      "factor": null,
      "open": false,
-     "no_margin_reason": "A due-east climb is assumed.",
+     "no_margin_reason": "The direction the vehicle's direct lunar flights climbed (IM-1 88.8°, IM-2 86.6°), measured from the pad at liftoff and where each left Earth for the Moon; over the ground it is 87.6°, inside the pad's 35 to 120°. Each degree moves the launch instant by about 7 minutes, which sets the margin on the liftoff.",
      "missing_reason": null,
-     "source": "A due-east climb is assumed."
+     "source": null
     },
     "dv_tli_m_s": {
      "value": 3140.0,

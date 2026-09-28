@@ -1969,12 +1969,23 @@ export interface components {
         };
         /** Donki */
         Donki: {
-            /** Cme */
+            /**
+             * Cme
+             * @description The newest 20.
+             */
             cme: components["schemas"]["Cme"][];
-            /** Flares */
+            /**
+             * Flares
+             * @description The newest 20.
+             */
             flares: components["schemas"]["Flare"][];
-            /** Sep */
+            /**
+             * Sep
+             * @description The newest 20.
+             */
             sep: components["schemas"]["Sep"][];
+            /** @description How many DONKI gave per kind over `days` (the lists show the newest 20); null for a kind not shown. */
+            counts: components["schemas"]["DonkiCounts"];
             /**
              * Days
              * @description How many days back DONKI was asked.
@@ -1982,6 +1993,15 @@ export interface components {
             days: number | null;
             /** Missing Reason */
             missing_reason: string | null;
+        };
+        /** DonkiCounts */
+        DonkiCounts: {
+            /** Cme */
+            cme: number | null;
+            /** Flares */
+            flares: number | null;
+            /** Sep */
+            sep: number | null;
         };
         /** ExplainRequest */
         ExplainRequest: {
@@ -2324,7 +2344,6 @@ export interface components {
             /** Rules */
             rules: components["schemas"]["RuleRow"][];
             official: components["schemas"]["OfficialForecast"] | null;
-            space_weather_now: components["schemas"]["SpaceWeatherNow"];
             /** Range Conflicts */
             range_conflicts: components["schemas"]["RangeConflict"][];
             /** Range Note */
@@ -2828,6 +2847,11 @@ export interface components {
             proton_100mev_pfu: components["schemas"]["QuantityOut"];
             /** Xray Class */
             xray_class: string | null;
+            /**
+             * Xray Missing Reason
+             * @description Why there is no X-ray class (no reading recorded, or too old); null when there is one.
+             */
+            xray_missing_reason: string | null;
             solar_wind_km_s: components["schemas"]["QuantityOut"];
             bz_nt: components["schemas"]["QuantityOut"];
             /**
@@ -2835,6 +2859,11 @@ export interface components {
              * @description SWPC alert headlines of the last 24 hours.
              */
             alerts: string[];
+            /**
+             * Alerts Missing Reason
+             * @description Why the alert list is not shown (not recorded, or too old); null when it is current, so an empty list means SWPC issued no alert in the last 24 hours.
+             */
+            alerts_missing_reason: string | null;
         };
         /** Observed */
         Observed: {
@@ -2848,6 +2877,8 @@ export interface components {
         };
         /** OfficialForecast */
         OfficialForecast: {
+            /** Id */
+            id: number;
             /** Probability Pct */
             probability_pct: number;
             /** Concerns */
@@ -3964,15 +3995,6 @@ export interface components {
             donki: components["schemas"]["Donki"];
             /** Note */
             note: string;
-        };
-        /** SpaceWeatherNow */
-        SpaceWeatherNow: {
-            kp: components["schemas"]["QuantityOut"];
-            proton_10mev_pfu: components["schemas"]["QuantityOut"];
-            /** Xray Class */
-            xray_class: string | null;
-            /** Alerts */
-            alerts: string[];
         };
         /** Spacecraft */
         Spacecraft: {
@@ -6060,7 +6082,7 @@ export interface operations {
     history_api_v1_history_get: {
         parameters: {
             query: {
-                /** @description ready_item, part, risk, booking, forecast, limits, parameter, lesson, feed */
+                /** @description ready_item, part, risk, booking, forecast, limits, parameter, lesson, milestone, feed, job, settings */
                 entity: string;
                 id: string;
             };
