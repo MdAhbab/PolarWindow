@@ -14,7 +14,7 @@ from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 from app.api.v1 import deps
-from app.api.v1.schemas.contact import BookingIn, BookingOut, Contact
+from app.api.v1.schemas.contact import BookingIn, BookingOut, Contact, RoverOut
 from app.api.v1.schemas.jobs import JobRefOut
 from app.api.v1.schemas.launch import LaunchCalendar
 from app.api.v1.schemas.ready import Section
@@ -73,6 +73,14 @@ def _contact_http(exc: Exception) -> HTTPException:
             str(exc),
             "The mission's other sections are unaffected.",
         )
+    if isinstance(exc, contact_service.NoRover):
+        return deps.problem(
+            409,
+            "no-rover",
+            "No rover on this mission",
+            str(exc),
+            "The mission's other sections are unaffected.",
+        )
     if isinstance(exc, contact_service.BadRequest):
         return deps.problem(
             422,
@@ -106,6 +114,38 @@ async def contact(
     try:
         code, body = await contact_service.contact(
             session, mission_id, _utc(start), _utc(end), relays=relay
+        )
+    except Exception as exc:
+        raise _contact_http(exc) from exc
+    if code == 202:
+        return JSONResponse(status_code=202, content=body)
+    return body
+
+
+@router.get(
+    "/missions/{mission_id}/contact/rover",
+    response_model=Section[RoverOut],
+    responses={202: {"model": JobRefOut, "description": "Being worked out; poll the job."}},
+    summary="Can the rover and the lander see each other, over the terrain around the lander",
+)
+async def contact_rover(
+    mission_id: str,
+    rover: str | None = Query(None, description="Rover id, e.g. `im-2/yaoki`. Default: the first."),
+    radius_m: float | None = Query(None, description="How far from the lander (default 500 m)."),
+    lander_antenna_m: float | None = Query(None, description="Default 2 m (assumed)."),
+    rover_antenna_m: float | None = Query(None, description="Default 0.5 m (assumed)."),
+    freq_mhz: float | None = Query(None, description="Default 2400 MHz (assumed)."),
+    session: Any = Depends(deps.db),
+) -> Any:
+    try:
+        code, body = await contact_service.rover(
+            session,
+            mission_id,
+            rover,
+            radius_m=radius_m,
+            lander_antenna_m=lander_antenna_m,
+            rover_antenna_m=rover_antenna_m,
+            freq_mhz=freq_mhz,
         )
     except Exception as exc:
         raise _contact_http(exc) from exc

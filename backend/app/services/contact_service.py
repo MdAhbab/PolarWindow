@@ -22,6 +22,7 @@ from app.data import catalogues
 from app.db.repositories.feeds import FeedRepository
 from app.db.repositories.missions import MissionRecord, MissionRepository
 from app.db.repositories.pm import PmRepository
+from app.db.repositories.sites import SiteRepository
 from app.services import audit_service, job_service, lifecycle, mission_service
 from app.services.auth_service import Claims
 from app.services.mission_service import MissionNotFound
@@ -308,3 +309,136 @@ async def add_booking(
         after=after,
     )
     return {**after, "id": bid, "entered_by": who.actor, "entered_at": datetime.now(UTC)}
+
+
+# ---------------------------------------------------------------------------
+# Rover <-> lander line of sight (F5)
+# ---------------------------------------------------------------------------
+
+ROVER_KIND = "rover"
+#: The polar elevation models (LOLA LDEM 80S, 20 m and 80 m) reach 80 deg S.
+POLAR_DEM_EDGE_LAT = -80.0
+DEFAULT_RADIUS_M = 500.0
+DEFAULT_LANDER_ANTENNA_M = 2.0
+DEFAULT_ROVER_ANTENNA_M = 0.5
+DEFAULT_FREQ_MHZ = 2400.0
+
+
+class NoRover(ValueError):
+    """The mission carries no rover; the message says so."""
+
+
+def _rovers(m: MissionRecord) -> list[dict[str, str]]:
+    """Rovers the mission record names: payloads that move, and listed rovers."""
+    out: dict[str, str] = {}
+    for p in m.payloads:
+        if "rover_mobility" in p.instrument_types:
+            out[p.id] = p.name
+    for r in (m.lifecycle or {}).get("rovers") or []:
+        out.setdefault(r["id"], r["name"])
+    return [{"id": k, "name": v} for k, v in out.items()]
+
+
+async def rover(
+    session: AsyncSession,
+    mission_id: str,
+    rover_id: str | None,
+    *,
+    radius_m: float | None = None,
+    lander_antenna_m: float | None = None,
+    rover_antenna_m: float | None = None,
+    freq_mhz: float | None = None,
+    requested_by: int | None = None,
+) -> tuple[int, dict[str, Any]]:
+    """``(200, section)`` when stored or not resolvable, else ``(202, job ref)``."""
+    m = await MissionRepository(session).get(mission_id)
+    if m is None:
+        raise MissionNotFound(mission_id)
+    rovers = _rovers(m)
+    if not rovers:
+        raise NoRover("This mission carries no rover.")
+    if rover_id is None:
+        rv = rovers[0]
+    else:
+        found = [r for r in rovers if r["id"] == rover_id]
+        if not found:
+            raise BadRequest(
+                f"No rover '{rover_id}' on this mission. Rovers: "
+                + ", ".join(r["id"] for r in rovers)
+                + "."
+            )
+        rv = found[0]
+    if m.site_id is None:
+        raise NoContact("No landing spot is published for this mission.")
+    site = await SiteRepository(session).get(m.site_id)
+    if site is None:
+        raise NoContact("The landing spot is not in the site list.")
+    if site.lat_deg > POLAR_DEM_EDGE_LAT:
+        why = (
+            f"{site.name} is outside the polar terrain model (south of 80°S), so the ground "
+            "between the rover and the lander is not known well enough to say."
+        )
+        short = f"{site.name} is outside the polar terrain model."
+        data = {
+            "rover": rv,
+            "share_basis": None,
+            "radius_m": None,
+            "viewshed": None,
+            "viewshed_tile": None,
+            "out_of_sight_share": lifecycle.missing("%", short),
+            "radio_not_clear_share": lifecycle.missing("%", short),
+            "longest_out_of_sight_m": lifecycle.missing("m", short),
+            "resolvable": False,
+            "reason": why,
+            "assumptions": None,
+            "terrain": None,
+            "note": None,
+        }
+        meta = lifecycle.meta(
+            engines=("los",),
+            sources=[],
+            parts=[("Terrain", why)],
+            compute_ms=None,
+            computed_at=datetime.now(UTC),
+        )
+        return 200, lifecycle.jsonable({"data": data, "meta": meta})
+    r = DEFAULT_RADIUS_M if radius_m is None else float(radius_m)
+    if not 50.0 <= r <= 5000.0:
+        raise BadRequest("radius_m must be between 50 and 5000.")
+    la = DEFAULT_LANDER_ANTENNA_M if lander_antenna_m is None else float(lander_antenna_m)
+    ra = DEFAULT_ROVER_ANTENNA_M if rover_antenna_m is None else float(rover_antenna_m)
+    f = DEFAULT_FREQ_MHZ if freq_mhz is None else float(freq_mhz)
+    if not (0.0 <= la <= 50.0 and 0.0 <= ra <= 50.0):
+        raise BadRequest("Antenna heights must be between 0 and 50 m.")
+    if not 30.0 <= f <= 100_000.0:
+        raise BadRequest("freq_mhz must be between 30 and 100000.")
+    params = {
+        "mission_id": m.id,
+        "data_version": m.data_version,
+        "site_id": site.id,
+        "lat_deg": site.lat_deg,
+        "lon_deg": site.lon_deg,
+        "surface_engine": ENGINE_VERSION,
+        "rover": rv,
+        "radius_m": r,
+        "lander_antenna_m": la,
+        "rover_antenna_m": ra,
+        "freq_mhz": f,
+        "given": {
+            "lander_antenna_m": lander_antenna_m is not None,
+            "rover_antenna_m": rover_antenna_m is not None,
+            "freq_mhz": freq_mhz is not None,
+        },
+    }
+    ans = await job_service.answer_or_enqueue(
+        session,
+        kind=ROVER_KIND,
+        closure=engine_closure("los"),
+        params=params,
+        mission_id=m.id,
+        requested_by=requested_by,
+    )
+    if ans.assessment is None:
+        assert ans.job is not None
+        return 202, ans.job
+    return 200, dict(ans.assessment.result)

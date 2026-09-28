@@ -1940,6 +1940,148 @@
         }
       }
     },
+    "/api/v1/missions/{mission_id}/contact/rover": {
+      "get": {
+        "tags": [
+          "mission sections"
+        ],
+        "summary": "Can the rover and the lander see each other, over the terrain around the lander",
+        "operationId": "contact_rover_api_v1_missions__mission_id__contact_rover_get",
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          },
+          {
+            "name": "rover",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Rover id, e.g. `im-2/yaoki`. Default: the first.",
+              "title": "Rover"
+            },
+            "description": "Rover id, e.g. `im-2/yaoki`. Default: the first."
+          },
+          {
+            "name": "radius_m",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "How far from the lander (default 500 m).",
+              "title": "Radius M"
+            },
+            "description": "How far from the lander (default 500 m)."
+          },
+          {
+            "name": "lander_antenna_m",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Default 2 m (assumed).",
+              "title": "Lander Antenna M"
+            },
+            "description": "Default 2 m (assumed)."
+          },
+          {
+            "name": "rover_antenna_m",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Default 0.5 m (assumed).",
+              "title": "Rover Antenna M"
+            },
+            "description": "Default 0.5 m (assumed)."
+          },
+          {
+            "name": "freq_mhz",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Default 2400 MHz (assumed).",
+              "title": "Freq Mhz"
+            },
+            "description": "Default 2400 MHz (assumed)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Section_RoverOut_"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Being worked out; poll the job.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRefOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/missions/{mission_id}/contact/plan": {
       "get": {
         "tags": [
@@ -11227,6 +11369,176 @@
         ],
         "title": "Rover"
       },
+      "RoverAssumptions": {
+        "properties": {
+          "lander_antenna_m": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "rover_antenna_m": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "radio_mhz": {
+            "$ref": "#/components/schemas/QuantityOut"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "lander_antenna_m",
+          "rover_antenna_m",
+          "radio_mhz"
+        ],
+        "title": "RoverAssumptions"
+      },
+      "RoverOut": {
+        "properties": {
+          "rover": {
+            "$ref": "#/components/schemas/RoverRef"
+          },
+          "share_basis": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "drive",
+                  "ground"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share Basis",
+            "description": "What the shares are over: the planned drive, or the ground within radius_m when no drive is published. Null when not resolvable."
+          },
+          "radius_m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Radius M"
+          },
+          "viewshed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Viewshed"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "viewshed_tile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Viewshed Tile"
+          },
+          "out_of_sight_share": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Percent out of sight; a range when uncertain cells could go either way."
+          },
+          "radio_not_clear_share": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Percent where the radio path is not clear (first Fresnel zone)."
+          },
+          "longest_out_of_sight_m": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "resolvable": {
+            "type": "boolean",
+            "title": "Resolvable"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "assumptions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoverAssumptions"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "terrain": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Terrain"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rover",
+          "share_basis",
+          "radius_m",
+          "viewshed",
+          "viewshed_tile",
+          "out_of_sight_share",
+          "radio_not_clear_share",
+          "longest_out_of_sight_m",
+          "resolvable",
+          "reason",
+          "assumptions",
+          "terrain",
+          "note"
+        ],
+        "title": "RoverOut"
+      },
+      "RoverRef": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "RoverRef"
+      },
       "RuleRow": {
         "properties": {
           "id": {
@@ -11516,6 +11828,23 @@
           "meta"
         ],
         "title": "Section[Return]"
+      },
+      "Section_RoverOut_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RoverOut"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/LifecycleMeta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "Section[RoverOut]"
       },
       "Section_SpaceWeather_": {
         "properties": {
@@ -12629,6 +12958,30 @@
         ],
         "title": "TargetSite"
       },
+      "Terrain": {
+        "properties": {
+          "product": {
+            "type": "string",
+            "title": "Product"
+          },
+          "post_m": {
+            "type": "number",
+            "title": "Post M"
+          },
+          "vertical_error_m": {
+            "type": "number",
+            "title": "Vertical Error M"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "product",
+          "post_m",
+          "vertical_error_m"
+        ],
+        "title": "Terrain"
+      },
       "TestIn": {
         "properties": {
           "kind": {
@@ -13368,6 +13721,67 @@
           "limits"
         ],
         "title": "VehicleLimits"
+      },
+      "Viewshed": {
+        "properties": {
+          "bearings_deg": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Bearings Deg",
+            "description": "From north, clockwise, every 5 degrees."
+          },
+          "ranges_m": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Ranges M",
+            "description": "Distance from the lander, 20 steps to radius_m."
+          },
+          "sight": {
+            "items": {
+              "items": {
+                "type": "string",
+                "enum": [
+                  "clear",
+                  "blocked",
+                  "uncertain"
+                ]
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Sight",
+            "description": "Clear line of sight, [bearing][range]."
+          },
+          "radio": {
+            "items": {
+              "items": {
+                "type": "string",
+                "enum": [
+                  "clear",
+                  "blocked",
+                  "uncertain"
+                ]
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Radio",
+            "description": "Radio path clear: the first Fresnel zone as well, [bearing][range]."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bearings_deg",
+          "ranges_m",
+          "sight",
+          "radio"
+        ],
+        "title": "Viewshed"
       },
       "Who": {
         "properties": {

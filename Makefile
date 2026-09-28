@@ -10,7 +10,7 @@ FE    := frontend
 DATA  := data
 
 .DEFAULT_GOAL := help
-.PHONY: missions climatology thunder-climatology space-climate validate-radiation validate-capsule validate-orbiters hindcast-weather validate-trip test-db help install kernels dem sites seed tiles services db-up migrate dev api worker \
+.PHONY: missions climatology thunder-climatology space-climate validate-radiation validate-capsule validate-orbiters validate-viewshed hindcast-weather validate-trip test-db help install kernels dem sites seed tiles services db-up migrate dev api worker \
         compute feeds feeds-once catalogues \
         frontend test test-fast test-int test-geo lint fmt typecheck contracts \
         golden-update openapi codegen clean nuke check
@@ -89,6 +89,9 @@ validate-radiation: ## Belts (IRBEM against NASA SPDF's AE8/AP8), cosmic rays ag
 
 validate-orbiters: ## Real orbiters' passes against JPL Horizons (az/el 0.02 deg, rise/set 2 s; needs the network; writes data/contact/orbiters_check.json)
 	cd $(BE) && $(UV) run python -m app.tests.golden.validate_orbiters 2>/dev/null
+
+validate-viewshed: ## Rover-to-lander line of sight on the polar terrain against a brute-force line test (gdal_viewshed is not installed; 99 % outside the uncertain band)
+	cd $(BE) && $(UV) run python -m app.tests.golden.validate_viewshed 2>/dev/null
 
 validate-capsule: ## Capsule entry against OSIRIS-REx (landing within 10 km; writes data/capsule/orex_check.json and prints the docs/validation.md tables)
 	cd $(BE) && $(UV) run python -m app.tests.golden.validate_capsule 2>/dev/null

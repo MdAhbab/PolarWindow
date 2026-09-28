@@ -563,3 +563,45 @@ flies as planned, would add 194–210 h and bring the longest time unheard to 3.
 message waits 182–230 min at most); Altus-1 in NASA's reference orbit would add 236–245 h
 (4.7–5.5 h unheard, 282–326 min wait). At IM-3's near-side site, where Earth never sets,
 Altus-1 adds nothing. About 50 s of compute per relay for a lunar day.
+
+# Rover-to-lander line of sight (plan T1, F5)
+
+`app/core/viewshed.py`, served by `GET /missions/{id}/contact/rover`. For each bearing (every
+5°) a ray is sampled outward from the lander; a rover at each of 20 ranges is in clear sight
+when the terrain between the antennas stays below the line joining them (the running maximum
+of the terrain's elevation angle), and on a clear radio path when it also stays out of the
+first Fresnel zone. Each is clear, blocked or uncertain: the elevation model's height error
+at each blocker, as the angle atan(σ / distance), and at the rover's ground, makes the band.
+Ground within two posts of either end is not a blocker (the skyline's noise rule).
+
+**Analytic surfaces** (plan: exact; `app/tests/unit/test_viewshed.py`). A ring wall
+shadows exactly the rovers whose antenna sits below the line over its near edge, and a taller
+mast ends the shadow where the line clears the wall; with a 2 m height error every cell is
+either that exact state or uncertain, uncertain exactly where the clearance is inside the
+band; a 2.5 m wall half way along a 500 m path at 30 GHz leaves the line clear and cuts the
+Fresnel zone (1.12 m at mid-path), and at 2.4 GHz the zone (3.95 m) reaches flat ground.
+
+**Real terrain** (`make validate-viewshed`; plan: 99 % agreement with `gdal_viewshed`
+outside the uncertain band). GDAL is not installed here, so `gdal_viewshed` was not run.
+The nearest check that could be: the engine's states with the height error set to zero,
+against a brute-force test written separately (the terrain every metre along each straight
+line, compared in heights, not angles), on the 20 m polar model around each rover site,
+antennas 2 m (lander) and 0.5 m (rover), counted where the 2 m error does not make a cell
+uncertain:
+
+| Site | Radius | Cells | Outside the band | Agree | Share out of sight (lo–hi) |
+|---|---:|---:|---:|---:|---|
+| IM-2 (Yaoki) | 500 m | 1440 | 221 | 100.00 % | 0.7–97.1 % |
+| IM-2 (Yaoki) | 2000 m | 1440 | 826 | 100.00 % | 76.8–100.0 % |
+| Griffin-1 (FLIP) | 500 m | 1440 | 481 | 100.00 % | 12.0–85.7 % |
+| Griffin-1 (FLIP) | 2000 m | 1440 | 742 | 100.00 % | 51.8–90.2 % |
+
+This checks the running maximum, not the terrain model or the method against an independent
+tool. **What it shows about the answer:** within 500 m most cells are uncertain (IM-2: 1,219
+of 1,440): a 2 m height error at 100 m is 1.1°, more than the angles between a 2 m and a
+0.5 m antenna, so the 20 m polar model cannot say whether a small rover near the lander is in
+its sight, and the shares come as wide ranges. The error is taken as independent at every
+post, as for the skyline; LOLA's errors between nearby posts are partly shared, so the band is
+if anything too wide. No rover drive is published, so the share is over the ground within
+the radius, and the longest stretch out of sight is missing with that reason. Reiner Gamma
+(CADRE, Lunar Vertex) is outside the polar model and answers "not resolvable".

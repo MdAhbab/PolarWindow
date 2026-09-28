@@ -655,3 +655,23 @@ that user. `GET /auth/me` returns the same `user`.
   - `GET /feeds` adds provider `horizons`, product `vectors`, one row per orbiter (location
     = its id) and per orbiter and flown mission (`lro@im-2`); CAPSTONE's weekly row records
     "no trajectory after 14 August 2026" as data (stale, not failing).
+- 2026-09-29 (backend, rover line of sight; plan F5, engine `los-1`):
+  - `GET /missions/{id}/contact/rover?rover=&radius_m=&lander_antenna_m=&rover_antenna_m=&freq_mhz=`
+    → `Section<RoverOut>` or 202 `JobRef` (a `rover` job; cheapest first). Rovers are the mission's
+    listed rovers and payloads that move (`im-2/yaoki`, `griffin-1/flip`, `im-3/cadre`,
+    `im-3/lvx`); default the first. 409 `no-rover` without one; 422 for an unknown rover or a
+    value out of range (radius 50–5000 m, default 500; antennas 0–50 m, defaults 2 m and 0.5 m;
+    30–100000 MHz, default 2400; the defaults are `assumed` and say so).
+  - `RoverOut` = the contract's fields plus, as the frontend asked: `rover {id, name}`,
+    `share_basis: "drive" | "ground" | null` (always `ground` today: no drive is published),
+    `radius_m`, `viewshed {bearings_deg (72, every 5°), ranges_m (20), sight, radio}` with
+    states `"clear" | "blocked" | "uncertain"` indexed [bearing][range]; also
+    `radio_not_clear_share` (%, the radio path's twin of `out_of_sight_share`), `assumptions
+    {lander_antenna_m, rover_antenna_m, radio_mhz}`, `terrain {product, post_m,
+    vertical_error_m}` and `note`. Shares are percent over the ground within `radius_m`, each
+    cell weighted by its ring: `lo` counts blocked cells, `hi` blocked and uncertain, the value
+    is their middle (no margin when nothing is uncertain). `longest_out_of_sight_m` is missing
+    (no drive is published). `viewshed_tile` is null (no tile layer yet).
+  - A site north of 80° S (outside the polar terrain model) answers 200 at once with
+    `resolvable: false`, the reason, `viewshed`, `radius_m`, `share_basis`, `assumptions` and
+    `terrain` null and the numbers missing.

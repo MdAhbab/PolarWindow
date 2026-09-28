@@ -212,3 +212,44 @@ async def test_real_orbiters_are_passes_over_the_site_never_relays(anon_client, 
     assert not any(n["id"] == "lro" for n in d["nodes"])  # never a node of the network
     async with session_scope() as s:
         await s.execute(text("DELETE FROM feed_snapshots WHERE provider = 'horizons'"))
+
+
+async def test_rover_line_of_sight_at_a_polar_site(anon_client) -> None:
+    r = await anon_client.get(f"{API}/missions/im-2/contact/rover")
+    assert r.status_code == 202, r.text
+    ran = await Worker(owner="test", handlers=HANDLERS).run_once()
+    assert ran is not None
+    r = await anon_client.get(f"{API}/missions/im-2/contact/rover")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    d = body["data"]
+    assert d["rover"] == {"id": "im-2/yaoki", "name": "Yaoki"}
+    assert d["resolvable"] is True and d["share_basis"] == "ground" and d["radius_m"] == 500
+    vs = d["viewshed"]
+    assert len(vs["bearings_deg"]) == 72 and len(vs["ranges_m"]) == 20
+    assert len(vs["sight"]) == 72 and all(len(row) == 20 for row in vs["sight"])
+    states = {c for row in vs["sight"] + vs["radio"] for c in row}
+    assert states <= {"clear", "blocked", "uncertain"}
+    share = d["out_of_sight_share"]
+    assert share["unit"] == "%" and 0.0 <= share["value"] <= 100.0
+    radio = d["radio_not_clear_share"]
+    # The radio path needs more than the line: never clearer than the sight.
+    assert radio["value"] >= share["value"] - 1e-9
+    assert d["longest_out_of_sight_m"]["value"] is None
+    assert "No drive is published for Yaoki" in d["longest_out_of_sight_m"]["missing_reason"]
+    a = d["assumptions"]
+    assert a["lander_antenna_m"]["provenance"] == "assumed" and a["radio_mhz"]["value"] == 2400
+    assert d["terrain"]["post_m"] == 20.0
+    assert body["meta"]["engines"] == {"los": "los-1"}
+
+
+async def test_rover_outside_the_polar_terrain_is_not_resolvable(anon_client) -> None:
+    r = await anon_client.get(f"{API}/missions/im-3/contact/rover", params={"rover": "im-3/cadre"})
+    assert r.status_code == 200, r.text
+    d = r.json()["data"]
+    assert d["resolvable"] is False and "polar terrain" in d["reason"]
+    assert d["viewshed"] is None and d["out_of_sight_share"]["missing_reason"]
+    r = await anon_client.get(f"{API}/missions/im-1/contact/rover")
+    assert r.status_code == 409 and r.json()["detail"]["type"].endswith("no-rover")
+    r = await anon_client.get(f"{API}/missions/im-2/contact/rover", params={"rover": "x"})
+    assert r.status_code == 422 and "im-2/yaoki" in r.json()["detail"]["detail"]

@@ -175,9 +175,53 @@ class BookingOut(_M):
     entered_at: datetime
 
 
+State = Literal["clear", "blocked", "uncertain"]
+
+
+class RoverRef(_M):
+    id: str
+    name: str
+
+
+class Viewshed(_M):
+    bearings_deg: list[float] = Field(description="From north, clockwise, every 5 degrees.")
+    ranges_m: list[float] = Field(description="Distance from the lander, 20 steps to radius_m.")
+    sight: list[list[State]] = Field(description="Clear line of sight, [bearing][range].")
+    radio: list[list[State]] = Field(
+        description="Radio path clear: the first Fresnel zone as well, [bearing][range]."
+    )
+
+
+class RoverAssumptions(_M):
+    lander_antenna_m: QuantityOut
+    rover_antenna_m: QuantityOut
+    radio_mhz: QuantityOut
+
+
+class Terrain(_M):
+    product: str
+    post_m: float
+    vertical_error_m: float
+
+
 class RoverOut(_M):
+    rover: RoverRef
+    share_basis: Literal["drive", "ground"] | None = Field(
+        description="What the shares are over: the planned drive, or the ground within "
+        "radius_m when no drive is published. Null when not resolvable."
+    )
+    radius_m: float | None
+    viewshed: Viewshed | None
     viewshed_tile: str | None
-    out_of_sight_share: QuantityOut
+    out_of_sight_share: QuantityOut = Field(
+        description="Percent out of sight; a range when uncertain cells could go either way."
+    )
+    radio_not_clear_share: QuantityOut = Field(
+        description="Percent where the radio path is not clear (first Fresnel zone)."
+    )
     longest_out_of_sight_m: QuantityOut
     resolvable: bool
     reason: str | None
+    assumptions: RoverAssumptions | None
+    terrain: Terrain | None
+    note: str | None
