@@ -8,7 +8,7 @@ import { useWindowParams } from '../../lib/mission'
 import { useMission as useStore } from '../../lib/store'
 import { hasSite } from '../../lib/sites'
 import { dateTimeWords, msFromModelH, windowLine } from '../../lib/format'
-import { ageWords, quantityText, quantityView } from '../../lib/lifecycle/quantity'
+import { ageWords, formatValue, quantityText, quantityView } from '../../lib/lifecycle/quantity'
 import { NumberRow, QuantityTile } from '../../components/lifecycle/QuantityTile'
 import { Answer, ChartPanel, HowSure, Legend, Rows, SectionLayout, SectionStates, SourcesRow, WorkingPanel } from '../../components/lifecycle/Section'
 import { ContactChart, ContactTable, contactRows, relayState } from '../../components/lifecycle/ContactChart'
@@ -103,7 +103,7 @@ export function contactAnswer(c: ContactDTO): string {
     out.push(
       one
         ? `Through ${named} it could reach Earth for ${quantityText(n.via_relay_h)}, if it flies as planned${
-            isRange(one.adds_h) ? `; that adds ${quantityText(one.adds_h)} to direct contact` : ''
+            !isRange(one.adds_h) ? '' : one.adds_h.hi === 0 ? '; it adds no time to direct contact' : `; that adds ${quantityText(one.adds_h)} to direct contact`
           }.`
         : `Through a relay it could reach Earth for ${quantityText(n.via_relay_h)}, if they fly as planned.`,
     )
@@ -129,7 +129,9 @@ export function contactAnswer(c: ContactDTO): string {
 /** An orbiter's passes in words: how many, time in view, the longest pass and the longest wait between passes. */
 export function orbiterWords(o: OrbiterDTO): string {
   const passes = `${o.pass_count} pass${o.pass_count === 1 ? '' : 'es'} over these dates`
-  if (!o.pass_count) return `No pass over these dates. ${quantityView(o.in_view_h).kind === 'missing' ? (o.in_view_h.missing_reason ?? '') : ''}`.trim()
+  // No trajectory for these dates: not known, which is not the same as no pass.
+  if (quantityView(o.in_view_h).kind === 'missing') return `Not known: ${o.in_view_h.missing_reason ?? 'no trajectory is recorded for these dates.'}`
+  if (!o.pass_count) return 'No pass over these dates.'
   return `${passes}, ${quantityText(o.in_view_h)} in view in all; the longest pass ${quantityText(o.longest_pass_min)}, the longest wait between passes ${quantityText(o.longest_gap_h)}.`
 }
 
@@ -208,7 +210,8 @@ function ContactAnswer({
             items={[
               { swatch: <span className="h-3 w-5 bg-earth-fill" />, label: 'Can hear the lander' },
               ...(planned ? [{ swatch: <span className="hatch-uncertain h-3 w-5 border border-uncertain" />, label: 'A range: if it flies as planned' }] : []),
-              ...(orbiters.length ? [{ swatch: <span className="h-3 w-5 border border-dashed border-earth" />, label: 'Could see the lander (an orbiter, not a relay)' }] : []),
+              ...(rows.some((r) => r.orbiter) ? [{ swatch: <span className="h-3 w-5 border border-dashed border-earth" />, label: 'Could see the lander (an orbiter, not a relay)' }] : []),
+              ...(rows.some((r) => r.noData?.length) ? [{ swatch: <span className="h-3 w-5 border border-dashed border-line-strong" />, label: 'No trajectory recorded' }] : []),
               ...(contact.bookings.length ? [{ swatch: <span className="h-3 w-5 border-2 border-ink" />, label: 'Booked pass' }] : []),
             ]}
           />
@@ -239,7 +242,9 @@ function ContactAnswer({
                   {r.for_this_mission === false && <span className="text-small text-ink-2">Added to compare: not planned for this mission.</span>}
                   <span className="text-small text-ink-2">
                     {isRange(r.adds_h)
-                      ? `Adds ${quantityText(r.adds_h)} to direct contact${r.via_h && isRange(r.via_h) ? `, ${quantityText(r.via_h)} in all through it` : ''}, if it flies as planned.`
+                      ? `${r.adds_h.hi === 0 ? 'Adds no time to direct contact' : `Adds ${quantityText(r.adds_h)} to direct contact`}${
+                          r.via_h && isRange(r.via_h) ? `, ${quantityText(r.via_h)} in all through it` : ''
+                        }, if it flies as planned.`
                       : `Time through it: ${numberWords(r.adds_h).replace(/^Not worked out: /, 'not worked out. ')}`}
                   </span>
                   {r.orbit && (
@@ -473,7 +478,40 @@ function RoverAnswer({ d, meta, roverName }: { d: RoverSightDTO; meta: Lifecycle
       ) : d.resolvable ? (
         <p className="text-small text-ink-2">The directions around the lander are not served yet, so there is no map to draw.</p>
       ) : null}
+      {d.note && <p className="text-small text-ink-2">{d.note}</p>}
       <Rows>
+        {(d.assumptions || d.terrain) && (
+          <Disclosure title="Antennas, radio and terrain" meta={d.assumptions ? 'assumed unless given' : undefined}>
+            <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-small sm:grid-cols-[max-content_1fr]">
+              {d.assumptions &&
+                (
+                  [
+                    ['lander_antenna_m', 'Lander’s antenna above the ground'],
+                    ['rover_antenna_m', 'Rover’s antenna above the ground'],
+                    ['radio_mhz', 'Radio frequency'],
+                  ] as const
+                ).map(([k, label]) => (
+                  <div key={k} className="contents">
+                    <dt className="text-ink-3">{label}</dt>
+                    <dd className="text-ink">
+                      {orbitWords(d.assumptions![k])}
+                      {d.assumptions![k].provenance === 'assumed' && d.assumptions![k].no_margin_reason && (
+                        <span className="block text-ink-2">{d.assumptions![k].no_margin_reason}</span>
+                      )}
+                    </dd>
+                  </div>
+                ))}
+              {d.terrain && (
+                <>
+                  <dt className="text-ink-3">Terrain</dt>
+                  <dd className="text-ink">
+                    {d.terrain.product}: a height every {formatValue(d.terrain.post_m)} m, each good to ±{formatValue(d.terrain.vertical_error_m)} m
+                  </dd>
+                </>
+              )}
+            </dl>
+          </Disclosure>
+        )}
         <HowSure meta={meta} />
         <SourcesRow meta={meta} />
       </Rows>

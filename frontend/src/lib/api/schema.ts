@@ -567,6 +567,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/missions/{mission_id}/contact/rover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Can the rover and the lander see each other, over the terrain around the lander */
+        get: operations["contact_rover_api_v1_missions__mission_id__contact_rover_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/missions/{mission_id}/contact/plan": {
         parameters: {
             query?: never;
@@ -3698,6 +3715,46 @@ export interface components {
             /** Source Url */
             source_url: string;
         };
+        /** RoverAssumptions */
+        RoverAssumptions: {
+            lander_antenna_m: components["schemas"]["QuantityOut"];
+            rover_antenna_m: components["schemas"]["QuantityOut"];
+            radio_mhz: components["schemas"]["QuantityOut"];
+        };
+        /** RoverOut */
+        RoverOut: {
+            rover: components["schemas"]["RoverRef"];
+            /**
+             * Share Basis
+             * @description What the shares are over: the planned drive, or the ground within radius_m when no drive is published. Null when not resolvable.
+             */
+            share_basis: ("drive" | "ground") | null;
+            /** Radius M */
+            radius_m: number | null;
+            viewshed: components["schemas"]["Viewshed"] | null;
+            /** Viewshed Tile */
+            viewshed_tile: string | null;
+            /** @description Percent out of sight; a range when uncertain cells could go either way. */
+            out_of_sight_share: components["schemas"]["QuantityOut"];
+            /** @description Percent where the radio path is not clear (first Fresnel zone). */
+            radio_not_clear_share: components["schemas"]["QuantityOut"];
+            longest_out_of_sight_m: components["schemas"]["QuantityOut"];
+            /** Resolvable */
+            resolvable: boolean;
+            /** Reason */
+            reason: string | null;
+            assumptions: components["schemas"]["RoverAssumptions"] | null;
+            terrain: components["schemas"]["Terrain"] | null;
+            /** Note */
+            note: string | null;
+        };
+        /** RoverRef */
+        RoverRef: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
         /** RuleRow */
         RuleRow: {
             /** Id */
@@ -3789,6 +3846,11 @@ export interface components {
         /** Section[Return] */
         Section_Return_: {
             data: components["schemas"]["Return"];
+            meta: components["schemas"]["LifecycleMeta"];
+        };
+        /** Section[RoverOut] */
+        Section_RoverOut_: {
+            data: components["schemas"]["RoverOut"];
             meta: components["schemas"]["LifecycleMeta"];
         };
         /** Section[SpaceWeather] */
@@ -4238,6 +4300,15 @@ export interface components {
             /** Source Note */
             source_note: string;
         };
+        /** Terrain */
+        Terrain: {
+            /** Product */
+            product: string;
+            /** Post M */
+            post_m: number;
+            /** Vertical Error M */
+            vertical_error_m: number;
+        };
         /** TestIn */
         TestIn: {
             /**
@@ -4504,6 +4575,29 @@ export interface components {
             vehicle_id: string;
             /** Limits */
             limits: components["schemas"]["LimitOut"][];
+        };
+        /** Viewshed */
+        Viewshed: {
+            /**
+             * Bearings Deg
+             * @description From north, clockwise, every 5 degrees.
+             */
+            bearings_deg: number[];
+            /**
+             * Ranges M
+             * @description Distance from the lander, 20 steps to radius_m.
+             */
+            ranges_m: number[];
+            /**
+             * Sight
+             * @description Clear line of sight, [bearing][range].
+             */
+            sight: ("clear" | "blocked" | "uncertain")[][];
+            /**
+             * Radio
+             * @description Radio path clear: the first Fresnel zone as well, [bearing][range].
+             */
+            radio: ("clear" | "blocked" | "uncertain")[][];
         };
         /**
          * Who
@@ -5574,6 +5668,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Section_Contact_"];
+                };
+            };
+            /** @description Being worked out; poll the job. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobRefOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    contact_rover_api_v1_missions__mission_id__contact_rover_get: {
+        parameters: {
+            query?: {
+                /** @description Rover id, e.g. `im-2/yaoki`. Default: the first. */
+                rover?: string | null;
+                /** @description How far from the lander (default 500 m). */
+                radius_m?: number | null;
+                /** @description Default 2 m (assumed). */
+                lander_antenna_m?: number | null;
+                /** @description Default 0.5 m (assumed). */
+                rover_antenna_m?: number | null;
+                /** @description Default 2400 MHz (assumed). */
+                freq_mhz?: number | null;
+            };
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Section_RoverOut_"];
                 };
             };
             /** @description Being worked out; poll the job. */

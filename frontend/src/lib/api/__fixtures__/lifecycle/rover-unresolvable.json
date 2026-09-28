@@ -35,7 +35,23 @@
    "source": null
   },
   "resolvable": false,
-  "reason": "Reiner Gamma is outside the polar terrain map (south of 80°S), so the ground between the rover and the lander is not known well enough to say."
+  "reason": "Reiner Gamma is outside the polar terrain map (south of 80°S), so the ground between the rover and the lander is not known well enough to say.",
+  "radio_not_clear_share": {
+   "value": null,
+   "unit": "%",
+   "provenance": "computed",
+   "pm": null,
+   "lo": null,
+   "hi": null,
+   "factor": null,
+   "open": false,
+   "no_margin_reason": null,
+   "missing_reason": "Reiner Gamma is outside the polar terrain map.",
+   "source": null
+  },
+  "assumptions": null,
+  "terrain": null,
+  "note": null
  },
  "meta": {
   "computed_at": "2026-09-27T08:00:00Z",

@@ -1684,7 +1684,67 @@
    "source": null
   },
   "resolvable": true,
-  "reason": null
+  "reason": null,
+  "radio_not_clear_share": {
+   "value": null,
+   "unit": "%",
+   "provenance": "computed",
+   "pm": null,
+   "lo": 25,
+   "hi": 33,
+   "factor": null,
+   "open": false,
+   "no_margin_reason": null,
+   "missing_reason": null,
+   "source": null
+  },
+  "assumptions": {
+   "lander_antenna_m": {
+    "value": 3.0,
+    "unit": "m",
+    "provenance": "assumed",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": "The lander's antenna height is not published; assumed. Give lander_antenna_m.",
+    "missing_reason": null,
+    "source": null
+   },
+   "rover_antenna_m": {
+    "value": 0.3,
+    "unit": "m",
+    "provenance": "assumed",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": "The rover's antenna height is not published; assumed. Give rover_antenna_m.",
+    "missing_reason": null,
+    "source": null
+   },
+   "radio_mhz": {
+    "value": 2400,
+    "unit": "MHz",
+    "provenance": "assumed",
+    "pm": null,
+    "lo": null,
+    "hi": null,
+    "factor": null,
+    "open": false,
+    "no_margin_reason": "The rover's radio frequency is not published; 2.4 GHz is assumed (only the radio path depends on it). Give freq_mhz.",
+    "missing_reason": null,
+    "source": null
+   }
+  },
+  "terrain": {
+   "product": "LDEM_83S_5M",
+   "post_m": 5.0,
+   "vertical_error_m": 0.5
+  },
+  "note": "Clear: the terrain stays below the line between the antennas by more than the elevation model's height error; blocked: it rises above by more than that; uncertain: the model cannot tell. The radio path also needs the first Fresnel zone clear. Ground within two model posts of either end is not counted as a blocker."
  },
  "meta": {
   "computed_at": "2026-09-27T08:00:00Z",

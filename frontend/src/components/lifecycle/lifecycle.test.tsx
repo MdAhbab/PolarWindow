@@ -469,6 +469,12 @@ describe('the charts’ arrays, shared with their tables', () => {
     expect(orbiters.map((r) => r.label)).toEqual(['Lunar Reconnaissance Orbiter', 'Danuri'])
     expect(orbiters.every((r) => r.orbiter && !r.relayId && r.caption === 'could see the lander; not a relay')).toBe(true)
     expect(orbiters[0].links[0].stretches).toHaveLength(contact.orbiters!.find((o) => o.id === 'lro')!.pass_count)
+    // A trajectory that stops early leaves the rest of the dates as no data, not out of view.
+    expect(orbiters[0].noData).toEqual([])
+    expect(orbiters[1].noData).toEqual([{ start: Date.parse('2025-03-11T00:00:00Z'), end: Date.parse(contact.end!) }])
+    // One with no trajectory for these dates has no row at all.
+    const none = contactRows({ ...contact, orbiters: [{ ...contact.orbiters![0], covered: null, passes: [], pass_count: 0 }] })
+    expect(none.some((r) => r.orbiter)).toBe(false)
   })
 })
 
@@ -700,8 +706,9 @@ describe('Contact through a relay', () => {
     // Orbiters: their passes in words, and a trajectory that stops early says so.
     const [lro, danuri] = contact.orbiters!
     expect(orbiterWords({ ...lro, pass_count: 0, passes: [], in_view_h: { ...lro.in_view_h, value: null, pm: null, missing_reason: 'No trajectory is recorded for these dates.' } })).toBe(
-      'No pass over these dates. No trajectory is recorded for these dates.',
+      'Not known: No trajectory is recorded for these dates.',
     )
+    expect(orbiterWords({ ...lro, pass_count: 0, passes: [], in_view_h: { ...lro.in_view_h, value: 0 } })).toBe('No pass over these dates.')
     const t = (x: string) => Date.parse(x)
     expect(coveredWords(lro, t(contact.start!), t(contact.end!))).toBeNull()
     expect(coveredWords(danuri, t(contact.start!), t(contact.end!))).toMatch(/to 11 March 2025 only; passes outside that are not known\.$/)
@@ -743,7 +750,7 @@ describe('Rover and lander line of sight', () => {
 
   it('the answer first: the share over the ground or the drive, the longest stretch or why not, and a site the terrain map does not cover', () => {
     expect(roverSentence(rover, 'Yaoki')).toBe(
-      'Within 500 m of the lander, 18–26% of the ground is out of its sight. No drive is published for Yaoki, so no stretch of it can be measured.',
+      'Within 500 m of the lander, 18–26% of the ground is out of its sight; the radio path is not clear over 25–33%. No drive is published for Yaoki, so no stretch of it can be measured.',
     )
     const drive = {
       ...rover,
@@ -751,7 +758,9 @@ describe('Rover and lander line of sight', () => {
       out_of_sight_share: { ...rover.out_of_sight_share, lo: null, hi: null, value: 12, no_margin_reason: 'every sample is clear or blocked' },
       longest_out_of_sight_m: { ...rover.longest_out_of_sight_m, value: 140, pm: 25, missing_reason: null },
     }
-    expect(roverSentence(drive, 'FLIP')).toBe('FLIP would be out of the lander’s sight for 12% of its drive. The longest stretch out of sight is 140 ±25 m.')
+    expect(roverSentence({ ...drive, radio_not_clear_share: undefined }, 'FLIP')).toBe(
+      'FLIP would be out of the lander’s sight for 12% of its drive. The longest stretch out of sight is 140 ±25 m.',
+    )
     const bad = (roverUnresolvable as unknown as SectionDTO<RoverSightDTO>).data
     expect(roverSentence(bad, 'CADRE')).toMatch(/^Reiner Gamma is outside the polar terrain map/)
   })

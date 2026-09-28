@@ -556,7 +556,7 @@ export interface MissionDetail extends Mission {
   /** Published landing ellipse as [lat, lon] vertices; null when none is published. */
   ellipseRing: [number, number][] | null
   site: TargetSite | null
-  /** Rovers the lander carries (schema v2 facts); empty when none is listed. */
+  /** Rovers the lander carries, as the rover line-of-sight endpoint knows them; empty when none. */
   rovers: { id: string; name: string; organisation: string | null }[]
   meta: Meta
 }
@@ -613,6 +613,18 @@ export function adaptMission(dto: MissionBriefDTO): Mission {
   }
 }
 
+/**
+ * The mission's rovers as the service lists them (contact_service `_rovers`):
+ * payloads that move first, then the listed rovers, each once. The first is
+ * the one the line-of-sight endpoint answers for by default.
+ */
+function missionRovers(dto: MissionDetailDTO): MissionDetail['rovers'] {
+  const out = new Map<string, MissionDetail['rovers'][number]>()
+  for (const p of dto.payloads) if (p.instrument_types.includes('rover_mobility')) out.set(p.id, { id: p.id, name: p.name, organisation: p.organisation })
+  for (const r of dto.lifecycle?.rovers ?? []) if (!out.has(r.id)) out.set(r.id, { id: r.id, name: r.name, organisation: r.organisation })
+  return [...out.values()]
+}
+
 export function adaptMissionDetail(dto: MissionDetailDTO): MissionDetail {
   return {
     ...adaptMission(dto),
@@ -653,7 +665,7 @@ export function adaptMissionDetail(dto: MissionDetailDTO): MissionDetail {
           sourceNote: dto.site.source_note,
         }
       : null,
-    rovers: (dto.lifecycle?.rovers ?? []).map((r) => ({ id: r.id, name: r.name, organisation: r.organisation })),
+    rovers: missionRovers(dto),
     meta: adaptMeta(dto.meta),
   }
 }

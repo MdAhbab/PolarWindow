@@ -55,10 +55,13 @@ export function roverSentence(d: RoverSightDTO, roverName: string): string {
   const share = d.out_of_sight_share
   const shareMissing = quantityView(share).kind === 'missing'
   const out: string[] = []
+  // The radio path needs a wider corridor, so it is blocked over more of the ground than the line of sight.
+  const radio = d.radio_not_clear_share && quantityView(d.radio_not_clear_share).kind !== 'missing' ? d.radio_not_clear_share : null
+  const radioPart = radio ? `; the radio path is not clear over ${quantityText(radio)}` : ''
   if (shareMissing) out.push(share.missing_reason ?? 'The share out of sight is not worked out.')
   else if (d.share_basis === 'ground' && d.radius_m)
-    out.push(`Within ${formatValue(d.radius_m)} m of the lander, ${quantityText(share)} of the ground is out of its sight.`)
-  else out.push(`${roverName} would be out of the lander’s sight for ${quantityText(share)} of its drive.`)
+    out.push(`Within ${formatValue(d.radius_m)} m of the lander, ${quantityText(share)} of the ground is out of its sight${radioPart}.`)
+  else out.push(`${roverName} would be out of the lander’s sight for ${quantityText(share)} of its drive${radioPart}.`)
   const longest: QuantityDTO = d.longest_out_of_sight_m
   if (quantityView(longest).kind !== 'missing') out.push(`The longest stretch out of sight is ${quantityText(longest)}.`)
   else if (longest.missing_reason && longest.missing_reason !== share.missing_reason) out.push(longest.missing_reason)

@@ -18,6 +18,8 @@ export interface ContactRow {
   relayId?: string
   /** An orbiter already flying: it could see the lander, but carries none of its data. */
   orbiter?: boolean
+  /** Parts of the dates with no recorded trajectory: unknown, not out of view. */
+  noData?: { start: number; end: number }[]
 }
 
 /** A relay's launch status in words, with a glyph beside them (never the glyph alone). */
@@ -110,7 +112,12 @@ export function contactRows(c: ContactDTO): ContactRow[] {
     })
   }
   // Orbiters already flying: their passes are the row's one link, lander to orbiter.
+  // One with no trajectory for these dates has no row: an empty row would read as never in view.
+  const [t0, t1] = [Date.parse(c.start ?? ''), Date.parse(c.end ?? '')]
   for (const o of c.orbiters ?? []) {
+    if (!o.covered) continue
+    const [a, b] = [Date.parse(o.covered.start), Date.parse(o.covered.end)]
+    const noData = Number.isNaN(t0) || Number.isNaN(t1) ? [] : [{ start: t0, end: a }, { start: b, end: t1 }].filter((g) => g.end - g.start > 60_000)
     rows.set(`orbiter-${o.id}`, {
       key: `orbiter-${o.id}`,
       label: o.name,
@@ -119,6 +126,7 @@ export function contactRows(c: ContactDTO): ContactRow[] {
       stations: [],
       planned: false,
       orbiter: true,
+      noData,
     })
   }
   const rank = (r: ContactRow) => (r.orbiter ? 3 : r.planned ? 2 : r.relayId ? 1 : 0)
@@ -156,7 +164,9 @@ export function ContactChart({ contact, rows, start, end }: { contact: ContactDT
     .map((r) =>
       r.planned
         ? `${r.label}, ${plannedWords(relayFor(r))}`
-        : `${r.label}${r.orbiter ? ` (${ORBITER_CAPTION})` : ''}, ${rowStretches(r).length} ${r.orbiter ? 'pass' : 'stretch'}${rowStretches(r).length === 1 ? '' : 'es'}`,
+        : `${r.label}${r.orbiter ? ` (${ORBITER_CAPTION})` : ''}, ${rowStretches(r).length} ${r.orbiter ? 'pass' : 'stretch'}${rowStretches(r).length === 1 ? '' : 'es'}${
+            r.noData?.length ? ', no trajectory recorded for part of the dates' : ''
+          }`,
     )
     .join('; ')}. ${contact.bookings.length} booked passes. The table lists every pass of every antenna.`
 
@@ -195,6 +205,14 @@ export function ContactChart({ contact, rows, start, end }: { contact: ContactDT
                     )
                   })
                 )}
+                {r.noData?.map((g) => (
+                  <span
+                    key={`nodata${g.start}`}
+                    className="absolute inset-y-1 border border-dashed border-line-strong"
+                    style={{ left: pct(g.start), width: width(g.start, g.end) }}
+                    title={`${r.label}: no trajectory recorded, ${dateTimeWords(g.start)} to ${dateTimeWords(g.end)}`}
+                  />
+                ))}
                 {booked.map((b) => {
                   const a = Date.parse(b.start)
                   const z = Date.parse(b.end)
@@ -295,6 +313,19 @@ export function ContactTable({ contact, rows }: { contact: ContactDTO; rows: Con
                 <td className={cell}>{booked ? 'Booked' : '—'}</td>
               </tr>
             ))}
+          {rows.flatMap((r) =>
+            (r.noData ?? []).map((g) => (
+              <tr key={`${r.key}nodata${g.start}`} className="border-t border-line">
+                <th scope="row" className={`${cell} font-semibold text-ink`}>
+                  {r.label}: no trajectory recorded
+                </th>
+                <td className={cell}>{dateTimeWords(g.start)}</td>
+                <td className={cell}>{dateTimeWords(g.end)}</td>
+                <td className={`${cell} font-mono text-ink`}>{formatValue((g.end - g.start) / HOUR)} h</td>
+                <td className={cell}>—</td>
+              </tr>
+            )),
+          )}
           {rows
             .filter((r) => r.planned)
             .map((r) => (

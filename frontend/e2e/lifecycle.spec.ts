@@ -388,11 +388,16 @@ test('rover line of sight (contract fixtures): the answer first, the map in thre
   await summary.click()
   const row = page.getByTestId('rover-sight')
   await expect(row.locator('p').first()).toHaveText(
-    'Within 500 m of the lander, 18–26% of the ground is out of its sight. No drive is published for Yaoki, so no stretch of it can be measured.',
+    'Within 500 m of the lander, 18–26% of the ground is out of its sight; the radio path is not clear over 25–33%. No drive is published for Yaoki, so no stretch of it can be measured.',
   )
   await expect(row.getByRole('img', { name: /^Line of sight between Yaoki and the lander, out to 500 m in 36 directions/ })).toBeVisible()
   // Three states, each in a glyph and words beside its swatch.
   for (const words of ['In sight', 'Blocked by the ground', 'Uncertain: the terrain map’s error could tip it either way']) await expect(row).toContainText(words)
+  // What the states mean, and what is assumed about the antennas and the radio.
+  await expect(row).toContainText('uncertain: the model cannot tell.')
+  await row.locator('summary', { hasText: 'Antennas, radio and terrain' }).click()
+  await expect(row.locator('dt', { hasText: 'Radio frequency' }).locator('xpath=following-sibling::dd[1]')).toContainText('2,400 MHz, assumed')
+  await expect(row).toContainText('LDEM_83S_5M: a height every 5 m, each good to ±0.5 m')
   await row.getByRole('button', { name: 'Radio path' }).click()
   await expect(row.getByRole('button', { name: 'Radio path' })).toHaveAttribute('aria-pressed', 'true')
   await expect(row.getByRole('img', { name: /^Radio path between Yaoki and the lander/ })).toBeVisible()
@@ -987,4 +992,65 @@ test('radiation and space weather (live API): Blue Ghost’s screening with its 
   await expect(sw).toContainText('(NASA DONKI)')
   await expect(sw).toContainText(/(Clouds thrown off the Sun \(coronal mass ejections\)|The latest data from NASA space weather database \(DONKI\) is \d+ (days?|hours?) old)/)
   await expectNoSeriousAxe(page, 'space weather now (live) with the forecast open')
+})
+
+test('relays, orbiters and rovers (live API): IM-3’s planned relay as a range, IM-2’s orbiter passes and Yaoki’s line of sight, a rover off the polar map', async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(240_000)
+  await returningVisitor(context)
+  const answer = page.locator('[data-guide="section-answer"]')
+  const row = async (title: string) => {
+    await openRow(page, title)
+    return page.locator('details').filter({ has: page.locator('summary', { hasText: title }) }).first()
+  }
+
+  // IM-3: Altus-1 flies alongside it, its orbit assumed from NASA's reference relay orbits.
+  await page.goto('/missions/im-3/contact')
+  await expect(answer).toContainText(/Through Altus-1 data-relay satellite \(planned, not launched\) it could reach Earth for [\d,.]+–[\d,.]+ h, if it flies as planned/, {
+    timeout: 120_000,
+  })
+  await expect(answer).toContainText(/The longest time without contact is [\d.]+ h directly, or [\d.]+–[\d.]+ h with the relay, if it flies as planned\./)
+  const relays = await row('Relays')
+  await expect(relays).toContainText('Planned, not launched.')
+  await expect(relays).toContainText(/in all through it, if it flies as planned\./)
+  await expect(relays.locator('dt', { hasText: 'Tilt to the Moon’s equator' }).locator('xpath=following-sibling::dd[1]')).toHaveText(/°, assumed$/)
+  // Its dates are past the recorded orbiter trajectories: not known, never "no pass".
+  const orbiters = await row('Orbiters that could see the lander')
+  await expect(orbiters).toContainText('Not known: No JPL Horizons trajectory is recorded for these dates')
+  await expect(orbiters).not.toContainText('No pass over these dates')
+  // Its rovers are off the polar terrain map, and it says so.
+  const rover = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Rover and lander line of sight' }) })
+  await rover.locator('summary').click()
+  await expect(rover.getByTestId('rover-sight')).toContainText(/^\? Cannot be said here\. .*outside the polar terrain model/, { timeout: 60_000 })
+  await expect(rover.getByLabel('Rover')).toBeVisible()
+  await expectNoSeriousAxe(page, 'IM-3 contact with relays, orbiters and rover open (dark)')
+
+  // IM-2: LRO and Danuri passed over the landing spot; Yaoki's line of sight on the polar map.
+  await page.goto('/missions/im-2/contact')
+  await expect(answer).toContainText('A ground station can hear it', { timeout: 120_000 })
+  const passes = await row('Orbiters that could see the lander')
+  await expect(passes).toContainText(/Lunar Reconnaissance Orbiter · NASA\d+ passes over these dates, [\d.]+ ±[\d.]+ h in view in all/)
+  await page.getByRole('button', { name: 'Read the chart as a table' }).first().click()
+  await expect(page.locator('main').getByRole('table').first()).toContainText('Lunar Reconnaissance Orbiter could see the lander (not a relay)')
+  await page.locator('summary', { hasText: 'Rover and lander line of sight' }).click()
+  const yaoki = page.getByTestId('rover-sight')
+  await expect(yaoki.locator('p').first()).toContainText(
+    /^Within 500 m of the lander, [\d.]+–[\d.]+% of the ground is out of its sight; the radio path is not clear over [\d.]+–[\d.]+%\. No drive is published for Yaoki/,
+    { timeout: 120_000 },
+  )
+  await expect(yaoki.getByRole('img', { name: /^Line of sight between Yaoki and the lander, out to 500 m in 72 directions/ })).toBeVisible()
+  await expect(yaoki.getByRole('row', { name: /^90° \(east\)/ })).toBeVisible()
+  await yaoki.locator('summary', { hasText: 'Antennas, radio and terrain' }).click()
+  await expect(yaoki).toContainText(/LOLA_LDEM_80S_20M: a height every 20 m, each good to ±2 m/)
+  await expectNoSeriousAxe(page, 'IM-2 contact with orbiters and Yaoki open (dark)')
+  await page.evaluate(() => localStorage.setItem('pw-prefs', JSON.stringify({ theme: 'light', motion: 'full', shortcuts: true })))
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.reload()
+  await openRow(page, 'Orbiters that could see the lander')
+  await page.locator('summary', { hasText: 'Rover and lander line of sight' }).click()
+  await expect(page.getByTestId('rover-sight').getByRole('img')).toBeVisible({ timeout: 60_000 })
+  await expectNoSeriousAxe(page, 'IM-2 contact with orbiters and Yaoki open (light, 375 px)')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth), 'IM-2 contact scrolls sideways at 375 px').toBeLessThanOrEqual(375)
 })

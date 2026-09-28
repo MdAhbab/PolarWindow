@@ -593,13 +593,21 @@ export interface ViewshedDTO {
 }
 
 export interface RoverSightDTO {
-  /** Proposed to the backend (queue-backend.md, 29 Sep): the rover, the rays and what the share is over. */
+  /** The rover, the rays and what the shares are over (F5). */
   rover?: { id: string; name: string } | null
   share_basis?: 'drive' | 'ground' | null
   radius_m?: number | null
   viewshed?: ViewshedDTO | null
   viewshed_tile: string | null
   out_of_sight_share: QuantityDTO
+  /** Percent where the radio path is not clear (first Fresnel zone). */
+  radio_not_clear_share?: QuantityDTO
+  /** Antenna heights and the radio frequency: assumed unless given. */
+  assumptions?: { lander_antenna_m: QuantityDTO; rover_antenna_m: QuantityDTO; radio_mhz: QuantityDTO } | null
+  /** The elevation model the rays are read from. */
+  terrain?: { product: string; post_m: number; vertical_error_m: number } | null
+  /** What clear, blocked and uncertain mean here, in one plain paragraph. */
+  note?: string | null
   longest_out_of_sight_m: QuantityDTO
   resolvable: boolean
   reason: string | null
@@ -756,6 +764,7 @@ export type ContractChecks = [
   Fits<Present<S['Contact']>, ContactDTO>,
   Fits<Present<S['RelayRow']>, RelayRowDTO>,
   Fits<Present<S['Orbiter']>, OrbiterDTO>,
+  Fits<Present<S['RoverOut']>, RoverSightDTO>,
   Fits<Present<S['Trip']>, TripDTO>,
   Fits<Present<S['LaunchCalendar']>, LaunchCalendarDTO>,
   Fits<Present<S['LaunchWeather']>, LaunchWeatherDTO>,

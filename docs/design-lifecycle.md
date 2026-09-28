@@ -345,7 +345,9 @@ into the hub header.
   {hi} hours with the relay, if it flies as planned" (`direct_only` gives the
   direct waits, net-4). The relay's
   launch status stands beside its name ("not launched", "planned, not
-  launched", "in orbit"); with more than one relay, "Through a relay … if they
+  launched", "in orbit"); a relay that adds nothing because Earth is already
+  in view says "it adds no time to direct contact" (IM-3's Altus-1); with more
+  than one relay, "Through a relay … if they
   fly as planned". A planned relay whose orbit is not published is named, not
   counted: "{relay} ({status}) could relay for it, but time through it is not
   worked out yet" (the tile says why). A wait that counts the relay is a range
@@ -368,7 +370,10 @@ into the hub header.
   Booked passes are outlined boxes labelled "booked". Orbiters already flying
   (LRO, Danuri, …) come last, their passes as dashed outlines captioned "could
   see the lander; not a relay": geometry only, no agreement carries a lander's
-  data, so they count in no number. The antennas of one Deep
+  data, so they count in no number. Only orbiters with a trajectory for these
+  dates get a row (an empty row would read as never in view); where the
+  trajectory stops early, the rest is a dashed grey "No trajectory recorded"
+  box, in the legend and the table twin. The antennas of one Deep
   Space Network complex share a row ("Goldstone, California · Deep Space
   Network, 4 antennas"); the twin keeps each antenna. Twin: link, start, end,
   length, booked or not.
@@ -380,8 +385,9 @@ into the hub header.
   Orbiters that could see the lander (`Contact.orbiters`, F2: `orbiters_note`
   first; each with its operator, "{n} passes over these dates, {h} in view in
   all; the longest pass {min}, the longest wait between passes {h}", a
-  trajectory that covers only part of the dates says so, its own note when it
-  differs, and its JPL Horizons source with its age) · Booked ground-station
+  trajectory that covers only part of the dates says so, one with none says
+  "Not known: {reason}" (never "no pass"), its own note when it differs, and
+  its JPL Horizons source with its age) · Booked ground-station
   passes · Rover and lander line of sight · More numbers (either way as a range
   "if the relay flies as planned"; the two waits directly; a missing number
   gives its reason) · Download the
@@ -390,14 +396,20 @@ into the hub header.
   lander's radio power is not published" changes what every number means,
   so it is a one-line note under the answer, not a row.
 - **Rover and lander line of sight** (`GET /missions/{id}/contact/rover?rover=`,
-  asked for when the row opens; shown only for a mission that carries a rover,
-  IM-2's Yaoki and Griffin-1's FLIP; a select when there is more than one; a
+  asked for when the row opens; shown only for a mission that carries a rover
+  as the service lists them (payloads that move, then listed rovers: IM-2's
+  Yaoki, Griffin-1's FLIP, IM-3's Lunar Vertex and CADRE); a select when there
+  is more than one; a
   202 shows the working panel). Answer first: "{rover} would be out of the
   lander's sight for {share} of its drive. The longest stretch out of sight is
   {m}." When no drive is published the share is over the ground: "Within {r} m
-  of the lander, {lo}–{hi}% of the ground is out of its sight." (a range where
-  uncertain cells could go either way), then the reason the longest stretch is
-  missing. `resolvable: false` → "Cannot be said here." and the served reason,
+  of the lander, {lo}–{hi}% of the ground is out of its sight; the radio path is
+  not clear over {lo}–{hi}%." (ranges where uncertain cells could go either
+  way), then the reason the longest stretch is missing. The served `note` (what
+  clear, blocked and uncertain mean) sits under the map, and a row "Antennas,
+  radio and terrain" gives the antenna heights and frequency (each "assumed"
+  with its reason unless given) and the elevation model with its post spacing
+  and height error. `resolvable: false` → "Cannot be said here." and the served reason,
   no map. The viewshed is a map layer around the lander, north up, rings every
   100 m, the lander an ink square: in sight filled (earth), blocked the 45°
   hatch, uncertain the −45° hatch on a light wash; each state in the legend
@@ -405,8 +417,7 @@ into the hub header.
   radio path (the first Fresnel zone needs a wider corridor). Table twin, from
   the same rays: each direction ("270° (west)") with its runs in words for both
   ("In sight 25–275 m; uncertain 300 m; blocked 325–425 m; in sight 450–500 m").
-  The rays (`viewshed`), `share_basis` and `radius_m` are proposed to the
-  backend (queue-backend.md); without `viewshed` the row says there is no map.
+  Without `viewshed` the row says there is no map.
 - **Dates:** the hub sets the dates to the mission's time on the surface
   when the mission is first opened, whichever step comes first, so Contact
   and Landing always answer for the same dates.
