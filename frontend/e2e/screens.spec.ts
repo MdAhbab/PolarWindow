@@ -126,12 +126,14 @@ test('axe and the fixed tab bar on a phone', async ({ page, context }) => {
     // Nothing runs off the side: no sideways scroll on a phone.
     expect(await page.evaluate(() => document.documentElement.scrollWidth), `${r} scrolls sideways at 375 px`).toBeLessThanOrEqual(375)
   }
-  // Rows open on a phone: the correction budget's table and the weather notes still fit; so does the limits form.
-  for (const r of ['/missions/blue-ghost-m1/trip', '/missions/im-1/launch']) {
+  // Rows open on a phone: the correction budget's table, the weather notes and space weather, and the capsule
+  // model's check with its source links still fit; so does the limits form.
+  for (const r of ['/missions/blue-ghost-m1/trip', '/missions/griffin-1/return', '/missions/im-1/launch']) {
     await page.goto(r)
     await page.waitForLoadState('networkidle')
     for (const s of await page.locator('main summary').all()) await s.click()
     expect(await page.evaluate(() => document.documentElement.scrollWidth), `${r} with rows open scrolls sideways at 375 px`).toBeLessThanOrEqual(375)
+    await expectNoSeriousAxe(page, `${r} with rows open at 375 px`)
   }
   await page.getByRole('button', { name: 'Enter the team’s limits' }).click()
   const limits = page.getByRole('dialog', { name: 'Team weather limits' })
