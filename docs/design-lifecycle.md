@@ -328,7 +328,10 @@ into the hub header.
   and wind then were not recorded."). Adds the capsule's `reason` ("Nothing
   comes back to Earth on this mission.") when not applicable. No booster: a
   cancelled delivery or a vehicle not published is the step's state panel with
-  its summary.
+  its summary. The note does not name its source; "Where does this come
+  from?" does (Launch Library 2's landing records or upcoming launches, and
+  GFS-Wave with its run and fetch when the sea is forecast), and "Worked out"
+  is the newest input's time.
 - **Numbers:** Waves at the booster landing zone · Wind at the booster
   landing zone · Waves at the splashdown zone · Wind at the splashdown zone
   (the last two only with a capsule; without one the row has two tiles). On

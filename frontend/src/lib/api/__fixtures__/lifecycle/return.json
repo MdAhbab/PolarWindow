@@ -7,7 +7,7 @@
     "lon_deg": -74.9,
     "pm_km": 12
    },
-   "note": "The booster landed on A Shortfall of Gravitas (droneship), 600 km downrange (Launch Library 2).",
+   "note": "The booster landed on A Shortfall of Gravitas (droneship), 600 km downrange.",
    "wave_height_m": {
     "value": 1.8,
     "unit": "m",
@@ -116,6 +116,14 @@
    "wx": "wx-1"
   },
   "sources": [
+   {
+    "name": "Launch Library 2 landing records",
+    "url": "https://ll.thespacedevs.com/2.3.0/launches/",
+    "issued_at": null,
+    "fetched_at": "2026-09-27T00:00:00Z",
+    "licence": null,
+    "snapshot_id": null
+   },
    {
     "name": "NOAA GFS-Wave",
     "url": "https://registry.opendata.aws/noaa-gfs-bdp-pds/",

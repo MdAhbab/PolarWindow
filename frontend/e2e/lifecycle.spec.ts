@@ -585,6 +585,12 @@ test('return (live API): where each flown booster came down, and a planned one n
   await expect(row('Booster landing zone')).toContainText('its size is not published')
   await expect(row('Team limits').locator('summary')).toContainText('none entered')
   await expect(main).not.toContainText(/\b0 m\b/)
+  // The source is named once, in the sources row, not inside the answer; the answer's time is its newest input's, not the request's.
+  await expect(answer).not.toContainText('Launch Library 2')
+  await expect(main.getByText(/^Worked out /).first()).not.toHaveText('Worked out just now')
+  await expect(row('Where does this come from?').locator('summary')).toContainText('1 source')
+  await row('Where does this come from?').locator('summary').click()
+  await expect(row('Where does this come from?')).toContainText('Launch Library 2 landing records')
   await expectNoSeriousAxe(page, '/missions/im-1/return (live) with a row open')
 
   // IM-2's landed on a droneship 700 km downrange, whose position is not published.
@@ -600,6 +606,12 @@ test('return (live API): where each flown booster came down, and a planned one n
   await expect(answer).toContainText('IM-1 on Landing Zone 1')
   await expect(answer).toContainText(/Waves there are forecast at [\d.]+ m\. Wind there is forecast at [\d.]+ m\/s\./)
   await expect(main).toContainText('GFS-Wave, run of')
+  // Each forecast number says how old it is, and the sources row lists GFS-Wave with its run and fetch.
+  await expect(main.getByText(/^as of .+ ago$/)).toHaveCount(2)
+  await expect(row('Where does this come from?').locator('summary')).toContainText('2 sources')
+  await row('Where does this come from?').locator('summary').click()
+  await expect(row('Where does this come from?')).toContainText(/GFS-Wave \(NOAA\)issued .+ · fetched .+ ago/)
+  await row('Where does this come from?').locator('summary').click()
   await expect(row('Booster landing zone').locator('summary')).toContainText('not published yet')
   await row('Booster landing zone').locator('summary').click()
   await expect(row('Booster landing zone')).toContainText(/The sea is read near [\d.]+°N [\d.]+°W\./)
