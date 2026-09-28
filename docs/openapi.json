@@ -1888,6 +1888,22 @@
               ],
               "title": "End"
             }
+          },
+          {
+            "name": "relay",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 3,
+              "description": "Planned relays (catalogue ids, e.g. `lunar-pathfinder`) to add to the mission's own, to see what each would add. Repeat for more than one.",
+              "default": [],
+              "title": "Relay"
+            },
+            "description": "Planned relays (catalogue ids, e.g. `lunar-pathfinder`) to add to the mission's own, to see what each would add. Repeat for more than one."
           }
         ],
         "responses": {
@@ -5554,6 +5570,28 @@
             "type": "array",
             "title": "Relays"
           },
+          "direct_only": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DirectOnly"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "With a relay in the graph: the same two numbers without it. Null otherwise."
+          },
+          "relay_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relay Note"
+          },
           "link_budget_note": {
             "anyOf": [
               {
@@ -5594,6 +5632,8 @@
           "links",
           "numbers",
           "relays",
+          "direct_only",
+          "relay_note",
           "link_budget_note",
           "bookings",
           "light_time_s",
@@ -5853,6 +5893,23 @@
           "earth_required"
         ],
         "title": "Descent"
+      },
+      "DirectOnly": {
+        "properties": {
+          "longest_unheard_h": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "longest_message_wait_min": {
+            "$ref": "#/components/schemas/QuantityOut"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "longest_unheard_h",
+          "longest_message_wait_min"
+        ],
+        "title": "DirectOnly"
       },
       "Donki": {
         "properties": {
@@ -10192,6 +10249,39 @@
         ],
         "title": "RefreshOut"
       },
+      "RelayOrbit": {
+        "properties": {
+          "periapsis_km": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Height of the near point above the mean radius."
+          },
+          "apoapsis_km": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Height of the far point above the mean radius."
+          },
+          "inclination_deg": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "To the lunar equator."
+          },
+          "arg_periapsis_deg": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "About 90 degrees puts the far point over the south pole."
+          },
+          "period_h": {
+            "$ref": "#/components/schemas/QuantityOut"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "periapsis_km",
+          "apoapsis_km",
+          "inclination_deg",
+          "arg_periapsis_deg",
+          "period_h"
+        ],
+        "title": "RelayOrbit"
+      },
       "RelayRow": {
         "properties": {
           "id": {
@@ -10203,11 +10293,58 @@
             "title": "Name"
           },
           "adds_h": {
-            "$ref": "#/components/schemas/QuantityOut"
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Time it adds to direct contact, as a range."
+          },
+          "via_h": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Time the lander can reach Earth through it, as a range."
           },
           "status": {
             "type": "string",
-            "title": "Status"
+            "title": "Status",
+            "description": "Its launch note, or its status when there is none."
+          },
+          "launch_status": {
+            "type": "string",
+            "enum": [
+              "operating",
+              "planned",
+              "not_launched",
+              "launched_not_operating"
+            ],
+            "title": "Launch Status"
+          },
+          "for_this_mission": {
+            "type": "boolean",
+            "title": "For This Mission",
+            "description": "False for a relay added to compare what it would add; not planned for this mission."
+          },
+          "orbit": {
+            "$ref": "#/components/schemas/RelayOrbit"
+          },
+          "orbit_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Orbit Note"
+          },
+          "sweep_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sweep Note",
+            "description": "What was swept to get the ranges; null when nothing was worked out."
           }
         },
         "additionalProperties": false,
@@ -10216,7 +10353,13 @@
           "id",
           "name",
           "adds_h",
-          "status"
+          "via_h",
+          "status",
+          "launch_status",
+          "for_this_mission",
+          "orbit",
+          "orbit_note",
+          "sweep_note"
         ],
         "title": "RelayRow"
       },

@@ -65,7 +65,34 @@ def window(
     )
 
 
-def _params(m: MissionRecord, start: datetime, end: datetime, note: str) -> dict[str, Any]:
+def _extra_relays(m: MissionRecord, asked: list[str] | None) -> list[str]:
+    """Relays asked for beyond the mission's own, checked against the catalogue."""
+    if not asked:
+        return []
+    cat = catalogues.load("relays")
+    own = set(((m.lifecycle or {}).get("comms") or {}).get("relays") or [])
+    out: list[str] = []
+    for rid in dict.fromkeys(x.strip() for x in asked if x.strip()):
+        try:
+            rec = cat.get(rid)
+        except KeyError:
+            known = ", ".join(r.id for r in cat.records if r.role == "relay")
+            raise BadRequest(f"No relay '{rid}' in the catalogue. Relays: {known}.") from None
+        if rec.role != "relay":
+            raise BadRequest(
+                f"{rec.name} is a real orbiter used only to check the pass calculation; "
+                "it offers no relay service to landers."
+            )
+        if rid not in own:
+            out.append(rid)
+    if len(out) > 3:
+        raise BadRequest("At most three relays can be added at a time.")
+    return sorted(out)
+
+
+def _params(
+    m: MissionRecord, start: datetime, end: datetime, note: str, extra: list[str]
+) -> dict[str, Any]:
     lc = m.lifecycle or {}
     return {
         "mission_id": m.id,
@@ -79,6 +106,7 @@ def _params(m: MissionRecord, start: datetime, end: datetime, note: str) -> dict
         "stations": catalogues.load("ground_stations").version,
         "relays_version": catalogues.load("relays").version,
         "relays": list((lc.get("comms") or {}).get("relays") or []),
+        "extra_relays": extra,
         "rovers": list(lc.get("rovers") or []),
         "lander_name": m.lander or m.name,
         "provider": m.provider,
@@ -92,8 +120,13 @@ async def contact(
     start: datetime | None,
     end: datetime | None,
     requested_by: int | None = None,
+    relays: list[str] | None = None,
 ) -> tuple[int, dict[str, Any]]:
-    """``(200, section)`` when stored, else ``(202, job ref)``."""
+    """``(200, section)`` when stored, else ``(202, job ref)``.
+
+    ``relays``: planned relays to add to the mission's own, to compare what
+    each would add (they are marked as not planned for this mission).
+    """
     m = await MissionRepository(session).get(mission_id)
     if m is None:
         raise MissionNotFound(mission_id)
@@ -110,7 +143,7 @@ async def contact(
             "from the landing spot to work out."
         )
     s, e, note = window(m, start, end)
-    params = _params(m, s, e, note)
+    params = _params(m, s, e, note, _extra_relays(m, relays))
     ans = await job_service.answer_or_enqueue(
         session,
         kind=KIND,

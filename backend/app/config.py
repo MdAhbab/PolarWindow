@@ -46,6 +46,8 @@ ENGINE_VERSION = "hz-2/vis-2"
 #: rad-2: Trip radiation: AE8/AP8 belts, cosmic-ray dose, solar particle events (track E).
 #: rad-3: belt numbers missing when the reconstruction starts beyond the belts; no surface
 #:        dose for a lander that did not land; a flat-horizon fallback is "assumed".
+#: net-4: planned relays in the contact graph: node x phase swept 36 x 36 (and both ends of
+#:        an assumed range), relay -> station with the Moon in the way, store and forward.
 #: lw-5: a designed launch climbs in the direction of the vehicle's direct lunar flights,
 #:       inside the pad's azimuth limits; a flown launch's climb direction is computed.
 ENGINES: dict[str, str] = {
@@ -56,7 +58,7 @@ ENGINES: dict[str, str] = {
     "wx": "wx-2",
     "rad": "rad-3",
     "link": "link-1",
-    "net": "net-3",
+    "net": "net-4",
     "ready": "ready-1",
     "los": "los-1",
     "lw": "lw-5",

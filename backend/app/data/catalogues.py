@@ -57,6 +57,18 @@ class Assumption(_Strict):
     reason: str = Field(min_length=10)
     #: A secondary source the assumption rests on, when there is one.
     url: str | None = Field(default=None, pattern=r"^https://\S+$")
+    #: The range an assumed number may take ("an unpublished value is an
+    #: assumed range"); the field holds a value inside it. Both or neither.
+    lo: float | None = None
+    hi: float | None = None
+
+    @model_validator(mode="after")
+    def _range(self) -> Assumption:
+        if (self.lo is None) != (self.hi is None):
+            raise ValueError("an assumed range needs both ends")
+        if self.lo is not None and self.hi is not None and self.lo > self.hi:
+            raise ValueError("assumed range reversed")
+        return self
 
 
 class CitedRecord(_Strict):
@@ -104,6 +116,12 @@ class CitedRecord(_Strict):
                 raise ValueError(f"'{f}' has a value but is listed as unconfirmed")
             if not empty and f not in self.field_sources and f not in self.assumed_fields:
                 raise ValueError(f"'{f}' has a value but no source and no stated assumption")
+        for f, a in self.assumed_fields.items():
+            value = getattr(self, f)
+            if (a.lo is not None and a.hi is not None) and (
+                not isinstance(value, int | float) or not a.lo <= value <= a.hi
+            ):
+                raise ValueError(f"'{f}' = {value!r} is outside its assumed range")
         for f, url in self.field_sources.items():
             if url not in urls:
                 raise ValueError(
@@ -203,10 +221,13 @@ class Relay(CitedRecord):
 
     status: Literal["operating", "planned", "not_launched", "launched_not_operating"]
     launch_note: str | None
-    #: Published nominal orbit (lunar, Moon-centred), if any.
+    #: Nominal orbit about the Moon: heights above the mean radius (1737.4 km),
+    #: angles to the lunar equator. Published, or an assumed range, or unknown.
     periapsis_km: float | None
     apoapsis_km: float | None
     inclination_deg: float | None
+    #: Argument of periapsis; about 90 deg puts the far point over the south pole.
+    arg_periapsis_deg: float | None = None
     period_h: float | None
     orbit_note: str | None
     serves_missions: list[str]

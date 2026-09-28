@@ -618,3 +618,28 @@ that user. `GET /auth/me` returns the same `user`.
     (Peregrine); `surface.open_sky` is `assumed` and `surface_note` says so where the
     elevation model does not cover the site (Blue Ghost 1); `sep_note` says "One solar
     particle event … its" / "2 … events … their".
+- 2026-09-29 (backend, planned relays in Contact; engine `net-4`):
+  - `GET /missions/{id}/contact?relay=` (repeatable, at most 3): planned relays from the catalogue to
+    add to the mission's own, to see what each would add. 422 for an unknown id or a real orbiter
+    kept only to check pass calculations (LRO, Danuri, Chandrayaan-2, CAPSTONE).
+  - `Contact.relays[]` adds `via_h` (time the lander can reach Earth through that relay),
+    `launch_status` (the catalogue status), `for_this_mission` (false for an added one),
+    `orbit {periapsis_km, apoapsis_km, inclination_deg, arg_periapsis_deg, period_h}` (Quantities:
+    heights above the mean radius; `published` with `source`, or `assumed` with `lo`/`hi`),
+    `orbit_note` and `sweep_note` (what was swept; null when nothing was worked out). `status`
+    stays the launch note.
+  - With a relay whose orbit is known, `via_relay_h`, `either_h`, `relays[].adds_h`,
+    `relays[].via_h`, `longest_unheard_h` and `longest_message_wait_min` are ranges
+    (`provenance: "assumed"`, `lo`/`hi`, value = the middle) over the relay's unknown node and
+    phase (36 x 36) and both ends of any assumed inclination or argument of periapsis. "Through the
+    relay" = the relay in view of the lander and of Earth at once (geometry, as `direct_h`);
+    "heard" through it = in view of the lander and of a ground station at once (the Moon may hide
+    the relay from the station); a message may wait on the relay (store and forward).
+  - `Contact.direct_only {longest_unheard_h, longest_message_wait_min}` (null without a relay):
+    the same two numbers without the relay. `Contact.relay_note`: one plain sentence.
+    `longest_wait_from` and `links` stay direct-only; the contact plan export lists direct
+    contacts only (a relay's passes depend on its unknown placement).
+  - Catalogue: Lunar Pathfinder heights 673.4 × 7331.8 km (ESA), inclination assumed 46.8–54.9°
+    (two figures in circulation), argument of periapsis assumed 85–95°; Altus-1's orbit is not
+    published and is assumed from NASA's LCRNS reference constellation 3.1 (five frozen orbits:
+    1745–1751 × 17391–17427 km, 52.5–59.4°, 85.4–92.5°, about 30 h).

@@ -95,10 +95,18 @@ async def contact(
     mission_id: str,
     start: datetime | None = Query(None, description="Default: the mission's surface dates."),
     end: datetime | None = Query(None),
+    relay: list[str] = Query(
+        [],
+        max_length=3,
+        description="Planned relays (catalogue ids, e.g. `lunar-pathfinder`) to add to the "
+        "mission's own, to see what each would add. Repeat for more than one.",
+    ),
     session: Any = Depends(deps.db),
 ) -> Any:
     try:
-        code, body = await contact_service.contact(session, mission_id, _utc(start), _utc(end))
+        code, body = await contact_service.contact(
+            session, mission_id, _utc(start), _utc(end), relays=relay
+        )
     except Exception as exc:
         raise _contact_http(exc) from exc
     if code == 202:

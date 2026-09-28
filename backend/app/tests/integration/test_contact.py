@@ -55,7 +55,7 @@ async def test_im1_contact_over_its_surface_days(anon_client) -> None:
     assert len(stations) == 14
     assert d["link_budget_note"].startswith("Line of sight only")
     assert 1.1 < d["light_time_s"]["min"] < d["light_time_s"]["max"] < 1.5
-    assert body["meta"]["engines"] == {"link": "link-1", "net": "net-3", "vis": "vis-2"}
+    assert body["meta"]["engines"] == {"link": "link-1", "net": "net-4", "vis": "vis-2"}
     assert any("mask" in p["source"].lower() for p in body["meta"]["uncertainty"]["parts"])
 
 
@@ -118,3 +118,51 @@ async def test_a_lander_lost_before_landing_has_no_contact(anon_client) -> None:
     r = await anon_client.get(f"{API}/missions/peregrine-m1/contact")
     assert r.status_code == 409
     assert "lost before" in r.json()["detail"]["detail"]
+
+
+async def test_a_planned_relay_added_to_a_south_pole_site(anon_client) -> None:
+    """Griffin-1's pole site with Lunar Pathfinder added to compare: every number
+    through the relay is a range over its unknown node and phase."""
+    q = {"start": "2027-03-20T00:00:00Z", "end": "2027-03-22T00:00:00Z"}
+    body = await _answer(anon_client, "griffin-1", **q, relay="lunar-pathfinder")
+    d = body["data"]
+    n = d["numbers"]
+    (row,) = d["relays"]
+    assert row["id"] == "lunar-pathfinder" and row["for_this_mission"] is False
+    assert row["launch_status"] == "planned"
+    assert row["orbit"]["periapsis_km"]["provenance"] == "published"
+    assert row["orbit"]["periapsis_km"]["value"] == pytest.approx(673.4)
+    inc = row["orbit"]["inclination_deg"]
+    assert inc["provenance"] == "assumed" and (inc["lo"], inc["hi"]) == (46.8, 54.9)
+    assert "5184 placements" in row["sweep_note"]
+    for q_ in (row["adds_h"], row["via_h"], n["via_relay_h"], n["either_h"]):
+        assert q_["provenance"] == "assumed"
+        assert q_["lo"] <= q_["value"] <= q_["hi"]
+    assert n["either_h"]["lo"] >= n["direct_h"]["value"] - 1e-9
+    assert n["either_h"]["hi"] <= 48.0 + 1e-9
+    # A relay can only shorten the time nobody hears the lander.
+    alone = d["direct_only"]
+    assert alone is not None and d["relay_note"]
+    assert n["longest_unheard_h"]["hi"] <= alone["longest_unheard_h"]["value"] + 1e-9
+    assert n["longest_message_wait_min"]["hi"] <= alone["longest_message_wait_min"]["value"] + 1e-6
+    relay_node = next(x for x in d["nodes"] if x["kind"] == "relay")
+    assert relay_node["orbit"] == "planned" and relay_node["launch_note"]
+    assert body["meta"]["engines"]["net"] == "net-4"
+
+
+async def test_a_mission_s_own_relay_over_a_near_side_site(anon_client) -> None:
+    """IM-3's Altus-1 over Reiner Gamma, where Earth never sets: the relay adds nothing."""
+    q = {"start": "2027-03-20T00:00:00Z", "end": "2027-03-21T00:00:00Z"}
+    d = (await _answer(anon_client, "im-3", **q))["data"]
+    (row,) = d["relays"]
+    assert row["id"] == "altus-1" and row["for_this_mission"] is True
+    assert row["orbit"]["periapsis_km"]["provenance"] == "assumed"
+    assert row["adds_h"]["hi"] == pytest.approx(0.0, abs=1e-6)
+    assert d["numbers"]["either_h"]["value"] == pytest.approx(d["numbers"]["direct_h"]["value"])
+
+
+async def test_only_a_catalogued_relay_service_can_be_added(anon_client) -> None:
+    r = await anon_client.get(f"{API}/missions/griffin-1/contact", params={"relay": "lro"})
+    assert r.status_code == 422 and "no relay service" in r.json()["detail"]["detail"]
+    r = await anon_client.get(f"{API}/missions/griffin-1/contact", params={"relay": "nope"})
+    assert r.status_code == 422 and "lunar-pathfinder" in r.json()["detail"]["detail"]

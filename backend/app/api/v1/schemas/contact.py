@@ -57,11 +57,39 @@ class ContactNumbers(_M):
     )
 
 
+class RelayOrbit(_M):
+    periapsis_km: QuantityOut = Field(description="Height of the near point above the mean radius.")
+    apoapsis_km: QuantityOut = Field(description="Height of the far point above the mean radius.")
+    inclination_deg: QuantityOut = Field(description="To the lunar equator.")
+    arg_periapsis_deg: QuantityOut = Field(
+        description="About 90 degrees puts the far point over the south pole."
+    )
+    period_h: QuantityOut
+
+
 class RelayRow(_M):
     id: str
     name: str
-    adds_h: QuantityOut
-    status: str
+    adds_h: QuantityOut = Field(description="Time it adds to direct contact, as a range.")
+    via_h: QuantityOut = Field(
+        description="Time the lander can reach Earth through it, as a range."
+    )
+    status: str = Field(description="Its launch note, or its status when there is none.")
+    launch_status: Literal["operating", "planned", "not_launched", "launched_not_operating"]
+    for_this_mission: bool = Field(
+        description="False for a relay added to compare what it would add; not planned "
+        "for this mission."
+    )
+    orbit: RelayOrbit
+    orbit_note: str | None
+    sweep_note: str | None = Field(
+        description="What was swept to get the ranges; null when nothing was worked out."
+    )
+
+
+class DirectOnly(_M):
+    longest_unheard_h: QuantityOut
+    longest_message_wait_min: QuantityOut
 
 
 class Booking(_M):
@@ -85,6 +113,10 @@ class Contact(_M):
     links: list[Link]
     numbers: ContactNumbers
     relays: list[RelayRow]
+    direct_only: DirectOnly | None = Field(
+        description="With a relay in the graph: the same two numbers without it. Null otherwise."
+    )
+    relay_note: str | None
     link_budget_note: str | None
     bookings: list[Booking]
     light_time_s: LightTime
