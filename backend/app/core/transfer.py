@@ -30,7 +30,7 @@ import numpy as np
 import numpy.typing as npt
 from scipy.optimize import brentq
 
-from app.core import forces, propagate
+from app.core import forces, launchwin, propagate
 from app.core.vec import rotate, unit
 
 FloatArray = npt.NDArray[np.float64]
@@ -331,3 +331,62 @@ def design(
         iterations=iterations,
         converged=converged,
     )
+
+
+def climb_parking(
+    pad_at: Callable[[float], FloatArray], az_deg: float, c_rad: float, r_park_m: float, gm: float
+) -> Callable[[float], Parking]:
+    """``t -> Parking``: the orbit a climb from the pad at inertial azimuth ``az_deg``
+    reaches, ``c`` behind a circular orbit that started at the pad (``core.launchwin``)."""
+
+    def at(tl: float) -> Parking:
+        ph = unit(pad_at(tl))
+        h = launchwin.climb_plane(ph, az_deg)
+        return Parking(tl, r_park_m * rotate(ph, h, c_rad), h, gm)
+
+    return at
+
+
+def launch_at(
+    tables: forces.Tables,
+    target: Target,
+    pad_at: Callable[[float], FloatArray],
+    az_deg: float,
+    c_rad: float,
+    r_park_m: float,
+    near: float,
+    northward: bool,
+    coasts: tuple[float, float],
+    span_s: float = 6 * 3600.0,
+) -> Design | None:
+    """The designed launch climbing at ``az_deg`` whose plane sweeps past the Moon's
+    arrival direction the same way (``northward``) nearest ``near``, or None when none
+    converges within ``span_s``. ``coasts``: the first guess of the coast and the shortest
+    one looked for. Moving the climb's direction moves the instant along one sweep, so the
+    instants at two directions bound the launch window between them (plan D1)."""
+    moon = unit(forces.body_state(tables, forces.MOON, np.array([target.t_arrive]))[0][:3])
+
+    def gap(t: float) -> float:
+        return launchwin.climb_gap(unit(pad_at(t)), moon, az_deg)
+
+    found = [
+        r
+        for r in launchwin.roots(gap, near - span_s, near + span_s, 600.0)
+        if (gap(r + 60.0) > gap(r - 60.0)) is northward
+    ]
+    if not found:
+        return None
+    root = min(found, key=lambda r: abs(r - near))
+    parking_at = climb_parking(pad_at, az_deg, c_rad, r_park_m, tables.gm_earth)
+    try:
+        t_g, dv_g = guess(
+            tables,
+            parking_at(root),
+            target.t_arrive,
+            target.t_arrive - root - coasts[0],
+            root + coasts[1],
+        )
+        d = design(tables, target, parking_at, root, t_g - root, dv_g)
+    except (ValueError, RuntimeError):
+        return None
+    return d if d.converged else None

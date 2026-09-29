@@ -675,3 +675,14 @@ that user. `GET /auth/me` returns the same `user`.
   - A site north of 80° S (outside the polar terrain model) answers 200 at once with
     `resolvable: false`, the reason, `viewshed`, `radius_m`, `share_basis`, `assumptions` and
     `terrain` null and the numbers missing.
+- 2026-09-29 (backend, D1 launch windows; engine `lw-6`; no shape change):
+  - `kind`/`window_open`/`window_close` of a flown launch are what Launch Library 2
+    published: Peregrine (07:18–08:03 UTC) and Blue Ghost 1 (06:06–06:45 UTC) are `window`,
+    IM-1 and IM-2 `instantaneous`. The note says which.
+  - A planned opportunity is `window` only when the vehicle's direct lunar launches were
+    published with windows (it steers); its ends are the instants designed at the pad's two
+    azimuth limits, `t0` stays the instant at the climb direction used. Falcon 9's (IM-1,
+    IM-2) were single instants, so Griffin-1 stays `instantaneous`; a vehicle with no
+    direct lunar launch is shown as an instant and the note says it is not published.
+  - `data/missions.json` `t0` may carry `window_open`/`window_close` (UTC, equal for a
+    single instant); `GET /missions` does not show them.

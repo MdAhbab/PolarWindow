@@ -195,9 +195,8 @@ calendar's check of the pad's limits passes for them.
 The planned calendar therefore climbs at the mean of the vehicle's direct
 lunar flights (Falcon 9: 87.7°, 87.6° over the ground; due east with a ±44 min
 margin for a vehicle with none) and gives the liftoff ± 18 min, the larger
-held-out miss (it was ± 44 min). A launch is still an instant: no flown CLPS
-launch published a window, so the plan's widening to a window between the
-azimuth limits is not applied. Designing the calendar with the flight held out
+held-out miss (it was ± 44 min). Whether that is an instant or a window follows
+what the vehicle's direct lunar launches were published as (below). Designing the calendar with the flight held out
 still puts an opportunity on each real launch day (D2 below); on that day the
 nearest one is 90 min before IM-1's liftoff (66 min due east) and 36 min after
 IM-2's (45 min due east), because the calendar aims at the landing times the
@@ -207,6 +206,51 @@ Keeping the TLI point fixed and steering with a sideways push at TLI instead
 was tried first and fails: for a transfer of nearly 180° the push barely
 moves the arrival, and the correction found answers about 100 to 190 m/s from the
 flown TLI.
+
+**Predicting the direction** (held out; the table's last part is printed by
+`make validate-trip`, pinned in `test_launch_vs_clps.py`). Four predictors were tried,
+each for a Nova-C launch from what is known without its own launch:
+
+| Mission | Other direct flight's direction | Due east | Arrival node: direction, liftoff | Other flight's inclination after TLI | The same rule, own inclination |
+|---|---|---|---|---|---|
+| im-1 | −15.8 min | +9.8 min | 114.1°, −145.5 min | −6.0 min | −14.3 min |
+| im-2 | +17.5 min | +27.4 min | 88.0°, +10.9 min | +0.9 min | +10.2 min |
+
+*Arrival node.* The design holds the arrival's inclination and the way round it goes;
+the node about the Moon's pole is the one thing about the arrival it leaves free, so the
+direction whose designed arrival has the flown node was solved for. It is ill
+conditioned: the node moves 0.046° (IM-1) and 0.086° (IM-2) per degree of direction,
+because a transfer of nearly 180° reaches the Moon from about the same side whatever
+plane it flies in, while at the direction it really climbed IM-1's designed arrival
+already has its node 1.20° off (0.12° for IM-2), the size of what the cruise's
+correction burns change. For IM-1 the node points to 114° and a liftoff 2.4 h early.
+
+*Inclination after TLI* (to the equator of the day, where the pad sits at 28.45°). A
+climb aimed at the other Nova-C's orbit inclination after TLI (28.51° or 28.60°) lands
+both launches within 10 min. It is chance: given each flight's *own* inclination the
+same rule misses by 14.3 and 10.2 min, since the plane a flight climbed in and the plane
+it left Earth in differ in inclination by 0.11 to 0.14° (the pad lay 0.10 to 0.13° off the latter at
+liftoff: the vehicle turned between them). With two flights the two numbers happen to
+cross; the calendar does not use it. *Due east* (the most the Earth's turning helps)
+misses IM-2 by 27 min. *The Moon's declination at arrival* (25° and 14°) has no rule
+tying it to the direction: for a transfer of nearly 180° every plane through the TLI
+point reaches it. The range's hazard-area notices, which state a launch's direction days
+before, would be the published predictor; NGA's archive of them (NAVAREA IV) refused
+this machine, so it is not tried. The mean of the other flight's direction stays.
+
+*Instant or window* (plan D1). Launch Library 2's records, the source of each flown
+liftoff, give the window each launch was published with: IM-1 and IM-2 (Falcon 9,
+direct) a single instant; Blue Ghost 1 (Falcon 9, phasing loops) 06:06 to 06:45 UTC;
+Peregrine (Vulcan, loops) 07:18 to 08:03 UTC. They are in `data/missions.json` (`t0`)
+and a flown launch now shows its own. A planned one gets a window only when the vehicle's
+direct lunar launches were published with windows (it steers); its ends are then the
+instants designed at the pad's two azimuth limits on the same sweep of the climb plane.
+Falcon 9's were instants, so its calendar stays one instant ± 18 min. Had the vehicle
+steered between the Eastern Range's assumed 35 and 120° over the ground, the same design
+puts IM-1's day from 105 min before to 300 min after its liftoff and IM-2's from 163 min
+before to 269 min after (converged at both ends): hours, not the single instant flown,
+so the pad's limits alone are not a vehicle's window; what it can lift at the ends is
+not published.
 
 **Backed out from the landing** (plan D2: flown landings inside the
 landing rule; flown launch days inside the calendar). With no Sun-height band
@@ -222,7 +266,7 @@ checked: near the poles the lighting decides.
 and flagged: with the Moon south of the equator the climb reaches the TLI point
 only after most of an orbit, and upper stage coast limits are not published.
 Which azimuth a flight takes is not predicted better than the spread of the
-flown ones (2.2°, 16–18 min).
+flown ones (2.2°, 16–18 min); four predictors tried held out are above.
 
 # Phasing loops and correction burns against the flown landers (plan C3, C4)
 

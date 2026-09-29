@@ -64,7 +64,10 @@ async def test_im2_launch_worked_out_again_from_its_trajectory(anon_client, sett
     assert 30 < o["coast_min"]["value"] < 45 and 3000 < o["dv_tli_m_s"]["value"] < 3300
     assert o["landing"]["earth_up"] is True
     assert "inside the times the landing rule allows" in o["note"]
-    assert body["meta"]["engines"] == {"lw": "lw-5", "traj": "traj-3", "vis": "vis-2"}
+    # Published as a single instant (Launch Library 2).
+    assert o["kind"] == "instantaneous" and o["window_open"] is None
+    assert "single instant" in o["note"]
+    assert body["meta"]["engines"] == {"lw": "lw-6", "traj": "traj-3", "vis": "vis-2"}
 
 
 @pytest.mark.requires_kernels
@@ -76,6 +79,10 @@ async def test_peregrine_shows_the_published_liftoff(anon_client, settings) -> N
     (o,) = d["opportunities"]
     assert o["basis"] == "published" and o["transfer"]["flight_days"]["value"] is None
     assert o["landing"]["time"]["missing_reason"]
+    # Vulcan's launch had a 45 minute window (Launch Library 2).
+    assert o["kind"] == "window"
+    assert o["window_open"].startswith("2024-01-08T07:18")
+    assert o["window_close"].startswith("2024-01-08T08:03")
 
 
 @pytest.mark.requires_kernels
@@ -96,6 +103,8 @@ async def test_griffin_calendar_backed_out_from_the_landing(anon_client) -> None
         assert o["landing"]["earth_up"] is True
         assert o["landing"]["time"]["value"] > o["t0"]["value"]
         assert "Falcon 9" in o["note"]  # Falcon Heavy's climb is taken from Falcon 9's
+        # Falcon 9's direct lunar launches were published as single instants.
+        assert o["kind"] == "instantaneous" and "single instant" in o["note"]
         assert "TLI" not in json.dumps(o)
         assert o["weather_note"]
         wait = o["transfer"]["orbit_wait_days"]

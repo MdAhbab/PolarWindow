@@ -97,6 +97,12 @@ def test_ground_azimuth_turns_away_from_east() -> None:
     assert launchwin.ground_azimuth(28.6, 110.0, 7800.0) == pytest.approx(az_r, abs=1e-6)
 
 
+@pytest.mark.parametrize("ground", [35.0, 60.0, 90.0, 120.0, 150.0])
+def test_inertial_azimuth_inverts_the_ground_one(ground: float) -> None:
+    a = launchwin.inertial_azimuth(28.6, ground, 7780.0)
+    assert launchwin.ground_azimuth(28.6, a, 7780.0) == pytest.approx(ground, abs=1e-9)
+
+
 def test_patched_conic_limits() -> None:
     r_park, r_moon = 6_578_000.0, 384_400_000.0
     a_h = 0.5 * (r_park + r_moon)

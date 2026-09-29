@@ -50,6 +50,8 @@ ENGINE_VERSION = "hz-2/vis-2"
 #:        an assumed range), relay -> station with the Moon in the way, store and forward.
 #: lw-5: a designed launch climbs in the direction of the vehicle's direct lunar flights,
 #:       inside the pad's azimuth limits; a flown launch's climb direction is computed.
+#: lw-6: a launch is a window or an instant as published (Launch Library 2); a vehicle
+#:       whose direct lunar launches flew windows gets one between the pad's limits.
 ENGINES: dict[str, str] = {
     "hz": "hz-2",
     "vis": "vis-2",
@@ -61,7 +63,7 @@ ENGINES: dict[str, str] = {
     "net": "net-4",
     "ready": "ready-1",
     "los": "los-1",
-    "lw": "lw-5",
+    "lw": "lw-6",
 }
 
 

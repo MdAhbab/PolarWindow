@@ -177,6 +177,17 @@ def ground_azimuth(lat_deg: float, azimuth_deg: float, v_orbit_m_s: float) -> fl
     return math.degrees(math.atan2(east, v_orbit_m_s * math.cos(a))) % 360.0
 
 
+def inertial_azimuth(lat_deg: float, ground_deg: float, v_orbit_m_s: float) -> float:
+    """The inertial azimuth whose climb heads ``ground_deg`` over the ground (the inverse
+    of ``ground_azimuth``): pad limits are set over the ground, climbs are designed
+    inertially."""
+    g = math.radians(ground_deg)
+    v_rot = OMEGA_EARTH * WGS84_A * math.cos(math.radians(lat_deg))
+    # |k (sin G, cos G) + (v_rot, 0)| = v for the ground speed k along G.
+    k = -v_rot * math.sin(g) + math.sqrt(v_orbit_m_s**2 - v_rot**2 + (v_rot * math.sin(g)) ** 2)
+    return math.degrees(math.atan2(k * math.sin(g) + v_rot, k * math.cos(g))) % 360.0
+
+
 def inclination_for_azimuth(lat_deg: float, azimuth_deg: float) -> float:
     """The inclination a climb from latitude ``lat`` at this inertial azimuth reaches:
     ``cos i = sin A cos lat``."""
@@ -195,6 +206,7 @@ __all__ = [
     "due_east_gap",
     "ground_azimuth",
     "inclination_for_azimuth",
+    "inertial_azimuth",
     "pad_itrf",
     "plane_normal",
     "residual",
