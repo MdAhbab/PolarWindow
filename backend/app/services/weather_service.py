@@ -403,6 +403,7 @@ async def launch_weather(
     nws = await feed_service.latest(session, "nws", "grid", pad_id)
     glm = await feed_service.latest(session, "goes", "glm", region)
     rows = []
+    lead_h = (when - now).total_seconds() / 3600.0
     for r in rules:
         limit = _limit(r, entered.get(r.id))
         per_system: list[dict[str, Any]] = []
@@ -410,7 +411,7 @@ async def launch_weather(
         observed = None
         if r.rule_class in ("model", "proxy"):
             per_system.append(
-                _gefs_row(gefs, pad_id, when, r, limit, verification.checked(region, r.id))
+                _gefs_row(gefs, pad_id, when, r, limit, verification.checked(region, r.id, lead_h))
             )
             per_system += [
                 {"system": s, "share": None, "missing_reason": NOT_RECORDED[s]} for s in SYSTEMS[1:]
@@ -498,6 +499,9 @@ async def launch_weather(
             "time. Shares count one forecast system's runs; they are never combined. "
             + (
                 "The wind rule's GEFS shares have been checked against observations."
+                if any(verification.checked(region, r.id, lead_h) for r in rules)
+                else "The wind rule's GEFS shares were checked against observations only for "
+                f"launches up to {verification.reach_h(region)} h ahead; this one is further out."
                 if any(verification.checked(region, r.id) for r in rules)
                 else "None has passed a check against observations yet."
             )

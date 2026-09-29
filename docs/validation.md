@@ -417,6 +417,46 @@ other than the lowest (669 cases, mean share 0.002, observed 0) holds 30 cases. 
 cannot check a limit this rarely reached; several years, or the pad's own tower record,
 would be needed.
 
+**The same check over thirteen years** (`make hindcast-reforecast`,
+`app/feeds/hindcast_reforecast.py`). NOAA's GEFS v12 reforecast (the model the live ensemble
+runs; 00 UTC, the control and four perturbed runs, 0.25°, 2000–2019 on NOAA's open-data bucket
+on AWS) is read for one day in three from 2007, in a fixed random order, from the first part
+of each global message (`parsers/grib_prefix.py`, equal to ecCodes on a cut of the field); 845
+of the 1,583 days planned are cached (2007-01-08 to 2019-12-31). The outcome is the station's sustained wind in its
+report nearest the valid time (within 30 minutes; a station with fewer reports has fewer cases),
+the limit is 10.52 m/s at 10 m as above, and the reference is the station's own month-by-hour
+frequency (and wind) over 2000–2019. Every interval is 95 %, from resampling whole months of
+cases (days in a month are not independent). Winds are 10 m; the runs are the reforecast's, not the
+archived live ensemble's (whose 31 runs and 0.5° cell are what the 2025 check used).
+
+| Station, lead | Cases | Above the limit | Brier (GEFS) | Brier (climatology) | Brier skill | CRPS skill | CRPS skill, fair | Mean wind, runs / station (m/s) |
+|---|---|---|---|---|---|---|---|---|
+| KXMR 24 h | 786 | 0 | 0.0134 | 0.0000 | not worked out | −0.95 (−1.10 to −0.80) | −0.86 (−1.02 to −0.72) | 5.3 / 3.1 |
+| KXMR 48 h | 801 | 2 | 0.0096 | 0.0025 | not worked out | −0.90 (−1.06 to −0.76) | −0.80 (−0.95 to −0.66) | 5.3 / 3.2 |
+| KVBG 24 h | 565 | 34 | 0.0346 | 0.0553 | 0.37 (0.15 to 0.57) | 0.33 (0.27 to 0.38) | 0.37 (0.31 to 0.42) | 5.5 / 5.8 |
+| KVBG 48 h | 566 | 38 | 0.0471 | 0.0604 | 0.22 (0.02 to 0.42) | 0.31 (0.26 to 0.36) | 0.37 (0.32 to 0.41) | 5.5 / 5.7 |
+
+A Brier skill is worked out only from 10 or more cases above the limit (fewer, and one case
+moves it more than the skill); at the Cape there were none at 24 h and two at 48 h, so no Brier
+skill is given and the continuous score (CRPS skill, which does not need the event to happen)
+is the verdict-free number. The gate pools the two leads' cases in its reliability bins.
+**The Cape does not pass**: the runs' wind is worse than the station's own record (CRPS skill
+below zero at both leads, intervals nowhere near zero), the runs averaging 5.3 m/s against the
+station's 3.1 (the 0.25° cell at the Cape is partly sea, where the wind is stronger than at a
+station inland), and the bin of shares of 0.2 (34 cases) saw the wind above the limit in none of
+them, 0.2 from what the share said and past the 0.1 allowed. So the wind rule's shares at the Cape stay "not checked against
+observations". **Vandenberg passes the plan's gate as written**: Brier skill 0.37 at 24 h and
+0.22 at 48 h against the 0.1 asked, and the only reliability bin with 30 cases or more (shares
+under 0.1: 1,057 cases) sits well inside 0.1 (the wind was above the limit in 2.8 % of them
+against a share of 0). Two things keep that from being more than it is. At 48 h the interval,
+0.02 to 0.42, runs below 0.1, so the gate is passed on the estimate and not with certainty. And
+five runs give shares in steps of 0.2, so every other bin holds 9 to 23 cases and the gate never
+counts them; taken together, the 37 cases at each lead with a share of 0.2 or more had the wind
+above the limit 62 % of the time at 24 h (mean share 63 %) and 51 % at 48 h (mean share 52 %).
+The check is made at 24 and 48 h; a share for a launch further out than 48 h is not covered by
+it and is not shown as checked. The download goes on, and the two
+`data/hindcast/gefs_reforecast_wind_*.json` files are rewritten each time it is scored.
+
 **Lightning climatology** (`make thunder-climatology`, `app/data/thunder_climatology.py`).
 NASA MSFC's Combined GLM Hourly Thunder Hour data (GHRC DAAC, doi:10.5067/GLM/HTH/DATA301),
 2019–2025, 2,557 days: for each hour, whether thunder could be heard in each 0.05° cell.

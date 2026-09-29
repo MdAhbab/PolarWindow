@@ -204,3 +204,95 @@ async def test_a_failed_day_goes_to_the_back_of_the_line(
     got = [json.loads(x)["init"] for x in (tmp_path / "cache.jsonl").read_text().splitlines()]
     assert len(got) == len(set(got)) == 365 and "2019-01-03" in got
     assert asked.count(date(2019, 1, 3)) == 2 and slept == [20.0]
+
+
+def _wind_check(passes: bool, leads: tuple[str, ...] = ("24", "48"), **more: object) -> dict:
+    lead = {"cases": 500, "events": 12, "skill": 0.3, "skill_95": [0.1, 0.5], "crps_skill": 0.2}
+    return {
+        "rule_id": "f9-wind-162ft",
+        "station": "KVBG",
+        "event": "sustained wind at 10 m above 10.52 m/s (23.5 mph)",
+        "period": "2007-01-08..2019-12-31",
+        "gate": "the plan's gate",
+        "passes": passes,
+        "leads": {k: dict(lead) for k in leads},
+        **more,
+    }
+
+
+def _on_disk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, **files: dict) -> None:
+    from types import SimpleNamespace
+
+    from app.data import verification as ver
+
+    folder = tmp_path / "hindcast"
+    folder.mkdir()
+    for name, body in files.items():
+        (folder / name).write_text(json.dumps(body))
+    monkeypatch.setattr(ver, "get_settings", lambda: SimpleNamespace(data_dir=tmp_path))
+    ver.load.cache_clear()
+
+
+def test_the_multi_year_check_is_used_first_and_covers_only_the_leads_it_scored(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app.data import verification as ver
+
+    _on_disk(
+        tmp_path,
+        monkeypatch,
+        **{
+            "gefs_reforecast_wind_vandenberg.json": _wind_check(True, days_fetched=845),
+            "gefs_wind_vandenberg.json": _wind_check(False),
+        },
+    )
+    try:
+        assert ver.checked("vandenberg", "f9-wind-162ft")
+        assert ver.checked("vandenberg", "f9-wind-162ft", 47.9)
+        assert not ver.checked("vandenberg", "f9-wind-162ft", 120.0)  # further out than 48 h
+        assert not ver.checked("vandenberg", "another-rule")
+        assert ver.reach_h("vandenberg") == 48 and ver.reach_h("florida") == 0
+        text = ver.summary("vandenberg", "f9-wind-162ft") or ""
+        assert "845 forecast days" in text and "CRPS skill 0.20" in text
+        assert "It passed the gate" in text and "up to 48 h ahead" in text
+    finally:
+        ver.load.cache_clear()
+
+
+def test_the_single_year_check_stands_in_and_a_failed_one_is_never_checked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app.data import verification as ver
+
+    _on_disk(
+        tmp_path,
+        monkeypatch,
+        **{"gefs_wind_florida.json": _wind_check(False, leads=("24",))},
+    )
+    try:
+        assert ver.load("florida") is not None and not ver.checked("florida", "f9-wind-162ft")
+        text = ver.summary("florida", "f9-wind-162ft") or ""
+        assert "did not pass" in text and "up to" not in text
+        assert ver.load("vandenberg") is None and ver.summary("vandenberg", "x") is None
+    finally:
+        ver.load.cache_clear()
+
+
+def test_a_score_the_files_cannot_work_out_is_said_so() -> None:
+    from app.data import verification as ver
+
+    x = {"cases": 786, "events": 0, "skill": None, "skill_note": "no", "crps_skill": -0.95}
+    words = ver._lead_words("24", x)
+    assert "Brier skill not worked out (too few cases above the limit)" in words
+    assert "no case of the wind above the limit" in words and "CRPS skill -0.95" in words
+
+
+def test_the_scored_files_say_what_the_plans_gate_says() -> None:
+    """``passes`` in each committed output is the gate applied to that file's own numbers."""
+    root = Path(__file__).resolve().parents[4] / "data" / "hindcast"
+    for region in ("florida", "vandenberg"):
+        d = json.loads((root / f"gefs_reforecast_wind_{region}.json").read_text())
+        skills = {int(k): v["skill"] for k, v in d["leads"].items()}
+        expected = bool(skills) and all(s is not None and s >= vf.BSS_MIN for s in skills.values())
+        expected = expected and all(b["ok"] for b in d["reliability"])
+        assert d["passes"] is expected, region

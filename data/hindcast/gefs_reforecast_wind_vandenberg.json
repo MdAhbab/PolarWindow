@@ -11,7 +11,7 @@
  "event": "sustained wind at 10 m above 10.52 m/s (23.5 mph)",
  "threshold_m_s": 10.51944399731159,
  "roughness_m": 0.03,
- "period": "2007-02-07..2019-12-16",
+ "period": "2007-01-08..2019-12-31",
  "years": [
   2007,
   2008,
@@ -27,43 +27,46 @@
   2018,
   2019
  ],
- "days_fetched": 224,
+ "days_fetched": 845,
  "climatology_years": "2000-2019",
  "intervals": "95 % from resampling whole months of cases",
  "leads": {
   "24": {
-   "cases": 130,
-   "events": 9,
-   "brier": 0.026461538461538463,
-   "brier_climatology": 0.06403453036052845,
-   "skill": null,
-   "skill_95": null,
-   "skill_note": "not worked out: 9 of 130 cases above the limit, fewer than the 10 it takes",
-   "crps_m_s": 1.0170017196388144,
-   "crps_fair_m_s": 0.9564085960871112,
-   "crps_climatology_m_s": 1.509276968833269,
-   "crps_skill": 0.32616627654167607,
+   "cases": 565,
+   "events": 34,
+   "brier": 0.03461946902654868,
+   "brier_climatology": 0.055337728034766664,
+   "skill": 0.3743966321711195,
+   "skill_95": [
+    0.14549766133118217,
+    0.5697820192284788
+   ],
+   "skill_note": null,
+   "crps_m_s": 0.9762462525034553,
+   "crps_fair_m_s": 0.9192957716269877,
+   "crps_climatology_m_s": 1.4578452380003721,
+   "crps_skill": 0.330349870441319,
    "crps_skill_95": [
-    0.20746576630908295,
-    0.42714436303454656
+    0.2742170684001539,
+    0.38369027178800585
    ],
-   "crps_skill_fair": 0.36631339652227457,
+   "crps_skill_fair": 0.36941470351961114,
    "crps_skill_fair_95": [
-    0.2492420273941305,
-    0.46451520228347437
+    0.31410511537301317,
+    0.42258779211618597
    ],
-   "mean_forecast_m_s": 5.721477724278984,
-   "mean_observed_m_s": 6.086273504273506,
+   "mean_forecast_m_s": 5.498044497696545,
+   "mean_observed_m_s": 5.793336440511309,
    "reliability": [
     {
      "lo": 0.0,
      "hi": 0.1,
-     "n": 121,
+     "n": 528,
      "mean_share": 0.0,
-     "observed": 0.01652892561983471,
+     "observed": 0.020833333333333332,
      "observed_95": [
-      0.004544593505246761,
-      0.058266742981552516
+      0.011672066314803595,
+      0.03691658440011494
      ],
      "counted": true,
      "ok": true
@@ -81,12 +84,12 @@
     {
      "lo": 0.2,
      "hi": 0.3,
-     "n": 1,
+     "n": 9,
      "mean_share": 0.2,
-     "observed": 0.0,
+     "observed": 0.4444444444444444,
      "observed_95": [
-      0.0,
-      0.7934506882081973
+      0.18877851977054566,
+      0.7333487081991259
      ],
      "counted": false,
      "ok": true
@@ -104,12 +107,12 @@
     {
      "lo": 0.4,
      "hi": 0.5,
-     "n": 2,
-     "mean_share": 0.4,
-     "observed": 1.0,
+     "n": 7,
+     "mean_share": 0.39999999999999997,
+     "observed": 0.5714285714285714,
      "observed_95": [
-      0.3423802239546494,
-      1.0
+      0.25045836275303557,
+      0.8417801460075546
      ],
      "counted": false,
      "ok": true
@@ -127,10 +130,13 @@
     {
      "lo": 0.6,
      "hi": 0.7,
-     "n": 0,
-     "mean_share": null,
-     "observed": null,
-     "observed_95": null,
+     "n": 3,
+     "mean_share": 0.6,
+     "observed": 0.3333333333333333,
+     "observed_95": [
+      0.06149194402093078,
+      0.7923404011921757
+     ],
      "counted": false,
      "ok": true
     },
@@ -147,12 +153,12 @@
     {
      "lo": 0.8,
      "hi": 0.9,
-     "n": 2,
+     "n": 5,
      "mean_share": 0.8,
-     "observed": 0.5,
+     "observed": 0.4,
      "observed_95": [
-      0.09453120463920084,
-      0.9054687953607992
+      0.11762077314099711,
+      0.7692757205908813
      ],
      "counted": false,
      "ok": true
@@ -160,12 +166,12 @@
     {
      "lo": 0.9,
      "hi": 1.0,
-     "n": 4,
+     "n": 13,
      "mean_share": 1.0,
-     "observed": 1.0,
+     "observed": 0.9230769230769231,
      "observed_95": [
-      0.5101091596030786,
-      0.9999999999999999
+      0.666860488286395,
+      0.986289578909774
      ],
      "counted": false,
      "ok": true
@@ -173,38 +179,41 @@
    ]
   },
   "48": {
-   "cases": 130,
-   "events": 8,
-   "brier": 0.043076923076923075,
-   "brier_climatology": 0.05569766469224702,
-   "skill": null,
-   "skill_95": null,
-   "skill_note": "not worked out: 8 of 130 cases above the limit, fewer than the 10 it takes",
-   "crps_m_s": 1.0106959256107573,
-   "crps_fair_m_s": 0.9324645802673748,
-   "crps_climatology_m_s": 1.4328779777276424,
-   "crps_skill": 0.2946392216777668,
+   "cases": 566,
+   "events": 38,
+   "brier": 0.04706713780918728,
+   "brier_climatology": 0.06039035764976522,
+   "skill": 0.22061832979771623,
+   "skill_95": [
+    0.02145641796104531,
+    0.4155151077241478
+   ],
+   "skill_note": null,
+   "crps_m_s": 0.98135378839797,
+   "crps_fair_m_s": 0.9051642458537492,
+   "crps_climatology_m_s": 1.4312419573087638,
+   "crps_skill": 0.31433411144314205,
    "crps_skill_95": [
-    0.16339222947772813,
-    0.4033639701356931
+    0.26379764812250905,
+    0.3633918915186686
    ],
-   "crps_skill_fair": 0.3492365750877531,
+   "crps_skill_fair": 0.3675672787319797,
    "crps_skill_fair_95": [
-    0.22101788447487983,
-    0.4549956012887579
+    0.3183779960298436,
+    0.4149005516269759
    ],
-   "mean_forecast_m_s": 5.688037809720525,
-   "mean_observed_m_s": 5.749905982905983,
+   "mean_forecast_m_s": 5.514802740436616,
+   "mean_observed_m_s": 5.700735217903417,
    "reliability": [
     {
      "lo": 0.0,
      "hi": 0.1,
-     "n": 119,
+     "n": 529,
      "mean_share": 0.0,
-     "observed": 0.025210084033613446,
+     "observed": 0.035916824196597356,
      "observed_95": [
-      0.00861023122230975,
-      0.071504894167124
+      0.02311228336001592,
+      0.055412873014156636
      ],
      "counted": true,
      "ok": true
@@ -222,12 +231,12 @@
     {
      "lo": 0.2,
      "hi": 0.3,
-     "n": 5,
-     "mean_share": 0.2,
-     "observed": 0.2,
+     "n": 14,
+     "mean_share": 0.20000000000000004,
+     "observed": 0.21428571428571427,
      "observed_95": [
-      0.03622410822563066,
-      0.6244653729700049
+      0.07571386653293533,
+      0.4758923079830535
      ],
      "counted": false,
      "ok": true
@@ -245,12 +254,12 @@
     {
      "lo": 0.4,
      "hi": 0.5,
-     "n": 2,
+     "n": 5,
      "mean_share": 0.4,
-     "observed": 1.0,
+     "observed": 0.8,
      "observed_95": [
-      0.3423802239546494,
-      1.0
+      0.375534627029995,
+      0.9637758917743693
      ],
      "counted": false,
      "ok": true
@@ -268,12 +277,12 @@
     {
      "lo": 0.6,
      "hi": 0.7,
-     "n": 1,
+     "n": 7,
      "mean_share": 0.6,
-     "observed": 0.0,
+     "observed": 0.42857142857142855,
      "observed_95": [
-      0.0,
-      0.7934506882081973
+      0.15821985399244537,
+      0.7495416372469643
      ],
      "counted": false,
      "ok": true
@@ -291,12 +300,12 @@
     {
      "lo": 0.8,
      "hi": 0.9,
-     "n": 3,
-     "mean_share": 0.8000000000000002,
-     "observed": 0.6666666666666666,
+     "n": 4,
+     "mean_share": 0.8,
+     "observed": 0.75,
      "observed_95": [
-      0.2076595988078242,
-      0.9385080559790691
+      0.3006418400969081,
+      0.954412739704631
      ],
      "counted": false,
      "ok": true
@@ -304,10 +313,13 @@
     {
      "lo": 0.9,
      "hi": 1.0,
-     "n": 0,
-     "mean_share": null,
-     "observed": null,
-     "observed_95": null,
+     "n": 7,
+     "mean_share": 1.0,
+     "observed": 0.8571428571428571,
+     "observed_95": [
+      0.486872167860775,
+      0.9743203759421759
+     ],
      "counted": false,
      "ok": true
     }
@@ -318,12 +330,12 @@
   {
    "lo": 0.0,
    "hi": 0.1,
-   "n": 240,
+   "n": 1057,
    "mean_share": 0.0,
-   "observed": 0.020833333333333332,
+   "observed": 0.02838221381267739,
    "observed_95": [
-    0.00893079605808516,
-    0.04783337745366427
+    0.01995217847553236,
+    0.04022784026979423
    ],
    "counted": true,
    "ok": true
@@ -341,12 +353,12 @@
   {
    "lo": 0.2,
    "hi": 0.3,
-   "n": 6,
-   "mean_share": 0.19999999999999998,
-   "observed": 0.16666666666666666,
+   "n": 23,
+   "mean_share": 0.20000000000000007,
+   "observed": 0.30434782608695654,
    "observed_95": [
-    0.030053369411815023,
-    0.5635028250257673
+    0.1560402436889323,
+    0.5086575642878356
    ],
    "counted": false,
    "ok": true
@@ -364,12 +376,12 @@
   {
    "lo": 0.4,
    "hi": 0.5,
-   "n": 4,
-   "mean_share": 0.4,
-   "observed": 1.0,
+   "n": 12,
+   "mean_share": 0.4000000000000001,
+   "observed": 0.6666666666666666,
    "observed_95": [
-    0.5101091596030786,
-    0.9999999999999999
+    0.3906220869404939,
+    0.86187990987514
    ],
    "counted": false,
    "ok": true
@@ -387,12 +399,12 @@
   {
    "lo": 0.6,
    "hi": 0.7,
-   "n": 1,
-   "mean_share": 0.6,
-   "observed": 0.0,
+   "n": 10,
+   "mean_share": 0.5999999999999999,
+   "observed": 0.4,
    "observed_95": [
-    0.0,
-    0.7934506882081973
+    0.1681803285264069,
+    0.6873262320788047
    ],
    "counted": false,
    "ok": true
@@ -410,12 +422,12 @@
   {
    "lo": 0.8,
    "hi": 0.9,
-   "n": 5,
+   "n": 9,
    "mean_share": 0.8,
-   "observed": 0.6,
+   "observed": 0.5555555555555556,
    "observed_95": [
-    0.23072427940911855,
-    0.8823792268590028
+    0.26665129180087416,
+    0.8112214802294544
    ],
    "counted": false,
    "ok": true
@@ -423,22 +435,22 @@
   {
    "lo": 0.9,
    "hi": 1.0,
-   "n": 4,
+   "n": 20,
    "mean_share": 1.0,
-   "observed": 1.0,
+   "observed": 0.9,
    "observed_95": [
-    0.5101091596030786,
-    0.9999999999999999
+    0.6989663528135878,
+    0.9721335190383086
    ],
    "counted": false,
    "ok": true
   }
  ],
- "passes": false,
+ "passes": true,
  "gate": "Brier skill >= 0.1 at each lead (from at least 10 cases above the limit) and reliability within 0.1 in bins with >= 30 cases",
  "sources": {
   "forecasts": "https://noaa-gefs-retrospective.s3.amazonaws.com/GEFSv12/reforecast/ (10 m UGRD, VGRD)",
   "observations": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=VBG&data=sknt&report_type=3"
  },
- "built": "2026-09-29T07:28:46+00:00"
+ "built": "2026-09-29T08:28:34+00:00"
 }

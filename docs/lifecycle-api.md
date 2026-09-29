@@ -737,3 +737,9 @@ that user. `GET /auth/me` returns the same `user`.
   drag range) and `passed` is false against the 10 km limit (the standard atmosphere gave 9.5 km,
   6.7 to 12.2); `note` names the air and gives the distance in the others. `ellipse_99_km` is now
   51.2 by 21.8.
+- 2026-09-29 (weather, no shape change): `per_system[].share.checked` is now true for the Falcon 9 wind
+  rule at Vandenberg's pads, for a launch up to 48 h ahead: the 13-year GEFS reforecast against KVBG
+  passes the plan's gate (Brier skill 0.37 at 24 h, 0.22 at 48 h, 95 % 0.15 to 0.57 and 0.02 to 0.42;
+  reliability within 0.1). It stays false at the Cape (CRPS skill -0.95 at 24 h: the runs' wind is worse
+  than the station's own record) and for a launch further out than 48 h, where `LaunchWeather.note` says
+  the check reached only 48 h. The meta part "Checked against observations" gives the numbers.
