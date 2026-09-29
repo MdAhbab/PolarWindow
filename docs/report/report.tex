@@ -80,11 +80,11 @@
 \vspace{-2.4\baselineskip}
 \begin{center}\small
 Submission report for the 2026 challenge \emph{CLPS Lunar Mission Browser}.
-Engine checks, response times, test counts and screens were measured on commit \texttt{18ac9d8} of branch \texttt{featured}.
+Engine checks, response times, test counts and screens were measured on commits \texttt{18ac9d8} and \texttt{8854792} of branch \texttt{featured}.
 \end{center}
 
 \begin{abstract}
-NASA's Commercial Lunar Payload Services (CLPS) programme buys the delivery of science payloads to the Moon from commercial providers. Planning one delivery draws on separate tools for launch design, weather, trajectory, radiation, communications and recovery, each with its own conventions. This report describes POLAR WINDOW, an open planner that follows one CLPS delivery through six sections: readiness, launch, trip, landing, contact with Earth and return. Every number it serves states its source, its margin or the reason it has none. It also carries the age of any live input. No section returns a verdict or a combined score. The engines are checked against the public record of flown missions. The references are NASA's reconstructed trajectories of four CLPS landers, their published liftoff times and NOAA's list of solar particle events. Measured lunar radiation doses and the landing point of the OSIRIS-REx capsule complete the set. Designed at the direction each vehicle climbed, the launch instants of the three flown Falcon 9 missions fall within one minute of the published liftoffs. One day of propagation from a reconstructed state stays within one kilometre in all but one case. Unmet planned tolerances are reported with their measured values. When the climb direction is not known in advance, a designed launch instant misses by about 16 to 18 minutes. The capsule entry model misses the measured touchdown by 12.1 kilometres, exceeding the 10 kilometre limit. Multi-year weather reforecasts show skill at Vandenberg but lack sufficient events at Cape Canaveral. Link budgets and the return trajectory from the Moon remain unbuilt because their inputs are not public.
+NASA's Commercial Lunar Payload Services (CLPS) programme buys the delivery of science payloads to the Moon from commercial providers. Planning one delivery draws on separate tools for launch design, weather, trajectory, radiation, communications and recovery, each with its own conventions. This report describes POLAR WINDOW, an open planner that follows one CLPS delivery through six sections: readiness, launch, trip, landing, contact with Earth and return. Every number it serves states its source, its margin or the reason it has none. It also carries the age of any live input. No section returns a verdict or a combined score. The engines are checked against the public record of flown missions. The references are NASA's reconstructed trajectories of four CLPS landers, their published liftoff times and NOAA's list of solar particle events. Measured lunar radiation doses and the landing point of the OSIRIS-REx capsule complete the set. Designed at the direction each vehicle climbed, the launch instants of the three flown Falcon 9 missions fall within one minute of the published liftoffs. One day of propagation from a reconstructed state stays within one kilometre in all but one case. Unmet planned tolerances are reported with their measured values. When the climb direction is not known in advance, a designed launch instant misses by about 16 to 18 minutes. The capsule entry model misses the measured touchdown by 12.1 kilometres, exceeding the 10 kilometre limit. Multi-year weather reforecasts show positive Brier skill at Vandenberg but fail on reliability, while Cape Canaveral lacks sufficient events, leaving wind shares marked as not checked. Link budgets and the return trajectory from the Moon remain unbuilt because their inputs are not public.
 \end{abstract}
 
 % ---------------------------------------------------------------------------
@@ -790,30 +790,34 @@ Station (KXMR) and Vandenberg Space Force Base (KVBG). The rule's limit of \qty{
 neutral logarithmic wind profile.
 
 Multi-year verification was conducted using the NOAA GEFSv12 reforecast archive over
-2000 to 2019 (\num{1583} days evaluated). At Vandenberg, the ensemble passes the acceptance
-gate: with 75 threshold exceedance events at \qty{24}{\hour} lead time, the Brier skill score is
+2000 to 2019 (\num{1583} days evaluated). At Vandenberg, the ensemble demonstrates positive skill:
+with 75 threshold exceedance events at \qty{24}{\hour} lead time, the Brier skill score is
 0.30 (95\,\% confidence interval 0.16 to 0.41), and the continuous ranked probability score
 (CRPS) skill is 0.33 (\cref{tab:brier}). At \qty{48}{\hour} lead time, with 74 events, the Brier
-skill is 0.24 (0.09 to 0.38). In contrast, at Cape Canaveral, only one event occurred at
-\qty{24}{\hour} and three at \qty{48}{\hour} across \num{1459} evaluated runs. This is fewer
-than the 10 events required for a reliable Brier skill calculation. Furthermore, the 0.25-degree
-grid cell overlaps the Atlantic Ocean, producing an offshore high bias (model mean \qty{5.28}{\m\per\s}
-against station mean \qty{3.11}{\m\per\s}) and negative CRPS skill ($-0.97$). Wind shares are
-therefore marked as checked at Vandenberg for leads up to \qty{48}{\hour}, but remain marked as
-not checked at Cape Canaveral.
+skill is 0.24 (0.09 to 0.38). However, Vandenberg does not pass the acceptance gate on reliability.
+The bin for a forecast share of 1.0 (all five runs over the limit) holds 41 cases across both
+leads. The wind was above the limit in 36 of them (88\,\%, 95\,\% confidence interval 75 to 95\,\%).
+This discrepancy of 0.12 against the forecast share exceeds the 0.10 tolerance allowed. At Cape
+Canaveral, only one event occurred at \qty{24}{\hour} and three at \qty{48}{\hour} across
+\num{1459} evaluated runs. This is fewer than the 10 events required for a reliable Brier skill
+calculation. Furthermore, the 0.25-degree grid cell overlaps the Atlantic Ocean, producing an
+offshore high bias (model mean \qty{5.28}{\m\per\s} against station mean \qty{3.11}{\m\per\s}) and
+negative CRPS skill ($-0.97$). Because neither pad passes the acceptance gate, launch weather
+probability shares remain marked as not checked against observations at both sites.
 
 \begin{table}[htbp]
 \centering\small
 \caption{GEFSv12 reforecast 10-meter wind verification against station observations.}
 \label{tab:brier}
-\begin{tabular}{@{}llrrrrr@{}}
+\setlength{\tabcolsep}{4.5pt}
+\begin{tabular}{@{}llrrrrc@{}}
 \toprule
 Station & Lead & Cases & Events & Brier skill (95\,\% CI) & CRPS skill & Passed gate \\
 \midrule
-Vandenberg (KVBG) & \qty{24}{\hour} & \num{1080} & 75 & 0.30 (0.16 to 0.41) & 0.33 & yes \\
-Vandenberg (KVBG) & \qty{48}{\hour} & \num{1082} & 74 & 0.24 (0.09 to 0.38) & 0.33 & yes \\
-Cape Canaveral (KXMR) & \qty{24}{\hour} & \num{1459} & 1 & insufficient events & $-0.97$ & no \\
-Cape Canaveral (KXMR) & \qty{48}{\hour} & \num{1482} & 3 & insufficient events & $-0.99$ & no \\
+Vandenberg (KVBG) & \qty{24}{\hour} & \num{1080} & 75 & 0.30 (0.16 to 0.41) & 0.33 & no (reliability) \\
+Vandenberg (KVBG) & \qty{48}{\hour} & \num{1082} & 74 & 0.24 (0.09 to 0.38) & 0.33 & no (reliability) \\
+Cape Canaveral (KXMR) & \qty{24}{\hour} & \num{1459} & 1 & insufficient events & $-0.97$ & no (bias) \\
+Cape Canaveral (KXMR) & \qty{48}{\hour} & \num{1482} & 3 & insufficient events & $-0.99$ & no (bias) \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -950,10 +954,12 @@ unmodelled maneuvers produces a 24-hour error of \qty{4.40}{\km} against the pla
 \qty{1}{\km} (reduced to \qty{1.65}{\km} when two discrete thruster events are included).
 Third, the capsule entry model with NRLMSISE-00 misses the measured landing point by
 \qty{12.1}{\km}, exceeding the planned \qty{10}{\km} limit by \qty{2.1}{\km}. Fourth, the weather
-ensemble exhibits negative skill at Cape Canaveral due to coastal grid cell resolution and low
-event frequency, though it passes at Vandenberg. Fifth, IM-2 belt protons differ by
-\qty{40.5}{\percent} between IRBEM and SPDF due to magnetic field model epochs (agreeing to
-\qty{0.0}{\percent} on identical coordinates).
+ensemble fails the acceptance gate at both launch ranges: Cape Canaveral exhibits negative CRPS
+skill ($-0.97$) due to coastal grid cell overlap and has insufficient events for Brier skill,
+while Vandenberg achieves required Brier skill (0.30 and 0.24) but fails the reliability
+threshold (0.12 discrepancy against the 0.10 limit in the share-of-1.0 bin). Fifth, IM-2 belt
+protons differ by \qty{40.5}{\percent} between IRBEM and SPDF due to magnetic field model epochs
+(agreeing to \qty{0.0}{\percent} on identical coordinates).
 
 \begin{table}[htbp]
 \centering\small
@@ -978,7 +984,7 @@ Correction budget, linear against runs & \qty{10}{\percent} & \qty{7}{\percent} 
 Belt fluence, two AE8/AP8 codes & \qty{5}{\percent} & electrons \qty{5.0}{\percent}; IM-2 protons \qty{40.5}{\percent} & partly \\
 Cosmic-ray dose against CRaTER & \qty{30}{\percent} & \qty{-26}{\percent}, \qty{-15}{\percent} & yes \\
 Solar event peaks against NOAA & \qty{10}{\percent} & \qty{5.5}{\percent}, \qty{0.0}{\percent} & yes \\
-Wind shares, multi-year Brier skill & $\geq 0.1$ & KVBG 0.30 at \qty{24}{\hour}, 0.24 at \qty{48}{\hour}; KXMR insufficient & partly \\
+Wind shares, multi-year gate & Brier $\geq 0.1$, rel $\leq 0.1$ & KVBG fails rel (0.12); KXMR negative CRPS ($-0.97$) & no \\
 Capsule landing & \qty{10}{\km} & \qty{12.1}{\km} (NRLMSISE-00, range 9.4--\qty{14.8}{\km}) & no \\
 Lunar orbiters against Horizons & \qty{0.02}{\degree}, \qty{2.0}{\s} & \qty{0.0010}{\degree}, \qty{0.003}{\s} (NAIF check \qty{0.00018}{\degree}) & yes \\
 Rover line of sight & \qty{99}{\percent} & \qty{100.00}{\percent} outside uncertain band & yes \\
@@ -1019,17 +1025,17 @@ tested the screens.
 
 POLAR WINDOW follows a CLPS delivery across six operational sections, from ground readiness
 to post-flight recovery. Every computed number provides provenance, freshness, and explicit
-uncertainty bounds or missing reasons. The system produces no arbitrary go/no-go verdicts or
+uncertain bounds or missing reasons. The system produces no arbitrary go/no-go verdicts or
 composite scores. Physical models were validated against the public record of flown missions,
 including NASA reconstructions of four CLPS trajectories, published liftoffs, and satellite
 observations. Most acceptance checks satisfy the planned tolerances. Five criteria fall outside
 the plan: the held-out launch azimuth prediction, unmodelled IM-2 cruise maneuvers, capsule
-touchdown error with NRLMSISE-00, coastal wind ensemble skill at Cape Canaveral, and radiation
-belt proton differences caused by geomagnetic model epochs. Planned relays, lunar orbiters, and
-rover line of sight provide transparent communication visibility. RF link budgets and the
-Moon-to-Earth return trajectory remain unbuilt because required engineering parameters are not
-public. The system serves as a screening and comparison tool, designed to help mission teams
-evaluate trade-offs before committing to specialized analysis pipelines.
+touchdown error with NRLMSISE-00, coastal wind ensemble skill and reliability at launch pads, and
+radiation belt proton differences caused by geomagnetic model epochs. Planned relays, lunar
+orbiters, and rover line of sight provide transparent communication visibility. RF link budgets
+and the Moon-to-Earth return trajectory remain unbuilt because required engineering parameters
+are not public. The system serves as a screening and comparison tool, designed to help mission
+teams evaluate trade-offs before committing to specialized analysis pipelines.
 
 \bibliographystyle{unsrtnat}
 \bibliography{ref}
