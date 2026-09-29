@@ -163,6 +163,18 @@ export function qs(params: Query | undefined): string {
   return s ? `?${s}` : ''
 }
 
+/**
+ * What the rover's line of sight is asked for besides the rover: how far out, the two antenna
+ * heights and the radio frequency. Each one left out is the service's assumption, and the
+ * answer says it is assumed.
+ */
+export interface RoverOptions {
+  radius_m?: number
+  lander_antenna_m?: number
+  rover_antenna_m?: number
+  freq_mhz?: number
+}
+
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 /** The calls the server checks a session on: the AI panels (they cost quota) and the settings. */
@@ -410,8 +422,8 @@ export const api = {
   contact: (missionId: string, q: Query, signal?: AbortSignal) =>
     section<ContactDTO>(`/missions/${enc(missionId)}/contact`, q, signal),
 
-  rover: (missionId: string, rover: string | undefined, signal?: AbortSignal) =>
-    section<RoverSightDTO>(`/missions/${enc(missionId)}/contact/rover`, { rover }, signal),
+  rover: (missionId: string, rover: string | undefined, signal?: AbortSignal, opts: RoverOptions = {}) =>
+    section<RoverSightDTO>(`/missions/${enc(missionId)}/contact/rover`, { rover, ...opts }, signal),
 
   returnSection: (missionId: string, signal?: AbortSignal) =>
     section<ReturnDTO>(`/missions/${enc(missionId)}/return`, undefined, signal),
@@ -504,6 +516,15 @@ export const api = {
   /** Answers with every parameter, as `GET /parameters` does; 422 in the server's words when out of range. */
   setParameter: async (id: string, body: { value: number; note: string | null }) =>
     fillQuantities(await request<{ parameters: ParameterDTO[] }>(`/parameters/${enc(id)}`, { body, method: 'PUT' })),
+
+  /**
+   * One tile of a rover answer's map (`viewshed_tile` is the address, with `{z}`, `{x}` and `{y}`);
+   * null while the offline copy is in use, which has no tiles.
+   */
+  viewshedTileUrl: (template: string, layer: 'terrain' | 'sight' | 'radio', z: number, x: number, y: number) =>
+    isSnapshotActive()
+      ? null
+      : `${API_BASE}${template.replace('{z}', String(z)).replace('{x}', String(x)).replace('{y}', String(y))}?layer=${layer}`,
 
   tileUrl: (layer: 'hillshade' | 'illumination' | 'psr', z: number, x: number, y: number) =>
     isSnapshotActive() ? snapshotTileUrl(layer, z, x, y) : `${API_BASE}/tiles/${layer}/${z}/${x}/${y}.png`,

@@ -10,6 +10,9 @@ import { fulfillWrite, serveLifecycleFixtures } from './lifecycleFixtures'
  * else (the mission record, sign-in, Landing) is the live API.
  */
 
+/** One transparent pixel, for the tiles the fixture tests ask the map for. */
+const ONE_PIXEL_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64')
+
 const QUESTIONS: Record<string, string> = {
   ready: 'What is ready, and what is holding it up?',
   launch: 'When and from where can it launch?',
@@ -382,6 +385,12 @@ test('rover line of sight (contract fixtures): the answer first, the map in thre
 }) => {
   await returningVisitor(context)
   await serveLifecycleFixtures(context)
+  // The answer's tiles: one clear pixel for every request, and the layers asked for are kept.
+  const layers = new Set<string>()
+  await context.route(/localhost:8000\/api\/v1\/tiles\/viewshed\/91\//, async (route) => {
+    layers.add(new URL(route.request().url()).searchParams.get('layer') ?? '')
+    await route.fulfill({ status: 200, contentType: 'image/png', body: ONE_PIXEL_PNG })
+  })
   await page.goto('/missions/im-2/contact')
   const summary = page.locator('summary', { hasText: 'Rover and lander line of sight' })
   await expect(summary).toContainText('Yaoki')
@@ -392,7 +401,10 @@ test('rover line of sight (contract fixtures): the answer first, the map in thre
   )
   await expect(row.getByRole('img', { name: /^Line of sight between Yaoki and the lander, out to 500 m in 36 directions/ })).toBeVisible()
   // Three states, each in a glyph and words beside its swatch.
-  for (const words of ['In sight', 'Blocked by the ground', 'Uncertain: the terrain map’s error could tip it either way']) await expect(row).toContainText(words)
+  for (const words of ['In sight', 'Blocked by the ground', 'Uncertain: the terrain map’s error could tip it either way', 'The ground, shaded from the elevation model']) await expect(row).toContainText(words)
+  // Laid over the terrain: the ground's tiles under the line of sight's, both from the answer's own address.
+  await expect(row.getByTestId('site-tile-map').locator('image').first()).toBeVisible()
+  await expect.poll(() => [...layers].sort().join(',')).toBe('sight,terrain')
   // What the states mean, and what is assumed about the antennas and the radio.
   await expect(row).toContainText('uncertain: the model cannot tell.')
   await row.locator('summary', { hasText: 'Antennas, radio and terrain' }).click()
@@ -401,6 +413,7 @@ test('rover line of sight (contract fixtures): the answer first, the map in thre
   await row.getByRole('button', { name: 'Radio path' }).click()
   await expect(row.getByRole('button', { name: 'Radio path' })).toHaveAttribute('aria-pressed', 'true')
   await expect(row.getByRole('img', { name: /^Radio path between Yaoki and the lander/ })).toBeVisible()
+  await expect.poll(() => [...layers].sort().join(',')).toBe('radio,sight,terrain')
   // The table twin, from the same rays: both the line of sight and the radio path.
   await row.getByRole('button', { name: 'Read the chart as a table' }).click()
   const ray = row.getByRole('row', { name: /^100°/ })
@@ -415,6 +428,19 @@ test('rover line of sight (contract fixtures): the answer first, the map in thre
   await expect(page.getByTestId('rover-sight').getByRole('img')).toBeVisible()
   await expectNoSeriousAxe(page, 'rover line of sight open (light, 375 px)')
   expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the rover row scrolls sideways at 375 px').toBeLessThanOrEqual(375)
+})
+
+test('rover line of sight (contract fixtures): tiles that do not load say so, and the table still has the answer', async ({ page, context }) => {
+  await returningVisitor(context)
+  await serveLifecycleFixtures(context)
+  await context.route(/localhost:8000\/api\/v1\/tiles\/viewshed\//, (route) => route.fulfill({ status: 404, contentType: 'application/json', body: '{"detail":"no-viewshed"}' }))
+  await page.goto('/missions/im-2/contact')
+  await page.locator('summary', { hasText: 'Rover and lander line of sight' }).click()
+  const row = page.getByTestId('rover-sight')
+  await expect(row.getByRole('status')).toHaveText('The map layer did not load, so nothing is drawn over the terrain. The table has the same answer.')
+  await row.getByRole('button', { name: 'Read the chart as a table' }).click()
+  await expect(row.getByRole('row', { name: /^270° \(west\)/ })).toContainText('blocked 325–425 m')
+  await expectNoSeriousAxe(page, 'rover map with its tiles missing (dark)')
 })
 
 test('rover line of sight (contract fixtures): a site outside the terrain map says why, with no map', async ({ page, context }) => {
@@ -1041,6 +1067,16 @@ test('relays, orbiters and rovers (live API): IM-3’s planned relay as a range,
     { timeout: 120_000 },
   )
   await expect(yaoki.getByRole('img', { name: /^Line of sight between Yaoki and the lander, out to 500 m in 72 directions/ })).toBeVisible()
+  // Over the terrain: the service's tiles for this answer, the ground and the line of sight, drawn (not the broken-image kind).
+  const tiles = yaoki.getByTestId('site-tile-map').locator('image')
+  await expect
+    .poll(async () => (await tiles.evaluateAll((els) => els.map((e) => (e as SVGImageElement).getAttribute('href') ?? ''))).filter((h) => /layer=(terrain|sight)$/.test(h)).length, {
+      timeout: 60_000,
+    })
+    .toBeGreaterThan(1)
+  await page.waitForLoadState('networkidle')
+  await expect(yaoki.getByRole('status')).toHaveCount(0)
+  await expect(yaoki).toContainText('The ground, shaded from the elevation model')
   await expect(yaoki.getByRole('row', { name: /^90° \(east\)/ })).toBeVisible()
   await yaoki.locator('summary', { hasText: 'Antennas, radio and terrain' }).click()
   await expect(yaoki).toContainText(/LOLA_LDEM_80S_20M: a height every 20 m, each good to ±2 m/)

@@ -597,7 +597,10 @@ export interface RoverSightDTO {
   rover?: { id: string; name: string } | null
   share_basis?: 'drive' | 'ground' | null
   radius_m?: number | null
+  /** Where the lander is: the centre of the viewshed and of its tiles. Null with no map. */
+  lander?: { lat_deg: number; lon_deg: number } | null
   viewshed?: ViewshedDTO | null
+  /** The address of the map's tiles under the API base, with `{z}`, `{x}` and `{y}`; `?layer=` is `terrain`, `sight` or `radio`. */
   viewshed_tile: string | null
   out_of_sight_share: QuantityDTO
   /** Percent where the radio path is not clear (first Fresnel zone). */

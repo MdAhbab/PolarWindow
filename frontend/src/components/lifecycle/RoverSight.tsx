@@ -1,8 +1,11 @@
 import { useState } from 'react'
+import { useSnapshotActive } from '../../lib/api/snapshot'
 import type { QuantityDTO, RoverSightDTO, SightState, ViewshedDTO } from '../../lib/api/lifecycle'
 import { formatValue, quantityText, quantityView } from '../../lib/lifecycle/quantity'
+import { cellEdges, tileSwatch, type SightLayer } from '../../lib/lifecycle/tileMap'
 import { ScrollRegion, Segmented } from '../ui'
 import { ChartPanel, Legend } from './Section'
+import { LAYER_WORDS, MapMarks, SiteTileMap, mapLabel } from './SiteTileMap'
 
 /** The three states, each with a glyph and words (colour never alone: a fill, a 45° and a −45° hatch). */
 export const SIGHT_WORDS: Record<SightState, { words: string; glyph: string; fill: string }> = {
@@ -11,12 +14,7 @@ export const SIGHT_WORDS: Record<SightState, { words: string; glyph: string; fil
   uncertain: { words: 'Uncertain', glyph: '?', fill: 'url(#pw-uncertain)' },
 }
 
-export type SightLayer = 'sight' | 'radio'
-
-const LAYER_WORDS: Record<SightLayer, string> = {
-  sight: 'Line of sight',
-  radio: 'Radio path',
-}
+export type { SightLayer }
 
 /** One ray's states as runs of the same state, from the first sample to the last of each run. */
 export function rayRuns(states: SightState[], ranges: number[]): { state: SightState; from: number; to: number; first: number; last: number }[] {
@@ -68,15 +66,6 @@ export function roverSentence(d: RoverSightDTO, roverName: string): string {
   return out.join(' ')
 }
 
-/** Cell edges half-way between samples; the first cell starts at the lander. */
-function edges(xs: number[]): number[] {
-  const e = [0]
-  for (let j = 1; j < xs.length; j++) e.push((xs[j - 1] + xs[j]) / 2)
-  const last = xs[xs.length - 1]
-  e.push(last + (xs.length > 1 ? (last - xs[xs.length - 2]) / 2 : last))
-  return e
-}
-
 const pt = (r: number, deg: number) => {
   const a = (deg * Math.PI) / 180
   return `${(r * Math.sin(a)).toFixed(2)} ${(-r * Math.cos(a)).toFixed(2)}`
@@ -98,23 +87,17 @@ function sector(r0: number, r1: number, a0: number, a1: number): string {
  */
 export function ViewshedMap({ v, layer, roverName }: { v: ViewshedDTO; layer: SightLayer; roverName: string }) {
   const grid = v[layer]
-  const re = edges(v.ranges_m)
+  const re = cellEdges(v.ranges_m)
   const R = re[re.length - 1]
   const n = v.bearings_deg.length
   const step = n > 1 ? (v.bearings_deg[1] - v.bearings_deg[0] + 360) % 360 || 360 / n : 360
   const pad = R * 0.22
-  const ringStep = R > 1500 ? 500 : R > 600 ? 200 : 100
-  const rings: number[] = []
-  for (let r = ringStep; r <= R; r += ringStep) rings.push(r)
-  const counts = { clear: 0, blocked: 0, uncertain: 0 }
-  grid.forEach((ray) => ray.forEach((s) => (counts[s] += 1)))
-  const label = `${LAYER_WORDS[layer]} between ${roverName} and the lander, out to ${formatValue(v.ranges_m[v.ranges_m.length - 1])} m in ${n} directions, north up. The table lists each direction.`
   return (
     <svg
       viewBox={`${-R - pad} ${-R - pad} ${2 * (R + pad)} ${2 * (R + pad)}`}
       className="mx-auto block aspect-square w-full max-w-[420px]"
       role="img"
-      aria-label={label}
+      aria-label={mapLabel(v, layer, roverName)}
     >
       <circle r={R} fill="var(--color-dark-fill)" />
       {grid.map((ray, i) => {
@@ -136,21 +119,7 @@ export function ViewshedMap({ v, layer, roverName }: { v: ViewshedDTO; layer: Si
           )
         })
       })}
-      {rings.map((r) => (
-        <g key={r}>
-          <circle r={r} fill="none" stroke="var(--color-panel)" strokeOpacity={0.8} strokeWidth={R / 250} strokeDasharray={`${R / 60} ${R / 60}`} />
-          {/* The label on a panel-coloured plate, so it reads on every state. */}
-          <rect x={R / 90} y={-r - R / 60 - R / 16} width={(`${formatValue(r)} m`.length * 0.62 + 0.5) * (R / 16)} height={R / 13} fill="var(--color-panel)" />
-          <text x={R / 60 + R / 90} y={-r - R / 60 - R / 160} fontSize={R / 16} fill="var(--color-ink)" className="font-mono">
-            {formatValue(r)} m
-          </text>
-        </g>
-      ))}
-      <text x={0} y={-R - pad * 0.55} textAnchor="middle" fontSize={R / 12} fontWeight={600} fill="var(--color-ink)">
-        N
-      </text>
-      {/* The lander: an ink square with a ring, so it reads on every state. */}
-      <rect x={-R / 40} y={-R / 40} width={R / 20} height={R / 20} fill="var(--color-ink)" stroke="var(--color-canvas)" strokeWidth={R / 200} />
+      <MapMarks R={R} pad={pad} />
     </svg>
   )
 }
@@ -188,9 +157,26 @@ export function ViewshedTable({ v }: { v: ViewshedDTO }) {
   )
 }
 
-/** The map with its switch (line of sight, radio path), its legend and its table twin. */
-export function ViewshedPanel({ v, roverName }: { v: ViewshedDTO; roverName: string }) {
+/**
+ * The map with its switch (line of sight, radio path), its legend and its table twin. Laid over
+ * the terrain, from the service's tiles, when the answer gives its tile address and where the
+ * lander is; drawn as sectors around the lander when it does not, and always in the offline
+ * copy, which has no tiles.
+ */
+export function ViewshedPanel({
+  v,
+  roverName,
+  tile,
+  at,
+}: {
+  v: ViewshedDTO
+  roverName: string
+  tile?: string | null
+  at?: { lat_deg: number; lon_deg: number } | null
+}) {
   const [layer, setLayer] = useState<SightLayer>('sight')
+  const offline = useSnapshotActive()
+  const onTerrain = Boolean(tile && at && !offline)
   return (
     <ChartPanel
       title={`${LAYER_WORDS[layer]}, ${roverName} and the lander`}
@@ -211,41 +197,65 @@ export function ViewshedPanel({ v, roverName }: { v: ViewshedDTO; roverName: str
               ? 'Where a rover could see the lander’s antenna, and the lander see it.'
               : 'Where the radio path is clear too: it needs a wider corridor over the ground (the first Fresnel zone), so less of the ground is clear.'}
           </p>
-          <ViewshedMap v={v} layer={layer} roverName={roverName} />
+          {onTerrain ? (
+            <SiteTileMap v={v} layer={layer} roverName={roverName} tile={tile as string} at={at as { lat_deg: number; lon_deg: number }} />
+          ) : (
+            <ViewshedMap v={v} layer={layer} roverName={roverName} />
+          )}
         </div>
       }
-      legend={
-        <Legend
-          items={[
-            {
-              swatch: (
-                <svg width="12" height="12" aria-hidden="true">
-                  <rect x="1" y="1" width="10" height="10" fill="var(--color-ink)" stroke="var(--color-canvas)" />
-                </svg>
-              ),
-              label: 'The lander',
-            },
-            ...(['clear', 'uncertain', 'blocked'] as const).map((s) => ({
-            swatch: (
-              <span className="flex items-center gap-1.5">
+      legend={<ViewshedLegend onTerrain={onTerrain} />}
+      table={<ViewshedTable v={v} />}
+    />
+  )
+}
+
+/** The key under a map of the line of sight: the lander, each state with its glyph, and (over the terrain) the ground. */
+export function ViewshedLegend({ onTerrain }: { onTerrain: boolean }) {
+  return (
+    <Legend
+      items={[
+        {
+          swatch: (
+            <svg width="12" height="12" aria-hidden="true">
+              <rect x="1" y="1" width="10" height="10" fill="var(--color-ink)" stroke="var(--color-canvas)" />
+            </svg>
+          ),
+          label: 'The lander',
+        },
+        ...(['clear', 'uncertain', 'blocked'] as const).map((s) => ({
+          swatch: (
+            <span className="flex items-center gap-1.5">
+              {onTerrain ? (
+                // The tiles are translucent, so the swatch sits on ground colour as they do on the relief.
+                <span className="flex h-3 w-5 border border-line" style={{ background: 'var(--color-terrain-mid)' }}>
+                  <span className="h-full w-full" style={{ background: tileSwatch(s) }} />
+                </span>
+              ) : (
                 <svg width="20" height="12" aria-hidden="true">
                   {s === 'uncertain' && <rect width="20" height="12" fill="var(--color-uncertain)" fillOpacity={0.3} />}
                   <rect width="20" height="12" fill={SIGHT_WORDS[s].fill} />
                 </svg>
-                <span className="text-ink">{SIGHT_WORDS[s].glyph}</span>
-              </span>
-            ),
-            label:
-              s === 'clear'
-                ? `${SIGHT_WORDS[s].words}`
-                : s === 'blocked'
-                  ? `${SIGHT_WORDS[s].words} by the ground`
-                  : `${SIGHT_WORDS[s].words}: the terrain map’s error could tip it either way`,
-            })),
-          ]}
-        />
-      }
-      table={<ViewshedTable v={v} />}
+              )}
+              <span className="text-ink">{SIGHT_WORDS[s].glyph}</span>
+            </span>
+          ),
+          label:
+            s === 'clear'
+              ? `${SIGHT_WORDS[s].words}`
+              : s === 'blocked'
+                ? `${SIGHT_WORDS[s].words} by the ground`
+                : `${SIGHT_WORDS[s].words}: the terrain map’s error could tip it either way`,
+        })),
+        ...(onTerrain
+          ? [
+              {
+                swatch: <span className="h-3 w-5 border border-line" style={{ background: 'var(--color-terrain-mid)' }} />,
+                label: 'The ground, shaded from the elevation model',
+              },
+            ]
+          : []),
+      ]}
     />
   )
 }

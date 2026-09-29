@@ -474,7 +474,7 @@ function RoverAnswer({ d, meta, roverName }: { d: RoverSightDTO; meta: Lifecycle
         {roverSentence(d, roverName)}
       </p>
       {d.resolvable && d.viewshed ? (
-        <ViewshedPanel v={d.viewshed} roverName={roverName} />
+        <ViewshedPanel v={d.viewshed} roverName={roverName} tile={d.viewshed_tile} at={d.lander} />
       ) : d.resolvable ? (
         <p className="text-small text-ink-2">The directions around the lander are not served yet, so there is no map to draw.</p>
       ) : null}

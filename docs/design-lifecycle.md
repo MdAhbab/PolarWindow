@@ -414,7 +414,17 @@ into the hub header.
   100 m, the lander an ink square: in sight filled (earth), blocked the 45°
   hatch, uncertain the −45° hatch on a light wash; each state in the legend
   with a glyph (● ✕ ?) and words. A switch shows the line of sight or the
-  radio path (the first Fresnel zone needs a wider corridor). Table twin, from
+  radio path (the first Fresnel zone needs a wider corridor). When the answer
+  gives `viewshed_tile` and `lander`, the same layers are drawn over the
+  terrain from the service's tiles (`/tiles/viewshed/{answer}/{z}/{x}/{y}.png`,
+  `?layer=terrain|sight|radio`): the hillshade of the 20 m window the answer
+  read under the answer's own layer, the picture turned to put north up (the
+  polar grid's north is the site's longitude off) and shrunk by the grid's
+  scale, at the zoom whose tile pixel is about a screen pixel; the legend adds
+  "The ground, shaded from the elevation model" and its swatches are drawn in
+  the tiles' own style; a layer that fails to load says so under the map (a map
+  without its layer would read as no blockers). Without tiles (not resolvable,
+  or the offline copy) the sectors above are drawn instead. Table twin, from
   the same rays: each direction ("270° (west)") with its runs in words for both
   ("In sight 25–275 m; uncertain 300 m; blocked 325–425 m; in sight 450–500 m").
   Without `viewshed` the row says there is no map.

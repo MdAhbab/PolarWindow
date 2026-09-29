@@ -37,7 +37,7 @@ import type { CapsuleModelCheckDTO, FeedDTO } from '../../lib/api/lifecycle'
 import { calendarDays } from './LaunchCalendar'
 import { axisTicks, complexOf, contactRows, plannedWords } from './ContactChart'
 import { contactAnswer, coveredWords, numberWords, orbiterWords, orbitWords, relayList } from '../../screens/sections/ContactSection'
-import { bearingWords, rayRuns, rayWords, roverSentence } from './RoverSight'
+import { bearingWords, rayRuns, rayWords, roverSentence, ViewshedPanel } from './RoverSight'
 import roverFixture from '../../lib/api/__fixtures__/lifecycle/rover.json'
 import roverUnresolvable from '../../lib/api/__fixtures__/lifecycle/rover-unresolvable.json'
 import type { RoverSightDTO } from '../../lib/api/lifecycle'
@@ -763,5 +763,36 @@ describe('Rover and lander line of sight', () => {
     )
     const bad = (roverUnresolvable as unknown as SectionDTO<RoverSightDTO>).data
     expect(roverSentence(bad, 'CADRE')).toMatch(/^Reiner Gamma is outside the polar terrain map/)
+  })
+
+  it('the map is laid over the terrain from the answer’s tiles, with the ground in the legend; without them it is drawn as sectors', () => {
+    const { unmount } = render(<ViewshedPanel v={v} roverName="Yaoki" tile={rover.viewshed_tile} at={rover.lander} />)
+    const map = screen.getByTestId('site-tile-map')
+    expect(map.getAttribute('aria-label')).toMatch(/^Line of sight between Yaoki and the lander, out to 500 m in 36 directions, north up\. The table lists each direction\. Drawn over the terrain map\.$/)
+    const hrefs = Array.from(map.querySelectorAll('image')).map((i) => i.getAttribute('href') ?? '')
+    // The terrain under the answer's own layer, each from the answer's address at one zoom.
+    expect(hrefs.some((h) => /\/tiles\/viewshed\/91\/\d+\/\d+\/\d+\.png\?layer=terrain$/.test(h))).toBe(true)
+    expect(hrefs.some((h) => /\?layer=sight$/.test(h))).toBe(true)
+    expect(hrefs.every((h) => !h.includes('{'))).toBe(true)
+    for (const words of ['The lander', 'In sight', 'Blocked by the ground', 'Uncertain: the terrain map’s error could tip it either way', 'The ground, shaded from the elevation model']) {
+      expect(screen.getByText(words)).toBeTruthy()
+    }
+    // The switch asks for the radio path's tiles.
+    fireEvent.click(screen.getByRole('button', { name: 'Radio path' }))
+    expect(Array.from(screen.getByTestId('site-tile-map').querySelectorAll('image')).some((i) => /\?layer=radio$/.test(i.getAttribute('href') ?? ''))).toBe(true)
+    unmount()
+
+    render(<ViewshedPanel v={v} roverName="Yaoki" tile={null} at={null} />)
+    expect(screen.queryByTestId('site-tile-map')).toBeNull()
+    expect(screen.getByRole('img', { name: /^Line of sight between Yaoki and the lander/ })).toBeTruthy()
+    expect(screen.queryByText('The ground, shaded from the elevation model')).toBeNull()
+  })
+
+  it('a layer that does not load says so, since a map without it would read as no blockers', () => {
+    render(<ViewshedPanel v={v} roverName="Yaoki" tile={rover.viewshed_tile} at={rover.lander} />)
+    expect(screen.queryByRole('status')).toBeNull()
+    const layer = Array.from(screen.getByTestId('site-tile-map').querySelectorAll('image')).find((i) => /\?layer=sight$/.test(i.getAttribute('href') ?? ''))!
+    fireEvent.error(layer)
+    expect(screen.getByRole('status').textContent).toBe('The map layer did not load, so nothing is drawn over the terrain. The table has the same answer.')
   })
 })

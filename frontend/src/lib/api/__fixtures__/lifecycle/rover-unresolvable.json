@@ -7,6 +7,7 @@
   "share_basis": null,
   "radius_m": null,
   "viewshed": null,
+  "lander": null,
   "viewshed_tile": null,
   "out_of_sight_share": {
    "value": null,
