@@ -4482,7 +4482,8 @@
               "assumed"
             ],
             "title": "Basis",
-            "description": "A figure a launch vehicle's guide publishes, or one the service assumes."
+            "description": "A figure a launch vehicle's guide publishes, or one the service assumes.",
+            "default": "assumed"
           },
           "source": {
             "anyOf": [
@@ -4501,9 +4502,7 @@
         "type": "object",
         "required": [
           "what",
-          "value",
-          "basis",
-          "source"
+          "value"
         ],
         "title": "Assumption"
       },

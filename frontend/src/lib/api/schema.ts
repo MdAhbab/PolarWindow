@@ -1383,6 +1383,7 @@ export interface components {
             /**
              * Basis
              * @description A figure a launch vehicle's guide publishes, or one the service assumes.
+             * @default assumed
              * @enum {string}
              */
             basis: "published" | "assumed";
@@ -1390,7 +1391,7 @@ export interface components {
              * Source
              * @description Where a published figure is from (the guide, table and page); null if assumed.
              */
-            source: string | null;
+            source?: string | null;
         };
         /** Attempt */
         Attempt: {
