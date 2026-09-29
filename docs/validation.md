@@ -689,3 +689,13 @@ post, as for the skyline; LOLA's errors between nearby posts are partly shared, 
 if anything too wide. No rover drive is published, so the share is over the ground within
 the radius, and the longest stretch out of sight is missing with that reason. Reiner Gamma
 (CADRE, Lunar Vertex) is outside the polar model and answers "not resolvable".
+
+**The map layer** (`GET /tiles/viewshed/...`, `app/core/viewshed.py: tile_rgba`). The tiles draw the
+states of that answer, not a second calculation, so what is checked is that each ground point lands
+in its cell: `test_viewshed.py` gives every (bearing, range) cell its own random state at 85°S 120°E,
+where the polar grid's north lies 120° from true north, and reads 300 cells back from the picture at
+points given as bearing and range from the lander; all 300 agree, and with the grid's turn left out
+214 of the 300 read back wrong, so the test does see it. The stripes are those of the whole map, not
+of a tile (checked on tiles at three offsets), so neighbouring tiles join up. The terrain under them
+is the hillshade of the 20 m window the answer read, drawn by the terrain tiles' own renderer; the
+regional 80 m model those tiles come from is blocks 34 pixels wide at the zoom of a rover map.

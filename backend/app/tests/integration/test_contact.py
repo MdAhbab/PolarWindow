@@ -341,3 +341,79 @@ async def test_the_contact_plan_takes_the_dates_and_refuses_a_relay_it_cannot_li
     assert r.status_code == 422 and "lunar-pathfinder" in r.json()["detail"]["detail"]
     r = await anon_client.get(PLAN, params={"format": "csv", "relay": "lro"})
     assert r.status_code == 422 and "no relay service" in r.json()["detail"]["detail"]
+
+
+def _png_size(blob: bytes) -> tuple[int, int]:
+    assert blob[:8] == b"\x89PNG\r\n\x1a\n"
+    return int.from_bytes(blob[16:20], "big"), int.from_bytes(blob[20:24], "big")
+
+
+async def _rover_answer(client, mission: str, **params) -> dict:
+    r = await client.get(f"{API}/missions/{mission}/contact/rover", params=params)
+    if r.status_code == 202:
+        assert await Worker(owner="test", handlers=HANDLERS).run_once() is not None
+        r = await client.get(f"{API}/missions/{mission}/contact/rover", params=params)
+    assert r.status_code == 200, r.text
+    return r.json()["data"]
+
+
+async def test_the_line_of_sight_is_served_as_map_tiles_over_the_terrain(anon_client) -> None:
+    from app.config import get_settings
+    from app.core.projections import local_frame
+    from app.db.repositories.jobs import AssessmentRepository
+    from app.services import contact_tiles
+
+    d = await _rover_answer(anon_client, "im-2")
+    template = d["viewshed_tile"]
+    assert template.startswith("/tiles/viewshed/") and template.endswith("/{z}/{x}/{y}.png")
+    aid = int(template.split("/")[3])
+    async with session_scope() as s:
+        rec = await AssessmentRepository(s).get(aid)
+    assert rec is not None and rec.kind == "rover"
+    f = local_frame(rec.params["lon_deg"], rec.params["lat_deg"])
+    z = 10
+    half = contact_tiles._half_extent_m(get_settings().regional_dem_path)
+    size = 2 * half / 2**z
+    tx, ty = int((f.x0_m + half) // size), int((half - f.y0_m) // size)
+
+    def url(layer: str, z_: int = z, x: int = tx, y: int = ty) -> str:
+        return f"{API}{template}".format(z=z_, x=x, y=y) + f"?layer={layer}"
+
+    for layer in ("sight", "radio", "terrain"):
+        r = await anon_client.get(url(layer))
+        assert r.status_code == 200 and r.headers["content-type"] == "image/png", (layer, r.text)
+        assert _png_size(r.content) == (256, 256)
+    # The layer is the line of sight unless asked otherwise.
+    plain = await anon_client.get(url("sight").split("?")[0])
+    assert plain.content == (await anon_client.get(url("sight"))).content
+    # An unchanged tile is not sent again; a tile with nothing in it is a 204, not a 404.
+    tag = (await anon_client.get(url("sight"))).headers["etag"]
+    again = await anon_client.get(url("sight"), headers={"if-none-match": tag})
+    assert again.status_code == 304
+    away = await anon_client.get(url("sight", x=0, y=0))
+    assert away.status_code == 204
+    # The terrain is drawn from the elevation model the answer used, not the coarse regional one.
+    r = await anon_client.get(url("terrain"))
+    assert r.headers["x-tile-source"] in ("static", "dynamic")
+
+    # What cannot be drawn is said, and the answer is the one asked about.
+    r = await anon_client.get(url("nope"))
+    assert r.status_code == 404 and r.json()["detail"]["type"].endswith("unknown-layer")
+    r = await anon_client.get(f"{API}/tiles/viewshed/{aid}/10/99999/0.png")
+    assert r.status_code == 404 and r.json()["detail"]["type"].endswith("tile-out-of-scheme")
+    r = await anon_client.get(f"{API}/tiles/viewshed/{aid}/13/0/0.png")
+    assert r.status_code == 422  # deeper than the scheme goes
+    r = await anon_client.get(f"{API}/tiles/viewshed/999999/10/0/0.png")
+    assert r.status_code == 404 and r.json()["detail"]["type"].endswith("no-viewshed")
+    await _answer(anon_client, "im-1")  # a contact answer is not a map
+    async with session_scope() as s:
+        other = (
+            await s.execute(text("SELECT max(id) FROM assessments WHERE kind = 'contact'"))
+        ).scalar_one()
+    r = await anon_client.get(f"{API}/tiles/viewshed/{other}/10/0/0.png")
+    assert r.status_code == 404 and r.json()["detail"]["type"].endswith("no-viewshed")
+
+
+async def test_a_site_outside_the_polar_terrain_has_no_map_to_fetch(anon_client) -> None:
+    d = await _rover_answer(anon_client, "im-3", rover="im-3/cadre")
+    assert d["resolvable"] is False and d["viewshed"] is None and d["viewshed_tile"] is None

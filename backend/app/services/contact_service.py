@@ -23,7 +23,7 @@ from app.db.repositories.feeds import FeedRepository
 from app.db.repositories.missions import MissionRecord, MissionRepository
 from app.db.repositories.pm import PmRepository
 from app.db.repositories.sites import SiteRepository
-from app.services import audit_service, job_service, lifecycle, mission_service
+from app.services import audit_service, contact_tiles, job_service, lifecycle, mission_service
 from app.services.auth_service import Claims
 from app.services.mission_service import MissionNotFound
 
@@ -207,7 +207,13 @@ async def _stored(
     if ans.assessment is None:
         assert ans.job is not None
         return 202, ans.job
-    return 200, dict(ans.assessment.result)
+    # The map's tiles belong to this stored answer: its number is in their address.
+    result = dict(ans.assessment.result)
+    data = dict(result["data"])
+    if data.get("viewshed") is not None:
+        data["viewshed_tile"] = contact_tiles.url_template(ans.assessment.id)
+    result["data"] = data
+    return 200, result
 
 
 async def contact(
@@ -570,4 +576,10 @@ async def rover(
     if ans.assessment is None:
         assert ans.job is not None
         return 202, ans.job
-    return 200, dict(ans.assessment.result)
+    # The map's tiles belong to this stored answer: its number is in their address.
+    result = dict(ans.assessment.result)
+    data = dict(result["data"])
+    if data.get("viewshed") is not None:
+        data["viewshed_tile"] = contact_tiles.url_template(ans.assessment.id)
+    result["data"] = data
+    return 200, result

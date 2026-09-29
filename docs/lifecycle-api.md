@@ -703,3 +703,18 @@ that user. `GET /auth/me` returns the same `user`.
   - The contact job keeps each relay's links at that placement beside `data` (a `plan` key of the
     stored result, never in the section); `net-4` answers are worked out again. No shape of the
     section changes.
+- 2026-09-29 (backend, the rover's line of sight as map tiles; no engine change):
+  - `RoverOut.viewshed_tile` is filled (it was null): `/tiles/viewshed/{answer}/{z}/{x}/{y}.png` under
+    `/api/v1`, with the stored answer's own number in it, so a tile never changes; null with no map
+    (not resolvable). `GET /tiles/viewshed/{answer}/{z}/{x}/{y}.png?layer=sight|radio|terrain`
+    (default `sight`): 256 px PNG in the terrain tiles' scheme (a quadtree over the regional model's
+    +-303,960 m, x east, y south) to zoom 12 (the terrain tiles stop at 7); 204 where the layer draws
+    nothing, which is most of the grid.
+  - `sight` and `radio` draw each cell as the twin lists it (cells end half way between the sampled
+    ranges and each bearing covers +-2.5 degrees): clear is Earth's blue filled, blocked dark with 45
+    degree stripes, uncertain a light wash with -45 degree stripes, all translucent so the relief shows
+    through. `terrain` is the hillshade of the elevation model the answer read, the 20 m window at the
+    landing spot where there is one (the regional 80 m model is blocks at a rover's scale).
+  - 404 `no-viewshed` (no such answer, not a rover answer, or nothing to draw), `unknown-layer`,
+    `tile-out-of-scheme`; 422 past zoom 12; 503 `dem-missing` for `terrain`. Tiles are cached under
+    `data/tiles/viewshed/{answer}/` and can be deleted at any time.

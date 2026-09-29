@@ -212,7 +212,12 @@ class RoverOut(_M):
     )
     radius_m: float | None
     viewshed: Viewshed | None
-    viewshed_tile: str | None
+    viewshed_tile: str | None = Field(
+        description="The map layer's tile address under the API prefix, with `{z}`, `{x}` and "
+        "`{y}` for the map to fill in: 256 px PNG in the terrain tiles' scheme, zoom 0 to 12. "
+        "`?layer=` is `sight` (default), `radio` or `terrain` (the hillshade of the elevation "
+        "model used). Null when there is nothing to draw."
+    )
     out_of_sight_share: QuantityOut = Field(
         description="Percent out of sight; a range when uncertain cells could go either way."
     )

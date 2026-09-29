@@ -1137,6 +1137,96 @@
         }
       }
     },
+    "/api/v1/tiles/viewshed/{assessment_id}/{z}/{x}/{y}.png": {
+      "get": {
+        "tags": [
+          "tiles"
+        ],
+        "summary": "A rover line-of-sight answer as map tiles, or the terrain under it",
+        "operationId": "get_viewshed_tile_api_v1_tiles_viewshed__assessment_id___z___x___y__png_get",
+        "parameters": [
+          {
+            "name": "assessment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The answer's number, from `viewshed_tile`.",
+              "title": "Assessment Id"
+            },
+            "description": "The answer's number, from `viewshed_tile`."
+          },
+          {
+            "name": "z",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 12,
+              "minimum": 0,
+              "title": "Z"
+            }
+          },
+          {
+            "name": "x",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "title": "X"
+            }
+          },
+          {
+            "name": "y",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "title": "Y"
+            }
+          },
+          {
+            "name": "layer",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "`sight` (line of sight), `radio` (the radio path too) or `terrain` (the hillshade of the elevation model the answer used).",
+              "default": "sight",
+              "title": "Layer"
+            },
+            "description": "`sight` (line of sight), `radio` (the radio path too) or `terrain` (the hillshade of the elevation model the answer used)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tile image.",
+            "content": {
+              "image/png": {}
+            }
+          },
+          "204": {
+            "description": "Inside the grid, but nothing is drawn there."
+          },
+          "404": {
+            "description": "No such answer or no map in it, or z/x/y outside the tile scheme."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/agents/explain": {
       "post": {
         "tags": [
@@ -5165,6 +5255,10 @@
             "type": "boolean",
             "title": "Passed"
           },
+          "atmosphere": {
+            "type": "string",
+            "title": "Atmosphere"
+          },
           "mission_team_km": {
             "type": "number",
             "title": "Mission Team Km"
@@ -5204,6 +5298,7 @@
           "distance_range_km",
           "limit_km",
           "passed",
+          "atmosphere",
           "mission_team_km",
           "ellipse_99_km",
           "measured_inside_ellipse",
@@ -5212,7 +5307,7 @@
           "note"
         ],
         "title": "CapsuleModelCheck",
-        "description": "The capsule entry model (3-DOF, U.S. Standard Atmosphere 1976) flown from\nOSIRIS-REx's reconstructed entry state, against where its capsule landed."
+        "description": "The capsule entry model (3-DOF, through NRLMSISE-00 for the entry day) flown from\nOSIRIS-REx's reconstructed entry state, against where its capsule landed."
       },
       "Cleared": {
         "properties": {
@@ -11493,7 +11588,8 @@
                 "type": "null"
               }
             ],
-            "title": "Viewshed Tile"
+            "title": "Viewshed Tile",
+            "description": "The map layer's tile address under the API prefix, with `{z}`, `{x}` and `{y}` for the map to fill in: 256 px PNG in the terrain tiles' scheme, zoom 0 to 12. `?layer=` is `sight` (default), `radio` or `terrain` (the hillshade of the elevation model used). Null when there is nothing to draw."
           },
           "out_of_sight_share": {
             "$ref": "#/components/schemas/QuantityOut",

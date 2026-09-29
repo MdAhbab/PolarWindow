@@ -225,6 +225,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tiles/viewshed/{assessment_id}/{z}/{x}/{y}.png": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A rover line-of-sight answer as map tiles, or the terrain under it */
+        get: operations["get_viewshed_tile_api_v1_tiles_viewshed__assessment_id___z___x___y__png_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/agents/explain": {
         parameters: {
             query?: never;
@@ -1635,7 +1652,7 @@ export interface components {
         };
         /**
          * CapsuleModelCheck
-         * @description The capsule entry model (3-DOF, U.S. Standard Atmosphere 1976) flown from
+         * @description The capsule entry model (3-DOF, through NRLMSISE-00 for the entry day) flown from
          *     OSIRIS-REx's reconstructed entry state, against where its capsule landed.
          */
         CapsuleModelCheck: {
@@ -1649,6 +1666,8 @@ export interface components {
             limit_km: number;
             /** Passed */
             passed: boolean;
+            /** Atmosphere */
+            atmosphere: string;
             /** Mission Team Km */
             mission_team_km: number;
             /** Ellipse 99 Km */
@@ -3732,7 +3751,10 @@ export interface components {
             /** Radius M */
             radius_m: number | null;
             viewshed: components["schemas"]["Viewshed"] | null;
-            /** Viewshed Tile */
+            /**
+             * Viewshed Tile
+             * @description The map layer's tile address under the API prefix, with `{z}`, `{x}` and `{y}` for the map to fill in: 256 px PNG in the terrain tiles' scheme, zoom 0 to 12. `?layer=` is `sight` (default), `radio` or `terrain` (the hillshade of the elevation model used). Null when there is nothing to draw.
+             */
             viewshed_tile: string | null;
             /** @description Percent out of sight; a range when uncertain cells could go either way. */
             out_of_sight_share: components["schemas"]["QuantityOut"];
@@ -5134,6 +5156,58 @@ export interface operations {
             };
             /** @description No data here. */
             204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_viewshed_tile_api_v1_tiles_viewshed__assessment_id___z___x___y__png_get: {
+        parameters: {
+            query?: {
+                /** @description `sight` (line of sight), `radio` (the radio path too) or `terrain` (the hillshade of the elevation model the answer used). */
+                layer?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The answer's number, from `viewshed_tile`. */
+                assessment_id: number;
+                z: number;
+                x: number;
+                y: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tile image. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": unknown;
+                };
+            };
+            /** @description Inside the grid, but nothing is drawn there. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such answer or no map in it, or z/x/y outside the tile scheme. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

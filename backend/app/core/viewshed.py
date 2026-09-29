@@ -37,6 +37,7 @@ import numpy as np
 import numpy.typing as npt
 
 from app.core.horizon import R_MOON_M, TerrainSampler, curvature_drop_m
+from app.core.projections import LocalFrame
 
 FloatArray = npt.NDArray[np.float64]
 IntArray = npt.NDArray[np.int8]
@@ -165,3 +166,88 @@ def ground_share(v: Viewshed, states: IntArray) -> tuple[float, float] | None:
     lo = float(w[states == BLOCKED].sum()) / total
     hi = float(w[states != CLEAR].sum()) / total
     return lo, hi
+
+
+# ---------------------------------------------------------------------------
+# The map layer: the same states as raster tiles
+# ---------------------------------------------------------------------------
+
+#: The tile style, the same in both themes (a tile is a picture): translucent so the relief
+#: shows through, and the three states told apart by pattern as well as by tone, never by
+#: colour alone: in sight is filled, blocked is dark with 45 degree stripes, uncertain is a
+#: light wash with -45 degree stripes. The colours are the product's dark-theme tokens
+#: (Earth's blue, the dark fill and its hatch, the uncertain grey).
+CLEAR_RGBA: Final[tuple[int, int, int, int]] = (79, 198, 224, 150)
+BLOCKED_RGBA: Final[tuple[int, int, int, int]] = (20, 24, 29, 225)
+BLOCKED_STRIPE_RGBA: Final[tuple[int, int, int, int]] = (138, 149, 161, 255)
+UNCERTAIN_RGBA: Final[tuple[int, int, int, int]] = (200, 208, 216, 95)
+UNCERTAIN_STRIPE_RGBA: Final[tuple[int, int, int, int]] = (20, 24, 29, 235)
+#: Stripes repeat every 8 pixels of the tile: 3 wide for blocked, 2 for uncertain.
+HATCH_PERIOD_PX: Final[int] = 8
+BLOCKED_STRIPE_PX: Final[int] = 3
+UNCERTAIN_STRIPE_PX: Final[int] = 2
+
+
+def cell_edges(ranges_m: FloatArray) -> FloatArray:
+    """Where each range cell ends: half way between samples, the first cell starting at the
+    lander and the last reaching half a step past the largest range. The frontend's table
+    and sector drawing use the same edges, so the tiles and the twin agree."""
+    r = np.asarray(ranges_m, dtype=np.float64)
+    last = r[-1] + ((r[-1] - r[-2]) / 2.0 if r.size > 1 else r[-1])
+    return np.concatenate([[0.0], (r[:-1] + r[1:]) / 2.0, [last]])
+
+
+def tile_rgba(
+    bounds: tuple[float, float, float, float],
+    frame: LocalFrame,
+    bearings_deg: FloatArray,
+    ranges_m: FloatArray,
+    states: IntArray,
+    *,
+    pixel_origin: tuple[int, int] = (0, 0),
+    size_px: int = 256,
+) -> npt.NDArray[np.uint8] | None:
+    """One map tile of a viewshed as RGBA, or None where no cell of it lies inside the tile.
+
+    ``bounds`` are the tile's ``(x_min, y_min, x_max, y_max)`` in the polar stereographic
+    grid, sampled as the terrain tiles are (``size_px`` points from edge to edge), so a
+    tile lines up with the hillshade under it. ``frame`` is the lander's local frame:
+    each pixel is taken back from the grid to the ground east and north of the lander (the
+    grid's north is not true north), then to a bearing and a range, and so to its cell.
+    ``states`` is ``[bearing][range]``. ``pixel_origin`` is the tile's first pixel in the
+    whole map at its zoom, so the stripes run on unbroken across tiles.
+    """
+    x_min, y_min, x_max, y_max = bounds
+    gx, gy = np.meshgrid(np.linspace(x_min, x_max, size_px), np.linspace(y_max, y_min, size_px))
+    dx, dy = gx - frame.x0_m, gy - frame.y0_m
+    c = math.cos(frame.grid_convergence_rad) * frame.scale_factor
+    s = math.sin(frame.grid_convergence_rad) * frame.scale_factor
+    k2 = c * c + s * s  # LocalFrame.local_to_grid, inverted
+    east = (dx * c - dy * s) / k2
+    north = (dx * s + dy * c) / k2
+    rng = np.hypot(east, north)
+    edges = cell_edges(ranges_m)
+    inside = rng < edges[-1]
+    if not inside.any():
+        return None
+    k = np.clip(np.searchsorted(edges, rng, side="right") - 1, 0, edges.size - 2)
+    b = np.asarray(bearings_deg, dtype=np.float64)
+    step = float(b[1] - b[0]) if b.size > 1 else 360.0
+    brg = np.degrees(np.arctan2(east, north)) % 360.0
+    i = np.floor((brg - b[0] + step / 2.0) / step).astype(np.int64) % b.size
+    state = np.asarray(states)[i, k]
+
+    col, row = np.meshgrid(np.arange(size_px), np.arange(size_px))
+    u = pixel_origin[0] + col
+    v = pixel_origin[1] + row
+    slash = ((u + v) % HATCH_PERIOD_PX) < BLOCKED_STRIPE_PX  # a line of constant x + y: "/"
+    backslash = ((u - v) % HATCH_PERIOD_PX) < UNCERTAIN_STRIPE_PX  # constant x - y: "\"
+    rgba = np.zeros((size_px, size_px, 4), dtype=np.uint8)
+    rgba[inside & (state == CLEAR)] = CLEAR_RGBA
+    blocked = inside & (state == BLOCKED)
+    rgba[blocked] = BLOCKED_RGBA
+    rgba[blocked & slash] = BLOCKED_STRIPE_RGBA
+    unsure = inside & (state == UNCERTAIN)
+    rgba[unsure] = UNCERTAIN_RGBA
+    rgba[unsure & backslash] = UNCERTAIN_STRIPE_RGBA
+    return rgba
