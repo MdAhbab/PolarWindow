@@ -63,7 +63,7 @@ def test_the_days_air_lands_it_where_docs_validation_says_which_is_over_the_10_k
     et0, r0, v0 = entry_state
     atm = capsule.day_atmosphere(et0)
     if atm.air is None:
-        pytest.skip(atm.fallback_reason)
+        pytest.skip(atm.fallback_reason or "no solar flux and ap for the entry day")
     ld = capsule.land(et0, r0, v0, entry.Capsule(v.beta(sum(v.CA) / 2), air=atm.air), v.TOUCHDOWN_M)
     assert ld.landed
     d = capsule.distance_km(ld.lat_deg, ld.lon_deg, *v.MEASURED)
