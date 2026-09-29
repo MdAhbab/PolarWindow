@@ -124,11 +124,15 @@ test('launch (contract fixtures): choosing an opportunity sets the four numbers;
   await expect(wind).toContainText("HRRR's 10 m wind was off by 1.2 m/s on average")
   await expect(wind).toContainText('National Weather Service (NWS) forecast: 8.9 m/s, under the limit.')
   await expect(wind).toContainText('keeps no archive of its forecasts, so this one cannot be checked against observations.')
-  // The row's closed line counts them, and under the table is what the service says about the check.
+  // The row's closed line counts them, and under the table is what the service says about the check (its own parts, as served).
   await expect(page.locator('summary', { hasText: 'Weather rules for this opportunity' })).toContainText('6 rules; models disagree on 1')
-  await expect(page.locator('details').filter({ has: page.locator('summary', { hasText: 'Weather rules for this opportunity' }) })).toContainText(
-    'No rule has been checked against observations (hindcast) yet',
-  )
+  const row = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Weather rules for this opportunity' }) })
+  await expect(row).toContainText('How these numbers were worked out')
+  for (const part of fixtureJson('launch-weather.json').meta.uncertainty.parts as { source: string; note: string }[]) {
+    await expect(row).toContainText(part.source)
+    await expect(row).toContainText(part.note)
+  }
+  await expect(row).toContainText('It did not pass the gate')
   await expectNoSeriousAxe(page, '/missions/im-2/launch with the weather open')
 })
 
@@ -138,7 +142,7 @@ test('launch weather (contract fixtures): a rule whose shares were checked again
 }) => {
   await returningVisitor(context)
   await serveLifecycleFixtures(context)
-  // The wind rule's shares, checked; the rest as they are.
+  // The wind rule's shares, checked; the rest as they are (the check's own sentence under the table is left alone: this test is about the rule's line and the closed row).
   await context.route(/localhost:8000\/api\/v1\/missions\/[^/]+\/launch\/weather/, async (route) => {
     const body = fixtureJson('launch-weather.json')
     for (const p of body.data.rules[0].per_system) if (p.share) p.share.checked = true

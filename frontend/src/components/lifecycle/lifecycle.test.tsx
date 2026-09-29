@@ -751,6 +751,12 @@ describe('Return: the capsule model, checked against a real landing', () => {
     expect(screen.getByText('The plan’s 10 km is met, with 0.5 km to spare.')).toBeTruthy()
     expect(screen.queryByText(/not met/)).toBeNull()
   })
+  it('a saved copy recorded before the air was served leaves the line out rather than empty', () => {
+    const { atmosphere: _air, ...old } = check
+    render(<CapsuleCheckRow check={old as CapsuleModelCheckDTO} />)
+    expect(screen.queryByText('The air the modelled fall went through')).toBeNull()
+    expect(screen.getByText('12.1 km from it; the plan’s 10 km is not met')).toBeTruthy()
+  })
   it('reads the limit and the air from the answer, not from the screen', () => {
     const other = { ...check, limit_km: 15, passed: true, distance_km: 12.1, atmosphere: 'The U.S. Standard Atmosphere 1976: the solar files have no values for that day.' }
     expect(capsuleLimitWords(other)).toEqual({

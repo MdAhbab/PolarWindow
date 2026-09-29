@@ -77,12 +77,13 @@ export function checkWords(row: Pick<RuleRowDTO, 'per_system'>): string | null {
 }
 
 function RuleCell({ row }: { row: RuleRowDTO }) {
+  const checked = checkWords(row)
   return (
     <span className="flex flex-col gap-1">
       <span className="text-body leading-5 font-semibold text-ink">{row.text}</span>
       <span className="text-caption leading-caption text-ink-3">
         {CLASS_WORDS[row.class]}
-        {checkWords(row) && ` · ${checkWords(row)}`}
+        {checked && ` · ${checked}`}
         {' · '}
         <a href={row.source_url} target="_blank" rel="noreferrer">
           {hostWords(row.source_url)}

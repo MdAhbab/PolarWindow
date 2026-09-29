@@ -246,7 +246,8 @@ export function CapsuleCheckRow({ check: k }: { check: CapsuleModelCheckDTO }) {
   const limit = capsuleLimitWords(k)
   const rows: [string, string][] = [
     ['The case', k.case],
-    ['The air the modelled fall went through', k.atmosphere],
+    // Always served now; a saved copy recorded before the field existed has none, and then the line is left out, not left empty.
+    ...(k.atmosphere ? ([['The air the modelled fall went through', k.atmosphere]] as [string, string][]) : []),
     ['From the real landing point', `${km(k.distance_km)}${lo != null && hi != null ? ` (${formatValue(lo)} to ${km(hi)} over the published drag range)` : ''}`],
     ['The limit', km(k.limit_km)],
     ['The mission’s own simulation', `${km(k.mission_team_km)} from it`],
@@ -268,27 +269,27 @@ export function CapsuleCheckRow({ check: k }: { check: CapsuleModelCheckDTO }) {
             {limit.long}
           </p>
         )}
-        <dl className="flex flex-col gap-2 text-small leading-5">
+        <dl className="flex flex-col gap-2 text-small leading-5 break-words [overflow-wrap:anywhere]">
           {rows.map(([label, value]) => (
             <div key={label}>
               <dt className="font-semibold text-ink-2">{label}</dt>
-              <dd className="text-ink-2">{value}</dd>
+              <dd className="text-ink-2 break-words [overflow-wrap:anywhere]">{value}</dd>
             </div>
           ))}
           {k.sources.length > 0 && (
             <div>
               <dt className="font-semibold text-ink-2">Where the entry state and the landing are from</dt>
               <dd className="text-ink-2">
-                <ul className="flex flex-col gap-1">
+                <ul className="flex flex-col gap-1 break-words [overflow-wrap:anywhere]">
                   {k.sources.map((s) =>
                     /^https?:\/\//.test(s) ? (
-                      <li key={s}>
+                      <li key={s} className="break-all [overflow-wrap:anywhere]">
                         <a href={s} target="_blank" rel="noreferrer">
                           {hostWords(s)}: {s.split('/').pop()}
                         </a>
                       </li>
                     ) : (
-                      <li key={s}>{s}</li>
+                      <li key={s} className="break-words [overflow-wrap:anywhere]">{s}</li>
                     ),
                   )}
                 </ul>
