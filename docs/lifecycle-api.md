@@ -207,7 +207,8 @@ interface Contact {
 }
 ```
 
-Exports: `GET /missions/{id}/contact/plan?format=ion|csv`.
+Exports: `GET /missions/{id}/contact/plan?format=ion|csv&rate_bps=&start=&end=&relay=` (the same dates and
+`relay` as the answer; ION needs `rate_bps`).
 Rover: `GET /missions/{id}/contact/rover?rover=` →
 `Section<{ viewshed_tile: string | null; out_of_sight_share: Quantity;
 longest_out_of_sight_m: Quantity; resolvable: boolean; reason: string | null }>`.
@@ -686,3 +687,19 @@ that user. `GET /auth/me` returns the same `user`.
     direct lunar launch is shown as an instant and the note says it is not published.
   - `data/missions.json` `t0` may carry `window_open`/`window_close` (UTC, equal for a
     single instant); `GET /missions` does not show them.
+- 2026-09-29 (backend, relay contacts in the contact plan; engine `net-5`; the frontend follows):
+  - `GET /missions/{id}/contact/plan?format=ion|csv` takes `start`, `end` (the frontend already sent
+    them and they were ignored, so a plan was for the default dates) and `relay=` (repeatable, at most 3,
+    as for the answer: a relay that is not the mission's own is added to the graph). Without `relay` the
+    plan lists direct contacts only, as before. A relay asked for is listed with its contacts at ONE
+    placement of the 5,184 swept (its node and phase are unknown), the one whose time through the relay
+    is nearest the middle of the range: `lander` to the relay (above the landing spot's skyline) and the
+    relay to each station (above its mask, the Moon not in the way), edges from 5-minute samples. CSV:
+    a sixth column `basis` (`direct`, or `planned relay; node .. deg, phase .. deg, one of 5184
+    placements`). ION: `#` lines say the relay is PLANNED, which placement, that it is not a forecast,
+    and the ranges (time through it, time it adds) over all placements; then `a contact` and `a range`
+    per contact, the range from that link's farthest light time. 422 when a relay asked for has no
+    usable orbit or is not a relay service.
+  - The contact job keeps each relay's links at that placement beside `data` (a `plan` key of the
+    stored result, never in the section); `net-4` answers are worked out again. No shape of the
+    section changes.

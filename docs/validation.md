@@ -635,6 +635,19 @@ message waits 182–230 min at most); Altus-1 in NASA's reference orbit would ad
 (4.7–5.5 h unheard, 282–326 min wait). At IM-3's near-side site, where Earth never sets,
 Altus-1 adds nothing. About 50 s of compute per relay for a lunar day.
 
+**The relay in the contact plan.** A plan that asks for a relay (`?relay=`) lists its contacts at
+one placement, the one swept (5,184 for each catalogue relay) whose time through the relay is
+nearest the middle of the range (the first on a tie), so the file and the answer's middle value agree and the choice is the
+same every time; the header says which placement, that it is planned and not a forecast, and the
+ranges over all of them. Checked in `test_relay.py` (a station's own link is the part of the
+combined link the sweep uses that it hears: with two stations at Earth's centre, the one with no
+mask is all of it to 1e-9 and one with an 89.5° mask hears less; the placement named is a real
+point of the sweep whose time through the relay is the one reported) and in `test_contact.py` (Griffin-1, 20 to 22 March
+2027: with no relay asked the plan is the direct contacts and nothing else; with Lunar Pathfinder
+every contact is from the lander to the relay or from it to a station, inside the dates, marked
+planned, and ION has an `a range` for each `a contact`). One placement is not a schedule: another
+gives other contacts, which is why it is never in a plan that did not ask for it.
+
 # Rover-to-lander line of sight (plan T1, F5)
 
 `app/core/viewshed.py`, served by `GET /missions/{id}/contact/rover`. For each bearing (every

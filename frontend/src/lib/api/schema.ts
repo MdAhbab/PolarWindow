@@ -5747,6 +5747,11 @@ export interface operations {
                 format?: "csv" | "ion";
                 /** @description Data rate for ION, bits per second. */
                 rate_bps?: number | null;
+                /** @description As for the answer: the mission's dates. */
+                start?: string | null;
+                end?: string | null;
+                /** @description Planned relays (catalogue ids) whose contacts to list, labelled planned: a relay's contacts are for one guessed placement of its orbit, so a plan lists them only when asked. As for the answer, a relay that is not the mission's own is added. */
+                relay?: string[];
             };
             header?: never;
             path: {

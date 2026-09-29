@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import csv
+import io
 from datetime import UTC, datetime
 
 import pytest
@@ -57,7 +59,7 @@ async def test_im1_contact_over_its_surface_days(anon_client) -> None:
     assert len(stations) == 14
     assert d["link_budget_note"].startswith("Line of sight only")
     assert 1.1 < d["light_time_s"]["min"] < d["light_time_s"]["max"] < 1.5
-    assert body["meta"]["engines"] == {"link": "link-1", "net": "net-4", "vis": "vis-2"}
+    assert body["meta"]["engines"] == {"link": "link-1", "net": "net-5", "vis": "vis-2"}
     assert any("mask" in p["source"].lower() for p in body["meta"]["uncertainty"]["parts"])
 
 
@@ -90,7 +92,7 @@ async def test_bookings_and_exports(client) -> None:
     csv_text = (
         await client.get(f"{API}/missions/im-1/contact/plan", params={"format": "csv"})
     ).text
-    assert csv_text.splitlines()[0] == "from,to,start_utc,end_utc,hours"
+    assert csv_text.splitlines()[0] == "from,to,start_utc,end_utc,hours,basis"
     no_rate = await client.get(f"{API}/missions/im-1/contact/plan", params={"format": "ion"})
     assert no_rate.status_code == 422 and "not published" in no_rate.json()["detail"]["detail"]
     ion = await client.get(
@@ -149,7 +151,7 @@ async def test_a_planned_relay_added_to_a_south_pole_site(anon_client) -> None:
     assert n["longest_message_wait_min"]["hi"] <= alone["longest_message_wait_min"]["value"] + 1e-6
     relay_node = next(x for x in d["nodes"] if x["kind"] == "relay")
     assert relay_node["orbit"] == "planned" and relay_node["launch_note"]
-    assert body["meta"]["engines"]["net"] == "net-4"
+    assert body["meta"]["engines"]["net"] == "net-5"
 
 
 async def test_a_mission_s_own_relay_over_a_near_side_site(anon_client) -> None:
@@ -253,3 +255,89 @@ async def test_rover_outside_the_polar_terrain_is_not_resolvable(anon_client) ->
     assert r.status_code == 409 and r.json()["detail"]["type"].endswith("no-rover")
     r = await anon_client.get(f"{API}/missions/im-2/contact/rover", params={"rover": "x"})
     assert r.status_code == 422 and "im-2/yaoki" in r.json()["detail"]["detail"]
+
+
+PLAN = f"{API}/missions/griffin-1/contact/plan"
+DATES = {"start": "2027-03-20T00:00:00Z", "end": "2027-03-22T00:00:00Z"}
+
+
+async def test_the_contact_plan_lists_a_relay_only_when_asked_and_says_it_is_planned(
+    anon_client,
+) -> None:
+    """Griffin-1's pole site over two days: the plan has the direct contacts alone, and with
+    ``?relay=`` also Lunar Pathfinder's, at one placement, marked planned."""
+    await _answer(anon_client, "griffin-1", **DATES)
+    body = await _answer(anon_client, "griffin-1", **DATES, relay="lunar-pathfinder")
+    stations = {n["id"] for n in body["data"]["nodes"] if n["kind"] == "station"}
+
+    # Not asked for: the same contacts as before, none through the relay, and the answer's
+    # own shape does not carry the export's material.
+    alone = await anon_client.get(PLAN, params={**DATES, "format": "csv"})
+    assert alone.status_code == 200, alone.text
+    rows = list(csv.DictReader(io.StringIO(alone.text)))
+    assert list(rows[0]) == ["from", "to", "start_utc", "end_utc", "hours", "basis"]
+    assert rows and {r["basis"] for r in rows} == {"direct"}
+    assert {r["from"] for r in rows} == {"lander"} and {r["to"] for r in rows} <= stations
+    assert "plan" not in body
+
+    # Asked for: the direct contacts unchanged, then the relay's, in time order.
+    both = await anon_client.get(
+        PLAN, params={**DATES, "format": "csv", "relay": "lunar-pathfinder"}
+    )
+    assert both.status_code == 200, both.text
+    all_rows = list(csv.DictReader(io.StringIO(both.text)))
+    assert [r for r in all_rows if r["basis"] == "direct"] == rows
+    via = [r for r in all_rows if r["basis"] != "direct"]
+    up = [r for r in via if r["to"] == "lunar-pathfinder"]
+    down = [r for r in via if r["from"] == "lunar-pathfinder"]
+    assert up and down and len(up) + len(down) == len(via)
+    assert {r["from"] for r in up} == {"lander"} and {r["to"] for r in down} <= stations
+    assert all(r["basis"].startswith("planned relay; node ") for r in via)
+    assert all("of 5184 placements" in r["basis"] for r in via)
+    starts = [r["start_utc"] for r in all_rows]
+    assert starts == sorted(starts)
+    for r in via:
+        assert DATES["start"] <= r["start_utc"] < r["end_utc"] <= DATES["end"]
+        assert float(r["hours"]) > 0.0
+
+    # ION: the same contacts as `a contact` lines, each with its `a range`, and comment lines
+    # that say what the relay's lines are.
+    ion = await anon_client.get(
+        PLAN, params={**DATES, "format": "ion", "rate_bps": 2000, "relay": "lunar-pathfinder"}
+    )
+    assert ion.status_code == 200, ion.text
+    lines = ion.text.splitlines()
+    numbered = lines[1].removeprefix("# Node numbers: ").rstrip(".").split(", ")
+    nodes = {k: int(v) for k, v in (x.split("=") for x in numbered)}
+    comments = " ".join(x for x in lines if x.startswith("#"))
+    assert "PLANNED relay Lunar Pathfinder" in comments
+    assert "ONE placement of the 5184 tried" in comments and "not a forecast" in comments
+    assert "if it flies as planned" in comments
+    contacts = [x.split() for x in lines if x.startswith("a contact")]
+    ranges = [x.split() for x in lines if x.startswith("a range")]
+    assert len(contacts) == len(ranges) == len(all_rows)
+    assert [c[2:6] for c in contacts] == [r[2:6] for r in ranges]  # same times and nodes
+    lp = nodes["lunar-pathfinder"]
+    assert {(int(c[4]), int(c[5])) for c in contacts if lp in (int(c[4]), int(c[5]))} >= {
+        (nodes["lander"], lp)
+    }
+    assert sum(1 for c in contacts if lp in (int(c[4]), int(c[5]))) == len(via)
+
+    # ION without the relay: no comment about one and no contact through it.
+    plain = await anon_client.get(PLAN, params={**DATES, "format": "ion", "rate_bps": 2000})
+    assert plain.status_code == 200 and "PLANNED" not in plain.text
+    assert f" {lp} " not in " ".join(
+        x for x in plain.text.splitlines() if x.startswith("a contact")
+    )
+
+
+async def test_the_contact_plan_takes_the_dates_and_refuses_a_relay_it_cannot_list(
+    anon_client,
+) -> None:
+    # Dates that were never asked for are worked out first: the plan waits, it does not guess.
+    r = await anon_client.get(PLAN, params={**DATES, "format": "csv"})
+    assert r.status_code == 409 and "still being worked out" in r.json()["detail"]["detail"]
+    r = await anon_client.get(PLAN, params={"format": "csv", "relay": "nope"})
+    assert r.status_code == 422 and "lunar-pathfinder" in r.json()["detail"]["detail"]
+    r = await anon_client.get(PLAN, params={"format": "csv", "relay": "lro"})
+    assert r.status_code == 422 and "no relay service" in r.json()["detail"]["detail"]

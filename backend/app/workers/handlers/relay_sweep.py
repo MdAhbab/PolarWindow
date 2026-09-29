@@ -124,6 +124,22 @@ class Result:
     either: relay.Spread
     unheard: relay.Spread
     wait: relay.Spread
+    #: Per usable relay: the placement (its index for :func:`placement`) whose time through the
+    #: relay is nearest the middle of the range, and that time in seconds. The contact plan
+    #: lists that one.
+    nearest: list[tuple[int, float]]
+
+
+def placement(sp: Spec, j: int) -> tuple[relay.Orbit, float, float]:
+    """The ``j``-th placement of a relay: its orbit (an end of each assumed range), node, phase."""
+    cells = relay.grid()
+    raan, m0 = cells[j % len(cells)]
+    return sp.orbits[j // len(cells)], raan, m0
+
+
+def placements(sp: Spec) -> int:
+    """How many placements of this relay the sweep tries."""
+    return len(relay.grid()) * len(sp.orbits)
 
 
 def sweep(
@@ -140,8 +156,7 @@ def sweep(
     With more than one relay, point ``k`` of the sweep places each relay at its
     own ``k``-th placement (cycling a shorter list), rather than every pairing.
     """
-    cells = relay.grid()
-    per = [len(cells) * len(s.orbits) for s in specs]
+    per = [placements(s) for s in specs]
     n = max(per)
     via: list[list[float]] = [[] for _ in specs]
     adds: list[list[float]] = [[] for _ in specs]
@@ -154,9 +169,8 @@ def sweep(
     for k in range(n):
         rl = []
         for s, m in zip(specs, per, strict=True):
-            j = k % m
-            raan, m0 = cells[j % len(cells)]
-            rl.append(relay.links(geom, s.orbits[j // len(cells)], raan, m0))
+            orbit, raan, m0 = placement(s, k % m)
+            rl.append(relay.links(geom, orbit, raan, m0))
         c = relay.cell_numbers(t1, earth_up, heard_any, direct_owlt_s, rl)
         for r in range(len(specs)):
             via[r].append(c.via_s[r])
@@ -177,7 +191,20 @@ def sweep(
         either=relay.Spread.of(either),
         unheard=relay.Spread.of(unheard, unheard_open),
         wait=relay.Spread.of(wait, wait_open),
+        nearest=[nearest_the_middle(v, m) for v, m in zip(via, per, strict=True)],
     )
+
+
+def nearest_the_middle(values: list[float], n_placements: int) -> tuple[int, float]:
+    """``(placement, value)`` of the point nearest the middle (median) of the sweep; the first on
+    a tie.
+
+    ``values[k]`` is the value at point ``k`` of the sweep, which put this relay at placement
+    ``k % n_placements``.
+    """
+    a = np.asarray(values, dtype=np.float64)
+    k = int(np.argmin(np.abs(a - np.median(a))))
+    return k % n_placements, float(a[k])
 
 
 def spread_q(s: relay.Spread, scale: float, unit: str) -> dict[str, Any]:
@@ -192,6 +219,41 @@ def spread_q(s: relay.Spread, scale: float, unit: str) -> dict[str, Any]:
             open=s.open,
         )
     )
+
+
+def plan_block(
+    geom: relay.Geometry,
+    sp: Spec,
+    j: int,
+    via_s: float,
+    stretches: Callable[[list[Run]], list[dict[str, Any]]],
+) -> dict[str, Any]:
+    """One relay's links at one placement, for the contact plan (never shown as an answer).
+
+    A planned relay has no schedule: its node and phase are not published, so the plan lists
+    the links of one placement of the sweep (the one whose time through the relay is nearest
+    the middle) and says so. Lander to relay is the relay above the landing spot's skyline;
+    relay to station is above that station's mask with the Moon not in the way.
+    """
+    orbit, raan, m0 = placement(sp, j)
+    rl = relay.links(geom, orbit, raan, m0)
+    return {
+        "id": sp.rec.id,
+        "placement": {
+            "node_deg": raan,
+            "phase_deg": m0,
+            "inclination_deg": orbit.i_deg,
+            "arg_periapsis_deg": orbit.argp_deg,
+            "of": placements(sp),
+            "via_h": via_s / H,
+        },
+        "lander_relay": stretches(rl.lander_relay),
+        "lander_relay_owlt_s": rl.lander_relay_owlt_s,
+        "relay_station": {
+            sid: {"stretches": stretches(runs), "owlt_s": owlt}
+            for sid, (runs, owlt) in relay.station_links(geom, orbit, raan, m0).items()
+        },
+    }
 
 
 def sweep_note(specs: list[Spec], n: int) -> str:

@@ -2131,6 +2131,58 @@
               "title": "Rate Bps"
             },
             "description": "Data rate for ION, bits per second."
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "As for the answer: the mission's dates.",
+              "title": "Start"
+            },
+            "description": "As for the answer: the mission's dates."
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End"
+            }
+          },
+          {
+            "name": "relay",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 3,
+              "description": "Planned relays (catalogue ids) whose contacts to list, labelled planned: a relay's contacts are for one guessed placement of its orbit, so a plan lists them only when asked. As for the answer, a relay that is not the mission's own is added.",
+              "default": [],
+              "title": "Relay"
+            },
+            "description": "Planned relays (catalogue ids) whose contacts to list, labelled planned: a relay's contacts are for one guessed placement of its orbit, so a plan lists them only when asked. As for the answer, a relay that is not the mission's own is added."
           }
         ],
         "responses": {

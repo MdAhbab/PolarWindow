@@ -48,6 +48,8 @@ ENGINE_VERSION = "hz-2/vis-2"
 #:        dose for a lander that did not land; a flat-horizon fallback is "assumed".
 #: net-4: planned relays in the contact graph: node x phase swept 36 x 36 (and both ends of
 #:        an assumed range), relay -> station with the Moon in the way, store and forward.
+#: net-5: the contact answer also keeps each relay's links at one placement (the one nearest
+#:        the middle of the sweep) for the contact plan's export; no number changes.
 #: lw-5: a designed launch climbs in the direction of the vehicle's direct lunar flights,
 #:       inside the pad's azimuth limits; a flown launch's climb direction is computed.
 #: lw-6: a launch is a window or an instant as published (Launch Library 2); a vehicle
@@ -60,7 +62,7 @@ ENGINES: dict[str, str] = {
     "wx": "wx-2",
     "rad": "rad-3",
     "link": "link-1",
-    "net": "net-4",
+    "net": "net-5",
     "ready": "ready-1",
     "los": "los-1",
     "lw": "lw-6",
