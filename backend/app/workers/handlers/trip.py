@@ -175,14 +175,7 @@ async def _burns_and_budget(
     shift = (plan.t_tli - dep) / 60.0
     flown = [(n, x.dv_m_s) for x, n in named if n.startswith("Correction")]
     budget = {
-        "label": (
-            "A budget for these errors, not a prediction of what the mission needed: the "
-            "launch vehicle’s published injection accuracy where its guide gives one, every "
-            "other error assumed."
-            if bud.derived
-            else "A budget for these assumed errors, not a prediction of what the mission "
-            "needed."
-        ),
+        "label": flown_burns.label(guide, bud.derived),
         "burns": [
             {
                 "name": TCM_NAMES[k] if k < len(TCM_NAMES) else f"Correction {k + 1}",

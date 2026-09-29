@@ -351,7 +351,7 @@ async def run(ctx: JobContext) -> HandlerResult:
                         snapshot_id=rec_snap.id,
                     )
                 )
-        orbiters.append(orbiter_passes.block(rec, snap, got, r.start, t1, missing))
+        orbiters.append(orbiter_passes.block(rec, snap, got, r.start, t1, missing, o.get("gap")))
     if p.get("orbiters"):
         ctx.progress(0.98, "Orbiter passes worked out.")
 

@@ -57,6 +57,17 @@ def _assumed(value: float, unit: str, given: bool, why: str) -> dict[str, Any]:
     )
 
 
+#: What the answer says about clear, blocked and uncertain. The radio path needs more than the
+#: line of sight: the space around it that the signal needs (the first Fresnel zone).
+RADIO_NOTE = (
+    "Clear: the terrain stays below the line between the antennas by more than the terrain "
+    "map’s height error; blocked: it rises above by more than that; uncertain: the map cannot "
+    "tell. The radio path is clear only if the space around the line of sight that the radio "
+    "signal needs is clear too. Ground within two map cells of either end is not counted as "
+    "a blocker."
+)
+
+
 @handler("rover")
 async def run(ctx: JobContext) -> HandlerResult:
     p = ctx.job.params
@@ -134,26 +145,23 @@ async def run(ctx: JobContext) -> HandlerResult:
             "post_m": tile.scale_m,
             "vertical_error_m": tile.vertical_error_m,
         },
-        "note": "Clear: the terrain stays below the line between the antennas by more than "
-        "the elevation model's height error; blocked: it rises above by more than that; "
-        "uncertain: the model cannot tell. The radio path also needs the first Fresnel zone "
-        "clear. Ground within two model posts of either end is not counted as a blocker.",
+        "note": RADIO_NOTE,
     }
     ms = (time.perf_counter() - t_wall) * 1000.0
     meta = lifecycle.meta(
         engines=("los",),
         sources=[
             lifecycle.source_ref(
-                f"LOLA polar elevation model ({tile.product})",
+                f"LOLA polar terrain map ({tile.product})",
                 "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/",
             )
         ],
         parts=[
             (
-                "Terrain height (LOLA polar model)",
-                f"A cell is uncertain when the model's height error ({tile.vertical_error_m:g} m "
-                f"at {tile.scale_m:g} m posts) could tip it either way; the shares are ranges "
-                "for that reason.",
+                "Terrain height (LOLA polar terrain map)",
+                f"A cell is uncertain when the map’s height error ({tile.vertical_error_m:g} m "
+                f"for cells {tile.scale_m:g} m wide) could tip it either way; the shares are "
+                "ranges for that reason.",
             ),
             (
                 "Antennas and radio",

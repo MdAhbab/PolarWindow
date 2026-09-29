@@ -44,8 +44,10 @@ WIND_TOP_M = 30_000.0
 #: The integrator's tolerances. The empirical models give their density as single-precision
 #: numbers (noise of 1e-7 relative in NRLMSISE-00, 2e-6 in NRLMSIS 2.1), and an eighth-order
 #: integrator asked for 1e-9 spends six times the steps following that noise, for nothing:
-#: at these the landing point is the same to 0.1 m as at 1e-9 and 1e-6 (checked in all three
-#: airs of the OSIRIS-REx case), and a flight in NRLMSIS 2.1 takes one second, not thirteen.
+#: at these the landing point is within 0.5 m of the landing at tolerances ten times tighter
+#: and a hundred times looser (OSIRIS-REx case; NRLMSIS 2.1 moves 0.02 m and 0.04 m, NRLMSISE-00
+#: 0.00 m and 0.5 m, the standard atmosphere 0.00 m and 0.04 m), and a flight in NRLMSIS 2.1
+#: takes one second, not thirteen.
 RTOL = 1e-8
 ATOL = 1e-5
 

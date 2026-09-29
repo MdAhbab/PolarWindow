@@ -48,7 +48,7 @@
         70
       ]
     ],
-    "basis": "NRLMSIS 2.1 was chosen over NRLMSISE-00 because it came nearer to the air measured between 30 and 70 km up, where a capsule slows: its density was off by 0.6 % from the TIMED/SABER satellite\u2019s profiles of that day and 1.6 % from the Table Mountain laser radar\u2019s (lidar\u2019s) nights either side of it, against 3.7 % and 5.0 % for NRLMSISE-00 (the measurements decided).",
+    "basis": "NRLMSIS 2.1 was chosen over NRLMSISE-00 because it came nearer to the air measured between 30 and 70 km up, where a capsule slows: its density was off by 0.6 % from the TIMED/SABER satellite\u2019s profiles of that day and 1.6 % from the Table Mountain laser radar\u2019s (lidar\u2019s) nights either side of it, against 3.7 % and 5.0 % for NRLMSISE-00.",
     "instruments": [
       {
         "name": "TIMED/SABER, 24 September 2023, 28 to 49 N",

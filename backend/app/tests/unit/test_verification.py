@@ -255,8 +255,11 @@ def test_the_multi_year_check_is_used_first_and_covers_only_the_leads_it_scored(
         assert not ver.checked("vandenberg", "another-rule")
         assert ver.reach_h("vandenberg") == 48 and ver.reach_h("florida") == 0
         text = ver.summary("vandenberg", "f9-wind-162ft") or ""
-        assert "845 forecast days" in text and "CRPS skill 0.20" in text
-        assert "(23.5 mph); forecasts from GEFSv12 reforecast) for 2007-01-08 to 2019-12-31" in text
+        assert "845 forecast days" in text and f"{ver.CRPS_WORDS}, 0.20" in text
+        assert (
+            "using forecasts from NOAA’s forecast model re-run for past years (GEFS version 12), "
+            "for 2007-01-08 to 2019-12-31"
+        ) in text
         assert "It passed the gate" in text and "up to 48 h ahead" in text
     finally:
         ver.load.cache_clear()
@@ -286,8 +289,50 @@ def test_a_score_the_files_cannot_work_out_is_said_so() -> None:
 
     x = {"cases": 786, "events": 0, "skill": None, "skill_note": "no", "crps_skill": -0.95}
     words = ver._lead_words("24", x)
-    assert "Brier skill not worked out (too few cases above the limit)" in words
-    assert "no case of the wind above the limit" in words and "CRPS skill -0.95" in words
+    assert f"{ver.BRIER_WORDS}, not worked out (too few cases above the limit)" in words
+    assert "no case of the wind above the limit" in words and f"{ver.CRPS_WORDS}, -0.95" in words
+
+
+def test_the_note_on_the_check_uses_no_term_a_forecaster_would_have_to_explain(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The committed checks, said as a person on the launch team reads them."""
+    from types import SimpleNamespace
+
+    from app.data import verification as ver
+
+    root = Path(__file__).resolve().parents[4] / "data"
+    monkeypatch.setattr(ver, "get_settings", lambda: SimpleNamespace(data_dir=root))
+    ver.load.cache_clear()
+    try:
+        for region in ("florida", "vandenberg"):
+            text = ver.summary(region, "f9-wind-162ft") or ""
+            assert "re-run for past years" in text and "did not pass the gate" in text, region
+            assert ver.BRIER_WORDS in text and ver.CRPS_WORDS in text
+            for term in ("reforecast", "Brier", "CRPS", "hindcast", "perturbed", "UTC", "bins"):
+                assert term not in text, (region, term)
+            assert ">=" not in text and "skill" not in text
+    finally:
+        ver.load.cache_clear()
+
+
+def test_a_gate_is_said_with_the_numbers_the_file_states() -> None:
+    from app.data import verification as ver
+
+    said = ver._gate_words(
+        "Brier skill >= 0.1 at each lead (from at least 10 cases above the limit) and "
+        "reliability within 0.1 in bins with >= 30 cases"
+    )
+    assert "at least 0.1 better than the past-years rate at each lead ahead" in said
+    assert "10 or more cases with the wind above the limit" in said
+    assert "30 or more cases gave a like share of runs" in said
+    assert "within 0.1 of that share" in said
+    # The one-year file has no event count; a gate in another form is quoted, not guessed at.
+    older = ver._gate_words(
+        "Brier skill >= 0.1 at each lead and reliability within 0.1 in bins with >= 30 cases"
+    )
+    assert "worked out only from" not in older
+    assert ver._gate_words("the plan's gate") == "the plan's gate"
 
 
 def test_the_scored_files_say_what_the_plans_gate_says() -> None:

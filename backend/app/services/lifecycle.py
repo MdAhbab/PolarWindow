@@ -143,3 +143,14 @@ def jsonable(obj: Any) -> Any:
     import orjson
 
     return orjson.loads(orjson.dumps(obj, option=orjson.OPT_UTC_Z | orjson.OPT_NAIVE_UTC))
+
+
+def trajectory_edge(name: str, at: datetime, *, ends: bool) -> str:
+    """Where the recorded JPL Horizons trajectory of an orbiter stops short of the dates."""
+    edge = "ends" if ends else "starts"
+    return f"The recorded JPL Horizons trajectory for {name} {edge} {at:%Y-%m-%d}."
+
+
+def horizons_has_none(name: str, after: datetime) -> str:
+    """JPL Horizons itself has no trajectory for the orbiter after this day."""
+    return f"JPL Horizons has no trajectory for {name} after {after:%Y-%m-%d}."

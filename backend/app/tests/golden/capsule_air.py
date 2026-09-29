@@ -1,7 +1,7 @@
 """Which model has the air right between 30 and 70 km on OSIRIS-REx's entry day (plan track H).
 
 A capsule loses its speed between 30 and 70 km, so the landing rests on the air there (the
-density 5 % higher over 30 to 50 km moves it 2.3 km, over 50 to 70 km 2.4 km). Two measurements
+density 5 % higher over 30 to 50 km moves it 2.4 km, over 50 to 70 km 2.3 km). Two measurements
 of that air are on disk (``capsule_air_data`` says where they are from and how they were reduced):
 
 * TIMED/SABER's limb profiles of the entry day, 136 of them from 28 to 49 N, at 3.6 and 18 h local
@@ -259,7 +259,14 @@ def evidence() -> dict[str, Any]:
             f"{chosen} was chosen over {' and '.join(others)} because it came nearer to the air "
             f"measured between 30 and 70 km up, where a capsule slows: its density was off by "
             + " and ".join(parts)
-            + f", against {against} for {' and '.join(others)} (the {decided_by} decided)."
+            + f", against {against} for {' and '.join(others)}"
+            + (
+                ""
+                if decided_by == "measurements"
+                else "; the two were too close for the measurements to decide, so the published "
+                "evaluations did"
+            )
+            + "."
         ),
         "instruments": [
             {

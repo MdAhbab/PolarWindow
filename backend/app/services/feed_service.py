@@ -38,10 +38,15 @@ PROVIDER_NAMES: dict[str, str] = {
 #: Products the feeds worker fetches only while a launch is near, and what to say about
 #: their empty state. Their age is the age of the last *check* (it answers "nothing to fetch"
 #: when no launch is near), so an empty one is idle, not stale. The six hours is
-#: ``feeds.adapters.glm.LOOKAHEAD`` (a test holds them together).
+#: ``feeds.adapters.glm.LOOKAHEAD`` and the 16 days ``workers.feeds.FORECAST_REACH`` (a test
+#: holds them together).
 ON_DEMAND: dict[tuple[str, str], str] = {
     ("goes", "glm"): "Fetched only in the 6 hours before a designed launch opportunity from "
     "this range's pads, so it holds nothing when none is near; that is not a fault.",
+    ("nomads", "gefs_launch"): "The forecast at the launch time itself: fetched only when a "
+    "designed launch opportunity from this range's pads is within 16 days, as far ahead as the "
+    "forecast reaches. With none that near there is nothing to fetch, so it holds nothing; that "
+    "is not a fault.",
 }
 
 

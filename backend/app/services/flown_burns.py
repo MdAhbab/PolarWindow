@@ -64,6 +64,7 @@ class Guide:
     orbit: str  # the guide's words for the row's orbit
     cited: str  # the guide, table and page
     sigma_assumed: bool  # the guide does not say how many standard deviations its ± is
+    to_the_moon: bool  # the row is the guide's own for a launch to the Moon, not one borrowed
 
 
 def guide_for(vehicle_id: str | None) -> Guide | None:
@@ -95,7 +96,14 @@ def guide_for(vehicle_id: str | None) -> Guide | None:
         r.inclination_pm_deg,
         v.injection_sigma,
     )
-    return Guide(v.name, row, r.orbit, r.cited, "injection_sigma" in v.assumed_fields)
+    return Guide(
+        v.name,
+        row,
+        r.orbit,
+        r.cited,
+        "injection_sigma" in v.assumed_fields,
+        r.kind == "lunar_transfer",
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,6 +130,34 @@ def _deviations(sigma: float) -> str:
     return f"{n} standard {'deviation' if sigma == 1.0 else 'deviations'}"
 
 
+def _row_why(guide: Guide) -> str:
+    """Which row of the guide the errors are taken from, and why that one."""
+    if guide.to_the_moon:
+        return "This is the guide’s row for a launch to the Moon."
+    return (
+        "The guide has no row for a launch to the Moon, so its row for a transfer orbit to "
+        "geosynchronous orbit is used in its place."
+    )
+
+
+def label(guide: Guide | None, derived: list[lincov.Derived]) -> str:
+    """What the budget says it is: a budget, not a prediction, and which of its errors are
+    the launch vehicle’s published figures and which are assumed."""
+    if guide is None or not derived:
+        return "A budget for these assumed errors, not a prediction of what the mission needed."
+    row = (
+        "its row for a launch to the Moon"
+        if guide.to_the_moon
+        else "its row for a transfer orbit to geosynchronous orbit, because the guide has no "
+        "row for a launch to the Moon"
+    )
+    return (
+        "A budget for these errors, not a prediction of what the mission needed. The accuracy "
+        f"published in the user’s guide for {guide.vehicle} is used for the errors at leaving "
+        f"Earth that it covers, worked out from {row}. Every other error is assumed."
+    )
+
+
 def input_words(
     errors: lincov.Errors, derived: list[lincov.Derived], guide: Guide | None
 ) -> list[Input]:
@@ -138,7 +174,7 @@ def input_words(
         if guide.sigma_assumed
         else ""
     )
-    cite = f"{guide.cited}; row: {guide.orbit}. "
+    cite = f"{guide.cited}; row: {guide.orbit}. {_row_why(guide)} "
     dev = _deviations(row.sigma)
     out: list[Input] = []
     if "pos_radial" in got:
@@ -166,12 +202,12 @@ def input_words(
     how = (
         "The orbit’s highest point within {pm:g} km at {dev}. The speed error at the lowest "
         "point that would move the highest point that far is {v} at one standard deviation, "
-        "taken as the same at leaving Earth."
+        "taken as the same at leaving Earth for the Moon."
     )
     tilt = (
         "The orbit’s tilt within {pm:g}° at {dev}. The sideways speed error at the lowest "
         "point that would tilt it that far is {v} at one standard deviation, taken as the "
-        "same at leaving Earth."
+        "same at leaving Earth for the Moon."
     )
     out.append(Input("Leaving Earth, speed up or down", _speed(vel[0]), "assumed", None))
     if "vel_along" in got:
