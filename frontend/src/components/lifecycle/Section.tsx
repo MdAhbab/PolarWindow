@@ -248,20 +248,27 @@ export function Legend({ items }: { items: { swatch: ReactNode; label: string }[
   )
 }
 
+/** Each source of error in a number, by name, with what it means (the service's `meta.uncertainty.parts`). */
+export function UncertaintyParts({ parts, small }: { parts: LifecycleMetaDTO['uncertainty']['parts']; small?: boolean }) {
+  return (
+    <dl className="flex flex-col gap-3">
+      {parts.map((p) => (
+        <div key={p.source} className="flex flex-col gap-0.5">
+          <dt className={`${small ? 'text-small' : 'text-body'} font-semibold text-ink`}>{p.source}</dt>
+          <dd className={`${small ? 'text-small leading-5' : 'text-body leading-6'} text-ink-2`}>{p.note}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
 /** "How sure is this?": each source of error in the answer, in plain words. */
 export function HowSure({ meta, children }: { meta: LifecycleMetaDTO; children?: ReactNode }) {
   const parts = meta.uncertainty.parts
   return (
     <Disclosure title="How sure is this?" meta={parts.length ? `${parts.length} source${parts.length === 1 ? '' : 's'} of error` : undefined}>
       {parts.length ? (
-        <dl className="flex flex-col gap-3">
-          {parts.map((p) => (
-            <div key={p.source} className="flex flex-col gap-0.5">
-              <dt className="text-body font-semibold text-ink">{p.source}</dt>
-              <dd className="text-body leading-6 text-ink-2">{p.note}</dd>
-            </div>
-          ))}
-        </dl>
+        <UncertaintyParts parts={parts} />
       ) : (
         <p className="text-body text-ink-2">Each number’s own margin is shown beside it.</p>
       )}

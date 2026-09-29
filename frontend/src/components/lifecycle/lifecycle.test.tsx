@@ -23,13 +23,14 @@ import { ReadinessList, RiskTable, sortItems } from './Readiness'
 import { LimitBars, LimitTable } from './LimitBars'
 import { coverageGaps, tripStretches } from './TripStrip'
 import { CorrectionsRow, shadowAndContact } from '../../screens/sections/TripSection'
-import { climatologyWords, observedWords, percentWords } from './WeatherRules'
+import { checkWords, climatologyWords, forecastLine, observedWords, percentWords, rulesSummary, WeatherRuleTable } from './WeatherRules'
 import { RadiationRow, radiationSentence, screeningFigure } from './Radiation'
 import { eventCountWords, outlookSentence, readingAge, spaceWeatherSentence, SpaceWeatherRow } from './SpaceWeather'
 import spaceWeatherFixture from '../../lib/api/__fixtures__/lifecycle/space-weather.json'
+import weatherFixture from '../../lib/api/__fixtures__/lifecycle/launch-weather.json'
 import type { RadiationDTO, SpaceWeatherDTO } from '../../lib/api/lifecycle'
 import { forecastChangeWords, limitDraft, limitsToSend, shownForecast } from '../../screens/sections/LaunchSection'
-import type { EnteredLimitDTO, RuleRowDTO } from '../../lib/api/lifecycle'
+import type { EnteredLimitDTO, LaunchWeatherDTO, RuleRowDTO } from '../../lib/api/lifecycle'
 import { CapsuleCheckRow, seaWords, zoneWords } from '../../screens/sections/ReturnSection'
 import returnFixture from '../../lib/api/__fixtures__/lifecycle/return.json'
 import { oldFeedsWords } from './OldFeeds'
@@ -402,6 +403,62 @@ describe('the charts’ arrays, shared with their tables', () => {
     expect(observedWords({ state: 'clear', detail: 'None within 10 nmi.' }).lead).toBe('Seen now: clear.')
     expect(observedWords({ state: 'seen', detail: '3 flashes within 10 nmi.' })).toEqual({ lead: 'Seen now:', detail: '3 flashes within 10 nmi.' })
     expect(observedWords({ state: 'no_data', detail: 'Watched by the range.' })).toEqual({ detail: 'Watched by the range.' })
+  })
+
+  describe('one forecast beside the runs, and who disagrees', () => {
+    const rules = (weatherFixture as unknown as { data: LaunchWeatherDTO }).data.rules
+    const wind = rules[0]
+    const hrrr = wind.one_forecast[0]
+    const nws = wind.one_forecast[1]
+
+    it('each forecast is named in full, answers first, then how the number was made and how that forecast did', () => {
+      const h = forecastLine(hrrr)
+      expect(h.lead).toBe('High-Resolution Rapid Refresh (HRRR) forecast:')
+      expect(h.answer).toBe('14.2 m/s, over the limit.')
+      expect(h.how).toBe("One forecast, at the rule's height from the model's 10 m and 80 m winds.")
+      expect(h.note).toMatch(/^Checked against KXMR for 2021 to 2025/)
+      const n = forecastLine(nws)
+      expect(n.lead).toBe('National Weather Service (NWS) forecast:')
+      expect(n.answer).toBe('8.9 m/s, under the limit.')
+      expect(n.note).toBe('The National Weather Service keeps no archive of its forecasts, so this one cannot be checked against observations.')
+    })
+
+    it('says whether the shares shown were checked: all, none, or by system; nothing where no share is shown', () => {
+      const share = (checked: boolean) => ({ k: 3, n: 31, lo: 0.02, hi: 0.26, checked })
+      const per = (...cs: (boolean | null)[]) => ({
+        per_system: cs.map((c, i) => ({ system: (['GEFS', 'ECMWF-ENS', 'AIFS-ENS'] as const)[i], share: c === null ? null : share(c), missing_reason: c === null ? 'not recorded' : null })),
+      })
+      expect(checkWords(per(true, null, null))).toBe('checked against observations')
+      expect(checkWords(per(false, false, null))).toBe('not yet checked against observations')
+      expect(checkWords(per(true, false, null))).toBe('checked against observations for NOAA GEFS, not yet for ECMWF ENS')
+      expect(checkWords(per(null, null, null))).toBeNull()
+      expect(checkWords({ per_system: [] })).toBeNull()
+    })
+
+    it('the closed row counts the rules that disagree and the rules checked against observations', () => {
+      expect(rulesSummary(rules)).toBe('6 rules; models disagree on 1')
+      const checked = rules.map((r, i) => (i === 0 ? { ...r, per_system: r.per_system.map((p, j) => (j === 0 && p.share ? { ...p, share: { ...p.share, checked: true } } : p)) } : r))
+      expect(rulesSummary(checked)).toBe('6 rules; models disagree on 1; 1 checked against observations')
+      expect(rulesSummary([wind])).toBe('1 rule; models disagree on 1')
+    })
+
+    it('the table gives the disagreement in a sentence and each forecast with its note; a checked rule says so', () => {
+      render(<WeatherRuleTable rules={rules} />)
+      // The table and the phone list carry the same words.
+      expect(screen.getAllByText('Models disagree').length).toBeGreaterThan(0)
+      expect(screen.getAllByText(wind.disagreement_note as string).length).toBeGreaterThan(0)
+      expect(screen.getAllByText(nws.note as string).length).toBeGreaterThan(0)
+      expect(screen.getAllByText(hrrr.note as string).length).toBeGreaterThan(0)
+      expect(screen.getAllByText('High-Resolution Rapid Refresh (HRRR) forecast:').length).toBeGreaterThan(0)
+      // Only the wind rule disagrees, so the sentence is shown once per layout, not for every rule.
+      expect(screen.getAllByText('Models disagree')).toHaveLength(2)
+      expect(document.body.textContent).toContain('A forecast model can answer this · not yet checked against observations')
+      expect(document.body.textContent).not.toContain('· checked against observations ·')
+      cleanup()
+      const checked = rules.map((r, i) => (i === 0 ? { ...r, per_system: r.per_system.map((p) => (p.share ? { ...p, share: { ...p.share, checked: true } } : p)) } : r))
+      render(<WeatherRuleTable rules={checked} />)
+      expect(document.body.textContent).toContain('A forecast model can answer this · checked against observations · nasa.gov')
+    })
   })
 
   it('team weather limits: start as entered; an empty field is no limit; a limit for a rule not shown is sent as it stands', () => {

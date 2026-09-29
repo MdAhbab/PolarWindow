@@ -309,8 +309,11 @@ export interface RuleRowDTO {
   /** The team's note with an entered limit. */
   limit_note: string | null
   per_system: { system: ModelSystem; share: ShareDTO | null; missing_reason: string | null }[]
-  one_forecast: { system: 'NWS' | 'HRRR' | 'GEOS-FP'; value: QuantityDTO; over: boolean }[]
+  /** Single forecasts, each with how it did against a station's record (HRRR) or why it cannot be checked (NWS). */
+  one_forecast: { system: 'NWS' | 'HRRR' | 'GEOS-FP'; value: QuantityDTO; over: boolean; note: string | null }[]
   disagreement: boolean
+  /** Who disagrees and how, in one or two sentences; null when none does. */
+  disagreement_note: string | null
   observed: { state: 'clear' | 'seen' | 'no_data'; detail: string } | null
   /** How often the limit was broken in past years at the launch's month and hour (wind rules with a known limit). */
   climatology: { share: number; years: string; source: string } | null

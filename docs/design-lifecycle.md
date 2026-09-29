@@ -220,7 +220,8 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   to leave Earth for the Moon, flight time, time in orbit around the Moon
   with what is assumed, the landing and the stretch the landing rule allows)
   · Weather rules for this opportunity (meta: "{n} rules; models disagree on
-  {k}", "; no forecast for this date" when `weather` is `none`) · Official
+  {k}; {c} checked against observations", each part only when it is more than
+  none; "; no forecast for this date" when `weather` is `none`) · Official
   launch forecast · Team weather limits · Other launches from this range that
   day (with `range_note`) · Space weather now · Change the dates (up to 180
   days; not shown for a flown mission) · How sure is this? · Where does this
@@ -254,10 +255,27 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   ENS, AIFS ENS), each cell "{k} of {n} runs" with a small bar and its
   interval as a hatch; missing cells give their reason. A rule's class is in
   words: "a model can answer this", "the model sees the ingredients",
-  "observation only: no forecast number". "Models disagree" with the
-  uncertain glyph when the intervals do not overlap. One forecast: "over" or
-  "under", never a probability. Each rule links its source. Nothing adds them
-  up. The last column also has what was seen ("Seen now: clear." or "Seen
+  "observation only: no forecast number". Whether the shares shown have been
+  checked against observations is said in that line, once for the rule ("checked
+  against observations", "not yet checked against observations", or by system
+  when they differ; nothing for a rule with no share), and again for screen
+  readers on each share (`share.checked`, invariant 12). "Models disagree" with
+  the uncertain glyph, and under it the service's sentence
+  (`disagreement_note`: who puts the wind where, against which limit or which
+  runs), when a single forecast is on the other side of the limit from the
+  runs or two single forecasts are on opposite sides. One forecast: each named
+  in full ("National Weather Service (NWS) forecast:", "High-Resolution Rapid
+  Refresh (HRRR) forecast:"), then the value with "over the limit" or "under
+  the limit", never a probability; under it how the number was made (the
+  Quantity's reason for having no margin: HRRR from the model's 10 m and 80 m
+  winds, NWS's 10 m wind carried to the rule's height) and the forecast's own
+  `note` as served (HRRR: how its 10 m wind did against the station's record;
+  NWS: it keeps no archive, so it cannot be checked). Each rule links its
+  source. Nothing adds them up. Under the table, "How these numbers were worked
+  out" lists the weather answer's own uncertainty parts (the shares' sample and
+  interval, the height, and what the check against observations found, with
+  whether it passed its gate), the numbers behind every "checked". The last
+  column also has what was seen ("Seen now: clear." or "Seen
   now:" with the count, for lightning within six hours; said to be now, not
   at the launch) and past years for a wind rule ("Past years (2001-2024):
   over the limit 1.0% of the time." with its source and hours counted) and
@@ -576,8 +594,9 @@ guide stays ten steps and the mission steps stay last.
   ink on canvas, as a pressed segment already is.
 - Radius 0 on data surfaces, 2 px on controls; no animation is added, so each
   new chart is its own reduced-motion version (stated in code comments).
-- Model disagreement: the uncertain glyph and the words "Models disagree".
-  "Not yet checked": caption text on every share line.
+- Model disagreement: the uncertain glyph and the words "Models disagree",
+  then the service's sentence. "Checked against observations" / "not yet
+  checked": one phrase in each rule's line, and spoken on every share.
 
 ## 9. Words
 

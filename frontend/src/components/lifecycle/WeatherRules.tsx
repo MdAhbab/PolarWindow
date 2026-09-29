@@ -1,5 +1,5 @@
 import type { ModelSystem, RuleRowDTO, ShareDTO } from '../../lib/api/lifecycle'
-import { hostWords, quantityText, shareView } from '../../lib/lifecycle/quantity'
+import { hostWords, quantityView, shareView } from '../../lib/lifecycle/quantity'
 import { Icon } from '../Icon'
 import { ScrollRegion } from '../ui'
 
@@ -8,6 +8,13 @@ export const SYSTEMS: { id: ModelSystem; name: string; runsNote: string }[] = [
   { id: 'ECMWF-ENS', name: 'ECMWF ENS', runsNote: 'European ensemble' },
   { id: 'AIFS-ENS', name: 'ECMWF AIFS', runsNote: 'European machine-learning ensemble' },
 ]
+
+/** A single forecast, named as people know it, with its acronym spelled out where it first appears. */
+export const FORECAST_NAMES: Record<RuleRowDTO['one_forecast'][number]['system'], string> = {
+  NWS: 'National Weather Service (NWS)',
+  HRRR: 'High-Resolution Rapid Refresh (HRRR)',
+  'GEOS-FP': 'GEOS-FP, NASA’s global model',
+}
 
 /** What a forecast model can say about a rule (ADR-14), in words. */
 export const CLASS_WORDS: Record<RuleRowDTO['class'], string> = {
@@ -54,23 +61,40 @@ function SystemCell({ row, system, proxy }: { row: RuleRowDTO; system: ModelSyst
   )
 }
 
+/**
+ * Whether the shares a rule shows have been checked against observations
+ * (invariant 12): one phrase when they all have or none has, by system when
+ * they differ; null when the rule shows no share.
+ */
+export function checkWords(row: Pick<RuleRowDTO, 'per_system'>): string | null {
+  const shown = row.per_system.filter((p) => p.share)
+  if (!shown.length) return null
+  const done = shown.filter((p) => p.share?.checked)
+  if (done.length === shown.length) return 'checked against observations'
+  if (!done.length) return 'not yet checked against observations'
+  const name = (p: (typeof shown)[number]) => SYSTEMS.find((s) => s.id === p.system)?.name ?? p.system
+  return `checked against observations for ${done.map(name).join(' and ')}, not yet for ${shown.filter((p) => !p.share?.checked).map(name).join(' and ')}`
+}
+
 function RuleCell({ row }: { row: RuleRowDTO }) {
-  const checked = row.per_system.some((p) => p.share?.checked)
   return (
     <span className="flex flex-col gap-1">
       <span className="text-body leading-5 font-semibold text-ink">{row.text}</span>
       <span className="text-caption leading-caption text-ink-3">
         {CLASS_WORDS[row.class]}
-        {row.class !== 'observation' && ` · ${checked ? 'checked against observations' : 'not yet checked against observations'}`}
+        {checkWords(row) && ` · ${checkWords(row)}`}
         {' · '}
         <a href={row.source_url} target="_blank" rel="noreferrer">
           {hostWords(row.source_url)}
         </a>
       </span>
-      {row.disagreement && (
-        <span className="flex items-center gap-1.5 text-caption font-semibold text-ink">
-          <Icon name="uncertain" size={14} strokeWidth={2.2} />
-          Models disagree
+      {(row.disagreement || row.disagreement_note) && (
+        <span className="flex flex-col gap-0.5">
+          <span className="flex items-center gap-1.5 text-caption font-semibold text-ink">
+            <Icon name="uncertain" size={14} strokeWidth={2.2} />
+            Models disagree
+          </span>
+          {row.disagreement_note && <span className="text-small leading-5 text-ink-2">{row.disagreement_note}</span>}
         </span>
       )}
     </span>
@@ -103,10 +127,27 @@ export function climatologyWords(row: Pick<RuleRowDTO, 'class' | 'climatology'>)
     : `Past years (${c.years}): over the limit ${percentWords(c.share)} of the time.`
 }
 
+/**
+ * One forecast in words, the answer first: "National Weather Service (NWS)
+ * forecast: 5.87 mph, under the limit", then how the number was made (it has
+ * no margin, and says why) and how that forecast did against a station's
+ * record, or why it cannot be checked (the service's `note`).
+ */
+export function forecastLine(f: RuleRowDTO['one_forecast'][number]): { lead: string; answer: string; how: string | null; note: string | null } {
+  const v = quantityView(f.value)
+  return {
+    lead: `${FORECAST_NAMES[f.system] ?? f.system} forecast:`,
+    answer: `${v.sentence}, ${f.over ? 'over the limit' : 'under the limit'}.`,
+    how: v.noMarginReason ?? null,
+    note: f.note,
+  }
+}
+
 function OtherCell({ row }: { row: RuleRowDTO }) {
-  const lines: { key: string; lead?: string; text: string; strong?: boolean }[] = []
+  const lines: { key: string; lead?: string; text: string; strong?: boolean; captions?: string[] }[] = []
   for (const f of row.one_forecast) {
-    lines.push({ key: f.system, text: `${f.system} forecast: ${quantityText(f.value)}, ${f.over ? 'over the limit' : 'under the limit'}` })
+    const l = forecastLine(f)
+    lines.push({ key: f.system, lead: l.lead, text: l.answer, strong: true, captions: [l.how, l.note].filter((x): x is string => Boolean(x)) })
   }
   if (row.observed) {
     const w = observedWords(row.observed)
@@ -115,11 +156,16 @@ function OtherCell({ row }: { row: RuleRowDTO }) {
   if (row.climatology) lines.push({ key: 'climatology', lead: climatologyWords(row), text: row.climatology.source })
   if (!lines.length) return <span className="text-small text-ink-3">—</span>
   return (
-    <ul className="flex flex-col gap-1.5">
+    <ul className="flex flex-col gap-2">
       {lines.map((l) => (
         <li key={l.key} className="text-small leading-5 text-ink-2">
           {l.lead && <span className={`font-semibold ${l.strong ? 'text-ink' : 'text-ink-2'}`}>{l.lead} </span>}
           {l.text}
+          {l.captions?.map((c) => (
+            <span key={c} className="mt-0.5 block text-caption leading-caption text-ink-3">
+              {c}
+            </span>
+          ))}
         </li>
       ))}
     </ul>
@@ -207,8 +253,13 @@ export function WeatherRuleTable({ rules }: { rules: RuleRowDTO[] }) {
   )
 }
 
-/** The row's closed-state summary: "4 rules; models disagree on 1". Never a total chance. */
+/**
+ * The row's closed-state summary: "4 rules; models disagree on 1; 1 checked
+ * against observations". Never a total chance. A rule is checked when a share
+ * of its model runs has been (`share.checked`).
+ */
 export function rulesSummary(rules: RuleRowDTO[]): string {
   const d = rules.filter((r) => r.disagreement).length
-  return `${rules.length} rule${rules.length === 1 ? '' : 's'}${d ? `; models disagree on ${d}` : ''}`
+  const c = rules.filter((r) => r.per_system.some((p) => p.share?.checked)).length
+  return `${rules.length} rule${rules.length === 1 ? '' : 's'}${d ? `; models disagree on ${d}` : ''}${c ? `; ${c} checked against observations` : ''}`
 }

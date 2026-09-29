@@ -117,7 +117,50 @@ test('launch (contract fixtures): choosing an opportunity sets the four numbers;
   await expect(rules).toContainText('Models disagree')
   await expect(rules).toContainText('not yet checked against observations')
   await expect(rules).toContainText('Observation only: no forecast number')
+  // Two single forecasts beside the runs, each named in full with how it did; the disagreement is a sentence.
+  const wind = rules.getByRole('row').filter({ hasText: 'Sustained wind at 162 ft' })
+  await expect(wind).toContainText('HRRR puts the wind at 14.2 m/s, over the limit, and NWS at 8.9 m/s, under it.')
+  await expect(wind).toContainText('High-Resolution Rapid Refresh (HRRR) forecast: 14.2 m/s, over the limit.')
+  await expect(wind).toContainText("HRRR's 10 m wind was off by 1.2 m/s on average")
+  await expect(wind).toContainText('National Weather Service (NWS) forecast: 8.9 m/s, under the limit.')
+  await expect(wind).toContainText('keeps no archive of its forecasts, so this one cannot be checked against observations.')
+  // The row's closed line counts them, and under the table is what the service says about the check.
+  await expect(page.locator('summary', { hasText: 'Weather rules for this opportunity' })).toContainText('6 rules; models disagree on 1')
+  await expect(page.locator('details').filter({ has: page.locator('summary', { hasText: 'Weather rules for this opportunity' }) })).toContainText(
+    'No rule has been checked against observations (hindcast) yet',
+  )
   await expectNoSeriousAxe(page, '/missions/im-2/launch with the weather open')
+})
+
+test('launch weather (contract fixtures): a rule whose shares were checked against observations says so, in the rule and in the closed row; both themes, a phone', async ({
+  page,
+  context,
+}) => {
+  await returningVisitor(context)
+  await serveLifecycleFixtures(context)
+  // The wind rule's shares, checked; the rest as they are.
+  await context.route(/localhost:8000\/api\/v1\/missions\/[^/]+\/launch\/weather/, async (route) => {
+    const body = fixtureJson('launch-weather.json')
+    for (const p of body.data.rules[0].per_system) if (p.share) p.share.checked = true
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body), headers: { 'access-control-allow-origin': '*' } })
+  })
+  await page.goto('/missions/im-2/launch')
+  const summary = page.locator('summary', { hasText: 'Weather rules for this opportunity' })
+  await expect(summary).toContainText('6 rules; models disagree on 1; 1 checked against observations')
+  await summary.click()
+  const rules = page.getByRole('table').filter({ hasText: 'model runs that break it' })
+  await expect(rules.getByRole('row').filter({ hasText: 'Sustained wind at 162 ft' })).toContainText('A forecast model can answer this · checked against observations')
+  await expect(rules.getByRole('row').filter({ hasText: 'No precipitation at the pad' })).toContainText('not yet checked against observations')
+  await expectNoSeriousAxe(page, 'launch weather with a checked rule (dark)')
+  await page.evaluate(() => localStorage.setItem('pw-prefs', JSON.stringify({ theme: 'light', motion: 'full', shortcuts: true })))
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.reload()
+  await page.locator('summary', { hasText: 'Weather rules for this opportunity' }).click()
+  const cards = page.getByRole('list', { name: 'Weather rules' })
+  await expect(cards).toContainText('HRRR puts the wind at 14.2 m/s')
+  await expect(cards).toContainText('National Weather Service (NWS) forecast: 8.9 m/s, under the limit.')
+  await expectNoSeriousAxe(page, 'launch weather with a checked rule (light, 375 px)')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the weather rules scroll sideways at 375 px').toBeLessThanOrEqual(375)
 })
 
 test('team weather limits (contract fixtures): the form starts from the limits as entered, with their notes, and sends every one again', async ({
@@ -960,6 +1003,39 @@ test('trip corrections and launch weather words (live API): Blue Ghost’s burns
   const opps = page.getByRole('group', { name: 'Launch opportunities by day' }).getByRole('button')
   await opps.last().click()
   await expect(row('Weather rules for this opportunity')).toContainText(cal.opportunities.at(-1)!.weather_note, { timeout: 30_000 })
+})
+
+test('launch weather (live API): the forecasts for a launch a few hours ahead, each with the service’s note, and any disagreement in the service’s sentence', async ({ page, context }) => {
+  test.setTimeout(120_000)
+  await returningVisitor(context)
+  // No planned opportunity is a few hours away, so the screen is given the service's answer for a launch time at the Cape three hours
+  // ahead (the same endpoint, `t0` and `pad`) in place of the one it asks for; the words on the screen are the served ones.
+  const hour = new Date(Math.ceil((Date.now() + 3 * 3_600_000) / 3_600_000) * 3_600_000).toISOString().replace('.000Z', 'Z')
+  const served = await page.request.get(`${API}/missions/im-2/launch/weather`, { params: { t0: hour, pad: 'ksc-lc-39a' } })
+  expect(served.ok(), 'the service answered the launch weather for a time and a pad').toBeTruthy()
+  const wx = (await served.json()) as {
+    data: { rules: { text: string; disagreement: boolean; disagreement_note: string | null; one_forecast: { system: string; note: string | null }[] }[] }
+  }
+  const forecasts = wx.data.rules.flatMap((r) => r.one_forecast)
+  expect(forecasts.length, 'at least the National Weather Service’s hourly forecast is in the answer').toBeGreaterThan(0)
+  await context.route(/localhost:8000\/api\/v1\/missions\/im-2\/launch\/weather/, (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(wx), headers: { 'access-control-allow-origin': '*' } }),
+  )
+  await page.goto('/missions/im-2/launch')
+  await expect(page.locator('[data-guide="section-answer"]')).toContainText('It launched on', { timeout: 90_000 })
+  await openRow(page, 'Weather rules for this launch')
+  const rules = page.getByRole('table').filter({ hasText: 'model runs that break it' })
+  for (const f of forecasts) {
+    if (f.note) await expect(rules).toContainText(f.note)
+    await expect(rules).toContainText(f.system === 'NWS' ? 'National Weather Service (NWS) forecast:' : 'High-Resolution Rapid Refresh (HRRR) forecast:')
+  }
+  for (const r of wx.data.rules) {
+    if (r.disagreement_note) await expect(rules).toContainText(r.disagreement_note)
+    expect(Boolean(r.disagreement_note), `${r.text}: the sentence is there when the rule is marked as disagreeing`).toBe(r.disagreement)
+  }
+  // No rule shown as checked unless a share was (the service says which).
+  await expect(page.locator('summary', { hasText: 'Weather rules for this launch' })).toContainText(/\d+ rules?/)
+  await expectNoSeriousAxe(page, '/missions/im-2/launch with the forecasts of a launch three hours ahead (live)')
 })
 
 test('return (live API): where each flown booster came down, and a planned one not published yet', async ({ page, context }) => {
