@@ -7070,6 +7070,25 @@
         ],
         "title": "KernelHealth"
       },
+      "LanderAt": {
+        "properties": {
+          "lat_deg": {
+            "type": "number",
+            "title": "Lat Deg"
+          },
+          "lon_deg": {
+            "type": "number",
+            "title": "Lon Deg"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "lat_deg",
+          "lon_deg"
+        ],
+        "title": "LanderAt"
+      },
       "LandingHistory": {
         "properties": {
           "attempts": {
@@ -11569,6 +11588,17 @@
             ],
             "title": "Radius M"
           },
+          "lander": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LanderAt"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where the lander is (planetocentric degrees, east): the centre of the viewshed and of its tiles. Null when there is no map."
+          },
           "viewshed": {
             "anyOf": [
               {
@@ -11655,6 +11685,7 @@
           "rover",
           "share_basis",
           "radius_m",
+          "lander",
           "viewshed",
           "viewshed_tile",
           "out_of_sight_share",

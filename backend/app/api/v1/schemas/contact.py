@@ -204,6 +204,11 @@ class Terrain(_M):
     vertical_error_m: float
 
 
+class LanderAt(_M):
+    lat_deg: float
+    lon_deg: float
+
+
 class RoverOut(_M):
     rover: RoverRef
     share_basis: Literal["drive", "ground"] | None = Field(
@@ -211,6 +216,10 @@ class RoverOut(_M):
         "radius_m when no drive is published. Null when not resolvable."
     )
     radius_m: float | None
+    lander: LanderAt | None = Field(
+        description="Where the lander is (planetocentric degrees, east): the centre of the "
+        "viewshed and of its tiles. Null when there is no map."
+    )
     viewshed: Viewshed | None
     viewshed_tile: str | None = Field(
         description="The map layer's tile address under the API prefix, with `{z}`, `{x}` and "

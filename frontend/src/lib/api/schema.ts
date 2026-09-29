@@ -2331,6 +2331,13 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /** LanderAt */
+        LanderAt: {
+            /** Lat Deg */
+            lat_deg: number;
+            /** Lon Deg */
+            lon_deg: number;
+        };
         /** LandingHistory */
         LandingHistory: {
             /** Attempts */
@@ -3750,6 +3757,8 @@ export interface components {
             share_basis: ("drive" | "ground") | null;
             /** Radius M */
             radius_m: number | null;
+            /** @description Where the lander is (planetocentric degrees, east): the centre of the viewshed and of its tiles. Null when there is no map. */
+            lander: components["schemas"]["LanderAt"] | null;
             viewshed: components["schemas"]["Viewshed"] | null;
             /**
              * Viewshed Tile

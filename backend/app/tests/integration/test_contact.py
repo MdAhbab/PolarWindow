@@ -366,6 +366,9 @@ async def test_the_line_of_sight_is_served_as_map_tiles_over_the_terrain(anon_cl
     d = await _rover_answer(anon_client, "im-2")
     template = d["viewshed_tile"]
     assert template.startswith("/tiles/viewshed/") and template.endswith("/{z}/{x}/{y}.png")
+    # The answer says where the lander is, so a map can place the tiles.
+    assert d["lander"]["lat_deg"] == pytest.approx(-84.79, abs=0.01)
+    assert d["lander"]["lon_deg"] == pytest.approx(29.2, abs=0.01)
     aid = int(template.split("/")[3])
     async with session_scope() as s:
         rec = await AssessmentRepository(s).get(aid)
@@ -417,3 +420,4 @@ async def test_the_line_of_sight_is_served_as_map_tiles_over_the_terrain(anon_cl
 async def test_a_site_outside_the_polar_terrain_has_no_map_to_fetch(anon_client) -> None:
     d = await _rover_answer(anon_client, "im-3", rover="im-3/cadre")
     assert d["resolvable"] is False and d["viewshed"] is None and d["viewshed_tile"] is None
+    assert d["lander"] is None

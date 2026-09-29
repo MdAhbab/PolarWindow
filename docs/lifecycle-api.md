@@ -704,7 +704,8 @@ that user. `GET /auth/me` returns the same `user`.
     stored result, never in the section); `net-4` answers are worked out again. No shape of the
     section changes.
 - 2026-09-29 (backend, the rover's line of sight as map tiles; no engine change):
-  - `RoverOut.viewshed_tile` is filled (it was null): `/tiles/viewshed/{answer}/{z}/{x}/{y}.png` under
+  - `RoverOut.lander {lat_deg, lon_deg}` (null with no map) is where the viewshed is centred, so a map can
+    place the tiles. `RoverOut.viewshed_tile` is filled (it was null): `/tiles/viewshed/{answer}/{z}/{x}/{y}.png` under
     `/api/v1`, with the stored answer's own number in it, so a tile never changes; null with no map
     (not resolvable). `GET /tiles/viewshed/{answer}/{z}/{x}/{y}.png?layer=sight|radio|terrain`
     (default `sight`): 256 px PNG in the terrain tiles' scheme (a quadtree over the regional model's

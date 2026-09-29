@@ -207,13 +207,7 @@ async def _stored(
     if ans.assessment is None:
         assert ans.job is not None
         return 202, ans.job
-    # The map's tiles belong to this stored answer: its number is in their address.
-    result = dict(ans.assessment.result)
-    data = dict(result["data"])
-    if data.get("viewshed") is not None:
-        data["viewshed_tile"] = contact_tiles.url_template(ans.assessment.id)
-    result["data"] = data
-    return 200, result
+    return 200, dict(ans.assessment.result)
 
 
 async def contact(
@@ -518,6 +512,7 @@ async def rover(
             "rover": rv,
             "share_basis": None,
             "radius_m": None,
+            "lander": None,
             "viewshed": None,
             "viewshed_tile": None,
             "out_of_sight_share": lifecycle.missing("%", short),
@@ -579,7 +574,12 @@ async def rover(
     # The map's tiles belong to this stored answer: its number is in their address.
     result = dict(ans.assessment.result)
     data = dict(result["data"])
+    data["lander"] = None
     if data.get("viewshed") is not None:
         data["viewshed_tile"] = contact_tiles.url_template(ans.assessment.id)
+        data["lander"] = {
+            "lat_deg": ans.assessment.params["lat_deg"],
+            "lon_deg": ans.assessment.params["lon_deg"],
+        }
     result["data"] = data
     return 200, result
