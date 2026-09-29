@@ -1,0 +1,435 @@
+{
+ "rule_id": "f9-wind-162ft",
+ "region": "florida",
+ "station": "KXMR",
+ "station_point": [
+  28.4677,
+  -80.5668
+ ],
+ "system": "GEFSv12 reforecast (NOAA PSL/EMC), 00 UTC runs, control and 4 perturbed runs, 0.25 degree",
+ "runs": 5,
+ "event": "sustained wind at 10 m above 10.52 m/s (23.5 mph)",
+ "threshold_m_s": 10.51944399731159,
+ "roughness_m": 0.03,
+ "period": "2007-02-07..2019-12-16",
+ "years": [
+  2007,
+  2008,
+  2009,
+  2010,
+  2011,
+  2012,
+  2013,
+  2014,
+  2015,
+  2016,
+  2017,
+  2018,
+  2019
+ ],
+ "days_fetched": 224,
+ "climatology_years": "2000-2019",
+ "intervals": "95 % from resampling whole months of cases",
+ "leads": {
+  "24": {
+   "cases": 212,
+   "events": 0,
+   "brier": 0.01679245283018868,
+   "brier_climatology": 1.2624860320107605e-05,
+   "skill": null,
+   "skill_95": null,
+   "skill_note": "not worked out: 0 of 212 cases above the limit, fewer than the 10 it takes",
+   "crps_m_s": 1.9346752786378223,
+   "crps_fair_m_s": 1.85304094957167,
+   "crps_climatology_m_s": 1.0180835019617107,
+   "crps_skill": -0.9003110009247393,
+   "crps_skill_95": [
+    -1.2454504120241179,
+    -0.6059550966328201
+   ],
+   "crps_skill_fair": -0.8201266850912601,
+   "crps_skill_fair_95": [
+    -1.1557381977610273,
+    -0.5298411638646489
+   ],
+   "mean_forecast_m_s": 5.3003261033255615,
+   "mean_observed_m_s": 3.220131027253669,
+   "reliability": [
+    {
+     "lo": 0.0,
+     "hi": 0.1,
+     "n": 204,
+     "mean_share": 0.0,
+     "observed": 0.0,
+     "observed_95": [
+      0.0,
+      0.018482640094871366
+     ],
+     "counted": true,
+     "ok": true
+    },
+    {
+     "lo": 0.1,
+     "hi": 0.2,
+     "n": 0,
+     "mean_share": null,
+     "observed": null,
+     "observed_95": null,
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.2,
+     "hi": 0.3,
+     "n": 2,
+     "mean_share": 0.2,
+     "observed": 0.0,
+     "observed_95": [
+      0.0,
+      0.6576197760453506
+     ],
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.3,
+     "hi": 0.4,
+     "n": 0,
+     "mean_share": null,
+     "observed": null,
+     "observed_95": null,
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.4,
+     "hi": 0.5,
+     "n": 3,
+     "mean_share": 0.4000000000000001,
+     "observed": 0.0,
+     "observed_95": [
+      0.0,
+      0.5614970356393196
+     ],
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.5,
+     "hi": 0.6,
+     "n": 0,
+     "mean_share": null,
+     "observed": null,
+     "observed_95": null,
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.6,
+     "hi": 0.7,
+     "n": 0,
+     "mean_share": null,
+     "observed": null,
+     "observed_95": null,
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.7,
+     "hi": 0.8,
+     "n": 0,
+     "mean_share": null,
+     "observed": null,
+     "observed_95": null,
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.8,
+     "hi": 0.9,
+     "n": 0,
+     "mean_share": null,
+     "observed": null,
+     "observed_95": null,
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.9,
+     "hi": 1.0,
+     "n": 3,
+     "mean_share": 1.0,
+     "observed": 0.0,
+     "observed_95": [
+      0.0,
+      0.5614970356393196
+     ],
+     "counted": false,
+     "ok": true
+    }
+   ]
+  },
+  "48": {
+   "cases": 215,
+   "events": 0,
+   "brier": 0.0068837209302325605,
+   "brier_climatology": 1.2655463829700402e-05,
+   "skill": null,
+   "skill_95": null,
+   "skill_note": "not worked out: 0 of 215 cases above the limit, fewer than the 10 it takes",
+   "crps_m_s": 1.8469815791294566,
+   "crps_fair_m_s": 1.7433017036763903,
+   "crps_climatology_m_s": 0.9482759098794132,
+   "crps_skill": -0.9477259306991428,
+   "crps_skill_95": [
+    -1.2733432026215783,
+    -0.7042733063640297
+   ],
+   "crps_skill_fair": -0.8383907948247635,
+   "crps_skill_fair_95": [
+    -1.1550100348768069,
+    -0.6031732015747489
+   ],
+   "mean_forecast_m_s": 5.337271486599755,
+   "mean_observed_m_s": 3.249374677002584,
+   "reliability": [
+    {
+     "lo": 0.0,
+     "hi": 0.1,
+     "n": 205,
+     "mean_share": 0.0,
+     "observed": 0.0,
+     "observed_95": [
+      1.734723475976807e-18,
+      0.01839413927614563
+     ],
+     "counted": true,
+     "ok": true
+    },
+    {
+     "lo": 0.1,
+     "hi": 0.2,
+     "n": 0,
+     "mean_share": null,
+     "observed": null,
+     "observed_95": null,
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.2,
+     "hi": 0.3,
+     "n": 5,
+     "mean_share": 0.2,
+     "observed": 0.0,
+     "observed_95": [
+      0.0,
+      0.43448246865939283
+     ],
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.3,
+     "hi": 0.4,
+     "n": 0,
+     "mean_share": null,
+     "observed": null,
+     "observed_95": null,
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.4,
+     "hi": 0.5,
+     "n": 4,
+     "mean_share": 0.4,
+     "observed": 0.0,
+     "observed_95": [
+      0.0,
+      0.4898908403969213
+     ],
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.5,
+     "hi": 0.6,
+     "n": 0,
+     "mean_share": null,
+     "observed": null,
+     "observed_95": null,
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.6,
+     "hi": 0.7,
+     "n": 0,
+     "mean_share": null,
+     "observed": null,
+     "observed_95": null,
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.7,
+     "hi": 0.8,
+     "n": 0,
+     "mean_share": null,
+     "observed": null,
+     "observed_95": null,
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.8,
+     "hi": 0.9,
+     "n": 1,
+     "mean_share": 0.8,
+     "observed": 0.0,
+     "observed_95": [
+      0.0,
+      0.7934506882081973
+     ],
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.9,
+     "hi": 1.0,
+     "n": 0,
+     "mean_share": null,
+     "observed": null,
+     "observed_95": null,
+     "counted": false,
+     "ok": true
+    }
+   ]
+  }
+ },
+ "reliability": [
+  {
+   "lo": 0.0,
+   "hi": 0.1,
+   "n": 409,
+   "mean_share": 0.0,
+   "observed": 0.0,
+   "observed_95": [
+    0.0,
+    0.009304925168381724
+   ],
+   "counted": true,
+   "ok": true
+  },
+  {
+   "lo": 0.1,
+   "hi": 0.2,
+   "n": 0,
+   "mean_share": null,
+   "observed": null,
+   "observed_95": null,
+   "counted": false,
+   "ok": true
+  },
+  {
+   "lo": 0.2,
+   "hi": 0.3,
+   "n": 7,
+   "mean_share": 0.19999999999999998,
+   "observed": 0.0,
+   "observed_95": [
+    0.0,
+    0.35433043867586833
+   ],
+   "counted": false,
+   "ok": true
+  },
+  {
+   "lo": 0.3,
+   "hi": 0.4,
+   "n": 0,
+   "mean_share": null,
+   "observed": null,
+   "observed_95": null,
+   "counted": false,
+   "ok": true
+  },
+  {
+   "lo": 0.4,
+   "hi": 0.5,
+   "n": 7,
+   "mean_share": 0.39999999999999997,
+   "observed": 0.0,
+   "observed_95": [
+    0.0,
+    0.35433043867586833
+   ],
+   "counted": false,
+   "ok": true
+  },
+  {
+   "lo": 0.5,
+   "hi": 0.6,
+   "n": 0,
+   "mean_share": null,
+   "observed": null,
+   "observed_95": null,
+   "counted": false,
+   "ok": true
+  },
+  {
+   "lo": 0.6,
+   "hi": 0.7,
+   "n": 0,
+   "mean_share": null,
+   "observed": null,
+   "observed_95": null,
+   "counted": false,
+   "ok": true
+  },
+  {
+   "lo": 0.7,
+   "hi": 0.8,
+   "n": 0,
+   "mean_share": null,
+   "observed": null,
+   "observed_95": null,
+   "counted": false,
+   "ok": true
+  },
+  {
+   "lo": 0.8,
+   "hi": 0.9,
+   "n": 1,
+   "mean_share": 0.8,
+   "observed": 0.0,
+   "observed_95": [
+    0.0,
+    0.7934506882081973
+   ],
+   "counted": false,
+   "ok": true
+  },
+  {
+   "lo": 0.9,
+   "hi": 1.0,
+   "n": 3,
+   "mean_share": 1.0,
+   "observed": 0.0,
+   "observed_95": [
+    0.0,
+    0.5614970356393196
+   ],
+   "counted": false,
+   "ok": true
+  }
+ ],
+ "passes": false,
+ "gate": "Brier skill >= 0.1 at each lead (from at least 10 cases above the limit) and reliability within 0.1 in bins with >= 30 cases",
+ "sources": {
+  "forecasts": "https://noaa-gefs-retrospective.s3.amazonaws.com/GEFSv12/reforecast/ (10 m UGRD, VGRD)",
+  "observations": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=XMR&data=sknt&report_type=3"
+ },
+ "built": "2026-09-29T07:28:46+00:00"
+}
