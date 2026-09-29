@@ -41,6 +41,7 @@ const PAGES: [name: string, path: string, open?: string[]][] = [
   ['contact-im-3-relay', '/missions/im-3/contact', ['Relays', 'Orbiters that could see the lander']],
   ['contact-im-2-orbiters', '/missions/im-2/contact', ['Orbiters that could see the lander']],
   ['contact-im-2-rover', '/missions/im-2/contact', ['Rover and lander line of sight']],
+  ['contact-im-2-rover-values', '/missions/im-2/contact', ['Rover and lander line of sight', 'Antennas, radio and terrain']],
   ['contact-im-2-compare', '/missions/im-2/contact', ['Compare a relay', 'Download the contact plan']],
   ['return-im-1-land', '/missions/im-1/return'],
   ['return-im-2-droneship', '/missions/im-2/return'],

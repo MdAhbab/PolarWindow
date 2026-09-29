@@ -422,7 +422,18 @@ into the hub header.
   clear, blocked and uncertain mean) sits under the map, and a row "Antennas,
   radio and terrain" gives the antenna heights and frequency (each "assumed"
   with its reason unless given) and the elevation model with its post spacing
-  and height error. `resolvable: false` → "Cannot be said here." and the served reason,
+  and height error. Under those, when the answer can be worked out, a form "Try
+  other values" asks for how far from the lander (`radius_m`, 50 to 5,000 m),
+  the two antenna heights (`lander_antenna_m`, `rover_antenna_m`, 0 to 50 m)
+  and the radio frequency (`freq_mhz`, 30 to 100,000 MHz), each box with its
+  limits and the value in use ("In use: 500 m, assumed."). An empty box is not
+  sent, so the service assumes it and says so; a slip is told at its box in a
+  sentence and nothing is asked; the button "Work it out with these" asks the
+  question again and the row comes back open with the sentence, map, numbers
+  and table for those values. A value the team gave reads "3 m, as you gave it"
+  whatever the service calls it, the service's "Give lander_antenna_m." is
+  dropped since the box is on screen, and "Back to the assumed values" (shown
+  only while any is given) asks for the assumed ones. `resolvable: false` → "Cannot be said here." and the served reason,
   no map. The viewshed is a map layer around the lander, north up, rings every
   100 m, the lander an ink square: in sight filled (earth), blocked the 45°
   hatch, uncertain the −45° hatch on a light wash; each state in the legend
