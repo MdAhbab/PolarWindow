@@ -131,3 +131,109 @@ def test_ground_share_weights_each_cell_by_its_ring() -> None:
     )
     lo, hi = vs.ground_share(v, v.sight)  # type: ignore[misc]
     assert lo == pytest.approx(300.0 / 800.0) and hi == pytest.approx(400.0 / 800.0)
+
+
+# ---------------------------------------------------------------------------
+# The map layer: tiles in the terrain tiles' scheme
+# ---------------------------------------------------------------------------
+
+from app.core.projections import local_frame  # noqa: E402
+
+CLASSES = {
+    vs.CLEAR: vs.CLEAR_RGBA,
+    vs.BLOCKED: vs.BLOCKED_RGBA,
+    vs.UNCERTAIN: vs.UNCERTAIN_RGBA,
+}
+STRIPES = {vs.BLOCKED: vs.BLOCKED_STRIPE_RGBA, vs.UNCERTAIN: vs.UNCERTAIN_STRIPE_RGBA}
+SITE = (-85.0, 120.0)  # lat, lon: grid north is 120 degrees from true north here
+
+
+def _pixel_at(frame, east: float, north: float, bearings, ranges, states, pixel_m: float = 1.0):
+    """The tile pixel that lies on the ground point ``east``, ``north`` of the lander, and
+    where in the whole map its tile starts (so the stripes' phase is known)."""
+    gx, gy = frame.local_to_grid(np.array([east]), np.array([north]))
+    gx, gy = float(gx[0]), float(gy[0])
+    # A 256 px tile whose pixel (128, 128) is exactly that grid point, ``pixel_m`` apart.
+    bounds = (gx - 128 * pixel_m, gy - 127 * pixel_m, gx + 127 * pixel_m, gy + 128 * pixel_m)
+    origin = (1000, 3000)
+    tile = vs.tile_rgba(bounds, frame, bearings, ranges, states, pixel_origin=origin)
+    assert tile is not None
+    return tuple(int(c) for c in tile[128, 128]), (origin[0] + 128, origin[1] + 128)
+
+
+def test_cell_edges_are_half_way_between_samples() -> None:
+    edges = vs.cell_edges(25.0 * np.arange(1, 21))
+    assert edges[0] == 0.0 and edges[1] == 37.5 and edges[2] == 62.5
+    assert edges[-2] == 487.5 and edges[-1] == 512.5 and edges.size == 21
+
+
+def test_a_tile_draws_each_ground_point_in_its_cell_whichever_way_the_grid_turns() -> None:
+    """A different state in every (bearing, range) cell, read back from the picture at points
+    given as bearing and range from the lander. At 120 deg E the grid's north is 120 degrees
+    from true north, so a tile that forgot the turn would put every cell in the wrong place."""
+    frame = local_frame(SITE[1], SITE[0])
+    assert abs(math.degrees(frame.grid_convergence_rad) - 120.0) < 0.01
+    bearings = np.arange(0.0, 360.0, 5.0)
+    ranges = 25.0 * np.arange(1, 21)
+    rng = np.random.default_rng(7)
+    states = rng.integers(0, 3, size=(72, 20)).astype(np.int8)
+    for _ in range(300):
+        i, k = int(rng.integers(0, 72)), int(rng.integers(0, 20))
+        # Inside the cell: within 2 degrees of the bearing, a few metres off the range (a
+        # metre is a pixel here, and the grid turns and stretches the point by up to a pixel).
+        b = math.radians(bearings[i] + rng.uniform(-2.0, 2.0))
+        r = ranges[k] + rng.uniform(-6.0, 6.0) if k else rng.uniform(5.0, 30.0)
+        px, _ = _pixel_at(frame, r * math.sin(b), r * math.cos(b), bearings, ranges, states)
+        want = int(states[i, k])
+        assert px in (CLASSES[want], STRIPES.get(want)), (bearings[i], ranges[k], px, want)
+
+
+def test_a_tile_is_empty_away_from_the_lander_and_clear_beyond_the_last_cell() -> None:
+    frame = local_frame(SITE[1], SITE[0])
+    bearings = np.arange(0.0, 360.0, 5.0)
+    ranges = 25.0 * np.arange(1, 21)
+    states = np.full((72, 20), vs.CLEAR, dtype=np.int8)
+    far = (frame.x0_m + 5000.0, frame.y0_m + 5000.0)
+    assert (
+        vs.tile_rgba((far[0], far[1], far[0] + 500, far[1] + 500), frame, bearings, ranges, states)
+        is None
+    )
+    here = (frame.x0_m - 700.0, frame.y0_m - 700.0, frame.x0_m + 700.0, frame.y0_m + 700.0)
+    tile = vs.tile_rgba(here, frame, bearings, ranges, states)
+    assert tile is not None
+    drawn = tile[..., 3] > 0
+    # A disc of radius 512.5 m on 1400 m: pi r^2 / side^2 of the picture, to a pixel of edge.
+    assert drawn.mean() == pytest.approx(
+        math.pi * 512.5**2 / 1400.0**2 * (256 / 255) ** 2, abs=0.01
+    )
+    assert set(map(tuple, tile[drawn][:, :].tolist())) == {vs.CLEAR_RGBA}
+
+
+def test_stripes_run_on_across_tiles_and_tell_blocked_from_uncertain() -> None:
+    """Both hatch states are stripes of the map, not of the tile: a pixel's stripe depends
+    on where it is in the whole picture, so two neighbouring tiles join up."""
+    frame = local_frame(SITE[1], SITE[0])
+    bearings = np.arange(0.0, 360.0, 5.0)
+    ranges = 25.0 * np.arange(1, 21)
+    for state, width in (
+        (vs.BLOCKED, vs.BLOCKED_STRIPE_PX),
+        (vs.UNCERTAIN, vs.UNCERTAIN_STRIPE_PX),
+    ):
+        states = np.full((72, 20), state, dtype=np.int8)
+        # The tile sits inside the disc (a 300 m square from the lander), at two places
+        # in the whole map.
+        b = (frame.x0_m - 150.0, frame.y0_m - 150.0, frame.x0_m + 150.0, frame.y0_m + 150.0)
+        for origin in ((0, 0), (256, 512), (263, 517)):
+            tile = vs.tile_rgba(b, frame, bearings, ranges, states, pixel_origin=origin)
+            assert tile is not None
+            u = origin[0] + np.arange(256)[None, :]
+            v = origin[1] + np.arange(256)[:, None]
+            phase = (
+                (u + v) % vs.HATCH_PERIOD_PX
+                if state == vs.BLOCKED
+                else (u - v) % vs.HATCH_PERIOD_PX
+            )
+            striped = np.all(tile == np.array(STRIPES[state], dtype=np.uint8), axis=-1)
+            assert np.array_equal(striped, phase < width)
+            assert striped.mean() == pytest.approx(width / vs.HATCH_PERIOD_PX, abs=0.01)
+    assert vs.BLOCKED_STRIPE_PX != vs.UNCERTAIN_STRIPE_PX  # two claims, two looks

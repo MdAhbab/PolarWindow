@@ -177,7 +177,7 @@ def rebase(
     return np.asarray(np.atleast_2d(states) + sign * moon, dtype=np.float64)
 
 
-def residual_acceleration(
+def residual_acceleration_vectors(
     tables: forces.Tables,
     model: forces.Model,
     ets: FloatArray,
@@ -186,7 +186,7 @@ def residual_acceleration(
     h_s: float = 10.0,
     state_at: Callable[[FloatArray], FloatArray] | None = None,
 ) -> FloatArray:
-    """(n,) |observed - modelled| acceleration along a reconstructed trajectory, m/s^2.
+    """(n, 3) observed - modelled acceleration along a reconstructed trajectory, m/s^2.
 
     ``state_at(ets)`` returns reconstructed states about the model's origin; the
     observed acceleration is the five-point central difference of its velocity
@@ -201,4 +201,19 @@ def residual_acceleration(
     v = [state_at(ets + k * h_s)[:, 3:] for k in (-2, -1, 1, 2)]
     observed = (v[0] - 8.0 * v[1] + 8.0 * v[2] - v[3]) / (12.0 * h_s)
     modelled = np.array([f(float(t), y)[3:] for t, y in zip(ets, states, strict=True)])
-    return np.asarray(np.linalg.norm(observed - modelled, axis=1), dtype=np.float64)
+    return np.asarray(observed - modelled, dtype=np.float64)
+
+
+def residual_acceleration(
+    tables: forces.Tables,
+    model: forces.Model,
+    ets: FloatArray,
+    states: FloatArray,
+    *,
+    h_s: float = 10.0,
+    state_at: Callable[[FloatArray], FloatArray] | None = None,
+) -> FloatArray:
+    """(n,) |observed - modelled| acceleration along a reconstructed trajectory, m/s^2
+    (the size of :func:`residual_acceleration_vectors`)."""
+    vec = residual_acceleration_vectors(tables, model, ets, states, h_s=h_s, state_at=state_at)
+    return np.asarray(np.linalg.norm(vec, axis=1), dtype=np.float64)

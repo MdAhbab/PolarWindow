@@ -163,10 +163,21 @@ async def contact_plan(
     mission_id: str,
     fmt: Literal["csv", "ion"] = Query("csv", alias="format"),
     rate_bps: float | None = Query(None, gt=0, description="Data rate for ION, bits per second."),
+    start: datetime | None = Query(None, description="As for the answer: the mission's dates."),
+    end: datetime | None = Query(None),
+    relay: list[str] = Query(
+        [],
+        max_length=3,
+        description="Planned relays (catalogue ids) whose contacts to list, labelled planned: "
+        "a relay's contacts are for one guessed placement of its orbit, so a plan lists them "
+        "only when asked. As for the answer, a relay that is not the mission's own is added.",
+    ),
     session: Any = Depends(deps.db),
 ) -> PlainTextResponse:
     try:
-        text, media = await contact_service.plan(session, mission_id, fmt, rate_bps)
+        text, media = await contact_service.plan(
+            session, mission_id, fmt, rate_bps, _utc(start), _utc(end), relays=relay
+        )
     except Exception as exc:
         raise _contact_http(exc) from exc
     ext = "csv" if fmt == "csv" else "txt"

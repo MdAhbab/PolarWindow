@@ -141,6 +141,25 @@ class DateIn(_Strict):
         return self
 
 
+class InstantIn(DateIn):
+    """A published launch instant (T-0) and the launch window it was published with."""
+
+    #: The window's ends (UTC); equal when the launch was published as a single instant.
+    #: Absent when no window was published.
+    window_open: str | None = None
+    window_close: str | None = None
+
+    @model_validator(mode="after")
+    def _inside(self) -> InstantIn:
+        if (self.window_open is None) != (self.window_close is None):
+            raise ValueError("a launch window has both ends or neither")
+        if self.window_open is not None and self.window_close is not None:
+            a, t, b = (parse_date(x) for x in (self.window_open, self.date, self.window_close))
+            if not a <= t <= b:
+                raise ValueError("the launch instant lies outside its published window")
+        return self
+
+
 class TargetIn(_Strict):
     name: str
     lat_deg: float = Field(ge=-90.0, le=90.0)
@@ -226,7 +245,7 @@ class MissionIn(_Strict):
     vehicle_id: str | None = None
     pad_id: str | None = None
     #: The published launch instant (T-0), to the minute or better.
-    t0: DateIn | None = None
+    t0: InstantIn | None = None
     transfer: TransferIn | None = None
     descent: DescentIn | None = None
     comms: CommsIn | None = None

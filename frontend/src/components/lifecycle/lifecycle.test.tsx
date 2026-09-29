@@ -34,10 +34,10 @@ import { CapsuleCheckRow, seaWords, zoneWords } from '../../screens/sections/Ret
 import returnFixture from '../../lib/api/__fixtures__/lifecycle/return.json'
 import { oldFeedsWords } from './OldFeeds'
 import type { CapsuleModelCheckDTO, FeedDTO } from '../../lib/api/lifecycle'
-import { calendarDays } from './LaunchCalendar'
+import { LaunchCalendar, LaunchTable, calendarDays, periodWords } from './LaunchCalendar'
 import { axisTicks, complexOf, contactRows, plannedWords } from './ContactChart'
 import { contactAnswer, coveredWords, numberWords, orbiterWords, orbitWords, relayList } from '../../screens/sections/ContactSection'
-import { bearingWords, rayRuns, rayWords, roverSentence } from './RoverSight'
+import { bearingWords, rayRuns, rayWords, roverSentence, ViewshedPanel } from './RoverSight'
 import roverFixture from '../../lib/api/__fixtures__/lifecycle/rover.json'
 import roverUnresolvable from '../../lib/api/__fixtures__/lifecycle/rover-unresolvable.json'
 import type { RoverSightDTO } from '../../lib/api/lifecycle'
@@ -434,6 +434,24 @@ describe('the charts’ arrays, shared with their tables', () => {
     expect(days.find((d) => d.kind === 'gap')).toEqual({ kind: 'gap', days: 1 })
   })
 
+  it('launch calendar: a launch period is said in words, in the mark\u2019s name and in the table, and one instant is not', () => {
+    const one = launch.opportunities[0]
+    expect(periodWords(one)).toBeNull()
+    const inDay = { ...one, kind: 'window' as const, window_open: '2024-01-08T07:18:00Z', window_close: '2024-01-08T08:03:00Z' }
+    expect(periodWords(inDay)).toBe('07:18 to 08:03 UTC')
+    // Past midnight the dates are given, so the close is not read as the same day.
+    expect(periodWords({ ...inDay, window_open: '2024-01-08T23:40:00Z', window_close: '2024-01-09T00:25:00Z' })).toBe('8 January 2024, 23:40 UTC to 9 January 2024, 00:25 UTC')
+    // A period whose ends the service does not give is not made up.
+    expect(periodWords({ ...inDay, window_close: null })).toBeNull()
+    const withPeriod = { ...one, ...inDay, t0: { ...one.t0, value: Date.parse('2024-01-08T07:18:38Z') / 1000 } }
+    render(<LaunchCalendar opportunities={[withPeriod]} selected={withPeriod.id} onSelect={() => {}} />)
+    expect(screen.getByRole('button', { name: /, a launch period from 07:18 to 08:03 UTC$/ })).toBeTruthy()
+    cleanup()
+    render(<LaunchTable opportunities={[withPeriod, { ...one, id: 'other', t0: { ...one.t0, value: withPeriod.t0.value + 86400 } }]} />)
+    expect(screen.getByText('Launch period, 07:18 to 08:03 UTC')).toBeTruthy()
+    expect(screen.getByText('One instant')).toBeTruthy()
+  })
+
   it('contact: antennas of one Deep Space Network complex share a row; the table keeps each antenna', () => {
     const two = {
       ...contact,
@@ -763,5 +781,36 @@ describe('Rover and lander line of sight', () => {
     )
     const bad = (roverUnresolvable as unknown as SectionDTO<RoverSightDTO>).data
     expect(roverSentence(bad, 'CADRE')).toMatch(/^Reiner Gamma is outside the polar terrain map/)
+  })
+
+  it('the map is laid over the terrain from the answer’s tiles, with the ground in the legend; without them it is drawn as sectors', () => {
+    const { unmount } = render(<ViewshedPanel v={v} roverName="Yaoki" tile={rover.viewshed_tile} at={rover.lander} />)
+    const map = screen.getByTestId('site-tile-map')
+    expect(map.getAttribute('aria-label')).toMatch(/^Line of sight between Yaoki and the lander, out to 500 m in 36 directions, north up\. The table lists each direction\. Drawn over the terrain map\.$/)
+    const hrefs = Array.from(map.querySelectorAll('image')).map((i) => i.getAttribute('href') ?? '')
+    // The terrain under the answer's own layer, each from the answer's address at one zoom.
+    expect(hrefs.some((h) => /\/tiles\/viewshed\/91\/\d+\/\d+\/\d+\.png\?layer=terrain$/.test(h))).toBe(true)
+    expect(hrefs.some((h) => /\?layer=sight$/.test(h))).toBe(true)
+    expect(hrefs.every((h) => !h.includes('{'))).toBe(true)
+    for (const words of ['The lander', 'In sight', 'Blocked by the ground', 'Uncertain: the terrain map’s error could tip it either way', 'The ground, shaded from the terrain map']) {
+      expect(screen.getByText(words)).toBeTruthy()
+    }
+    // The switch asks for the radio path's tiles.
+    fireEvent.click(screen.getByRole('button', { name: 'Radio path' }))
+    expect(Array.from(screen.getByTestId('site-tile-map').querySelectorAll('image')).some((i) => /\?layer=radio$/.test(i.getAttribute('href') ?? ''))).toBe(true)
+    unmount()
+
+    render(<ViewshedPanel v={v} roverName="Yaoki" tile={null} at={null} />)
+    expect(screen.queryByTestId('site-tile-map')).toBeNull()
+    expect(screen.getByRole('img', { name: /^Line of sight between Yaoki and the lander/ })).toBeTruthy()
+    expect(screen.queryByText('The ground, shaded from the terrain map')).toBeNull()
+  })
+
+  it('a layer that does not load says so, since a map without it would read as no blockers', () => {
+    render(<ViewshedPanel v={v} roverName="Yaoki" tile={rover.viewshed_tile} at={rover.lander} />)
+    expect(screen.queryByRole('status')).toBeNull()
+    const layer = Array.from(screen.getByTestId('site-tile-map').querySelectorAll('image')).find((i) => /\?layer=sight$/.test(i.getAttribute('href') ?? ''))!
+    fireEvent.error(layer)
+    expect(screen.getByRole('status').textContent).toBe('The map layer did not load, so nothing is drawn over the terrain. The table has the same answer.')
   })
 })

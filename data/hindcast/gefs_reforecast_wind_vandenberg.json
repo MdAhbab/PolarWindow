@@ -1,0 +1,456 @@
+{
+ "rule_id": "f9-wind-162ft",
+ "region": "vandenberg",
+ "station": "KVBG",
+ "station_point": [
+  34.7297,
+  -120.5768
+ ],
+ "system": "GEFSv12 reforecast (NOAA PSL/EMC), 00 UTC runs, control and 4 perturbed runs, 0.25 degree",
+ "runs": 5,
+ "event": "sustained wind at 10 m above 10.52 m/s (23.5 mph)",
+ "threshold_m_s": 10.51944399731159,
+ "roughness_m": 0.03,
+ "period": "2007-01-08..2019-12-31",
+ "years": [
+  2007,
+  2008,
+  2009,
+  2010,
+  2011,
+  2012,
+  2013,
+  2014,
+  2015,
+  2016,
+  2017,
+  2018,
+  2019
+ ],
+ "days_fetched": 845,
+ "climatology_years": "2000-2019",
+ "intervals": "95 % from resampling whole months of cases",
+ "leads": {
+  "24": {
+   "cases": 565,
+   "events": 34,
+   "brier": 0.03461946902654868,
+   "brier_climatology": 0.055337728034766664,
+   "skill": 0.3743966321711195,
+   "skill_95": [
+    0.14549766133118217,
+    0.5697820192284788
+   ],
+   "skill_note": null,
+   "crps_m_s": 0.9762462525034553,
+   "crps_fair_m_s": 0.9192957716269877,
+   "crps_climatology_m_s": 1.4578452380003721,
+   "crps_skill": 0.330349870441319,
+   "crps_skill_95": [
+    0.2742170684001539,
+    0.38369027178800585
+   ],
+   "crps_skill_fair": 0.36941470351961114,
+   "crps_skill_fair_95": [
+    0.31410511537301317,
+    0.42258779211618597
+   ],
+   "mean_forecast_m_s": 5.498044497696545,
+   "mean_observed_m_s": 5.793336440511309,
+   "reliability": [
+    {
+     "lo": 0.0,
+     "hi": 0.1,
+     "n": 528,
+     "mean_share": 0.0,
+     "observed": 0.020833333333333332,
+     "observed_95": [
+      0.011672066314803595,
+      0.03691658440011494
+     ],
+     "counted": true,
+     "ok": true
+    },
+    {
+     "lo": 0.1,
+     "hi": 0.2,
+     "n": 0,
+     "mean_share": null,
+     "observed": null,
+     "observed_95": null,
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.2,
+     "hi": 0.3,
+     "n": 9,
+     "mean_share": 0.2,
+     "observed": 0.4444444444444444,
+     "observed_95": [
+      0.18877851977054566,
+      0.7333487081991259
+     ],
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.3,
+     "hi": 0.4,
+     "n": 0,
+     "mean_share": null,
+     "observed": null,
+     "observed_95": null,
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.4,
+     "hi": 0.5,
+     "n": 7,
+     "mean_share": 0.39999999999999997,
+     "observed": 0.5714285714285714,
+     "observed_95": [
+      0.25045836275303557,
+      0.8417801460075546
+     ],
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.5,
+     "hi": 0.6,
+     "n": 0,
+     "mean_share": null,
+     "observed": null,
+     "observed_95": null,
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.6,
+     "hi": 0.7,
+     "n": 3,
+     "mean_share": 0.6,
+     "observed": 0.3333333333333333,
+     "observed_95": [
+      0.06149194402093078,
+      0.7923404011921757
+     ],
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.7,
+     "hi": 0.8,
+     "n": 0,
+     "mean_share": null,
+     "observed": null,
+     "observed_95": null,
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.8,
+     "hi": 0.9,
+     "n": 5,
+     "mean_share": 0.8,
+     "observed": 0.4,
+     "observed_95": [
+      0.11762077314099711,
+      0.7692757205908813
+     ],
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.9,
+     "hi": 1.0,
+     "n": 13,
+     "mean_share": 1.0,
+     "observed": 0.9230769230769231,
+     "observed_95": [
+      0.666860488286395,
+      0.986289578909774
+     ],
+     "counted": false,
+     "ok": true
+    }
+   ]
+  },
+  "48": {
+   "cases": 566,
+   "events": 38,
+   "brier": 0.04706713780918728,
+   "brier_climatology": 0.06039035764976522,
+   "skill": 0.22061832979771623,
+   "skill_95": [
+    0.02145641796104531,
+    0.4155151077241478
+   ],
+   "skill_note": null,
+   "crps_m_s": 0.98135378839797,
+   "crps_fair_m_s": 0.9051642458537492,
+   "crps_climatology_m_s": 1.4312419573087638,
+   "crps_skill": 0.31433411144314205,
+   "crps_skill_95": [
+    0.26379764812250905,
+    0.3633918915186686
+   ],
+   "crps_skill_fair": 0.3675672787319797,
+   "crps_skill_fair_95": [
+    0.3183779960298436,
+    0.4149005516269759
+   ],
+   "mean_forecast_m_s": 5.514802740436616,
+   "mean_observed_m_s": 5.700735217903417,
+   "reliability": [
+    {
+     "lo": 0.0,
+     "hi": 0.1,
+     "n": 529,
+     "mean_share": 0.0,
+     "observed": 0.035916824196597356,
+     "observed_95": [
+      0.02311228336001592,
+      0.055412873014156636
+     ],
+     "counted": true,
+     "ok": true
+    },
+    {
+     "lo": 0.1,
+     "hi": 0.2,
+     "n": 0,
+     "mean_share": null,
+     "observed": null,
+     "observed_95": null,
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.2,
+     "hi": 0.3,
+     "n": 14,
+     "mean_share": 0.20000000000000004,
+     "observed": 0.21428571428571427,
+     "observed_95": [
+      0.07571386653293533,
+      0.4758923079830535
+     ],
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.3,
+     "hi": 0.4,
+     "n": 0,
+     "mean_share": null,
+     "observed": null,
+     "observed_95": null,
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.4,
+     "hi": 0.5,
+     "n": 5,
+     "mean_share": 0.4,
+     "observed": 0.8,
+     "observed_95": [
+      0.375534627029995,
+      0.9637758917743693
+     ],
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.5,
+     "hi": 0.6,
+     "n": 0,
+     "mean_share": null,
+     "observed": null,
+     "observed_95": null,
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.6,
+     "hi": 0.7,
+     "n": 7,
+     "mean_share": 0.6,
+     "observed": 0.42857142857142855,
+     "observed_95": [
+      0.15821985399244537,
+      0.7495416372469643
+     ],
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.7,
+     "hi": 0.8,
+     "n": 0,
+     "mean_share": null,
+     "observed": null,
+     "observed_95": null,
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.8,
+     "hi": 0.9,
+     "n": 4,
+     "mean_share": 0.8,
+     "observed": 0.75,
+     "observed_95": [
+      0.3006418400969081,
+      0.954412739704631
+     ],
+     "counted": false,
+     "ok": true
+    },
+    {
+     "lo": 0.9,
+     "hi": 1.0,
+     "n": 7,
+     "mean_share": 1.0,
+     "observed": 0.8571428571428571,
+     "observed_95": [
+      0.486872167860775,
+      0.9743203759421759
+     ],
+     "counted": false,
+     "ok": true
+    }
+   ]
+  }
+ },
+ "reliability": [
+  {
+   "lo": 0.0,
+   "hi": 0.1,
+   "n": 1057,
+   "mean_share": 0.0,
+   "observed": 0.02838221381267739,
+   "observed_95": [
+    0.01995217847553236,
+    0.04022784026979423
+   ],
+   "counted": true,
+   "ok": true
+  },
+  {
+   "lo": 0.1,
+   "hi": 0.2,
+   "n": 0,
+   "mean_share": null,
+   "observed": null,
+   "observed_95": null,
+   "counted": false,
+   "ok": true
+  },
+  {
+   "lo": 0.2,
+   "hi": 0.3,
+   "n": 23,
+   "mean_share": 0.20000000000000007,
+   "observed": 0.30434782608695654,
+   "observed_95": [
+    0.1560402436889323,
+    0.5086575642878356
+   ],
+   "counted": false,
+   "ok": true
+  },
+  {
+   "lo": 0.3,
+   "hi": 0.4,
+   "n": 0,
+   "mean_share": null,
+   "observed": null,
+   "observed_95": null,
+   "counted": false,
+   "ok": true
+  },
+  {
+   "lo": 0.4,
+   "hi": 0.5,
+   "n": 12,
+   "mean_share": 0.4000000000000001,
+   "observed": 0.6666666666666666,
+   "observed_95": [
+    0.3906220869404939,
+    0.86187990987514
+   ],
+   "counted": false,
+   "ok": true
+  },
+  {
+   "lo": 0.5,
+   "hi": 0.6,
+   "n": 0,
+   "mean_share": null,
+   "observed": null,
+   "observed_95": null,
+   "counted": false,
+   "ok": true
+  },
+  {
+   "lo": 0.6,
+   "hi": 0.7,
+   "n": 10,
+   "mean_share": 0.5999999999999999,
+   "observed": 0.4,
+   "observed_95": [
+    0.1681803285264069,
+    0.6873262320788047
+   ],
+   "counted": false,
+   "ok": true
+  },
+  {
+   "lo": 0.7,
+   "hi": 0.8,
+   "n": 0,
+   "mean_share": null,
+   "observed": null,
+   "observed_95": null,
+   "counted": false,
+   "ok": true
+  },
+  {
+   "lo": 0.8,
+   "hi": 0.9,
+   "n": 9,
+   "mean_share": 0.8,
+   "observed": 0.5555555555555556,
+   "observed_95": [
+    0.26665129180087416,
+    0.8112214802294544
+   ],
+   "counted": false,
+   "ok": true
+  },
+  {
+   "lo": 0.9,
+   "hi": 1.0,
+   "n": 20,
+   "mean_share": 1.0,
+   "observed": 0.9,
+   "observed_95": [
+    0.6989663528135878,
+    0.9721335190383086
+   ],
+   "counted": false,
+   "ok": true
+  }
+ ],
+ "passes": true,
+ "gate": "Brier skill >= 0.1 at each lead (from at least 10 cases above the limit) and reliability within 0.1 in bins with >= 30 cases",
+ "sources": {
+  "forecasts": "https://noaa-gefs-retrospective.s3.amazonaws.com/GEFSv12/reforecast/ (10 m UGRD, VGRD)",
+  "observations": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=VBG&data=sknt&report_type=3"
+ },
+ "built": "2026-09-29T08:28:34+00:00"
+}

@@ -144,8 +144,10 @@ interface RuleRow {
   limit: Quantity;                             // provenance published or entered
   per_system: { system: "GEFS" | "ECMWF-ENS" | "AIFS-ENS";
                 share: Share | null; missing_reason: string | null }[];
-  one_forecast: { system: "NWS" | "HRRR" | "GEOS-FP"; value: Quantity; over: boolean }[];
+  one_forecast: { system: "NWS" | "HRRR" | "GEOS-FP"; value: Quantity; over: boolean;
+                  note: string | null }[];   // HRRR: how it did against the station; NWS: keeps no archive
   disagreement: boolean;
+  disagreement_note: string | null;          // who disagrees and how, in plain words
   observed: { state: "clear" | "seen" | "no_data"; detail: string } | null;  // GLM etc.
   climatology: { share: number; years: string; source: string } | null;
 }
@@ -207,7 +209,8 @@ interface Contact {
 }
 ```
 
-Exports: `GET /missions/{id}/contact/plan?format=ion|csv`.
+Exports: `GET /missions/{id}/contact/plan?format=ion|csv&rate_bps=&start=&end=&relay=` (the same dates and
+`relay` as the answer; ION needs `rate_bps`).
 Rover: `GET /missions/{id}/contact/rover?rover=` →
 `Section<{ viewshed_tile: string | null; out_of_sight_share: Quantity;
 longest_out_of_sight_m: Quantity; resolvable: boolean; reason: string | null }>`.
@@ -239,7 +242,9 @@ interface Return {
 // its capsule landed (make validate-capsule); null when that check has not been run here.
 interface CapsuleModelCheck {
   case: string; distance_km: number; distance_range_km: [number, number];
-  limit_km: number; passed: boolean; mission_team_km: number;   // the mission's own simulation
+  limit_km: number; passed: boolean;             // false when distance_km is over limit_km
+  atmosphere: string;                            // the air the fall went through, in plain words
+  mission_team_km: number;                       // the mission's own simulation
   ellipse_99_km: [number, number]; measured_inside_ellipse: boolean;
   checked_at: string; sources: string[]; note: string;         // note: plain words
 }
@@ -389,10 +394,13 @@ that user. `GET /auth/me` returns the same `user`.
     and a recorded GEFS step within 3 h of `t0` (else `missing_reason` says which:
     past, beyond 16 days, not yet fetched, fields do not describe the rule). ECMWF and
     AIFS are not recorded yet. `one_forecast` is HRRR within 1 h of `t0` (value in the
-    limit's unit, at the rule's height). Observation rules have `per_system: []` and
+    limit's unit, at the rule's height) and, when the National Weather Service's hourly grid
+    holds a wind for the hour of `t0`, NWS (its 10 m wind carried to the rule's height on a
+    neutral profile over open flat ground, roughness 0.03 m). Observation rules have `per_system: []` and
     `observed.state: "no_data"` with a plain `detail` (the lightning rules add NWS's
     chance of thunder in that hour). `climatology` is null (not built); `disagreement`
-    is false (one system).
+    is true when two systems put a wind rule on opposite sides (see the 2026-09-29 weather
+    line under *Changes*), false otherwise.
   - `PUT /missions/{id}/launch/official-forecast` → the stored forecast with `id`,
     `entered_by`, `entered_at`. `PUT /vehicles/{id}/limits` → `{vehicle_id, limits:
     {rule_id, value, unit, note, entered_by, entered_at}[]}`; a wind rule takes mph, kt,
@@ -675,3 +683,94 @@ that user. `GET /auth/me` returns the same `user`.
   - A site north of 80° S (outside the polar terrain model) answers 200 at once with
     `resolvable: false`, the reason, `viewshed`, `radius_m`, `share_basis`, `assumptions` and
     `terrain` null and the numbers missing.
+- 2026-09-29 (backend, D1 launch windows; engine `lw-6`; no shape change):
+  - `kind`/`window_open`/`window_close` of a flown launch are what Launch Library 2
+    published: Peregrine (07:18–08:03 UTC) and Blue Ghost 1 (06:06–06:45 UTC) are `window`,
+    IM-1 and IM-2 `instantaneous`. The note says which.
+  - A planned opportunity is `window` only when the vehicle's direct lunar launches were
+    published with windows (it steers); its ends are the instants designed at the pad's two
+    azimuth limits, `t0` stays the instant at the climb direction used. Falcon 9's (IM-1,
+    IM-2) were single instants, so Griffin-1 stays `instantaneous`; a vehicle with no
+    direct lunar launch is shown as an instant and the note says it is not published.
+  - `data/missions.json` `t0` may carry `window_open`/`window_close` (UTC, equal for a
+    single instant); `GET /missions` does not show them.
+- 2026-09-29 (backend, relay contacts in the contact plan; engine `net-5`; the frontend follows):
+  - `GET /missions/{id}/contact/plan?format=ion|csv` takes `start`, `end` (the frontend already sent
+    them and they were ignored, so a plan was for the default dates) and `relay=` (repeatable, at most 3,
+    as for the answer: a relay that is not the mission's own is added to the graph). Without `relay` the
+    plan lists direct contacts only, as before. A relay asked for is listed with its contacts at ONE
+    placement of the 5,184 swept (its node and phase are unknown), the one whose time through the relay
+    is nearest the middle of the range: `lander` to the relay (above the landing spot's skyline) and the
+    relay to each station (above its mask, the Moon not in the way), edges from 5-minute samples. CSV:
+    a sixth column `basis` (`direct`, or `planned relay; node .. deg, phase .. deg, one of 5184
+    placements`). ION: `#` lines say the relay is PLANNED, which placement, that it is not a forecast,
+    and the ranges (time through it, time it adds) over all placements; then `a contact` and `a range`
+    per contact, the range from that link's farthest light time. 422 when a relay asked for has no
+    usable orbit or is not a relay service.
+  - The contact job keeps each relay's links at that placement beside `data` (a `plan` key of the
+    stored result, never in the section); `net-4` answers are worked out again. No shape of the
+    section changes.
+- 2026-09-29 (backend, the rover's line of sight as map tiles; no engine change):
+  - `RoverOut.lander {lat_deg, lon_deg}` (null with no map) is where the viewshed is centred, so a map can
+    place the tiles. `RoverOut.viewshed_tile` is filled (it was null): `/tiles/viewshed/{answer}/{z}/{x}/{y}.png` under
+    `/api/v1`, with the stored answer's own number in it, so a tile never changes; null with no map
+    (not resolvable). `GET /tiles/viewshed/{answer}/{z}/{x}/{y}.png?layer=sight|radio|terrain`
+    (default `sight`): 256 px PNG in the terrain tiles' scheme (a quadtree over the regional model's
+    +-303,960 m, x east, y south) to zoom 12 (the terrain tiles stop at 7); 204 where the layer draws
+    nothing, which is most of the grid.
+  - `sight` and `radio` draw each cell as the twin lists it (cells end half way between the sampled
+    ranges and each bearing covers +-2.5 degrees): clear is Earth's blue filled, blocked dark with 45
+    degree stripes, uncertain a light wash with -45 degree stripes, all translucent so the relief shows
+    through. `terrain` is the hillshade of the elevation model the answer read, the 20 m window at the
+    landing spot where there is one (the regional 80 m model is blocks at a rover's scale).
+  - 404 `no-viewshed` (no such answer, not a rover answer, or nothing to draw), `unknown-layer`,
+    `tile-out-of-scheme`; 422 past zoom 12; 503 `dem-missing` for `terrain`. Tiles are cached under
+    `data/tiles/viewshed/{answer}/` and can be deleted at any time.
+- 2026-09-29 (backend, the relays a comparison can add; no engine change):
+  - `GET /relays` (no session; answers at once) lists the relay services in the catalogue, in its order:
+    `{relays: [{id, name, operator, status, launch_note, orbit_known, orbit_note, serves_missions}]}`.
+    `id` is what `?relay=` takes on the contact answer and its plan. `orbit_known` is false when a relay's
+    orbit lacks a height, the tilt or the argument of periapsis: it can still be compared (the answer says
+    time through it is not worked out) but the plan refuses it with 422. `serves_missions` are the missions
+    it is planned for, where it is in the answer already. Real orbiters kept only to check pass
+    calculations are not listed.
+- 2026-09-29 (H): `Return.capsule.model_check.atmosphere` (string, always present): the air the
+  modelled fall went through and what it was given, in plain words: NRLMSISE-00 driven by the
+  entry day's solar radio flux and geomagnetic activity (10.7 cm flux 174.1 the day before, ap 4
+  at the time), or the U.S. Standard Atmosphere 1976 with the reason when the day's values are not
+  on disk. With that air the check is 12.1 km from the real landing point (9.4 to 14.8 over the
+  drag range) and `passed` is false against the 10 km limit (the standard atmosphere gave 9.5 km,
+  6.7 to 12.2); `note` names the air and gives the distance in the others. `ellipse_99_km` is now
+  51.2 by 21.8.
+- 2026-09-29 (weather, no shape change): `per_system[].share.checked` is now true for the Falcon 9 wind
+  rule at Vandenberg's pads, for a launch up to 48 h ahead: the 13-year GEFS reforecast against KVBG
+  passes the plan's gate (Brier skill 0.37 at 24 h, 0.22 at 48 h, 95 % 0.15 to 0.57 and 0.02 to 0.42;
+  reliability within 0.1). It stays false at the Cape (CRPS skill -0.95 at 24 h: the runs' wind is worse
+  than the station's own record) and for a launch further out than 48 h, where `LaunchWeather.note` says
+  the check reached only 48 h. The meta part "Checked against observations" gives the numbers.
+- 2026-09-29 (backend, relay catalogue; no shape change): `data/catalogues/relays.json` lists IM-4's two lunar data
+  relay satellites (`im-4-relay-1`, `im-4-relay-2`), planned for 2027 as Intuitive Machines' release of 8 April 2025
+  says (read as distributed through GlobeNewswire; the company's own pages did not load). The release names neither
+  satellite and gives no orbit, so the ids are this project's labels, no orbit is assumed and every orbit field says
+  "Not published": `GET /relays` gives `orbit_known: false` and the contact answer's `adds_h` and `via_h` for them are
+  `missing_reason`, not a number. `data/missions.json` gives IM-4 no `comms.relays`, so `for_this_mission` is false
+  for them until it does (not a catalogue matter).
+- 2026-09-29 (weather, additive): `OneForecast.note` (string or null) says how that forecast did against a
+  weather station's record: HRRR's, from `data/hindcast/hrrr_wind_{region}.json` (`make hindcast-hrrr`,
+  the 10 m wind at KXMR or KVBG for 2021-2025 at the lead nearest the step shown, and its over/under
+  call at the limit brought to 10 m); NWS's says it keeps no archive, so it cannot be checked.
+  `RuleRow.disagreement` is now worked out and `RuleRow.disagreement_note` (string or null) says who
+  disagrees and how. NWS, which is now listed in `one_forecast` beside HRRR when its grid has the hour,
+  and HRRR each disagree with GEFS when their side (over/under) is the one GEFS's 95 % share interval
+  excludes (entirely below one half for over, entirely above for under); NWS and HRRR disagree with
+  each other when on opposite sides and further apart than HRRR's measured 10 m error (its RMSE at
+  that lead, carried to the rule's height), or on opposite sides at all when that is not known. It
+  stays false when only one system has an answer.
+- 2026-09-29 (feeds, additive): `GET /feeds` rows carry `note` (string or null). For a product fetched only
+  while a launch is near (today `goes/glm`, in the six hours before an opportunity) it says so, and `stale`
+  is judged by when the worker last asked (`last_ok`) and not by the data the product holds, so an empty
+  one is idle and not "stale"; `age_s` is still null with no data. `LaunchWeather.meta.stale` no longer
+  counts an old GLM snapshot, which is not shown and not part of the answer then. No shape change to the
+  launch weather. `nomads/gefs_launch` (the GEFS steps nearest each opportunity) had been refused every time
+  since its cost, 373 requests, was more than the provider's allowance holds (120); it now costs at most
+  what the bucket holds and a run already fetched whole is not asked for again.

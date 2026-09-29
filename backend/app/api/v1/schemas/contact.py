@@ -87,6 +87,32 @@ class RelayRow(_M):
     )
 
 
+class RelayChoice(_M):
+    id: str = Field(description="What `?relay=` takes on the contact answer and its plan.")
+    name: str
+    operator: str | None
+    status: Literal["operating", "planned", "not_launched", "launched_not_operating"] = Field(
+        description="Its launch status, as the catalogue has it."
+    )
+    launch_note: str | None = Field(description="Its launch plan in a sentence, as published.")
+    orbit_known: bool = Field(
+        description="Its orbit is published, or assumed from a published design, well enough to "
+        "work out time through it. False: it can be compared, and the answer says it is not "
+        "worked out (and a plan cannot list its contacts)."
+    )
+    orbit_note: str | None = Field(description="What is published of its orbit, in a sentence.")
+    serves_missions: list[str] = Field(
+        description="Missions it is planned for: for these it is in the answer already."
+    )
+
+
+class RelayCatalogue(_M):
+    relays: list[RelayChoice] = Field(
+        description="The relay services in the catalogue, in its order: what a comparison can "
+        "add. Real orbiters kept only to check pass calculations are not listed."
+    )
+
+
 class DirectOnly(_M):
     longest_unheard_h: QuantityOut
     longest_message_wait_min: QuantityOut
@@ -204,6 +230,11 @@ class Terrain(_M):
     vertical_error_m: float
 
 
+class LanderAt(_M):
+    lat_deg: float
+    lon_deg: float
+
+
 class RoverOut(_M):
     rover: RoverRef
     share_basis: Literal["drive", "ground"] | None = Field(
@@ -211,8 +242,17 @@ class RoverOut(_M):
         "radius_m when no drive is published. Null when not resolvable."
     )
     radius_m: float | None
+    lander: LanderAt | None = Field(
+        description="Where the lander is (planetocentric degrees, east): the centre of the "
+        "viewshed and of its tiles. Null when there is no map."
+    )
     viewshed: Viewshed | None
-    viewshed_tile: str | None
+    viewshed_tile: str | None = Field(
+        description="The map layer's tile address under the API prefix, with `{z}`, `{x}` and "
+        "`{y}` for the map to fill in: 256 px PNG in the terrain tiles' scheme, zoom 0 to 12. "
+        "`?layer=` is `sight` (default), `radio` or `terrain` (the hillshade of the elevation "
+        "model used). Null when there is nothing to draw."
+    )
     out_of_sight_share: QuantityOut = Field(
         description="Percent out of sight; a range when uncertain cells could go either way."
     )

@@ -1656,7 +1656,11 @@
     ]
    ]
   },
-  "viewshed_tile": null,
+  "lander": {
+   "lat_deg": -84.7906,
+   "lon_deg": 29.1957
+  },
+  "viewshed_tile": "/tiles/viewshed/91/{z}/{x}/{y}.png",
   "out_of_sight_share": {
    "value": null,
    "unit": "%",

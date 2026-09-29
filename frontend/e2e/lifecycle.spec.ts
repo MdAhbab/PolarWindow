@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { API, expectNoSeriousAxe, openRow, openRow as openRowOf, returningVisitor, watchConsole } from './helpers'
-import { fulfillWrite, serveLifecycleFixtures } from './lifecycleFixtures'
+import { fixtureJson, fulfillWrite, serveLifecycleFixtures } from './lifecycleFixtures'
 
 /**
  * The mission hub and its six steps, against the contract's fixtures
@@ -9,6 +9,9 @@ import { fulfillWrite, serveLifecycleFixtures } from './lifecycleFixtures'
  * backend's lifecycle endpoints are being built alongside them. Everything
  * else (the mission record, sign-in, Landing) is the live API.
  */
+
+/** One transparent pixel, for the tiles the fixture tests ask the map for. */
+const ONE_PIXEL_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64')
 
 const QUESTIONS: Record<string, string> = {
   ready: 'What is ready, and what is holding it up?',
@@ -376,12 +379,77 @@ test('contact through a relay (contract fixtures): a range with its launch statu
   expect(await page.evaluate(() => document.documentElement.scrollWidth), 'contact scrolls sideways at 375 px').toBeLessThanOrEqual(375)
 })
 
+test('compare a relay (contract fixtures): tick one, ask again, and the answer, its row and the plan follow; both themes, a phone', async ({ page, context }) => {
+  await returningVisitor(context)
+  await serveLifecycleFixtures(context)
+  // The answer asked with a relay added, as the service gives it: that relay's row, marked as added to compare.
+  const asked: string[][] = []
+  await context.route(/localhost:8000\/api\/v1\/missions\/[^/]+\/contact(\?.*)?$/, async (route) => {
+    const relays = new URL(route.request().url()).searchParams.getAll('relay')
+    asked.push(relays)
+    if (!relays.length) return route.fallback()
+    const body = fixtureJson('contact.json')
+    const own = body.data.relays[0]
+    body.data.relays.push({ ...own, id: 'altus-1', name: 'Altus-1 data-relay satellite', for_this_mission: false })
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body), headers: { 'access-control-allow-origin': '*' } })
+  })
+  const compare = () => page.locator('details').filter({ has: page.locator('summary', { hasText: 'Compare a relay' }) })
+  const addAltus = async () => {
+    await page.goto('/missions/im-2/contact')
+    await expect(page.locator('summary', { hasText: 'Compare a relay' })).toContainText('none added')
+    await openRow(page, 'Compare a relay')
+    await expect(compare().getByRole('checkbox')).toHaveCount(2)
+    await expect(compare().getByRole('button', { name: 'Work out the numbers with these' })).toBeDisabled()
+    await compare().getByRole('checkbox', { name: /^Altus-1 data-relay satellite/ }).check()
+    await compare().getByRole('button', { name: 'Work out the numbers with these' }).click()
+  }
+  await addAltus()
+  // The same request, with the relay asked for; the row comes back open with it ticked, named beside its title.
+  await expect.poll(() => asked.some((r) => r.join() === 'altus-1')).toBe(true)
+  await expect(page.locator('summary', { hasText: 'Compare a relay' })).toContainText('Altus-1 data-relay satellite')
+  await expect(compare()).toHaveAttribute('open', '')
+  await expect(compare().getByRole('checkbox', { name: /^Altus-1 data-relay satellite/ })).toBeChecked()
+  await openRow(page, 'Relays')
+  const relays = page.locator('details').filter({ has: page.locator('summary', { hasText: /^Relays/ }) }).first()
+  await expect(relays).toContainText('Altus-1 data-relay satellite')
+  await expect(relays).toContainText('Added to compare: not planned for this mission.')
+  // The plan: the ION file needs a data rate; a relay's contacts are listed only when asked.
+  await openRow(page, 'Download the contact plan')
+  const plan = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Download the contact plan' }) })
+  await expect(plan.getByRole('button', { name: 'Contact plan for ION (DTN)' })).toBeDisabled()
+  await expect(plan.getByRole('link', { name: 'Spreadsheet (CSV)' })).not.toHaveAttribute('href', /relay=/)
+  await plan.getByLabel('Data rate for the ION plan, bits per second').fill('2,000,000')
+  await expect(plan.getByRole('link', { name: 'Contact plan for ION (DTN)' })).toHaveAttribute('href', /format=ion&start=.*&end=.*&rate_bps=2000000$/)
+  await plan.getByRole('checkbox', { name: /^Include the contacts of the planned relays: / }).check()
+  await expect(plan.getByRole('link', { name: 'Spreadsheet (CSV)' })).toHaveAttribute('href', /format=csv&.*&relay=pathfinder&relay=altus-1$/)
+  await expectNoSeriousAxe(page, 'contact with the compare row and the plan row open (dark)')
+  // Take it out again: the answer without it (already worked out, so not asked for again) is back.
+  await compare().getByRole('checkbox', { name: /^Altus-1 data-relay satellite/ }).uncheck()
+  await compare().getByRole('button', { name: 'Work out the numbers without them' }).click()
+  await expect(page.locator('summary', { hasText: 'Compare a relay' })).toContainText('none added')
+  await expect(page.locator('details').filter({ has: page.locator('summary', { hasText: /^Relays/ }) }).first()).not.toContainText('Altus-1 data-relay satellite')
+  // A phone, in the light theme.
+  await page.evaluate(() => localStorage.setItem('pw-prefs', JSON.stringify({ theme: 'light', motion: 'full', shortcuts: true })))
+  await page.setViewportSize({ width: 375, height: 812 })
+  await addAltus()
+  await expect(page.locator('summary', { hasText: 'Compare a relay' })).toContainText('Altus-1 data-relay satellite')
+  await openRow(page, 'Download the contact plan')
+  await expectNoSeriousAxe(page, 'contact with the compare row and the plan row open (light, 375 px)')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth), 'contact scrolls sideways at 375 px').toBeLessThanOrEqual(375)
+})
+
 test('rover line of sight (contract fixtures): the answer first, the map in three states with its table twin, both themes, a phone', async ({
   page,
   context,
 }) => {
   await returningVisitor(context)
   await serveLifecycleFixtures(context)
+  // The answer's tiles: one clear pixel for every request, and the layers asked for are kept.
+  const layers = new Set<string>()
+  await context.route(/localhost:8000\/api\/v1\/tiles\/viewshed\/91\//, async (route) => {
+    layers.add(new URL(route.request().url()).searchParams.get('layer') ?? '')
+    await route.fulfill({ status: 200, contentType: 'image/png', body: ONE_PIXEL_PNG })
+  })
   await page.goto('/missions/im-2/contact')
   const summary = page.locator('summary', { hasText: 'Rover and lander line of sight' })
   await expect(summary).toContainText('Yaoki')
@@ -392,7 +460,10 @@ test('rover line of sight (contract fixtures): the answer first, the map in thre
   )
   await expect(row.getByRole('img', { name: /^Line of sight between Yaoki and the lander, out to 500 m in 36 directions/ })).toBeVisible()
   // Three states, each in a glyph and words beside its swatch.
-  for (const words of ['In sight', 'Blocked by the ground', 'Uncertain: the terrain map’s error could tip it either way']) await expect(row).toContainText(words)
+  for (const words of ['In sight', 'Blocked by the ground', 'Uncertain: the terrain map’s error could tip it either way', 'The ground, shaded from the terrain map']) await expect(row).toContainText(words)
+  // Laid over the terrain: the ground's tiles under the line of sight's, both from the answer's own address.
+  await expect(row.getByTestId('site-tile-map').locator('image').first()).toBeVisible()
+  await expect.poll(() => [...layers].sort().join(',')).toBe('sight,terrain')
   // What the states mean, and what is assumed about the antennas and the radio.
   await expect(row).toContainText('uncertain: the model cannot tell.')
   await row.locator('summary', { hasText: 'Antennas, radio and terrain' }).click()
@@ -401,6 +472,7 @@ test('rover line of sight (contract fixtures): the answer first, the map in thre
   await row.getByRole('button', { name: 'Radio path' }).click()
   await expect(row.getByRole('button', { name: 'Radio path' })).toHaveAttribute('aria-pressed', 'true')
   await expect(row.getByRole('img', { name: /^Radio path between Yaoki and the lander/ })).toBeVisible()
+  await expect.poll(() => [...layers].sort().join(',')).toBe('radio,sight,terrain')
   // The table twin, from the same rays: both the line of sight and the radio path.
   await row.getByRole('button', { name: 'Read the chart as a table' }).click()
   const ray = row.getByRole('row', { name: /^100°/ })
@@ -414,6 +486,81 @@ test('rover line of sight (contract fixtures): the answer first, the map in thre
   await page.locator('summary', { hasText: 'Rover and lander line of sight' }).click()
   await expect(page.getByTestId('rover-sight').getByRole('img')).toBeVisible()
   await expectNoSeriousAxe(page, 'rover line of sight open (light, 375 px)')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the rover row scrolls sideways at 375 px').toBeLessThanOrEqual(375)
+})
+
+test('rover line of sight (contract fixtures): tiles that do not load say so, and the table still has the answer', async ({ page, context }) => {
+  await returningVisitor(context)
+  await serveLifecycleFixtures(context)
+  await context.route(/localhost:8000\/api\/v1\/tiles\/viewshed\//, (route) => route.fulfill({ status: 404, contentType: 'application/json', body: '{"detail":"no-viewshed"}' }))
+  await page.goto('/missions/im-2/contact')
+  await page.locator('summary', { hasText: 'Rover and lander line of sight' }).click()
+  const row = page.getByTestId('rover-sight')
+  await expect(row.getByRole('status')).toHaveText('The map layer did not load, so nothing is drawn over the terrain. The table has the same answer.')
+  await row.getByRole('button', { name: 'Read the chart as a table' }).click()
+  await expect(row.getByRole('row', { name: /^270° \(west\)/ })).toContainText('blocked 325–425 m')
+  await expectNoSeriousAxe(page, 'rover map with its tiles missing (dark)')
+})
+
+test('rover line of sight (contract fixtures): other values are asked for as typed, a slip is told at its box, and the assumed values come back on request; both themes, a phone', async ({
+  page,
+  context,
+}) => {
+  await returningVisitor(context)
+  await serveLifecycleFixtures(context)
+  await context.route(/localhost:8000\/api\/v1\/tiles\/viewshed\//, (route) => route.fulfill({ status: 200, contentType: 'image/png', body: ONE_PIXEL_PNG }))
+  const asked: Record<string, string>[] = []
+  await context.route(/localhost:8000\/api\/v1\/missions\/[^/]+\/contact\/rover(\?.*)?$/, (route) => {
+    asked.push(Object.fromEntries(new URL(route.request().url()).searchParams))
+    return route.fallback()
+  })
+  await page.goto('/missions/im-2/contact')
+  await page.locator('summary', { hasText: 'Rover and lander line of sight' }).click()
+  const row = page.getByTestId('rover-sight')
+  const antennas = row.locator('details').filter({ has: page.locator('summary', { hasText: 'Antennas, radio and terrain' }) })
+  await antennas.locator('summary').click()
+  const form = row.getByTestId('rover-inputs')
+  const field = (label: string) => form.getByLabel(label)
+  const go = form.getByRole('button', { name: 'Work it out with these' })
+  const dd = (label: string) => antennas.locator('dt', { hasText: label }).locator('xpath=following-sibling::dd[1]')
+  // What is in force for each box, and that nothing is asked until the button is pressed.
+  await expect(form.getByText('Between 50 and 5,000 m. In use: 500 m, assumed.')).toBeVisible()
+  await expect(form.getByText('Between 30 and 100,000 MHz. In use: 2,400 MHz, assumed.')).toBeVisible()
+  await expect(go).toBeDisabled()
+  await expect(dd('Lander’s antenna above the ground')).toContainText('3 m, assumed')
+  await expect(antennas).not.toContainText('Give lander_antenna_m')
+  expect(asked).toEqual([{ rover: 'im-2/yaoki' }])
+  // A slip is told at its box, and nothing is asked.
+  await field('How far from the lander, metres').fill('10')
+  await field('Radio frequency, MHz').fill('fast')
+  await go.click()
+  await expect(form.getByText('Between 50 and 5,000 m.', { exact: true })).toBeVisible()
+  await expect(form.getByText('Give a number. Between 30 and 100,000 MHz.')).toBeVisible()
+  await expect(field('How far from the lander, metres')).toHaveAttribute('aria-invalid', 'true')
+  expect(asked).toHaveLength(1)
+  await expectNoSeriousAxe(page, 'rover values form with its messages (dark)')
+  // Typed values are asked for, and only those; the row comes back open with them as the team's.
+  await field('How far from the lander, metres').fill('300')
+  await field('Radio frequency, MHz').fill('')
+  await field('Lander’s antenna above the ground, metres').fill('4')
+  await go.click()
+  await expect.poll(() => asked.length).toBe(2)
+  expect(asked[1]).toEqual({ rover: 'im-2/yaoki', radius_m: '300', lander_antenna_m: '4' })
+  await expect(antennas).toHaveAttribute('open', '')
+  await expect(dd('Lander’s antenna above the ground')).toContainText('3 m, as you gave it')
+  await expect(dd('Rover’s antenna above the ground')).toContainText('assumed')
+  // Back to the assumed values: the answer already worked out for them is shown again.
+  await antennas.getByRole('button', { name: 'Back to the assumed values' }).click()
+  await expect(dd('Lander’s antenna above the ground')).toContainText('3 m, assumed')
+  await expect(antennas.getByRole('button', { name: 'Back to the assumed values' })).toHaveCount(0)
+  // A phone, in the light theme.
+  await page.evaluate(() => localStorage.setItem('pw-prefs', JSON.stringify({ theme: 'light', motion: 'full', shortcuts: true })))
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.reload()
+  await page.locator('summary', { hasText: 'Rover and lander line of sight' }).click()
+  await page.locator('summary', { hasText: 'Antennas, radio and terrain' }).click()
+  await expect(page.getByTestId('rover-inputs')).toBeVisible()
+  await expectNoSeriousAxe(page, 'rover values form open (light, 375 px)')
   expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the rover row scrolls sideways at 375 px').toBeLessThanOrEqual(375)
 })
 
@@ -705,6 +852,47 @@ test('launch (live API): a flown launch worked out again, and a planned mission�
   await expectNoSeriousAxe(page, '/missions/griffin-1/launch (live) with its table and rows open')
 })
 
+test('launch period (live API): Peregrine and Blue Ghost 1 show the period Launch Library 2 published, in the row, the table and the calendar’s mark; IM-1 and Griffin-1 are one instant', async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(240_000)
+  await returningVisitor(context)
+  const main = page.locator('main')
+  const answer = page.locator('[data-guide="section-answer"]')
+  const period = page.getByTestId('launch-period')
+  const flight = page.locator('details').filter({ has: page.locator('summary', { hasText: 'The flight as launched' }) })
+  const opens = async () => {
+    if ((await flight.getAttribute('open')) === null) await flight.locator('summary').click()
+  }
+  for (const [mission, words] of [
+    ['peregrine-m1', '07:18 to 08:03 UTC'],
+    ['blue-ghost-m1', '06:06 to 06:45 UTC'],
+  ] as const) {
+    await page.goto(`/missions/${mission}/launch`)
+    await expect(answer).toContainText('It launched on', { timeout: 90_000 })
+    // The service's own sentence under the numbers, and the same period in the row, the mark's name and the table.
+    await expect(main).toContainText(`published with a launch window from ${words}`)
+    await opens()
+    await expect(period).toHaveText(`${words} (published)`)
+    await expect(page.getByRole('group', { name: 'Launch opportunities by day' }).getByRole('button')).toHaveAttribute('aria-label', new RegExp(`, a launch period from ${words}$`))
+    await expect(page.getByText('The launch period, from its opening to its close')).toBeVisible()
+    await page.getByRole('button', { name: 'Read the chart as a table' }).click()
+    await expect(main.getByRole('table').first()).toContainText(`Launch period, ${words}`)
+    await expectNoSeriousAxe(page, `/missions/${mission}/launch (live) with its flight row and table open`)
+  }
+  // Launches published as one instant say so, and draw no period.
+  for (const mission of ['im-1', 'griffin-1']) {
+    await page.goto(`/missions/${mission}/launch`)
+    await expect(answer).toContainText(/It launched on|launch opportunit/, { timeout: 90_000 })
+    if (mission === 'im-1') {
+      await opens()
+      await expect(period).toHaveText('One instant (published)')
+    }
+    await expect(page.getByText('The launch period, from its opening to its close')).toHaveCount(0)
+  }
+})
+
 test('trip corrections and launch weather words (live API): Blue Ghost’s burns and budget, IM-1’s past years, Griffin-1’s weather notes', async ({
   page,
   context,
@@ -994,6 +1182,94 @@ test('radiation and space weather (live API): Blue Ghost’s screening with its 
   await expectNoSeriousAxe(page, 'space weather now (live) with the forecast open')
 })
 
+test('compare a relay (live API): Lunar Pathfinder added at IM-2’s landing spot, its row marked as added to compare, and both plan files list it as planned', async ({
+  page,
+  context,
+  request,
+}) => {
+  test.setTimeout(240_000)
+  await returningVisitor(context)
+  const answer = page.locator('[data-guide="section-answer"]')
+  await page.goto('/missions/im-2/contact')
+  await expect(answer).toContainText('A ground station can hear it', { timeout: 120_000 })
+  await expect(page.locator('summary', { hasText: 'Compare a relay' })).toContainText('none added')
+  await openRow(page, 'Compare a relay')
+  const compare = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Compare a relay' }) })
+  // The catalogue's relays, each with who runs it and where it stands; IM-2 plans none of them.
+  await expect(compare.getByRole('checkbox', { name: /^Altus-1 data-relay satellite · Intuitive Machines/ })).toBeVisible()
+  await compare.getByRole('checkbox', { name: /^Lunar Pathfinder · ESA/ }).check()
+  await compare.getByRole('button', { name: 'Work out the numbers with these' }).click()
+  await expect(answer).toContainText(/Through Lunar Pathfinder \(planned, not launched\) it could reach Earth for [\d,.]+–[\d,.]+ h, if it flies as planned/, { timeout: 180_000 })
+  await expect(page.locator('summary', { hasText: 'Compare a relay' })).toContainText('Lunar Pathfinder')
+  await openRow(page, /^Relays/)
+  const relays = page.locator('details').filter({ has: page.locator('summary', { hasText: /^Relays/ }) }).first()
+  await expect(relays).toContainText('Added to compare: not planned for this mission.')
+  await expect(relays).toContainText('673 km')
+  // The plan lists the relay's contacts only when asked, and says they are planned.
+  await openRow(page, 'Download the contact plan')
+  const plan = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Download the contact plan' }) })
+  const csvLink = plan.getByRole('link', { name: 'Spreadsheet (CSV)' })
+  const direct = await request.get((await csvLink.getAttribute('href')) as string)
+  expect(direct.status()).toBe(200)
+  expect(await direct.text()).not.toContain('planned relay')
+  await plan.getByRole('checkbox', { name: /^Include the contacts of the planned relay: Lunar Pathfinder\./ }).check()
+  const withRelay = await request.get((await csvLink.getAttribute('href')) as string)
+  expect(withRelay.status()).toBe(200)
+  const csv = await withRelay.text()
+  expect(csv.split(/\r?\n/)[0]).toBe('from,to,start_utc,end_utc,hours,basis')
+  expect(csv).toMatch(/lander,lunar-pathfinder,.*planned relay; node [\d.]+ deg, phase [\d.]+ deg, one of 5184 placements/)
+  await plan.getByLabel('Data rate for the ION plan, bits per second').fill('2,000,000')
+  const ion = await request.get((await plan.getByRole('link', { name: 'Contact plan for ION (DTN)' }).getAttribute('href')) as string)
+  expect(ion.status()).toBe(200)
+  const text = await ion.text()
+  expect(text).toContain('# PLANNED relay Lunar Pathfinder')
+  expect(text).toMatch(/^a contact /m)
+  expect(text).toMatch(/^a range /m)
+  await expectNoSeriousAxe(page, 'IM-2 contact with Lunar Pathfinder added (dark)')
+})
+
+test('rover line of sight (live API): other values are worked out again, 300 m out and a 4 m antenna on the lander, in the sentence, the map and the table, and the assumed values come back', async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(300_000)
+  await returningVisitor(context)
+  await page.goto('/missions/im-2/contact')
+  await page.locator('summary', { hasText: 'Rover and lander line of sight' }).click()
+  const yaoki = page.getByTestId('rover-sight')
+  await expect(yaoki.locator('p').first()).toContainText(/^Within 500 m of the lander, /, { timeout: 180_000 })
+  const antennas = yaoki.locator('details').filter({ has: page.locator('summary', { hasText: 'Antennas, radio and terrain' }) })
+  await antennas.locator('summary').click()
+  const form = yaoki.getByTestId('rover-inputs')
+  // The service's own assumptions, as it says them.
+  await expect(form.getByText('Between 50 and 5,000 m. In use: 500 m, assumed.')).toBeVisible()
+  await expect(antennas.locator('dt', { hasText: 'Lander’s antenna above the ground' }).locator('xpath=following-sibling::dd[1]')).toContainText(/^2 m, assumed/)
+  await expect(antennas).not.toContainText(/Give [a-z]+_[a-z]+/)
+  await form.getByLabel('How far from the lander, metres').fill('300')
+  await form.getByLabel('Lander’s antenna above the ground, metres').fill('4')
+  await form.getByRole('button', { name: 'Work it out with these' }).click()
+  await expect(yaoki.locator('p').first()).toContainText(/^Within 300 m of the lander, [\d.]+–[\d.]+% of the ground is out of its sight/, { timeout: 240_000 })
+  await expect(yaoki.getByRole('img', { name: /^Line of sight between Yaoki and the lander, out to 300 m in 72 directions/ })).toBeVisible()
+  await expect(antennas).toHaveAttribute('open', '')
+  await expect(antennas.locator('dt', { hasText: 'Lander’s antenna above the ground' }).locator('xpath=following-sibling::dd[1]')).toHaveText('4 m, as you gave it')
+  await expect(antennas.locator('dt', { hasText: 'Rover’s antenna above the ground' }).locator('xpath=following-sibling::dd[1]')).toContainText(/assumed/)
+  // The map is this answer's own: its tiles are drawn, and none failed.
+  const tiles = yaoki.getByTestId('site-tile-map').locator('image')
+  await expect
+    .poll(async () => (await tiles.evaluateAll((els) => els.map((e) => (e as SVGImageElement).getAttribute('href') ?? ''))).filter((h) => /layer=(terrain|sight)$/.test(h)).length, {
+      timeout: 60_000,
+    })
+    .toBeGreaterThan(1)
+  await page.waitForLoadState('networkidle')
+  await expect(yaoki.getByRole('status')).toHaveCount(0)
+  await yaoki.getByRole('button', { name: 'Read the chart as a table' }).click()
+  await expect(yaoki.getByRole('row', { name: /^90° \(east\)/ })).toBeVisible()
+  await expectNoSeriousAxe(page, 'rover answer with the team’s values (dark)')
+  // Back to the assumed values.
+  await antennas.getByRole('button', { name: 'Back to the assumed values' }).click()
+  await expect(yaoki.locator('p').first()).toContainText(/^Within 500 m of the lander, /, { timeout: 120_000 })
+})
+
 test('relays, orbiters and rovers (live API): IM-3’s planned relay as a range, IM-2’s orbiter passes and Yaoki’s line of sight, a rover off the polar map', async ({
   page,
   context,
@@ -1041,6 +1317,16 @@ test('relays, orbiters and rovers (live API): IM-3’s planned relay as a range,
     { timeout: 120_000 },
   )
   await expect(yaoki.getByRole('img', { name: /^Line of sight between Yaoki and the lander, out to 500 m in 72 directions/ })).toBeVisible()
+  // Over the terrain: the service's tiles for this answer, the ground and the line of sight, drawn (not the broken-image kind).
+  const tiles = yaoki.getByTestId('site-tile-map').locator('image')
+  await expect
+    .poll(async () => (await tiles.evaluateAll((els) => els.map((e) => (e as SVGImageElement).getAttribute('href') ?? ''))).filter((h) => /layer=(terrain|sight)$/.test(h)).length, {
+      timeout: 60_000,
+    })
+    .toBeGreaterThan(1)
+  await page.waitForLoadState('networkidle')
+  await expect(yaoki.getByRole('status')).toHaveCount(0)
+  await expect(yaoki).toContainText('The ground, shaded from the terrain map')
   await expect(yaoki.getByRole('row', { name: /^90° \(east\)/ })).toBeVisible()
   await yaoki.locator('summary', { hasText: 'Antennas, radio and terrain' }).click()
   await expect(yaoki).toContainText(/LOLA_LDEM_80S_20M: a height every 20 m, each good to ±2 m/)

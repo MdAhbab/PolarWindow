@@ -194,3 +194,76 @@ def test_spread_is_middle_and_ends() -> None:
     s = relay.Spread.of([3.0, 1.0, 2.0], [False, True, False])
     assert (s.median, s.lo, s.hi, s.open) == (2.0, 1.0, 3.0, True)
     assert len(relay.grid()) == relay.NODE_STEPS * relay.PHASE_STEPS
+
+
+def _stations_at_the_moons_side(n: int) -> list[relay.StationFrame]:
+    """Two stations at Earth's centre looking straight at the Moon, so the Moon is all that can
+    hide a relay from the one with no mask; the other's mask keeps only a relay within half a
+    degree of the Moon's centre."""
+    to_topo = np.array([[0.0, 0.0, 1.0], [0.0, -1.0, 0.0], [1.0, 0.0, 0.0]])
+    return [
+        relay.StationFrame(
+            id=sid,
+            pos_j2k_m=np.zeros((n, 3)),
+            j2k_to_topo=np.broadcast_to(to_topo, (n, 3, 3)).copy(),
+            mask_az_deg=np.array([0.0, 180.0]),
+            mask_el_deg=np.array([mask, mask]),
+        )
+        for sid, mask in (("low-mask", 0.0), ("high-mask", 89.5))
+    ]
+
+
+def test_each_station_on_its_own_makes_up_the_combined_link() -> None:
+    alt = 5000e3
+    o = relay.Orbit.from_heights(alt, alt, 30.0, 0.0, R)
+    t = np.linspace(0.0, 4.0 * o.period_s(GM), 4001)
+    geom = _geometry(t, -90.0, stations=_stations_at_the_moons_side(t.size))
+    each = relay.station_links(geom, o, 40.0, 100.0)
+    assert set(each) == {"low-mask", "high-mask"}
+    combined = relay.links(geom, o, 40.0, 100.0)
+    # With the low mask a station hears wherever the Moon is not in the way, and the high
+    # mask hears less; the combined link is the low one.
+    low, high = (intervals.total(each[k][0], True) for k in ("low-mask", "high-mask"))
+    assert low == pytest.approx(intervals.total(combined.relay_station, True), rel=1e-9)
+    assert 0.0 < high < low
+    # The light time is the farthest the relay is from that station (from Earth's centre here).
+    far = (384_400e3 + R + alt) / 299_792_458.0
+    assert each["low-mask"][1] <= far + 1e-6 and each["low-mask"][1] > 1.0
+
+
+def test_the_placement_listed_is_the_one_nearest_the_middle_and_is_reproducible() -> None:
+    # The middle of [10, 20, 30, 50, 90] is 30, and the point with 30 in it is the third.
+    assert relay_sweep.nearest_the_middle([10.0, 50.0, 30.0, 20.0, 90.0], 5) == (2, 30.0)
+    # A tie goes to the earlier point of the sweep, so the choice is the same every time:
+    # the middle of [1, 3, 2, 2] is 2 and it first appears at point 2.
+    assert relay_sweep.nearest_the_middle([1.0, 3.0, 2.0, 2.0], 4) == (2, 2.0)
+    # Point k of a sweep put this relay at placement k modulo its own count.
+    assert relay_sweep.nearest_the_middle([5.0, 1.0, 2.0, 9.0, 2.0], 3) == (2, 2.0)
+    assert relay_sweep.nearest_the_middle([5.0, 9.0, 1.0, 2.0, 3.0], 3) == (1, 3.0)
+
+
+def test_a_sweep_names_the_placement_nearest_the_middle_of_each_relay() -> None:
+    rec = catalogues.load("relays").get("lunar-pathfinder")
+    sp = relay_sweep.spec(rec, True)
+    o = sp.orbits[0]
+    # A short run over a moon that does not turn; no stations, Earth always above the skyline.
+    t = np.linspace(0.0, 2.0 * o.period_s(GM), 241)
+    geom = _geometry(t, -90.0, stations=[])
+    t1 = float(t[-1])
+    res = relay_sweep.sweep(
+        geom,
+        [relay_sweep.Spec(rec, True, [o], None)],
+        t1,
+        [Run(True, 0.0, t1)],
+        [],
+        1.3,
+    )
+    ((j, via_s),) = res.nearest
+    assert 0 <= j < relay.NODE_STEPS * relay.PHASE_STEPS
+    assert res.via[0].lo <= via_s <= res.via[0].hi
+    # The listed placement really gives that time through the relay, and it is as near
+    # the sweep's middle as any placement on the grid.
+    orbit, raan, m0 = relay_sweep.placement(relay_sweep.Spec(rec, True, [o], None), j)
+    rl = relay.links(geom, orbit, raan, m0)
+    again = intervals.total(intervals.both(rl.lander_relay, rl.relay_earth), True)
+    assert again == pytest.approx(via_s)

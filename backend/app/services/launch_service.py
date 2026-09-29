@@ -164,6 +164,19 @@ async def reconstructed_flights(session: AsyncSession) -> tuple[list[list[str]],
     return out, names
 
 
+async def published_windows(session: AsyncSession) -> dict[str, list[str]]:
+    """The launch window each reconstructed flight was published with, ``[open, close]``
+    (equal ends for a single instant)."""
+    repo = MissionRepository(session)
+    out: dict[str, list[str]] = {}
+    for mid in ascent.RECONSTRUCTED:
+        r = await repo.get(mid)
+        t0 = ((r.lifecycle or {}) if r else {}).get("t0") or {}
+        if t0.get("window_open") and t0.get("window_close"):
+            out[mid] = [t0["window_open"], t0["window_close"]]
+    return out
+
+
 async def launch(
     session: AsyncSession,
     mission_id: str,
@@ -198,6 +211,7 @@ async def launch(
         if m.planned_surface_days is not None
         else params.get("surface_days"),
         "flights": flights,
+        "windows": await published_windows(session),
         "catalogues": [
             catalogues.load("launch_sites").version,
             catalogues.load("vehicles").version,

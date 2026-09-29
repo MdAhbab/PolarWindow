@@ -225,6 +225,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tiles/viewshed/{assessment_id}/{z}/{x}/{y}.png": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A rover line-of-sight answer as map tiles, or the terrain under it */
+        get: operations["get_viewshed_tile_api_v1_tiles_viewshed__assessment_id___z___x___y__png_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/relays": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The relays in the catalogue, to compare on a mission's Contact answer */
+        get: operations["relays_api_v1_relays_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/agents/explain": {
         parameters: {
             query?: never;
@@ -1635,7 +1669,7 @@ export interface components {
         };
         /**
          * CapsuleModelCheck
-         * @description The capsule entry model (3-DOF, U.S. Standard Atmosphere 1976) flown from
+         * @description The capsule entry model (3-DOF, through NRLMSISE-00 for the entry day) flown from
          *     OSIRIS-REx's reconstructed entry state, against where its capsule landed.
          */
         CapsuleModelCheck: {
@@ -1649,6 +1683,8 @@ export interface components {
             limit_km: number;
             /** Passed */
             passed: boolean;
+            /** Atmosphere */
+            atmosphere: string;
             /** Mission Team Km */
             mission_team_km: number;
             /** Ellipse 99 Km */
@@ -2093,7 +2129,7 @@ export interface components {
             age_s: number | null;
             /**
              * Stale
-             * @description Past its staleness budget (or no data yet).
+             * @description Past its staleness budget (or no data yet); for a product fetched only while a launch is near (`note`), past the budget since it was last asked.
              */
             stale: boolean;
             /** Staleness Budget S */
@@ -2109,6 +2145,11 @@ export interface components {
             last_error: string | null;
             /** Licence */
             licence: string;
+            /**
+             * Note
+             * @description Why the product may hold nothing or no age (fetched only while a launch is near); null for the rest.
+             */
+            note: string | null;
             /**
              * Breaker
              * @description `open`: the provider failed repeatedly and is being left alone for a while.
@@ -2311,6 +2352,13 @@ export interface components {
             missing: string[];
             /** Error */
             error?: string | null;
+        };
+        /** LanderAt */
+        LanderAt: {
+            /** Lat Deg */
+            lat_deg: number;
+            /** Lon Deg */
+            lon_deg: number;
         };
         /** LandingHistory */
         LandingHistory: {
@@ -2973,6 +3021,11 @@ export interface components {
             value: components["schemas"]["QuantityOut"];
             /** Over */
             over: boolean;
+            /**
+             * Note
+             * @description How this forecast did against a weather station's record (HRRR), or why it could not be checked (NWS keeps no archive).
+             */
+            note: string | null;
         };
         /** Opportunity */
         Opportunity: {
@@ -3487,6 +3540,52 @@ export interface components {
             /** Message */
             message: string;
         };
+        /** RelayCatalogue */
+        RelayCatalogue: {
+            /**
+             * Relays
+             * @description The relay services in the catalogue, in its order: what a comparison can add. Real orbiters kept only to check pass calculations are not listed.
+             */
+            relays: components["schemas"]["RelayChoice"][];
+        };
+        /** RelayChoice */
+        RelayChoice: {
+            /**
+             * Id
+             * @description What `?relay=` takes on the contact answer and its plan.
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Operator */
+            operator: string | null;
+            /**
+             * Status
+             * @description Its launch status, as the catalogue has it.
+             * @enum {string}
+             */
+            status: "operating" | "planned" | "not_launched" | "launched_not_operating";
+            /**
+             * Launch Note
+             * @description Its launch plan in a sentence, as published.
+             */
+            launch_note: string | null;
+            /**
+             * Orbit Known
+             * @description Its orbit is published, or assumed from a published design, well enough to work out time through it. False: it can be compared, and the answer says it is not worked out (and a plan cannot list its contacts).
+             */
+            orbit_known: boolean;
+            /**
+             * Orbit Note
+             * @description What is published of its orbit, in a sentence.
+             */
+            orbit_note: string | null;
+            /**
+             * Serves Missions
+             * @description Missions it is planned for: for these it is in the answer already.
+             */
+            serves_missions: string[];
+        };
         /** RelayOrbit */
         RelayOrbit: {
             /** @description Height of the near point above the mean radius. */
@@ -3731,8 +3830,13 @@ export interface components {
             share_basis: ("drive" | "ground") | null;
             /** Radius M */
             radius_m: number | null;
+            /** @description Where the lander is (planetocentric degrees, east): the centre of the viewshed and of its tiles. Null when there is no map. */
+            lander: components["schemas"]["LanderAt"] | null;
             viewshed: components["schemas"]["Viewshed"] | null;
-            /** Viewshed Tile */
+            /**
+             * Viewshed Tile
+             * @description The map layer's tile address under the API prefix, with `{z}`, `{x}` and `{y}` for the map to fill in: 256 px PNG in the terrain tiles' scheme, zoom 0 to 12. `?layer=` is `sight` (default), `radio` or `terrain` (the hillshade of the elevation model used). Null when there is nothing to draw.
+             */
             viewshed_tile: string | null;
             /** @description Percent out of sight; a range when uncertain cells could go either way. */
             out_of_sight_share: components["schemas"]["QuantityOut"];
@@ -3788,6 +3892,11 @@ export interface components {
             one_forecast: components["schemas"]["OneForecast"][];
             /** Disagreement */
             disagreement: boolean;
+            /**
+             * Disagreement Note
+             * @description Who disagrees and how, in plain words; null when `disagreement` is false.
+             */
+            disagreement_note: string | null;
             observed: components["schemas"]["Observed"] | null;
             climatology: components["schemas"]["Climatology"] | null;
         };
@@ -5150,6 +5259,78 @@ export interface operations {
             };
         };
     };
+    get_viewshed_tile_api_v1_tiles_viewshed__assessment_id___z___x___y__png_get: {
+        parameters: {
+            query?: {
+                /** @description `sight` (line of sight), `radio` (the radio path too) or `terrain` (the hillshade of the elevation model the answer used). */
+                layer?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The answer's number, from `viewshed_tile`. */
+                assessment_id: number;
+                z: number;
+                x: number;
+                y: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tile image. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": unknown;
+                };
+            };
+            /** @description Inside the grid, but nothing is drawn there. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such answer or no map in it, or z/x/y outside the tile scheme. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    relays_api_v1_relays_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelayCatalogue"];
+                };
+            };
+        };
+    };
     explain_api_v1_agents_explain_post: {
         parameters: {
             query?: never;
@@ -5747,6 +5928,11 @@ export interface operations {
                 format?: "csv" | "ion";
                 /** @description Data rate for ION, bits per second. */
                 rate_bps?: number | null;
+                /** @description As for the answer: the mission's dates. */
+                start?: string | null;
+                end?: string | null;
+                /** @description Planned relays (catalogue ids) whose contacts to list, labelled planned: a relay's contacts are for one guessed placement of its orbit, so a plan lists them only when asked. As for the answer, a relay that is not the mission's own is added. */
+                relay?: string[];
             };
             header?: never;
             path: {

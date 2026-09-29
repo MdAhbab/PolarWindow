@@ -10,7 +10,7 @@ FE    := frontend
 DATA  := data
 
 .DEFAULT_GOAL := help
-.PHONY: missions climatology thunder-climatology space-climate validate-radiation validate-capsule validate-orbiters validate-viewshed hindcast-weather validate-trip test-db help install kernels dem sites seed tiles services db-up migrate dev api worker \
+.PHONY: missions climatology thunder-climatology space-climate validate-radiation validate-capsule validate-orbiters validate-viewshed hindcast-weather hindcast-reforecast hindcast-hrrr validate-trip test-db help install kernels dem sites seed tiles services db-up migrate dev api worker \
         compute feeds feeds-once catalogues \
         frontend test test-fast test-int test-geo lint fmt typecheck contracts \
         golden-update openapi codegen clean nuke check
@@ -98,6 +98,12 @@ validate-capsule: ## Capsule entry against OSIRIS-REx (landing within 10 km; wri
 
 hindcast-weather: ## GEFS wind shares against the Cape's weather station for a year (AWS open data + IEM; ~30 min, cached)
 	cd $(BE) && $(UV) run python -m app.feeds.hindcast
+
+hindcast-reforecast: ## GEFSv12 reforecast wind shares against KXMR and KVBG over many years (AWS open data + IEM; resumable, cached per day; stops after HOURS, default 24)
+	cd $(BE) && $(UV) run python -m app.feeds.hindcast_reforecast --hours $(or $(HOURS),24)
+
+hindcast-hrrr: ## HRRR's 10 m wind and its over/under call against KXMR and KVBG, 2021-2025 (AWS open data + IEM; resumable, cached per run; stops after HOURS, default 2)
+	cd $(BE) && $(UV) run python -m app.feeds.hindcast_hrrr --hours $(or $(HOURS),2)
 
 catalogues: ## Validate the cited catalogues under data/catalogues
 	cd $(BE) && $(UV) run python -m app.data.catalogues

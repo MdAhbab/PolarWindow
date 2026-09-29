@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { API_BASE, ApiError, api } from '../../lib/api/client'
+import { ApiError, api, type RoverOptions } from '../../lib/api/client'
 import type { MissionDetail } from '../../lib/api/adapters'
 import type { ContactDTO, LifecycleMetaDTO, OrbiterDTO, QuantityDTO, RelayOrbitDTO, RoverSightDTO } from '../../lib/api/lifecycle'
 import { useHistory, useLifecycleWrite, useSection, useSectionStatus } from '../../lib/api/lifecycleQueries'
+import { useSnapshotActive } from '../../lib/api/snapshot'
 import { useWindowParams } from '../../lib/mission'
 import { useMission as useStore } from '../../lib/store'
 import { hasSite } from '../../lib/sites'
@@ -17,6 +18,10 @@ import { WindowPicker } from '../../components/WindowPicker'
 import { Button, Disclosure } from '../../components/ui'
 import { UncertaintyNote } from '../../components/States'
 import { ViewshedPanel, roverSentence } from '../../components/lifecycle/RoverSight'
+import { RelayCompare } from '../../components/lifecycle/RelayCompare'
+import { RoverInputs } from '../../components/lifecycle/RoverInputs'
+import { anyGiven, plainReason } from '../../lib/lifecycle/roverInputs'
+import { PlanDownload } from '../../components/lifecycle/PlanDownload'
 import { Icon } from '../../components/Icon'
 import { useCanWrite } from './ReadySection'
 
@@ -29,7 +34,15 @@ const TERMS = ['stationHears', 'viaRelay', 'contactUnheard', 'messageWait']
  */
 export function ContactSection({ mission: m }: { mission: MissionDetail }) {
   const w = useWindowParams()
-  const view = useSection<ContactDTO>('contact', m.id, (signal) => api.contact(m.id, { start: w.start, end: w.end }, signal), [w.start, w.end])
+  // Relays added to compare (catalogue ids, at most three), for this mission only.
+  const [pick, setPick] = useState<{ mission: string; ids: string[] }>({ mission: m.id, ids: [] })
+  const added = pick.mission === m.id ? pick.ids : []
+  const view = useSection<ContactDTO>(
+    'contact',
+    m.id,
+    (signal) => api.contact(m.id, { start: w.start, end: w.end, relay: added }, signal),
+    [w.start, w.end, ...added],
+  )
   const status = useSectionStatus(m.id, 'contact')
   return (
     <SectionLayout question="How often can the lander talk to Earth?">
@@ -39,6 +52,8 @@ export function ContactSection({ mission: m }: { mission: MissionDetail }) {
             contact={data}
             meta={meta}
             mission={m}
+            added={added}
+            onAdded={(ids) => setPick({ mission: m.id, ids: [...ids].sort() })}
             // The dates the answer says it covers; the asked-for ones if it does not say.
             start={Date.parse(data.start ?? w.start)}
             end={Date.parse(data.end ?? w.end)}
@@ -161,6 +176,8 @@ function ContactAnswer({
   contact,
   meta,
   mission: m,
+  added,
+  onAdded,
   start,
   end,
   datesNote,
@@ -168,10 +185,14 @@ function ContactAnswer({
   contact: ContactDTO
   meta: LifecycleMetaDTO
   mission: MissionDetail
+  /** The relays this answer was asked to compare, and how to ask for others. */
+  added: string[]
+  onAdded: (ids: string[]) => void
   start: number
   end: number
   datesNote?: string | null
 }) {
+  const offline = useSnapshotActive()
   const hours = (end - start) / 3_600_000
   const n = contact.numbers
   const rows = contactRows(contact)
@@ -264,6 +285,9 @@ function ContactAnswer({
             </ul>
           </Disclosure>
         )}
+        {!offline && (
+          <RelayCompare own={contact.relays.filter((r) => r.for_this_mission !== false).map((r) => r.id)} applied={added} onApply={onAdded} />
+        )}
         {orbiters.length > 0 && (
           <Disclosure title="Orbiters that could see the lander" meta={orbiters.map((o) => o.name).join(', ')}>
             <p className="text-body text-ink-2">
@@ -317,26 +341,7 @@ function ContactAnswer({
             <dd className="text-ink">{numberWords(n.dark_and_unheard_h, 'with the relay, if it flies as planned')}</dd>
           </dl>
         </Disclosure>
-        <Disclosure title="Download the contact plan" meta="ION, spreadsheet">
-          <ul className="flex flex-wrap gap-3">
-            {(
-              [
-                ['ion', 'Contact plan for ION (DTN)'],
-                ['csv', 'Spreadsheet (CSV)'],
-              ] as const
-            ).map(([f, label]) => (
-              <li key={f}>
-                <a
-                  className="inline-flex h-12 items-center rounded-control border border-line-strong px-4 text-body font-semibold text-ink no-underline hover:bg-inset"
-                  href={`${API_BASE}/missions/${encodeURIComponent(m.id)}/contact/plan?format=${f}&start=${new Date(start).toISOString()}&end=${new Date(end).toISOString()}`}
-                  download
-                >
-                  {label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </Disclosure>
+        <PlanDownload missionId={m.id} start={start} end={end} relays={contact.relays} />
         {m.siteId && hasSite(m.siteId) && (
           <Disclosure title="Change the dates" meta={windowLine(msFromModelH(windowStartH), windowHours)}>
             <p className="text-small text-ink-2">The same dates as Landing: changing them here changes them there.</p>
@@ -437,7 +442,15 @@ function BookingsRow({ contact, missionId }: { contact: ContactDTO; missionId: s
 function RoverRow({ mission: m }: { mission: MissionDetail }) {
   const [open, setOpen] = useState(false)
   const [roverId, setRoverId] = useState(m.rovers[0]?.id)
-  const view = useSection<RoverSightDTO>('rover', m.id, (signal) => api.rover(m.id, roverId, signal), [roverId], open)
+  // The values the team gave for how far out, the antennas and the radio; what is not given is assumed.
+  const [given, setGiven] = useState<RoverOptions>({})
+  const view = useSection<RoverSightDTO>(
+    'rover',
+    m.id,
+    (signal) => api.rover(m.id, roverId, signal, given),
+    [roverId, given.radius_m, given.lander_antenna_m, given.rover_antenna_m, given.freq_mhz],
+    open,
+  )
   if (!m.rovers.length) return null
   const rover = m.rovers.find((r) => r.id === roverId) ?? m.rovers[0]
   return (
@@ -456,13 +469,26 @@ function RoverRow({ mission: m }: { mission: MissionDetail }) {
           Not available: {view.error instanceof ApiError ? view.error.detail : 'the service did not answer.'}
         </p>
       ) : (
-        <RoverAnswer d={view.section.data} meta={view.section.meta} roverName={view.section.data.rover?.name ?? rover.name} />
+        <RoverAnswer d={view.section.data} meta={view.section.meta} roverName={view.section.data.rover?.name ?? rover.name} given={given} onGiven={setGiven} />
       )}
     </Disclosure>
   )
 }
 
-function RoverAnswer({ d, meta, roverName }: { d: RoverSightDTO; meta: LifecycleMetaDTO; roverName: string }) {
+function RoverAnswer({
+  d,
+  meta,
+  roverName,
+  given,
+  onGiven,
+}: {
+  d: RoverSightDTO
+  meta: LifecycleMetaDTO
+  roverName: string
+  /** The values this answer was asked for, and how to ask for others. */
+  given: RoverOptions
+  onGiven: (o: RoverOptions) => void
+}) {
   return (
     <div className="flex flex-col gap-4" data-testid="rover-sight">
       <p className="text-control leading-7 text-ink">
@@ -474,29 +500,30 @@ function RoverAnswer({ d, meta, roverName }: { d: RoverSightDTO; meta: Lifecycle
         {roverSentence(d, roverName)}
       </p>
       {d.resolvable && d.viewshed ? (
-        <ViewshedPanel v={d.viewshed} roverName={roverName} />
+        <ViewshedPanel v={d.viewshed} roverName={roverName} tile={d.viewshed_tile} at={d.lander} />
       ) : d.resolvable ? (
         <p className="text-small text-ink-2">The directions around the lander are not served yet, so there is no map to draw.</p>
       ) : null}
       {d.note && <p className="text-small text-ink-2">{d.note}</p>}
       <Rows>
         {(d.assumptions || d.terrain) && (
-          <Disclosure title="Antennas, radio and terrain" meta={d.assumptions ? 'assumed unless given' : undefined}>
+          <Disclosure title="Antennas, radio and terrain" meta={d.assumptions ? 'assumed unless given' : undefined} defaultOpen={anyGiven(given)}>
             <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-small sm:grid-cols-[max-content_1fr]">
               {d.assumptions &&
                 (
                   [
-                    ['lander_antenna_m', 'Lander’s antenna above the ground'],
-                    ['rover_antenna_m', 'Rover’s antenna above the ground'],
-                    ['radio_mhz', 'Radio frequency'],
+                    ['lander_antenna_m', 'Lander’s antenna above the ground', given.lander_antenna_m],
+                    ['rover_antenna_m', 'Rover’s antenna above the ground', given.rover_antenna_m],
+                    ['radio_mhz', 'Radio frequency', given.freq_mhz],
                   ] as const
-                ).map(([k, label]) => (
+                ).map(([k, label, mine]) => (
                   <div key={k} className="contents">
                     <dt className="text-ink-3">{label}</dt>
                     <dd className="text-ink">
-                      {orbitWords(d.assumptions![k])}
-                      {d.assumptions![k].provenance === 'assumed' && d.assumptions![k].no_margin_reason && (
-                        <span className="block text-ink-2">{d.assumptions![k].no_margin_reason}</span>
+                      {/* A value the team gave is theirs, not an assumption, whatever the service calls it. */}
+                      {mine !== undefined ? `${numberWords(d.assumptions![k])}, as you gave it` : orbitWords(d.assumptions![k])}
+                      {mine === undefined && d.assumptions![k].provenance === 'assumed' && d.assumptions![k].no_margin_reason && (
+                        <span className="block text-ink-2">{plainReason(d.assumptions![k].no_margin_reason as string)}</span>
                       )}
                     </dd>
                   </div>
@@ -510,6 +537,7 @@ function RoverAnswer({ d, meta, roverName }: { d: RoverSightDTO; meta: Lifecycle
                 </>
               )}
             </dl>
+            {d.resolvable && <RoverInputs answer={d} given={given} onApply={onGiven} />}
           </Disclosure>
         )}
         <HowSure meta={meta} />

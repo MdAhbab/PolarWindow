@@ -195,9 +195,8 @@ calendar's check of the pad's limits passes for them.
 The planned calendar therefore climbs at the mean of the vehicle's direct
 lunar flights (Falcon 9: 87.7°, 87.6° over the ground; due east with a ±44 min
 margin for a vehicle with none) and gives the liftoff ± 18 min, the larger
-held-out miss (it was ± 44 min). A launch is still an instant: no flown CLPS
-launch published a window, so the plan's widening to a window between the
-azimuth limits is not applied. Designing the calendar with the flight held out
+held-out miss (it was ± 44 min). Whether that is an instant or a window follows
+what the vehicle's direct lunar launches were published as (below). Designing the calendar with the flight held out
 still puts an opportunity on each real launch day (D2 below); on that day the
 nearest one is 90 min before IM-1's liftoff (66 min due east) and 36 min after
 IM-2's (45 min due east), because the calendar aims at the landing times the
@@ -207,6 +206,51 @@ Keeping the TLI point fixed and steering with a sideways push at TLI instead
 was tried first and fails: for a transfer of nearly 180° the push barely
 moves the arrival, and the correction found answers about 100 to 190 m/s from the
 flown TLI.
+
+**Predicting the direction** (held out; the table's last part is printed by
+`make validate-trip`, pinned in `test_launch_vs_clps.py`). Four predictors were tried,
+each for a Nova-C launch from what is known without its own launch:
+
+| Mission | Other direct flight's direction | Due east | Arrival node: direction, liftoff | Other flight's inclination after TLI | The same rule, own inclination |
+|---|---|---|---|---|---|
+| im-1 | −15.8 min | +9.8 min | 114.1°, −145.5 min | −6.0 min | −14.3 min |
+| im-2 | +17.5 min | +27.4 min | 88.0°, +10.9 min | +0.9 min | +10.2 min |
+
+*Arrival node.* The design holds the arrival's inclination and the way round it goes;
+the node about the Moon's pole is the one thing about the arrival it leaves free, so the
+direction whose designed arrival has the flown node was solved for. It is ill
+conditioned: the node moves 0.046° (IM-1) and 0.086° (IM-2) per degree of direction,
+because a transfer of nearly 180° reaches the Moon from about the same side whatever
+plane it flies in, while at the direction it really climbed IM-1's designed arrival
+already has its node 1.20° off (0.12° for IM-2), the size of what the cruise's
+correction burns change. For IM-1 the node points to 114° and a liftoff 2.4 h early.
+
+*Inclination after TLI* (to the equator of the day, where the pad sits at 28.45°). A
+climb aimed at the other Nova-C's orbit inclination after TLI (28.51° or 28.60°) lands
+both launches within 10 min. It is chance: given each flight's *own* inclination the
+same rule misses by 14.3 and 10.2 min, since the plane a flight climbed in and the plane
+it left Earth in differ in inclination by 0.11 to 0.14° (the pad lay 0.10 to 0.13° off the latter at
+liftoff: the vehicle turned between them). With two flights the two numbers happen to
+cross; the calendar does not use it. *Due east* (the most the Earth's turning helps)
+misses IM-2 by 27 min. *The Moon's declination at arrival* (25° and 14°) has no rule
+tying it to the direction: for a transfer of nearly 180° every plane through the TLI
+point reaches it. The range's hazard-area notices, which state a launch's direction days
+before, would be the published predictor; NGA's archive of them (NAVAREA IV) refused
+this machine, so it is not tried. The mean of the other flight's direction stays.
+
+*Instant or window* (plan D1). Launch Library 2's records, the source of each flown
+liftoff, give the window each launch was published with: IM-1 and IM-2 (Falcon 9,
+direct) a single instant; Blue Ghost 1 (Falcon 9, phasing loops) 06:06 to 06:45 UTC;
+Peregrine (Vulcan, loops) 07:18 to 08:03 UTC. They are in `data/missions.json` (`t0`)
+and a flown launch now shows its own. A planned one gets a window only when the vehicle's
+direct lunar launches were published with windows (it steers); its ends are then the
+instants designed at the pad's two azimuth limits on the same sweep of the climb plane.
+Falcon 9's were instants, so its calendar stays one instant ± 18 min. Had the vehicle
+steered between the Eastern Range's assumed 35 and 120° over the ground, the same design
+puts IM-1's day from 105 min before to 300 min after its liftoff and IM-2's from 163 min
+before to 269 min after (converged at both ends): hours, not the single instant flown,
+so the pad's limits alone are not a vehicle's window; what it can lift at the ends is
+not published.
 
 **Backed out from the landing** (plan D2: flown landings inside the
 landing rule; flown launch days inside the calendar). With no Sun-height band
@@ -222,7 +266,7 @@ checked: near the poles the lighting decides.
 and flagged: with the Moon south of the equator the climb reaches the TLI point
 only after most of an orbit, and upper stage coast limits are not published.
 Which azimuth a flight takes is not predicted better than the spread of the
-flown ones (2.2°, 16–18 min).
+flown ones (2.2°, 16–18 min); four predictors tried held out are above.
 
 # Phasing loops and correction burns against the flown landers (plan C3, C4)
 
@@ -373,6 +417,46 @@ other than the lowest (669 cases, mean share 0.002, observed 0) holds 30 cases. 
 cannot check a limit this rarely reached; several years, or the pad's own tower record,
 would be needed.
 
+**The same check over thirteen years** (`make hindcast-reforecast`,
+`app/feeds/hindcast_reforecast.py`). NOAA's GEFS v12 reforecast (the model the live ensemble
+runs; 00 UTC, the control and four perturbed runs, 0.25°, 2000–2019 on NOAA's open-data bucket
+on AWS) is read for one day in three from 2007, in a fixed random order, from the first part
+of each global message (`parsers/grib_prefix.py`, equal to ecCodes on a cut of the field); 845
+of the 1,583 days planned are cached (2007-01-08 to 2019-12-31). The outcome is the station's sustained wind in its
+report nearest the valid time (within 30 minutes; a station with fewer reports has fewer cases),
+the limit is 10.52 m/s at 10 m as above, and the reference is the station's own month-by-hour
+frequency (and wind) over 2000–2019. Every interval is 95 %, from resampling whole months of
+cases (days in a month are not independent). Winds are 10 m; the runs are the reforecast's, not the
+archived live ensemble's (whose 31 runs and 0.5° cell are what the 2025 check used).
+
+| Station, lead | Cases | Above the limit | Brier (GEFS) | Brier (climatology) | Brier skill | CRPS skill | CRPS skill, fair | Mean wind, runs / station (m/s) |
+|---|---|---|---|---|---|---|---|---|
+| KXMR 24 h | 786 | 0 | 0.0134 | 0.0000 | not worked out | −0.95 (−1.10 to −0.80) | −0.86 (−1.02 to −0.72) | 5.3 / 3.1 |
+| KXMR 48 h | 801 | 2 | 0.0096 | 0.0025 | not worked out | −0.90 (−1.06 to −0.76) | −0.80 (−0.95 to −0.66) | 5.3 / 3.2 |
+| KVBG 24 h | 565 | 34 | 0.0346 | 0.0553 | 0.37 (0.15 to 0.57) | 0.33 (0.27 to 0.38) | 0.37 (0.31 to 0.42) | 5.5 / 5.8 |
+| KVBG 48 h | 566 | 38 | 0.0471 | 0.0604 | 0.22 (0.02 to 0.42) | 0.31 (0.26 to 0.36) | 0.37 (0.32 to 0.41) | 5.5 / 5.7 |
+
+A Brier skill is worked out only from 10 or more cases above the limit (fewer, and one case
+moves it more than the skill); at the Cape there were none at 24 h and two at 48 h, so no Brier
+skill is given and the continuous score (CRPS skill, which does not need the event to happen)
+is the verdict-free number. The gate pools the two leads' cases in its reliability bins.
+**The Cape does not pass**: the runs' wind is worse than the station's own record (CRPS skill
+below zero at both leads, intervals nowhere near zero), the runs averaging 5.3 m/s against the
+station's 3.1 (the 0.25° cell at the Cape is partly sea, where the wind is stronger than at a
+station inland), and the bin of shares of 0.2 (34 cases) saw the wind above the limit in none of
+them, 0.2 from what the share said and past the 0.1 allowed. So the wind rule's shares at the Cape stay "not checked against
+observations". **Vandenberg passes the plan's gate as written**: Brier skill 0.37 at 24 h and
+0.22 at 48 h against the 0.1 asked, and the only reliability bin with 30 cases or more (shares
+under 0.1: 1,057 cases) sits well inside 0.1 (the wind was above the limit in 2.8 % of them
+against a share of 0). Two things keep that from being more than it is. At 48 h the interval,
+0.02 to 0.42, runs below 0.1, so the gate is passed on the estimate and not with certainty. And
+five runs give shares in steps of 0.2, so every other bin holds 9 to 23 cases and the gate never
+counts them; taken together, the 37 cases at each lead with a share of 0.2 or more had the wind
+above the limit 62 % of the time at 24 h (mean share 63 %) and 51 % at 48 h (mean share 52 %).
+The check is made at 24 and 48 h; a share for a launch further out than 48 h is not covered by
+it and is not shown as checked. The download goes on, and the two
+`data/hindcast/gefs_reforecast_wind_*.json` files are rewritten each time it is scored.
+
 **Lightning climatology** (`make thunder-climatology`, `app/data/thunder_climatology.py`).
 NASA MSFC's Combined GLM Hourly Thunder Hour data (GHRC DAAC, doi:10.5067/GLM/HTH/DATA301),
 2019–2025, 2,557 days: for each hour, whether thunder could be heard in each 0.05° cell.
@@ -386,24 +470,51 @@ in about 21 % of July's 20 UTC hours and none of January's.
 `test_radiation.py` pins the cosmic-ray and past-event checks.
 
 **Belts: the engine against a second implementation** (plan: IRBEM within 5 % of SPENVIS
-running AE8/AP8). SPENVIS is a web service and was not run here. Instead, along each flown
+running AE8/AP8). SPENVIS needs an account and was not run here. Instead, along each flown
 trajectory (one-minute samples within 15 Earth radii, from NASA's reconstruction), the
-fluence from IRBEM (the engine, compiled in spacepy's wheel; its own magnetic shells from
-IGRF) is compared with NASA SPDF's own AE8/AP8 code (`radbelt`; its own shells from its
-IGRF). Solar-maximum maps for all four (the year before each launch was near the cycle's
-peak in OMNI's sunspot record).
+fluence from IRBEM (the engine, compiled in spacepy's wheel) is compared with NASA SPDF's
+own AE8/AP8 code (`radbelt`), twice. Solar-maximum maps for all four (the year before each
+launch was near the cycle's peak in OMNI's sunspot record).
 
-| Mission | 1-min samples | e >1 MeV IRBEM | SPDF | diff | p >10 MeV IRBEM | SPDF | diff |
+The two codes do not place a point on the same magnetic shell. IRBEM's `fly_in_nasa_aeap1`
+works out McIlwain L and B/B0 with the field each map was built with: Jensen and Cain 1960
+for AE8 MIN, AE8 MAX and AP8 MIN, GSFC 12/66 updated to 1970 for AP8 MAX, with B0 from
+McIlwain's moment (31,165.3 nT/L³). These are the fields SPENVIS's model description lists
+for the maps (spenvis.oma.be, help/background/traprad, Table 1). SPDF's driver uses IGRF
+of the flight date and the field line's own minimum for B0. So the first table feeds
+IRBEM's L and B/B0 into both codes: it checks the maps and how they are read (energy grid,
+interpolation, MIN or MAX). The second gives SPDF its own shells: it shows what the choice
+of field changes.
+
+| Mission | 1-min samples | e >1 MeV IRBEM | SPDF, same shells | diff | p >10 MeV IRBEM | SPDF, same shells | diff |
 |---|---|---|---|---|---|---|---|
 | IM-1 | 0 | – | – | – | – | – | – |
-| IM-2 | 437 | 1.09e10 | 1.13e10 | −2.8 % | 8.55e5 | 1.44e6 | −40.5 % |
-| Blue Ghost 1 | 3,311 | 2.04e10 | 2.15e10 | −5.0 % | 8.00e8 | 7.94e8 | +0.7 % |
-| Peregrine | 867 | 2.35e10 | 2.33e10 | +0.8 % | 2.67e8 | 2.80e8 | −4.8 % |
+| IM-2 | 437 | 1.09e10 | 1.09e10 | 0.0 % | 8.55e5 | 8.55e5 | 0.0 % |
+| Blue Ghost 1 | 3,311 | 2.04e10 | 2.04e10 | 0.0 % | 8.00e8 | 8.00e8 | 0.0 % |
+| Peregrine | 867 | 2.35e10 | 2.35e10 | 0.0 % | 2.67e8 | 2.67e8 | 0.0 % |
 
-Electrons agree within 5 % on every trip; protons on the two trips that spend hours in
-the inner belt (Blue Ghost's four passes, Peregrine's two). IM-2's proton fluence, a
-thousand times smaller, differs by 40 %: it comes from minutes at the inner belt's lower
-edge, where the flux changes steeply with B/B0 and the two codes' shells differ most.
+| Mission | e >1 MeV SPDF, IGRF of the day | IRBEM against it | p >10 MeV SPDF, IGRF of the day | IRBEM against it |
+|---|---|---|---|---|
+| IM-2 | 1.13e10 | −2.8 % | 1.44e6 | −40.5 % |
+| Blue Ghost 1 | 2.15e10 | −5.0 % | 7.94e8 | +0.7 % |
+| Peregrine | 2.33e10 | +0.8 % | 2.80e8 | −4.8 % |
+
+With the same shells the two codes agree to 0.0 % on every trip: the maps and their reading
+are the same. The 40 % on IM-2's protons is the field alone. Read with SPDF's code and
+shells from other fields, IM-2's proton fluence is 8.55e5 with GSFC 12/66 (the map's own
+field), 8.73e5 with IGRF of 1970 (+2 %), 1.66e6 with IGRF of the flight date (+94 %), and
+1.45e6 with IGRF of the flight date and the field line's minimum as B0 (+70 %; SPDF's
+choice). It is the 55 years of change in Earth's field, not the field model or the code:
+the dipole has weakened and the South Atlantic Anomaly has drifted west (about 0.3° a year,
+SPENVIS's description), so today's field puts the same point on a shell nearer the belt's
+floor. IM-2's protons come from minutes at the inner belt's lower edge, where the flux
+changes steeply with B/B0, so they feel this most; the trips that spend hours inside the
+belt (Blue Ghost's four passes, Peregrine's two) move by 5 % or less. The engine is left as
+it is, reading each map with the field it was built with, which is what SPENVIS's model
+description lists; it has not been checked against a SPENVIS run. Reading the maps with
+today's field instead would roughly double IM-2's proton number, which is inside the ×/÷2
+the maps are read with. (IRBEM's IGRF in spacepy's build ends at 2025.0 and uses that for
+2025 dates; this only enters the IGRF-of-the-day line above.)
 IM-1's reconstruction starts 242,000 km out, a day and a half after launch, past the
 belts, so it has none; the answer
 says the climb out is not counted (a lower bound). The maps themselves are read as good
@@ -437,13 +548,18 @@ values after March 2020, so the events during a flown trip are listed from NASA 
 
 # Capsule entry against OSIRIS-REx (plan track H)
 
-`make validate-capsule` (`app/tests/golden/validate_capsule.py`; the model is
-`app/core/entry.py` with `app/core/atmosphere.py`). The model is a point mass with a
-ballistic coefficient β, falling from the entry interface through the U.S. Standard
-Atmosphere 1976 (equations to 86 km, its Table I densities from 86 to 150 km) that turns
-with the Earth, under gravity with J2; no lift, no parachutes, and a wind only in the
-footprint. Nothing returns to Earth on a CLPS mission, so the model is checked on the one
-recent sample return with a published entry state and a measured landing point.
+`make validate-capsule` (`app/tests/golden/validate_capsule.py`, about 7 minutes; the model
+is `app/core/entry.py`, flown for a day by `app/services/capsule.py`). The model is a point
+mass with a ballistic coefficient β, falling from the entry interface through an atmosphere
+that turns with the Earth, under gravity with J2; no lift, no parachutes, and a wind only in
+the footprint. The air is NRLMSISE-00 (Picone et al. 2002, run through `pymsis` 0.13.0)
+driven by the entry day's 10.7 cm solar flux and 3-hour geomagnetic ap from NASA's OMNI
+files (`app/data/msis_indices.py`: the flux of the day before, its 81-day mean, and the
+seven ap numbers the model's storm-time mode takes), asked for at the capsule's own place
+and time all the way down. The U.S. Standard Atmosphere 1976 (equations to 86 km, its Table
+I densities from 86 to 150 km) stands in when the OMNI files lack the day; the answer says
+which air was used. Nothing returns to Earth on a CLPS mission, so the model is checked on
+the one recent sample return with a published entry state and a measured landing point.
 
 **Entry state.** The sample return capsule's reconstructed trajectory in NAIF's PDS
 archive (`src_230924_230924_230930_od383a_v1.bsp`, in the registry as
@@ -456,29 +572,101 @@ flight path angle −8.184°, heading 66.396°, Earth-relative speed 12.361 km/s
 **Landing** (plan: within 10 km of the measured point). β from published numbers: the
 capsule's mass at entry (49.64 kg as built plus the 121.6 g sample), Stardust's diameter
 (0.8128 m, the same forebody) and its hypersonic axial force coefficient, 1.48 to 1.56
-(Mitcheltree et al. 1997). Flown to the touchdown height, 1,288 m, and compared with the
-recovery team's measured point, 40.3719° N, 113.24° W:
+(Mitcheltree et al. 1997). Flown to the touchdown height, 1,288 m, in each atmosphere over
+the published drag range, and compared with the recovery team's measured point,
+40.3719° N, 113.24° W. Before, the standard atmosphere; now, NRLMSISE-00 for the day; the
+newer NRLMSIS 2.1 is flown for comparison only:
+
+| Atmosphere | C_A 1.48 | C_A 1.52 | C_A 1.56 | Entry to ground | Peak deceleration |
+|---|---|---|---|---|---|
+| U.S. Standard Atmosphere 1976 (before) | 6.7 km | **9.5 km** | 12.2 km | 530 s | 31.0 g |
+| NRLMSISE-00, 24 September 2023 (now) | 9.4 km | **12.1 km** | 14.8 km | 537 s | 32.3 g |
+| NRLMSIS 2.1, 24 September 2023 | 3.9 km | 6.6 km | 9.3 km | 531 s | 32.0 g |
+
+The day's indices were the 10.7 cm flux of 23 September, 174.1 solar flux units (81-day mean
+149.3), and a 3-hour ap of 4 at the time (the day's storm began in the 18 to 21 UTC block,
+after the landing). NRLMSISE-00's flights, β from each C_A:
 
 | C_A | β (kg/m²) | Landing | From the measured point | Entry to ground | Peak deceleration |
 |---|---|---|---|---|---|
-| 1.48 | 64.8 | 40.3609 N, 113.3176 W | 6.7 km | 524 s | 30.8 g |
-| 1.52 | 63.1 | 40.3532 N, 113.3491 W | **9.5 km** | 530 s | 31.0 g |
-| 1.56 | 61.5 | 40.3456 N, 113.3797 W | 12.2 km | 535 s | 31.2 g |
+| 1.48 | 64.8 | 40.3535 N, 113.3479 W | 9.4 km | 531 s | 32.2 g |
+| 1.52 | 63.1 | 40.3459 N, 113.3788 W | **12.1 km** | 537 s | 32.3 g |
+| 1.56 | 61.5 | 40.3385 N, 113.4089 W | 14.8 km | 543 s | 32.4 g |
 
-The middle value passes, with little room; the published drag range spans 6.7 to 12.2 km.
-Every case lands short (west-southwest), as the mission's own simulation did: from the
-same reconstructed state with its pre-flight atmosphere and winds, it was 8.9 km off, and
-3.5 km with the day's reconstructed atmosphere (Francis et al., AAS 24, comparison
-table), so most of the miss is the day's upper atmosphere, which a standard atmosphere
-cannot know. The time to the ground (530 s) is not comparable with the observed 615 s:
-the model has no parachutes, which change the time and not the place.
+**The plan's 10 km is not met with the day's air.** NRLMSISE-00 lands the capsule 12.1 km
+from the measured point (9.4 to 14.8 km over the drag range: only its low-drag end is inside
+the limit), 2.6 km farther than the standard atmosphere did (9.5 km, met with 0.5 km to
+spare). The answer says so (`passed: false`), names the air, and gives the other airs'
+distances. NRLMSIS 2.1 lands 6.6 km away and would pass; it is not used, because the model
+was fixed before the runs (the plan names NRLMSISE-00, which the low-orbit drag model uses
+too) and not by which one lands nearest. All three miss on the same side, short and
+west-southwest (257° from the measured point in the standard atmosphere). So did the
+mission's own six-degree-of-freedom simulation from the same reconstructed entry state
+with the parachutes as flown and its pre-flight atmosphere (Earth-GRAM) and winds: 8.9 km
+at 257° (Francis et al., the table of comparison cases, "Cht Seq + ESF").
+
+**What decides the landing.** The middle case in NRLMSISE-00 with the density 5 % higher over
+one band of heights at a time:
+
+| NRLMSISE-00, density 5 % higher between | Landing moves | From the measured point |
+|---|---|---|
+| 0 and 30 km | 0.08 km | 12.2 km |
+| 30 and 50 km | 2.34 km | 14.5 km |
+| 50 and 70 km | 2.37 km | 14.5 km |
+| 70 and 90 km | 0.28 km | 12.4 km |
+| 90 and 125 km | 0.01 km | 12.1 km |
+
+The landing rests on the air between 30 and 70 km, where the capsule loses its speed. It does
+not rest on the Sun: the solar flux and the geomagnetic activity, which are all that make
+NRLMSISE-00 the day's, act above 100 km. With the flux at 70 solar flux units (solar minimum)
+or 250 (maximum) the landing is 11.7 or 11.8 km from the measured point instead of 12.1,
+with ap held at 4 all the way down 12.0 km, and in a severe storm (ap 100 all the way down)
+12.9 km. The 12.1 km is the model's average stratosphere and mesosphere for the place and
+the season; the day's indices move it by 0.8 km at most.
+
+**The models against the day's radiosonde.** The National Weather Service's balloon from Salt
+Lake City at 12 UTC (130 km from the touchdown, up to 33 km; Iowa Environmental Mesonet
+archive, saved unchanged in `data/capsule/kslc_20230924_12z.json`), with its heights made
+geometric and its temperatures virtual, against each model at the balloon's place and time:
+
+| Height | Radiosonde (kg/m³) | U.S. Standard Atmosphere 1976 / radiosonde | NRLMSISE-00 / radiosonde | NRLMSIS 2.1 / radiosonde |
+|---|---|---|---|---|
+| 3 km | 0.8875 | 1.025 | 1.014 | 0.985 |
+| 5 km | 0.7262 | 1.014 | 1.014 | 0.975 |
+| 10 km | 0.4258 | 0.971 | 0.995 | 0.972 |
+| 15 km | 0.2093 | 0.931 | 1.016 | 1.002 |
+| 20 km | 0.0939 | 0.947 | 1.014 | 0.982 |
+| 25 km | 0.04204 | 0.954 | 1.019 | 0.979 |
+| 30 km | 0.01907 | 0.965 | 1.025 | 0.983 |
+
+The standard atmosphere is 3 to 7 % thinner than the day's air from 10 to 30 km;
+NRLMSISE-00 is within 2.5 % of the balloon at every height and NRLMSIS 2.1 within 2.8 %. Below
+30 km the empirical models have the day's air right, and the landing hardly depends on it
+(0.08 km for 5 %). Where it does depend, above 30 km, nothing measured that day is on disk.
+
+**What the mission's team found.** Its reconstruction of the day's air, from NASA's GEOS
+analysis, "showed notably lower atmospheric densities in the upper atmosphere than the
+nominal GRAM atmosphere predicted, and was even lower than the predicted GRAM 3σ low density
+for a significant portion of the drag pulse". Put into their simulation, with the winds it
+came with, it landed 15.1 km northeast of the pre-flight prediction, 3.5 km beyond the
+measured point ("Cht Seq + ESF + Atm"; 2.7 km with the winds of the balloon flown after the
+landing instead). An average like NRLMSISE-00, which knows a day only through its flux and
+geomagnetic activity, cannot show a thin day. The capsule flew with no parachute until 1.4 km
+above the ground (the signals to the drogue's mortar and to the cutters that free its bridle
+were reversed), so a model without parachutes follows the real flight nearly to the ground;
+the team found that the parachutes as flown moved the touchdown point by 0.4 km and, in
+their no-parachute contingency, by under 100 m. The time to the ground (537 s) is not
+comparable with the observed 615 s: the observed flight ended under the main parachute, 285 s
+over its last 1.4 km, and the model has no parachute and one axial force coefficient all the
+way down.
 
 **Footprint.** A seeded Monte Carlo of 200 runs: the flight path angle from TCM-12's
 delivery accuracy (0.073° at 3σ, AAS 24-058 Table 5), heading and speed from the E-1 day
 solution (Table 12), β ±2.6 % (the published C_A range as one sigma), and, assumed, the
-density ±5 % and a wind below 30 km of 10 m/s in each direction. Its 99 % ellipse is 51.4
-by 21.4 km, long axis 77° from north, and holds the measured point (the mission's design
-ellipse was 84 by 20 km). Without the wind the ellipse was 0.3 km wide and missed the
+density ±5 % and a wind below 30 km of 10 m/s in each direction. Its 99 % ellipse is 51.2
+by 21.8 km in NRLMSISE-00 (51.4 by 21.4 km in the standard atmosphere), long axis 77° from
+north, and holds the measured point in both (the mission's design ellipse was 84 by 20 km).
+In the standard atmosphere, without the wind the ellipse was 0.3 km wide and missed the
 measured point, which lies about 0.9 km across the track: the wind is what sets the width.
 
 The result is written to `data/capsule/orex_check.json` and served in
@@ -486,7 +674,10 @@ The result is written to `data/capsule/orex_check.json` and served in
 
 **Not done.** The Moon-to-Earth return trajectory to the entry interface (C1/C2 reversed)
 is not built: no CLPS mission brings anything back, and no planned one publishes an entry
-state. A capsule's zone weather (B2) waits for the same.
+state. A capsule's zone weather (B2) waits for the same. The day's air from 30 to 76 km,
+which the landing depends on, is not measured or analysed in what is on disk; NASA's
+GEOS-FP analysis of it (the family of analyses the mission's team used, open on the NCCS
+OPeNDAP server) is the input to try next.
 
 # Real orbiters over the landing sites against JPL Horizons (plan T1, F2)
 
@@ -564,6 +755,19 @@ message waits 182–230 min at most); Altus-1 in NASA's reference orbit would ad
 (4.7–5.5 h unheard, 282–326 min wait). At IM-3's near-side site, where Earth never sets,
 Altus-1 adds nothing. About 50 s of compute per relay for a lunar day.
 
+**The relay in the contact plan.** A plan that asks for a relay (`?relay=`) lists its contacts at
+one placement, the one swept (5,184 for each catalogue relay) whose time through the relay is
+nearest the middle of the range (the first on a tie), so the file and the answer's middle value agree and the choice is the
+same every time; the header says which placement, that it is planned and not a forecast, and the
+ranges over all of them. Checked in `test_relay.py` (a station's own link is the part of the
+combined link the sweep uses that it hears: with two stations at Earth's centre, the one with no
+mask is all of it to 1e-9 and one with an 89.5° mask hears less; the placement named is a real
+point of the sweep whose time through the relay is the one reported) and in `test_contact.py` (Griffin-1, 20 to 22 March
+2027: with no relay asked the plan is the direct contacts and nothing else; with Lunar Pathfinder
+every contact is from the lander to the relay or from it to a station, inside the dates, marked
+planned, and ION has an `a range` for each `a contact`). One placement is not a schedule: another
+gives other contacts, which is why it is never in a plan that did not ask for it.
+
 # Rover-to-lander line of sight (plan T1, F5)
 
 `app/core/viewshed.py`, served by `GET /missions/{id}/contact/rover`. For each bearing (every
@@ -605,3 +809,13 @@ post, as for the skyline; LOLA's errors between nearby posts are partly shared, 
 if anything too wide. No rover drive is published, so the share is over the ground within
 the radius, and the longest stretch out of sight is missing with that reason. Reiner Gamma
 (CADRE, Lunar Vertex) is outside the polar model and answers "not resolvable".
+
+**The map layer** (`GET /tiles/viewshed/...`, `app/core/viewshed.py: tile_rgba`). The tiles draw the
+states of that answer, not a second calculation, so what is checked is that each ground point lands
+in its cell: `test_viewshed.py` gives every (bearing, range) cell its own random state at 85°S 120°E,
+where the polar grid's north lies 120° from true north, and reads 300 cells back from the picture at
+points given as bearing and range from the lander; all 300 agree, and with the grid's turn left out
+214 of the 300 read back wrong, so the test does see it. The stripes are those of the whole map, not
+of a tile (checked on tiles at three offsets), so neighbouring tiles join up. The terrain under them
+is the hillshade of the 20 m window the answer read, drawn by the terrain tiles' own renderer; the
+regional 80 m model those tiles come from is blocks 34 pixels wide at the zoom of a rover map.

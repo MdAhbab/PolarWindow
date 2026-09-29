@@ -35,12 +35,19 @@ class FeedOut(BaseModel):
         description="The time the data itself refers to (model run, issue time, newest reading)."
     )
     age_s: float | None = Field(description="How old the data is, seconds; null if none yet.")
-    stale: bool = Field(description="Past its staleness budget (or no data yet).")
+    stale: bool = Field(
+        description="Past its staleness budget (or no data yet); for a product fetched only "
+        "while a launch is near (`note`), past the budget since it was last asked."
+    )
     staleness_budget_s: int
     next_run: datetime | None
     errors: int = Field(description="Failed attempts in a row.")
     last_error: str | None
     licence: str
+    note: str | None = Field(
+        description="Why the product may hold nothing or no age (fetched only while a launch "
+        "is near); null for the rest."
+    )
     breaker: Literal["closed", "open", "half_open"] = Field(
         description="`open`: the provider failed repeatedly and is being left alone for a while."
     )

@@ -8,7 +8,10 @@ the times the spot allows a landing (``core.landing_windows``), minus the
 time in lunar orbit, minus the flight, then the day's launch instant from a
 climb in the direction the vehicle's direct lunar flights climbed (due east
 when there are none), inside the pad's azimuth limits, corrected in the full
-force model (``core.transfer.design``).
+force model (``core.transfer.design``). A launch is a window or a single instant
+as the flown launches were published (Launch Library 2): a flown one shows its own; a
+planned one gets a window, between the instants at the pad's azimuth limits, only when
+the vehicle's direct lunar launches were published with windows.
 """
 
 from __future__ import annotations
@@ -157,6 +160,32 @@ def _flown_azimuth_reason(pad_id: str, fl: Any, gm: float) -> str:
     )
 
 
+def _published_window(t0: dict[str, Any]) -> tuple[str, datetime | None, datetime | None, str]:
+    """``(kind, open, close, sentence)`` of the window a launch was published with."""
+    a, b = t0.get("window_open"), t0.get("window_close")
+    if not a or not b:
+        return "instantaneous", None, None, " No launch window was published for it."
+    wo, wc = lifecycle.parse_time(a), lifecycle.parse_time(b)
+    if wo == wc:
+        return "instantaneous", None, None, " It was published as a single instant."
+    return (
+        "window",
+        wo,
+        wc,
+        f" It was published with a launch window from {wo:%H:%M} to {wc:%H:%M} UTC.",
+    )
+
+
+def _steers(p: dict[str, Any], asc: ascent.Ascent) -> bool | None:
+    """Whether the vehicle's direct lunar launches were published as windows: True when
+    one was, False when all were single instants, None when it has none."""
+    pub = p.get("windows", {})
+    ends = [pub[m] for m in asc.direct if m in pub]
+    if not ends:
+        return None
+    return any(lifecycle.parse_time(a) < lifecycle.parse_time(b) for a, b in ends)
+
+
 async def _flown(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, Any]], str | None]:
     flights = await spice.run_async(ascent.measure, tuple(tuple(x) for x in p["flights"]))
     mid = p["mission_id"]
@@ -247,15 +276,17 @@ async def _flown(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, Any
             "sunlight_after_h": lifecycle.missing("h", why),
             "earth_up": False,
         }
+    kind_w, w_open, w_close, w_note = _published_window(p.get("t0") or {})
+    note += w_note
     opp = {
         "id": f"{p['pad_id']}-flown",
         "pad_id": p["pad_id"],
         "pad_name": launch_service.pads(p["pad_id"])[0]["name"],
         "vehicle_id": p["vehicle_id"],
         "t0": t0,
-        "kind": "instantaneous",
-        "window_open": None,
-        "window_close": None,
+        "kind": kind_w,
+        "window_open": w_open,
+        "window_close": w_close,
         "transfer": {"type": kind, "flight_days": flight, "orbit_wait_days": wait},
         "landing": land,
         "weather": "none",
@@ -445,9 +476,50 @@ def _design_landing(
                 "flight_d": float(flight_d),
                 "land_t": float(land_t),
                 "window": (float(w.start), float(w.end)),
+                "arrive_et": float(arrive_et),
+                "inc": float(inc),
+                "t_launch_et": float(d.t_launch),
             }
         )
     return designs
+
+
+def _window_ends(
+    p: dict[str, Any],
+    asc: ascent.Ascent,
+    chosen: list[dict[str, Any]],
+    az_limits: tuple[float, float],
+) -> None:
+    """Synchronous (SPICE thread): for a vehicle that steers, each opportunity's launch
+    window: the instants designed at the pad's two azimuth limits on the same sweep of the
+    climb plane past the Moon (plan D1). Sets ``open`` and ``close`` (epoch s) or leaves
+    them out when a limit's design does not converge."""
+    if not chosen:
+        return
+    lo = min(o["t_launch_et"] for o in chosen) - DAY
+    hi = max(o["arrive_et"] for o in chosen) + 2 * DAY
+    tables = propagate.environment(lo, hi)
+    pad_at = ascent.pad_j2000(p["pad_id"])
+    coast = (float(np.mean(asc.coasts_s)), min(asc.coasts_s) - COAST_SLACK_S)
+    for o in chosen:
+        target = transfer.Target(o["arrive_et"], R_MOON_M + PERI_ALT_M, o["inc"])
+        ends = []
+        for az in az_limits:
+            d = transfer.launch_at(
+                tables,
+                target,
+                pad_at,
+                az,
+                asc.c_rad,
+                asc.r_park_m,
+                o["t_launch_et"],
+                o["northward"],
+                coast,
+                span_s=12 * H,
+            )
+            ends.append(None if d is None else _epoch(d.t_launch))
+        if all(e is not None for e in ends):
+            o["open"], o["close"] = min(ends), max(ends)  # type: ignore[type-var]
 
 
 async def _designed(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, Any]], str | None]:
@@ -529,9 +601,34 @@ async def _designed(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, 
             "Due east is assumed: the vehicle has no direct lunar flight measured here "
             "(phasing loops climb their own way)."
         )
+    steers = _steers(p, asc)
+    direct_names = ", ".join(names.get(m, m) for m in asc.direct)
+    chosen = [min(g, key=lambda x: (x["land_t"], x["flight_d"])) for g in clusters]
+    if steers and lo_az is not None and hi_az is not None:
+        v = math.sqrt(gm / asc.r_park_m)
+        az_limits = (
+            launchwin.inertial_azimuth(pad.lat_deg, lo_az, v),
+            launchwin.inertial_azimuth(pad.lat_deg, hi_az, v),
+        )
+        await spice.run_async(_window_ends, p, asc, chosen, az_limits)
+        window_words = (
+            f" The vehicle flew a direct lunar launch with a window ({direct_names}), so it "
+            f"steers: the window runs between the instants designed at the pad's "
+            f"{lo_az:.0f} and {hi_az:.0f}° over the ground; what the vehicle can lift at "
+            "the window's ends is not published."
+        )
+    elif steers is False:
+        window_words = (
+            f" The vehicle's direct lunar launches ({direct_names}) were each published as "
+            "a single instant, so this is one too."
+        )
+    else:
+        window_words = (
+            " Whether this vehicle flies a direct lunar launch as a window is not published: "
+            "a single instant is shown."
+        )
     opps: list[dict[str, Any]] = []
-    for group in clusters:
-        o = min(group, key=lambda x: (x["land_t"], x["flight_d"]))
+    for o in chosen:
         land_epoch = tr.start.timestamp() + o["land_t"]
         weather, weather_note = _weather(o["t0"] - now, p["pad_id"], p["vehicle_id"])
         a, b = o["window"]
@@ -539,7 +636,7 @@ async def _designed(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, 
         note = (
             f"{climb_words} The flight is corrected in the full force model to reach a "
             "100 km lunar orbit when the landing time allows; the margin is the largest "
-            "difference from a flown liftoff seen when designing that way."
+            "difference from a flown liftoff seen when designing that way." + window_words
         )
         if o["long_coast"]:
             lo_c, hi_c = o["flown_coasts"]
@@ -561,9 +658,9 @@ async def _designed(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, 
                 "pad_name": pad_name,
                 "vehicle_id": p["vehicle_id"],
                 "t0": _q(o["t0"], lifecycle.EPOCH_UNIT, provenance="computed", pm=pm_s),
-                "kind": "instantaneous",
-                "window_open": None,
-                "window_close": None,
+                "kind": "window" if "open" in o else "instantaneous",
+                "window_open": (datetime.fromtimestamp(o["open"], UTC) if "open" in o else None),
+                "window_close": (datetime.fromtimestamp(o["close"], UTC) if "close" in o else None),
                 "transfer": {
                     "type": "direct",
                     "flight_days": _q(

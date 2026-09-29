@@ -24,6 +24,10 @@ class OneForecast(_M):
     system: Literal["NWS", "HRRR", "GEOS-FP"]
     value: QuantityOut
     over: bool
+    note: str | None = Field(
+        description="How this forecast did against a weather station's record (HRRR), or why "
+        "it could not be checked (NWS keeps no archive)."
+    )
 
 
 class Observed(_M):
@@ -53,6 +57,9 @@ class RuleRow(_M):
     per_system: list[SystemShare]
     one_forecast: list[OneForecast]
     disagreement: bool
+    disagreement_note: str | None = Field(
+        description="Who disagrees and how, in plain words; null when `disagreement` is false."
+    )
     observed: Observed | None
     climatology: Climatology | None
 
@@ -162,7 +169,7 @@ class Booster(_M):
 
 
 class CapsuleModelCheck(_M):
-    """The capsule entry model (3-DOF, U.S. Standard Atmosphere 1976) flown from
+    """The capsule entry model (3-DOF, through NRLMSISE-00 for the entry day) flown from
     OSIRIS-REx's reconstructed entry state, against where its capsule landed."""
 
     case: str
@@ -170,6 +177,8 @@ class CapsuleModelCheck(_M):
     distance_range_km: list[float]
     limit_km: float
     passed: bool
+    #: The air the modelled fall went through and what it was given, in plain words.
+    atmosphere: str
     mission_team_km: float
     ellipse_99_km: list[float]
     measured_inside_ellipse: bool

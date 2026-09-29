@@ -16,6 +16,9 @@ import type { BrowserContext, Route } from '@playwright/test'
 const DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'lib', 'api', '__fixtures__', 'lifecycle')
 const read = (name: string) => readFileSync(join(DIR, name), 'utf8')
 
+/** A fixture as data, for a test that answers one request differently. */
+export const fixtureJson = (name: string) => JSON.parse(read(name)) as any // eslint-disable-line @typescript-eslint/no-explicit-any
+
 const ROUTES: [RegExp, string][] = [
   [/\/missions\/[^/]+\/sections$/, 'sections.json'],
   [/\/missions\/[^/]+\/ready$/, 'ready.json'],
@@ -28,6 +31,7 @@ const ROUTES: [RegExp, string][] = [
   [/\/missions\/[^/]+\/parts$/, 'parts.json'],
   [/\/parts\/[^/]+\/impact$/, 'part-impact.json'],
   [/\/risk-scales$/, 'risk-scales.json'],
+  [/\/relays$/, 'relays.json'],
   [/\/landing-history$/, 'landing-history.json'],
   [/\/lessons$/, 'lessons.json'],
   [/\/ready\/items\/[^/]+\/history$/, 'history.json'],

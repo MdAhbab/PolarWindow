@@ -127,6 +127,7 @@ export const keys = {
   feeds: () => ['feeds'] as const,
   parameters: () => ['parameters'] as const,
   riskScales: () => ['riskScales'] as const,
+  relays: () => ['relays'] as const,
   landingHistory: () => ['landingHistory'] as const,
 }
 

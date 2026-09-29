@@ -57,3 +57,29 @@ def test_the_direction_of_the_climb_decides_the_instant(rows) -> None:
         assert r.held_az_t0_min is not None and abs(r.held_az_t0_min) < 20
     assert 85 < rows["im-1"].flown_az_deg < 90 and 85 < rows["im-2"].flown_az_deg < 90
     assert 105 < rows["blue-ghost-m1"].flown_az_deg < 115  # inclined 35 degrees
+
+
+def test_nothing_published_predicts_the_direction(rows) -> None:
+    """Held out, no predictor of the climb's direction beats the other flight's for both
+    Nova-C launches (docs/validation.md, D1): pinned so a change is seen."""
+    im1, im2 = rows["im-1"], rows["im-2"]
+    # The arrival's node moves 0.05 to 0.09 degrees per degree of direction; IM-1's
+    # designed approach already sits 1.2 degrees off, so the node points far away.
+    assert im1.node_per_az is not None and 0.02 < im1.node_per_az < 0.12
+    assert im2.node_per_az is not None and 0.02 < im2.node_per_az < 0.12
+    assert im1.node_az_t0_min is None or abs(im1.node_az_t0_min) > 60
+    assert im2.node_az_t0_min is not None and 5 < abs(im2.node_az_t0_min) < 15
+    # The other flight's inclination after TLI lands both within 10 minutes, but the same
+    # rule given each flight's own inclination misses both by more: two flights' numbers
+    # crossing, not a property of the climb.
+    assert abs(im1.inc_other_t0_min) < 10 and abs(im2.inc_other_t0_min) < 10
+    assert abs(im1.inc_own_t0_min) > 10 and abs(im2.inc_own_t0_min) > 10
+
+
+def test_steering_between_the_pads_limits_would_open_hours(rows) -> None:
+    """Designed at the pad's 35 and 120 degrees over the ground, the day's instant moves by
+    hours; both Nova-C launches were published as single instants."""
+    for mid in ("im-1", "im-2"):
+        r = rows[mid]
+        assert r.window_open_min is not None and r.window_open_min < -60
+        assert r.window_close_min is not None and r.window_close_min > 60

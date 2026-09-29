@@ -196,15 +196,24 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   Sunlight after landing ({h} ±).
 - **Chart: the launch calendar.** One row per day that has an opportunity; a
   24-hour track with each opportunity as a button at its time ("01:32 · 39A"),
-  its ± drawn as the −45° hatch, a launch period as a thin bar from open to
-  close. Runs of days with none collapse into one line: "No opportunity for 9
-  days". Choosing one updates the four numbers and the weather row. Twin:
-  day, time ±, pad, kind, flight days, landing time, Sun height, sunlight
-  after, Earth up at landing, weather available.
+  its ± drawn as the −45° hatch, a launch period (`kind: window`, with
+  `window_open` and `window_close`) as a thin bar from open to close along the
+  foot of the track, named in the legend and in the mark's name ("…, a launch
+  period from 07:18 to 08:03 UTC"). Runs of days with none collapse into one
+  line: "No opportunity for 9 days". Choosing one updates the four numbers and
+  the weather row. Twin:
+  day, time ±, pad, kind ("Launch period, 07:18 to 08:03 UTC" or "One
+  instant"), flight days, landing time, Sun height, sunlight
+  after, Earth up at landing, weather available. A flown launch shows the
+  period Launch Library 2 published (Peregrine 07:18 to 08:03 UTC, Blue Ghost 1
+  06:06 to 06:45 UTC; IM-1 and IM-2 one instant); a designed one shows the
+  ends the service worked out from the pad's two limits on the climb, and
+  says so. Dates are added when a period runs past midnight.
   The opportunity's `note` (how it was worked out, and anything unusual such
   as a coast longer than any flown one) sits under the four numbers.
 - **Rows:** The flight for this opportunity (meta: how it was worked out;
-  launch time, direction of the climb (with where it comes from: worked out
+  launch time, launch period (or "One instant", "(published)" for a flown
+  launch), direction of the climb (with where it comes from: worked out
   from NASA's reconstruction for a flown launch, assumed for a designed one
   as the vehicle's flown lunar climbs averaged, which sets the ± on its
   time), coasting in Earth orbit, speed added
@@ -381,7 +390,15 @@ into the hub header.
   as glyph and words, its launch plan, what it adds to direct contact and the
   time through it as ranges or why they are not worked out, its orbit in plain
   words, each figure "published" or "assumed", `orbit_note`, `sweep_note`;
-  "Added to compare" when `for_this_mission` is false) ·
+  "Added to compare" when `for_this_mission` is false) · Compare a relay
+  (`GET /relays`: the catalogue's relay services that are not already the
+  mission's own, a tick box each with its operator, launch status and launch
+  plan, and "Its orbit is not published, so no time through it can be worked
+  out" when `orbit_known` is false; at most three. Ticking works nothing out:
+  "Work out the numbers with these" asks the answer again with `?relay=` for
+  each, and the row comes back open with them named beside its title. The
+  choice is for this mission on this page only, and the row is not offered in
+  the saved copy, which has no comparisons) ·
   Orbiters that could see the lander (`Contact.orbiters`, F2: `orbiters_note`
   first; each with its operator, "{n} passes over these dates, {h} in view in
   all; the longest pass {min}, the longest wait between passes {h}", a
@@ -391,7 +408,12 @@ into the hub header.
   passes · Rover and lander line of sight · More numbers (either way as a range
   "if the relay flies as planned"; the two waits directly; a missing number
   gives its reason) · Download the
-  contact plan (ION, CSV) · Change the dates (the same dates as Landing) ·
+  contact plan (ION, CSV: the ION file needs the data rate the team plans for,
+  since the lander's is not published, so there is a field for it and the ION
+  link stays off until it holds a number above zero; the spreadsheet needs none.
+  With a planned or added relay whose orbit is known well enough, a tick box adds
+  `?relay=` so both files list its contacts, marked planned; one that is not is said
+  to have none listed) · Change the dates (the same dates as Landing) ·
   How sure is this? · Where does this come from? "Line of sight only: the
   lander's radio power is not published" changes what every number means,
   so it is a one-line note under the answer, not a row.
@@ -409,12 +431,33 @@ into the hub header.
   clear, blocked and uncertain mean) sits under the map, and a row "Antennas,
   radio and terrain" gives the antenna heights and frequency (each "assumed"
   with its reason unless given) and the elevation model with its post spacing
-  and height error. `resolvable: false` → "Cannot be said here." and the served reason,
+  and height error. Under those, when the answer can be worked out, a form "Try
+  other values" asks for how far from the lander (`radius_m`, 50 to 5,000 m),
+  the two antenna heights (`lander_antenna_m`, `rover_antenna_m`, 0 to 50 m)
+  and the radio frequency (`freq_mhz`, 30 to 100,000 MHz), each box with its
+  limits and the value in use ("In use: 500 m, assumed."). An empty box is not
+  sent, so the service assumes it and says so; a slip is told at its box in a
+  sentence and nothing is asked; the button "Work it out with these" asks the
+  question again and the row comes back open with the sentence, map, numbers
+  and table for those values. A value the team gave reads "3 m, as you gave it"
+  whatever the service calls it, the service's "Give lander_antenna_m." is
+  dropped since the box is on screen, and "Back to the assumed values" (shown
+  only while any is given) asks for the assumed ones. `resolvable: false` → "Cannot be said here." and the served reason,
   no map. The viewshed is a map layer around the lander, north up, rings every
   100 m, the lander an ink square: in sight filled (earth), blocked the 45°
   hatch, uncertain the −45° hatch on a light wash; each state in the legend
   with a glyph (● ✕ ?) and words. A switch shows the line of sight or the
-  radio path (the first Fresnel zone needs a wider corridor). Table twin, from
+  radio path (the first Fresnel zone needs a wider corridor). When the answer
+  gives `viewshed_tile` and `lander`, the same layers are drawn over the
+  terrain from the service's tiles (`/tiles/viewshed/{answer}/{z}/{x}/{y}.png`,
+  `?layer=terrain|sight|radio`): the hillshade of the 20 m window the answer
+  read under the answer's own layer, the picture turned to put north up (the
+  polar grid's north is the site's longitude off) and shrunk by the grid's
+  scale, at the zoom whose tile pixel is about a screen pixel; the legend adds
+  "The ground, shaded from the terrain map" and its swatches are drawn in
+  the tiles' own style; a layer that fails to load says so under the map (a map
+  without its layer would read as no blockers). Without tiles (not resolvable,
+  or the offline copy) the sectors above are drawn instead. Table twin, from
   the same rays: each direction ("270° (west)") with its runs in words for both
   ("In sight 25–275 m; uncertain 300 m; blocked 325–425 m; in sight 450–500 m").
   Without `viewshed` the row says there is no map.

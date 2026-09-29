@@ -31,6 +31,22 @@ def test_the_belts_are_where_the_maps_put_them() -> None:
     assert p[0] > 0 and p[2] == 0 and p[3] == 0  # the protons stay inside
 
 
+@pytest.mark.skipif(not belts.available(), reason="IRBEM (spacepy) not installed")
+def test_shells_are_the_ones_the_maps_are_read_at() -> None:
+    radbelt = pytest.importorskip("radbelt")
+    x = np.array([1.3, 1.6, 2.0]) * belts.RE_KM
+    xyz = np.c_[x * 0.6, x * 0.64, x * 0.48]  # off the equator: B/B0 above 1
+    when = [datetime(2024, 2, 15, 6, tzinfo=UTC)] * 3
+    lm, bb0 = belts.shells("p", "max", when, xyz)
+    assert np.all(lm > 1.0) and np.all(bb0 > 1.0)
+    engine = belts.integral_flux("p", "max", [10.0], when, xyz)[0]
+    spdf = np.asarray(radbelt.aep8(10.0, lm, bb0, "p", "max"), dtype=float)
+    assert np.allclose(engine, spdf, rtol=1e-4)  # same shells, same maps: the same flux
+    # IGRF of the flight date puts the same points on other shells.
+    lg, _, _ = belts.field_lines(when, xyz, field=0)
+    assert not np.allclose(lg, lm, rtol=1e-3)
+
+
 def test_the_cosmic_ray_model_and_its_modulation() -> None:
     assert gcr.w_from_oulu(6814.3) == pytest.approx(5.0, abs=0.1)
     e = np.array([100.0, 1000.0])

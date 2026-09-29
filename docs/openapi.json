@@ -1137,6 +1137,117 @@
         }
       }
     },
+    "/api/v1/tiles/viewshed/{assessment_id}/{z}/{x}/{y}.png": {
+      "get": {
+        "tags": [
+          "tiles"
+        ],
+        "summary": "A rover line-of-sight answer as map tiles, or the terrain under it",
+        "operationId": "get_viewshed_tile_api_v1_tiles_viewshed__assessment_id___z___x___y__png_get",
+        "parameters": [
+          {
+            "name": "assessment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The answer's number, from `viewshed_tile`.",
+              "title": "Assessment Id"
+            },
+            "description": "The answer's number, from `viewshed_tile`."
+          },
+          {
+            "name": "z",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 12,
+              "minimum": 0,
+              "title": "Z"
+            }
+          },
+          {
+            "name": "x",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "title": "X"
+            }
+          },
+          {
+            "name": "y",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "title": "Y"
+            }
+          },
+          {
+            "name": "layer",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "`sight` (line of sight), `radio` (the radio path too) or `terrain` (the hillshade of the elevation model the answer used).",
+              "default": "sight",
+              "title": "Layer"
+            },
+            "description": "`sight` (line of sight), `radio` (the radio path too) or `terrain` (the hillshade of the elevation model the answer used)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tile image.",
+            "content": {
+              "image/png": {}
+            }
+          },
+          "204": {
+            "description": "Inside the grid, but nothing is drawn there."
+          },
+          "404": {
+            "description": "No such answer or no map in it, or z/x/y outside the tile scheme."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/relays": {
+      "get": {
+        "tags": [
+          "mission sections"
+        ],
+        "summary": "The relays in the catalogue, to compare on a mission's Contact answer",
+        "operationId": "relays_api_v1_relays_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelayCatalogue"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/agents/explain": {
       "post": {
         "tags": [
@@ -2131,6 +2242,58 @@
               "title": "Rate Bps"
             },
             "description": "Data rate for ION, bits per second."
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "As for the answer: the mission's dates.",
+              "title": "Start"
+            },
+            "description": "As for the answer: the mission's dates."
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End"
+            }
+          },
+          {
+            "name": "relay",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 3,
+              "description": "Planned relays (catalogue ids) whose contacts to list, labelled planned: a relay's contacts are for one guessed placement of its orbit, so a plan lists them only when asked. As for the answer, a relay that is not the mission's own is added.",
+              "default": [],
+              "title": "Relay"
+            },
+            "description": "Planned relays (catalogue ids) whose contacts to list, labelled planned: a relay's contacts are for one guessed placement of its orbit, so a plan lists them only when asked. As for the answer, a relay that is not the mission's own is added."
           }
         ],
         "responses": {
@@ -5113,6 +5276,10 @@
             "type": "boolean",
             "title": "Passed"
           },
+          "atmosphere": {
+            "type": "string",
+            "title": "Atmosphere"
+          },
           "mission_team_km": {
             "type": "number",
             "title": "Mission Team Km"
@@ -5152,6 +5319,7 @@
           "distance_range_km",
           "limit_km",
           "passed",
+          "atmosphere",
           "mission_team_km",
           "ellipse_99_km",
           "measured_inside_ellipse",
@@ -5160,7 +5328,7 @@
           "note"
         ],
         "title": "CapsuleModelCheck",
-        "description": "The capsule entry model (3-DOF, U.S. Standard Atmosphere 1976) flown from\nOSIRIS-REx's reconstructed entry state, against where its capsule landed."
+        "description": "The capsule entry model (3-DOF, through NRLMSISE-00 for the entry day) flown from\nOSIRIS-REx's reconstructed entry state, against where its capsule landed."
       },
       "Cleared": {
         "properties": {
@@ -6318,7 +6486,7 @@
           "stale": {
             "type": "boolean",
             "title": "Stale",
-            "description": "Past its staleness budget (or no data yet)."
+            "description": "Past its staleness budget (or no data yet); for a product fetched only while a launch is near (`note`), past the budget since it was last asked."
           },
           "staleness_budget_s": {
             "type": "integer",
@@ -6356,6 +6524,18 @@
             "type": "string",
             "title": "Licence"
           },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note",
+            "description": "Why the product may hold nothing or no age (fetched only while a launch is near); null for the rest."
+          },
           "breaker": {
             "type": "string",
             "enum": [
@@ -6383,6 +6563,7 @@
           "errors",
           "last_error",
           "licence",
+          "note",
           "breaker"
         ],
         "title": "FeedOut"
@@ -6922,6 +7103,25 @@
           "missing"
         ],
         "title": "KernelHealth"
+      },
+      "LanderAt": {
+        "properties": {
+          "lat_deg": {
+            "type": "number",
+            "title": "Lat Deg"
+          },
+          "lon_deg": {
+            "type": "number",
+            "title": "Lon Deg"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "lat_deg",
+          "lon_deg"
+        ],
+        "title": "LanderAt"
       },
       "LandingHistory": {
         "properties": {
@@ -9002,6 +9202,18 @@
           "over": {
             "type": "boolean",
             "title": "Over"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note",
+            "description": "How this forecast did against a weather station's record (HRRR), or why it could not be checked (NWS keeps no archive)."
           }
         },
         "additionalProperties": false,
@@ -9009,7 +9221,8 @@
         "required": [
           "system",
           "value",
-          "over"
+          "over",
+          "note"
         ],
         "title": "OneForecast"
       },
@@ -10633,6 +10846,109 @@
         ],
         "title": "RefreshOut"
       },
+      "RelayCatalogue": {
+        "properties": {
+          "relays": {
+            "items": {
+              "$ref": "#/components/schemas/RelayChoice"
+            },
+            "type": "array",
+            "title": "Relays",
+            "description": "The relay services in the catalogue, in its order: what a comparison can add. Real orbiters kept only to check pass calculations are not listed."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "relays"
+        ],
+        "title": "RelayCatalogue"
+      },
+      "RelayChoice": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "What `?relay=` takes on the contact answer and its plan."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "operator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operator"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "operating",
+              "planned",
+              "not_launched",
+              "launched_not_operating"
+            ],
+            "title": "Status",
+            "description": "Its launch status, as the catalogue has it."
+          },
+          "launch_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Launch Note",
+            "description": "Its launch plan in a sentence, as published."
+          },
+          "orbit_known": {
+            "type": "boolean",
+            "title": "Orbit Known",
+            "description": "Its orbit is published, or assumed from a published design, well enough to work out time through it. False: it can be compared, and the answer says it is not worked out (and a plan cannot list its contacts)."
+          },
+          "orbit_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Orbit Note",
+            "description": "What is published of its orbit, in a sentence."
+          },
+          "serves_missions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Serves Missions",
+            "description": "Missions it is planned for: for these it is in the answer already."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "operator",
+          "status",
+          "launch_note",
+          "orbit_known",
+          "orbit_note",
+          "serves_missions"
+        ],
+        "title": "RelayChoice"
+      },
       "RelayOrbit": {
         "properties": {
           "periapsis_km": {
@@ -11422,6 +11738,17 @@
             ],
             "title": "Radius M"
           },
+          "lander": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LanderAt"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where the lander is (planetocentric degrees, east): the centre of the viewshed and of its tiles. Null when there is no map."
+          },
           "viewshed": {
             "anyOf": [
               {
@@ -11441,7 +11768,8 @@
                 "type": "null"
               }
             ],
-            "title": "Viewshed Tile"
+            "title": "Viewshed Tile",
+            "description": "The map layer's tile address under the API prefix, with `{z}`, `{x}` and `{y}` for the map to fill in: 256 px PNG in the terrain tiles' scheme, zoom 0 to 12. `?layer=` is `sight` (default), `radio` or `terrain` (the hillshade of the elevation model used). Null when there is nothing to draw."
           },
           "out_of_sight_share": {
             "$ref": "#/components/schemas/QuantityOut",
@@ -11507,6 +11835,7 @@
           "rover",
           "share_basis",
           "radius_m",
+          "lander",
           "viewshed",
           "viewshed_tile",
           "out_of_sight_share",
@@ -11604,6 +11933,18 @@
             "type": "boolean",
             "title": "Disagreement"
           },
+          "disagreement_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disagreement Note",
+            "description": "Who disagrees and how, in plain words; null when `disagreement` is false."
+          },
           "observed": {
             "anyOf": [
               {
@@ -11638,6 +11979,7 @@
           "per_system",
           "one_forecast",
           "disagreement",
+          "disagreement_note",
           "observed",
           "climatology"
         ],

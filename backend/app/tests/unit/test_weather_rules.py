@@ -48,3 +48,36 @@ def test_nearest_lead_within_tolerance() -> None:
     t = datetime(2026, 10, 2, 14, 10, tzinfo=UTC)
     assert wr.nearest_lead(leads, t, 3 * 3600)[0] == "27"  # type: ignore[index]
     assert wr.nearest_lead(leads, datetime(2026, 10, 3, tzinfo=UTC), 3 * 3600) is None
+
+
+def test_an_ensemble_leans_only_when_its_whole_interval_is_on_one_side() -> None:
+    assert wr.lean(0.0, 0.09) == "under" and wr.lean(0.55, 0.9) == "over"
+    assert wr.lean(0.18, 0.50) is None and wr.lean(0.3, 0.7) is None
+
+
+def test_forecasts_that_disagree_are_named_in_plain_words() -> None:
+    # 0 of 31 runs break the limit, yet NWS is over it: a disagreement; HRRR under: agrees.
+    got = wr.disagreements(
+        [("NWS", 34.0, True), ("HRRR", 20.0, False)], (0, 31, 0.0, 0.0787), "mph", 3.0
+    )
+    assert len(got) == 2  # NWS against the runs, and NWS against HRRR (14 mph apart, gap 3)
+    assert got[0].startswith("NWS puts the wind at 34.0 mph, over the limit")
+    assert "0 of 31 GEFS runs break it (95% range 0% to 7.9%)" in got[0]
+    assert (
+        got[1] == "NWS puts the wind at 34.0 mph, over the limit, and HRRR at 20.0 mph, under it."
+    )
+    # An ensemble that is unsure (interval across one half) contradicts nothing.
+    assert wr.disagreements([("NWS", 34.0, True)], (10, 31, 0.18, 0.5), "mph", None) == []
+    # Two forecasts a hair either side of the limit are not a disagreement...
+    near = [("NWS", 30.4, True), ("HRRR", 29.8, False)]
+    assert wr.disagreements(near, None, "mph", 3.0) == []
+    # ...unless no typical error is known, and then opposite sides are enough.
+    assert len(wr.disagreements(near, None, "mph", None)) == 1
+    # One forecast alone, or agreement on one side, says nothing.
+    assert wr.disagreements([("HRRR", 20.0, False)], None, "mph", 3.0) == []
+    assert (
+        wr.disagreements(
+            [("NWS", 40.0, True), ("HRRR", 35.0, True)], (25, 31, 0.6, 0.93), "mph", 3.0
+        )
+        == []
+    )

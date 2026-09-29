@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import csv
+import io
 from datetime import UTC, datetime
 
 import pytest
@@ -57,7 +59,7 @@ async def test_im1_contact_over_its_surface_days(anon_client) -> None:
     assert len(stations) == 14
     assert d["link_budget_note"].startswith("Line of sight only")
     assert 1.1 < d["light_time_s"]["min"] < d["light_time_s"]["max"] < 1.5
-    assert body["meta"]["engines"] == {"link": "link-1", "net": "net-4", "vis": "vis-2"}
+    assert body["meta"]["engines"] == {"link": "link-1", "net": "net-5", "vis": "vis-2"}
     assert any("mask" in p["source"].lower() for p in body["meta"]["uncertainty"]["parts"])
 
 
@@ -90,7 +92,7 @@ async def test_bookings_and_exports(client) -> None:
     csv_text = (
         await client.get(f"{API}/missions/im-1/contact/plan", params={"format": "csv"})
     ).text
-    assert csv_text.splitlines()[0] == "from,to,start_utc,end_utc,hours"
+    assert csv_text.splitlines()[0] == "from,to,start_utc,end_utc,hours,basis"
     no_rate = await client.get(f"{API}/missions/im-1/contact/plan", params={"format": "ion"})
     assert no_rate.status_code == 422 and "not published" in no_rate.json()["detail"]["detail"]
     ion = await client.get(
@@ -149,7 +151,7 @@ async def test_a_planned_relay_added_to_a_south_pole_site(anon_client) -> None:
     assert n["longest_message_wait_min"]["hi"] <= alone["longest_message_wait_min"]["value"] + 1e-6
     relay_node = next(x for x in d["nodes"] if x["kind"] == "relay")
     assert relay_node["orbit"] == "planned" and relay_node["launch_note"]
-    assert body["meta"]["engines"]["net"] == "net-4"
+    assert body["meta"]["engines"]["net"] == "net-5"
 
 
 async def test_a_mission_s_own_relay_over_a_near_side_site(anon_client) -> None:
@@ -253,3 +255,169 @@ async def test_rover_outside_the_polar_terrain_is_not_resolvable(anon_client) ->
     assert r.status_code == 409 and r.json()["detail"]["type"].endswith("no-rover")
     r = await anon_client.get(f"{API}/missions/im-2/contact/rover", params={"rover": "x"})
     assert r.status_code == 422 and "im-2/yaoki" in r.json()["detail"]["detail"]
+
+
+PLAN = f"{API}/missions/griffin-1/contact/plan"
+DATES = {"start": "2027-03-20T00:00:00Z", "end": "2027-03-22T00:00:00Z"}
+
+
+async def test_the_contact_plan_lists_a_relay_only_when_asked_and_says_it_is_planned(
+    anon_client,
+) -> None:
+    """Griffin-1's pole site over two days: the plan has the direct contacts alone, and with
+    ``?relay=`` also Lunar Pathfinder's, at one placement, marked planned."""
+    await _answer(anon_client, "griffin-1", **DATES)
+    body = await _answer(anon_client, "griffin-1", **DATES, relay="lunar-pathfinder")
+    stations = {n["id"] for n in body["data"]["nodes"] if n["kind"] == "station"}
+
+    # Not asked for: the same contacts as before, none through the relay, and the answer's
+    # own shape does not carry the export's material.
+    alone = await anon_client.get(PLAN, params={**DATES, "format": "csv"})
+    assert alone.status_code == 200, alone.text
+    rows = list(csv.DictReader(io.StringIO(alone.text)))
+    assert list(rows[0]) == ["from", "to", "start_utc", "end_utc", "hours", "basis"]
+    assert rows and {r["basis"] for r in rows} == {"direct"}
+    assert {r["from"] for r in rows} == {"lander"} and {r["to"] for r in rows} <= stations
+    assert "plan" not in body
+
+    # Asked for: the direct contacts unchanged, then the relay's, in time order.
+    both = await anon_client.get(
+        PLAN, params={**DATES, "format": "csv", "relay": "lunar-pathfinder"}
+    )
+    assert both.status_code == 200, both.text
+    all_rows = list(csv.DictReader(io.StringIO(both.text)))
+    assert [r for r in all_rows if r["basis"] == "direct"] == rows
+    via = [r for r in all_rows if r["basis"] != "direct"]
+    up = [r for r in via if r["to"] == "lunar-pathfinder"]
+    down = [r for r in via if r["from"] == "lunar-pathfinder"]
+    assert up and down and len(up) + len(down) == len(via)
+    assert {r["from"] for r in up} == {"lander"} and {r["to"] for r in down} <= stations
+    assert all(r["basis"].startswith("planned relay; node ") for r in via)
+    assert all("of 5184 placements" in r["basis"] for r in via)
+    starts = [r["start_utc"] for r in all_rows]
+    assert starts == sorted(starts)
+    for r in via:
+        assert DATES["start"] <= r["start_utc"] < r["end_utc"] <= DATES["end"]
+        assert float(r["hours"]) > 0.0
+
+    # ION: the same contacts as `a contact` lines, each with its `a range`, and comment lines
+    # that say what the relay's lines are.
+    ion = await anon_client.get(
+        PLAN, params={**DATES, "format": "ion", "rate_bps": 2000, "relay": "lunar-pathfinder"}
+    )
+    assert ion.status_code == 200, ion.text
+    lines = ion.text.splitlines()
+    numbered = lines[1].removeprefix("# Node numbers: ").rstrip(".").split(", ")
+    nodes = {k: int(v) for k, v in (x.split("=") for x in numbered)}
+    comments = " ".join(x for x in lines if x.startswith("#"))
+    assert "PLANNED relay Lunar Pathfinder" in comments
+    assert "ONE placement of the 5184 tried" in comments and "not a forecast" in comments
+    assert "if it flies as planned" in comments
+    contacts = [x.split() for x in lines if x.startswith("a contact")]
+    ranges = [x.split() for x in lines if x.startswith("a range")]
+    assert len(contacts) == len(ranges) == len(all_rows)
+    assert [c[2:6] for c in contacts] == [r[2:6] for r in ranges]  # same times and nodes
+    lp = nodes["lunar-pathfinder"]
+    assert {(int(c[4]), int(c[5])) for c in contacts if lp in (int(c[4]), int(c[5]))} >= {
+        (nodes["lander"], lp)
+    }
+    assert sum(1 for c in contacts if lp in (int(c[4]), int(c[5]))) == len(via)
+
+    # ION without the relay: no comment about one and no contact through it.
+    plain = await anon_client.get(PLAN, params={**DATES, "format": "ion", "rate_bps": 2000})
+    assert plain.status_code == 200 and "PLANNED" not in plain.text
+    assert f" {lp} " not in " ".join(
+        x for x in plain.text.splitlines() if x.startswith("a contact")
+    )
+
+
+async def test_the_contact_plan_takes_the_dates_and_refuses_a_relay_it_cannot_list(
+    anon_client,
+) -> None:
+    # Dates that were never asked for are worked out first: the plan waits, it does not guess.
+    r = await anon_client.get(PLAN, params={**DATES, "format": "csv"})
+    assert r.status_code == 409 and "still being worked out" in r.json()["detail"]["detail"]
+    r = await anon_client.get(PLAN, params={"format": "csv", "relay": "nope"})
+    assert r.status_code == 422 and "lunar-pathfinder" in r.json()["detail"]["detail"]
+    r = await anon_client.get(PLAN, params={"format": "csv", "relay": "lro"})
+    assert r.status_code == 422 and "no relay service" in r.json()["detail"]["detail"]
+
+
+def _png_size(blob: bytes) -> tuple[int, int]:
+    assert blob[:8] == b"\x89PNG\r\n\x1a\n"
+    return int.from_bytes(blob[16:20], "big"), int.from_bytes(blob[20:24], "big")
+
+
+async def _rover_answer(client, mission: str, **params) -> dict:
+    r = await client.get(f"{API}/missions/{mission}/contact/rover", params=params)
+    if r.status_code == 202:
+        assert await Worker(owner="test", handlers=HANDLERS).run_once() is not None
+        r = await client.get(f"{API}/missions/{mission}/contact/rover", params=params)
+    assert r.status_code == 200, r.text
+    return r.json()["data"]
+
+
+async def test_the_line_of_sight_is_served_as_map_tiles_over_the_terrain(anon_client) -> None:
+    from app.config import get_settings
+    from app.core.projections import local_frame
+    from app.db.repositories.jobs import AssessmentRepository
+    from app.services import contact_tiles
+
+    d = await _rover_answer(anon_client, "im-2")
+    template = d["viewshed_tile"]
+    assert template.startswith("/tiles/viewshed/") and template.endswith("/{z}/{x}/{y}.png")
+    # The answer says where the lander is, so a map can place the tiles.
+    assert d["lander"]["lat_deg"] == pytest.approx(-84.79, abs=0.01)
+    assert d["lander"]["lon_deg"] == pytest.approx(29.2, abs=0.01)
+    aid = int(template.split("/")[3])
+    async with session_scope() as s:
+        rec = await AssessmentRepository(s).get(aid)
+    assert rec is not None and rec.kind == "rover"
+    f = local_frame(rec.params["lon_deg"], rec.params["lat_deg"])
+    z = 10
+    half = contact_tiles._half_extent_m(get_settings().regional_dem_path)
+    size = 2 * half / 2**z
+    tx, ty = int((f.x0_m + half) // size), int((half - f.y0_m) // size)
+
+    def url(layer: str, z_: int = z, x: int = tx, y: int = ty) -> str:
+        return f"{API}{template}".format(z=z_, x=x, y=y) + f"?layer={layer}"
+
+    for layer in ("sight", "radio", "terrain"):
+        r = await anon_client.get(url(layer))
+        assert r.status_code == 200 and r.headers["content-type"] == "image/png", (layer, r.text)
+        assert _png_size(r.content) == (256, 256)
+    # The layer is the line of sight unless asked otherwise.
+    plain = await anon_client.get(url("sight").split("?")[0])
+    assert plain.content == (await anon_client.get(url("sight"))).content
+    # An unchanged tile is not sent again; a tile with nothing in it is a 204, not a 404.
+    tag = (await anon_client.get(url("sight"))).headers["etag"]
+    again = await anon_client.get(url("sight"), headers={"if-none-match": tag})
+    assert again.status_code == 304
+    away = await anon_client.get(url("sight", x=0, y=0))
+    assert away.status_code == 204
+    # The terrain is drawn from the elevation model the answer used, not the coarse regional one.
+    r = await anon_client.get(url("terrain"))
+    assert r.headers["x-tile-source"] in ("static", "dynamic")
+
+    # What cannot be drawn is said, and the answer is the one asked about.
+    r = await anon_client.get(url("nope"))
+    assert r.status_code == 404 and r.json()["detail"]["type"].endswith("unknown-layer")
+    r = await anon_client.get(f"{API}/tiles/viewshed/{aid}/10/99999/0.png")
+    assert r.status_code == 404 and r.json()["detail"]["type"].endswith("tile-out-of-scheme")
+    r = await anon_client.get(f"{API}/tiles/viewshed/{aid}/13/0/0.png")
+    assert r.status_code == 422  # deeper than the scheme goes
+    r = await anon_client.get(f"{API}/tiles/viewshed/999999/10/0/0.png")
+    assert r.status_code == 404 and r.json()["detail"]["type"].endswith("no-viewshed")
+    await _answer(anon_client, "im-1")  # a contact answer is not a map
+    async with session_scope() as s:
+        other = (
+            await s.execute(text("SELECT max(id) FROM assessments WHERE kind = 'contact'"))
+        ).scalar_one()
+    r = await anon_client.get(f"{API}/tiles/viewshed/{other}/10/0/0.png")
+    assert r.status_code == 404 and r.json()["detail"]["type"].endswith("no-viewshed")
+
+
+async def test_a_site_outside_the_polar_terrain_has_no_map_to_fetch(anon_client) -> None:
+    d = await _rover_answer(anon_client, "im-3", rover="im-3/cadre")
+    assert d["resolvable"] is False and d["viewshed"] is None and d["viewshed_tile"] is None
+    assert d["lander"] is None

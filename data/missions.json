@@ -139,7 +139,9 @@
       "t0": {
         "date": "2024-01-08T07:18:38Z",
         "precision": "minute",
-        "as_published": "2024-01-08T07:18:38Z (Launch Library 2, to the second)"
+        "as_published": "2024-01-08T07:18:38Z (Launch Library 2, to the second)",
+        "window_open": "2024-01-08T07:18:00Z",
+        "window_close": "2024-01-08T08:03:00Z"
       },
       "transfer": null,
       "descent": null,
@@ -319,7 +321,9 @@
       "t0": {
         "date": "2024-02-15T06:05:37Z",
         "precision": "minute",
-        "as_published": "2024-02-15T06:05:37Z (Launch Library 2, to the second)"
+        "as_published": "2024-02-15T06:05:37Z (Launch Library 2, to the second)",
+        "window_open": "2024-02-15T06:05:37Z",
+        "window_close": "2024-02-15T06:05:37Z"
       },
       "transfer": null,
       "descent": null,
@@ -553,7 +557,9 @@
       "t0": {
         "date": "2025-01-15T06:11:39Z",
         "precision": "minute",
-        "as_published": "2025-01-15T06:11:39Z (Launch Library 2, to the second)"
+        "as_published": "2025-01-15T06:11:39Z (Launch Library 2, to the second)",
+        "window_open": "2025-01-15T06:06:00Z",
+        "window_close": "2025-01-15T06:45:00Z"
       },
       "transfer": null,
       "descent": null,
@@ -705,7 +711,9 @@
       "t0": {
         "date": "2025-02-27T00:16:30Z",
         "precision": "minute",
-        "as_published": "2025-02-27T00:16:30Z (Launch Library 2, to the second)"
+        "as_published": "2025-02-27T00:16:30Z (Launch Library 2, to the second)",
+        "window_open": "2025-02-27T00:16:30Z",
+        "window_close": "2025-02-27T00:16:30Z"
       },
       "transfer": null,
       "descent": null,

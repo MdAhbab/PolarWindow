@@ -1,0 +1,28 @@
+{
+ "relays": [
+  {
+   "id": "lunar-pathfinder",
+   "name": "Lunar Pathfinder",
+   "operator": "ESA, built and operated by Surrey Satellite Technology Ltd",
+   "status": "planned",
+   "launch_note": "To fly on Firefly's Blue Ghost Mission 2, integrated into its Elytra Dark orbital vehicle. ESA: launch not earlier than November 2026; SSTL: due to launch 2027.",
+   "orbit_known": true,
+   "orbit_note": "SSTL: 'a stable elliptical orbit to provide long duration visibility of the Southern Lunar Hemisphere each day' (an elliptical lunar frozen orbit). Its heights are ESA's; where its node and its place along the orbit will be is not published, so both are swept.",
+   "serves_missions": [
+    "blue-ghost-m2"
+   ]
+  },
+  {
+   "id": "altus-1",
+   "name": "Altus-1 data-relay satellite",
+   "operator": "Intuitive Machines",
+   "status": "planned",
+   "launch_note": "Planned to fly alongside IM-3 (NASA, August 2026).",
+   "orbit_known": true,
+   "orbit_note": "NASA says only that Altus-1 is deployed 'in lunar orbit'. The orbit used here is assumed from NASA's reference design; where its node and its place along the orbit will be is swept.",
+   "serves_missions": [
+    "im-3"
+   ]
+  }
+ ]
+}

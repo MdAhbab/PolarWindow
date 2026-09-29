@@ -53,6 +53,16 @@ FloatArray = npt.NDArray[np.float64]
 NODE_STEPS: Final[int] = 36
 PHASE_STEPS: Final[int] = 36
 
+#: The orbit fields a relay needs before anything is worked out through it: a shape
+#: (two heights), how it is tilted and where its far point is. With one of them
+#: unknown the relay is listed and said to be "not worked out", never guessed.
+NEEDED_ORBIT_FIELDS: Final[tuple[str, ...]] = (
+    "periapsis_km",
+    "apoapsis_km",
+    "inclination_deg",
+    "arg_periapsis_deg",
+)
+
 
 @dataclass(frozen=True, slots=True)
 class Orbit:
@@ -180,6 +190,25 @@ class RelayLinks:
     relay_station_owlt_s: float
 
 
+def _station_margin(
+    geom: Geometry, st: StationFrame, r_j: FloatArray, relay_geo: FloatArray, r_dist: FloatArray
+) -> tuple[FloatArray, float]:
+    """One station's margin to the relay (degrees, ``> 0`` = it can hear it) and the
+    farthest the relay is from that station over the dates (m).
+
+    The smaller of two margins: the relay above the station's published mask, and
+    the Moon not in the way (its clearance as an angle seen from the relay).
+    """
+    rel = relay_geo - st.pos_j2k_m
+    w = np.einsum("nij,nj->ni", st.j2k_to_topo, rel)
+    rng = np.linalg.norm(w, axis=1)
+    s_el = np.degrees(np.arcsin(np.clip(w[:, 2] / rng, -1.0, 1.0)))
+    s_az = np.mod(np.degrees(np.arctan2(-w[:, 1], w[:, 0])), 360.0)
+    above = s_el - mask_elevation(st.mask_az_deg, st.mask_el_deg, s_az)
+    clear = segment_clearance_m(r_j, st.pos_j2k_m - geom.moon_from_earth_j2k_m, geom.r_moon_m)
+    return np.minimum(above, np.degrees(clear / r_dist)), float(rng.max())
+
+
 def links(geom: Geometry, orbit: Orbit, raan_deg: float, m0_deg: float) -> RelayLinks:
     """The relay's three links over the dates for one point of the sweep."""
     c = 299_792_458.0
@@ -209,15 +238,9 @@ def links(geom: Geometry, orbit: Orbit, raan_deg: float, m0_deg: float) -> Relay
     best = np.full(t.shape, -180.0)
     rng_rs = 0.0
     for st in geom.stations:
-        rel = relay_geo - st.pos_j2k_m
-        w = np.einsum("nij,nj->ni", st.j2k_to_topo, rel)
-        rng = np.linalg.norm(w, axis=1)
-        s_el = np.degrees(np.arcsin(np.clip(w[:, 2] / rng, -1.0, 1.0)))
-        s_az = np.mod(np.degrees(np.arctan2(-w[:, 1], w[:, 0])), 360.0)
-        above = s_el - mask_elevation(st.mask_az_deg, st.mask_el_deg, s_az)
-        clear = segment_clearance_m(r_j, st.pos_j2k_m - geom.moon_from_earth_j2k_m, geom.r_moon_m)
-        best = np.maximum(best, np.minimum(above, np.degrees(clear / r_dist)))
-        rng_rs = max(rng_rs, float(rng.max()))
+        margin, rng_max = _station_margin(geom, st, r_j, relay_geo, r_dist)
+        best = np.maximum(best, margin)
+        rng_rs = max(rng_rs, rng_max)
     rs = intervals.runs_from_margin(t, best)
     return RelayLinks(
         lander_relay=lr,
@@ -226,6 +249,27 @@ def links(geom: Geometry, orbit: Orbit, raan_deg: float, m0_deg: float) -> Relay
         lander_relay_owlt_s=float(rng_lr.max()) / c,
         relay_station_owlt_s=rng_rs / c,
     )
+
+
+def station_links(
+    geom: Geometry, orbit: Orbit, raan_deg: float, m0_deg: float
+) -> dict[str, tuple[list[Run], float]]:
+    """For one placement, each station's own link to the relay: ``id -> (runs, light time)``.
+
+    The contact plan needs a link per pair of nodes, where :func:`links` folds all
+    stations into "any station hears it". The light time is the farthest the relay is
+    from that station over the dates.
+    """
+    c = 299_792_458.0
+    r_in = positions(orbit, raan_deg, m0_deg, geom.t_s, geom.gm)
+    r_j = r_in @ geom.in_to_j2k.T
+    relay_geo = geom.moon_from_earth_j2k_m + r_j
+    r_dist = np.linalg.norm(r_j, axis=1)
+    out: dict[str, tuple[list[Run], float]] = {}
+    for st in geom.stations:
+        margin, rng_max = _station_margin(geom, st, r_j, relay_geo, r_dist)
+        out[st.id] = (intervals.runs_from_margin(geom.t_s, margin), rng_max / c)
+    return out
 
 
 # ---------------------------------------------------------------------------

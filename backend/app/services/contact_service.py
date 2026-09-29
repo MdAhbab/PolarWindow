@@ -18,12 +18,13 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import ENGINE_VERSION, engine_closure, get_settings
+from app.core import relay as core_relay
 from app.data import catalogues
 from app.db.repositories.feeds import FeedRepository
 from app.db.repositories.missions import MissionRecord, MissionRepository
 from app.db.repositories.pm import PmRepository
 from app.db.repositories.sites import SiteRepository
-from app.services import audit_service, job_service, lifecycle, mission_service
+from app.services import audit_service, contact_tiles, job_service, lifecycle, mission_service
 from app.services.auth_service import Claims
 from app.services.mission_service import MissionNotFound
 
@@ -65,6 +66,33 @@ def window(
         f"{w.note} The reference lunar day is used instead "
         f"({rs.date().isoformat()}, {s.reference_window_days:g} days).",
     )
+
+
+def relay_catalogue() -> dict[str, Any]:
+    """The relay services a comparison can add (``?relay=``), from the catalogue, in its order.
+
+    Real orbiters that are kept only to check the pass calculation are not relays and are not
+    listed. A relay whose orbit is not known enough is listed all the same: comparing it says
+    that time through it is not worked out, which is true and worth seeing.
+    """
+    return {
+        "relays": [
+            {
+                "id": r.id,
+                "name": r.name,
+                "operator": r.operator,
+                "status": r.status,
+                "launch_note": r.launch_note,
+                "orbit_known": all(
+                    getattr(r, f) is not None for f in core_relay.NEEDED_ORBIT_FIELDS
+                ),
+                "orbit_note": r.orbit_note,
+                "serves_missions": list(r.serves_missions),
+            }
+            for r in catalogues.load("relays").records
+            if r.role == "relay"
+        ]
+    }
 
 
 def _extra_relays(m: MissionRecord, asked: list[str] | None) -> list[str]:
@@ -168,19 +196,16 @@ def _params(
     }
 
 
-async def contact(
+async def _stored(
     session: AsyncSession,
     mission_id: str,
     start: datetime | None,
     end: datetime | None,
-    requested_by: int | None = None,
-    relays: list[str] | None = None,
+    requested_by: int | None,
+    relays: list[str] | None,
 ) -> tuple[int, dict[str, Any]]:
-    """``(200, section)`` when stored, else ``(202, job ref)``.
-
-    ``relays``: planned relays to add to the mission's own, to compare what
-    each would add (they are marked as not planned for this mission).
-    """
+    """``(200, the stored result)`` or ``(202, job ref)``. The result holds the section's
+    ``data`` and ``meta`` and, for the exports only, ``plan``."""
     m = await MissionRepository(session).get(mission_id)
     if m is None:
         raise MissionNotFound(mission_id)
@@ -210,7 +235,26 @@ async def contact(
     if ans.assessment is None:
         assert ans.job is not None
         return 202, ans.job
-    section = dict(ans.assessment.result)
+    return 200, dict(ans.assessment.result)
+
+
+async def contact(
+    session: AsyncSession,
+    mission_id: str,
+    start: datetime | None,
+    end: datetime | None,
+    requested_by: int | None = None,
+    relays: list[str] | None = None,
+) -> tuple[int, dict[str, Any]]:
+    """``(200, section)`` when stored, else ``(202, job ref)``.
+
+    ``relays``: planned relays to add to the mission's own, to compare what
+    each would add (they are marked as not planned for this mission).
+    """
+    code, stored = await _stored(session, mission_id, start, end, requested_by, relays)
+    if code != 200:
+        return code, stored
+    section = {k: v for k, v in stored.items() if k != "plan"}
     data = dict(section["data"])
     data["bookings"] = [
         {
@@ -220,38 +264,151 @@ async def contact(
             "entered_by": b["entered_by"],
             "note": b["note"],
         }
-        for b in await PmRepository(session).bookings(m.id)
+        for b in await PmRepository(session).bookings(mission_id)
     ]
     section["data"] = data
     return 200, section
 
 
+#: How a relay's launch status reads in a plan's comments.
+_LAUNCH_WORDS = {
+    "operating": "in orbit",
+    "planned": "planned, not launched",
+    "not_launched": "not launched",
+    "launched_not_operating": "launched, not operating",
+}
+
+
+def _range_words(q: dict[str, Any]) -> str | None:
+    """A quantity in hours as "194-210 h"; None when it has no value."""
+    if q.get("value") is None:
+        return None
+    lo, hi = q.get("lo"), q.get("hi")
+    if lo is None or hi is None:
+        return f"{q['value']:.1f} h"
+    return f"{lo:.1f}-{hi:.1f} h"
+
+
+def _relay_lines(row: dict[str, Any], pl: dict[str, Any]) -> list[str]:
+    """The plan's comment lines for one planned relay: why its contacts are one guess among many.
+
+    ``pl`` is the relay's placement (node, phase, orbit, how many were tried)."""
+    inc, argp = pl["inclination_deg"], pl["arg_periapsis_deg"]
+    launch = _LAUNCH_WORDS.get(row["launch_status"], "status unknown")
+    lines = [
+        f"# PLANNED relay {row['name']} ({launch}).",
+        f"# {row['status']}",
+        "# A planned relay has no published schedule: its orbit is known in part, and where it "
+        "will be on these dates is not.",
+        f"# The lines for {row['id']} are for ONE placement of the {pl['of']} tried: node "
+        f"{pl['node_deg']:g} deg, phase {pl['phase_deg']:g} deg, inclination {inc:g} deg, "
+        f"argument of periapsis {argp:g} deg;",
+        "# the one whose time through the relay is nearest the middle of the range. It is not a "
+        "forecast; another placement gives other contacts.",
+    ]
+    via, adds = _range_words(row["via_h"]), _range_words(row["adds_h"])
+    if via and adds:
+        lines.append(
+            f"# Over all placements the lander could reach Earth through it for {via}, adding "
+            f"{adds} to direct contact, if it flies as planned; this placement gives "
+            f"{pl['via_h']:.1f} h."
+        )
+    lines.append(
+        "# Contacts run from the lander to the relay and from the relay to each ground station; "
+        "edges are placed from 5-minute samples."
+    )
+    return lines
+
+
+#: One contact of a plan: from, to, start, end, one-way light time (s), and what it rests on.
+Row = tuple[str, str, datetime, datetime, float, str]
+
+
+def _relay_rows(rid: str, block: dict[str, Any], basis: str) -> list[Row]:
+    """A relay's contacts at its listed placement: lander to relay, then relay to each station."""
+    links = [("lander", rid, block["lander_relay"], block["lander_relay_owlt_s"])] + [
+        (rid, sid, link["stretches"], link["owlt_s"])
+        for sid, link in block["relay_station"].items()
+    ]
+    return [
+        (
+            a,
+            b,
+            lifecycle.parse_time(st["start"]),
+            lifecycle.parse_time(st["end"]),
+            owlt,
+            basis,
+        )
+        for a, b, stretches, owlt in links
+        for st in stretches
+    ]
+
+
 async def plan(
-    session: AsyncSession, mission_id: str, fmt: str, rate_bps: float | None
+    session: AsyncSession,
+    mission_id: str,
+    fmt: str,
+    rate_bps: float | None,
+    start: datetime | None = None,
+    end: datetime | None = None,
+    relays: list[str] | None = None,
 ) -> tuple[str, str]:
-    code, section = await contact(session, mission_id, None, None)
+    """The contact plan for the answer over these dates: direct contacts, and the contacts of
+    each relay asked for in ``relays`` (and only those: a planned relay's contacts are a guess
+    at where it will be, so they are never in a plan that did not ask for them)."""
+    code, stored = await _stored(session, mission_id, start, end, None, relays)
     if code != 200:
         raise NoContact("The contact plan is still being worked out; try again shortly.")
-    data = section["data"]
+    data = stored["data"]
     t_ref = lifecycle.parse_time(data["start"])
-    rows = []
+    light = data.get("light_time_s", {}).get("max", 1.3)
+    rows: list[Row] = []
     for link in data["links"]:
-        for s in link["stretches"]:
+        for st in link["stretches"]:
             rows.append(
                 (
                     link["from"],
                     link["to"],
-                    lifecycle.parse_time(s["start"]),
-                    lifecycle.parse_time(s["end"]),
+                    lifecycle.parse_time(st["start"]),
+                    lifecycle.parse_time(st["end"]),
+                    light,
+                    "direct",
                 )
             )
+    by_id = {r["id"]: r for r in data["relays"]}
+    blocks = {b["id"]: b for b in (stored.get("plan") or {}).get("relays") or []}
+    header: list[str] = []
+    for rid in dict.fromkeys(x.strip() for x in relays or [] if x.strip()):
+        row, block = by_id.get(rid), blocks.get(rid)
+        if row is None or block is None:
+            why = (row or {}).get("adds_h", {}).get("missing_reason") or "Nothing is worked out."
+            raise BadRequest(
+                f"No contacts through {(row or {}).get('name', rid)} can be listed: {why} "
+                "Ask for the plan without it."
+            )
+        pl = block["placement"]
+        header += _relay_lines(row, pl)
+        basis = (
+            f"planned relay; node {pl['node_deg']:g} deg, phase {pl['phase_deg']:g} deg, "
+            f"one of {pl['of']} placements"
+        )
+
+        rows += _relay_rows(rid, block, basis)
+    rows.sort(key=lambda x: (x[2], x[0], x[1]))
     if fmt == "csv":
         buf = io.StringIO()
         w = csv.writer(buf)
-        w.writerow(["from", "to", "start_utc", "end_utc", "hours"])
-        for a, b, s, e in sorted(rows, key=lambda x: x[2]):
+        w.writerow(["from", "to", "start_utc", "end_utc", "hours", "basis"])
+        for a, b, s, e, _owlt, basis in rows:
             w.writerow(
-                [a, b, lifecycle.iso(s), lifecycle.iso(e), f"{(e - s).total_seconds() / 3600:.3f}"]
+                [
+                    a,
+                    b,
+                    lifecycle.iso(s),
+                    lifecycle.iso(e),
+                    f"{(e - s).total_seconds() / 3600:.3f}",
+                    basis,
+                ]
             )
         return buf.getvalue(), "text/csv"
     if rate_bps is None:
@@ -260,16 +417,16 @@ async def plan(
             "published: add ?rate_bps= with the rate you plan for."
         )
     nodes = {n["id"]: i + 1 for i, n in enumerate(data["nodes"])}
-    light = data.get("light_time_s", {}).get("max", 1.3)
     lines = [
         f"# ION contact plan for {mission_id}, from {data['start']} (time 0).",
         f"# Node numbers: {', '.join(f'{k}={v}' for k, v in nodes.items())}.",
         f"# Rate {rate_bps:.0f} bit/s as given by the user; not a published figure.",
+        *header,
     ]
-    for a, b, s, e in sorted(rows, key=lambda x: x[2]):
+    for a, b, s, e, owlt, _basis in rows:
         s0, e0 = (s - t_ref).total_seconds(), (e - t_ref).total_seconds()
         lines.append(f"a contact +{s0:.0f} +{e0:.0f} {nodes[a]} {nodes[b]} {rate_bps / 8:.0f}")
-        lines.append(f"a range +{s0:.0f} +{e0:.0f} {nodes[a]} {nodes[b]} {max(1, round(light))}")
+        lines.append(f"a range +{s0:.0f} +{e0:.0f} {nodes[a]} {nodes[b]} {max(1, round(owlt))}")
     return "\n".join(lines) + "\n", "text/plain"
 
 
@@ -383,6 +540,7 @@ async def rover(
             "rover": rv,
             "share_basis": None,
             "radius_m": None,
+            "lander": None,
             "viewshed": None,
             "viewshed_tile": None,
             "out_of_sight_share": lifecycle.missing("%", short),
@@ -441,4 +599,15 @@ async def rover(
     if ans.assessment is None:
         assert ans.job is not None
         return 202, ans.job
-    return 200, dict(ans.assessment.result)
+    # The map's tiles belong to this stored answer: its number is in their address.
+    result = dict(ans.assessment.result)
+    data = dict(result["data"])
+    data["lander"] = None
+    if data.get("viewshed") is not None:
+        data["viewshed_tile"] = contact_tiles.url_template(ans.assessment.id)
+        data["lander"] = {
+            "lat_deg": ans.assessment.params["lat_deg"],
+            "lon_deg": ans.assessment.params["lon_deg"],
+        }
+    result["data"] = data
+    return 200, result

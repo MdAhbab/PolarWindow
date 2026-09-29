@@ -174,6 +174,7 @@ export function Disclosure({
   children,
   guide,
   onOpen,
+  defaultOpen,
   className = '',
 }: {
   title: ReactNode
@@ -182,10 +183,13 @@ export function Disclosure({
   children: ReactNode
   guide?: string
   onOpen?: () => void
+  /** Open when it first appears: for a row whose own control puts the page back to work and brings it back. */
+  defaultOpen?: boolean
   className?: string
 }) {
   return (
     <details
+      open={defaultOpen}
       data-guide={guide}
       className={`group border border-line bg-panel ${className}`}
       onToggle={(e) => {

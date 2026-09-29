@@ -166,6 +166,7 @@ async def run(ctx: JobContext) -> HandlerResult:
     via_relay: dict[str, Any]
     either: dict[str, Any]
     sweep: relay_sweep.Result | None = None
+    plan_relays: list[dict[str, Any]] = []
     if not specs:
         via_relay = lifecycle.missing("h", "No relay is planned for this mission.")
         either = _hours(earth_up_s, earth_tol.total_s)
@@ -206,6 +207,11 @@ async def run(ctx: JobContext) -> HandlerResult:
         sweep = res
         via_relay = relay_sweep.spread_q(res.via_any, H, "h")
         either = relay_sweep.spread_q(res.either, H, "h")
+        # For the contact plan only: each relay's links at the placement nearest the middle.
+        plan_relays = [
+            relay_sweep.plan_block(geom, sp, j, via_s, lambda runs: _stretches(runs, r.start, t1))
+            for sp, (j, via_s) in zip(usable, res.nearest, strict=True)
+        ]
 
     nodes: list[dict[str, Any]] = [
         {
@@ -448,7 +454,8 @@ async def run(ctx: JobContext) -> HandlerResult:
     if not math.isfinite(wait_s):
         raise ValueError("message wait is not finite")
     return HandlerResult(
-        result=lifecycle.jsonable({"data": data, "meta": meta}),
+        # ``plan`` is not part of the section: the service keeps it back and the export reads it.
+        result=lifecycle.jsonable({"data": data, "meta": meta, "plan": {"relays": plan_relays}}),
         inputs=inputs,
         message="Contact worked out.",
     )

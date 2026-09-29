@@ -301,7 +301,7 @@ def _gefs_fetch(points: list[Point], leads_for: LeadsFor, now: Callable[[], date
             (f"{BASE}/filter_gefs_atmos_0p50b.pl", b),
         ]
 
-    async def fetch(client: httpx.AsyncClient, _e: str | None, _lm: str | None) -> http.Fetched:
+    async def fetch(client: httpx.AsyncClient, etag: str | None, _lm: str | None) -> http.Fetched:
         t = now().astimezone(UTC)
         latest = t.replace(hour=t.hour - t.hour % 6, minute=0, second=0, microsecond=0)
         for back in range(0, 5):
@@ -311,14 +311,21 @@ def _gefs_fetch(points: list[Point], leads_for: LeadsFor, now: Callable[[], date
             if not leads:
                 # Nothing wanted from this run (no launch opportunity in reach): no request.
                 return http.Fetched(url0, 304, b"", None, None, None, True, 0)
+            # What was fetched last time, kept as the snapshot's etag: the same run at the
+            # same steps, whole, is not asked for again (a refresh, or a restart's retry).
+            token = f"{cycle:%Y%m%d%H}:{','.join(str(x) for x in leads)}"
+            if etag == token:
+                return http.Fetched(url0, 304, b"", token, None, None, True, 0)
             url, params = files(cycle, GEFS_MEMBERS[-1], leads[-1])[1]
             if await _get_grib(client, url, params) is None:
                 continue  # the last member's b-file is the last to appear
             bodies: list[bytes] = []
+            asked = 0
             for lead_h in leads:
                 for m in GEFS_MEMBERS:
                     for url, params in files(cycle, m, lead_h):
                         await asyncio.sleep(PAUSE_S)
+                        asked += 1
                         body = await _get_grib(client, url, params)
                         if body is not None:
                             bodies.append(body)
@@ -326,7 +333,7 @@ def _gefs_fetch(points: list[Point], leads_for: LeadsFor, now: Callable[[], date
                 url=f"{url0}&lead={','.join(str(x) for x in leads)}",
                 status=200,
                 body=b"".join(bodies),
-                etag=None,
+                etag=token if len(bodies) == asked else None,  # a gap is asked for again
                 last_modified=None,
                 content_type="application/x-grib2",
                 not_modified=False,
@@ -427,7 +434,11 @@ def products(
                     parse=parse_points(pts, "GEFS", len(GEFS_MEMBERS)),
                     custom_fetch=_gefs_fetch(pts, _targeted(region, wanted), now),
                     keep_raw=False,
-                    cost=MAX_TARGETED_LEADS * 2 * len(GEFS_MEMBERS) + 1,
+                    # What a run can ask for, but never more than the bucket holds: a run
+                    # that costs more would never be admitted. Its own pauses (PAUSE_S) keep
+                    # the requests to a pace NOMADS allows; the emptied bucket keeps the
+                    # provider's other products waiting while it refills.
+                    cost=min(MAX_TARGETED_LEADS * 2 * len(GEFS_MEMBERS) + 1, PROVIDER.capacity),
                 )
             )
         for lead in GEFS_LEADS_H:
