@@ -34,7 +34,7 @@ import { CapsuleCheckRow, seaWords, zoneWords } from '../../screens/sections/Ret
 import returnFixture from '../../lib/api/__fixtures__/lifecycle/return.json'
 import { oldFeedsWords } from './OldFeeds'
 import type { CapsuleModelCheckDTO, FeedDTO } from '../../lib/api/lifecycle'
-import { calendarDays } from './LaunchCalendar'
+import { LaunchCalendar, LaunchTable, calendarDays, periodWords } from './LaunchCalendar'
 import { axisTicks, complexOf, contactRows, plannedWords } from './ContactChart'
 import { contactAnswer, coveredWords, numberWords, orbiterWords, orbitWords, relayList } from '../../screens/sections/ContactSection'
 import { bearingWords, rayRuns, rayWords, roverSentence, ViewshedPanel } from './RoverSight'
@@ -432,6 +432,24 @@ describe('the charts’ arrays, shared with their tables', () => {
     const days = calendarDays(launch.opportunities)
     expect(days.filter((d) => d.kind === 'day')).toHaveLength(6)
     expect(days.find((d) => d.kind === 'gap')).toEqual({ kind: 'gap', days: 1 })
+  })
+
+  it('launch calendar: a launch period is said in words, in the mark\u2019s name and in the table, and one instant is not', () => {
+    const one = launch.opportunities[0]
+    expect(periodWords(one)).toBeNull()
+    const inDay = { ...one, kind: 'window' as const, window_open: '2024-01-08T07:18:00Z', window_close: '2024-01-08T08:03:00Z' }
+    expect(periodWords(inDay)).toBe('07:18 to 08:03 UTC')
+    // Past midnight the dates are given, so the close is not read as the same day.
+    expect(periodWords({ ...inDay, window_open: '2024-01-08T23:40:00Z', window_close: '2024-01-09T00:25:00Z' })).toBe('8 January 2024, 23:40 UTC to 9 January 2024, 00:25 UTC')
+    // A period whose ends the service does not give is not made up.
+    expect(periodWords({ ...inDay, window_close: null })).toBeNull()
+    const withPeriod = { ...one, ...inDay, t0: { ...one.t0, value: Date.parse('2024-01-08T07:18:38Z') / 1000 } }
+    render(<LaunchCalendar opportunities={[withPeriod]} selected={withPeriod.id} onSelect={() => {}} />)
+    expect(screen.getByRole('button', { name: /, a launch period from 07:18 to 08:03 UTC$/ })).toBeTruthy()
+    cleanup()
+    render(<LaunchTable opportunities={[withPeriod, { ...one, id: 'other', t0: { ...one.t0, value: withPeriod.t0.value + 86400 } }]} />)
+    expect(screen.getByText('Launch period, 07:18 to 08:03 UTC')).toBeTruthy()
+    expect(screen.getByText('One instant')).toBeTruthy()
   })
 
   it('contact: antennas of one Deep Space Network complex share a row; the table keeps each antenna', () => {

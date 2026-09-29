@@ -852,6 +852,47 @@ test('launch (live API): a flown launch worked out again, and a planned mission�
   await expectNoSeriousAxe(page, '/missions/griffin-1/launch (live) with its table and rows open')
 })
 
+test('launch period (live API): Peregrine and Blue Ghost 1 show the period Launch Library 2 published, in the row, the table and the calendar’s mark; IM-1 and Griffin-1 are one instant', async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(240_000)
+  await returningVisitor(context)
+  const main = page.locator('main')
+  const answer = page.locator('[data-guide="section-answer"]')
+  const period = page.getByTestId('launch-period')
+  const flight = page.locator('details').filter({ has: page.locator('summary', { hasText: 'The flight as launched' }) })
+  const opens = async () => {
+    if ((await flight.getAttribute('open')) === null) await flight.locator('summary').click()
+  }
+  for (const [mission, words] of [
+    ['peregrine-m1', '07:18 to 08:03 UTC'],
+    ['blue-ghost-m1', '06:06 to 06:45 UTC'],
+  ] as const) {
+    await page.goto(`/missions/${mission}/launch`)
+    await expect(answer).toContainText('It launched on', { timeout: 90_000 })
+    // The service's own sentence under the numbers, and the same period in the row, the mark's name and the table.
+    await expect(main).toContainText(`published with a launch window from ${words}`)
+    await opens()
+    await expect(period).toHaveText(`${words} (published)`)
+    await expect(page.getByRole('group', { name: 'Launch opportunities by day' }).getByRole('button')).toHaveAttribute('aria-label', new RegExp(`, a launch period from ${words}$`))
+    await expect(page.getByText('The launch period, from its opening to its close')).toBeVisible()
+    await page.getByRole('button', { name: 'Read the chart as a table' }).click()
+    await expect(main.getByRole('table').first()).toContainText(`Launch period, ${words}`)
+    await expectNoSeriousAxe(page, `/missions/${mission}/launch (live) with its flight row and table open`)
+  }
+  // Launches published as one instant say so, and draw no period.
+  for (const mission of ['im-1', 'griffin-1']) {
+    await page.goto(`/missions/${mission}/launch`)
+    await expect(answer).toContainText(/It launched on|launch opportunit/, { timeout: 90_000 })
+    if (mission === 'im-1') {
+      await opens()
+      await expect(period).toHaveText('One instant (published)')
+    }
+    await expect(page.getByText('The launch period, from its opening to its close')).toHaveCount(0)
+  }
+})
+
 test('trip corrections and launch weather words (live API): Blue Ghost’s burns and budget, IM-1’s past years, Griffin-1’s weather notes', async ({
   page,
   context,

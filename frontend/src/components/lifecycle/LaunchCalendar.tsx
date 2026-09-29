@@ -1,6 +1,6 @@
 import type { OpportunityDTO } from '../../lib/api/lifecycle'
 import { clockWords, durationMargin, quantityText } from '../../lib/lifecycle/quantity'
-import { dateWords } from '../../lib/format'
+import { dateTimeWords, dateWords } from '../../lib/format'
 import { ScrollRegion } from '../ui'
 
 const DAY = 86_400_000
@@ -37,6 +37,19 @@ export function calendarDays(opps: OpportunityDTO[]): ({ kind: 'day'; day: numbe
     last = d
   }
   return out
+}
+
+/**
+ * The launch period in words, when the opportunity has one: "07:18 to 08:03 UTC", or with the
+ * dates when it runs past midnight. Null for one instant, or when the service gives no ends.
+ */
+export function periodWords(o: Pick<OpportunityDTO, 'kind' | 'window_open' | 'window_close'>): string | null {
+  if (o.kind !== 'window' || !o.window_open || !o.window_close) return null
+  const open = Date.parse(o.window_open)
+  const close = Date.parse(o.window_close)
+  if (Number.isNaN(open) || Number.isNaN(close)) return null
+  const clock = (ms: number) => clockWords(ms / 1000).replace(' UTC', '')
+  return dayOf(open) === dayOf(close) ? `${clock(open)} to ${clock(close)} UTC` : `${dateTimeWords(open)} to ${dateTimeWords(close)}`
 }
 
 export function opportunityName(o: OpportunityDTO): string {
@@ -111,7 +124,7 @@ export function LaunchCalendar({
                       {open !== null && close !== null && (
                         <span
                           aria-hidden="true"
-                          className="absolute top-1/2 h-0.5 -translate-y-1/2 bg-ink-3"
+                          className="absolute bottom-0 h-1 rounded-control bg-ink-3"
                           style={{ left: `${Math.max(0, open) * 100}%`, width: `${Math.max(0.3, (Math.min(1, close) - Math.max(0, open)) * 100)}%` }}
                         />
                       )}
@@ -125,7 +138,7 @@ export function LaunchCalendar({
                       <button
                         type="button"
                         aria-pressed={on}
-                        aria-label={`${opportunityName(o)}${o.kind === 'window' ? ', a launch period' : ''}`}
+                        aria-label={`${opportunityName(o)}${o.kind === 'window' ? `, a launch period${periodWords(o) ? ` from ${periodWords(o)}` : ''}` : ''}`}
                         onClick={() => onSelect(o.id)}
                         className={`absolute top-1 h-12 rounded-control border px-2.5 font-mono text-small font-semibold whitespace-nowrap ${
                           on ? 'border-ink bg-ink text-canvas' : 'border-line-strong bg-panel text-ink hover:bg-inset'
@@ -174,7 +187,7 @@ export function LaunchTable({ opportunities }: { opportunities: OpportunityDTO[]
                 {o.t0.pm !== null ? ` ${durationMargin(o.t0.pm)}` : ''}
               </th>
               <td className={cell}>{o.pad_name}</td>
-              <td className={cell}>{o.kind === 'window' ? 'Launch period' : 'One instant'}</td>
+              <td className={cell}>{o.kind === 'window' ? `Launch period${periodWords(o) ? `, ${periodWords(o)}` : ''}` : 'One instant'}</td>
               <td className={`${cell} font-mono`}>{quantityText(o.transfer.flight_days)}</td>
               {/* The landing itself; for a designed one, lo/hi are the stretch the rule allows, not a margin. */}
               <td className={cell}>{quantityText({ ...o.landing.time, lo: null, hi: null })}</td>

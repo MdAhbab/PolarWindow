@@ -196,15 +196,24 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   Sunlight after landing ({h} ±).
 - **Chart: the launch calendar.** One row per day that has an opportunity; a
   24-hour track with each opportunity as a button at its time ("01:32 · 39A"),
-  its ± drawn as the −45° hatch, a launch period as a thin bar from open to
-  close. Runs of days with none collapse into one line: "No opportunity for 9
-  days". Choosing one updates the four numbers and the weather row. Twin:
-  day, time ±, pad, kind, flight days, landing time, Sun height, sunlight
-  after, Earth up at landing, weather available.
+  its ± drawn as the −45° hatch, a launch period (`kind: window`, with
+  `window_open` and `window_close`) as a thin bar from open to close along the
+  foot of the track, named in the legend and in the mark's name ("…, a launch
+  period from 07:18 to 08:03 UTC"). Runs of days with none collapse into one
+  line: "No opportunity for 9 days". Choosing one updates the four numbers and
+  the weather row. Twin:
+  day, time ±, pad, kind ("Launch period, 07:18 to 08:03 UTC" or "One
+  instant"), flight days, landing time, Sun height, sunlight
+  after, Earth up at landing, weather available. A flown launch shows the
+  period Launch Library 2 published (Peregrine 07:18 to 08:03 UTC, Blue Ghost 1
+  06:06 to 06:45 UTC; IM-1 and IM-2 one instant); a designed one shows the
+  ends the service worked out from the pad's two limits on the climb, and
+  says so. Dates are added when a period runs past midnight.
   The opportunity's `note` (how it was worked out, and anything unusual such
   as a coast longer than any flown one) sits under the four numbers.
 - **Rows:** The flight for this opportunity (meta: how it was worked out;
-  launch time, direction of the climb (with where it comes from: worked out
+  launch time, launch period (or "One instant", "(published)" for a flown
+  launch), direction of the climb (with where it comes from: worked out
   from NASA's reconstruction for a flown launch, assumed for a designed one
   as the vehicle's flown lunar climbs averaged, which sets the ± on its
   time), coasting in Earth orbit, speed added

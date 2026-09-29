@@ -26,6 +26,7 @@ const PAGES: [name: string, path: string, open?: string[]][] = [
   ['hub-im-2', '/missions/im-2'],
   ['ready-im-2', '/missions/im-2/ready'],
   ['launch-im-1-flown', '/missions/im-1/launch'],
+  ['launch-peregrine-m1-flown', '/missions/peregrine-m1/launch', ['The flight as launched']],
   ['launch-griffin-1-calendar', '/missions/griffin-1/launch'],
   ['trip-im-2', '/missions/im-2/trip'],
   ['trip-im-1-with-gaps', '/missions/im-1/trip'],

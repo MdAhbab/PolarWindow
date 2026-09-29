@@ -18,7 +18,7 @@ import { dateTimeWords, dateWords } from '../../lib/format'
 import { ageWords, formatValue, hostWords, provenanceWords, quantityText } from '../../lib/lifecycle/quantity'
 import { NumberRow, QuantityTile } from '../../components/lifecycle/QuantityTile'
 import { Answer, ChartPanel, HowSure, Legend, Rows, SectionLayout, SectionStates, SourcesRow, StatePanel } from '../../components/lifecycle/Section'
-import { LaunchCalendar, LaunchTable, opportunityName } from '../../components/lifecycle/LaunchCalendar'
+import { LaunchCalendar, LaunchTable, opportunityName, periodWords } from '../../components/lifecycle/LaunchCalendar'
 import { WeatherRuleTable, rulesSummary } from '../../components/lifecycle/WeatherRules'
 import { Field, FormSheet, HistoryList, Select, TextArea, TextInput, isHttpUrl } from '../../components/lifecycle/Forms'
 import { Button, Disclosure } from '../../components/ui'
@@ -171,6 +171,9 @@ function LaunchAnswer({ cal, meta, missionId }: { cal: LaunchCalendarDTO; meta: 
                       { swatch: <span className="h-4 w-8 rounded-control bg-ink" />, label: 'Chosen' },
                     ]),
                 { swatch: <span className="hatch-uncertain h-3 w-5" />, label: 'How far the time could be off' },
+                ...(cal.opportunities.some((x) => periodWords(x))
+                  ? [{ swatch: <span className="h-1 w-8 rounded-control bg-ink-3" />, label: 'The launch period, from its opening to its close' }]
+                  : []),
               ]}
             />
             <p className="text-caption leading-caption text-ink-3">
@@ -282,6 +285,16 @@ function FlightRow({ o, flown }: { o: OpportunityDTO; flown: boolean }) {
       <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-body sm:grid-cols-[max-content_1fr]">
         <dt className="text-ink-3">Launch time</dt>
         <dd className="text-ink">{quantityText(o.t0)}</dd>
+        <dt className="text-ink-3">Launch period</dt>
+        <dd className="text-ink" data-testid="launch-period">
+          {periodWords(o) ?? 'One instant'}
+          {flown && <span className="text-ink-2"> (published)</span>}
+          {!flown && o.kind === 'window' && (
+            <span className="block text-small text-ink-2">
+              Its ends are worked out from the two limits on the climb’s direction at the pad, since this vehicle’s earlier launches to the Moon had launch periods.
+            </span>
+          )}
+        </dd>
         <dt className="text-ink-3">Direction of the climb (compass heading)</dt>
         <dd className="text-ink">
           <ClimbLine q={o.azimuth_deg} />
