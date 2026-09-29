@@ -729,6 +729,11 @@ export interface FeedDTO {
   last_error?: string | null
   licence: string | null
   breaker: 'closed' | 'open' | 'half_open'
+  /**
+   * Why the row is as it is, in the service's words, when it says: a product fetched only while a
+   * launch is near holds nothing when none is, which is not a fault. Null otherwise.
+   */
+  note: string | null
 }
 
 export interface FeedsDTO {

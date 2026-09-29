@@ -566,8 +566,12 @@ Four additions, each a group or a closed row:
 - **People:** who is signed in (name, team), "Sign in with your name".
 - **Data sources:** one row per feed (`GET /feeds`): provider and product,
   state as glyph and words (● Working, ◔ Out of date, ▲ Failing), last good
-  fetch as an age, next run, licence, the last error; "Refresh now" for a
-  signed-in manager.
+  fetch as an age, next run, licence, the last error, and the service's own
+  `note` on the product's line when it gives one (a product fetched only in the
+  six hours before a launch opportunity, today the lightning mapper, holds
+  nothing when none is near: "no data yet · Fetched only in the 6 hours before
+  … that is not a fault.", and it is not called out of date); "Refresh now" for
+  a signed-in manager.
 - **Risk scale:** the likelihood and consequence levels in use, with their
   source and notes (read-only). When the levels have no words beyond their
   numbers (the scale as shipped: GSFC-HDBK-8005A leaves the words to a

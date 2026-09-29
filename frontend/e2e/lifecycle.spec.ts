@@ -761,10 +761,16 @@ test('settings (contract fixtures): data sources with their age, the risk scale,
   await page.getByRole('button', { name: 'Settings' }).click()
   const sheet = page.getByRole('dialog', { name: 'Settings' })
   await sheet.locator('summary', { hasText: 'Data sources' }).click()
-  await expect(sheet).toContainText('4 products from 4 providers: 2 working, 1 out of date, 1 failing')
+  await expect(sheet).toContainText('5 products from 5 providers: 3 working, 1 out of date, 1 failing')
   await expect(sheet).toContainText('DSN Now')
   await expect(sheet).toContainText('Failing')
   await expect(sheet).toContainText('data from 11 h ago')
+  // The lightning mapper is fetched only near a launch: it holds nothing now, says why in the service's words, and is no fault.
+  const glm = sheet.getByRole('listitem').filter({ hasText: /^glm, florida/ }).last()
+  await expect(glm).toHaveText(
+    "glm, florida · no data yet · Fetched only in the 6 hours before a designed launch opportunity from this range's pads, so it holds nothing when none is near; that is not a fault.",
+  )
+  await expect(glm).not.toContainText('out of date')
   await sheet.locator('summary', { hasText: 'Risk scale' }).click()
   await expect(sheet).toContainText('never multiplied into a score')
   await expect(sheet).toContainText('No words are entered for the levels yet')
@@ -797,6 +803,11 @@ test('settings (live API): the parameters and the risk scale as the server has t
   await expect(sheet).toContainText(/Change history/i)
   await sheet.locator('summary', { hasText: 'Risk scale' }).click()
   await expect(sheet.getByRole('link', { name: 'standards.nasa.gov' })).toBeVisible()
+  // The feeds: every note the service gives is on its product's line.
+  const feeds = ((await (await page.request.get(`${API}/feeds`)).json()) as { feeds: { product: string; note: string | null }[] }).feeds
+  await sheet.locator('summary', { hasText: 'Data sources' }).click()
+  await expect(sheet).toContainText(/\d+ products from \d+ providers/)
+  for (const note of new Set(feeds.map((f) => f.note).filter((n): n is string => Boolean(n)))) await expect(sheet).toContainText(note)
   await expectNoSeriousAxe(page, 'settings, live parameters and risk scale')
 })
 

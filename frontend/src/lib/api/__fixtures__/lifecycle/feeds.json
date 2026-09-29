@@ -14,7 +14,8 @@
    "errors": 0,
    "last_error": null,
    "licence": "Public domain",
-   "breaker": "closed"
+   "breaker": "closed",
+   "note": null
   },
   {
    "provider": "nws",
@@ -30,7 +31,25 @@
    "errors": 0,
    "last_error": null,
    "licence": "Public domain",
-   "breaker": "closed"
+   "breaker": "closed",
+   "note": null
+  },
+  {
+   "provider": "goes",
+   "provider_name": "NOAA GOES lightning mapper (GLM)",
+   "product": "glm",
+   "location": "florida",
+   "last_ok": "2026-09-27T07:57:00Z",
+   "data_time": null,
+   "age_s": null,
+   "stale": false,
+   "staleness_budget_s": 1200,
+   "next_run": "2026-09-27T08:07:00Z",
+   "errors": 0,
+   "last_error": null,
+   "licence": "NOAA GOES-R Series GLM on the AWS open data registry, US government work (public domain)",
+   "breaker": "closed",
+   "note": "Fetched only in the 6 hours before a designed launch opportunity from this range's pads, so it holds nothing when none is near; that is not a fault."
   },
   {
    "provider": "ndbc",
@@ -46,7 +65,8 @@
    "errors": 3,
    "last_error": "The buoy has not reported since 21:00 UTC",
    "licence": "Public domain",
-   "breaker": "half_open"
+   "breaker": "half_open",
+   "note": null
   },
   {
    "provider": "dsn-now",
@@ -62,7 +82,8 @@
    "errors": 5,
    "last_error": "Timed out after 20 s",
    "licence": "Public domain",
-   "breaker": "open"
+   "breaker": "open",
+   "note": null
   }
  ]
 }

@@ -3,16 +3,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { renderApp } from '../../test/render'
 import { api, ApiError } from '../../lib/api/client'
-import type { AuditEntryDTO, ParameterDTO, RiskScaleDTO, RiskScalesDTO } from '../../lib/api/lifecycle'
+import type { AuditEntryDTO, FeedsDTO, ParameterDTO, RiskScaleDTO, RiskScalesDTO } from '../../lib/api/lifecycle'
 import { useSession } from '../../lib/session'
-import { levelsHaveNoWords, parameterChangeWords, ParametersPanel, RiskScalePanel } from './ProjectPanels'
+import { DataSources, levelsHaveNoWords, parameterChangeWords, ParametersPanel, RiskScalePanel } from './ProjectPanels'
 import parametersFixture from '../../lib/api/__fixtures__/lifecycle/parameters.json'
 import riskScalesFixture from '../../lib/api/__fixtures__/lifecycle/risk-scales.json'
 import historyFixture from '../../lib/api/__fixtures__/lifecycle/history-parameter.json'
+import feedsFixture from '../../lib/api/__fixtures__/lifecycle/feeds.json'
 
 const parameters = parametersFixture as unknown as { parameters: ParameterDTO[] }
 const scales = riskScalesFixture as unknown as RiskScalesDTO
 const history = (historyFixture as unknown as { entries: AuditEntryDTO[] }).entries
+const feeds = feedsFixture as unknown as FeedsDTO
 
 beforeEach(() => {
   useSession.setState({
@@ -27,6 +29,8 @@ afterEach(() => {
 })
 
 const openRow = (title: string) => fireEvent.click(screen.getByText(title, { selector: 'summary' }))
+/** The list item whose whole text starts with these words (an item's first words sit in a child element). */
+const itemStarting = (words: string) => screen.getAllByRole('listitem').find((li) => li.textContent?.startsWith(words) && !li.querySelector('li'))
 
 describe('Settings → Project: the risk scale as built', () => {
   it('a scale whose levels are only numbers says so in one sentence instead of a table of repeats', async () => {
@@ -136,5 +140,36 @@ describe('Settings → Project: parameters as built', () => {
     const { container } = renderApp(<ParametersPanel enabled />)
     await waitFor(() => expect(api.parameters).toHaveBeenCalled())
     await waitFor(() => expect(container.textContent).toBe(''))
+  })
+})
+
+describe('Settings → Data sources: the service’s note on a feed', () => {
+  const glm = feeds.feeds.find((f) => f.provider === 'goes')!
+
+  it('a product fetched only near a launch says why it holds nothing, in the service’s words, and is not called out of date', async () => {
+    expect(glm.note).toMatch(/^Fetched only in the 6 hours before a designed launch opportunity/)
+    vi.spyOn(api, 'feeds').mockResolvedValue(feeds)
+    renderApp(<DataSources enabled live />)
+    openRow('Data sources')
+    await waitFor(() => expect(itemStarting('glm, florida')).toBeTruthy())
+    const line = itemStarting('glm, florida')!
+    expect(line.textContent).toBe(`glm, florida · no data yet · ${glm.note}`)
+    expect(line.textContent).not.toContain('out of date')
+    // The provider is working: its idle product is no fault.
+    const provider = line.parentElement!.closest('li')!
+    expect(within(provider).getByText('Working')).toBeTruthy()
+    // A product with no note says nothing more than its age.
+    expect(itemStarting('Protons and X-rays')!.textContent).toBe('Protons and X-rays · data from just now')
+  })
+
+  it('a stale product keeps its own state words, and its note too when it has one', async () => {
+    const stale = { ...feeds, feeds: feeds.feeds.map((f) => (f.provider === 'ndbc' ? { ...f, note: 'Buoy 41010 is being serviced.' } : f)) }
+    vi.spyOn(api, 'feeds').mockResolvedValue(stale)
+    renderApp(<DataSources enabled live />)
+    openRow('Data sources')
+    await waitFor(() => expect(itemStarting('Buoy observations')).toBeTruthy())
+    const line = itemStarting('Buoy observations')!
+    expect(line.textContent).toContain('out of date')
+    expect(line.textContent).toContain('The buoy has not reported since 21:00 UTC · Buoy 41010 is being serviced.')
   })
 })
