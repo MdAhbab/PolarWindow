@@ -27,6 +27,9 @@ FloatArray = npt.NDArray[np.float64]
 BSS_MIN = 0.1
 RELIABILITY_TOL = 0.1
 MIN_BIN_CASES = 30
+#: A Brier skill is not worked out from fewer cases above the limit than this: the
+#: reference score is then a few misses' worth of noise, and the skill a ratio of noises.
+MIN_EVENTS = 10
 
 
 def brier(p: FloatArray, o: FloatArray) -> float:
@@ -54,11 +57,29 @@ class Bin:
         return self.n >= MIN_BIN_CASES
 
     @property
+    def freq_95(self) -> tuple[float, float] | None:
+        """95 % (Wilson) interval of the observed frequency from this bin's cases."""
+        if self.freq is None or not self.n:
+            return None
+        return wilson(round(self.freq * self.n), self.n)
+
+    @property
     def ok(self) -> bool:
         """Within tolerance, or too few cases to say."""
         if not self.counted or self.mean_p is None or self.freq is None:
             return True
         return abs(self.freq - self.mean_p) <= RELIABILITY_TOL
+
+
+def wilson(k: int, n: int, z: float = 1.959964) -> tuple[float, float]:
+    """95 % Wilson score interval of a frequency ``k`` of ``n``."""
+    if n <= 0:
+        raise ValueError("no cases")
+    p = k / n
+    d = 1.0 + z * z / n
+    c = (p + z * z / (2 * n)) / d
+    h = z * math.sqrt(p * (1.0 - p) / n + z * z / (4 * n * n)) / d
+    return max(0.0, c - h), min(1.0, c + h)
 
 
 def reliability(p: FloatArray, o: FloatArray, n_bins: int = 10) -> list[Bin]:
@@ -127,18 +148,36 @@ def crps_sample(sample: FloatArray, y: float, spread: float | None = None) -> fl
 
 
 def skill_interval(
-    score: FloatArray, ref: FloatArray, n: int = 2000, seed: int = 0
+    score: FloatArray,
+    ref: FloatArray,
+    n: int = 2000,
+    seed: int = 0,
+    blocks: npt.ArrayLike | None = None,
 ) -> tuple[float, float] | None:
-    """95 % interval of ``1 - mean(score) / mean(ref)`` from resampling the cases."""
+    """95 % interval of ``1 - mean(score) / mean(ref)`` from resampling the cases.
+
+    Cases close in time are not independent (one front gives a run of similar
+    cases), so with ``blocks`` (a label per case: its month, say) whole blocks
+    are drawn together, the way they occurred; without, single cases.
+    """
     score = np.asarray(score, dtype=np.float64)
     ref = np.asarray(ref, dtype=np.float64)
     if score.size < 2:
         return None
+    if blocks is None:
+        labels = np.arange(score.size)
+    else:
+        labels = np.unique(np.asarray(blocks), return_inverse=True)[1].ravel()
+    m = int(labels.max()) + 1
+    if m < 2:
+        return None
+    sum_score = np.bincount(labels, weights=score, minlength=m)
+    sum_ref = np.bincount(labels, weights=ref, minlength=m)
     rng = np.random.default_rng(seed)
-    i = rng.integers(0, score.size, size=(n, score.size))
-    r = ref[i].mean(axis=1)
+    i = rng.integers(0, m, size=(n, m))
+    r = sum_ref[i].sum(axis=1)
     ok = r > 0
     if not ok.any():
         return None
-    s = 1.0 - score[i].mean(axis=1)[ok] / r[ok]
+    s = 1.0 - sum_score[i].sum(axis=1)[ok] / r[ok]
     return float(np.quantile(s, 0.025)), float(np.quantile(s, 0.975))
