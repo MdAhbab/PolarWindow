@@ -144,8 +144,10 @@ interface RuleRow {
   limit: Quantity;                             // provenance published or entered
   per_system: { system: "GEFS" | "ECMWF-ENS" | "AIFS-ENS";
                 share: Share | null; missing_reason: string | null }[];
-  one_forecast: { system: "NWS" | "HRRR" | "GEOS-FP"; value: Quantity; over: boolean }[];
+  one_forecast: { system: "NWS" | "HRRR" | "GEOS-FP"; value: Quantity; over: boolean;
+                  note: string | null }[];   // HRRR: how it did against the station; NWS: keeps no archive
   disagreement: boolean;
+  disagreement_note: string | null;          // who disagrees and how, in plain words
   observed: { state: "clear" | "seen" | "no_data"; detail: string } | null;  // GLM etc.
   climatology: { share: number; years: string; source: string } | null;
 }
@@ -392,10 +394,13 @@ that user. `GET /auth/me` returns the same `user`.
     and a recorded GEFS step within 3 h of `t0` (else `missing_reason` says which:
     past, beyond 16 days, not yet fetched, fields do not describe the rule). ECMWF and
     AIFS are not recorded yet. `one_forecast` is HRRR within 1 h of `t0` (value in the
-    limit's unit, at the rule's height). Observation rules have `per_system: []` and
+    limit's unit, at the rule's height) and, when the National Weather Service's hourly grid
+    holds a wind for the hour of `t0`, NWS (its 10 m wind carried to the rule's height on a
+    neutral profile over open flat ground, roughness 0.03 m). Observation rules have `per_system: []` and
     `observed.state: "no_data"` with a plain `detail` (the lightning rules add NWS's
     chance of thunder in that hour). `climatology` is null (not built); `disagreement`
-    is false (one system).
+    is true when two systems put a wind rule on opposite sides (see the 2026-09-29 weather
+    line under *Changes*), false otherwise.
   - `PUT /missions/{id}/launch/official-forecast` → the stored forecast with `id`,
     `entered_by`, `entered_at`. `PUT /vehicles/{id}/limits` → `{vehicle_id, limits:
     {rule_id, value, unit, note, entered_by, entered_at}[]}`; a wind rule takes mph, kt,
@@ -750,3 +755,14 @@ that user. `GET /auth/me` returns the same `user`.
   "Not published": `GET /relays` gives `orbit_known: false` and the contact answer's `adds_h` and `via_h` for them are
   `missing_reason`, not a number. `data/missions.json` gives IM-4 no `comms.relays`, so `for_this_mission` is false
   for them until it does (not a catalogue matter).
+- 2026-09-29 (weather, additive): `OneForecast.note` (string or null) says how that forecast did against a
+  weather station's record: HRRR's, from `data/hindcast/hrrr_wind_{region}.json` (`make hindcast-hrrr`,
+  the 10 m wind at KXMR or KVBG for 2021-2025 at the lead nearest the step shown, and its over/under
+  call at the limit brought to 10 m); NWS's says it keeps no archive, so it cannot be checked.
+  `RuleRow.disagreement` is now worked out and `RuleRow.disagreement_note` (string or null) says who
+  disagrees and how. NWS, which is now listed in `one_forecast` beside HRRR when its grid has the hour,
+  and HRRR each disagree with GEFS when their side (over/under) is the one GEFS's 95 % share interval
+  excludes (entirely below one half for over, entirely above for under); NWS and HRRR disagree with
+  each other when on opposite sides and further apart than HRRR's measured 10 m error (its RMSE at
+  that lead, carried to the rule's height), or on opposite sides at all when that is not known. It
+  stays false when only one system has an answer.

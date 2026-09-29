@@ -24,6 +24,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import verification as vf
 from app.core import weather_rules as wr
 from app.core.quantity import Quantity, share
 from app.data import catalogues, climatology, thunder_climatology, verification
@@ -36,6 +37,8 @@ from app.services.mission_service import MissionNotFound
 #: An ensemble step this close to the launch time stands for it.
 ENSEMBLE_TOLERANCE_S = 3 * 3600.0
 HRRR_TOLERANCE_S = 3600.0
+#: NWS's forecast grid gives the wind at this height (m).
+NWS_WIND_HEIGHT_M = 10.0
 FORECAST_REACH_H = 16 * 24.0
 SYSTEMS = ("GEFS", "ECMWF-ENS", "AIFS-ENS")
 NOT_RECORDED = {
@@ -190,23 +193,30 @@ def _gefs_row(
 
 
 def _hrrr(
-    snap: feed_service.Latest, pad: str, t0: datetime, rule: Any, limit: dict[str, Any]
-) -> list[dict[str, Any]]:
+    snap: feed_service.Latest,
+    pad: str,
+    t0: datetime,
+    rule: Any,
+    limit: dict[str, Any],
+    region: str = "",
+) -> tuple[list[dict[str, Any]], float | None]:
+    """HRRR's forecast at the rule's height, and the lead (hours) of the step it is from."""
     vals = snap.values
     if vals is None or rule.variable != "wind_speed" or rule.height_m is None:
-        return []
+        return [], None
     if limit["value"] is None:
-        return []
+        return [], None
     leads = ((vals.get("points") or {}).get(pad) or {}).get("leads") or {}
     hit = wr.nearest_lead(leads, t0, HRRR_TOLERANCE_S)
     if hit is None:
-        return []
+        return [], None
     member = next(iter(leads[hit[0]]["members"].values()))
     sp = wr.speed_at(member, float(rule.height_m))
     if sp is None:
-        return []
+        return [], None
     unit = str(limit["unit"])
     value = wr.from_m_s(sp, unit)
+    lead_h = float(hit[0]) if hit[0].isdigit() else None
     return [
         {
             "system": "HRRR",
@@ -219,8 +229,74 @@ def _hrrr(
                 source=snap.snapshot.url if snap.snapshot else None,
             ),
             "over": wr.breaks(value, float(limit["value"]), rule.comparison or "gt"),
+            "note": (verification.hrrr_words(region, lead_h) if lead_h is not None else None)
+            or "HRRR's 10 m wind has not been checked against observations yet.",
         }
-    ]
+    ], lead_h
+
+
+def _nws(
+    snap: feed_service.Latest, t0: datetime, rule: Any, limit: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """The National Weather Service's hourly wind at the pad, carried to the rule's height."""
+    vals = snap.values
+    if vals is None or rule.variable != "wind_speed" or rule.height_m is None:
+        return []
+    if limit["value"] is None:
+        return []
+    times = [lifecycle.parse_time(t) for t in vals.get("times") or []]
+    wind = vals.get("wind_speed_m_s") or []
+    height = float((vals.get("height_m") or {}).get("wind") or NWS_WIND_HEIGHT_M)
+    for t, v in zip(times, wind, strict=False):
+        if t <= t0 < t + timedelta(hours=1) and v is not None:
+            unit = str(limit["unit"])
+            sp = float(v) * vf.neutral_ratio(height, float(rule.height_m), wr.OPEN_FLAT_Z0_M)
+            value = wr.from_m_s(sp, unit)
+            return [
+                {
+                    "system": "NWS",
+                    "value": _q(
+                        value,
+                        unit,
+                        provenance="computed",
+                        no_margin_reason="One forecast: the Service's wind at 10 m carried to the "
+                        "rule's height on a neutral profile over open flat ground (roughness "
+                        f"{wr.OPEN_FLAT_Z0_M} m).",
+                        source=snap.snapshot.url if snap.snapshot else None,
+                    ),
+                    "over": wr.breaks(value, float(limit["value"]), rule.comparison or "gt"),
+                    "note": "The National Weather Service keeps no archive of its forecasts, so "
+                    "this one cannot be checked against observations.",
+                }
+            ]
+    return []
+
+
+def _disagreements(
+    one: list[dict[str, Any]],
+    gefs: dict[str, Any],
+    rule: Any,
+    limit: dict[str, Any],
+    region: str,
+    hrrr_lead_h: float | None,
+) -> list[str]:
+    """Which forecast systems disagree on this rule (``wr.disagreements``), in plain words."""
+    if limit["value"] is None:
+        return []
+    unit = str(limit["unit"])
+    sh = gefs.get("share")
+    share_ = (sh["k"], sh["n"], sh["lo"], sh["hi"]) if sh else None
+    error = None if hrrr_lead_h is None else verification.hrrr_error_m_s(region, hrrr_lead_h)
+    gap = (
+        None
+        if error is None or rule.height_m is None
+        else wr.from_m_s(
+            error * vf.neutral_ratio(NWS_WIND_HEIGHT_M, float(rule.height_m), wr.OPEN_FLAT_Z0_M),
+            unit,
+        )
+    )
+    forecasts = [(str(o["system"]), float(o["value"]["value"]), bool(o["over"])) for o in one]
+    return wr.disagreements(forecasts, share_, unit, gap)
 
 
 def _thunder(nws: feed_service.Latest, t0: datetime) -> str | None:
@@ -409,6 +485,7 @@ async def launch_weather(
         per_system: list[dict[str, Any]] = []
         one: list[dict[str, Any]] = []
         observed = None
+        disagree: list[str] = []
         if r.rule_class in ("model", "proxy"):
             per_system.append(
                 _gefs_row(gefs, pad_id, when, r, limit, verification.checked(region, r.id, lead_h))
@@ -416,7 +493,9 @@ async def launch_weather(
             per_system += [
                 {"system": s, "share": None, "missing_reason": NOT_RECORDED[s]} for s in SYSTEMS[1:]
             ]
-            one = _hrrr(hrrr, pad_id, when, r, limit)
+            one, hrrr_lead_h = _hrrr(hrrr, pad_id, when, r, limit, region)
+            one += _nws(nws, when, r, limit)
+            disagree = _disagreements(one, per_system[0], r, limit, region, hrrr_lead_h)
         else:
             detail = OBSERVED_DETAIL.get(
                 r.variable or "", "Decided by the range's weather officers at the time."
@@ -442,7 +521,8 @@ async def launch_weather(
                 "limit_note": (entered.get(r.id) or {}).get("note"),
                 "per_system": per_system,
                 "one_forecast": one,
-                "disagreement": False,
+                "disagreement": bool(disagree),
+                "disagreement_note": " ".join(disagree) or None,
                 "observed": observed,
                 "climatology": _climatology(r, limit, region, when, pad_id),
             }

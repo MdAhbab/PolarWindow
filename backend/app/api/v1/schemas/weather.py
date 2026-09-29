@@ -24,6 +24,10 @@ class OneForecast(_M):
     system: Literal["NWS", "HRRR", "GEOS-FP"]
     value: QuantityOut
     over: bool
+    note: str | None = Field(
+        description="How this forecast did against a weather station's record (HRRR), or why "
+        "it could not be checked (NWS keeps no archive)."
+    )
 
 
 class Observed(_M):
@@ -53,6 +57,9 @@ class RuleRow(_M):
     per_system: list[SystemShare]
     one_forecast: list[OneForecast]
     disagreement: bool
+    disagreement_note: str | None = Field(
+        description="Who disagrees and how, in plain words; null when `disagreement` is false."
+    )
     observed: Observed | None
     climatology: Climatology | None
 

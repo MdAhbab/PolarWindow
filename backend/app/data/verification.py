@@ -93,3 +93,71 @@ def summary(region: str, rule_id: str) -> str | None:
         + f". It {verdict} the gate ({d['gate']})."
         + (f" It covers launches up to {max_lead_h(d)} h ahead." if d.get("passes") else "")
     )
+
+
+# ---------------------------------------------------------------------------
+# HRRR's one forecast against the station (make hindcast-hrrr)
+# ---------------------------------------------------------------------------
+
+
+@lru_cache(maxsize=8)
+def hrrr_load(region: str) -> dict[str, Any] | None:
+    p = get_settings().data_dir / "hindcast" / f"hrrr_wind_{region}.json"
+    if not p.exists():
+        return None
+    d: dict[str, Any] = json.loads(p.read_text())
+    return d if d.get("leads") else None
+
+
+def _hrrr_lead(d: dict[str, Any], lead_h: float) -> dict[str, Any] | None:
+    """The scored lead nearest ``lead_h`` (the feed keeps 1, 6, 12 and 18 h)."""
+    leads = d.get("leads") or {}
+    if not leads:
+        return None
+    key = min(leads, key=lambda k: abs(int(k) - lead_h))
+    x: dict[str, Any] = leads[key]
+    return x if x.get("cases") else None
+
+
+def hrrr_error_m_s(region: str, lead_h: float) -> float | None:
+    """Root-mean-square error of HRRR's 10 m wind at the lead, m/s, or None if not checked."""
+    d = hrrr_load(region)
+    x = _hrrr_lead(d, lead_h) if d else None
+    return None if x is None else x.get("rmse_m_s")
+
+
+def hrrr_words(region: str, lead_h: float) -> str | None:
+    """How HRRR's 10 m wind did against the station's, in plain words, or None."""
+    d = hrrr_load(region)
+    x = _hrrr_lead(d, lead_h) if d else None
+    if d is None or x is None:
+        return None
+    years = d.get("years") or []
+    span = f"{years[0]} to {years[-1]}" if years else "the years checked"
+    bias = x["bias_m_s"]
+    skill = x.get("mae_skill")
+    text = (
+        f"Checked against {d['station']} for {span} ({x['cases']} runs at this lead): HRRR's 10 m "
+        f"wind was off by {x['mae_m_s']:.1f} m/s on average, {abs(bias):.1f} m/s "
+        f"{'above' if bias >= 0 else 'below'} the station's"
+    )
+    if skill is not None:
+        text += (
+            f", and {abs(100 * skill):.0f}% {'closer to' if skill >= 0 else 'further from'} what "
+            "was measured than the station's usual wind for that month and hour"
+        )
+    text += ". "
+    c = d.get("call_all_leads") or {}
+    if c.get("cases"):
+        if c["events"] == 0:
+            text += (
+                f"The station never reported wind above the limit at 10 m in those runs, so its "
+                f"over-or-under call is not tested ({c['called_over']} calls of over)."
+            )
+        else:
+            text += (
+                f"At the limit brought to 10 m, over all leads: the station reported wind above it "
+                f"{c['events']} times in {c['cases']} runs, HRRR called {c['hits']} of them, and "
+                f"{c['false_alarms']} of its {c['called_over']} calls of over were wrong."
+            )
+    return text.strip()

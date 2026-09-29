@@ -9189,6 +9189,18 @@
           "over": {
             "type": "boolean",
             "title": "Over"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note",
+            "description": "How this forecast did against a weather station's record (HRRR), or why it could not be checked (NWS keeps no archive)."
           }
         },
         "additionalProperties": false,
@@ -9196,7 +9208,8 @@
         "required": [
           "system",
           "value",
-          "over"
+          "over",
+          "note"
         ],
         "title": "OneForecast"
       },
@@ -11907,6 +11920,18 @@
             "type": "boolean",
             "title": "Disagreement"
           },
+          "disagreement_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disagreement Note",
+            "description": "Who disagrees and how, in plain words; null when `disagreement` is false."
+          },
           "observed": {
             "anyOf": [
               {
@@ -11941,6 +11966,7 @@
           "per_system",
           "one_forecast",
           "disagreement",
+          "disagreement_note",
           "observed",
           "climatology"
         ],

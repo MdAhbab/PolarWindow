@@ -296,3 +296,66 @@ def test_the_scored_files_say_what_the_plans_gate_says() -> None:
         expected = bool(skills) and all(s is not None and s >= vf.BSS_MIN for s in skills.values())
         expected = expected and all(b["ok"] for b in d["reliability"])
         assert d["passes"] is expected, region
+
+
+def _hrrr_check(**call: object) -> dict:
+    lead = {
+        "cases": 700,
+        "bias_m_s": 0.3,
+        "rmse_m_s": 1.7,
+        "mae_m_s": 1.2,
+        "mae_skill": 0.25,
+    }
+    return {
+        "station": "KVBG",
+        "years": [2021, 2022, 2025],
+        "leads": {"1": dict(lead), "6": {**lead, "rmse_m_s": 1.9}, "18": {**lead, "cases": 0}},
+        "call_all_leads": {
+            "cases": 2800,
+            "events": 40,
+            "called_over": 30,
+            "hits": 24,
+            "false_alarms": 6,
+            **call,
+        },
+    }
+
+
+def test_hrrr_check_is_read_at_the_nearest_lead_and_put_in_words(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app.data import verification as ver
+
+    _on_disk(tmp_path, monkeypatch, **{"hrrr_wind_vandenberg.json": _hrrr_check()})
+    ver.hrrr_load.cache_clear()
+    try:
+        assert ver.hrrr_error_m_s("vandenberg", 5.0) == 1.9  # the 6 h lead is nearest
+        assert ver.hrrr_error_m_s("vandenberg", 1.0) == 1.7
+        assert ver.hrrr_error_m_s("florida", 6.0) is None  # nothing scored there
+        assert ver.hrrr_error_m_s("vandenberg", 18.0) is None  # a lead with no cases
+        words = ver.hrrr_words("vandenberg", 6.0) or ""
+        assert "KVBG for 2021 to 2025 (700 runs at this lead)" in words
+        assert "off by 1.2 m/s on average, 0.3 m/s above the station's" in words
+        assert "25% closer to what was measured" in words
+        assert "40 times in 2800 runs, HRRR called 24 of them, and 6 of its 30 calls" in words
+        assert ver.hrrr_words("florida", 6.0) is None
+    finally:
+        ver.hrrr_load.cache_clear()
+
+
+def test_a_call_that_was_never_tested_is_said_so(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app.data import verification as ver
+
+    _on_disk(
+        tmp_path,
+        monkeypatch,
+        **{"hrrr_wind_vandenberg.json": _hrrr_check(events=0, hits=0, called_over=1)},
+    )
+    ver.hrrr_load.cache_clear()
+    try:
+        words = ver.hrrr_words("vandenberg", 6.0) or ""
+        assert "never reported wind above the limit" in words and "not tested" in words
+    finally:
+        ver.hrrr_load.cache_clear()

@@ -3016,6 +3016,11 @@ export interface components {
             value: components["schemas"]["QuantityOut"];
             /** Over */
             over: boolean;
+            /**
+             * Note
+             * @description How this forecast did against a weather station's record (HRRR), or why it could not be checked (NWS keeps no archive).
+             */
+            note: string | null;
         };
         /** Opportunity */
         Opportunity: {
@@ -3882,6 +3887,11 @@ export interface components {
             one_forecast: components["schemas"]["OneForecast"][];
             /** Disagreement */
             disagreement: boolean;
+            /**
+             * Disagreement Note
+             * @description Who disagrees and how, in plain words; null when `disagreement` is false.
+             */
+            disagreement_note: string | null;
             observed: components["schemas"]["Observed"] | null;
             climatology: components["schemas"]["Climatology"] | null;
         };

@@ -11,9 +11,13 @@ labelled as interpolated wherever it is shown.
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from datetime import datetime
 from typing import Any
+
+#: Roughness length (m) of open, flat ground: with it a neutral logarithmic profile carries a 10 m
+#: wind to a rule's height (and the rule's limit down to 10 m), as the weather check does.
+OPEN_FLAT_Z0_M = 0.03
 
 #: Metres per second in one of each unit a published limit uses.
 SPEED_UNITS: dict[str, float] = {"m/s": 1.0, "mph": 0.44704, "kt": 1852.0 / 3600.0, "km/h": 1 / 3.6}
@@ -73,3 +77,61 @@ def count_breaking(
     speeds = [speed_at(m, height_m) for m in members.values()]
     got = [s for s in speeds if s is not None]
     return sum(breaks(s, limit_m_s, comparison) for s in got), len(got)
+
+
+def lean(lo: float, hi: float) -> str | None:
+    """The side of a limit an ensemble's share puts the wind on, or None when it does not.
+
+    A single forecast says "over" or "under", which is a claim that the wind is more likely
+    than not on that side. An ensemble's share, with its 95 % interval, contradicts that
+    claim only when the whole interval is on the other side of one half.
+    """
+    if lo > 0.5:
+        return "over"
+    if hi < 0.5:
+        return "under"
+    return None
+
+
+def _percent(x: float) -> str:
+    pct = 100.0 * x
+    return "0%" if pct == 0 else f"{pct:.1f}%" if pct < 10 else f"{pct:.0f}%"
+
+
+def disagreements(
+    one: Sequence[tuple[str, float, bool]],
+    share: tuple[int, int, float, float] | None,
+    unit: str,
+    gap: float | None,
+) -> list[str]:
+    """Plain sentences for each pair of forecast systems that do not agree on a rule.
+
+    ``one`` are the single forecasts as ``(system, wind at the rule's height in the limit's
+    ``unit``, whether it breaks the limit)``; ``share`` is the ensemble's ``(k, n, lo, hi)``.
+    A single forecast disagrees with the ensemble when its side is the one the ensemble's
+    share interval excludes (:func:`lean`). Two single forecasts disagree when they fall on
+    opposite sides of the limit and are further apart than ``gap`` (the typical error of
+    one of them, so two values a hair either side of the limit are not called a
+    disagreement); with no ``gap`` known, opposite sides are enough.
+    """
+    out: list[str] = []
+    if share is not None:
+        k, n, lo, hi = share
+        side = lean(lo, hi)
+        for name, value, over in one:
+            if side is not None and (side == "over") != over:
+                out.append(
+                    f"{name} puts the wind at {value:.1f} {unit}, "
+                    f"{'over' if over else 'under'} the limit, while {k} of {n} GEFS runs break it "
+                    f"(95% range {_percent(lo)} to {_percent(hi)})."
+                )
+    for i, (a, va, oa) in enumerate(one):
+        for b, vb, ob in one[i + 1 :]:
+            if oa != ob and abs(va - vb) > (gap or 0.0):
+                over_first = (a, va) if oa else (b, vb)
+                under_first = (b, vb) if oa else (a, va)
+                out.append(
+                    f"{over_first[0]} puts the wind at {over_first[1]:.1f} {unit}, over the "
+                    f"limit, and {under_first[0]} at {under_first[1]:.1f} {unit}, under it."
+                )
+    return out

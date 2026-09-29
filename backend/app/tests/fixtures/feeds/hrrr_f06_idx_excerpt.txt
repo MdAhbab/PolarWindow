@@ -1,0 +1,12 @@
+8:2945655:d=2021061512:REFD:263 K level:6 hour fcst:
+9:3092661:d=2021061512:GUST:surface:6 hour fcst:
+10:4263981:d=2021061512:UGRD:250 mb:6 hour fcst:
+59:35610585:d=2021061512:LTNG:entire atmosphere:6 hour fcst:
+60:35664462:d=2021061512:UGRD:80 m above ground:6 hour fcst:
+61:36855535:d=2021061512:VGRD:80 m above ground:6 hour fcst:
+62:37991491:d=2021061512:PRES:surface:6 hour fcst:
+76:51619389:d=2021061512:MASSDEN:8 m above ground:6 hour fcst:
+77:52154488:d=2021061512:UGRD:10 m above ground:6 hour fcst:
+78:54536103:d=2021061512:VGRD:10 m above ground:6 hour fcst:
+79:56917718:d=2021061512:WIND:10 m above ground:5-6 hour max fcst:
+80:58087651:d=2021061512:MAXUW:10 m above ground:5-6 hour max fcst:
