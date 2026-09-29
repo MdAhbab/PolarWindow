@@ -1275,21 +1275,34 @@ test('radiation and space weather (live API): Blue Ghost’s screening with its 
   await expect(page.locator('[data-guide="section-answer"]')).toContainText('It launched on', { timeout: 90_000 })
   await openRow(page, 'Space weather now')
   const sw = row('Space weather now')
-  // The feeds worker records SWPC every few minutes, so every reading is shown, each with its age.
-  await expect(sw.getByText(/^Now: /)).toHaveText(
-    /^Now: Kp [\d.]+, protons above 10 MeV at [\d.]+ pfu, X-ray flares class [ABCMX][\d.]+, solar wind at [\d.]+ km\/s; (no alerts in the last 24 hours|\d+ alerts? in the last 24 hours|SWPC’s alerts of the last 24 hours are not shown here)\.$/,
+  // The feeds worker records SWPC every few minutes, so each reading is shown with its age. A reading with no recent value (Kp has been
+  // missing at times) is left out of the line and gives its reason in the list, so the line and the list must say the same.
+  const line = sw.getByText(/^Now: /)
+  const item = 'Kp [\\d.]+|[Pp]rotons above 10 MeV at [\\d.]+ pfu|[Ss]olar wind at [\\d.]+ km\\/s|X-ray flares class [ABCMX][\\d.]+'
+  await expect(line).toHaveText(
+    new RegExp(
+      `^Now: (?:${item})(?:, (?:${item})){0,3}; (no alerts in the last 24 hours|\\d+ alerts? in the last 24 hours|SWPC’s alerts of the last 24 hours are not shown here)\\.$`,
+    ),
     { timeout: 30_000 },
   )
+  const said = (await line.textContent()) ?? ''
   const reading = (label: string) => sw.locator('dt', { hasText: label }).locator('xpath=following-sibling::dd[1]')
-  for (const label of [
-    'Geomagnetic activity (Kp, 0 to 9)',
-    'Protons above 10 MeV',
-    'Protons above 100 MeV',
-    'Solar wind speed',
-    'Magnetic field from the Sun, north–south (Bz)',
-    'X-ray flares (class)',
-  ]) {
-    await expect(reading(label), label).toHaveText(/^-?[\w.]+ (pfu |km\/s |nT )?· as of (just now|\d+ min ago|\d+ h ago)$/)
+  const valueWithAge = /^-?[\w.]+ (pfu |km\/s |nT )?· as of (just now|\d+ min ago|\d+ h ago)$/
+  for (const [label, words] of [
+    ['Geomagnetic activity (Kp, 0 to 9)', /Kp [\d.]+/],
+    ['Protons above 10 MeV', /[Pp]rotons above 10 MeV at [\d.]+ pfu/],
+    ['Solar wind speed', /[Ss]olar wind at [\d.]+ km\/s/],
+    ['X-ray flares (class)', /X-ray flares class [ABCMX][\d.]+/],
+  ] as const) {
+    const cell = ((await reading(label).textContent()) ?? '').trim()
+    const hasValue = valueWithAge.test(cell)
+    expect(words.test(said), `${label}: the line has it exactly when the list gives its value (the list says "${cell}")`).toBe(hasValue)
+    if (!hasValue) expect(cell.length, `${label}: gives the reason it is not shown`).toBeGreaterThan(0)
+  }
+  // Two more readings are only in the list: a value with its age, or the reason it has none.
+  for (const label of ['Protons above 100 MeV', 'Magnetic field from the Sun, north–south (Bz)']) {
+    const cell = ((await reading(label).textContent()) ?? '').trim()
+    expect(valueWithAge.test(cell) || (cell.length > 0 && !/^-?[\d.]+ /.test(cell)), `${label}: "${cell}"`).toBe(true)
   }
   // "None" only when the service says its list is current and empty; a list it cannot show says why, with SWPC's own.
   const live = (await (await page.request.get(`${API}/space-weather`)).json()) as {

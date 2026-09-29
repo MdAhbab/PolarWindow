@@ -672,6 +672,16 @@ describe('Space weather now', () => {
       'Now: Kp 1, protons above 10 MeV at 0.23 pfu, X-ray flares class B4.7, solar wind at 456 km/s; 2 alerts in the last 24 hours.',
     )
   })
+  it('leaves out a reading with no recent value from the line, and its own line in the list says why', async () => {
+    const noKp = { ...sw, now: { ...sw.now, kp: { ...sw.now.kp, value: null, missing_reason: 'The newest Kp reading is 5 hours old.' } } }
+    expect(spaceWeatherSentence(noKp, meta)).toBe(
+      'Now: Protons above 10 MeV at 0.23 pfu, solar wind at 456 km/s, X-ray flares class B4.7; 2 alerts in the last 24 hours.',
+    )
+    vi.spyOn(api, 'spaceWeather').mockResolvedValue({ ...spaceWeatherFixture, data: noKp } as never)
+    renderApp(<SpaceWeatherRow />)
+    fireEvent.click(screen.getByText('Space weather now'))
+    expect(await screen.findByText('The newest Kp reading is 5 hours old.')).toBeTruthy()
+  })
   it('an empty alert list is "no alerts" only when the service says the list is current', () => {
     const quiet = { ...sw, now: { ...sw.now, alerts: [] } }
     expect(spaceWeatherSentence(quiet, meta)).toMatch(/; no alerts in the last 24 hours\.$/)
