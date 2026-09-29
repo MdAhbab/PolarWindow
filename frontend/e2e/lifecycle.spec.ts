@@ -634,27 +634,28 @@ test('the capsule model (contract fixtures): whether the plan’s limit is met a
   const served = check(fixtureJson('return.json'))
   await page.goto('/missions/im-2/return')
   const row = page.locator('details').filter({ has: page.locator('summary', { hasText: 'The capsule model, checked against a real landing' }) })
-  await expect(row.locator('summary')).toContainText('12.1 km from it; the plan’s 10 km is not met')
+  // The fixture is the served answer: NRLMSIS 2.1 flown, 6.6 km from the real landing point, the plan's limit met.
+  await expect(row.locator('summary')).toContainText('6.6 km from it; the plan’s 10 km is met')
   await row.locator('summary').click()
-  // The air and the limit as the fixture serves them, the not-met one with its triangle.
+  // The air and the limit as the fixture serves them: met, with what is to spare and no triangle.
   await expect(row).toContainText('The air the modelled fall went through')
   await expect(row).toContainText(served.atmosphere)
-  await expect(row).toContainText('The plan’s 10 km is not met: 2.1 km over the limit.')
+  await expect(row).toContainText('The plan’s 10 km is met, with 3.4 km to spare.')
+  await expect(row).not.toContainText('not met')
   await expectNoSeriousAxe(page, 'the capsule model row open (dark)')
-  // The same row with the limit met: no triangle, and what is to spare.
+  // The same row with the limit not met (a synthetic answer): its triangle, and by how much.
   await context.route(/localhost:8000\/api\/v1\/missions\/im-2\/return$/, async (route) => {
     const body = fixtureJson('return.json')
-    Object.assign(body.data.capsule.model_check, { distance_km: 9.5, distance_range_km: [6.7, 12.2], passed: true, note: 'The entry model lands its capsule 9.5 km from where the recovery team found it (the limit is 10 km).' })
+    Object.assign(body.data.capsule.model_check, { distance_km: 12.1, distance_range_km: [9.4, 14.8], passed: false, note: 'The entry model lands its capsule 12.1 km from where the recovery team found it (the limit is 10 km, not met).' })
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body), headers: { 'access-control-allow-origin': '*' } })
   })
   await page.evaluate(() => localStorage.setItem('pw-prefs', JSON.stringify({ theme: 'light', motion: 'full', shortcuts: true })))
   await page.setViewportSize({ width: 375, height: 812 })
   await page.reload()
-  const met = page.locator('details').filter({ has: page.locator('summary', { hasText: 'The capsule model, checked against a real landing' }) })
-  await expect(met.locator('summary')).toContainText('9.5 km from it; the plan’s 10 km is met')
-  await met.locator('summary').click()
-  await expect(met).toContainText('The plan’s 10 km is met, with 0.5 km to spare.')
-  await expect(met).not.toContainText('not met')
+  const notMet = page.locator('details').filter({ has: page.locator('summary', { hasText: 'The capsule model, checked against a real landing' }) })
+  await expect(notMet.locator('summary')).toContainText('12.1 km from it; the plan’s 10 km is not met')
+  await notMet.locator('summary').click()
+  await expect(notMet).toContainText('The plan’s 10 km is not met: 2.1 km over the limit.')
   await expectNoSeriousAxe(page, 'the capsule model row open (light, 375 px)')
   expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the capsule row scrolls sideways at 375 px').toBeLessThanOrEqual(375)
 })

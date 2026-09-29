@@ -722,40 +722,49 @@ describe('Weather rules: past years', () => {
 })
 
 describe('Return: the capsule model, checked against a real landing', () => {
+  // The fixture is the served answer: NRLMSIS 2.1 flown, 6.6 km from the real landing point, the plan's limit met.
   const check = (returnFixture.data.capsule as { model_check: CapsuleModelCheckDTO }).model_check
+  // A limit not met is a synthetic input, since the service serves the check as met.
+  const notMet: CapsuleModelCheckDTO = {
+    ...check,
+    distance_km: 12.1,
+    distance_range_km: [9.4, 14.8],
+    passed: false,
+    note: 'The entry model lands its capsule 12.1 km from where the recovery team found it (the limit is 10 km, not met).',
+  }
   it('says the service’s words first, whether the plan’s limit is met, the air, then the numbers, the date and the sources', () => {
     render(<CapsuleCheckRow check={check} />)
     expect(screen.getByText('The capsule model, checked against a real landing')).toBeTruthy()
-    expect(screen.getByText('12.1 km from it; the plan’s 10 km is not met')).toBeTruthy()
+    expect(screen.getByText('6.6 km from it; the plan’s 10 km is met')).toBeTruthy()
     expect(screen.getByText(check.note)).toBeTruthy()
     // The air the modelled fall went through, as served.
     expect(screen.getByText('The air the modelled fall went through')).toBeTruthy()
     expect(screen.getByText(check.atmosphere)).toBeTruthy()
-    expect(screen.getByText('12.1 km (9.4 to 14.8 km over the published drag range)')).toBeTruthy()
-    expect(screen.getByText('51.2 by 21.8 km; holds the real landing point')).toBeTruthy()
-    expect(screen.getByText('29 September 2026, 08:17 UTC')).toBeTruthy()
+    expect(check.atmosphere).toMatch(/^NRLMSIS 2\.1, /)
+    expect(screen.getByText('6.6 km (3.9 to 9.3 km over the published drag range)')).toBeTruthy()
+    expect(screen.getByText('51.1 by 21.5 km; holds the real landing point')).toBeTruthy()
+    expect(screen.getByText('29 September 2026, 16:32 UTC')).toBeTruthy()
     expect(screen.getByRole('link', { name: /naif\.jpl\.nasa\.gov/ }).getAttribute('href')).toBe(check.sources[0])
   })
   it('a limit not met says by how much, in words and a shape', () => {
-    render(<CapsuleCheckRow check={check} />)
+    render(<CapsuleCheckRow check={notMet} />)
+    expect(screen.getByText('12.1 km from it; the plan’s 10 km is not met')).toBeTruthy()
     expect(screen.getByText('The plan’s 10 km is not met: 2.1 km over the limit.')).toBeTruthy()
     cleanup()
-    render(<CapsuleCheckRow check={{ ...check, distance_km: 12.5, measured_inside_ellipse: false }} />)
+    render(<CapsuleCheckRow check={{ ...notMet, distance_km: 12.5, measured_inside_ellipse: false }} />)
     expect(screen.getByText('The plan’s 10 km is not met: 2.5 km over the limit.')).toBeTruthy()
-    expect(screen.getByText('51.2 by 21.8 km; does not hold the real landing point')).toBeTruthy()
+    expect(screen.getByText('51.1 by 21.5 km; does not hold the real landing point')).toBeTruthy()
   })
   it('a limit met says so, with what is to spare, and no shape', () => {
-    const note = 'The entry model lands its capsule 9.5 km from where the recovery team found it (the limit is 10 km).'
-    render(<CapsuleCheckRow check={{ ...check, distance_km: 9.5, distance_range_km: [6.7, 12.2], passed: true, note }} />)
-    expect(screen.getByText('9.5 km from it; the plan’s 10 km is met')).toBeTruthy()
-    expect(screen.getByText('The plan’s 10 km is met, with 0.5 km to spare.')).toBeTruthy()
+    render(<CapsuleCheckRow check={check} />)
+    expect(screen.getByText('The plan’s 10 km is met, with 3.4 km to spare.')).toBeTruthy()
     expect(screen.queryByText(/not met/)).toBeNull()
   })
   it('a saved copy recorded before the air was served leaves the line out rather than empty', () => {
     const { atmosphere: _air, ...old } = check
     render(<CapsuleCheckRow check={old as CapsuleModelCheckDTO} />)
     expect(screen.queryByText('The air the modelled fall went through')).toBeNull()
-    expect(screen.getByText('12.1 km from it; the plan’s 10 km is not met')).toBeTruthy()
+    expect(screen.getByText('6.6 km from it; the plan’s 10 km is met')).toBeTruthy()
   })
   it('reads the limit and the air from the answer, not from the screen', () => {
     const other = { ...check, limit_km: 15, passed: true, distance_km: 12.1, atmosphere: 'The U.S. Standard Atmosphere 1976: the solar files have no values for that day.' }
