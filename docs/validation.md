@@ -508,13 +508,18 @@ values after March 2020, so the events during a flown trip are listed from NASA 
 
 # Capsule entry against OSIRIS-REx (plan track H)
 
-`make validate-capsule` (`app/tests/golden/validate_capsule.py`; the model is
-`app/core/entry.py` with `app/core/atmosphere.py`). The model is a point mass with a
-ballistic coefficient β, falling from the entry interface through the U.S. Standard
-Atmosphere 1976 (equations to 86 km, its Table I densities from 86 to 150 km) that turns
-with the Earth, under gravity with J2; no lift, no parachutes, and a wind only in the
-footprint. Nothing returns to Earth on a CLPS mission, so the model is checked on the one
-recent sample return with a published entry state and a measured landing point.
+`make validate-capsule` (`app/tests/golden/validate_capsule.py`, about 7 minutes; the model
+is `app/core/entry.py`, flown for a day by `app/services/capsule.py`). The model is a point
+mass with a ballistic coefficient β, falling from the entry interface through an atmosphere
+that turns with the Earth, under gravity with J2; no lift, no parachutes, and a wind only in
+the footprint. The air is NRLMSISE-00 (Picone et al. 2002, run through `pymsis` 0.13.0)
+driven by the entry day's 10.7 cm solar flux and 3-hour geomagnetic ap from NASA's OMNI
+files (`app/data/msis_indices.py`: the flux of the day before, its 81-day mean, and the
+seven ap numbers the model's storm-time mode takes), asked for at the capsule's own place
+and time all the way down. The U.S. Standard Atmosphere 1976 (equations to 86 km, its Table
+I densities from 86 to 150 km) stands in when the OMNI files lack the day; the answer says
+which air was used. Nothing returns to Earth on a CLPS mission, so the model is checked on
+the one recent sample return with a published entry state and a measured landing point.
 
 **Entry state.** The sample return capsule's reconstructed trajectory in NAIF's PDS
 archive (`src_230924_230924_230930_od383a_v1.bsp`, in the registry as
@@ -527,29 +532,101 @@ flight path angle −8.184°, heading 66.396°, Earth-relative speed 12.361 km/s
 **Landing** (plan: within 10 km of the measured point). β from published numbers: the
 capsule's mass at entry (49.64 kg as built plus the 121.6 g sample), Stardust's diameter
 (0.8128 m, the same forebody) and its hypersonic axial force coefficient, 1.48 to 1.56
-(Mitcheltree et al. 1997). Flown to the touchdown height, 1,288 m, and compared with the
-recovery team's measured point, 40.3719° N, 113.24° W:
+(Mitcheltree et al. 1997). Flown to the touchdown height, 1,288 m, in each atmosphere over
+the published drag range, and compared with the recovery team's measured point,
+40.3719° N, 113.24° W. Before, the standard atmosphere; now, NRLMSISE-00 for the day; the
+newer NRLMSIS 2.1 is flown for comparison only:
+
+| Atmosphere | C_A 1.48 | C_A 1.52 | C_A 1.56 | Entry to ground | Peak deceleration |
+|---|---|---|---|---|---|
+| U.S. Standard Atmosphere 1976 (before) | 6.7 km | **9.5 km** | 12.2 km | 530 s | 31.0 g |
+| NRLMSISE-00, 24 September 2023 (now) | 9.4 km | **12.1 km** | 14.8 km | 537 s | 32.3 g |
+| NRLMSIS 2.1, 24 September 2023 | 3.9 km | 6.6 km | 9.3 km | 531 s | 32.0 g |
+
+The day's indices were the 10.7 cm flux of 23 September, 174.1 solar flux units (81-day mean
+149.3), and a 3-hour ap of 4 at the time (the day's storm began in the 18 to 21 UTC block,
+after the landing). NRLMSISE-00's flights, β from each C_A:
 
 | C_A | β (kg/m²) | Landing | From the measured point | Entry to ground | Peak deceleration |
 |---|---|---|---|---|---|
-| 1.48 | 64.8 | 40.3609 N, 113.3176 W | 6.7 km | 524 s | 30.8 g |
-| 1.52 | 63.1 | 40.3532 N, 113.3491 W | **9.5 km** | 530 s | 31.0 g |
-| 1.56 | 61.5 | 40.3456 N, 113.3797 W | 12.2 km | 535 s | 31.2 g |
+| 1.48 | 64.8 | 40.3535 N, 113.3479 W | 9.4 km | 531 s | 32.2 g |
+| 1.52 | 63.1 | 40.3459 N, 113.3788 W | **12.1 km** | 537 s | 32.3 g |
+| 1.56 | 61.5 | 40.3385 N, 113.4089 W | 14.8 km | 543 s | 32.4 g |
 
-The middle value passes, with little room; the published drag range spans 6.7 to 12.2 km.
-Every case lands short (west-southwest), as the mission's own simulation did: from the
-same reconstructed state with its pre-flight atmosphere and winds, it was 8.9 km off, and
-3.5 km with the day's reconstructed atmosphere (Francis et al., AAS 24, comparison
-table), so most of the miss is the day's upper atmosphere, which a standard atmosphere
-cannot know. The time to the ground (530 s) is not comparable with the observed 615 s:
-the model has no parachutes, which change the time and not the place.
+**The plan's 10 km is not met with the day's air.** NRLMSISE-00 lands the capsule 12.1 km
+from the measured point (9.4 to 14.8 km over the drag range: only its low-drag end is inside
+the limit), 2.6 km farther than the standard atmosphere did (9.5 km, met with 0.5 km to
+spare). The answer says so (`passed: false`), names the air, and gives the other airs'
+distances. NRLMSIS 2.1 lands 6.6 km away and would pass; it is not used, because the model
+was fixed before the runs (the plan names NRLMSISE-00, which the low-orbit drag model uses
+too) and not by which one lands nearest. All three miss on the same side, short and
+west-southwest (257° from the measured point in the standard atmosphere). So did the
+mission's own six-degree-of-freedom simulation from the same reconstructed entry state
+with the parachutes as flown and its pre-flight atmosphere (Earth-GRAM) and winds: 8.9 km
+at 257° (Francis et al., the table of comparison cases, "Cht Seq + ESF").
+
+**What decides the landing.** The middle case in NRLMSISE-00 with the density 5 % higher over
+one band of heights at a time:
+
+| NRLMSISE-00, density 5 % higher between | Landing moves | From the measured point |
+|---|---|---|
+| 0 and 30 km | 0.08 km | 12.2 km |
+| 30 and 50 km | 2.34 km | 14.5 km |
+| 50 and 70 km | 2.37 km | 14.5 km |
+| 70 and 90 km | 0.28 km | 12.4 km |
+| 90 and 125 km | 0.01 km | 12.1 km |
+
+The landing rests on the air between 30 and 70 km, where the capsule loses its speed. It does
+not rest on the Sun: the solar flux and the geomagnetic activity, which are all that make
+NRLMSISE-00 the day's, act above 100 km. With the flux at 70 solar flux units (solar minimum)
+or 250 (maximum) the landing is 11.7 or 11.8 km from the measured point instead of 12.1,
+with ap held at 4 all the way down 12.0 km, and in a severe storm (ap 100 all the way down)
+12.9 km. The 12.1 km is the model's average stratosphere and mesosphere for the place and
+the season; the day's indices move it by 0.8 km at most.
+
+**The models against the day's radiosonde.** The National Weather Service's balloon from Salt
+Lake City at 12 UTC (130 km from the touchdown, up to 33 km; Iowa Environmental Mesonet
+archive, saved unchanged in `data/capsule/kslc_20230924_12z.json`), with its heights made
+geometric and its temperatures virtual, against each model at the balloon's place and time:
+
+| Height | Radiosonde (kg/m³) | U.S. Standard Atmosphere 1976 / radiosonde | NRLMSISE-00 / radiosonde | NRLMSIS 2.1 / radiosonde |
+|---|---|---|---|---|
+| 3 km | 0.8875 | 1.025 | 1.014 | 0.985 |
+| 5 km | 0.7262 | 1.014 | 1.014 | 0.975 |
+| 10 km | 0.4258 | 0.971 | 0.995 | 0.972 |
+| 15 km | 0.2093 | 0.931 | 1.016 | 1.002 |
+| 20 km | 0.0939 | 0.947 | 1.014 | 0.982 |
+| 25 km | 0.04204 | 0.954 | 1.019 | 0.979 |
+| 30 km | 0.01907 | 0.965 | 1.025 | 0.983 |
+
+The standard atmosphere is 3 to 7 % thinner than the day's air from 10 to 30 km;
+NRLMSISE-00 is within 2.5 % of the balloon at every height and NRLMSIS 2.1 within 2.8 %. Below
+30 km the empirical models have the day's air right, and the landing hardly depends on it
+(0.08 km for 5 %). Where it does depend, above 30 km, nothing measured that day is on disk.
+
+**What the mission's team found.** Its reconstruction of the day's air, from NASA's GEOS
+analysis, "showed notably lower atmospheric densities in the upper atmosphere than the
+nominal GRAM atmosphere predicted, and was even lower than the predicted GRAM 3σ low density
+for a significant portion of the drag pulse". Put into their simulation, with the winds it
+came with, it landed 15.1 km northeast of the pre-flight prediction, 3.5 km beyond the
+measured point ("Cht Seq + ESF + Atm"; 2.7 km with the winds of the balloon flown after the
+landing instead). An average like NRLMSISE-00, which knows a day only through its flux and
+geomagnetic activity, cannot show a thin day. The capsule flew with no parachute until 1.4 km
+above the ground (the signals to the drogue's mortar and to the cutters that free its bridle
+were reversed), so a model without parachutes follows the real flight nearly to the ground;
+the team found that the parachutes as flown moved the touchdown point by 0.4 km and, in
+their no-parachute contingency, by under 100 m. The time to the ground (537 s) is not
+comparable with the observed 615 s: the observed flight ended under the main parachute, 285 s
+over its last 1.4 km, and the model has no parachute and one axial force coefficient all the
+way down.
 
 **Footprint.** A seeded Monte Carlo of 200 runs: the flight path angle from TCM-12's
 delivery accuracy (0.073° at 3σ, AAS 24-058 Table 5), heading and speed from the E-1 day
 solution (Table 12), β ±2.6 % (the published C_A range as one sigma), and, assumed, the
-density ±5 % and a wind below 30 km of 10 m/s in each direction. Its 99 % ellipse is 51.4
-by 21.4 km, long axis 77° from north, and holds the measured point (the mission's design
-ellipse was 84 by 20 km). Without the wind the ellipse was 0.3 km wide and missed the
+density ±5 % and a wind below 30 km of 10 m/s in each direction. Its 99 % ellipse is 51.2
+by 21.8 km in NRLMSISE-00 (51.4 by 21.4 km in the standard atmosphere), long axis 77° from
+north, and holds the measured point in both (the mission's design ellipse was 84 by 20 km).
+In the standard atmosphere, without the wind the ellipse was 0.3 km wide and missed the
 measured point, which lies about 0.9 km across the track: the wind is what sets the width.
 
 The result is written to `data/capsule/orex_check.json` and served in
@@ -557,7 +634,10 @@ The result is written to `data/capsule/orex_check.json` and served in
 
 **Not done.** The Moon-to-Earth return trajectory to the entry interface (C1/C2 reversed)
 is not built: no CLPS mission brings anything back, and no planned one publishes an entry
-state. A capsule's zone weather (B2) waits for the same.
+state. A capsule's zone weather (B2) waits for the same. The day's air from 30 to 76 km,
+which the landing depends on, is not measured or analysed in what is on disk; NASA's
+GEOS-FP analysis of it (the family of analyses the mission's team used, open on the NCCS
+OPeNDAP server) is the input to try next.
 
 # Real orbiters over the landing sites against JPL Horizons (plan T1, F2)
 

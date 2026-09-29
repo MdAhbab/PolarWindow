@@ -1,8 +1,10 @@
 """Capsule entry to the ground: 3-DOF ballistic flight (plan track H).
 
 A point mass with a ballistic coefficient beta = m / (C_D A), falling from the
-entry interface through the U.S. Standard Atmosphere 1976 (``core.atmosphere``)
-that turns with the Earth, under Earth's gravity with J2. No lift and no
+entry interface through an atmosphere that turns with the Earth, under Earth's
+gravity with J2. The air is the U.S. Standard Atmosphere 1976
+(``core.atmosphere``) unless the caller gives a density (``Capsule.air``: the
+capsule service gives NRLMSISE-00 for the entry day). No lift and no
 parachutes: the plan asks for beta as the input, and for a blunt capsule the
 parachutes change the landing point little (the OSIRIS-REx team found its
 no-parachute touchdown within 100 m of the nominal one). A wind, when given, is
@@ -19,6 +21,7 @@ landing points.
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import numpy as np
@@ -39,6 +42,10 @@ EI_HEIGHT_M = 121_920.0
 #: A given wind blows below this height.
 WIND_TOP_M = 30_000.0
 
+#: Air density (kg/m^3) at (seconds from the entry state, inertial position, height
+#: above WGS84).
+Air = Callable[[float, FloatArray, float], float]
+
 
 def geodetic_height(r: FloatArray, pole: FloatArray) -> tuple[float, float]:
     """(height above WGS84, geodetic latitude in rad) of an inertial position whose
@@ -58,10 +65,16 @@ def geodetic_height(r: FloatArray, pole: FloatArray) -> tuple[float, float]:
 @dataclass(frozen=True, slots=True)
 class Capsule:
     beta_kg_m2: float
-    #: Multiplies the standard atmosphere's density (1 = the standard).
+    #: Multiplies the atmosphere's density (1 = as the atmosphere gives it).
     density_scale: float = 1.0
     #: Wind below ``WIND_TOP_M``, (east, north) m/s.
     wind_en_m_s: tuple[float, float] = (0.0, 0.0)
+    #: The atmosphere; None: the U.S. Standard Atmosphere 1976.
+    air: Air | None = None
+
+    def density(self, t_s: float, r: FloatArray, h: float) -> float:
+        rho = self.air(t_s, r, h) if self.air else atmosphere.density(h)
+        return rho * self.density_scale
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,9 +91,9 @@ class Flight:
 
     def peak_deceleration_g(self, pole: FloatArray, capsule: Capsule) -> float:
         best = 0.0
-        for r, v, h in zip(self.r_m, self.v_m_s, self.height_m, strict=True):
+        for t, r, v, h in zip(self.t_s, self.r_m, self.v_m_s, self.height_m, strict=True):
             vr = _air_relative(r, v, float(h), pole, capsule)
-            rho = atmosphere.density(float(h)) * capsule.density_scale
+            rho = capsule.density(float(t), r, max(float(h), 0.0))
             best = max(best, 0.5 * rho * float(np.dot(vr, vr)) / capsule.beta_kg_m2)
         return best / 9.80665
 
@@ -99,7 +112,9 @@ def _air_relative(
     return np.asarray(vr, dtype=np.float64)
 
 
-def _accel(r: FloatArray, v: FloatArray, pole: FloatArray, capsule: Capsule) -> FloatArray:
+def _accel(
+    t: float, r: FloatArray, v: FloatArray, pole: FloatArray, capsule: Capsule
+) -> FloatArray:
     rn = float(np.linalg.norm(r))
     z = float(np.dot(r, pole))
     # Point mass plus J2 about the true pole.
@@ -107,7 +122,7 @@ def _accel(r: FloatArray, v: FloatArray, pole: FloatArray, capsule: Capsule) -> 
     zr = z / rn
     a = -MU_EARTH * r / rn**3 + k * ((5 * zr**2 - 1) * r - 2 * z * pole)
     h, _ = geodetic_height(r, pole)
-    rho = atmosphere.density(max(h, 0.0)) * capsule.density_scale
+    rho = capsule.density(t, r, max(h, 0.0))
     if rho > 0.0:
         vr = _air_relative(r, v, h, pole, capsule)
         a = a - 0.5 * rho * float(np.linalg.norm(vr)) * vr / capsule.beta_kg_m2
@@ -126,8 +141,8 @@ def fly(
     """From an inertial entry state down to ``ground_m`` above the ellipsoid."""
     pole = np.asarray(pole, dtype=np.float64) / np.linalg.norm(pole)
 
-    def rhs(_t: float, y: FloatArray) -> FloatArray:
-        return np.concatenate([y[3:], _accel(y[:3], y[3:], pole, capsule)])
+    def rhs(t: float, y: FloatArray) -> FloatArray:
+        return np.concatenate([y[3:], _accel(t, y[:3], y[3:], pole, capsule)])
 
     def ground(_t: float, y: FloatArray) -> float:
         return geodetic_height(y[:3], pole)[0] - ground_m
@@ -231,6 +246,7 @@ def footprint(
                 capsule.wind_en_m_s[0] + dr[5] * spread.wind_m_s,
                 capsule.wind_en_m_s[1] + dr[6] * spread.wind_m_s,
             ),
+            air=capsule.air,
         )
         out.append(fly(r, v, pole, cap, ground_m))
     return out

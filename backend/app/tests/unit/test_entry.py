@@ -102,3 +102,55 @@ def test_the_ellipse_of_scattered_points() -> None:
     assert ell["semi_major_km"] == pytest.approx(3.0 * k, rel=0.03)
     assert ell["semi_minor_km"] == pytest.approx(1.0 * k, rel=0.03)
     assert min(ell["azimuth_deg"], 180 - ell["azimuth_deg"]) < 3.0  # along north
+
+
+def _thicker(k: float) -> entry.Air:
+    """The standard atmosphere, ``k`` times as dense, as a density the caller gives."""
+    return lambda _t, _r, h: k * atmosphere.density(h)
+
+
+def test_a_density_the_caller_gives_replaces_the_standard_atmosphere() -> None:
+    pole = np.array([0.0, 0.0, 1.0])
+    r0, v0 = _state(12_000.0, -8.2)
+    std = entry.fly(r0, v0, pole, entry.Capsule(beta_kg_m2=63.0))
+    # The standard atmosphere handed in as a callable is the same flight.
+    same = entry.fly(r0, v0, pole, entry.Capsule(beta_kg_m2=63.0, air=_thicker(1.0)))
+    assert same.r_m[-1] == pytest.approx(std.r_m[-1], abs=1e-6)
+    # Thicker air through the callable is thicker air through the scale, and slows the fall.
+    thick = entry.fly(r0, v0, pole, entry.Capsule(beta_kg_m2=63.0, air=_thicker(1.1)))
+    scaled = entry.fly(r0, v0, pole, entry.Capsule(beta_kg_m2=63.0, density_scale=1.1))
+    assert thick.r_m[-1] == pytest.approx(scaled.r_m[-1], abs=1e-6)
+    assert thick.duration_s > std.duration_s
+
+
+def test_the_air_is_asked_at_seconds_from_entry_and_at_the_height_above_the_ellipsoid() -> None:
+    pole = np.array([0.0, 0.0, 1.0])
+    r0, v0 = _state(12_000.0, -8.2)
+    calls: list[tuple[float, float, float]] = []
+
+    def air(t: float, r: np.ndarray, h: float) -> float:
+        calls.append((t, entry.geodetic_height(r, pole)[0], h))
+        return atmosphere.density(h)
+
+    fl = entry.fly(r0, v0, pole, entry.Capsule(beta_kg_m2=63.0, air=air))
+    assert calls[0][0] == 0.0 and calls[0][2] == pytest.approx(entry.EI_HEIGHT_M, abs=1e-6)
+    # Steps of at most 2 s: the last stage of the last step may lie just past the ground.
+    assert max(t for t, _, _ in calls) <= fl.duration_s + 2.0
+    # The height it gets is the position's, floored at the ground.
+    assert all(h == pytest.approx(max(g, 0.0), abs=1e-6) for _, g, h in calls)
+
+
+def test_the_peak_deceleration_and_the_footprint_use_the_same_air() -> None:
+    pole = np.array([0.0, 0.0, 1.0])
+    r0, v0 = _state(12_000.0, -8.2)
+    cap = entry.Capsule(beta_kg_m2=63.0)
+    fl = entry.fly(r0, v0, pole, cap)
+    double = entry.Capsule(beta_kg_m2=63.0, air=_thicker(2.0))
+    assert fl.peak_deceleration_g(pole, double) == pytest.approx(
+        2.0 * fl.peak_deceleration_g(pole, cap)
+    )
+    tiny = entry.Spread(fpa_deg=0.01, heading_deg=0.001, speed_frac=1e-6, beta_frac=0.0,
+                        density_frac=0.0)  # fmt: skip
+    plain = entry.footprint(r0, v0, pole, cap, tiny, runs=2)
+    thick = entry.footprint(r0, v0, pole, entry.Capsule(63.0, air=_thicker(1.1)), tiny, runs=2)
+    assert all(b.duration_s > a.duration_s for a, b in zip(plain, thick, strict=True))

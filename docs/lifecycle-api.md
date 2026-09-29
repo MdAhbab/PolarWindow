@@ -240,7 +240,9 @@ interface Return {
 // its capsule landed (make validate-capsule); null when that check has not been run here.
 interface CapsuleModelCheck {
   case: string; distance_km: number; distance_range_km: [number, number];
-  limit_km: number; passed: boolean; mission_team_km: number;   // the mission's own simulation
+  limit_km: number; passed: boolean;             // false when distance_km is over limit_km
+  atmosphere: string;                            // the air the fall went through, in plain words
+  mission_team_km: number;                       // the mission's own simulation
   ellipse_99_km: [number, number]; measured_inside_ellipse: boolean;
   checked_at: string; sources: string[]; note: string;         // note: plain words
 }
@@ -727,3 +729,11 @@ that user. `GET /auth/me` returns the same `user`.
     time through it is not worked out) but the plan refuses it with 422. `serves_missions` are the missions
     it is planned for, where it is in the answer already. Real orbiters kept only to check pass
     calculations are not listed.
+- 2026-09-29 (H): `Return.capsule.model_check.atmosphere` (string, always present): the air the
+  modelled fall went through and what it was given, in plain words: NRLMSISE-00 driven by the
+  entry day's solar radio flux and geomagnetic activity (10.7 cm flux 174.1 the day before, ap 4
+  at the time), or the U.S. Standard Atmosphere 1976 with the reason when the day's values are not
+  on disk. With that air the check is 12.1 km from the real landing point (9.4 to 14.8 over the
+  drag range) and `passed` is false against the 10 km limit (the standard atmosphere gave 9.5 km,
+  6.7 to 12.2); `note` names the air and gives the distance in the others. `ellipse_99_km` is now
+  51.2 by 21.8.

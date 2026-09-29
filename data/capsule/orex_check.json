@@ -1,34 +1,90 @@
 {
   "case": "OSIRIS-REx sample return capsule, 24 September 2023",
   "entry_utc": "2023-09-24T14:41:55.072Z",
+  "atmosphere": {
+    "name": "NRLMSISE-00",
+    "f107_sfu": 174.1,
+    "f107_mean_81_day_sfu": 149.3,
+    "ap_3_hour": 4.0,
+    "indices_from": [
+      "omni2_h0_mrg1hr_20230701_v01.cdf"
+    ],
+    "standard_atmosphere_instead": null
+  },
   "measured": {
     "lat_deg": 40.3719,
     "lon_deg": -113.24
   },
   "modelled": {
-    "lat_deg": 40.3532,
-    "lon_deg": -113.3491
+    "lat_deg": 40.3459,
+    "lon_deg": -113.3788
   },
-  "distance_km": 9.5,
+  "distance_km": 12.1,
   "distance_range_km": [
-    6.7,
-    12.2
+    9.4,
+    14.8
   ],
   "limit_km": 10.0,
-  "passed": true,
+  "passed": false,
   "edl_team_km": 8.9,
+  "edl_team_day_km": 3.5,
+  "atmospheres": [
+    {
+      "name": "U.S. Standard Atmosphere 1976",
+      "used": false,
+      "distance_km": 9.5,
+      "distance_range_km": [
+        6.7,
+        12.2
+      ],
+      "ellipse_99_km": [
+        51.4,
+        21.4
+      ],
+      "measured_inside_ellipse": true
+    },
+    {
+      "name": "NRLMSISE-00",
+      "used": true,
+      "distance_km": 12.1,
+      "distance_range_km": [
+        9.4,
+        14.8
+      ],
+      "ellipse_99_km": [
+        51.2,
+        21.8
+      ],
+      "measured_inside_ellipse": true
+    },
+    {
+      "name": "NRLMSIS 2.1",
+      "used": false,
+      "distance_km": 6.6,
+      "distance_range_km": [
+        3.9,
+        9.3
+      ],
+      "ellipse_99_km": null,
+      "measured_inside_ellipse": null
+    }
+  ],
   "beta_kg_m2": 63.1,
   "ellipse_99_km": [
-    51.4,
-    21.4
+    51.2,
+    21.8
   ],
   "measured_inside_ellipse": true,
   "runs": 200,
   "sources": [
     "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/orex/orex_spice/spice_kernels/spk/src_230924_230924_230930_od383a_v1.bsp",
-    "Francis et al., Entry, Descent, and Landing Analysis for the OSIRIS-REx Sample Return Capsule (AAS 24)",
+    "Francis et al., Entry, Descent, and Landing Analysis for the OSIRIS-REx Sample Return Capsule (AAS 24), https://ntrs.nasa.gov/citations/20240000629",
     "Wibben et al., AAS 24-058, Table 12 (reconstructed entry state)",
-    "Mitcheltree et al. 1997 and Wilmoth et al. 1997 (Stardust capsule shape and axial force)"
+    "Mitcheltree et al. 1997 and Wilmoth et al. 1997 (Stardust capsule shape and axial force)",
+    "Picone et al., NRLMSISE-00 empirical model of the atmosphere: statistical comparisons and scientific issues, J. Geophys. Res. 107(A12), 1468 (2002), doi:10.1029/2002JA009430 (run through pymsis)",
+    "Emmert et al., NRLMSIS 2.1: an empirical model of nitric oxide incorporated into MSIS, J. Geophys. Res. Space Physics 127, e2022JA030896 (2022) (the comparison run)",
+    "NASA SPDF, OMNI hourly data: the 10.7 cm solar flux and the 3-hour ap from NOAA NGDC",
+    "National Weather Service radiosonde, Salt Lake City (KSLC, WMO 72572), 24 September 2023 12 UTC, from the Iowa Environmental Mesonet archive: https://mesonet.agron.iastate.edu/json/raob.py?ts=202309241200&station=KSLC"
   ],
-  "checked_at": "2026-09-28T15:19:19+00:00"
+  "checked_at": "2026-09-29T08:17:22+00:00"
 }

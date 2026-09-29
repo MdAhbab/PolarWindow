@@ -306,6 +306,25 @@ def _booster(
 CAPSULE_CHECK = "capsule/orex_check.json"
 
 
+def _atmosphere_words(c: dict[str, Any]) -> str:
+    """The air the modelled fall went through, and what it was given, in plain words."""
+    a = c.get("atmosphere") or {}
+    name = a.get("name") or "U.S. Standard Atmosphere 1976"
+    if a.get("f107_sfu") is None:
+        why = a.get("standard_atmosphere_instead")
+        return (
+            f"{name}, the average density of the air at each height, with no input from that "
+            f"day{f'; used because {why}' if why else ''}."
+        )
+    return (
+        f"{name}, an empirical model of the air’s density at each height and place, given "
+        f"that day’s solar radio flux (10.7 cm: {a['f107_sfu']:g} solar flux units the day "
+        f"before, {a['f107_mean_81_day_sfu']:g} averaged over 81 days) and geomagnetic "
+        f"activity (ap {a['ap_3_hour']:g} at the time). The U.S. Standard Atmosphere 1976 "
+        f"takes its place when a day has none of these."
+    )
+
+
 def model_check() -> dict[str, Any] | None:
     """The capsule entry model against OSIRIS-REx's landing, in numbers and words; None
     when the check has not been run here."""
@@ -315,12 +334,24 @@ def model_check() -> dict[str, Any] | None:
         return None
     lo, hi = c["distance_range_km"]
     a, b = c["ellipse_99_km"]
+    others = "; ".join(
+        f"{x['name']}, {x['distance_km']:g} km ({x['distance_range_km'][0]:g} to "
+        f"{x['distance_range_km'][1]:g})"
+        for x in c.get("atmospheres", [])
+        if not x.get("used")
+    )
+    name = (c.get("atmosphere") or {}).get("name") or "the U.S. Standard Atmosphere 1976"
+    day = c.get("edl_team_day_km")
     note = (
         f"From OSIRIS-REx’s reconstructed entry state, the entry model lands its capsule "
         f"{c['distance_km']:g} km from where the recovery team found it ({lo:g} to {hi:g} km "
-        f"over the published drag range; the limit is {c['limit_km']:g} km). The mission’s own "
-        f"simulation from the same state, before the day’s atmosphere was known, was "
-        f"{c['edl_team_km']:g} km off. Its 99 % landing area, {a:g} by {b:g} km, "
+        f"over the published drag range; the limit is {c['limit_km']:g} km, "
+        f"{'met' if c['passed'] else 'not met'}). It flies through {name} for that day."
+        f"{f' With other air the distance is {others}.' if others else ''} "
+        f"The mission’s own simulation from the same state was {c['edl_team_km']:g} km off "
+        f"with its pre-flight atmosphere"
+        f"{f' and {day:g} km with the day’s reconstructed one' if day else ''}. "
+        f"Its 99 % landing area, {a:g} by {b:g} km, "
         f"{'holds' if c['measured_inside_ellipse'] else 'misses'} the real landing point."
     )
     return {
@@ -329,6 +360,7 @@ def model_check() -> dict[str, Any] | None:
         "distance_range_km": [lo, hi],
         "limit_km": c["limit_km"],
         "passed": c["passed"],
+        "atmosphere": _atmosphere_words(c),
         "mission_team_km": c["edl_team_km"],
         "ellipse_99_km": [a, b],
         "measured_inside_ellipse": c["measured_inside_ellipse"],

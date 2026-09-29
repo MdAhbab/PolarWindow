@@ -133,6 +133,13 @@ def geopotential_m(z_m: float) -> float:
     return R0_M * z_m / (R0_M + z_m)
 
 
+def geometric_m(h_m: float) -> float:
+    """Geometric height of a geopotential height (the inverse of ``geopotential_m``): what a
+    radiosonde or a weather model gives as a height, made the height above the ellipsoid
+    a capsule's flight and the empirical models use."""
+    return R0_M * h_m / (R0_M - h_m)
+
+
 def lower(z_m: float) -> tuple[float, float, float]:
     """(molecular-scale temperature K, pressure Pa, density kg/m^3) at geometric height
     ``z_m`` from 0 to 86 km."""

@@ -162,7 +162,7 @@ class Booster(_M):
 
 
 class CapsuleModelCheck(_M):
-    """The capsule entry model (3-DOF, U.S. Standard Atmosphere 1976) flown from
+    """The capsule entry model (3-DOF, through NRLMSISE-00 for the entry day) flown from
     OSIRIS-REx's reconstructed entry state, against where its capsule landed."""
 
     case: str
@@ -170,6 +170,8 @@ class CapsuleModelCheck(_M):
     distance_range_km: list[float]
     limit_km: float
     passed: bool
+    #: The air the modelled fall went through and what it was given, in plain words.
+    atmosphere: str
     mission_team_km: float
     ellipse_99_km: list[float]
     measured_inside_ellipse: bool
