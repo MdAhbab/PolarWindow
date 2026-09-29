@@ -8918,7 +8918,8 @@
             "enum": [
               "operating",
               "planned",
-              "not_launched"
+              "not_launched",
+              "launched_not_operating"
             ],
             "title": "Status"
           },
@@ -9402,9 +9403,16 @@
             "title": "Naif Id"
           },
           "note": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Note",
-            "description": "Geometry only: none of these orbiters relays for a lander."
+            "description": "What is this orbiter's own: where its recorded trajectory ends before, or starts after, the dates, so no pass there is worked out. Null when it covers them all. That none of these orbiters relays for a lander is `Contact.orbiters_note`, once."
           },
           "source": {
             "anyOf": [
@@ -11799,7 +11807,7 @@
           },
           "radio_not_clear_share": {
             "$ref": "#/components/schemas/QuantityOut",
-            "description": "Percent where the radio path is not clear (first Fresnel zone)."
+            "description": "Percent where the radio path is not clear (the space around the line of sight that the radio signal needs is blocked)."
           },
           "longest_out_of_sight_m": {
             "$ref": "#/components/schemas/QuantityOut"
@@ -14134,7 +14142,7 @@
             },
             "type": "array",
             "title": "Radio",
-            "description": "Radio path clear: the first Fresnel zone as well, [bearing][range]."
+            "description": "Radio path clear: the space around the line of sight that the radio signal needs as well, [bearing][range]."
           }
         },
         "additionalProperties": false,

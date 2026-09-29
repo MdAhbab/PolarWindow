@@ -2927,7 +2927,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "operating" | "planned" | "not_launched";
+            status: "operating" | "planned" | "not_launched" | "launched_not_operating";
             /** Orbit */
             orbit: ("real" | "planned") | null;
             /** Launch Note */
@@ -3094,9 +3094,9 @@ export interface components {
             naif_id: number | null;
             /**
              * Note
-             * @description Geometry only: none of these orbiters relays for a lander.
+             * @description What is this orbiter's own: where its recorded trajectory ends before, or starts after, the dates, so no pass there is worked out. Null when it covers them all. That none of these orbiters relays for a lander is `Contact.orbiters_note`, once.
              */
-            note: string;
+            note: string | null;
             /** @description The recorded JPL Horizons trajectory. */
             source: components["schemas"]["OrbiterSource"] | null;
             /** @description The part of the dates the trajectory covers. */
@@ -3852,7 +3852,7 @@ export interface components {
             viewshed_tile: string | null;
             /** @description Percent out of sight; a range when uncertain cells could go either way. */
             out_of_sight_share: components["schemas"]["QuantityOut"];
-            /** @description Percent where the radio path is not clear (first Fresnel zone). */
+            /** @description Percent where the radio path is not clear (the space around the line of sight that the radio signal needs is blocked). */
             radio_not_clear_share: components["schemas"]["QuantityOut"];
             longest_out_of_sight_m: components["schemas"]["QuantityOut"];
             /** Resolvable */
@@ -4716,7 +4716,7 @@ export interface components {
             sight: ("clear" | "blocked" | "uncertain")[][];
             /**
              * Radio
-             * @description Radio path clear: the first Fresnel zone as well, [bearing][range].
+             * @description Radio path clear: the space around the line of sight that the radio signal needs as well, [bearing][range].
              */
             radio: ("clear" | "blocked" | "uncertain")[][];
         };
