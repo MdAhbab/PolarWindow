@@ -170,6 +170,102 @@
   {
    "sources": [
     {
+     "url": "https://www.globenewswire.com/news-release/2025/04/08/3057599/0/en/Intuitive-Machines-Selects-SpaceX-to-Launch-its-Fourth-Lunar-Lander-Mission-and-Lunar-Data-Relay-Satellites.html",
+     "title": "Intuitive Machines Selects SpaceX to Launch its Fourth Lunar Lander Mission and Lunar Data Relay Satellites (press release, 8 April 2025)",
+     "publisher": "Intuitive Machines, distributed by GlobeNewswire",
+     "accessed": "2026-09-29"
+    }
+   ],
+   "field_sources": {
+    "operator": "https://www.globenewswire.com/news-release/2025/04/08/3057599/0/en/Intuitive-Machines-Selects-SpaceX-to-Launch-its-Fourth-Lunar-Lander-Mission-and-Lunar-Data-Relay-Satellites.html",
+    "status": "https://www.globenewswire.com/news-release/2025/04/08/3057599/0/en/Intuitive-Machines-Selects-SpaceX-to-Launch-its-Fourth-Lunar-Lander-Mission-and-Lunar-Data-Relay-Satellites.html",
+    "launch_note": "https://www.globenewswire.com/news-release/2025/04/08/3057599/0/en/Intuitive-Machines-Selects-SpaceX-to-Launch-its-Fourth-Lunar-Lander-Mission-and-Lunar-Data-Relay-Satellites.html",
+    "serves_missions": "https://www.globenewswire.com/news-release/2025/04/08/3057599/0/en/Intuitive-Machines-Selects-SpaceX-to-Launch-its-Fourth-Lunar-Lander-Mission-and-Lunar-Data-Relay-Satellites.html",
+    "orbit_note": "https://www.globenewswire.com/news-release/2025/04/08/3057599/0/en/Intuitive-Machines-Selects-SpaceX-to-Launch-its-Fourth-Lunar-Lander-Mission-and-Lunar-Data-Relay-Satellites.html"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [
+    "apoapsis_km",
+    "arg_periapsis_deg",
+    "bands",
+    "inclination_deg",
+    "periapsis_km",
+    "period_h"
+   ],
+   "notes": [
+    "The release names neither of the two satellites: this record and the next are this project's labels for them, first and second of two, not the company's names.",
+    "Intuitive Machines' own copies of the release did not load when this was compiled (its investor page timed out twice and refused a plain request with 403, and its news page needs a browser to show any text), so the release was read as Intuitive Machines distributed it through GlobeNewswire.",
+    "No orbit is assumed. Altus-1's record assumes one of the five frozen orbits of NASA's reference design, but two relays given that same assumption would be swept at the same place and counted as one; which of the five these two take is not stated."
+   ],
+   "id": "im-4-relay-1",
+   "name": "IM-4 data-relay satellite, first of two",
+   "role": "relay",
+   "operator": "Intuitive Machines",
+   "naif_id": null,
+   "status": "planned",
+   "launch_note": "One of two lunar data relay satellites expected to launch with IM-4, currently scheduled for 2027 (Intuitive Machines, April 2025).",
+   "periapsis_km": null,
+   "apoapsis_km": null,
+   "inclination_deg": null,
+   "arg_periapsis_deg": null,
+   "period_h": null,
+   "orbit_note": "Intuitive Machines' release gives no orbit for these satellites.",
+   "serves_missions": [
+    "im-4"
+   ],
+   "bands": []
+  },
+  {
+   "sources": [
+    {
+     "url": "https://www.globenewswire.com/news-release/2025/04/08/3057599/0/en/Intuitive-Machines-Selects-SpaceX-to-Launch-its-Fourth-Lunar-Lander-Mission-and-Lunar-Data-Relay-Satellites.html",
+     "title": "Intuitive Machines Selects SpaceX to Launch its Fourth Lunar Lander Mission and Lunar Data Relay Satellites (press release, 8 April 2025)",
+     "publisher": "Intuitive Machines, distributed by GlobeNewswire",
+     "accessed": "2026-09-29"
+    }
+   ],
+   "field_sources": {
+    "operator": "https://www.globenewswire.com/news-release/2025/04/08/3057599/0/en/Intuitive-Machines-Selects-SpaceX-to-Launch-its-Fourth-Lunar-Lander-Mission-and-Lunar-Data-Relay-Satellites.html",
+    "status": "https://www.globenewswire.com/news-release/2025/04/08/3057599/0/en/Intuitive-Machines-Selects-SpaceX-to-Launch-its-Fourth-Lunar-Lander-Mission-and-Lunar-Data-Relay-Satellites.html",
+    "launch_note": "https://www.globenewswire.com/news-release/2025/04/08/3057599/0/en/Intuitive-Machines-Selects-SpaceX-to-Launch-its-Fourth-Lunar-Lander-Mission-and-Lunar-Data-Relay-Satellites.html",
+    "serves_missions": "https://www.globenewswire.com/news-release/2025/04/08/3057599/0/en/Intuitive-Machines-Selects-SpaceX-to-Launch-its-Fourth-Lunar-Lander-Mission-and-Lunar-Data-Relay-Satellites.html",
+    "orbit_note": "https://www.globenewswire.com/news-release/2025/04/08/3057599/0/en/Intuitive-Machines-Selects-SpaceX-to-Launch-its-Fourth-Lunar-Lander-Mission-and-Lunar-Data-Relay-Satellites.html"
+   },
+   "assumed_fields": {},
+   "unconfirmed_fields": [
+    "apoapsis_km",
+    "arg_periapsis_deg",
+    "bands",
+    "inclination_deg",
+    "periapsis_km",
+    "period_h"
+   ],
+   "notes": [
+    "The release names neither of the two satellites: this record and the one before are this project's labels for them, first and second of two, not the company's names.",
+    "Intuitive Machines' own copies of the release did not load when this was compiled (its investor page timed out twice and refused a plain request with 403, and its news page needs a browser to show any text), so the release was read as Intuitive Machines distributed it through GlobeNewswire.",
+    "No orbit is assumed. Altus-1's record assumes one of the five frozen orbits of NASA's reference design, but two relays given that same assumption would be swept at the same place and counted as one; which of the five these two take is not stated."
+   ],
+   "id": "im-4-relay-2",
+   "name": "IM-4 data-relay satellite, second of two",
+   "role": "relay",
+   "operator": "Intuitive Machines",
+   "naif_id": null,
+   "status": "planned",
+   "launch_note": "One of two lunar data relay satellites expected to launch with IM-4, currently scheduled for 2027 (Intuitive Machines, April 2025).",
+   "periapsis_km": null,
+   "apoapsis_km": null,
+   "inclination_deg": null,
+   "arg_periapsis_deg": null,
+   "period_h": null,
+   "orbit_note": "Intuitive Machines' release gives no orbit for these satellites.",
+   "serves_missions": [
+    "im-4"
+   ],
+   "bands": []
+  },
+  {
+   "sources": [
+    {
      "url": "https://ssd.jpl.nasa.gov/horizons/",
      "title": "JPL Horizons on-line ephemeris system",
      "publisher": "NASA JPL Solar System Dynamics",

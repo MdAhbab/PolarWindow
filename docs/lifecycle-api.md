@@ -743,3 +743,10 @@ that user. `GET /auth/me` returns the same `user`.
   reliability within 0.1). It stays false at the Cape (CRPS skill -0.95 at 24 h: the runs' wind is worse
   than the station's own record) and for a launch further out than 48 h, where `LaunchWeather.note` says
   the check reached only 48 h. The meta part "Checked against observations" gives the numbers.
+- 2026-09-29 (backend, relay catalogue; no shape change): `data/catalogues/relays.json` lists IM-4's two lunar data
+  relay satellites (`im-4-relay-1`, `im-4-relay-2`), planned for 2027 as Intuitive Machines' release of 8 April 2025
+  says (read as distributed through GlobeNewswire; the company's own pages did not load). The release names neither
+  satellite and gives no orbit, so the ids are this project's labels, no orbit is assumed and every orbit field says
+  "Not published": `GET /relays` gives `orbit_known: false` and the contact answer's `adds_h` and `via_h` for them are
+  `missing_reason`, not a number. `data/missions.json` gives IM-4 no `comms.relays`, so `for_this_mission` is false
+  for them until it does (not a catalogue matter).
