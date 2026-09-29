@@ -1,4 +1,4 @@
-"""Spherical-harmonic gravity: the Moon's lumpy field and Earth's zonal terms. Pure.
+"""Spherical-harmonic gravity: the Moon's lumpy field and Earth's (zonal and tesseral). Pure.
 
 The potential is summed with the fully normalised Cunningham recursion for
 ``V_nm``, ``W_nm`` (Montenbruck and Gill, *Satellite Orbits*, 2000, section

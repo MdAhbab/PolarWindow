@@ -13,8 +13,11 @@ integrated about the Moon without the Earth-centred round-off.
 
 Bodies and fields:
 
-* Earth: point mass plus zonal terms J2..J6 (EGM2008, tide-free; Pavlis et al.,
-  *JGR* 117, B04406, 2012) in ITRF93, whose pole the EOP kernel supplies.
+* Earth: point mass plus EGM2008 to degree and order 8 (tide-free; Pavlis et al.,
+  *JGR* 117, B04406, 2012) in ITRF93, whose pole the EOP kernel supplies. The zonal
+  terms alone (``earth_zonal(6)``, J2..J6) leave 1.2e-6 m/s^2 unmodelled at 22,500 km,
+  where a trip is an hour or two out of its parking orbit; the rest of the field
+  (degrees 9 and 10 measured) adds less than 2e-11 m/s^2 beyond that.
 * Moon: point mass plus GRGM1200A (Lemoine et al., *GRL* 41, 2014) in
   MOON_PA, switched on within ``moon_sh_within_m`` of the Moon's centre.
 * Sun: point mass. GMs are DE440's (``gm_de440.tpc``).
@@ -36,6 +39,7 @@ from __future__ import annotations
 import math
 from collections.abc import Callable
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Final
 
 import numpy as np
@@ -60,16 +64,58 @@ DRAG_BELOW_M: Final[float] = 1_000_000.0
 #: TT - UTC since 2017-01-01 (37 leap seconds + 32.184 s); TDB - TT < 2 ms.
 TT_MINUS_UTC_S: Final[float] = 69.184
 
-#: EGM2008 fully normalised zonal coefficients, GM and reference radius.
+#: EGM2008 GM and reference radius (ICGEM's EGM2008.gfc header).
 EGM2008_GM: Final[float] = 3.986004415e14
 EGM2008_R_M: Final[float] = 6_378_136.3
-EGM2008_CN0: Final[dict[int, float]] = {
-    2: -0.484165143790815e-03,
-    3: 0.957161207093473e-06,
-    4: 0.539965866638991e-06,
-    5: 0.686702913736681e-07,
-    6: -0.149953927978527e-06,
+#: EGM2008 fully normalised, tide-free coefficients (C_nm, S_nm), n = 2..8, as that file
+#: lists them (ICGEM, Pavlis et al. 2012; read 29 Sep 2026, 15 digits).
+EGM2008_CS: Final[dict[tuple[int, int], tuple[float, float]]] = {
+    (2, 0): (-0.484165143790815e-03, 0.000000000000000e00),
+    (2, 1): (-0.206615509074176e-09, 0.138441389137979e-08),
+    (2, 2): (0.243938357328313e-05, -0.140027370385934e-05),
+    (3, 0): (0.957161207093473e-06, 0.000000000000000e00),
+    (3, 1): (0.203046201047864e-05, 0.248200415856872e-06),
+    (3, 2): (0.904787894809528e-06, -0.619005475177618e-06),
+    (3, 3): (0.721321757121568e-06, 0.141434926192941e-05),
+    (4, 0): (0.539965866638991e-06, 0.000000000000000e00),
+    (4, 1): (-0.536157389388867e-06, -0.473567346518086e-06),
+    (4, 2): (0.350501623962649e-06, 0.662480026275829e-06),
+    (4, 3): (0.990856766672321e-06, -0.200956723567452e-06),
+    (4, 4): (-0.188519633023033e-06, 0.308803882149194e-06),
+    (5, 0): (0.686702913736681e-07, 0.000000000000000e00),
+    (5, 1): (-0.629211923042529e-07, -0.943698073395769e-07),
+    (5, 2): (0.652078043176164e-06, -0.323353192540522e-06),
+    (5, 3): (-0.451847152328843e-06, -0.214955408306046e-06),
+    (5, 4): (-0.295328761175629e-06, 0.498070550102351e-07),
+    (5, 5): (0.174811795496002e-06, -0.669379935180165e-06),
+    (6, 0): (-0.149953927978527e-06, 0.000000000000000e00),
+    (6, 1): (-0.759210081892527e-07, 0.265122593213647e-07),
+    (6, 2): (0.486488924604690e-07, -0.373789324523752e-06),
+    (6, 3): (0.572451611175653e-07, 0.895201130010730e-08),
+    (6, 4): (-0.860237937191611e-07, -0.471425573429095e-06),
+    (6, 5): (-0.267166423703038e-06, -0.536493151500206e-06),
+    (6, 6): (0.947068749756882e-08, -0.237382353351005e-06),
+    (7, 0): (0.905120844521618e-07, 0.000000000000000e00),
+    (7, 1): (0.280887555776673e-06, 0.951259362869275e-07),
+    (7, 2): (0.330407993702235e-06, 0.929969290624092e-07),
+    (7, 3): (0.250458409225729e-06, -0.217118287729610e-06),
+    (7, 4): (-0.274993935591631e-06, -0.124058403514343e-06),
+    (7, 5): (0.164773255934658e-08, 0.179281782751438e-07),
+    (7, 6): (-0.358798423464889e-06, 0.151798257443669e-06),
+    (7, 7): (0.150746472872675e-08, 0.241068767286303e-07),
+    (8, 0): (0.494756003005199e-07, 0.000000000000000e00),
+    (8, 1): (0.231607991248329e-07, 0.588974540927606e-07),
+    (8, 2): (0.800143604736599e-07, 0.652805043667369e-07),
+    (8, 3): (-0.193745381715290e-07, -0.859639339125694e-07),
+    (8, 4): (-0.244360480007096e-06, 0.698072508472777e-07),
+    (8, 5): (-0.257011477267991e-07, 0.892034891745881e-07),
+    (8, 6): (-0.659648680031408e-07, 0.308946730783065e-06),
+    (8, 7): (0.672569751771483e-07, 0.748686063738231e-07),
+    (8, 8): (-0.124022771917136e-06, 0.120551889384997e-06),
 }
+EGM2008_DEGREE: Final[int] = 8
+#: The zonal terms alone: C_n0 for n = 2..6 (J2..J6).
+EGM2008_CN0: Final[dict[int, float]] = {n: EGM2008_CS[(n, 0)][0] for n in range(2, 7)}
 
 
 def earth_zonal(degree: int = 6) -> Field:
@@ -79,6 +125,22 @@ def earth_zonal(degree: int = 6) -> Field:
     return zonal_field(
         EGM2008_GM, EGM2008_R_M, {n: c for n, c in EGM2008_CN0.items() if n <= degree}
     )
+
+
+@lru_cache(maxsize=4)
+def earth_egm(degree: int = EGM2008_DEGREE) -> Field:
+    """Earth's field: EGM2008 (tide-free) to degree and order ``degree`` (2..8); below 2, a
+    point mass."""
+    n = min(degree, EGM2008_DEGREE)
+    if n < 2:
+        return Field(EGM2008_GM, EGM2008_R_M, np.ones((1, 1)), np.zeros((1, 1)), 0)
+    c = np.zeros((n + 1, n + 1))
+    s = np.zeros((n + 1, n + 1))
+    c[0, 0] = 1.0
+    for (i, m), (cnm, snm) in EGM2008_CS.items():
+        if i <= n:
+            c[i, m], s[i, m] = cnm, snm
+    return Field(EGM2008_GM, EGM2008_R_M, c, s, n)
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,14 +184,15 @@ class Model:
     origin: int = EARTH
     moon_field: Field | None = None  # None: the Moon is a point mass
     moon_sh_within_m: float = 17_380_000.0  # ten lunar radii
-    earth_field: Field | None = None  # None: J2..J6 (EGM2008); use earth_zonal(0) to switch off
+    #: None: EGM2008 to degree 8; earth_zonal(6) is J2..J6 alone, earth_zonal(0) switches it off.
+    earth_field: Field | None = None
     sun: bool = True
     moon: bool = True
     cr_am: float = 0.0  # Cr times area over mass, m^2/kg; 0 switches SRP off
     drag: Drag | None = None
 
     def earth(self) -> Field:
-        return self.earth_field if self.earth_field is not None else earth_zonal()
+        return self.earth_field if self.earth_field is not None else earth_egm()
 
 
 @njit(cache=True)  # type: ignore[misc]
@@ -168,6 +231,31 @@ def _hermite(tab: FloatArray, i: int, s: float, dt: float) -> FloatArray:
 @njit(cache=True)  # type: ignore[misc]
 def _rot(tab: FloatArray, i: int, s: float) -> FloatArray:
     return (1.0 - s) * tab[i] + s * tab[i + 1]  # type: ignore[no-any-return]
+
+
+@njit(cache=True)  # type: ignore[misc]
+def _rot_earth(tab: FloatArray, i: int, s: float, dt: float) -> FloatArray:
+    """J2000 -> ITRF93 between knots ``i`` and ``i + 1``, ``s`` of the way (``dt`` apart).
+
+    The Earth turns 0.022 rad in a knot, and a blend of two rotations that far apart is not
+    a rotation (it shrinks the equatorial part by dt^2 w^2 / 8 = 6e-5 at mid-knot). So each
+    knot's rotation is first turned about the Earth's axis by the spin to the instant, and
+    the two are blended: they then differ only by precession, nutation and polar motion over
+    the knot (1e-8 rad), so the blend is a rotation to that and matches SPICE's to it."""
+    a = OMEGA_EARTH * dt * s
+    b = -OMEGA_EARTH * dt * (1.0 - s)
+    ca, sa = math.cos(a), math.sin(a)
+    cb, sb = math.cos(b), math.sin(b)
+    out = np.empty((3, 3))
+    for k in range(3):
+        out[0, k] = (1.0 - s) * (ca * tab[i, 0, k] + sa * tab[i, 1, k]) + s * (
+            cb * tab[i + 1, 0, k] + sb * tab[i + 1, 1, k]
+        )
+        out[1, k] = (1.0 - s) * (-sa * tab[i, 0, k] + ca * tab[i, 1, k]) + s * (
+            -sb * tab[i + 1, 0, k] + cb * tab[i + 1, 1, k]
+        )
+        out[2, k] = (1.0 - s) * tab[i, 2, k] + s * tab[i + 1, 2, k]
+    return out
 
 
 @njit(cache=True)  # type: ignore[misc]
@@ -254,7 +342,7 @@ def _derivs(
     rm = _hermite(moon_tab, i, s, dt)[:3]
     rs = _hermite(sun_tab, i, s, dt)[:3]
     pa = _rot(pa_tab, i, s)
-    itrf = _rot(itrf_tab, i, s)
+    itrf = _rot_earth(itrf_tab, i, s, dt)
     if origin == EARTH:
         pe = np.zeros(3)
         pm = rm
@@ -459,7 +547,7 @@ def derivatives(tables: Tables, model: Model) -> Callable[[float, FloatArray], F
         out: FloatArray = _derivs(t, y, *args)
         if drag is not None and float(np.dot(y[:3], y[:3])) < (6_378_137.0 + DRAG_BELOW_M) ** 2:
             i, s = _knot(t, tables.t0, tables.dt, tables.moon.shape[0])
-            itrf = _rot(tables.itrf, i, s)
+            itrf = _rot_earth(tables.itrf, i, s, tables.dt)
             out[3:] += drag_acceleration(t, y[:3], y[3:], itrf, drag)
         return out
 

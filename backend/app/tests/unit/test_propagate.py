@@ -7,6 +7,7 @@ NASA's reconstructions live in tests/golden/test_propagate_vs_clps.py.
 
 from __future__ import annotations
 
+import dataclasses
 import math
 
 import numpy as np
@@ -19,6 +20,17 @@ GM_M = 4.902800118457551e12
 GM_S = 1.32712440041279419e20
 A_MOON = 3.844e8
 DAY = 86400.0
+
+
+def _frame_z(theta: float) -> np.ndarray:
+    """The matrix that takes coordinates to those of a frame turned by ``theta`` about z."""
+    c, s = math.cos(theta), math.sin(theta)
+    return np.array([[c, s, 0.0], [-s, c, 0.0], [0.0, 0.0, 1.0]])
+
+
+def _spin(t: np.ndarray, extra: float = 0.0) -> np.ndarray:
+    """(n, 3, 3) J2000 -> body-fixed for an Earth turning about its axis at OMEGA_EARTH."""
+    return np.array([_frame_z(forces.OMEGA_EARTH * float(x) + extra) for x in t])
 
 
 def _tables(t0: float = 0.0, days: float = 6.0, dt: float = 300.0) -> forces.Tables:
@@ -48,7 +60,7 @@ def _tables(t0: float = 0.0, days: float = 6.0, dt: float = 300.0) -> forces.Tab
     )
     eye = np.broadcast_to(np.eye(3), (n, 3, 3)).copy()
     return forces.Tables(
-        t0, dt, moon, sun, eye, eye.copy(), GM_E, GM_M, GM_S, 6_378_136.6, 1_737_400.0, 6.957e8
+        t0, dt, moon, sun, eye, _spin(t), GM_E, GM_M, GM_S, 6_378_136.6, 1_737_400.0, 6.957e8
     )
 
 
@@ -223,3 +235,102 @@ def test_residual_acceleration_finds_an_unmodelled_push() -> None:
         tab, model, ets, sol.sol(ets).T, state_at=lambda t: sol.sol(t).T
     )
     assert np.allclose(res, 2e-6, rtol=1e-3)
+    # The vectors say which way it pushes (observed - modelled, so along +y); the size is
+    # their length.
+    vec = propagate.residual_acceleration_vectors(
+        tab, model, ets, sol.sol(ets).T, state_at=lambda t: sol.sol(t).T
+    )
+    assert np.allclose(vec, push, rtol=1e-3)
+    assert np.allclose(np.linalg.norm(vec, axis=1), res, rtol=1e-12)
+
+
+def test_earths_default_field_is_egm2008_to_degree_eight() -> None:
+    assert forces.EGM2008_DEGREE == 8
+    default = forces.Model().earth()
+    assert default.degree == 8 and np.array_equal(default.s, forces.earth_egm(8).s)
+    assert forces.earth_egm(20).degree == 8  # nothing is tabulated past it
+    assert forces.earth_egm(1).degree == 0  # below degree 2, a point mass
+    f4 = forces.earth_egm(4)
+    assert f4.degree == 4 and f4.c.shape == (5, 5)
+    assert (f4.c[4, 3], f4.s[4, 3]) == forces.EGM2008_CS[(4, 3)]
+    assert not f4.c[1].any() and not f4.s[:, 0].any()  # no degree 1, no S_n0
+    # The zonal column is J2..J6 as before, which is what the nodal-drift test above uses.
+    assert [forces.earth_egm(6).c[n, 0] for n in range(2, 7)] == list(forces.EGM2008_CN0.values())
+
+
+def test_earths_pull_turns_with_the_earth() -> None:
+    """Zonal terms cannot tell which way the Earth has turned; the tesseral ones can. With
+    the Earth turned by alpha and the spacecraft carried round with it, the pull is the
+    still Earth's, turned by alpha."""
+    tab = _tables(days=1.0)
+    a = math.radians(37.0)
+    rz = _frame_z(a)
+    knots = tab.t0 + tab.dt * np.arange(tab.itrf.shape[0])
+    turned = dataclasses.replace(tab, itrf=_spin(knots, extra=a))
+    x_bf = np.array([2.2e7, 1.0e7, 8.0e6])  # 24,700 km out, well off every axis
+    at_rest = np.zeros(3)
+    egm = forces.Model(moon=False, sun=False)
+    zonal = forces.Model(moon=False, sun=False, earth_field=forces.earth_zonal(6))
+    still = forces.derivatives(tab, egm)(1000.0, np.concatenate([x_bf, at_rest]))[3:]
+    moved = forces.derivatives(turned, egm)(1000.0, np.concatenate([rz.T @ x_bf, at_rest]))[3:]
+    assert np.allclose(moved, rz.T @ still, rtol=1e-12, atol=0.0)
+    flat = forces.derivatives(tab, zonal)(1000.0, np.concatenate([x_bf, at_rest]))[3:]
+    assert np.linalg.norm(still - flat) > 1e-7  # the tesseral part is really there
+
+
+GEO_R_M = 42_164_170.0
+
+
+def _geo_east_pull(field: gravity.Field, step_deg: float = 0.1) -> tuple[np.ndarray, np.ndarray]:
+    """East-west acceleration (m/s^2) of the field's non-central part on the equator at
+    geostationary radius, every ``step_deg`` of body-fixed longitude."""
+    lons = np.arange(0.0, 360.0, step_deg)
+    east = np.empty(lons.size)
+    for k, lon in enumerate(np.radians(lons)):
+        pos = GEO_R_M * np.array([math.cos(lon), math.sin(lon), 0.0])
+        pull = gravity.acceleration(field, pos, include_central=False)
+        east[k] = pull @ np.array([-math.sin(lon), math.cos(lon), 0.0])
+    return lons, east
+
+
+def _zeros(lons: np.ndarray, east: np.ndarray, *, rising: bool) -> list[float]:
+    """Longitudes (deg) where ``east`` crosses zero rising or falling, by linear interpolation."""
+    step = float(lons[1] - lons[0])
+    out = []
+    for k in range(lons.size):
+        a, b = float(east[k]), float(east[(k + 1) % lons.size])
+        if (a < 0.0 <= b) if rising else (a > 0.0 >= b):
+            out.append((float(lons[k]) + a / (a - b) * step) % 360.0)
+    return sorted(out)
+
+
+def test_the_equatorial_bulge_sets_the_geostationary_drift_points() -> None:
+    """Earth's equatorial ellipticity (C22, S22) pushes a geostationary satellite east or
+    west by up to 5.6e-8 m/s^2. Along-track push moves the orbit's height, so the drift
+    goes the other way (d2 lambda/dt2 = -3 a_east / a): the longitudes a satellite settles
+    at are where the pull rises through zero, 90 degrees from the ones it is pulled to.
+    Closed form for C22 and S22 alone; the whole field to degree 8 against the published
+    drift points, about 75.3 E and 104.7 W (Soop, *Handbook of Geostationary Orbits*, 1994)
+    and 0.0017 deg/day^2 for the ellipticity alone."""
+    c22, s22 = forces.EGM2008_CS[(2, 2)]
+    norm = math.sqrt(10.0 / 24.0)  # fully normalised -> conventional, n = m = 2
+    amp = 6.0 * forces.EGM2008_GM * forces.EGM2008_R_M**2 / GEO_R_M**4
+    amp *= norm * math.hypot(c22, s22)
+    lam22 = 0.5 * math.degrees(math.atan2(s22, c22))  # the long axis of the equator: 14.9 W
+
+    lons, east = _geo_east_pull(forces.earth_egm(2))
+    # (a degree-2 field also has C21 and S21, 1e-9: they do not reach the equator's east pull)
+    assert np.max(np.abs(east)) == pytest.approx(amp, rel=1e-3)
+    settle = _zeros(lons, east, rising=True)
+    assert settle == pytest.approx([(lam22 + 90.0) % 360.0, (lam22 + 270.0) % 360.0], abs=0.02)
+    assert _zeros(lons, east, rising=False) == pytest.approx(
+        [(lam22 + 180.0) % 360.0, (lam22 + 360.0) % 360.0], abs=0.02
+    )
+    drift = 3.0 * amp / GEO_R_M * math.degrees(1.0) * 86400.0**2
+    assert drift == pytest.approx(0.0017, rel=0.03)
+
+    lons, east = _geo_east_pull(forces.earth_egm(8))
+    settle = _zeros(lons, east, rising=True)
+    assert len(settle) == 2 and len(_zeros(lons, east, rising=False)) == 2
+    assert settle[0] == pytest.approx(75.3, abs=1.0)
+    assert settle[1] == pytest.approx(360.0 - 104.7, abs=1.0)
