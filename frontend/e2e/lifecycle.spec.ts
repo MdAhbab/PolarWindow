@@ -520,8 +520,11 @@ test('rover line of sight (contract fixtures): the answer first, the map in thre
   await expect(row.getByRole('button', { name: 'Radio path' })).toHaveAttribute('aria-pressed', 'true')
   await expect(row.getByRole('img', { name: /^Radio path between Yaoki and the lander/ })).toBeVisible()
   await expect.poll(() => [...layers].sort().join(',')).toBe('radio,sight,terrain')
+  // What the radio path needs beyond the line of sight, in plain words.
+  await expect(row).toContainText('the ground must also stay out of the space around the line of sight that the radio signal needs')
   // The table twin, from the same rays: both the line of sight and the radio path.
   await row.getByRole('button', { name: 'Read the chart as a table' }).click()
+  await expect(row.getByRole('columnheader', { name: 'Radio path (the space around the line of sight that the radio signal needs)' })).toBeVisible()
   const ray = row.getByRole('row', { name: /^100°/ })
   await expect(ray).toContainText('In sight 25–125 m; uncertain 150–175 m; blocked 200–500 m')
   await expect(ray).toContainText('In sight 25–100 m; uncertain 125–150 m; blocked 175–500 m')

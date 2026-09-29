@@ -884,6 +884,11 @@ describe('Rover and lander line of sight', () => {
     // The switch asks for the radio path's tiles.
     fireEvent.click(screen.getByRole('button', { name: 'Radio path' }))
     expect(Array.from(screen.getByTestId('site-tile-map').querySelectorAll('image')).some((i) => /\?layer=radio$/.test(i.getAttribute('href') ?? ''))).toBe(true)
+    // What the radio path needs beyond the line of sight is said in plain words, above the map and over the table, never by its term.
+    expect(screen.getByText('Where the radio path is clear too: the ground must also stay out of the space around the line of sight that the radio signal needs, so less of the ground is clear.')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Read the chart as a table' }))
+    expect(screen.getByRole('columnheader', { name: 'Radio path (the space around the line of sight that the radio signal needs)' })).toBeTruthy()
+    expect(document.body.textContent).not.toMatch(/Fresnel/i)
     unmount()
 
     render(<ViewshedPanel v={v} roverName="Yaoki" tile={null} at={null} />)

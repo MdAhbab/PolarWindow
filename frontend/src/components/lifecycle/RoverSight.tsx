@@ -16,6 +16,9 @@ export const SIGHT_WORDS: Record<SightState, { words: string; glyph: string; fil
 
 export type { SightLayer }
 
+/** What the radio path needs beyond the line of sight, in the words the served note uses. */
+export const RADIO_ROOM = 'the space around the line of sight that the radio signal needs'
+
 /** One ray's states as runs of the same state, from the first sample to the last of each run. */
 export function rayRuns(states: SightState[], ranges: number[]): { state: SightState; from: number; to: number; first: number; last: number }[] {
   const out: { state: SightState; from: number; to: number; first: number; last: number }[] = []
@@ -134,11 +137,16 @@ export function ViewshedTable({ v }: { v: ViewshedDTO }) {
         <caption className="sr-only">For each direction from the lander, where a rover would be in its sight, blocked, or uncertain, by distance.</caption>
         <thead>
           <tr className="bg-inset">
-            {['Direction', 'Line of sight', 'Radio path (first Fresnel zone)'].map((h) => (
-              <th key={h} scope="col" className={head}>
-                {h}
-              </th>
-            ))}
+            <th scope="col" className={head}>
+              Direction
+            </th>
+            <th scope="col" className={head}>
+              Line of sight
+            </th>
+            <th scope="col" className={head}>
+              Radio path{' '}
+              <span className="mt-0.5 block text-small font-normal tracking-normal text-ink-3 normal-case">({RADIO_ROOM})</span>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -195,7 +203,7 @@ export function ViewshedPanel({
           <p className="text-small text-ink-2">
             {layer === 'sight'
               ? 'Where a rover could see the lander’s antenna, and the lander see it.'
-              : 'Where the radio path is clear too: it needs a wider corridor over the ground (the first Fresnel zone), so less of the ground is clear.'}
+              : `Where the radio path is clear too: the ground must also stay out of ${RADIO_ROOM}, so less of the ground is clear.`}
           </p>
           {onTerrain ? (
             <SiteTileMap v={v} layer={layer} roverName={roverName} tile={tile as string} at={at as { lat_deg: number; lon_deg: number }} />
