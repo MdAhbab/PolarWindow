@@ -489,6 +489,68 @@ The check is made at 24 and 48 h; a share for a launch further out than 48 h is 
 it and is not shown as checked. The download goes on, and the two
 `data/hindcast/gefs_reforecast_wind_*.json` files are rewritten each time it is scored.
 
+**HRRR's one forecast against the same stations** (`make hindcast-hrrr`,
+`app/feeds/hindcast_hrrr.py`). The launch weather lists HRRR (3 km, one run) beside the ensemble as
+one forecast, "over" or "under" the limit; this asks how good that wind and that call have been.
+It reads HRRR version 4 (December 2020 on, the version the live feed reads) from NOAA's open-data
+bucket on AWS: the 00 and 12 UTC runs on every second day of 2021 to 2025, 1,826 runs (2021-01-02 to
+2025-12-31; every run planned was in the archive), at 1, 6, 12 and 18 h, the leads the live feed
+keeps. The 10 m wind at the grid point nearest each station (0.7 km from KXMR, 0.3 km from KVBG) is
+read as the two bytes of the message that hold it (`parsers/grib_ranges.py`, after the file's index
+says where the message starts): about 46 kB a run instead of the eight 2.4 MB messages it comes
+from. The reader is equal to ecCodes on every value of five messages cut around the Cape and on
+20,000 scattered values of a full-size grid ecCodes wrote (`tests/unit/test_grib_ranges.py`), and it
+was checked once against a real archive message (the 2025-06-01 00 UTC run at 6 h): 222,259 values
+drawn from its 1,905,141 (largest difference 0.0), the own coordinates of every grid point (none
+read as another cell) and 1,521 random places (none named another cell than ecCodes does), and
+both stations fall in the cells ecCodes names. The outcome and the station's record are those above
+(the station's sustained wind in its report nearest the valid time, within 30 minutes; its
+month-by-hour record for 2000–2019), the limit 10.52 m/s at 10 m. The wind is scored against the
+record twice: the typical (median) wind for that month and hour used as a forecast (the mean
+absolute error), and the whole range of what has happened then (the CRPS; a single forecast's CRPS
+is its absolute error, so this is the skill the GEFS check reports, and the harder bar for one
+forecast to clear). The over or under call is scored as a share of 0 or 1 (Brier) against the
+station's month-by-hour frequency. Intervals are 95 %, from resampling whole months of cases.
+
+| Station, lead | Cases | Lean, HRRR minus station (m/s) | Mean absolute error (m/s) | Skill against the typical wind (mean absolute error) | CRPS skill | Station above the limit / HRRR said over / of them right | Brier skill of the call |
+|---|---|---|---|---|---|---|---|
+| KXMR 1 h | 1,744 | +0.32 | 1.13 | 0.26 (0.22 to 0.31) | −0.02 (−0.09 to 0.03) | 3 / 2 / 1 | not worked out |
+| KXMR 6 h | 1,733 | +0.18 | 1.23 | 0.19 (0.14 to 0.23) | −0.14 (−0.20 to −0.08) | 8 / 9 / 3 | not worked out |
+| KXMR 12 h | 1,746 | +0.61 | 1.29 | 0.15 (0.09 to 0.20) | −0.20 (−0.28 to −0.12) | 5 / 8 / 2 | not worked out |
+| KXMR 18 h | 1,744 | +0.12 | 1.22 | 0.18 (0.13 to 0.23) | −0.14 (−0.21 to −0.07) | 9 / 11 / 5 | not worked out |
+| KXMR, the four leads together | 6,967 | | | | | 25 / 30 / 11 | −0.32 (−0.79 to 0.08) |
+| KVBG 1 h | 1,728 | 0.00 | 0.99 | 0.42 (0.39 to 0.45) | 0.19 (0.14 to 0.22) | 30 / 8 / 7 | 0.16 (0.01 to 0.32) |
+| KVBG 6 h | 1,739 | +0.43 | 1.23 | 0.28 (0.23 to 0.33) | 0.01 (−0.06 to 0.07) | 11 / 5 / 3 | 0.12 (−0.33 to 0.48) |
+| KVBG 12 h | 1,749 | +0.29 | 1.19 | 0.31 (0.27 to 0.34) | 0.02 (−0.03 to 0.06) | 33 / 15 / 8 | −0.01 (−0.25 to 0.25) |
+| KVBG 18 h | 1,740 | +0.62 | 1.37 | 0.22 (0.17 to 0.26) | −0.09 (−0.15 to −0.04) | 9 / 7 / 3 | not worked out |
+| KVBG, the four leads together | 6,956 | | | | | 83 / 35 / 21 | 0.06 (−0.06 to 0.20) |
+
+At both pads and every lead HRRR's 10 m wind leans a little high (0.1 to 0.6 m/s above the
+station's, level with it at Vandenberg's 1 h) and is off by 1.0 to 1.4 m/s on average, 15 to 42 %
+less than the typical wind for the month and hour is off, every interval clear of zero. Against
+the whole range seen at that month and hour it does better only at Vandenberg's 1 h (0.19, 0.14 to
+0.22); it cannot be told apart from it at Vandenberg's 6 and 12 h and at the Cape's 1 h, and it does
+worse at the Cape's 6, 12 and 18 h (−0.14 to −0.20) and at Vandenberg's 18 h (−0.09), each interval
+clear of zero. The limit was passed in the station's report in 25 of 6,967 cases at the Cape (0.4 %)
+and 83 of 6,956 at Vandenberg (1.2 %). At the Cape HRRR said "over" 30 times, right 11 times, and
+missed 14 of the 25; at Vandenberg it said "over" 35 times, right 21 times, and missed 62 of the
+83. Fewer than 10 cases were above the limit at any lead at the Cape and at Vandenberg's 18 h, so
+no Brier skill is worked out there; at Vandenberg the call's is 0.16 (0.01 to 0.32) at 1 h, 0.12
+(−0.33 to 0.48) at 6 h and −0.01 (−0.25 to 0.25) at 12 h. Nothing here shows the single call
+beating what the station's own record says about that hour: over the four leads together the skill
+is 0.06 (−0.06 to 0.20) at Vandenberg and −0.32 (−0.79 to 0.08) at the Cape. No gate applies to
+one forecast, which is not a share, so nothing here makes a rule say "checked against
+observations"; the numbers go beside the forecast instead. `OneForecast.note` gives them for the
+lead nearest the step shown (the mean absolute error, the lean, the skill against the typical wind
+with its 95 % range, and the call's record over the four leads), and the disagreement flag counts
+NWS and HRRR as disagreeing only when they are on opposite sides of the limit and further apart
+than HRRR's own root-mean-square error at that lead (1.3 to 1.8 m/s at 10 m, carried to the rule's
+height on the same neutral profile). Not covered: the 162 ft wind the rule names (no public
+station measures it, so the check is at 10 m), runs at other hours than 00 and 12 UTC (the live
+feed reads the latest run), and leads between the four. `make hindcast-hrrr` resumes from
+`data/hindcast/hrrr_wind.cache.jsonl` and rewrites `data/hindcast/hrrr_wind_{region}.json`; the last
+115 runs took 1.1 s each with 12 requests in flight, so a fresh cache takes about 35 minutes.
+
 **Lightning climatology** (`make thunder-climatology`, `app/data/thunder_climatology.py`).
 NASA MSFC's Combined GLM Hourly Thunder Hour data (GHRC DAAC, doi:10.5067/GLM/HTH/DATA301),
 2019–2025, 2,557 days: for each hour, whether thunder could be heard in each 0.05° cell.

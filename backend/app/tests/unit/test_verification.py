@@ -242,7 +242,9 @@ def test_the_multi_year_check_is_used_first_and_covers_only_the_leads_it_scored(
         tmp_path,
         monkeypatch,
         **{
-            "gefs_reforecast_wind_vandenberg.json": _wind_check(True, days_fetched=845),
+            "gefs_reforecast_wind_vandenberg.json": _wind_check(
+                True, days_fetched=845, system="GEFSv12 reforecast"
+            ),
             "gefs_wind_vandenberg.json": _wind_check(False),
         },
     )
@@ -254,6 +256,7 @@ def test_the_multi_year_check_is_used_first_and_covers_only_the_leads_it_scored(
         assert ver.reach_h("vandenberg") == 48 and ver.reach_h("florida") == 0
         text = ver.summary("vandenberg", "f9-wind-162ft") or ""
         assert "845 forecast days" in text and "CRPS skill 0.20" in text
+        assert "(23.5 mph); forecasts from GEFSv12 reforecast) for 2007-01-08 to 2019-12-31" in text
         assert "It passed the gate" in text and "up to 48 h ahead" in text
     finally:
         ver.load.cache_clear()
@@ -305,6 +308,7 @@ def _hrrr_check(**call: object) -> dict:
         "rmse_m_s": 1.7,
         "mae_m_s": 1.2,
         "mae_skill": 0.25,
+        "mae_skill_95": [0.2, 0.3],
     }
     return {
         "station": "KVBG",
@@ -337,8 +341,30 @@ def test_hrrr_check_is_read_at_the_nearest_lead_and_put_in_words(
         assert "KVBG for 2021 to 2025 (700 runs at this lead)" in words
         assert "off by 1.2 m/s on average, 0.3 m/s above the station's" in words
         assert "25% closer to what was measured" in words
+        assert "usual wind for that month and hour (95 % 20 to 30%)." in words
         assert "40 times in 2800 runs, HRRR called 24 of them, and 6 of its 30 calls" in words
         assert ver.hrrr_words("florida", 6.0) is None
+    finally:
+        ver.hrrr_load.cache_clear()
+
+
+def test_hrrr_words_say_no_lean_and_give_a_worse_skill_in_its_own_direction(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app.data import verification as ver
+
+    check = _hrrr_check()
+    check["leads"]["1"].update(bias_m_s=0.004, mae_skill=-0.1, mae_skill_95=[-0.3, 0.02])
+    check["leads"]["6"].pop("mae_skill_95")
+    _on_disk(tmp_path, monkeypatch, **{"hrrr_wind_vandenberg.json": check})
+    ver.hrrr_load.cache_clear()
+    try:
+        words = ver.hrrr_words("vandenberg", 1.0) or ""
+        assert "0.0 m/s above" not in words and "no higher or lower than the station's" in words
+        # a skill below zero is "further from", its interval turned the same way round
+        assert "10% further from what was measured" in words and "(95 % -2 to 30%)" in words
+        # no interval on file, none said
+        assert "usual wind for that month and hour." in (ver.hrrr_words("vandenberg", 6.0) or "")
     finally:
         ver.hrrr_load.cache_clear()
 

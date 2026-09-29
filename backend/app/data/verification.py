@@ -84,10 +84,10 @@ def summary(region: str, rule_id: str) -> str | None:
     leads = d.get("leads") or {}
     parts = [_lead_words(lead, leads[lead]) for lead in sorted(leads, key=int)]
     verdict = "passed" if d.get("passes") else "did not pass"
-    system = f" using {d['system']}" if d.get("system") else ""
+    system = f"; forecasts from {d['system']}" if d.get("system") else ""
     span = f", {d['days_fetched']} forecast days" if d.get("days_fetched") else ""
     return (
-        f"Checked against {d['station']} ({d['event']}){system} for "
+        f"Checked against {d['station']} ({d['event']}{system}) for "
         f"{d['period'].replace('..', ' to ')}{span}: "
         + "; ".join(parts)
         + f". It {verdict} the gate ({d['gate']})."
@@ -119,6 +119,14 @@ def _hrrr_lead(d: dict[str, Any], lead_h: float) -> dict[str, Any] | None:
     return x if x.get("cases") else None
 
 
+def _range_pct(span: list[float] | tuple[float, float] | None, closer: bool) -> str:
+    """`` (95 % 22 to 31%)``: a skill's interval, said in the direction the words give the skill."""
+    if not span:
+        return ""
+    lo, hi = (span[0], span[1]) if closer else (-span[1], -span[0])
+    return f" (95 % {100 * lo:.0f} to {100 * hi:.0f}%)"
+
+
 def hrrr_error_m_s(region: str, lead_h: float) -> float | None:
     """Root-mean-square error of HRRR's 10 m wind at the lead, m/s, or None if not checked."""
     d = hrrr_load(region)
@@ -136,15 +144,20 @@ def hrrr_words(region: str, lead_h: float) -> str | None:
     span = f"{years[0]} to {years[-1]}" if years else "the years checked"
     bias = x["bias_m_s"]
     skill = x.get("mae_skill")
+    lean = (
+        "no higher or lower than the station's"
+        if round(abs(bias), 1) == 0.0
+        else f"{abs(bias):.1f} m/s {'above' if bias > 0 else 'below'} the station's"
+    )
     text = (
         f"Checked against {d['station']} for {span} ({x['cases']} runs at this lead): HRRR's 10 m "
-        f"wind was off by {x['mae_m_s']:.1f} m/s on average, {abs(bias):.1f} m/s "
-        f"{'above' if bias >= 0 else 'below'} the station's"
+        f"wind was off by {x['mae_m_s']:.1f} m/s on average, {lean}"
     )
     if skill is not None:
         text += (
             f", and {abs(100 * skill):.0f}% {'closer to' if skill >= 0 else 'further from'} what "
             "was measured than the station's usual wind for that month and hour"
+            + _range_pct(x.get("mae_skill_95"), skill >= 0)
         )
     text += ". "
     c = d.get("call_all_leads") or {}
