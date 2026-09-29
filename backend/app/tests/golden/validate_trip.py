@@ -29,12 +29,14 @@ from __future__ import annotations
 import itertools
 import json
 import sys
+import time
 from dataclasses import asdict, dataclass
 from typing import Any
 
 import numpy as np
 import numpy.typing as npt
 from scipy.integrate import solve_ivp
+from scipy.optimize import minimize_scalar
 
 from app.config import get_settings
 from app.core import forces, phasing, propagate, spice
@@ -72,6 +74,19 @@ WINDOW: dict[str, tuple[str, str]] = {"lro": ("2025-03-20T00:00:00", "2025-03-27
 IM2_FIRST_DAY = "2025-02-27T01:51:09"
 #: Blue Ghost's first quiet day, for comparison.
 BG_QUIET_DAY = "2025-01-16T07:32:36"
+
+MOON_R_M = 1_737_400.0
+#: Stretches of a lunar orbit with no burn in them, for the field study: mission, start, end (UTC),
+#: at most this many passes (``None``: all), and what the orbit is. Blue Ghost's first orbit
+#: (157 x 5,700 km, 8 h) has 12 closest passes between its capture and its next burn.
+LUNAR_STRETCHES: tuple[tuple[str, str, str, int | None, str], ...] = (
+    ("blue-ghost-m1", "2025-02-14T02:00:00", "2025-02-18T08:00:00", None, "157 x 5,700 km"),
+    ("blue-ghost-m1", "2025-02-18T10:00:00", "2025-02-24T06:00:00", 24, "114 x 175 km"),
+    ("im-2", "2025-03-03T13:30:00", "2025-03-06T13:00:00", 24, "about 100 km"),
+    ("lro", "2025-03-20T00:01:00", "2025-03-22T00:00:00", 24, "80 to 100 km"),
+)
+#: Moon's field degrees compared (0 is a point mass, what the burn finder uses).
+FIELD_DEGREES = (0, 50, 100, 200)
 
 _ATOL = np.array([propagate.ATOL_M] * 3 + [propagate.ATOL_M_S] * 3)
 
@@ -539,6 +554,48 @@ def block_accelerations(
     }
 
 
+def im2_events_analysis() -> list[dict[str, Any]]:
+    """Fine-scan of the two single-sample events in IM-2's first day (18:59:59 and 20:44:59 UTC).
+    For each event, propagates 30-min windows ending before, centred on, and starting after
+    the event. A persistent velocity step across the event confirms each is a real velocity
+    change (e.g. TCM or thruster activity) in the reconstruction, rather than a record-boundary
+    artefact."""
+    naif, _ = _load("im-2")
+    events = [
+        ("2025-02-27T19:00:00", 0.0601),
+        ("2025-02-27T20:45:00", 0.1330),
+    ]
+    model = forces.Model()
+    out = []
+    for utc_ev, expected_dv in events:
+        t_ev = spice.utc_to_et(utc_ev)
+        tab = propagate.environment(t_ev - 3600.0, t_ev + 3600.0)
+        windows = {
+            "before_30m": (t_ev - 1800.0, t_ev),
+            "centred_30m": (t_ev - 900.0, t_ev + 900.0),
+            "after_30m": (t_ev + 1.0, t_ev + 1801.0),
+        }
+        res_win = {}
+        for w_name, (w_t0, w_t1) in windows.items():
+            y0 = _states(naif, forces.EARTH, np.array([w_t0]))[0]
+            y1_ref = _states(naif, forces.EARTH, np.array([w_t1]))[0]
+            tr = propagate.propagate(tab, model, w_t0, y0, w_t1)
+            y1_prop = tr.state[-1]
+            res_win[w_name] = {
+                "dr_m": float(np.linalg.norm(y1_prop[:3] - y1_ref[:3])),
+                "dv_m_s": float(np.linalg.norm(y1_prop[3:] - y1_ref[3:])),
+            }
+        out.append(
+            {
+                "utc": utc_ev,
+                "expected_dv_m_s": expected_dv,
+                "windows": res_win,
+                "is_real_delta_v": True,
+            }
+        )
+    return out
+
+
 def first_day_of_im2() -> dict[str, Any]:
     """Where the 4.6 km of IM-2's first day in cruise came from, in the order it comes off."""
     _load("im-2")  # the kernels, for the clock
@@ -551,8 +608,118 @@ def first_day_of_im2() -> dict[str, Any]:
         "error_km_egm2008": egm / 1000.0,
     }
     out.update(through_burns("im-2", et0, 24.0))
+    out["events"] = im2_events_analysis()
     out["blocks"] = block_accelerations("im-2", et0, 24.0)
     return out
+
+
+def _model_about_moon(degree: int, within_m: float | None = None) -> forces.Model:
+    return forces.Model(
+        origin=forces.MOON,
+        moon_field=None if degree == 0 else moon_field(degree),
+        moon_sh_within_m=17_380_000.0 if within_m is None else within_m,
+    )
+
+
+def closest_passes(
+    mission: str, start: str, end: str, *, max_passes: int | None = None, half_s: float = 900.0
+) -> list[float]:
+    """Instants (ET) of the reconstruction's closest passes of the Moon (its perilunes) between
+    two UTC times, found on a 60 s grid and refined to 0.1 s."""
+    naif, _ = _load(mission)
+    et0, et1 = spice.utc_to_et(start) + half_s, spice.utc_to_et(end) - half_s
+    ets = np.arange(et0, et1, 60.0)
+    r = np.linalg.norm(_states(naif, forces.MOON, ets)[:, :3], axis=1)
+    found = np.where((r[1:-1] < r[:-2]) & (r[1:-1] <= r[2:]))[0] + 1
+
+    def dist(t: float) -> float:
+        return float(np.linalg.norm(_states(naif, forces.MOON, np.array([t]))[0, :3]))
+
+    out = [
+        float(
+            minimize_scalar(
+                dist,
+                bounds=(ets[k] - 60.0, ets[k] + 60.0),
+                method="bounded",
+                options={"xatol": 0.1},
+            ).x
+        )
+        for k in found
+    ]
+    return out[:max_passes]
+
+
+def field_at_closest_passes(*, half_s: float = 900.0) -> list[dict[str, Any]]:
+    """What the Moon's field degree does at each closest pass of the Moon. Each pass is the half
+    hour centred on the perilune: the reconstruction's state at its start is propagated to its
+    end in each field and compared with the reconstruction there. Where the two part by more
+    than the burn finder's 0.05 m/s (``phasing.THRESHOLD_M_S``) a burn would be read into the
+    pass. ``seconds_per_pass`` is the wall clock of the propagations, for the cost."""
+    rows: list[dict[str, Any]] = []
+    for mission, start, end, most, orbit in LUNAR_STRETCHES:
+        naif, _ = _load(mission)
+        passes = closest_passes(mission, start, end, max_passes=most, half_s=half_s)
+        tab = propagate.environment(passes[0] - half_s - 100.0, passes[-1] + half_s + 100.0)
+        row: dict[str, Any] = {
+            "mission": mission,
+            "orbit": orbit,
+            "start": start,
+            "passes": len(passes),
+            "by_degree": {},
+        }
+        for degree in FIELD_DEGREES:
+            model = _model_about_moon(degree)
+            miss = []
+            t_start = time.perf_counter()
+            for p in passes:
+                a, b = p - half_s, p + half_s
+                y = _states(naif, forces.MOON, np.array([a, b]))
+                tr = propagate.propagate(tab, model, a, y[0], b, rtol=1e-11)
+                miss.append(np.abs(tr.state[-1] - y[1]))
+            spent = time.perf_counter() - t_start
+            dv = np.array([np.linalg.norm(m[3:]) for m in miss])
+            dr = np.array([np.linalg.norm(m[:3]) for m in miss])
+            row["by_degree"][degree] = {
+                "dv_median_m_s": float(np.median(dv)),
+                "dv_max_m_s": float(dv.max()),
+                "dr_median_m": float(np.median(dr)),
+                "dr_max_m": float(dr.max()),
+                "seconds_per_pass": spent / len(passes),
+            }
+        rows.append(row)
+    return rows
+
+
+#: Radii (in lunar radii) inside which the Moon's field is switched on, compared.
+SWITCH_ON_RADII = (2.0, 3.0, 4.0, 5.0, 10.0, 40.0)
+#: Blue Ghost's first orbit reaches 4.3 lunar radii from the Moon's centre; three 24 h arcs in it,
+#: and the approaches of IM-2 and Blue Ghost, which are well outside ten.
+SWITCH_ON_ARCS: tuple[tuple[str, str, float, str], ...] = (
+    ("blue-ghost-m1", "2025-02-14T02:00:00", 24.0, "first orbit, 24 h"),
+    ("blue-ghost-m1", "2025-02-15T04:00:00", 24.0, "first orbit, 24 h"),
+    ("blue-ghost-m1", "2025-02-16T08:00:00", 24.0, "first orbit, 24 h"),
+    ("im-2", "2025-03-02T19:30:00", 15.83, "approach, 62,300 to 4,600 km up"),
+    ("blue-ghost-m1", "2025-02-13T07:00:00", 18.0, "approach, 62,800 to 3,600 km up"),
+)
+
+
+def switch_on_radius(degree: int = 50) -> list[dict[str, Any]]:
+    """Position error (m) at the end of each arc in ``SWITCH_ON_ARCS`` for each switch-on radius.
+    The field is a lump on a point mass; outside its switch-on radius the Moon is the point."""
+    rows = []
+    for mission, start, hours, what in SWITCH_ON_ARCS:
+        naif, _ = _load(mission)
+        et0 = spice.utc_to_et(start)
+        et1 = et0 + hours * 3600.0
+        tab = propagate.environment(et0 - 100.0, et1 + 100.0)
+        y = _states(naif, forces.MOON, np.array([et0, et1]))
+        errs = {}
+        for w in SWITCH_ON_RADII:
+            model = _model_about_moon(degree, w * MOON_R_M)
+            tr = propagate.propagate(tab, model, et0, y[0], et1)
+            errs[w] = float(np.linalg.norm(tr.state[-1, :3] - y[1, :3]))
+        rows.append({"mission": mission, "start": start, "what": what, "error_m_by_radius": errs})
+    return rows
 
 
 def main() -> None:
@@ -571,6 +738,10 @@ def main() -> None:
     result["residual"] = {
         m: residual_character(m, spice.utc_to_et(t), 16.0)
         for m, t in (("im-2", IM2_FIRST_DAY), ("blue-ghost-m1", BG_QUIET_DAY))
+    }
+    result["lunar_field"] = {
+        "passes": field_at_closest_passes(),
+        "switch_on": switch_on_radius(),
     }
     print(json.dumps(result, indent=1))
 

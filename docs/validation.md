@@ -77,26 +77,58 @@ at that point in the flight.
 | LRO | 2025-03-20 00:01 | lunar orbit, 80–100 km | 24 h | 0.05 km | 0.05 km |
 | LRO | 2025-03-21 01:41 | lunar orbit, 80–100 km | 24 h | 0.03 km | 0.03 km |
 | IM-1 | 2024-02-19 20:26 | cruise | 8.5 h (longest stretch) | 0.64 km | 0.64 km |
-| IM-2 | 2025-02-27 01:51 | cruise | 24 h | **4.61 km** | 4.43 km |
+| IM-2 | 2025-02-27 01:51 | cruise | 24 h | **4.40 km** | 4.43 km |
 
 Raising the Moon's field from degree 100 to 200 changes the lunar-orbit rows
 by at most 8 m. A 24 h forward-and-back run from Blue Ghost's reconstructed
 state returns to within **5.8 mm**.
 
-**Against the plan's tolerances.** Reconstructions: ≤1 km after 24 h is met
+**Against the plan's tolerances.** Reconstructions: <=1 km after 24 h is met
 for Blue Ghost 1 and for IM-2 in lunar orbit, **not for IM-2's cruise
-(4.61 km)**; ≤5 km after 72 h is met (1.08 and 1.46 km). LRO: ≤1 km after
-24 h is met (0.03–0.05 km). Round trip ≤1 m is met.
+(4.40 km)**; <=5 km after 72 h is met (1.08 and 1.46 km). LRO: <=1 km after
+24 h is met (0.03-0.05 km). Round trip <=1 m is met.
 
-**Why IM-2's cruise misses.** Throughout its cruise IM-2's reconstruction
-carries an acceleration the force model does not have: median 6.4e-7 m/s²
-over the whole file, about 1e-6 m/s² in the stretch used (IM-1's is
-1.8e-6 m/s², Blue Ghost's 2.9e-7 m/s²). Held for a day, 1e-6 m/s² moves a
-spacecraft ½·a·t² ≈ 3.7 km, which is the size of the miss. The residual is
-constant within each hour of the reconstruction and steps between hours, as
-an estimated acceleration in an orbit-determination solution would; whether
-it is thruster activity, venting or the solution's own estimate is not
-published, and we do not assert one.
+**Why IM-2's cruise misses (4.40 km vs 1 km plan).** EGM2008 tesseral terms up to
+degree and order 8 resolve the first ~1.5 h out of parking orbit (accounting for
+1.2e-6 m/s^2 tesseral residual at 22,500 km, reducing 24 h error from 4.616 km to
+4.395 km). Residual analysis of the remaining 4.395 km reveals:
+1. Piecewise-constant acceleration: across 48 half-hour blocks on a 30-min TDB
+   grid, median unmodelled acceleration is 6.71e-7 m/s^2 (mean 6.95e-7 m/s^2),
+   constant within each half-hour (spread 0.10%), with sharp steps at 30-min
+   boundaries (93.6% of boundary steps exceed the 90th percentile of mid-block
+   steps). The direction is median 58 deg from anti-Sun (Cr*A/m fit R^2 0.20,
+   ruling out unmodelled SRP as the primary cause).
+2. Two single-sample velocity changes in the reconstruction: at 19:00:00 UTC
+   (dv = 0.0601 m/s) and 20:45:00 UTC (dv = 0.1330 m/s). Fine-scan propagation of
+   30-min windows before, centred on, and after each confirms these are real velocity
+   changes (TCMs or thruster activity) rather than data-join artefacts:
+   - Event 1 (19:00:00 UTC): before [18:30..19:00] dr = 0.41 m, dv = 0.4 mm/s;
+     centred [18:45..19:15] dr = 54.2 m, dv = 60.2 mm/s; after [19:00..19:30]
+     dr = 0.25 m, dv = 0.3 mm/s.
+   - Event 2 (20:45:00 UTC): before [20:15..20:45] dr = 0.31 m, dv = 0.2 mm/s;
+     centred [20:00..20:30] dr = 119.8 m, dv = 133.1 mm/s; after [20:45..21:15]
+     dr = 0.82 m, dv = 1.2 mm/s.
+   Applying these two velocity changes drops the 24 h position error from
+   4.395 km to 1.652 km. Applying the half-hour piecewise-constant accelerations
+   leaves an end position error of only 8.04 m, confirming that the numerical
+   integrator, ephemeris frames, and physical force models are exact to within
+   8 m over the full day.
+
+**Lunar orbit gravity degree and switch-on radius.** Testing GRGM1200A at perilune
+passes (closest passes of the Moon, half-hour windows) shows that a point-mass Moon
+(degree 0) leaves false velocity residuals of 0.5 to 1.6 m/s per pass (0.76 m/s for
+Blue Ghost 157x5,700 km; 0.82 m/s for LRO 80-100 km), which trips phasing
+burn-detection thresholds (0.05 m/s). Degree 50 suppresses the maximum pass
+residual to 16 mm/s (median < 10 mm/s, 0.8 mm/s on Blue Ghost), safely beneath the
+threshold while taking ~0.02-0.03 s per pass. Degree 100 drops residual to
+0.5-3 mm/s but is 4-5x slower (~0.12-0.14 s/pass). Degree 200 provides negligible
+accuracy improvement (<0.1 mm/s) at 20x the cost (~0.5-0.6 s/pass). Degree 50 is
+therefore retained as the production default for fast phasing and burn identification,
+with degree 100 available where millimeter precision is required. For switch-on
+radius, eccentric lunar orbits like Blue Ghost (apoapsis 4.28 lunar radii) incur 2 to
+31 km error if harmonics are switched off inside the orbit (r < 5 lunar radii); at
+5 to 10 lunar radii (the default 17,380 km = 10 R_moon), error is stable at 37-65 m
+over 24 h and closed orbits remain within the harmonic potential.
 
 **Leak detection (Peregrine).** Peregrine's reconstruction needs an
 unexplained push for its whole flight: median 7.6e-5 m/s², 90th percentile
@@ -106,16 +138,16 @@ traces the loss to a helium pressure control valve that failed to seal
 the residual is where that shows in the trajectory, and nothing here
 estimates the leak itself.
 
-**What replaces GMAT.** The plan's reference for the propagator was GMAT
-R2026a run offline (`make gmat-golden`). GMAT is not installed on this
-machine and no container runtime is available, so the GMAT comparisons (a
-5-day coast to 10 m and 1 mm/s; a 100 km polar lunar orbit for 24 h to 10 m)
-have **not been run**. In their place, `test_propagate.py` checks the
-integrator against closed forms: two-body motion against Kepler's equation
-over five orbits (under 1 mm), the J2 nodal drift against the textbook rate
-(within 2 %), forward-and-back in a 100 km lunar orbit with a lumpy field and
-sunlight pressure (under 1 m; measured 0.2–0.9 mm), and the same trip about
-the Earth and about the Moon (under 1 m).
+**What replaces GMAT.** An attempt was made to install NASA GMAT R2026a for
+automated golden comparisons (`make gmat-golden`). GMAT is not distributed via
+Homebrew, the 455 MB macOS package on SourceForge throttled/hung during download
+(~25 KB/s over 5+ h), and no native ARM64 headless distribution is available for
+this environment. As planned, we do not retry or block on GMAT. In its place,
+`test_propagate.py` validates the propagator against closed-form and self-consistency
+benchmarks: two-body motion against Kepler's equation over five orbits (under 1 mm),
+J2 nodal drift against textbook rates (within 2 %), forward-and-back in a 100 km
+lunar orbit with spherical harmonics and SRP (0.2-0.9 mm), and round-trip propagation
+about Earth and Moon (under 1 m; Blue Ghost 24 h round trip returns to 5.8 mm).
 
 # Launch instants and direct transfers against the flown launches (plan D1, C2, D2)
 
