@@ -251,7 +251,7 @@ export function ViewshedLegend({ onTerrain }: { onTerrain: boolean }) {
           ? [
               {
                 swatch: <span className="h-3 w-5 border border-line" style={{ background: 'var(--color-terrain-mid)' }} />,
-                label: 'The ground, shaded from the elevation model',
+                label: 'The ground, shaded from the terrain map',
               },
             ]
           : []),

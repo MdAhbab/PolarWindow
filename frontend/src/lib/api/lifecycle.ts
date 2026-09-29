@@ -523,6 +523,25 @@ export interface RelayRowDTO {
   sweep_note?: string | null
 }
 
+/** A relay in the catalogue, what a comparison can add (`GET /relays`; its `id` is what `?relay=` takes). */
+export interface RelayChoiceDTO {
+  id: string
+  name: string
+  operator: string | null
+  status: RelayLaunchStatus
+  /** Its launch plan in a sentence, as published. */
+  launch_note: string | null
+  /** Its orbit is known well enough to work out time through it; false: it is compared and the answer says it is not worked out. */
+  orbit_known: boolean
+  orbit_note: string | null
+  /** The missions it is planned for: it is in their answers already. */
+  serves_missions: string[]
+}
+
+export interface RelayCatalogueDTO {
+  relays: RelayChoiceDTO[]
+}
+
 /** A real lunar orbiter's passes over the landing spot: geometry only, never a relay service (F2). */
 export interface OrbiterDTO {
   id: string
@@ -766,6 +785,8 @@ export type ContractChecks = [
   Fits<Present<S['Parameter']>, ParameterDTO>,
   Fits<Present<S['Contact']>, ContactDTO>,
   Fits<Present<S['RelayRow']>, RelayRowDTO>,
+  Fits<Present<S['RelayChoice']>, RelayChoiceDTO>,
+  Fits<Present<S['RelayCatalogue']>, RelayCatalogueDTO>,
   Fits<Present<S['Orbiter']>, OrbiterDTO>,
   Fits<Present<S['RoverOut']>, RoverSightDTO>,
   Fits<Present<S['Trip']>, TripDTO>,

@@ -27,6 +27,7 @@ import type {
   PartImpactDTO,
   ReadyDTO,
   ReadyItemDTO,
+  RelayCatalogueDTO,
   ReturnDTO,
   RiskDTO,
   RiskScalesDTO,
@@ -424,6 +425,9 @@ export const api = {
 
   rover: (missionId: string, rover: string | undefined, signal?: AbortSignal, opts: RoverOptions = {}) =>
     section<RoverSightDTO>(`/missions/${enc(missionId)}/contact/rover`, { rover, ...opts }, signal),
+
+  /** The relays in the catalogue a comparison can add (`?relay=` on the contact answer and its plan). */
+  relays: (signal?: AbortSignal) => request<RelayCatalogueDTO>('/relays', { signal }),
 
   returnSection: (missionId: string, signal?: AbortSignal) =>
     section<ReturnDTO>(`/missions/${enc(missionId)}/return`, undefined, signal),

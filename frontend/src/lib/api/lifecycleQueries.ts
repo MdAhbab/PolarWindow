@@ -158,6 +158,17 @@ export function useRiskScales(enabled: boolean) {
   })
 }
 
+/** The relays in the catalogue a comparison can add: a small read-only list. */
+export function useRelayChoices(enabled: boolean) {
+  return useQuery({
+    queryKey: keys.relays(),
+    enabled,
+    staleTime: 10 * MINUTE,
+    retry: retryServerErrors,
+    queryFn: ({ signal }) => api.relays(signal),
+  })
+}
+
 export function useLandingHistory(enabled: boolean) {
   return useQuery({
     queryKey: keys.landingHistory(),

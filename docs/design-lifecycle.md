@@ -381,7 +381,15 @@ into the hub header.
   as glyph and words, its launch plan, what it adds to direct contact and the
   time through it as ranges or why they are not worked out, its orbit in plain
   words, each figure "published" or "assumed", `orbit_note`, `sweep_note`;
-  "Added to compare" when `for_this_mission` is false) ·
+  "Added to compare" when `for_this_mission` is false) · Compare a relay
+  (`GET /relays`: the catalogue's relay services that are not already the
+  mission's own, a tick box each with its operator, launch status and launch
+  plan, and "Its orbit is not published, so no time through it can be worked
+  out" when `orbit_known` is false; at most three. Ticking works nothing out:
+  "Work out the numbers with these" asks the answer again with `?relay=` for
+  each, and the row comes back open with them named beside its title. The
+  choice is for this mission on this page only, and the row is not offered in
+  the saved copy, which has no comparisons) ·
   Orbiters that could see the lander (`Contact.orbiters`, F2: `orbiters_note`
   first; each with its operator, "{n} passes over these dates, {h} in view in
   all; the longest pass {min}, the longest wait between passes {h}", a
@@ -391,7 +399,12 @@ into the hub header.
   passes · Rover and lander line of sight · More numbers (either way as a range
   "if the relay flies as planned"; the two waits directly; a missing number
   gives its reason) · Download the
-  contact plan (ION, CSV) · Change the dates (the same dates as Landing) ·
+  contact plan (ION, CSV: the ION file needs the data rate the team plans for,
+  since the lander's is not published, so there is a field for it and the ION
+  link stays off until it holds a number above zero; the spreadsheet needs none.
+  With a planned or added relay whose orbit is known well enough, a tick box adds
+  `?relay=` so both files list its contacts, marked planned; one that is not is said
+  to have none listed) · Change the dates (the same dates as Landing) ·
   How sure is this? · Where does this come from? "Line of sight only: the
   lander's radio power is not published" changes what every number means,
   so it is a one-line note under the answer, not a row.
@@ -421,7 +434,7 @@ into the hub header.
   read under the answer's own layer, the picture turned to put north up (the
   polar grid's north is the site's longitude off) and shrunk by the grid's
   scale, at the zoom whose tile pixel is about a screen pixel; the legend adds
-  "The ground, shaded from the elevation model" and its swatches are drawn in
+  "The ground, shaded from the terrain map" and its swatches are drawn in
   the tiles' own style; a layer that fails to load says so under the map (a map
   without its layer would read as no blockers). Without tiles (not resolvable,
   or the offline copy) the sectors above are drawn instead. Table twin, from

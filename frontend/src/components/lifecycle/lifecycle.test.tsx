@@ -774,7 +774,7 @@ describe('Rover and lander line of sight', () => {
     expect(hrefs.some((h) => /\/tiles\/viewshed\/91\/\d+\/\d+\/\d+\.png\?layer=terrain$/.test(h))).toBe(true)
     expect(hrefs.some((h) => /\?layer=sight$/.test(h))).toBe(true)
     expect(hrefs.every((h) => !h.includes('{'))).toBe(true)
-    for (const words of ['The lander', 'In sight', 'Blocked by the ground', 'Uncertain: the terrain map’s error could tip it either way', 'The ground, shaded from the elevation model']) {
+    for (const words of ['The lander', 'In sight', 'Blocked by the ground', 'Uncertain: the terrain map’s error could tip it either way', 'The ground, shaded from the terrain map']) {
       expect(screen.getByText(words)).toBeTruthy()
     }
     // The switch asks for the radio path's tiles.
@@ -785,7 +785,7 @@ describe('Rover and lander line of sight', () => {
     render(<ViewshedPanel v={v} roverName="Yaoki" tile={null} at={null} />)
     expect(screen.queryByTestId('site-tile-map')).toBeNull()
     expect(screen.getByRole('img', { name: /^Line of sight between Yaoki and the lander/ })).toBeTruthy()
-    expect(screen.queryByText('The ground, shaded from the elevation model')).toBeNull()
+    expect(screen.queryByText('The ground, shaded from the terrain map')).toBeNull()
   })
 
   it('a layer that does not load says so, since a map without it would read as no blockers', () => {

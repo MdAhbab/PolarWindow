@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { API, expectNoSeriousAxe, openRow, openRow as openRowOf, returningVisitor, watchConsole } from './helpers'
-import { fulfillWrite, serveLifecycleFixtures } from './lifecycleFixtures'
+import { fixtureJson, fulfillWrite, serveLifecycleFixtures } from './lifecycleFixtures'
 
 /**
  * The mission hub and its six steps, against the contract's fixtures
@@ -379,6 +379,65 @@ test('contact through a relay (contract fixtures): a range with its launch statu
   expect(await page.evaluate(() => document.documentElement.scrollWidth), 'contact scrolls sideways at 375 px').toBeLessThanOrEqual(375)
 })
 
+test('compare a relay (contract fixtures): tick one, ask again, and the answer, its row and the plan follow; both themes, a phone', async ({ page, context }) => {
+  await returningVisitor(context)
+  await serveLifecycleFixtures(context)
+  // The answer asked with a relay added, as the service gives it: that relay's row, marked as added to compare.
+  const asked: string[][] = []
+  await context.route(/localhost:8000\/api\/v1\/missions\/[^/]+\/contact(\?.*)?$/, async (route) => {
+    const relays = new URL(route.request().url()).searchParams.getAll('relay')
+    asked.push(relays)
+    if (!relays.length) return route.fallback()
+    const body = fixtureJson('contact.json')
+    const own = body.data.relays[0]
+    body.data.relays.push({ ...own, id: 'altus-1', name: 'Altus-1 data-relay satellite', for_this_mission: false })
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body), headers: { 'access-control-allow-origin': '*' } })
+  })
+  const compare = () => page.locator('details').filter({ has: page.locator('summary', { hasText: 'Compare a relay' }) })
+  const addAltus = async () => {
+    await page.goto('/missions/im-2/contact')
+    await expect(page.locator('summary', { hasText: 'Compare a relay' })).toContainText('none added')
+    await openRow(page, 'Compare a relay')
+    await expect(compare().getByRole('checkbox')).toHaveCount(2)
+    await expect(compare().getByRole('button', { name: 'Work out the numbers with these' })).toBeDisabled()
+    await compare().getByRole('checkbox', { name: /^Altus-1 data-relay satellite/ }).check()
+    await compare().getByRole('button', { name: 'Work out the numbers with these' }).click()
+  }
+  await addAltus()
+  // The same request, with the relay asked for; the row comes back open with it ticked, named beside its title.
+  await expect.poll(() => asked.some((r) => r.join() === 'altus-1')).toBe(true)
+  await expect(page.locator('summary', { hasText: 'Compare a relay' })).toContainText('Altus-1 data-relay satellite')
+  await expect(compare()).toHaveAttribute('open', '')
+  await expect(compare().getByRole('checkbox', { name: /^Altus-1 data-relay satellite/ })).toBeChecked()
+  await openRow(page, 'Relays')
+  const relays = page.locator('details').filter({ has: page.locator('summary', { hasText: /^Relays/ }) }).first()
+  await expect(relays).toContainText('Altus-1 data-relay satellite')
+  await expect(relays).toContainText('Added to compare: not planned for this mission.')
+  // The plan: the ION file needs a data rate; a relay's contacts are listed only when asked.
+  await openRow(page, 'Download the contact plan')
+  const plan = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Download the contact plan' }) })
+  await expect(plan.getByRole('button', { name: 'Contact plan for ION (DTN)' })).toBeDisabled()
+  await expect(plan.getByRole('link', { name: 'Spreadsheet (CSV)' })).not.toHaveAttribute('href', /relay=/)
+  await plan.getByLabel('Data rate for the ION plan, bits per second').fill('2,000,000')
+  await expect(plan.getByRole('link', { name: 'Contact plan for ION (DTN)' })).toHaveAttribute('href', /format=ion&start=.*&end=.*&rate_bps=2000000$/)
+  await plan.getByRole('checkbox', { name: /^Include the contacts of the planned relays: / }).check()
+  await expect(plan.getByRole('link', { name: 'Spreadsheet (CSV)' })).toHaveAttribute('href', /format=csv&.*&relay=pathfinder&relay=altus-1$/)
+  await expectNoSeriousAxe(page, 'contact with the compare row and the plan row open (dark)')
+  // Take it out again: the answer without it (already worked out, so not asked for again) is back.
+  await compare().getByRole('checkbox', { name: /^Altus-1 data-relay satellite/ }).uncheck()
+  await compare().getByRole('button', { name: 'Work out the numbers without them' }).click()
+  await expect(page.locator('summary', { hasText: 'Compare a relay' })).toContainText('none added')
+  await expect(page.locator('details').filter({ has: page.locator('summary', { hasText: /^Relays/ }) }).first()).not.toContainText('Altus-1 data-relay satellite')
+  // A phone, in the light theme.
+  await page.evaluate(() => localStorage.setItem('pw-prefs', JSON.stringify({ theme: 'light', motion: 'full', shortcuts: true })))
+  await page.setViewportSize({ width: 375, height: 812 })
+  await addAltus()
+  await expect(page.locator('summary', { hasText: 'Compare a relay' })).toContainText('Altus-1 data-relay satellite')
+  await openRow(page, 'Download the contact plan')
+  await expectNoSeriousAxe(page, 'contact with the compare row and the plan row open (light, 375 px)')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth), 'contact scrolls sideways at 375 px').toBeLessThanOrEqual(375)
+})
+
 test('rover line of sight (contract fixtures): the answer first, the map in three states with its table twin, both themes, a phone', async ({
   page,
   context,
@@ -401,7 +460,7 @@ test('rover line of sight (contract fixtures): the answer first, the map in thre
   )
   await expect(row.getByRole('img', { name: /^Line of sight between Yaoki and the lander, out to 500 m in 36 directions/ })).toBeVisible()
   // Three states, each in a glyph and words beside its swatch.
-  for (const words of ['In sight', 'Blocked by the ground', 'Uncertain: the terrain map’s error could tip it either way', 'The ground, shaded from the elevation model']) await expect(row).toContainText(words)
+  for (const words of ['In sight', 'Blocked by the ground', 'Uncertain: the terrain map’s error could tip it either way', 'The ground, shaded from the terrain map']) await expect(row).toContainText(words)
   // Laid over the terrain: the ground's tiles under the line of sight's, both from the answer's own address.
   await expect(row.getByTestId('site-tile-map').locator('image').first()).toBeVisible()
   await expect.poll(() => [...layers].sort().join(',')).toBe('sight,terrain')
@@ -1020,6 +1079,52 @@ test('radiation and space weather (live API): Blue Ghost’s screening with its 
   await expectNoSeriousAxe(page, 'space weather now (live) with the forecast open')
 })
 
+test('compare a relay (live API): Lunar Pathfinder added at IM-2’s landing spot, its row marked as added to compare, and both plan files list it as planned', async ({
+  page,
+  context,
+  request,
+}) => {
+  test.setTimeout(240_000)
+  await returningVisitor(context)
+  const answer = page.locator('[data-guide="section-answer"]')
+  await page.goto('/missions/im-2/contact')
+  await expect(answer).toContainText('A ground station can hear it', { timeout: 120_000 })
+  await expect(page.locator('summary', { hasText: 'Compare a relay' })).toContainText('none added')
+  await openRow(page, 'Compare a relay')
+  const compare = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Compare a relay' }) })
+  // The catalogue's relays, each with who runs it and where it stands; IM-2 plans none of them.
+  await expect(compare.getByRole('checkbox', { name: /^Altus-1 data-relay satellite · Intuitive Machines/ })).toBeVisible()
+  await compare.getByRole('checkbox', { name: /^Lunar Pathfinder · ESA/ }).check()
+  await compare.getByRole('button', { name: 'Work out the numbers with these' }).click()
+  await expect(answer).toContainText(/Through Lunar Pathfinder \(planned, not launched\) it could reach Earth for [\d,.]+–[\d,.]+ h, if it flies as planned/, { timeout: 180_000 })
+  await expect(page.locator('summary', { hasText: 'Compare a relay' })).toContainText('Lunar Pathfinder')
+  await openRow(page, /^Relays/)
+  const relays = page.locator('details').filter({ has: page.locator('summary', { hasText: /^Relays/ }) }).first()
+  await expect(relays).toContainText('Added to compare: not planned for this mission.')
+  await expect(relays).toContainText('673 km')
+  // The plan lists the relay's contacts only when asked, and says they are planned.
+  await openRow(page, 'Download the contact plan')
+  const plan = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Download the contact plan' }) })
+  const csvLink = plan.getByRole('link', { name: 'Spreadsheet (CSV)' })
+  const direct = await request.get((await csvLink.getAttribute('href')) as string)
+  expect(direct.status()).toBe(200)
+  expect(await direct.text()).not.toContain('planned relay')
+  await plan.getByRole('checkbox', { name: /^Include the contacts of the planned relay: Lunar Pathfinder\./ }).check()
+  const withRelay = await request.get((await csvLink.getAttribute('href')) as string)
+  expect(withRelay.status()).toBe(200)
+  const csv = await withRelay.text()
+  expect(csv.split(/\r?\n/)[0]).toBe('from,to,start_utc,end_utc,hours,basis')
+  expect(csv).toMatch(/lander,lunar-pathfinder,.*planned relay; node [\d.]+ deg, phase [\d.]+ deg, one of 5184 placements/)
+  await plan.getByLabel('Data rate for the ION plan, bits per second').fill('2,000,000')
+  const ion = await request.get((await plan.getByRole('link', { name: 'Contact plan for ION (DTN)' }).getAttribute('href')) as string)
+  expect(ion.status()).toBe(200)
+  const text = await ion.text()
+  expect(text).toContain('# PLANNED relay Lunar Pathfinder')
+  expect(text).toMatch(/^a contact /m)
+  expect(text).toMatch(/^a range /m)
+  await expectNoSeriousAxe(page, 'IM-2 contact with Lunar Pathfinder added (dark)')
+})
+
 test('relays, orbiters and rovers (live API): IM-3’s planned relay as a range, IM-2’s orbiter passes and Yaoki’s line of sight, a rover off the polar map', async ({
   page,
   context,
@@ -1076,7 +1181,7 @@ test('relays, orbiters and rovers (live API): IM-3’s planned relay as a range,
     .toBeGreaterThan(1)
   await page.waitForLoadState('networkidle')
   await expect(yaoki.getByRole('status')).toHaveCount(0)
-  await expect(yaoki).toContainText('The ground, shaded from the elevation model')
+  await expect(yaoki).toContainText('The ground, shaded from the terrain map')
   await expect(yaoki.getByRole('row', { name: /^90° \(east\)/ })).toBeVisible()
   await yaoki.locator('summary', { hasText: 'Antennas, radio and terrain' }).click()
   await expect(yaoki).toContainText(/LOLA_LDEM_80S_20M: a height every 20 m, each good to ±2 m/)
