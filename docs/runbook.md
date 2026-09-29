@@ -313,6 +313,10 @@ them off). `Retry-After` says when to try again. The counts live in the API proc
 and reset when it restarts. Bodies over `PW_MAX_BODY_BYTES` (64 KB) are refused (413).
 
 **Long commands**, cached where they can be: `make hindcast-weather` (~40 min),
+`make hindcast-reforecast` (~30–60 min; multi-year GEFSv12 wind verification against pad ASOS),
+`make hindcast-hrrr` (~35 min; HRRR AWS byte-range verification),
 `make thunder-climatology` (~1.5 h), `make validate-trip` (~7 min with the loops),
 `make validate-capsule` (~20 s), `make validate-radiation`, `make space-climate`.
 Their results are committed under `data/` (see `docs/data-sources.md`).
+
+Run `make help` to inspect all available make targets and their descriptions.

@@ -1008,15 +1008,43 @@ ADR-17 (project manager data), ADR-18 (kernel pinning).
 | Section | Endpoint | Engine (`app/core`) | Inputs |
 |---|---|---|---|
 | Ready | `/missions/{id}/ready` (+ items, parts, risks, lessons) | `readiness` | the team's entries (audited), `lessons`, `risk_scales` |
-| Launch | `/missions/{id}/launch` | `launchwin`, `transfer`, `phasing`, `landing_windows`, `flown` | pads, vehicles, NASA's reconstructions |
-| Launch weather | `/missions/{id}/launch/weather` | `weather_rules`, `verification` | `weather_rules` (verbatim), GEFS, HRRR, NWS, GLM, LL2, climatologies |
-| Trip | `/missions/{id}/trip` (+ export) | `propagate`, `forces`, `gravity`, `eclipse`, `lincov`, `belts`, `gcr` | NAIF SPKs, GRGM1200A, DONKI, OMNI, Oulu |
-| Contact | `/missions/{id}/contact` (+ plan, bookings) | `contact`, `network`, `visibility` | DSN station kernels, `ground_stations`, `relays`, horizon masks |
-| Return | `/missions/{id}/return` | `entry`, `atmosphere` (capsule model check) | `recovery_zones`, `vehicles`, GFS-Wave |
+| Launch | `/missions/{id}/launch` | `launchwin`, `transfer`, `phasing`, `landing_windows`, `flown` | pads, vehicles, departure azimuth solver, NASA's reconstructions |
+| Launch weather | `/missions/{id}/launch/weather` | `weather_rules`, `verification` | `weather_rules` (verbatim), GEFS, HRRR, NWS, GLM, LL2, GEFSv12 reforecast, ASOS/IEM observations |
+| Trip | `/missions/{id}/trip` (+ export) | `propagate`, `forces`, `gravity`, `eclipse`, `lincov`, `belts`, `gcr` | NAIF SPKs, EGM2008, GRGM1200A, DONKI, OMNI, Oulu |
+| Contact | `/missions/{id}/contact` (+ plan, bookings, rover, viewshed tiles, relays) | `contact`, `network`, `visibility`, `relay`, `rover`, `viewshed` | DSN station kernels, `ground_stations`, `relays`, JPL Horizons orbiters, 20 m LOLA DEM |
+| Return | `/missions/{id}/return` | `entry`, `atmosphere` (capsule model check) | `recovery_zones`, `vehicles`, NRLMSISE-00 (OMNI2 indices), GFS-Wave |
 | Space weather | `/space-weather` | none | SWPC, DONKI |
 
 Every value is a `Quantity` with its provenance and ± or the reason it has none
 (ADR-9); no section returns a verdict, score or overall chance (invariant 9).
+
+Key lifecycle enhancements:
+- **Planned relays and active orbiters (ADR-16):** planned relays (Lunar Pathfinder,
+  Altus-1) sweep 36 x 36 nodes and phases, presenting contact as minimum to maximum
+  ranges with launch status beside them; the catalogue is exposed via `GET /relays`
+  and comparisons run on demand (`?relay=`). Active orbiters from JPL Horizons are
+  rendered purely as geometric line-of-sight passes over the landing spot.
+- **Rover line of sight and viewshed tiles:** rover-to-lander direct visibility
+  and Fresnel radio clearance are evaluated against 20 m LOLA elevation windows,
+  served as zoom 12 raster map tiles (`GET /tiles/viewshed/{answer}/{z}/{x}/{y}.png`)
+  with clear, blocked, or uncertain states distinguished by tone and pattern.
+- **Departure azimuth and launch windows:** climb directions are solved from the
+  pad-to-TLI orbital plane (Falcon 9 empirical direct departure 87.7°) within pad
+  ground azimuth constraints, providing published launch periods alongside instantaneous
+  liftoff opportunities.
+- **Multi-year weather verification:** launch weather rules are scored against
+  decades of station observations (Cape Canaveral KXMR and Vandenberg KVBG) and
+  GEFSv12 reforecasts (2000-2019) with Brier and CRPS skills. High-resolution HRRR
+  archive runs are read directly via S3 byte ranges. Deterministic forecast
+  disagreements are surfaced with explicit notes.
+- **Trip force models and Earth gravity:** Earth gravity integrates EGM2008
+  spherical harmonics up to degree and order 8 with true Earth spin kinematics in
+  ITRF93, resolving near-Earth tesseral residuals. Radiation belts select the magnetic
+  field model appropriate to each environment (GSFC 12/66 for AP8/AE8, IGRF for modern
+  baselines).
+- **Compute queue scheduling:** compute jobs are prioritized cheapest-first
+  (contact -> launch -> trip) to eliminate head-of-line blocking for short interactive
+  requests (`make load-compute`).
 
 ### 11.3 Agents over the sections
 
@@ -1037,3 +1065,6 @@ grounding guard also rejects verdict words.
 | no compute worker | the section says it is waiting and, after a while, that the worker is not running | `test_job_ref.py` |
 | a job fails | its message is the answer until the inputs change; a signed-in retry | `test_jobs.py`, `test_job_ref.py` |
 | a catalogue value unpublished | absent with its reason, never filled | `test_catalogues.py` |
+| request body over 64 KB | 413 Payload Too Large | `test_request_limits.py` |
+| rate limit exceeded | 429 Too Many Requests with Retry-After header | `test_request_limits.py` |
+| queue backlog over 200 jobs | 503 Service Unavailable ("Too many answers are being worked out") | `test_jobs.py` |

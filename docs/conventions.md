@@ -181,6 +181,13 @@ professional name of a key number is shown only when its label is pressed
 | booster landing zone | droneship area, LZ |
 | splashdown zone | recovery area |
 | the trip | cruise, transit, trans-lunar phase |
+| launch period | launch window, the window (for an interval with open and close) |
+| forecasts disagree | models conflict, disagreement |
+| checked against observations | verified, ground-truthed |
+| could see the lander | orbiter pass, relay pass (for active orbiters overhead) |
+| rover line of sight | rover viewshed, rover LOS |
+| radio path | first Fresnel zone clearance, RF clearance |
+| planned relay | speculative relay, unlaunched relay |
 
 ## Motion
 

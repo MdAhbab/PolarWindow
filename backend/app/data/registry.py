@@ -402,6 +402,76 @@ _SPECIFIC: Final[tuple[Dataset, ...]] = (
         catalogue=f"{DATA_NASA}/combined-geostationary-lightning-mapper-glm-hourly-thunder-hour-data-product",
         needs_key="NASA Earthdata Login (free)",
     ),
+    Dataset(
+        id="icgem:egm2008",
+        title="Earth Gravitational Model 2008 (EGM2008) spherical harmonic coefficients",
+        provider="NGA / ICGEM (GFZ Potsdam)",
+        tier="lifecycle",
+        method="file",
+        urls=(
+            "https://icgem.gfz-potsdam.de/getmodel/gfc/"
+            "d0d463b2cf7fae5ddab27fcf03c713bdf2292f75846cf3ebba9e6da5a62657e3/EGM2008.gfc",
+        ),
+        dest="gravity/EGM2008.gfc",
+        size_bytes=206_369_000,
+        used_for="Earth's gravitational potential (Pavlis et al., JGR 2012) through degree and "
+        "order 8 in the trip model, resolving near-Earth tesseral accelerations.",
+        licence="Public domain (ICGEM / NGA)",
+    ),
+    Dataset(
+        id="jpl:horizons-orbiters",
+        title="JPL Horizons lunar orbiter ephemerides (LRO, KPLO, Capstone, THEMIS)",
+        provider="NASA JPL Solar System Dynamics",
+        tier="lifecycle",
+        method="file",
+        urls=("https://ssd.jpl.nasa.gov/api/horizons.api",),
+        dest="orbiters/",
+        size_bytes=5_000_000,
+        used_for="Reconstructed and predicted state vectors for active lunar orbiters to "
+        "compute geometric visibility and line-of-sight passes over landing sites.",
+        licence="US government work (public domain)",
+    ),
+    Dataset(
+        id="noaa:gefs-reforecast",
+        title="NOAA GEFSv12 atmospheric reforecast archive (2000-2019, 00 UTC, 0.25 deg)",
+        provider="NOAA PSL / EMC, via AWS Open Data",
+        tier="bulk",
+        method="file",
+        urls=("https://noaa-gefs-retrospective.s3.amazonaws.com/GEFSv12/reforecast/",),
+        dest="hindcast/gefs_reforecast_wind.cache.jsonl",
+        size_bytes=50_000_000_000,
+        used_for="Multi-year verification of launch wind rules (make hindcast-reforecast): "
+        "evaluates 10 m wind forecasts against pad station observations to compute "
+        "Brier skill and CRPS across historical years.",
+        licence="US government work (public domain)",
+    ),
+    Dataset(
+        id="noaa:hrrr-archive",
+        title="NOAA High-Resolution Rapid Refresh (HRRR) model archive, version 4",
+        provider="NOAA NCEP, via AWS Open Data",
+        tier="bulk",
+        method="file",
+        urls=("https://noaa-hrrr-bdp-pds.s3.amazonaws.com",),
+        dest="hindcast/hrrr_wind_florida.json",
+        size_bytes=100_000_000_000,
+        used_for="High-resolution (3 km) launch weather rule evaluation against pad weather "
+        "stations at Cape Canaveral (KXMR) and Vandenberg (KVBG) via byte-range reads "
+        "(make hindcast-hrrr).",
+        licence="US government work (public domain)",
+    ),
+    Dataset(
+        id="iem:asos-archive",
+        title="Iowa Environmental Mesonet (IEM) ASOS hourly weather station archive",
+        provider="Iowa State University / NWS ASOS",
+        tier="bulk",
+        method="file",
+        urls=("https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py",),
+        dest="hindcast/observations/",
+        size_bytes=25_000_000,
+        used_for="Historical hourly surface wind observations at Cape Canaveral (KXMR) and "
+        "Vandenberg (KVBG) used as observational ground truth for weather rule scoring.",
+        licence="Public domain (ASOS / IEM)",
+    ),
 )
 
 DATASETS: Final[tuple[Dataset, ...]] = (

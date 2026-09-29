@@ -383,14 +383,16 @@ contract: `docs/lifecycle-api.md` (shapes and their *Changes*) and
 | Endpoint | Answer |
 |---|---|
 | `GET /missions/{id}/sections` | each section's state and a line of words |
-| `GET /missions/{id}/ready`, `.../ready/items`, `.../parts`, `.../risks`, `GET /lessons` | readiness items, milestones, parts, risks as entered (writes need a named sign-in; audited) |
-| `GET /missions/{id}/launch` | the flown launch, or opportunities backed out from the landing (job) |
-| `GET /missions/{id}/launch/weather` | each weather rule at one launch time with what each forecast says |
+| `GET /missions/{id}/ready`, `.../ready/items`, `.../parts`, `.../risks`, `GET /lessons` | readiness items, milestones, parts, risks as entered (writes need a named sign-in; audited; supports PATCH) |
+| `GET /missions/{id}/launch` | the flown launch with published period, or opportunities backed out from the landing (job) |
+| `GET /missions/{id}/launch/weather` | each weather rule at one launch time with ensemble shares, deterministic calls and disagreement notes |
 | `PUT`/`DELETE /missions/{id}/launch/official-forecast`, `GET`/`PUT /vehicles/{id}/limits` | the team's entries (audited) |
 | `GET /missions/{id}/trip` (+ `/export?format=oem\|csv`) | distance, shadow, burns, correction budget, radiation (job) |
-| `GET /missions/{id}/contact` (+ `/plan`, `/bookings`) | who can hear the lander and how long a message waits (job) |
+| `GET /missions/{id}/contact` (+ `?relay=`, `/plan.csv`, `/plan.ion`, `/bookings`) | who can hear the lander, message waits directly and with planned relays (job) |
+| `GET /missions/{id}/contact/rover` | rover-to-lander optical line of sight and first Fresnel zone radio path across polar terrain (job) |
+| `GET /relays` | catalogue of planned relay satellite services, launch status, and orbital characteristics |
 | `GET /missions/{id}/return`, `PUT .../return/limits` | the booster's landing, sea and wind, the capsule and its entry model's check |
-| `GET /space-weather` | space weather now, each value with its age |
+| `GET /space-weather` | space weather now, each value with its age and source |
 | `GET /jobs/{id}`, `POST /jobs/{id}/retry` | a heavy answer's progress; retry a failed one |
 | `GET /feeds`, `POST /feeds/{provider}/refresh` | every live source and its age; fetch one now (signed in) |
 
@@ -400,6 +402,8 @@ A heavy answer that is not stored yet comes back **202** with a `JobRef`; poll
 ## Tiles
 
 `GET /tiles/{layer}/{z}/{x}/{y}.png` (the suffix is optional), layers `hillshade` | `illumination` | `psr`. `make seed` pre-renders z0–z5 (4,095 tiles, ~134 MB); z6–z7 render on first request.
+
+`GET /tiles/viewshed/{answer}/{z}/{x}/{y}.png?layer=sight|radio|terrain` serves zoom 12 rover viewshed tiles around the lander (polar stereographic, 20 m LOLA elevation window), rendering cells as clear, blocked, or uncertain by both tone and stipple pattern.
 
 A plain quadtree over the DEM's own ±304 km extent in lunar south polar
 stereographic. `z0` is one tile; each level doubles.

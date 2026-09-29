@@ -133,9 +133,11 @@ Every file is listed once in the registry, with its URL, size, sha256 and what i
 used for; the README's "Required data" table is generated from it
 (`uv run polar-data readme --write`) and `polar-data sync` downloads it. Tiers:
 `core` (the product will not start without it), `lifecycle` (NASA's reconstructed
-CLPS trajectories from NAIF, GRAIL gravity, DSN station kernels), `bulk` (large and
-optional: GLM thunder hours) and `validation` (only for `make validate-*`: the
-OSIRIS-REx capsule's reconstructed entry, IRBEM references).
+CLPS trajectories from NAIF, GRAIL gravity, EGM2008 Earth gravity from ICGEM,
+JPL Horizons lunar orbiter states, DSN station kernels), `bulk` (large archives
+fetched on demand: GLM thunder hours, KSC field mill, GEFSv12 reforecast, HRRR archive
+on AWS, ASOS station archives) and `validation` (only for `make validate-*`: the
+OSIRIS-REx capsule's reconstructed entry, Goldstone radar DEM, IRBEM references).
 
 ### Cited catalogues (`data/catalogues/*.json`, ADR-10)
 
@@ -152,6 +154,8 @@ publishes is absent with a reason, never filled in.
 | `data/climatology/power_ws50m_*.json` | `make climatology` | NASA POWER hourly wind at 50 m, 2001–2024 |
 | `data/climatology/glm_thunder_*.json` | `make thunder-climatology` | GLM thunder hours, GHRC DAAC (Earthdata token) |
 | `data/hindcast/gefs_wind_florida.json` | `make hindcast-weather` | GEFS on AWS against the Cape's station (IEM) |
+| `data/hindcast/gefs_reforecast_wind_*.json` | `make hindcast-reforecast` | GEFSv12 2000-2019 reforecast against pad stations (IEM) |
+| `data/hindcast/hrrr_wind_*.json` | `make hindcast-hrrr` | HRRR v4 2021-2025 byte-range archive on AWS against pad stations |
 | `data/radiation/*.json` | `make space-climate` | Oulu neutron monitor (NMDB), GOES events (NCEI), DONKI |
 | `data/capsule/orex_check.json` | `make validate-capsule` | the entry model against OSIRIS-REx's landing |
 
@@ -171,6 +175,7 @@ past its staleness budget its numbers are replaced by the reason.
 | NDBC | buoy 41009 | 3 h | recorded only (shown at `/feeds`) |
 | Launch Library 2 | upcoming launches at the Florida and Vandenberg ranges | 12 h | launch weather (other launches from the range that day) |
 | NASA DSN Now | which dishes are tracking what | 15 min | recorded only (shown at `/feeds`) |
+| NASA JPL Horizons | active lunar orbiter state vectors (LRO, KPLO, Capstone, THEMIS) | 7 d | contact (orbiter line of sight) |
 
 Not recorded, with the reason: GEOS-FP (host unreachable from here), ECMWF ENS/AIFS
 (whole-globe fields, too heavy for a routine fetch), NGA's NAVAREA IV warnings (the

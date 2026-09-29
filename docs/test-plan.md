@@ -708,6 +708,31 @@ Checked on every route that is not a read (`unit/test_request_limits.py`,
   cross-site request carries none (no CSRF); a 500 returns a problem detail without the
   trace.
 
-### 11.6 Not tested yet
+### 11.6 Lifecycle test expansions (trajectory, weather, communications, registry)
+
+- **Trajectory and Earth gravity (`test_propagate.py`, `validate_trip.py`):**
+  unit and golden tests pin EGM2008 tide-free spherical harmonic coefficients up to
+  degree and order 8, Earth's spin kinematics, and J2 nodal drift against textbook rates
+  within 2 %. Residual acceleration analyses verify 30-min window propagations across
+  reconstructed events and benchmark GRGM1200A lunar degrees (0, 50, 100, 200) and
+  switch-on radii (2–40 R_moon) across perilune passes.
+- **Weather verification and byte-range readers (`test_verification.py`, `test_grib_prefix.py`):**
+  unit tests verify GRIB2 template 5.0 (simple) and 5.3 (complex packing) byte-range
+  decoding against ecCodes without external C libraries. Brier skill score (requiring
+  >= 10 cases above threshold), CRPS / fair CRPS skill against month-and-hour empirical
+  station distributions, Wilson score intervals, and forecast disagreement notes are
+  tested deterministically against fixtures.
+- **Communications: relays, orbiters, and rover viewshed (`test_horizons_feed.py`, `test_contact.py`, `test_rover.py`, `test_viewshed.py`):**
+  unit and integration tests validate JPL Horizons SPK type 13 parsing, geometric
+  orbiter passes over landing sites (validated against Horizons and LRO reconstruction),
+  36 x 36 relay parameter sweeps, rover-to-lander optical line of sight and first Fresnel
+  zone clearance against 20 m LOLA elevation windows, and zoom 12 viewshed raster tile
+  rendering across clear, blocked, and uncertain classifications.
+- **Dataset registry consistency (`test_registry.py`):**
+  asserts uniqueness of dataset IDs, kernel coverage, valid HTTPS source URLs,
+  data.nasa.gov catalogue URLs, and byte-for-byte synchronization between the registry
+  and README's generated data table.
+
+### 11.7 Not tested yet
 
 The live end-to-end runs against the real feeds (they are recorded responses here).

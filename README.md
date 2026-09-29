@@ -11,12 +11,14 @@ and real Sun and Earth positions, and each one shows how far it could be off.
 
 Each mission is also followed through its delivery, section by section: **Ready**
 (readiness items, parts, risks, as the team enters them), **Launch** (the flown
-launch, or opportunities backed out from the landing, with each launch weather
-rule and what the forecasts say), **Trip** (distance, shadow, burns, correction
-budget, a radiation screening), **Contact** (who can hear the lander), **Return**
-(where the booster comes down, sea and wind) and space weather now. No section
-gives a verdict: the evidence is shown rule by rule and people decide
-(`docs/lifecycle-api.md`).
+launch with its published period, or opportunities backed out from the landing with
+solved climb azimuths, launch weather rules, forecast disagreement checks, and multi-year
+hindcast verification), **Trip** (distance, shadow, burns, correction budget, EGM2008
+gravity, a radiation screening), **Contact** (who can hear the lander, planned relays
+as ranges, active orbiter passes, and rover line-of-sight viewshed tiles), **Return**
+(where the booster comes down, sea and wind, capsule entry check against OSIRIS-REx)
+and space weather now. No section gives a verdict: the evidence is shown rule by rule
+and people decide (`docs/lifecycle-api.md`).
 
 ```bash
 make install     # backend and frontend dependencies
@@ -331,6 +333,8 @@ the two disagree. Regenerate it with `uv run polar-data readme`.
 | [DSN Telecommunications Link Design Handbook 810-005, module 301 (coverage and geometry, antenna horizon masks)](https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf) | NASA JPL Deep Space Network | 3.1 MB | `dsn/810-005-301O.pdf` | Each Deep Space Network antenna's real horizon: the lowest elevation at which it can hear the Moon, by direction. | none |
 | [DSN 810-005 module 301 Rev. O horizon mask spreadsheet (every antenna, every degree of azimuth, effective 1 May 2024)](https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx) | NASA JPL Deep Space Network | 441 kB | `dsn/Horizon-Masks-Download-V2-301O.xlsx` | The ground-station catalogue's receive masks: when each Deep Space Network antenna can hear the Moon (python -m app.data.build_ground_stations). | none |
 | [OMNI hourly solar wind, geomagnetic and solar indices (OMNI2_H0_MRG1HR), 1963 to date](https://gov-nasa-hdrl-data1.s3.amazonaws.com) ([data.nasa.gov](https://data.nasa.gov/dataset/omni-hourly-data-set)) | NASA GSFC Space Physics Data Facility, via NASA HelioCloud on AWS | 190 MB | `spaceweather/omni_hourly/` | Solar activity (F10.7, Ap) that sets air drag in Earth orbit, and the history of solar storms and proton events used to check radiation estimates. | none |
+| [Earth Gravitational Model 2008 (EGM2008) spherical harmonic coefficients](https://icgem.gfz-potsdam.de/getmodel/gfc/d0d463b2cf7fae5ddab27fcf03c713bdf2292f75846cf3ebba9e6da5a62657e3/EGM2008.gfc) | NGA / ICGEM (GFZ Potsdam) | 206 MB | `gravity/EGM2008.gfc` | Earth's gravitational potential (Pavlis et al., JGR 2012) through degree and order 8 in the trip model, resolving near-Earth tesseral accelerations. | none |
+| [JPL Horizons lunar orbiter ephemerides (LRO, KPLO, Capstone, THEMIS)](https://ssd.jpl.nasa.gov/api/horizons.api) | NASA JPL Solar System Dynamics | 5.0 MB | `orbiters/` | Reconstructed and predicted state vectors for active lunar orbiters to compute geometric visibility and line-of-sight passes over landing sites. | none |
 
 **Used only to check our numbers**
 
@@ -351,6 +355,9 @@ the two disagree. Regenerate it with `uv run polar-data readme`.
 |---|---|---|---|---|---|
 | [KSC Advanced Ground Based Field Mill network, 1997-2012](https://data.ghrc.earthdata.nasa.gov/ghrcw-protected/kscmill__1/) ([data.nasa.gov](https://data.nasa.gov/dataset/ksc-advanced-ground-based-field-mill-v1-7b0b5)) | NASA MSFC GHRC DAAC | 1.5 TB | `bulk/kscmill/` | How often the electric field at Kennedy exceeds the launch limit, by month and hour: the history behind the field-mill launch rule. | NASA Earthdata Login (free) |
 | [Combined GLM hourly thunder-hour data, 2019-2025](https://data.ghrc.earthdata.nasa.gov/ghrcw-protected/glmhth__1/) ([data.nasa.gov](https://data.nasa.gov/dataset/combined-geostationary-lightning-mapper-glm-hourly-thunder-hour-data-product)) | NASA MSFC GHRC DAAC | 77 GB | `bulk/glm_thunder_hours/` | How often lightning is seen near each launch pad, by month and hour, for dates beyond the weather forecast. | NASA Earthdata Login (free) |
+| [NOAA GEFSv12 atmospheric reforecast archive (2000-2019, 00 UTC, 0.25 deg)](https://noaa-gefs-retrospective.s3.amazonaws.com/GEFSv12/reforecast/) | NOAA PSL / EMC, via AWS Open Data | 50 GB | `hindcast/gefs_reforecast_wind.cache.jsonl` | Multi-year verification of launch wind rules (make hindcast-reforecast): evaluates 10 m wind forecasts against pad station observations to compute Brier skill and CRPS across historical years. | none |
+| [NOAA High-Resolution Rapid Refresh (HRRR) model archive, version 4](https://noaa-hrrr-bdp-pds.s3.amazonaws.com) | NOAA NCEP, via AWS Open Data | 100 GB | `hindcast/hrrr_wind_florida.json` | High-resolution (3 km) launch weather rule evaluation against pad weather stations at Cape Canaveral (KXMR) and Vandenberg (KVBG) via byte-range reads (make hindcast-hrrr). | none |
+| [Iowa Environmental Mesonet (IEM) ASOS hourly weather station archive](https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py) | Iowa State University / NWS ASOS | 25 MB | `hindcast/observations/` | Historical hourly surface wind observations at Cape Canaveral (KXMR) and Vandenberg (KVBG) used as observational ground truth for weather rule scoring. | none |
 
 <!-- required-data:end -->
 
