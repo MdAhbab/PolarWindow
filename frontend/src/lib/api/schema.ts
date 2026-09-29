@@ -1380,6 +1380,17 @@ export interface components {
             what: string;
             /** Value */
             value: string;
+            /**
+             * Basis
+             * @description A figure a launch vehicle's guide publishes, or one the service assumes.
+             * @enum {string}
+             */
+            basis: "published" | "assumed";
+            /**
+             * Source
+             * @description Where a published figure is from (the guide, table and page); null if assumed.
+             */
+            source: string | null;
         };
         /** Attempt */
         Attempt: {
@@ -1669,8 +1680,8 @@ export interface components {
         };
         /**
          * CapsuleModelCheck
-         * @description The capsule entry model (3-DOF, through NRLMSISE-00 for the entry day) flown from
-         *     OSIRIS-REx's reconstructed entry state, against where its capsule landed.
+         * @description The capsule entry model (3-DOF, through an empirical model of the entry day's air)
+         *     flown from OSIRIS-REx's reconstructed entry state, against where its capsule landed.
          */
         CapsuleModelCheck: {
             /** Case */
@@ -1968,7 +1979,7 @@ export interface components {
         Corrections: {
             /**
              * Label
-             * @description Always says these sizes are a budget for assumed errors.
+             * @description Says these sizes are a budget, not a prediction, and that the errors are assumed except where a launch vehicle's guide publishes them.
              */
             label: string;
             /** Burns */

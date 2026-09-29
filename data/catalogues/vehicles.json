@@ -1,8 +1,8 @@
 {
  "schema_version": 1,
  "catalogue": "vehicles",
- "compiled": "2026-09-27",
- "about": "Launch vehicles that carry CLPS landers. Weather limits are in weather_rules; a limit no vehicle maker publishes is entered by the team, never filled in here.",
+ "compiled": "2026-09-29",
+ "about": "Launch vehicles that carry CLPS landers. Weather limits are in weather_rules; a limit no vehicle maker publishes is entered by the team, never filled in here. Injection accuracy is what a vehicle's own user guide prints, row by row, with the page in the source's title; a guide with none has none here.",
  "records": [
   {
    "id": "falcon-9",
@@ -16,18 +16,55 @@
    ],
    "user_guide_url": null,
    "window_kind": null,
+   "injection_accuracy": [
+    {
+     "orbit": "LEO direct inject (200 km x 360 km)",
+     "cited": "Falcon 9 Launch Vehicle Payload User’s Guide, Rev 2 (21 October 2015), Table 3-2, page 16",
+     "kind": "leo",
+     "perigee_alt_km": 200,
+     "apogee_alt_km": 360,
+     "perigee_pm_km": 10,
+     "apogee_pm_km": 15,
+     "inclination_pm_deg": 0.1,
+     "arg_perigee_pm_deg": null,
+     "raan_pm_deg": 0.1,
+     "note": "The guide prints no argument of perigee for it (N/A). Its footnote 2: the RAAN figure assumes an instantaneous launch window, a nonstandard service; for the standard one-hour window the RAAN is about 7.5 degrees, set by the launch time."
+    },
+    {
+     "orbit": "Geosynchronous transfer orbit (185 km x 35,786 km)",
+     "cited": "Falcon 9 Launch Vehicle Payload User’s Guide, Rev 2 (21 October 2015), Table 3-2, page 16",
+     "kind": "gto",
+     "perigee_alt_km": 185,
+     "apogee_alt_km": 35786,
+     "perigee_pm_km": 10,
+     "apogee_pm_km": 500,
+     "inclination_pm_deg": 0.1,
+     "arg_perigee_pm_deg": 0.3,
+     "raan_pm_deg": 0.1,
+     "note": "RAAN as in the row above (footnote 2 of the table)."
+    }
+   ],
+   "injection_sigma": 3.0,
    "sources": [
     {
      "url": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
      "title": "Launch Library 2: upcoming launches at Kennedy, Cape Canaveral and Vandenberg (booster landing plans per launch)",
      "publisher": "The Space Devs (Launch Library 2)",
      "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://web.archive.org/web/20161223112909/http://www.spacex.com/sites/spacex/files/falcon_9_users_guide_rev_2.0.pdf#page=16",
+     "title": "Falcon 9 Launch Vehicle Payload User's Guide, Rev 2 (21 October 2015), section 3.6 Orbit Insertion Accuracy, Table 3-2, page 16 of 69: accuracies at 3 sigma for the osculating elements at orbit insertion (SpaceX's file, as archived on 23 December 2016; SHA-256 a47b5ea023db7f094052596887c3f35010f5a808b348a882193509167f2e6ae0)",
+     "publisher": "SpaceX",
+     "accessed": "2026-09-29"
     }
    ],
    "field_sources": {
     "provider": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
     "pads": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
-    "booster_recovery": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11"
+    "booster_recovery": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+    "injection_accuracy": "https://web.archive.org/web/20161223112909/http://www.spacex.com/sites/spacex/files/falcon_9_users_guide_rev_2.0.pdf#page=16",
+    "injection_sigma": "https://web.archive.org/web/20161223112909/http://www.spacex.com/sites/spacex/files/falcon_9_users_guide_rev_2.0.pdf#page=16"
    },
    "assumed_fields": {},
    "unconfirmed_fields": [
@@ -35,7 +72,8 @@
     "window_kind"
    ],
    "notes": [
-    "Launch Library 2 lists droneship (ASDS) and land (RTLS) booster landings for upcoming Falcon 9 flights."
+    "Launch Library 2 lists droneship (ASDS) and land (RTLS) booster landings for upcoming Falcon 9 flights.",
+    "Only Rev 2 (October 2015) of SpaceX's Falcon guide prints an orbit-insertion accuracy: the guides of April 2020, September 2021 and May 2025 were read and have none (they give a separation attitude and its accuracy only), so this is the accuracy the guide gave for the vehicle of 2015, not a figure for Block 5."
    ]
   },
   {
@@ -48,6 +86,8 @@
    ],
    "user_guide_url": null,
    "window_kind": null,
+   "injection_accuracy": [],
+   "injection_sigma": null,
    "sources": [
     {
      "url": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
@@ -63,11 +103,14 @@
    },
    "assumed_fields": {},
    "unconfirmed_fields": [
+    "injection_accuracy",
+    "injection_sigma",
     "user_guide_url",
     "window_kind"
    ],
    "notes": [
-    "For NROL-97 Launch Library 2 lists both side boosters landing on land and the centre core expended."
+    "For NROL-97 Launch Library 2 lists both side boosters landing on land and the centre core expended.",
+    "SpaceX prints no orbit-insertion accuracy for Falcon Heavy (the Falcon guide's 2015 table is for Falcon 9), so none is entered; Falcon 9's is not carried over to it."
    ]
   },
   {
@@ -80,26 +123,135 @@
    ],
    "user_guide_url": null,
    "window_kind": null,
+   "injection_accuracy": [
+    {
+     "orbit": "1,800 m/sec GTO",
+     "cited": "Vulcan Launch Systems User’s Guide, October 2023, Table 2.3-1, page 2-9",
+     "kind": "gto",
+     "perigee_alt_km": null,
+     "apogee_alt_km": null,
+     "perigee_pm_km": 1.9,
+     "apogee_pm_km": 67.2,
+     "inclination_pm_deg": 0.01,
+     "arg_perigee_pm_deg": 0.11,
+     "raan_pm_deg": 0.12,
+     "note": null
+    },
+    {
+     "orbit": "1,500 m/sec GTO",
+     "cited": "Vulcan Launch Systems User’s Guide, October 2023, Table 2.3-1, page 2-9",
+     "kind": "gto",
+     "perigee_alt_km": null,
+     "apogee_alt_km": null,
+     "perigee_pm_km": 27.8,
+     "apogee_pm_km": 67.2,
+     "inclination_pm_deg": 0.03,
+     "arg_perigee_pm_deg": 0.25,
+     "raan_pm_deg": 0.12,
+     "note": null
+    },
+    {
+     "orbit": "Lunar Transfer/Earth Escape",
+     "cited": "Vulcan Launch Systems User’s Guide, October 2023, Table 2.3-1, page 2-9",
+     "kind": "lunar_transfer",
+     "perigee_alt_km": null,
+     "apogee_alt_km": null,
+     "perigee_pm_km": 1.9,
+     "apogee_pm_km": 4630.0,
+     "inclination_pm_deg": 0.01,
+     "arg_perigee_pm_deg": 0.11,
+     "raan_pm_deg": 0.12,
+     "note": "The guide gives no reference orbit for it: the correction budget works it out in the orbit of the planned flight."
+    },
+    {
+     "orbit": "MEO",
+     "cited": "Vulcan Launch Systems User’s Guide, October 2023, Table 2.3-1, page 2-9",
+     "kind": "meo",
+     "perigee_alt_km": null,
+     "apogee_alt_km": null,
+     "perigee_pm_km": 57.4,
+     "apogee_pm_km": 29.6,
+     "inclination_pm_deg": 0.05,
+     "arg_perigee_pm_deg": null,
+     "raan_pm_deg": 0.05,
+     "note": "The guide prints no argument of perigee for it (a dash)."
+    },
+    {
+     "orbit": "ISS",
+     "cited": "Vulcan Launch Systems User’s Guide, October 2023, Table 2.3-1, page 2-9",
+     "kind": "iss",
+     "perigee_alt_km": null,
+     "apogee_alt_km": null,
+     "perigee_pm_km": 5.7,
+     "apogee_pm_km": 5.0,
+     "inclination_pm_deg": 0.05,
+     "arg_perigee_pm_deg": null,
+     "raan_pm_deg": 0.04,
+     "note": "The guide prints no argument of perigee for it (a dash)."
+    },
+    {
+     "orbit": "Sun-Synchronous",
+     "cited": "Vulcan Launch Systems User’s Guide, October 2023, Table 2.3-1, page 2-9",
+     "kind": "sun_synchronous",
+     "perigee_alt_km": null,
+     "apogee_alt_km": null,
+     "perigee_pm_km": 4.3,
+     "apogee_pm_km": 4.3,
+     "inclination_pm_deg": 0.05,
+     "arg_perigee_pm_deg": null,
+     "raan_pm_deg": 0.04,
+     "note": "The guide prints no argument of perigee for it (a dash)."
+    },
+    {
+     "orbit": "Molniya",
+     "cited": "Vulcan Launch Systems User’s Guide, October 2023, Table 2.3-1, page 2-9",
+     "kind": "molniya",
+     "perigee_alt_km": null,
+     "apogee_alt_km": null,
+     "perigee_pm_km": 3.7,
+     "apogee_pm_km": 55.6,
+     "inclination_pm_deg": 0.05,
+     "arg_perigee_pm_deg": 0.05,
+     "raan_pm_deg": 0.05,
+     "note": null
+    }
+   ],
+   "injection_sigma": 3.0,
    "sources": [
     {
      "url": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
      "title": "Launch Library 2: upcoming launches at Kennedy, Cape Canaveral and Vandenberg (booster landing plans per launch)",
      "publisher": "The Space Devs (Launch Library 2)",
      "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://www.ulalaunch.com/docs/default-source/rockets/2023_vulcan_user_guide.pdf#page=22",
+     "title": "Vulcan Launch Systems User's Guide, October 2023 (approved for public release 16 October 2023), section 2.3 Vulcan Centaur Injection Accuracy, Table 2.3-1 Predicted Vulcan Centaur Guidance Accuracy, printed page 2-9 (page 22 of 85 in the PDF; SHA-256 aefd3e7e813fe9a3a87e6f6584aac26b7feb5fd26a6812fd3053413709543e49)",
+     "publisher": "United Launch Alliance",
+     "accessed": "2026-09-29"
     }
    ],
    "field_sources": {
     "provider": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
-    "pads": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11"
+    "pads": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+    "injection_accuracy": "https://www.ulalaunch.com/docs/default-source/rockets/2023_vulcan_user_guide.pdf#page=22"
    },
-   "assumed_fields": {},
+   "assumed_fields": {
+    "injection_sigma": {
+     "reason": "The guide does not say how many standard deviations the plus-or-minus of its table stands for (it calls the table predicted guidance accuracy). Three is what the Falcon 9 and New Glenn guides print for theirs and the usual convention; if it were one, every error taken from the table would be three times larger.",
+     "url": null,
+     "lo": 1.0,
+     "hi": 3.0
+    }
+   },
    "unconfirmed_fields": [
     "booster_recovery",
     "user_guide_url",
     "window_kind"
    ],
    "notes": [
-    "Launch Library 2 lists no booster landing for Vulcan flights."
+    "Launch Library 2 lists no booster landing for Vulcan flights.",
+    "The table's kilometre values are the guide's first figures; its nautical miles are in brackets beside them."
    ]
   },
   {
@@ -112,17 +264,54 @@
    ],
    "user_guide_url": null,
    "window_kind": null,
+   "injection_accuracy": [
+    {
+     "orbit": "LEO: apogee and perigee altitude at least 200 km, inclination 28 to 51.6 degrees",
+     "cited": "New Glenn Payload User’s Guide, Rev C (October 2018), Table 2-3, page 31",
+     "kind": "leo",
+     "perigee_alt_km": null,
+     "apogee_alt_km": null,
+     "perigee_pm_km": 7.4,
+     "apogee_pm_km": 15.0,
+     "inclination_pm_deg": 0.12,
+     "arg_perigee_pm_deg": null,
+     "raan_pm_deg": 0.1,
+     "note": "The guide prints the argument of perigee as (circular) and the altitudes as at least 200 km."
+    },
+    {
+     "orbit": "GTO: apogee altitude 35,786 km, perigee altitude at least 185 km, inclination 27 degrees or less",
+     "cited": "New Glenn Payload User’s Guide, Rev C (October 2018), Table 2-3, page 31",
+     "kind": "gto",
+     "perigee_alt_km": 185,
+     "apogee_alt_km": 35786,
+     "perigee_pm_km": 7.4,
+     "apogee_pm_km": 200.0,
+     "inclination_pm_deg": 0.05,
+     "arg_perigee_pm_deg": 0.3,
+     "raan_pm_deg": 0.4,
+     "note": "The guide prints the perigee altitude as at least 185 km; 185 km is taken as the reference orbit's perigee, the standard GTO's."
+    }
+   ],
+   "injection_sigma": 3.0,
    "sources": [
     {
      "url": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
      "title": "Launch Library 2: upcoming launches at Kennedy, Cape Canaveral and Vandenberg (booster landing plans per launch)",
      "publisher": "The Space Devs (Launch Library 2)",
      "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://yellowdragonblogdotcom.wordpress.com/wp-content/uploads/2019/01/new_glenn_payload_users_guide_rev_c.pdf#page=31",
+     "title": "New Glenn Payload User's Guide, October 2018 (Rev C), section 2.6 Orbital Injection Accuracy, Table 2-3, page 31 of 124: accuracies at 3 sigma (Blue Origin's document, read from a copy on yellowdragonblogdotcom.wordpress.com uploaded in January 2019 because blueorigin.com answered every download with HTTP 429; SHA-256 441e91829725fd1e96aa4c3943fec2d3fd9492c7cdeded2e98a38aa06c80aa4d; the guide's own page is https://www.blueorigin.com/new-glenn/new-glenn-payload-user-s-guide)",
+     "publisher": "Blue Origin",
+     "accessed": "2026-09-29"
     }
    ],
    "field_sources": {
     "provider": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
-    "pads": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11"
+    "pads": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?mode=detailed&location__ids=12,27,11",
+    "injection_accuracy": "https://yellowdragonblogdotcom.wordpress.com/wp-content/uploads/2019/01/new_glenn_payload_users_guide_rev_c.pdf#page=31",
+    "injection_sigma": "https://yellowdragonblogdotcom.wordpress.com/wp-content/uploads/2019/01/new_glenn_payload_users_guide_rev_c.pdf#page=31"
    },
    "assumed_fields": {},
    "unconfirmed_fields": [
@@ -131,7 +320,8 @@
     "window_kind"
    ],
    "notes": [
-    "LC-36, New Glenn's only pad, was damaged on 28 May 2026 (see launch_sites)."
+    "LC-36, New Glenn's only pad, was damaged on 28 May 2026 (see launch_sites).",
+    "Blue Origin says it is designing New Glenn to achieve these accuracies (the vehicle had not yet flown when the guide was written, in 2018)."
    ]
   }
  ]

@@ -784,3 +784,14 @@ that user. `GET /auth/me` returns the same `user`.
   numbers. The Cape stays false (CRPS skill -0.97 at 24 h, 95 % -1.08 to -0.86). `OneForecast.note` for HRRR
   now carries the 95 % range of its skill against the station's usual wind and says "no higher or lower"
   where its lean rounds to nothing. No field is added or removed.
+- 2026-09-29 (trip, additive): `Assumption` in `Corrections.assumptions[]` gains `basis` ("published" | "assumed")
+  and `source` (string | null). Where a launch vehicle user's guide gives orbital injection accuracies (Falcon 9,
+  Vulcan, New Glenn), `basis` is "published" and `source` cites the guide, table and page; where unpublished,
+  `basis` is "assumed" and `source` is null. `Corrections.label` clarifies that errors are assumed except where
+  the launch vehicle's guide publishes them.
+- 2026-09-29 (return, no shape change): `Return.capsule.model_check.atmosphere` default is now NRLMSIS 2.1 (Emmert
+  et al. 2022) driven by the entry day's solar flux and ap indices. Independent mesospheric measurements (TIMED/SABER
+  136 profiles and Table Mountain Rayleigh lidar 9 nights) pick NRLMSIS 2.1 over NRLMSISE-00 (RMS density bias
+  0.6 % and 1.6 % vs 3.7 % and 5.0 %). With NRLMSIS 2.1, the OSIRIS-REx landing distance is 6.6 km (3.9 to 9.3 km
+  over the drag range), satisfying the plan's 10 km limit (`passed: true`). Ellipse 99 % is 51.1 by 21.5 km (43.7 by
+  0.3 km with no wind).

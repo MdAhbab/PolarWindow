@@ -4,8 +4,9 @@ OMNI hourly files on disk (``data/spaceweather/omni_hourly``, NASA SPDF).
 NRLMSISE-00 (Picone et al. 2002) is driven by the 10.7 cm solar flux of the day before,
 its 81-day mean centred on the day, and seven ap numbers: the day's Ap, the 3-hour ap at
 the time and 3, 6 and 9 hours before, and the means of the eight 3-hour values 12 to 33
-and 36 to 57 hours before. OMNI carries the daily F10.7 and the 3-hour ap from NOAA
-NGDC, repeated on every hour they cover.
+and 36 to 57 hours before. NRLMSIS 2.x takes the same numbers (``pymsis``' storm-time
+mode). OMNI carries the daily F10.7 and the 3-hour ap from NOAA NGDC, repeated on every
+hour they cover.
 """
 
 from __future__ import annotations
@@ -111,15 +112,23 @@ def compute(
     return Indices(prev, float(np.nanmean(around)), values, files)
 
 
-def at(t: datetime) -> Indices | None:
-    """The indices for ``t`` (UTC), or None when OMNI on disk lacks any of them."""
-    if t.tzinfo is None:
-        raise ValueError("t must carry its time zone (UTC)")
-    t = t.astimezone(UTC)
-    day = t.replace(hour=0, minute=0, second=0, microsecond=0)
+def at_many(times: list[datetime]) -> list[Indices | None]:
+    """``at`` for several times (UTC), reading the files once for all of them."""
+    if not times:
+        return []
+    if any(t.tzinfo is None for t in times):
+        raise ValueError("every time must carry its time zone (UTC)")
+    utc = [t.astimezone(UTC) for t in times]
+    first = min(utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    last = max(utc).replace(hour=0, minute=0, second=0, microsecond=0)
     ts, f107, ap, used = _hours(
-        day - timedelta(days=HALF_MEAN_DAYS), day + timedelta(days=HALF_MEAN_DAYS + 1)
+        first - timedelta(days=HALF_MEAN_DAYS), last + timedelta(days=HALF_MEAN_DAYS + 1)
     )
     if not ts:
-        return None
-    return compute(t, ts, f107, ap, tuple(used))
+        return [None] * len(utc)
+    return [compute(t, ts, f107, ap, tuple(used)) for t in utc]
+
+
+def at(t: datetime) -> Indices | None:
+    """The indices for ``t`` (UTC), or None when OMNI on disk lacks any of them."""
+    return at_many([t])[0]

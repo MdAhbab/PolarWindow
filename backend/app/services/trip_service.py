@@ -117,6 +117,8 @@ async def trip(session: AsyncSession, mission_id: str) -> tuple[int, dict[str, A
         "url": ds.source,
         "step_s": STEP_S,
         "stations": catalogues.load("ground_stations").version,
+        # The correction budget takes the vehicle's published injection accuracy from here.
+        "vehicles": catalogues.load("vehicles").version,
         "sky": await _sky(session, m),
     }
     ans = await job_service.answer_or_enqueue(

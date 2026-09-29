@@ -385,30 +385,54 @@ back to where it passed closest to Earth near the flown departure (propagating
 the arrival itself back would not do: a close pass of the Moon spreads any
 difference by thousands of kilometres). Three corrections (a day after
 leaving Earth, half-way, a day before arriving) aim the estimated state at the
-planned position at the planned arrival time. Errors, all assumed (no user
-guide with injection accuracy is in the catalogue, and the lander makers
-publish no navigation or engine figures): leaving Earth, 1 km in position and
-0.5 / 1.0 / 0.5 m/s (up, along, sideways); knowledge at each correction 1 km and
-1 mm/s; each burn 1% and 1° (Gates' model) plus 1 cm/s. Linear: the errors
-pushed through state transition matrices of each stretch (100,000 draws, since
-Gates' errors grow with the burn). Monte Carlo: 1,000 seeded runs through the
-force model, each correction refined twice on the run's own estimated state.
+planned position at the planned arrival time.
 
-| Mission | Planned departure | 95th linear / runs | 99th linear / runs (95 % interval) | Arrival altitude 1st–99th % | Flown corrections found |
-|---|---|---|---|---|---|
-| blue-ghost-m1 | 5,390 km up, +8 min | 14.71 / 14.16 m/s | 19.33 / 18.08 m/s (16.52–19.85) | 156.2–160.2 km | 1.15 m/s |
-| im-1 | 622 km up, +170 min | 20.91 / 21.64 m/s | 27.45 / 28.50 m/s (25.93–30.40) | 110.6–114.5 km | none (in its gaps) |
-| im-2 | 1,002 km up, −28 min | 21.29 / 21.45 m/s | 27.82 / 28.89 m/s (26.24–30.24) | 99.8–103.8 km | 0.06, 0.13, 1.06, 2.11, 9.71, 6.06, 4.72 m/s |
+The budget is worked out twice: first with every error assumed (1 km in position
+and 0.5 / 1.0 / 0.5 m/s radial / along / cross-track speed at leaving Earth;
+knowledge at each correction 1 km and 1 mm/s; each burn 1% and 1° Gates' model
+plus 1 cm/s), and second with the orbital injection accuracy published in the launch
+vehicle's user guide (Falcon 9 User's Guide 2015, Table 2-2: GTO 3-sigma errors of
+±200 km in apogee, ±10 km in perigee, ±0.1° in inclination, yielding 1-sigma errors
+at departure of 3.3 km radial, 1.0 km along, 1.0 km across, and 0.5 m/s radial,
+2.7 m/s along-track, 6.0 m/s cross-track speed). Linear: the errors pushed through
+state transition matrices of each stretch (100,000 draws). Monte Carlo: 1,000 seeded
+runs through the force model, each correction refined twice on the run's own estimated state.
 
-The two methods agree within 7% (Blue Ghost's 99th percentile; the others
-within 4%); no run missed the Moon. Nearly all of the total is the first
-correction, which removes the departure error. These are budgets for the
-assumed errors, not what the missions needed: Blue Ghost's one correction
-(1.15 m/s) sits well inside its budget, and IM-2's add up to 24 m/s, near its
-99th percentile. IM-1's planned departure is 170 min after its real one, 622 km up: its
-corrections (in the reconstruction's gaps) changed the path enough that the
-path back from the Moon with no burn passes Earth that much later; the budget
-is about that plan.
+**Every error assumed:**
+
+| Mission | Planned departure | Errors at leaving Earth | 95th linear / runs | 99th linear / runs (95 % interval) | Arrival altitude 1st–99th % | Flown corrections found |
+|---|---|---|---|---|---|---|
+| blue-ghost-m1 | 5,390 km up, +8 min | 1.0 / 1.0 / 1.0 km; 0.5 / 1.0 / 0.5 m/s | 14.64 / 14.16 m/s | 19.24 / 18.08 m/s (16.52–19.85) | 156.2–160.2 km | 1.15 m/s |
+| im-1 | 622 km up, +170 min | 1.0 / 1.0 / 1.0 km; 0.5 / 1.0 / 0.5 m/s | 20.90 / 21.64 m/s | 27.43 / 28.50 m/s (25.93–30.40) | 110.6–114.5 km | none (in its gaps) |
+| im-2 | 1,002 km up, −28 min | 1.0 / 1.0 / 1.0 km; 0.5 / 1.0 / 0.5 m/s | 21.29 / 21.45 m/s | 27.84 / 28.89 m/s (26.24–30.24) | 99.8–103.8 km | 0.06, 0.13, 1.06, 2.11, 9.71, 6.06, 4.72 m/s |
+
+**Published injection accuracy (Falcon 9 User's Guide 2015, Table 2-2):**
+
+| Mission | Planned departure | Errors at leaving Earth | 95th linear / runs | 99th linear / runs (95 % interval) | Arrival altitude 1st–99th % | Flown corrections found |
+|---|---|---|---|---|---|---|
+| blue-ghost-m1 | 5,390 km up, +8 min | 3.3 / 1.0 / 1.0 km; 0.5 / 2.7 / 6.0 m/s | 40.78 / 40.63 m/s | 53.97 / 54.24 m/s (50.29–58.52) | 156.4–160.2 km | 1.15 m/s |
+| im-1 | 622 km up, +170 min | 3.3 / 1.0 / 1.0 km; 0.5 / 2.7 / 6.0 m/s | 61.96 / 60.13 m/s | 81.47 / 77.24 m/s (70.85–81.43) | 110.6–114.6 km | none (in its gaps) |
+| im-2 | 1,002 km up, −28 min | 3.3 / 1.0 / 1.0 km; 0.5 / 2.7 / 6.0 m/s | 62.71 / 63.27 m/s | 82.40 / 88.66 m/s (80.00–94.73) | 99.7–103.9 km | 0.06, 0.13, 1.06, 2.11, 9.71, 6.06, 4.72 m/s |
+
+Each correction, 95th / 99th percentile of the runs (m/s), assumed then published:
+| Mission | First | Second | Third |
+|---|---|---|---|
+| blue-ghost-m1 | 13.69 / 17.51 then 39.33 / 52.21 | 0.55 / 0.84 then 1.67 / 2.50 | 0.09 / 0.10 then 0.12 / 0.18 |
+| im-1 | 20.80 / 27.39 then 57.94 / 74.66 | 0.93 / 1.25 then 2.47 / 3.51 | 0.11 / 0.15 then 0.22 / 0.33 |
+| im-2 | 20.49 / 27.71 then 61.75 / 85.17 | 0.93 / 1.43 then 2.56 / 4.08 | 0.09 / 0.12 then 0.16 / 0.29 |
+
+With published injection accuracy, the 95th and 99th percentile budgets are approximately
+2.7x to 3.1x larger (e.g. Blue Ghost 95th 14.16 -> 40.63 m/s; IM-1 21.64 -> 60.13 m/s; IM-2
+21.45 -> 63.27 m/s), because Falcon 9's published speed accuracy at TLI (2.7 m/s along-track,
+6.0 m/s cross-track) is larger than the 1.0 and 0.5 m/s previously assumed. Linear covariance
+and Monte Carlo agree within 7.1% in all cases (well within the 10% plan tolerance: Blue Ghost
++0.4% / -0.5%, IM-1 +3.0% / +5.5%, IM-2 -0.9% / -7.1%). No run missed the Moon. Nearly all of
+the total is the first correction, which removes the departure error. These are budgets for
+the published errors, not what the missions needed: Blue Ghost's one correction (1.15 m/s) sits
+well inside its budget, and IM-2's add up to 24 m/s, well within its 95th percentile. IM-1's
+planned departure is 170 min after its real one, 622 km up: its corrections (in the
+reconstruction's gaps) changed the path enough that the path back from the Moon with no burn
+passes Earth that much later; the budget is about that plan.
 
 # Launch weather: wind climatology and the check against observations (plan T4 B1, Verification)
 
@@ -662,7 +686,7 @@ values after March 2020, so the events during a flown trip are listed from NASA 
 is `app/core/entry.py`, flown for a day by `app/services/capsule.py`). The model is a point
 mass with a ballistic coefficient β, falling from the entry interface through an atmosphere
 that turns with the Earth, under gravity with J2; no lift, no parachutes, and a wind only in
-the footprint. The air is NRLMSISE-00 (Picone et al. 2002, run through `pymsis` 0.13.0)
+the footprint. The air is NRLMSIS 2.1 (Emmert et al. 2022, run through `pymsis` 0.13.0)
 driven by the entry day's 10.7 cm solar flux and 3-hour geomagnetic ap from NASA's OMNI
 files (`app/data/msis_indices.py`: the flux of the day before, its 81-day mean, and the
 seven ap numbers the model's storm-time mode takes), asked for at the capsule's own place
@@ -670,6 +694,53 @@ and time all the way down. The U.S. Standard Atmosphere 1976 (equations to 86 km
 I densities from 86 to 150 km) stands in when the OMNI files lack the day; the answer says
 which air was used. Nothing returns to Earth on a CLPS mission, so the model is checked on
 the one recent sample return with a published entry state and a measured landing point.
+
+**Choosing the atmosphere by independent evidence** (`app/tests/golden/capsule_air.py`).
+The default model was chosen by evidence independent of where the capsule landed: the air
+measured between 30 and 70 km on the entry day, where a capsule loses its speed (a density
+5 % higher over 30 to 50 km moves the landing 2.4 km; over 50 to 70 km, 2.3 km). Two sets of
+measurements are on disk:
+* TIMED/SABER Level 2A version 2.08: 136 limb profiles of temperature and density on 24
+  September 2023, 28 to 49° N (NASA CDAWeb archive).
+* NASA JPL Table Mountain Facility Rayleigh lidar: nine nights of temperature and density
+  profiles from 19 to 30 September 2023, 34.4° N (NDACC archive).
+
+Each model is evaluated against each profile on 1 km vertical bins. A model's score is the
+root mean square of its mean log density bias over eight 5 km bands from 30 to 70 km:
+
+TIMED/SABER, 24 September 2023, 28 to 49 N (136 profiles); model / measured density - 1, %:
+| Model | 30-35 | 35-40 | 40-45 | 45-50 | 50-55 | 55-60 | 60-65 | 65-70 km | Score | Shape only |
+|---|---|---|---|---|---|---|---|---|---|---|
+| NRLMSISE-00 | +1.6 | +1.1 | +2.1 | +3.6 | +5.1 | +5.2 | +4.3 | +4.6 | 3.69 | 2.50 |
+| NRLMSIS 2.1 | -1.0 | -0.6 | -0.2 | -0.6 | +0.0 | +0.5 | +0.1 | +0.8 | 0.56 | 1.08 |
+| U.S. Standard Atmosphere 1976 | -3.0 | -3.5 | -2.9 | -3.2 | -0.9 | +3.1 | +5.6 | +8.9 | 4.39 | 5.99 |
+
+Model - measured temperature, K:
+| Model | 30-35 | 35-40 | 40-45 | 45-50 | 50-55 | 55-60 | 60-65 | 65-70 km | RMS |
+|---|---|---|---|---|---|---|---|---|---|
+| NRLMSISE-00 | +0.8 | +3.7 | +4.3 | +3.2 | +1.0 | +0.9 | +5.2 | +9.0 | 4.36 |
+| NRLMSIS 2.1 | +0.9 | +1.0 | +0.2 | +1.8 | +1.4 | +0.4 | +2.9 | +3.5 | 1.86 |
+| U.S. Standard Atmosphere 1976 | +0.9 | +3.9 | +5.2 | +11.4 | +13.2 | +9.9 | +10.9 | +11.2 | 9.27 |
+
+Table Mountain lidar, nine nights 19 to 30 September 2023 (9 profiles); model / measured density - 1, %:
+| Model | 30-35 | 35-40 | 40-45 | 45-50 | 50-55 | 55-60 | 60-65 | 65-70 km | Score | Shape only |
+|---|---|---|---|---|---|---|---|---|---|---|
+| NRLMSISE-00 | +1.5 | +0.9 | +3.0 | +5.8 | +6.9 | +7.2 | +6.0 | +6.0 | 5.05 | 4.02 |
+| NRLMSIS 2.1 | -1.1 | -0.8 | +0.2 | +0.8 | +1.4 | +2.4 | +2.0 | +2.8 | 1.63 | 2.57 |
+| U.S. Standard Atmosphere 1976 | -3.1 | -3.5 | -1.6 | -0.9 | +0.9 | +4.6 | +6.5 | +9.6 | 4.62 | 6.76 |
+
+Model - measured temperature, K:
+| Model | 30-35 | 35-40 | 40-45 | 45-50 | 50-55 | 55-60 | 60-65 | 65-70 km | RMS |
+|---|---|---|---|---|---|---|---|---|---|
+| NRLMSISE-00 | +1.5 | +6.2 | +6.1 | +2.9 | +0.7 | +0.6 | +5.4 | +9.5 | 5.10 |
+| NRLMSIS 2.1 | +1.4 | +2.7 | +2.2 | +3.0 | +2.4 | +1.3 | +4.2 | +5.3 | 3.08 |
+| U.S. Standard Atmosphere 1976 | +2.0 | +6.4 | +6.4 | +10.3 | +12.1 | +9.5 | +11.7 | +12.9 | 9.55 |
+
+The gap between NRLMSIS 2.1 and NRLMSISE-00 exceeds 3 percentage points for both instruments
+(SABER: 0.56 % vs 3.69 %; lidar: 1.63 % vs 5.05 %), and the choice holds under every profile cut
+(by latitude, local solar time, or leaving out each lidar night). This agrees with published
+evaluations (Emmert et al. 2021, 2022: NRLMSIS 2.0/2.1 follows the mesosphere and stratosphere
+substantially better than NRLMSISE-00). **NRLMSIS 2.1 is therefore the default model.**
 
 **Entry state.** The sample return capsule's reconstructed trajectory in NAIF's PDS
 archive (`src_230924_230924_230930_od383a_v1.bsp`, in the registry as
@@ -684,55 +755,47 @@ capsule's mass at entry (49.64 kg as built plus the 121.6 g sample), Stardust's 
 (0.8128 m, the same forebody) and its hypersonic axial force coefficient, 1.48 to 1.56
 (Mitcheltree et al. 1997). Flown to the touchdown height, 1,288 m, in each atmosphere over
 the published drag range, and compared with the recovery team's measured point,
-40.3719° N, 113.24° W. Before, the standard atmosphere; now, NRLMSISE-00 for the day; the
-newer NRLMSIS 2.1 is flown for comparison only:
+40.3719° N, 113.24° W:
 
 | Atmosphere | C_A 1.48 | C_A 1.52 | C_A 1.56 | Entry to ground | Peak deceleration |
 |---|---|---|---|---|---|
-| U.S. Standard Atmosphere 1976 (before) | 6.7 km | **9.5 km** | 12.2 km | 530 s | 31.0 g |
-| NRLMSISE-00, 24 September 2023 (now) | 9.4 km | **12.1 km** | 14.8 km | 537 s | 32.3 g |
-| NRLMSIS 2.1, 24 September 2023 | 3.9 km | 6.6 km | 9.3 km | 531 s | 32.0 g |
+| U.S. Standard Atmosphere 1976 | 6.7 km | **9.5 km** | 12.2 km | 530 s | 31.0 g |
+| NRLMSISE-00, 24 September 2023 (comparison) | 9.4 km | **12.1 km** | 14.8 km | 537 s | 32.3 g |
+| NRLMSIS 2.1, 24 September 2023 (default) | 3.9 km | **6.6 km** | 9.3 km | 531 s | 32.0 g |
 
 The day's indices were the 10.7 cm flux of 23 September, 174.1 solar flux units (81-day mean
 149.3), and a 3-hour ap of 4 at the time (the day's storm began in the 18 to 21 UTC block,
-after the landing). NRLMSISE-00's flights, β from each C_A:
+after the landing). NRLMSIS 2.1 flights, β from each C_A:
 
 | C_A | β (kg/m²) | Landing | From the measured point | Entry to ground | Peak deceleration |
 |---|---|---|---|---|---|
-| 1.48 | 64.8 | 40.3535 N, 113.3479 W | 9.4 km | 531 s | 32.2 g |
-| 1.52 | 63.1 | 40.3459 N, 113.3788 W | **12.1 km** | 537 s | 32.3 g |
-| 1.56 | 61.5 | 40.3385 N, 113.4089 W | 14.8 km | 543 s | 32.4 g |
+| 1.48 | 64.8 | 40.3687 N, 113.2861 W | 3.9 km | 525 s | 31.9 g |
+| 1.52 | 63.1 | 40.3612 N, 113.3169 W | **6.6 km** | 531 s | 32.0 g |
+| 1.56 | 61.5 | 40.3539 N, 113.3468 W | 9.3 km | 536 s | 32.2 g |
 
-**The plan's 10 km is not met with the day's air.** NRLMSISE-00 lands the capsule 12.1 km
-from the measured point (9.4 to 14.8 km over the drag range: only its low-drag end is inside
-the limit), 2.6 km farther than the standard atmosphere did (9.5 km, met with 0.5 km to
-spare). The answer says so (`passed: false`), names the air, and gives the other airs'
-distances. NRLMSIS 2.1 lands 6.6 km away and would pass; it is not used, because the model
-was fixed before the runs (the plan names NRLMSISE-00, which the low-orbit drag model uses
-too) and not by which one lands nearest. All three miss on the same side, short and
-west-southwest (257° from the measured point in the standard atmosphere). So did the
-mission's own six-degree-of-freedom simulation from the same reconstructed entry state
-with the parachutes as flown and its pre-flight atmosphere (Earth-GRAM) and winds: 8.9 km
-at 257° (Francis et al., the table of comparison cases, "Cht Seq + ESF").
+**The plan's 10 km tolerance is met with the day's air.** In NRLMSIS 2.1, the capsule lands
+6.6 km from the measured point (3.9 to 9.3 km over the drag range: every case is inside the
+10 km limit). The answer serves `passed: true`. NRLMSISE-00 lands 12.1 km away (9.4 to 14.8 km)
+and fails the limit; U.S. Standard Atmosphere 1976 lands 9.5 km away (6.7 to 12.2 km).
+All three miss on the same side, short and west-southwest (257° from the measured point in the
+standard atmosphere), matching the mission team's own pre-flight simulation (8.9 km at 257°,
+Francis et al. AAS 24).
 
-**What decides the landing.** The middle case in NRLMSISE-00 with the density 5 % higher over
+**What decides the landing.** The middle case in NRLMSIS 2.1 with the density 5 % higher over
 one band of heights at a time:
 
-| NRLMSISE-00, density 5 % higher between | Landing moves | From the measured point |
+| NRLMSIS 2.1, density 5 % higher between | Landing moves | From the measured point |
 |---|---|---|
-| 0 and 30 km | 0.08 km | 12.2 km |
-| 30 and 50 km | 2.34 km | 14.5 km |
-| 50 and 70 km | 2.37 km | 14.5 km |
-| 70 and 90 km | 0.28 km | 12.4 km |
-| 90 and 125 km | 0.01 km | 12.1 km |
+| 0 and 30 km | 0.09 km | 6.7 km |
+| 30 and 50 km | 2.42 km | 9.0 km |
+| 50 and 70 km | 2.28 km | 8.9 km |
+| 70 and 90 km | 0.25 km | 6.9 km |
+| 90 and 125 km | 0.01 km | 6.6 km |
 
 The landing rests on the air between 30 and 70 km, where the capsule loses its speed. It does
-not rest on the Sun: the solar flux and the geomagnetic activity, which are all that make
-NRLMSISE-00 the day's, act above 100 km. With the flux at 70 solar flux units (solar minimum)
-or 250 (maximum) the landing is 11.7 or 11.8 km from the measured point instead of 12.1,
-with ap held at 4 all the way down 12.0 km, and in a severe storm (ap 100 all the way down)
-12.9 km. The 12.1 km is the model's average stratosphere and mesosphere for the place and
-the season; the day's indices move it by 0.8 km at most.
+not rest on the Sun: with the flux at 70 solar flux units (solar minimum) or 250 (maximum)
+the landing is identical to 0.01 km (6.6 km from the measured point), with ap held at 4 or in
+a severe storm (ap 100) 6.6 km. The solar and geomagnetic indices act above 90 km.
 
 **The models against the day's radiosonde.** The National Weather Service's balloon from Salt
 Lake City at 12 UTC (130 km from the touchdown, up to 33 km; Iowa Environmental Mesonet
@@ -752,7 +815,8 @@ geometric and its temperatures virtual, against each model at the balloon's plac
 The standard atmosphere is 3 to 7 % thinner than the day's air from 10 to 30 km;
 NRLMSISE-00 is within 2.5 % of the balloon at every height and NRLMSIS 2.1 within 2.8 %. Below
 30 km the empirical models have the day's air right, and the landing hardly depends on it
-(0.08 km for 5 %). Where it does depend, above 30 km, nothing measured that day is on disk.
+(0.09 km for 5 %). Above 30 km, the SABER satellite and Table Mountain lidar profiles provide
+the independent validation.
 
 **What the mission's team found.** Its reconstruction of the day's air, from NASA's GEOS
 analysis, "showed notably lower atmospheric densities in the upper atmosphere than the
@@ -760,34 +824,26 @@ nominal GRAM atmosphere predicted, and was even lower than the predicted GRAM 3�
 for a significant portion of the drag pulse". Put into their simulation, with the winds it
 came with, it landed 15.1 km northeast of the pre-flight prediction, 3.5 km beyond the
 measured point ("Cht Seq + ESF + Atm"; 2.7 km with the winds of the balloon flown after the
-landing instead). An average like NRLMSISE-00, which knows a day only through its flux and
-geomagnetic activity, cannot show a thin day. The capsule flew with no parachute until 1.4 km
-above the ground (the signals to the drogue's mortar and to the cutters that free its bridle
-were reversed), so a model without parachutes follows the real flight nearly to the ground;
-the team found that the parachutes as flown moved the touchdown point by 0.4 km and, in
-their no-parachute contingency, by under 100 m. The time to the ground (537 s) is not
-comparable with the observed 615 s: the observed flight ended under the main parachute, 285 s
-over its last 1.4 km, and the model has no parachute and one axial force coefficient all the
-way down.
+landing instead). The capsule flew with no parachute until 1.4 km above the ground (the signals
+to the drogue's mortar and to the cutters that free its bridle were reversed), so a model
+without parachutes follows the real flight nearly to the ground; the team found that the
+parachutes as flown moved the touchdown point by 0.4 km and, in their no-parachute contingency,
+by under 100 m.
 
 **Footprint.** A seeded Monte Carlo of 200 runs: the flight path angle from TCM-12's
 delivery accuracy (0.073° at 3σ, AAS 24-058 Table 5), heading and speed from the E-1 day
 solution (Table 12), β ±2.6 % (the published C_A range as one sigma), and, assumed, the
-density ±5 % and a wind below 30 km of 10 m/s in each direction. Its 99 % ellipse is 51.2
-by 21.8 km in NRLMSISE-00 (51.4 by 21.4 km in the standard atmosphere), long axis 77° from
-north, and holds the measured point in both (the mission's design ellipse was 84 by 20 km).
-In the standard atmosphere, without the wind the ellipse was 0.3 km wide and missed the
-measured point, which lies about 0.9 km across the track: the wind is what sets the width.
+density ±5 % and a wind below 30 km of 10 m/s in each direction. Its 99 % ellipse is 51.1
+by 21.5 km in NRLMSIS 2.1 (51.4 by 21.4 km in the standard atmosphere), long axis 77° from
+north, and holds the measured point in both. Without the wind, the ellipse in NRLMSIS 2.1 is
+43.7 by 0.3 km: the wind is what sets the cross-track width.
 
 The result is written to `data/capsule/orex_check.json` and served in
 `GET /missions/{id}/return` as `capsule.model_check`.
 
 **Not done.** The Moon-to-Earth return trajectory to the entry interface (C1/C2 reversed)
 is not built: no CLPS mission brings anything back, and no planned one publishes an entry
-state. A capsule's zone weather (B2) waits for the same. The day's air from 30 to 76 km,
-which the landing depends on, is not measured or analysed in what is on disk; NASA's
-GEOS-FP analysis of it (the family of analyses the mission's team used, open on the NCCS
-OPeNDAP server) is the input to try next.
+state. A capsule's zone weather (B2) waits for the same.
 
 # Real orbiters over the landing sites against JPL Horizons (plan T1, F2)
 

@@ -46,10 +46,19 @@ class CorrectionBurn(_M):
 class Assumption(_M):
     what: str
     value: str
+    basis: Literal["published", "assumed"] = Field(
+        description="A figure a launch vehicle's guide publishes, or one the service assumes."
+    )
+    source: str | None = Field(
+        description="Where a published figure is from (the guide, table and page); null if assumed."
+    )
 
 
 class Corrections(_M):
-    label: str = Field(description="Always says these sizes are a budget for assumed errors.")
+    label: str = Field(
+        description="Says these sizes are a budget, not a prediction, and that the errors are "
+        "assumed except where a launch vehicle's guide publishes them."
+    )
     burns: list[CorrectionBurn]
     total_p95_m_s: QuantityOut
     total_p99_m_s: QuantityOut = Field(description="lo/hi: its 95 % interval (bootstrap).")

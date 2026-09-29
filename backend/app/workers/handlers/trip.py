@@ -156,8 +156,11 @@ async def _burns_and_budget(
         if n % 50 == 0:
             ctx.progress(0.5 + 0.45 * n / BUDGET_RUNS, f"Correction runs: {n} of {BUDGET_RUNS}.")
 
+    guide = flown_burns.guide_for(f.vehicle_id)
     bud = await spice.run_async(
-        lambda: flown_burns.budget(mid, fl, tables, named, samples=BUDGET_RUNS, progress=tick)
+        lambda: flown_burns.budget(
+            mid, fl, tables, named, guide=guide, samples=BUDGET_RUNS, progress=tick
+        )
     )
     if bud is None:
         why = (
@@ -172,8 +175,14 @@ async def _burns_and_budget(
     shift = (plan.t_tli - dep) / 60.0
     flown = [(n, x.dv_m_s) for x, n in named if n.startswith("Correction")]
     budget = {
-        "label": "A budget for these assumed errors, not a prediction of what the mission "
-        "needed.",
+        "label": (
+            "A budget for these errors, not a prediction of what the mission needed: the "
+            "launch vehicle’s published injection accuracy where its guide gives one, every "
+            "other error assumed."
+            if bud.derived
+            else "A budget for these assumed errors, not a prediction of what the mission "
+            "needed."
+        ),
         "burns": [
             {
                 "name": TCM_NAMES[k] if k < len(TCM_NAMES) else f"Correction {k + 1}",
@@ -206,7 +215,10 @@ async def _burns_and_budget(
         ),
         "runs": int(runs.dv.shape[0]),
         "missed": runs.missed,
-        "assumptions": [{"what": w, "value": v} for w, v in flown_burns.ASSUMED_WORDS],
+        "assumptions": [
+            {"what": i.what, "value": i.value, "basis": i.basis, "source": i.source}
+            for i in flown_burns.input_words(bud.errors, bud.derived, guide)
+        ],
         "plan_note": (
             "The flight as planned: NASA's reconstruction just before entering lunar orbit, "
             "propagated back to where it passed closest to Earth "
@@ -449,6 +461,7 @@ async def run(ctx: JobContext) -> HandlerResult:
     inputs = [
         InputRef("dataset", p["dataset"], p["spk"]),
         InputRef("catalogue", "ground_stations", catalogues.load("ground_stations").version),
+        InputRef("catalogue", "vehicles", catalogues.load("vehicles").version),
         InputRef("mission", p["mission_id"], p["data_version"]),
     ]
     return HandlerResult(

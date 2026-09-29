@@ -171,6 +171,32 @@ class LaunchSite(CitedRecord):
     ll2_location_id: int | None
 
 
+class InjectionAccuracy(_Strict):
+    """One row of a launch vehicle guide's table of orbit-injection accuracy: the plus-or-minus
+    of the osculating elements at injection, as printed. The table and page are in the title of
+    the record's source; how many standard deviations the plus-or-minus stands for is the
+    record's ``injection_sigma``."""
+
+    #: The guide's words for the orbit, and the guide, table and page the row is read from.
+    orbit: str = Field(min_length=3)
+    cited: str = Field(min_length=10)
+    #: What kind of orbit it is. The correction budget takes the lunar transfer row when there
+    #: is one and otherwise the geosynchronous transfer orbit's (the nearest to a departure
+    #: for the Moon).
+    kind: Literal["leo", "gto", "lunar_transfer", "meo", "iss", "sun_synchronous", "molniya"]
+    #: The altitudes of the reference orbit when the guide gives them, else null.
+    perigee_alt_km: float | None = Field(gt=0)
+    apogee_alt_km: float | None = Field(gt=0)
+    #: The plus-or-minus; null where the guide prints none (a circular orbit has no argument
+    #: of perigee).
+    perigee_pm_km: float | None = Field(gt=0)
+    apogee_pm_km: float | None = Field(gt=0)
+    inclination_pm_deg: float | None = Field(gt=0)
+    arg_perigee_pm_deg: float | None = Field(gt=0)
+    raan_pm_deg: float | None = Field(gt=0)
+    note: str | None
+
+
 class Vehicle(CitedRecord):
     provider: str | None
     #: How the first stage (or side boosters) is usually recovered.
@@ -181,6 +207,11 @@ class Vehicle(CitedRecord):
     user_guide_url: str | None
     #: A launch window the vehicle can fly (it steers in azimuth) or a single instant.
     window_kind: Literal["window", "instantaneous"] | None
+    #: The accuracy the vehicle's guide prints for the orbit it injects into, row by row, and
+    #: how many standard deviations its plus-or-minus stands for (three where the guide says
+    #: so; an assumption where it does not).
+    injection_accuracy: list[InjectionAccuracy]
+    injection_sigma: float | None = Field(gt=0)
 
 
 class HorizonMaskPoint(_Strict):

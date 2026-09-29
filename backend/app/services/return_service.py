@@ -316,12 +316,13 @@ def _atmosphere_words(c: dict[str, Any]) -> str:
             f"{name}, the average density of the air at each height, with no input from that "
             f"day{f'; used because {why}' if why else ''}."
         )
+    why = (c.get("atmosphere_choice") or {}).get("basis")
     return (
         f"{name}, an empirical model of the air’s density at each height and place, given "
         f"that day’s solar radio flux (10.7 cm: {a['f107_sfu']:g} solar flux units the day "
         f"before, {a['f107_mean_81_day_sfu']:g} averaged over 81 days) and geomagnetic "
         f"activity (ap {a['ap_3_hour']:g} at the time). The U.S. Standard Atmosphere 1976 "
-        f"takes its place when a day has none of these."
+        f"takes its place when a day has none of these.{f' {why}' if why else ''}"
     )
 
 
