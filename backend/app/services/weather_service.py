@@ -623,7 +623,8 @@ async def launch_weather(
                 "share says so.",
             ),
         ],
-        stale=any(s.stale and s.snapshot is not None for s in used),
+        # GLM is fetched only near a launch: an old one is not shown and is not a stale answer.
+        stale=any(s.stale and s.snapshot is not None for s in used if s is not glm),
         computed_at=now,
     )
     return {"data": data, "meta": meta}

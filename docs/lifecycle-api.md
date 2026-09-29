@@ -766,3 +766,11 @@ that user. `GET /auth/me` returns the same `user`.
   each other when on opposite sides and further apart than HRRR's measured 10 m error (its RMSE at
   that lead, carried to the rule's height), or on opposite sides at all when that is not known. It
   stays false when only one system has an answer.
+- 2026-09-29 (feeds, additive): `GET /feeds` rows carry `note` (string or null). For a product fetched only
+  while a launch is near (today `goes/glm`, in the six hours before an opportunity) it says so, and `stale`
+  is judged by when the worker last asked (`last_ok`) and not by the data the product holds, so an empty
+  one is idle and not "stale"; `age_s` is still null with no data. `LaunchWeather.meta.stale` no longer
+  counts an old GLM snapshot, which is not shown and not part of the answer then. No shape change to the
+  launch weather. `nomads/gefs_launch` (the GEFS steps nearest each opportunity) had been refused every time
+  since its cost, 373 requests, was more than the provider's allowance holds (120); it now costs at most
+  what the bucket holds and a run already fetched whole is not asked for again.

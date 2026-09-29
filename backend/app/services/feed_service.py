@@ -35,6 +35,16 @@ PROVIDER_NAMES: dict[str, str] = {
 }
 
 
+#: Products the feeds worker fetches only while a launch is near, and what to say about
+#: their empty state. Their age is the age of the last *check* (it answers "nothing to fetch"
+#: when no launch is near), so an empty one is idle, not stale. The six hours is
+#: ``feeds.adapters.glm.LOOKAHEAD`` (a test holds them together).
+ON_DEMAND: dict[tuple[str, str], str] = {
+    ("goes", "glm"): "Fetched only in the 6 hours before a designed launch opportunity from "
+    "this range's pads, so it holds nothing when none is near; that is not a fault.",
+}
+
+
 class UnknownProvider(LookupError):
     pass
 
@@ -159,6 +169,11 @@ def _row(
 ) -> dict[str, Any]:
     age = None if snap_time is None else max(0.0, (now - snap_time).total_seconds())
     stale = age is None or age > h.staleness_budget_s
+    note = ON_DEMAND.get((h.provider, h.product))
+    if note is not None:
+        # Judged by when the worker last asked, not by the data it holds (or does not).
+        asked = None if h.last_ok_at is None else (now - h.last_ok_at).total_seconds()
+        stale = asked is None or asked > h.staleness_budget_s
     return {
         "provider": h.provider,
         "provider_name": PROVIDER_NAMES.get(h.provider, h.provider),
@@ -174,6 +189,7 @@ def _row(
         "last_error": h.last_error,
         "licence": h.licence,
         "breaker": breaker,
+        "note": note,
     }
 
 

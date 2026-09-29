@@ -2129,7 +2129,7 @@ export interface components {
             age_s: number | null;
             /**
              * Stale
-             * @description Past its staleness budget (or no data yet).
+             * @description Past its staleness budget (or no data yet); for a product fetched only while a launch is near (`note`), past the budget since it was last asked.
              */
             stale: boolean;
             /** Staleness Budget S */
@@ -2145,6 +2145,11 @@ export interface components {
             last_error: string | null;
             /** Licence */
             licence: string;
+            /**
+             * Note
+             * @description Why the product may hold nothing or no age (fetched only while a launch is near); null for the rest.
+             */
+            note: string | null;
             /**
              * Breaker
              * @description `open`: the provider failed repeatedly and is being left alone for a while.
