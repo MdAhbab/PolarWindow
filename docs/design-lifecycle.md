@@ -518,14 +518,19 @@ into the hub header.
   read ("The sea is read near {lat} {lon}."), since that point is chosen, not
   a published zone.
 - **The capsule model, checked against a real landing** (`capsule.model_check`,
-  shown whenever it is served, capsule or not): meta "{d} km from it; the limit
-  is {l} km"; the body is the service's `note` first, then the case, the
-  distance with its range over the published drag range, the limit, the
-  mission's own simulation, the 99 % landing area and whether it holds the real
-  point, when it was checked, and its sources (a URL as a link by its host).
-  Over the limit: "{x} km over the limit." with the triangle (invariant 4).
-  With a capsule and no check served, the splashdown zone says "The capsule
-  model has not been checked against a real landing here."
+  shown whenever it is served, capsule or not): meta "{d} km from it; the
+  plan's {l} km is met" or "is not met" (`passed` and `limit_km`, as served);
+  the body is the service's `note` first, then whether the limit is met in a
+  sentence ("The plan's {l} km is met, with {g} km to spare." or "The plan's
+  {l} km is not met: {x} km over the limit." with the triangle, invariant 4),
+  then the case, "The air the modelled fall went through" (`atmosphere`, as
+  served: which air model and what it was given, or which standard atmosphere
+  stood in and why), the distance with its range over the published drag range,
+  the limit, the mission's own simulation, the 99 % landing area and whether it
+  holds the real point, when it was checked, and its sources (a URL as a link by
+  its host). Neither the limit nor the air is written on the screen. With a
+  capsule and no check served, the splashdown zone says "The capsule model has
+  not been checked against a real landing here."
 - **Rows:** Booster landing zone · Splashdown zone · The capsule model, checked
   against a real landing · Team limits · How sure is this? · Where does this
   come from?

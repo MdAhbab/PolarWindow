@@ -617,6 +617,41 @@ test('rover line of sight (contract fixtures): a site outside the terrain map sa
   await expect(row.getByRole('img')).toHaveCount(0)
 })
 
+test('the capsule model (contract fixtures): whether the plan’s limit is met and the air the fall went through, in the row and its closed line; both themes, a phone', async ({
+  page,
+  context,
+}) => {
+  await returningVisitor(context)
+  await serveLifecycleFixtures(context)
+  const check = (returnJson: { data: { capsule: { model_check: { atmosphere: string; passed: boolean; limit_km: number } } } }) => returnJson.data.capsule.model_check
+  const served = check(fixtureJson('return.json'))
+  await page.goto('/missions/im-2/return')
+  const row = page.locator('details').filter({ has: page.locator('summary', { hasText: 'The capsule model, checked against a real landing' }) })
+  await expect(row.locator('summary')).toContainText('12.1 km from it; the plan’s 10 km is not met')
+  await row.locator('summary').click()
+  // The air and the limit as the fixture serves them, the not-met one with its triangle.
+  await expect(row).toContainText('The air the modelled fall went through')
+  await expect(row).toContainText(served.atmosphere)
+  await expect(row).toContainText('The plan’s 10 km is not met: 2.1 km over the limit.')
+  await expectNoSeriousAxe(page, 'the capsule model row open (dark)')
+  // The same row with the limit met: no triangle, and what is to spare.
+  await context.route(/localhost:8000\/api\/v1\/missions\/im-2\/return$/, async (route) => {
+    const body = fixtureJson('return.json')
+    Object.assign(body.data.capsule.model_check, { distance_km: 9.5, distance_range_km: [6.7, 12.2], passed: true, note: 'The entry model lands its capsule 9.5 km from where the recovery team found it (the limit is 10 km).' })
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body), headers: { 'access-control-allow-origin': '*' } })
+  })
+  await page.evaluate(() => localStorage.setItem('pw-prefs', JSON.stringify({ theme: 'light', motion: 'full', shortcuts: true })))
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.reload()
+  const met = page.locator('details').filter({ has: page.locator('summary', { hasText: 'The capsule model, checked against a real landing' }) })
+  await expect(met.locator('summary')).toContainText('9.5 km from it; the plan’s 10 km is met')
+  await met.locator('summary').click()
+  await expect(met).toContainText('The plan’s 10 km is met, with 0.5 km to spare.')
+  await expect(met).not.toContainText('not met')
+  await expectNoSeriousAxe(page, 'the capsule model row open (light, 375 px)')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the capsule row scrolls sideways at 375 px').toBeLessThanOrEqual(375)
+})
+
 test('team sea limits (contract fixtures): the form starts from what is entered, and sends both parts', async ({ page, context }) => {
   await returningVisitor(context)
   await serveLifecycleFixtures(context)
@@ -1065,8 +1100,14 @@ test('return (live API): where each flown booster came down, and a planned one n
   await expect(row('Where does this come from?')).toContainText('Launch Library 2 landing records')
   // The capsule model's check against OSIRIS-REx: the service's words, then the numbers and where they are from.
   const check = row('The capsule model, checked against a real landing')
-  await expect(check.locator('summary')).toContainText(/[\d.]+ km from it; the limit is 10 km/)
+  // Whether the plan's limit is met, and which air the modelled fall went through, are read from the answer, not from here.
+  const served = ((await (await page.request.get(`${API}/missions/im-1/return`)).json()).data.capsule as { model_check: { atmosphere: string; passed: boolean; limit_km: number } }).model_check
+  expect(served.atmosphere.length, 'the service says which air the modelled fall went through').toBeGreaterThan(0)
+  await expect(check.locator('summary')).toContainText(new RegExp(`[\\d.]+ km from it; the plan’s ${served.limit_km} km is ${served.passed ? 'met' : 'not met'}`))
   await check.locator('summary').click()
+  await expect(check).toContainText('The air the modelled fall went through')
+  await expect(check).toContainText(served.atmosphere)
+  await expect(check).toContainText(new RegExp(`The plan’s ${served.limit_km} km is ${served.passed ? 'met, with' : 'not met:'} [\\d.]+ km ${served.passed ? 'to spare' : 'over the limit'}\\.`))
   await expect(check).toContainText('where the recovery team found it')
   await expect(check).toContainText('OSIRIS-REx sample return capsule')
   await expect(check.getByRole('link', { name: /naif\.jpl\.nasa\.gov/ })).toHaveCount(1)

@@ -224,18 +224,29 @@ function ReturnAnswer({ ret, meta, missionId, status }: { ret: ReturnDTO; meta: 
   )
 }
 
+/** Whether the plan's limit on the distance is met, from what the service serves (`passed`, `limit_km`), never from a number written here. */
+export function capsuleLimitWords(k: Pick<CapsuleModelCheckDTO, 'passed' | 'limit_km' | 'distance_km'>): { met: boolean; short: string; long: string } {
+  const km = (v: number) => `${formatValue(v)} km`
+  const gap = formatValue(Math.abs(k.distance_km - k.limit_km))
+  return k.passed
+    ? { met: true, short: `the plan’s ${km(k.limit_km)} is met`, long: `The plan’s ${km(k.limit_km)} is met, with ${gap} km to spare.` }
+    : { met: false, short: `the plan’s ${km(k.limit_km)} is not met`, long: `The plan’s ${km(k.limit_km)} is not met: ${gap} km over the limit.` }
+}
+
 /**
  * The capsule entry model against a real landing (OSIRIS-REx): the service's
- * own words first, then the numbers they rest on, when it was checked and
- * where the entry state and the landing are from.
+ * own words first, whether the plan's limit is met, the air the modelled fall
+ * went through, then the numbers they rest on, when it was checked and where
+ * the entry state and the landing are from.
  */
 export function CapsuleCheckRow({ check: k }: { check: CapsuleModelCheckDTO }) {
   const km = (v: number) => `${formatValue(v)} km`
   const [lo, hi] = k.distance_range_km
   const [long, wide] = k.ellipse_99_km
-  const over = k.passed ? null : k.distance_km - k.limit_km
+  const limit = capsuleLimitWords(k)
   const rows: [string, string][] = [
     ['The case', k.case],
+    ['The air the modelled fall went through', k.atmosphere],
     ['From the real landing point', `${km(k.distance_km)}${lo != null && hi != null ? ` (${formatValue(lo)} to ${km(hi)} over the published drag range)` : ''}`],
     ['The limit', km(k.limit_km)],
     ['The mission’s own simulation', `${km(k.mission_team_km)} from it`],
@@ -246,13 +257,15 @@ export function CapsuleCheckRow({ check: k }: { check: CapsuleModelCheckDTO }) {
     ['Checked', dateTimeWords(Date.parse(k.checked_at))],
   ]
   return (
-    <Disclosure title="The capsule model, checked against a real landing" meta={`${km(k.distance_km)} from it; the limit is ${km(k.limit_km)}`}>
+    <Disclosure title="The capsule model, checked against a real landing" meta={`${km(k.distance_km)} from it; ${limit.short}`}>
       <div className="flex flex-col gap-3">
         <p className="text-body leading-6 text-ink-2">{k.note}</p>
-        {over !== null && (
+        {limit.met ? (
+          <p className="text-small font-semibold text-ink">{limit.long}</p>
+        ) : (
           <p className="flex items-start gap-2 text-small font-semibold text-alert">
             <Icon name="alert" size={15} strokeWidth={2.2} className="mt-0.5 shrink-0" />
-            {km(over)} over the limit.
+            {limit.long}
           </p>
         )}
         <dl className="flex flex-col gap-2 text-small leading-5">

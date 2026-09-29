@@ -691,6 +691,8 @@ export interface CapsuleModelCheckDTO {
   distance_range_km: number[]
   limit_km: number
   passed: boolean
+  /** The air the modelled fall went through and what it was given, in plain words (always present). */
+  atmosphere: string
   /** The mission's own simulation. */
   mission_team_km: number
   /** The 99 % area, long by wide. */
