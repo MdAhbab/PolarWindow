@@ -18,6 +18,7 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import ENGINE_VERSION, engine_closure, get_settings
+from app.core import relay as core_relay
 from app.data import catalogues
 from app.db.repositories.feeds import FeedRepository
 from app.db.repositories.missions import MissionRecord, MissionRepository
@@ -65,6 +66,33 @@ def window(
         f"{w.note} The reference lunar day is used instead "
         f"({rs.date().isoformat()}, {s.reference_window_days:g} days).",
     )
+
+
+def relay_catalogue() -> dict[str, Any]:
+    """The relay services a comparison can add (``?relay=``), from the catalogue, in its order.
+
+    Real orbiters that are kept only to check the pass calculation are not relays and are not
+    listed. A relay whose orbit is not known enough is listed all the same: comparing it says
+    that time through it is not worked out, which is true and worth seeing.
+    """
+    return {
+        "relays": [
+            {
+                "id": r.id,
+                "name": r.name,
+                "operator": r.operator,
+                "status": r.status,
+                "launch_note": r.launch_note,
+                "orbit_known": all(
+                    getattr(r, f) is not None for f in core_relay.NEEDED_ORBIT_FIELDS
+                ),
+                "orbit_note": r.orbit_note,
+                "serves_missions": list(r.serves_missions),
+            }
+            for r in catalogues.load("relays").records
+            if r.role == "relay"
+        ]
+    }
 
 
 def _extra_relays(m: MissionRecord, asked: list[str] | None) -> list[str]:

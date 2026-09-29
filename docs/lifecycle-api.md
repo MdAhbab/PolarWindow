@@ -719,3 +719,11 @@ that user. `GET /auth/me` returns the same `user`.
   - 404 `no-viewshed` (no such answer, not a rover answer, or nothing to draw), `unknown-layer`,
     `tile-out-of-scheme`; 422 past zoom 12; 503 `dem-missing` for `terrain`. Tiles are cached under
     `data/tiles/viewshed/{answer}/` and can be deleted at any time.
+- 2026-09-29 (backend, the relays a comparison can add; no engine change):
+  - `GET /relays` (no session; answers at once) lists the relay services in the catalogue, in its order:
+    `{relays: [{id, name, operator, status, launch_note, orbit_known, orbit_note, serves_missions}]}`.
+    `id` is what `?relay=` takes on the contact answer and its plan. `orbit_known` is false when a relay's
+    orbit lacks a height, the tilt or the argument of periapsis: it can still be compared (the answer says
+    time through it is not worked out) but the plan refuses it with 422. `serves_missions` are the missions
+    it is planned for, where it is in the answer already. Real orbiters kept only to check pass
+    calculations are not listed.

@@ -53,6 +53,16 @@ FloatArray = npt.NDArray[np.float64]
 NODE_STEPS: Final[int] = 36
 PHASE_STEPS: Final[int] = 36
 
+#: The orbit fields a relay needs before anything is worked out through it: a shape
+#: (two heights), how it is tilted and where its far point is. With one of them
+#: unknown the relay is listed and said to be "not worked out", never guessed.
+NEEDED_ORBIT_FIELDS: Final[tuple[str, ...]] = (
+    "periapsis_km",
+    "apoapsis_km",
+    "inclination_deg",
+    "arg_periapsis_deg",
+)
+
 
 @dataclass(frozen=True, slots=True)
 class Orbit:

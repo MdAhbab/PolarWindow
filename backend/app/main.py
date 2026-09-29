@@ -178,6 +178,7 @@ def create_app() -> FastAPI:
         agents,
         auth,
         compare,
+        contact_relays,
         contact_tiles,
         health,
         jobs,
@@ -197,6 +198,7 @@ def create_app() -> FastAPI:
     app.include_router(compare.router, prefix=s.api_prefix)
     app.include_router(tiles.router, prefix=s.api_prefix)
     app.include_router(contact_tiles.router, prefix=s.api_prefix)
+    app.include_router(contact_relays.router, prefix=s.api_prefix)
     app.include_router(agents.router, prefix=s.api_prefix)
     app.include_router(auth.router, prefix=s.api_prefix)
     app.include_router(settings.router, prefix=s.api_prefix)

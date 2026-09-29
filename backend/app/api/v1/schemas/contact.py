@@ -87,6 +87,32 @@ class RelayRow(_M):
     )
 
 
+class RelayChoice(_M):
+    id: str = Field(description="What `?relay=` takes on the contact answer and its plan.")
+    name: str
+    operator: str | None
+    status: Literal["operating", "planned", "not_launched", "launched_not_operating"] = Field(
+        description="Its launch status, as the catalogue has it."
+    )
+    launch_note: str | None = Field(description="Its launch plan in a sentence, as published.")
+    orbit_known: bool = Field(
+        description="Its orbit is published, or assumed from a published design, well enough to "
+        "work out time through it. False: it can be compared, and the answer says it is not "
+        "worked out (and a plan cannot list its contacts)."
+    )
+    orbit_note: str | None = Field(description="What is published of its orbit, in a sentence.")
+    serves_missions: list[str] = Field(
+        description="Missions it is planned for: for these it is in the answer already."
+    )
+
+
+class RelayCatalogue(_M):
+    relays: list[RelayChoice] = Field(
+        description="The relay services in the catalogue, in its order: what a comparison can "
+        "add. Real orbiters kept only to check pass calculations are not listed."
+    )
+
+
 class DirectOnly(_M):
     longest_unheard_h: QuantityOut
     longest_message_wait_min: QuantityOut

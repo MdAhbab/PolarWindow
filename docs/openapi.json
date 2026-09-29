@@ -1227,6 +1227,27 @@
         }
       }
     },
+    "/api/v1/relays": {
+      "get": {
+        "tags": [
+          "mission sections"
+        ],
+        "summary": "The relays in the catalogue, to compare on a mission's Contact answer",
+        "operationId": "relays_api_v1_relays_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelayCatalogue"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/agents/explain": {
       "post": {
         "tags": [
@@ -10798,6 +10819,109 @@
           "message"
         ],
         "title": "RefreshOut"
+      },
+      "RelayCatalogue": {
+        "properties": {
+          "relays": {
+            "items": {
+              "$ref": "#/components/schemas/RelayChoice"
+            },
+            "type": "array",
+            "title": "Relays",
+            "description": "The relay services in the catalogue, in its order: what a comparison can add. Real orbiters kept only to check pass calculations are not listed."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "relays"
+        ],
+        "title": "RelayCatalogue"
+      },
+      "RelayChoice": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "What `?relay=` takes on the contact answer and its plan."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "operator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operator"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "operating",
+              "planned",
+              "not_launched",
+              "launched_not_operating"
+            ],
+            "title": "Status",
+            "description": "Its launch status, as the catalogue has it."
+          },
+          "launch_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Launch Note",
+            "description": "Its launch plan in a sentence, as published."
+          },
+          "orbit_known": {
+            "type": "boolean",
+            "title": "Orbit Known",
+            "description": "Its orbit is published, or assumed from a published design, well enough to work out time through it. False: it can be compared, and the answer says it is not worked out (and a plan cannot list its contacts)."
+          },
+          "orbit_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Orbit Note",
+            "description": "What is published of its orbit, in a sentence."
+          },
+          "serves_missions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Serves Missions",
+            "description": "Missions it is planned for: for these it is in the answer already."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "operator",
+          "status",
+          "launch_note",
+          "orbit_known",
+          "orbit_note",
+          "serves_missions"
+        ],
+        "title": "RelayChoice"
       },
       "RelayOrbit": {
         "properties": {

@@ -28,7 +28,7 @@ STEP_S = 300.0
 H = 3600.0
 
 #: Orbit fields a relay needs before anything is worked out through it.
-NEEDED = ("periapsis_km", "apoapsis_km", "inclination_deg", "arg_periapsis_deg")
+NEEDED = relay.NEEDED_ORBIT_FIELDS
 #: Of those, the ones whose assumed range is swept end to end. The heights'
 #: assumed ranges (if any) are narrow next to the node and phase sweep and are
 #: taken at their stated value.

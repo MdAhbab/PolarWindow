@@ -242,6 +242,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/relays": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The relays in the catalogue, to compare on a mission's Contact answer */
+        get: operations["relays_api_v1_relays_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/agents/explain": {
         parameters: {
             query?: never;
@@ -3513,6 +3530,52 @@ export interface components {
             /** Message */
             message: string;
         };
+        /** RelayCatalogue */
+        RelayCatalogue: {
+            /**
+             * Relays
+             * @description The relay services in the catalogue, in its order: what a comparison can add. Real orbiters kept only to check pass calculations are not listed.
+             */
+            relays: components["schemas"]["RelayChoice"][];
+        };
+        /** RelayChoice */
+        RelayChoice: {
+            /**
+             * Id
+             * @description What `?relay=` takes on the contact answer and its plan.
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Operator */
+            operator: string | null;
+            /**
+             * Status
+             * @description Its launch status, as the catalogue has it.
+             * @enum {string}
+             */
+            status: "operating" | "planned" | "not_launched" | "launched_not_operating";
+            /**
+             * Launch Note
+             * @description Its launch plan in a sentence, as published.
+             */
+            launch_note: string | null;
+            /**
+             * Orbit Known
+             * @description Its orbit is published, or assumed from a published design, well enough to work out time through it. False: it can be compared, and the answer says it is not worked out (and a plan cannot list its contacts).
+             */
+            orbit_known: boolean;
+            /**
+             * Orbit Note
+             * @description What is published of its orbit, in a sentence.
+             */
+            orbit_note: string | null;
+            /**
+             * Serves Missions
+             * @description Missions it is planned for: for these it is in the answer already.
+             */
+            serves_missions: string[];
+        };
         /** RelayOrbit */
         RelayOrbit: {
             /** @description Height of the near point above the mean radius. */
@@ -5229,6 +5292,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    relays_api_v1_relays_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelayCatalogue"];
                 };
             };
         };
