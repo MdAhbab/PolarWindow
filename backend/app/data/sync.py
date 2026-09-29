@@ -4,10 +4,16 @@
     polar-data sync                      core, lifecycle and validation data
     polar-data sync --tier bulk          also the large archives (needs keys)
     polar-data readme                    print the README "Required data" table
+    polar-data export PATH               copy what is on disk to a folder or a .zip, to share
+    polar-data import PATH [PATH ...]    bring in such a copy (a folder, a .zip, Drive's parts)
+    polar-data sync --from PATH          import a copy first, then download what is still missing
 
 ``run.py`` calls ``polar-data sync`` once the API and the frontend are up, so
 the app is usable while the rest downloads. Everything here is idempotent: a
 verified file is never fetched twice, and an interrupted download resumes.
+Where NASA's servers are slow or out of reach, one machine that has everything
+can ``export`` it and others ``import`` it (``data/share.py``); each file is
+checked against the SHA-256 the export listed.
 
 Exit codes
 ----------
@@ -34,7 +40,7 @@ from pathlib import Path
 
 from app.config import get_settings
 from app.core import kernels as kernel_mod
-from app.data import download
+from app.data import download, share
 from app.data.registry import DATASETS, TIERS, Dataset, Tier, in_tiers
 
 log = logging.getLogger("polar-data")
@@ -75,6 +81,11 @@ def is_present(d: Dataset) -> bool | None:
         return fine.exists() and any(fine.glob("*.npz"))
     if d.method == "seed":
         return None
+    if d.method == "built":
+        if any(c in d.dest for c in "*?["):
+            return any(s.data_dir.glob(d.dest))
+        p = _path(d)
+        return p.is_dir() and any(p.iterdir()) if d.dest.endswith("/") else p.is_file()
     if d.method in ("cmr", "s3_prefix"):
         p = _path(d)
         return p.exists() and any(p.iterdir())
@@ -247,6 +258,17 @@ def _sync_s3_prefix(d: Dataset) -> Outcome:
     )
 
 
+def _sync_built(d: Dataset) -> Outcome:
+    if is_present(d):
+        return Outcome(d.id, "present")
+    return Outcome(
+        d.id,
+        "skipped",
+        f"made by `{d.build}` (hours of downloads), or copied from a shared data folder "
+        "with `polar-data import`",
+    )
+
+
 _STEPS = {
     "kernel": _sync_kernel,
     "file": _sync_file,
@@ -255,6 +277,7 @@ _STEPS = {
     "seed": _sync_seed,
     "cmr": _sync_cmr,
     "s3_prefix": _sync_s3_prefix,
+    "built": _sync_built,
 }
 
 
@@ -376,6 +399,64 @@ def _list() -> int:
     return EXIT_OK
 
 
+def _commit() -> str | None:
+    head = subprocess.run(  # noqa: S603 -- fixed argv, no shell
+        ["git", "rev-parse", "HEAD"],  # noqa: S607
+        cwd=README_PATH.parent,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return head.stdout.strip() or None
+
+
+def _export(out: Path) -> int:
+    s = get_settings()
+    files = share.shareable(s.data_dir, README_PATH.parent)
+    if not files:
+        log.error("Nothing to export: data/ holds no downloaded files yet (run `polar-data sync`).")
+        return EXIT_FAILED
+    log.info("Checking and copying %d files from %s to %s ...", len(files), s.data_dir, out)
+    done = share.export(s.data_dir, out, files, commit=_commit())
+    log.info(
+        "Exported %d files (%s): %d copied, %d unchanged since the last export.",
+        done.files,
+        _size(done.total_bytes),
+        len(done.copied),
+        done.present,
+    )
+    log.info("Share %s (for example in a Google Drive folder). To use it on another machine:", out)
+    log.info("  python3 run.py --data-from <that folder, the .zip, or the .zip parts Drive gives>")
+    return EXIT_OK
+
+
+def _import(sources: list[Path]) -> tuple[int, bool]:
+    """Exit code and whether data the running API loads at start-up arrived."""
+    s = get_settings()
+    try:
+        done = share.import_(sources, s.data_dir)
+    except (share.ShareError, OSError) as exc:
+        log.error("Shared copy not used: %s", exc)
+        return EXIT_FAILED, False
+    if any(p.startswith("kernels/") for p in done.copied):
+        kernel_mod.write_metakernel(s.kernel_dir, kernel_mod.loadable(s.kernel_dir))
+    log.info(
+        "Shared copy: %d of %d files copied in, %d already here, %d not in what was given.",
+        len(done.copied),
+        done.files,
+        done.present,
+        len(done.missing),
+    )
+    for rel in done.kept[:10]:
+        log.info("  kept yours (it differs from the shared copy): %s", rel)
+    for rel in done.bad[:10]:
+        log.warning("  damaged in the shared copy, not used (it will be downloaded): %s", rel)
+    if len(done.bad) > 10:
+        log.warning("  ... and %d more damaged files", len(done.bad) - 10)
+    changed = any(p.startswith(("kernels/", "dem/", "tiles/")) for p in done.copied)
+    return (EXIT_FAILED if done.bad else EXIT_OK), changed
+
+
 def main(argv: list[str] | None = None) -> None:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -387,6 +468,20 @@ def main(argv: list[str] | None = None) -> None:
         action="append",
         choices=TIERS,
         help="repeatable; default core, lifecycle and validation",
+    )
+    sp.add_argument(
+        "--from",
+        dest="sources",
+        type=Path,
+        nargs="+",
+        metavar="PATH",
+        help="first copy in a shared copy made by `polar-data export`",
+    )
+    ep = sub.add_parser("export", help="copy what is on disk to a folder or a .zip, to share it")
+    ep.add_argument("path", type=Path, help="a folder, or a file name ending in .zip")
+    ip = sub.add_parser("import", help="bring in a copy made by `polar-data export`")
+    ip.add_argument(
+        "paths", type=Path, nargs="+", help="the folder, the .zip, or the parts Drive downloaded"
     )
     sub.add_parser("list", help="show what is on disk")
     rp = sub.add_parser("readme", help="print the README table")
@@ -402,6 +497,15 @@ def main(argv: list[str] | None = None) -> None:
             print(readme_table())
         raise SystemExit(EXIT_OK)
 
+    if args.cmd == "export":
+        raise SystemExit(_export(args.path.expanduser()))
+    if args.cmd == "import":
+        code, changed = _import([p.expanduser() for p in args.paths])
+        raise SystemExit(EXIT_RESTART if code == EXIT_OK and changed else code)
+
+    imported = False
+    if args.sources:
+        imported = _import([p.expanduser() for p in args.sources])[1]
     tiers: tuple[Tier, ...] = tuple(args.tier or ("core", "lifecycle", "validation"))
     outcomes = sync(tiers)
     failed = [o for o in outcomes if o.status == "failed"]
@@ -417,7 +521,7 @@ def main(argv: list[str] | None = None) -> None:
         log.info("  %s %s: %s", o.status, o.dataset, o.detail)
     if failed:
         raise SystemExit(EXIT_FAILED)
-    if any(o.changed_api_data for o in outcomes):
+    if imported or any(o.changed_api_data for o in outcomes):
         raise SystemExit(EXIT_RESTART)
     raise SystemExit(EXIT_OK)
 

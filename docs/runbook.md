@@ -18,6 +18,15 @@ make seed        # kernels + terrain + sites + masks. ~10 min, once.
 make dev         # services, api on :8000, frontend on :5173
 ```
 
+`python3 run.py` does all of this in one command, and on a machine without
+Docker or a database it creates the project's own PostgreSQL in `.local/pgdata`
+(this machine only, no password) on the port in `PW_DATABASE_URL`. When the
+NASA servers are slow, copy the data from a machine that has it instead of
+downloading it: `python3 run.py --export-data <folder or .zip>` there, then
+`python3 run.py --data-from <that folder, .zip, or Google Drive's .zip parts>`
+here (README, "Required data"). Each file is checked against the SHA-256 listed
+at export.
+
 `make seed` is a **hard prerequisite**, not an optimisation. Until it runs the
 API starts, answers `/healthz`, and returns 409 with a readable message for
 every geometry request. It does four things, and each is separately re-runnable:

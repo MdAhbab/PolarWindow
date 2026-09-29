@@ -18,9 +18,15 @@ Tiers
 ``bulk``        large archives reduced to small climatologies by a job; fetched
                 only on request (``polar-data sync --tier bulk``).
 
-Live feeds (weather forecasts, space weather now, DSN Now) are not here: they
-are fetched on a schedule by the feeds worker and kept as dated snapshots
-(ADR-8). This list is for files that are downloaded once.
+Live feeds (weather forecasts, space weather now, DSN Now, the orbiters'
+trajectories from JPL Horizons) are not here: they are fetched on a schedule by
+the feeds worker and kept as dated snapshots (ADR-8). Neither are the few
+coefficients cited in the code itself (EGM2008 to degree and order 8, in
+``core/forces.py``). This list is for files that are downloaded once.
+
+Everything this list puts under ``data/`` can be passed on without the internet:
+``polar-data export`` copies it to a folder or a ``.zip`` and ``polar-data
+import`` (or ``python3 run.py --data-from``) brings it back (``data/share.py``).
 """
 
 from __future__ import annotations
@@ -39,8 +45,13 @@ TIERS: Final[tuple[Tier, ...]] = ("core", "lifecycle", "validation", "bulk")
 #: locally from other datasets; ``cmr`` lists a NASA Earthdata collection's
 #: files through the Common Metadata Repository and fetches each one;
 #: ``s3_prefix`` lists a public S3 bucket prefix (NASA's HelioCloud mirror)
-#: and fetches every object ending in ``s3_suffix``.
-Method = Literal["kernel", "file", "lola_regional", "lola_fine", "seed", "cmr", "s3_prefix"]
+#: and fetches every object ending in ``s3_suffix``; ``built`` is reduced from a
+#: large public archive by a command that downloads for hours (``build``):
+#: ``sync`` never runs it, it only says whether it is here, and ``polar-data
+#: import`` brings it from a shared copy.
+Method = Literal[
+    "kernel", "file", "lola_regional", "lola_fine", "seed", "cmr", "s3_prefix", "built"
+]
 
 DATA_NASA: Final[str] = "https://data.nasa.gov/dataset"
 NAIF_PDS_CLPS: Final[str] = (
@@ -75,6 +86,8 @@ class Dataset:
     #: For ``method="s3_prefix"``: object key prefix and the suffix to keep.
     s3_prefix: str | None = None
     s3_suffix: str | None = None
+    #: For ``method="built"``: the command that makes it. ``dest`` may be a pattern.
+    build: str | None = None
     #: False when the download address could not be reached to confirm it.
     #: The README says so next to the dataset rather than implying it works.
     address_confirmed: bool = True
@@ -403,74 +416,79 @@ _SPECIFIC: Final[tuple[Dataset, ...]] = (
         needs_key="NASA Earthdata Login (free)",
     ),
     Dataset(
-        id="icgem:egm2008",
-        title="Earth Gravitational Model 2008 (EGM2008) spherical harmonic coefficients",
-        provider="NGA / ICGEM (GFZ Potsdam)",
-        tier="lifecycle",
-        method="file",
-        urls=(
-            "https://icgem.gfz-potsdam.de/getmodel/gfc/"
-            "d0d463b2cf7fae5ddab27fcf03c713bdf2292f75846cf3ebba9e6da5a62657e3/EGM2008.gfc",
-        ),
-        dest="gravity/EGM2008.gfc",
-        size_bytes=206_369_000,
-        used_for="Earth's gravitational potential (Pavlis et al., JGR 2012) through degree and "
-        "order 8 in the trip model, resolving near-Earth tesseral accelerations.",
-        licence="Public domain (ICGEM / NGA)",
-    ),
-    Dataset(
-        id="jpl:horizons-orbiters",
-        title="JPL Horizons lunar orbiter ephemerides (LRO, KPLO, Capstone, THEMIS)",
-        provider="NASA JPL Solar System Dynamics",
-        tier="lifecycle",
-        method="file",
-        urls=("https://ssd.jpl.nasa.gov/api/horizons.api",),
-        dest="orbiters/",
-        size_bytes=5_000_000,
-        used_for="Reconstructed and predicted state vectors for active lunar orbiters to "
-        "compute geometric visibility and line-of-sight passes over landing sites.",
+        id="noaa:gefs-cape-year",
+        title="NOAA GEFS 10 m wind at the Cape, one year of archived forecasts (reduced here)",
+        provider="NOAA NCEP, via AWS Open Data",
+        tier="validation",
+        method="built",
+        urls=("https://noaa-gefs-pds.s3.amazonaws.com",),
+        dest="hindcast/gefs_wind_florida.cache.jsonl",
+        size_bytes=481_134,
+        used_for="Re-running the one-year check of the wind rules' shares against the Cape's "
+        "weather station. The result itself is kept in the repository.",
         licence="US government work (public domain)",
+        build="make hindcast-weather",
     ),
     Dataset(
         id="noaa:gefs-reforecast",
-        title="NOAA GEFSv12 atmospheric reforecast archive (2000-2019, 00 UTC, 0.25 deg)",
-        provider="NOAA PSL / EMC, via AWS Open Data",
+        title="NOAA GEFSv12 reforecast, 10 m wind at the pads, 2000-2019 (reduced here)",
+        provider="NOAA PSL and EMC, via AWS Open Data",
         tier="bulk",
-        method="file",
-        urls=("https://noaa-gefs-retrospective.s3.amazonaws.com/GEFSv12/reforecast/",),
+        method="built",
+        urls=("https://noaa-gefs-retrospective.s3.amazonaws.com",),
         dest="hindcast/gefs_reforecast_wind.cache.jsonl",
-        size_bytes=50_000_000_000,
-        used_for="Multi-year verification of launch wind rules (make hindcast-reforecast): "
-        "evaluates 10 m wind forecasts against pad station observations to compute "
-        "Brier skill and CRPS across historical years.",
+        size_bytes=758_952,
+        used_for="Re-running the many-year check of the wind rules at the Cape and Vandenberg. "
+        "Only the pads' grid points are read, by byte ranges, from a 50 GB archive; the result "
+        "is kept in the repository.",
         licence="US government work (public domain)",
+        build="make hindcast-reforecast",
     ),
     Dataset(
         id="noaa:hrrr-archive",
-        title="NOAA High-Resolution Rapid Refresh (HRRR) model archive, version 4",
+        title="NOAA HRRR version 4, 10 m wind at the pads, 2021-2025 (reduced here)",
         provider="NOAA NCEP, via AWS Open Data",
         tier="bulk",
-        method="file",
+        method="built",
         urls=("https://noaa-hrrr-bdp-pds.s3.amazonaws.com",),
-        dest="hindcast/hrrr_wind_florida.json",
-        size_bytes=100_000_000_000,
-        used_for="High-resolution (3 km) launch weather rule evaluation against pad weather "
-        "stations at Cape Canaveral (KXMR) and Vandenberg (KVBG) via byte-range reads "
-        "(make hindcast-hrrr).",
+        dest="hindcast/hrrr_wind.cache.jsonl",
+        size_bytes=589_559,
+        used_for="Re-running the check of HRRR's wind at the Cape and Vandenberg, read by byte "
+        "ranges from a 100 GB archive. The result is kept in the repository.",
         licence="US government work (public domain)",
+        build="make hindcast-hrrr",
     ),
     Dataset(
         id="iem:asos-archive",
-        title="Iowa Environmental Mesonet (IEM) ASOS hourly weather station archive",
-        provider="Iowa State University / NWS ASOS",
+        title="Hourly wind at the Cape (KXMR) and Vandenberg (KVBG) weather stations (ASOS)",
+        provider="Iowa Environmental Mesonet (Iowa State University), from NWS ASOS",
         tier="bulk",
-        method="file",
+        method="built",
         urls=("https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py",),
-        dest="hindcast/observations/",
-        size_bytes=25_000_000,
-        used_for="Historical hourly surface wind observations at Cape Canaveral (KXMR) and "
-        "Vandenberg (KVBG) used as observational ground truth for weather rule scoring.",
+        dest="hindcast/asos_*.csv",
+        size_bytes=10_000_000,
+        used_for="The observed wind that every weather check is scored against; fetched by the "
+        "three weather-check commands.",
         licence="Public domain (ASOS / IEM)",
+        build="make hindcast-weather, hindcast-reforecast or hindcast-hrrr",
+    ),
+    Dataset(
+        id="nasa:capsule-air",
+        title="Measured air at 30-70 km on OSIRIS-REx's entry day: TIMED/SABER and the "
+        "Table Mountain lidar (originals)",
+        provider="NASA TIMED/SABER (CDAWeb) and NASA JPL Table Mountain Facility (NDACC)",
+        tier="validation",
+        method="built",
+        urls=(
+            "https://cdaweb.gsfc.nasa.gov/sp_phys/data/timed/saber/level2a_netCDF/2023/267/",
+            "https://www-air.larc.nasa.gov/pub/NDACC/PUBLIC/stations/table.mountain.ca/hdf/lidar/",
+        ),
+        dest="bulk/capsule_air/",
+        size_bytes=82_000_000,
+        used_for="Re-making the two small profiles the capsule's atmosphere models are checked "
+        "against. The profiles themselves are kept in the repository.",
+        licence="US government work (public domain)",
+        build="uv run python -m app.tests.golden.capsule_air_data (needs pyhdf)",
     ),
 )
 

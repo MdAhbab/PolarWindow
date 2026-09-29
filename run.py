@@ -2,24 +2,41 @@
 """POLAR WINDOW - Unified runner and environment manager.
 
 Stops previous instances of frontend and backend, starts required local services
-(Postgres and Redis), installs all backend & frontend dependencies, and runs
-FastAPI (backend) and Vite (frontend) together. Once both answer, it downloads
-every dataset the app uses that is not already on disk (SPICE kernels, LOLA
-terrain, GRAIL gravity, flown CLPS trajectories and the rest; the list is
-backend/app/data/registry.py and the README's "Required data" section), then
-restarts the backend if the new data is something it loads at start-up.
+(Postgres and Redis; on a machine that has never run the app it creates a local
+database in .local/pgdata), installs all backend & frontend dependencies, and runs
+FastAPI (backend), the compute and feeds workers and Vite (frontend) together.
+Once both answer, it downloads every dataset the app uses that is not already on
+disk (SPICE kernels, LOLA terrain, GRAIL gravity, flown CLPS trajectories and the
+rest; the list is backend/app/data/registry.py and the README's "Required data"
+section), then restarts the backend if the new data is something it loads at
+start-up.
+
+The data can also travel without the internet (NASA's archive servers can send
+30 kB/s): on a machine that has it,
+
+    python3 run.py --export-data ~/polar-window-data.zip    (or a folder)
+
+and on another, before anything is downloaded,
+
+    python3 run.py --data-from ~/Downloads/polar-window-data.zip
+
+--data-from takes a folder, a .zip, or the several .zip parts Google Drive gives
+for a large folder. Every file is checked against the SHA-256 the export listed.
 """
 
 from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import signal
 import socket
 import subprocess
 import sys
 import threading
 import time
+import urllib.parse
+from dataclasses import dataclass
 from pathlib import Path
 
 # Base Paths
@@ -43,6 +60,29 @@ EXTRA_PATHS = [
 for p in EXTRA_PATHS:
     if os.path.isdir(p) and p not in os.environ.get("PATH", "").split(os.pathsep):
         os.environ["PATH"] = p + os.pathsep + os.environ.get("PATH", "")
+
+# PostgreSQL's server programs (initdb, pg_ctl) are often not on PATH: Homebrew's
+# postgresql@16 is keg-only and Debian keeps them under /usr/lib/postgresql. They go
+# last, newest first, so a PostgreSQL already on PATH is still the one used.
+for pattern in ("opt/homebrew/opt/postgresql@*/bin", "usr/local/opt/postgresql@*/bin",
+                "usr/lib/postgresql/*/bin"):
+    for p in sorted((str(d) for d in Path("/").glob(pattern)), reverse=True):
+        if p not in os.environ.get("PATH", "").split(os.pathsep):
+            os.environ["PATH"] = os.environ.get("PATH", "") + os.pathsep + p
+
+#: The backend's own defaults (backend/app/config.py), used when .env does not set them.
+DEFAULT_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/polar_window"
+DEFAULT_REDIS_URL = "redis://localhost:6379/0"
+
+HOW_TO_INSTALL = {
+    "uv": "Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh",
+    "npm": "Install Node.js 20 or newer (it brings npm): https://nodejs.org, or `brew install node`.",
+    "postgres": "Install PostgreSQL 16 (`brew install postgresql@16` on macOS, "
+    "`sudo apt install postgresql` on Debian or Ubuntu), or start the database with "
+    "`docker compose up -d db redis`, then run this again.",
+    "redis": "Install Redis (`brew install redis` or `sudo apt install redis-server`), or set "
+    "PW_REDIS_ENABLED=false in .env: Redis only caches answers, the app works without it.",
+}
 
 # ANSI Color Codes
 CYAN = "\033[36m"
@@ -189,58 +229,185 @@ def stop_previous_instances(be_port: int = 8000, fe_port: int = 5173) -> None:
                 break
 
 
-def ensure_postgres() -> None:
-    """Ensure PostgreSQL is accessible on port 5433 or unix socket."""
-    is_up = is_port_open(5433) or is_unix_socket_open("/tmp/.s.PGSQL.5433")
-    if is_up:
-        log("SERVICES", GREEN, "PostgreSQL is running (port 5433 / /tmp socket).")
-        return
+def read_env() -> dict[str, str]:
+    """The PW_* settings the backend will see: .env files, then the environment (it wins).
 
+    A small reader, because this runs before the backend's own dependencies exist. Same order
+    as backend/app/config.py: the repository's .env, then backend/.env (the backend's folder).
+    """
+    values: dict[str, str] = {}
+    for path in (ROOT_DIR / ".env", BE_DIR / ".env"):
+        if not path.is_file():
+            continue
+        for raw in path.read_text(encoding="utf-8").splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            key, value = key.removeprefix("export ").strip(), value.strip()
+            if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
+                value = value[1:-1]
+            else:
+                value = value.split(" #", 1)[0].strip()
+            values[key] = value
+    values.update({k: v for k, v in os.environ.items() if k.startswith("PW_")})
+    return values
+
+
+@dataclass(frozen=True)
+class Database:
+    """Where PW_DATABASE_URL points. ``host`` is a name, or a socket folder such as /tmp."""
+
+    host: str
+    port: int
+    user: str
+    password: str
+    name: str
+
+    @classmethod
+    def from_env(cls, env: dict[str, str]) -> "Database":
+        url = urllib.parse.urlsplit(env.get("PW_DATABASE_URL") or DEFAULT_DATABASE_URL)
+        query = urllib.parse.parse_qs(url.query)
+        return cls(
+            host=query.get("host", [url.hostname or "localhost"])[0],
+            port=int(query.get("port", [str(url.port or 5432)])[0]),
+            user=urllib.parse.unquote(url.username or "postgres"),
+            password=urllib.parse.unquote(url.password or ""),
+            name=url.path.lstrip("/") or "polar_window",
+        )
+
+    @property
+    def on_this_machine(self) -> bool:
+        return self.host.startswith("/") or self.host in ("localhost", "127.0.0.1", "::1")
+
+    @property
+    def where(self) -> str:
+        return f"{self.host} port {self.port}"
+
+    def answers(self) -> bool:
+        if self.host.startswith("/"):
+            return is_unix_socket_open(f"{self.host}/.s.PGSQL.{self.port}")
+        return is_port_open(self.port, "127.0.0.1" if self.host == "localhost" else self.host)
+
+
+def start_local_postgres(db: Database) -> bool:
+    """Start the project's own database in .local/pgdata, creating it on the first run."""
+    pg_ctl, initdb = shutil.which("pg_ctl"), shutil.which("initdb")
+    if pg_ctl is None or (initdb is None and not PGDATA_DIR.exists()):
+        log("SERVICES", RED, f"PostgreSQL does not answer at {db.where} and its programs "
+            f"were not found. {HOW_TO_INSTALL['postgres']}")
+        return False
+    env = {**os.environ, "LC_ALL": "C"}
     if not PGDATA_DIR.exists():
-        log("SERVICES", YELLOW, f"No local pgdata directory found at {PGDATA_DIR}. Assuming external DB.")
-        return
-
-    log("SERVICES", YELLOW, "Starting local PostgreSQL server on port 5433...")
-    pg_ctl = subprocess.run(["which", "pg_ctl"], capture_output=True, text=True, check=False)
-    pg_ctl_bin = pg_ctl.stdout.strip() if pg_ctl.returncode == 0 else "pg_ctl"
-
-    env = os.environ.copy()
-    env["LC_ALL"] = "C"
+        assert initdb is not None
+        log("SERVICES", YELLOW, f"Creating this project's own PostgreSQL database in {PGDATA_DIR} "
+            "(first run; it takes connections from this machine only, without a password)...")
+        PGDATA_DIR.parent.mkdir(parents=True, exist_ok=True)
+        res = subprocess.run(
+            [initdb, "-D", str(PGDATA_DIR), "-U", db.user, "--auth=trust", "-E", "UTF8",
+             "--locale=C"],
+            env=env, capture_output=True, text=True, check=False,
+        )
+        if res.returncode != 0:
+            log("SERVICES", RED, f"Could not create the database: {(res.stderr or res.stdout).strip()}")
+            return False
+    socket_dir = db.host if db.host.startswith("/") else "/tmp"
+    log("SERVICES", YELLOW, f"Starting local PostgreSQL on port {db.port}...")
     PGLOG_FILE.parent.mkdir(parents=True, exist_ok=True)
-
-    cmd = [
-        pg_ctl_bin,
-        "-D", str(PGDATA_DIR),
-        "-l", str(PGLOG_FILE),
-        "-o", "-p 5433 -k /tmp",
-        "start",
-    ]
-    res = subprocess.run(cmd, env=env, capture_output=True, text=True, check=False)
+    res = subprocess.run(
+        [pg_ctl, "-D", str(PGDATA_DIR), "-l", str(PGLOG_FILE), "-o",
+         f"-p {db.port} -k {socket_dir}", "-w", "start"],
+        env=env, capture_output=True, text=True, check=False,
+    )
     if res.returncode != 0:
-        log("SERVICES", RED, f"Failed to start PostgreSQL: {res.stderr or res.stdout}")
-    else:
-        log("SERVICES", GREEN, "PostgreSQL started successfully.")
+        log("SERVICES", RED, f"Failed to start PostgreSQL ({(res.stderr or res.stdout).strip()}); "
+            f"its log is {PGLOG_FILE}.")
+        return False
+    log("SERVICES", GREEN, "PostgreSQL started.")
+    return True
 
 
-def ensure_redis() -> None:
-    """Ensure Redis is accessible on port 6380."""
-    if is_port_open(6380):
-        log("SERVICES", GREEN, "Redis is running (port 6380).")
+def ensure_database(db: Database) -> None:
+    """Create the database named in PW_DATABASE_URL if the server does not have it yet."""
+    psql, createdb = shutil.which("psql"), shutil.which("createdb")
+    if psql is None or createdb is None:
+        return  # cannot look; the migrations say so if it is missing
+    env = {**os.environ, "LC_ALL": "C"}
+    if db.password:
+        env["PGPASSWORD"] = db.password
+    conn = ["-h", db.host, "-p", str(db.port), "-U", db.user]
+    res = subprocess.run(
+        [psql, *conn, "-d", "postgres", "-Atc", "SELECT datname FROM pg_database"],
+        env=env, capture_output=True, text=True, check=False, timeout=30,
+    )
+    if res.returncode != 0:
+        log("SERVICES", RED, f"PostgreSQL answers at {db.where} but would not let user "
+            f"'{db.user}' in: {res.stderr.strip()}. Set PW_DATABASE_URL in .env to a user and "
+            "database that exist there, or to port 5433, where this script makes its own.")
         return
+    if db.name in res.stdout.split():
+        return
+    made = subprocess.run([createdb, *conn, db.name], env=env, capture_output=True, text=True,
+                          check=False, timeout=30)
+    if made.returncode == 0:
+        log("SERVICES", GREEN, f"Created the database '{db.name}'.")
+    else:
+        log("SERVICES", RED, f"Could not create the database '{db.name}': {made.stderr.strip()}")
 
-    log("SERVICES", YELLOW, "Starting local Redis server on port 6380...")
+
+def ensure_postgres(env: dict[str, str]) -> None:
+    """Make sure the database in PW_DATABASE_URL answers and exists.
+
+    One on this machine is started from .local/pgdata (created on the first run when
+    PostgreSQL's programs are installed); one elsewhere is only checked.
+    """
+    db = Database.from_env(env)
+    if db.answers():
+        log("SERVICES", GREEN, f"PostgreSQL is running ({db.where}).")
+    elif not db.on_this_machine:
+        log("SERVICES", RED, f"PostgreSQL at {db.where} does not answer; check PW_DATABASE_URL.")
+        return
+    elif not start_local_postgres(db):
+        return
+    ensure_database(db)
+
+
+def ensure_redis(env: dict[str, str]) -> None:
+    """Start Redis on the port in PW_REDIS_URL if it is on this machine and not running."""
+    if env.get("PW_REDIS_ENABLED", "true").strip().lower() in ("0", "false", "no", "off"):
+        log("SERVICES", YELLOW, "Redis is switched off (PW_REDIS_ENABLED=false); answers are not cached.")
+        return
+    url = urllib.parse.urlsplit(env.get("PW_REDIS_URL") or DEFAULT_REDIS_URL)
+    host, port = url.hostname or "localhost", url.port or 6379
+    if is_port_open(port, "127.0.0.1" if host == "localhost" else host):
+        log("SERVICES", GREEN, f"Redis is running (port {port}).")
+        return
+    if host not in ("localhost", "127.0.0.1", "::1"):
+        log("SERVICES", RED, f"Redis at {host}:{port} does not answer; check PW_REDIS_URL.")
+        return
+    server = shutil.which("redis-server")
+    if server is None:
+        log("SERVICES", YELLOW, f"Redis is not running and not installed. {HOW_TO_INSTALL['redis']}")
+        return
+    log("SERVICES", YELLOW, f"Starting local Redis on port {port}...")
     REDIS_DIR.mkdir(parents=True, exist_ok=True)
-    cmd = [
-        "redis-server",
-        "--port", "6380",
-        "--dir", str(REDIS_DIR),
-        "--daemonize", "yes",
-    ]
-    res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    res = subprocess.run(
+        [server, "--port", str(port), "--dir", str(REDIS_DIR), "--daemonize", "yes"],
+        capture_output=True, text=True, check=False,
+    )
     if res.returncode != 0:
         log("SERVICES", RED, f"Failed to start Redis: {res.stderr or res.stdout}")
     else:
-        log("SERVICES", GREEN, "Redis started successfully.")
+        log("SERVICES", GREEN, "Redis started.")
+
+
+def check_tools() -> None:
+    """Stop early, with the way to install it, when a program the runner needs is missing."""
+    missing = [tool for tool in ("uv", "npm") if shutil.which(tool) is None]
+    for tool in missing:
+        log("SETUP", RED, f"`{tool}` was not found. {HOW_TO_INSTALL[tool]}")
+    if missing:
+        sys.exit(1)
 
 
 def install_dependencies() -> None:
@@ -433,7 +600,30 @@ def sync_data(stack: Stack, tiers: list[str]) -> None:
         stack.restart_backend("the new data")
     else:
         log("DATA", RED, "Some datasets could not be downloaded (listed above). "
-            "The app keeps working with what is present; re-run to resume.")
+            "The app keeps working with what is present; re-run to resume, or copy the data "
+            "from a machine that has it: `python3 run.py --export-data <folder or .zip>` there, "
+            "then `python3 run.py --data-from <that folder or .zip>` here.")
+
+
+def polar_data(args: list[str]) -> int:
+    """Run ``polar-data`` (backend/app/data/sync.py) with its output shown under [DATA]."""
+    proc = subprocess.Popen(
+        ["uv", "run", "polar-data", *args],
+        cwd=BE_DIR, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1,
+    )
+    stream_process_output(proc, "DATA", YELLOW, threading.Event())
+    return proc.wait()
+
+
+def import_data(sources: list[str]) -> None:
+    """Copy in a shared copy of the data before the app starts, so it starts with it."""
+    paths = [str(Path(s).expanduser().resolve()) for s in sources]
+    log("DATA", CYAN, f"Copying in the shared data from {', '.join(paths)}...")
+    if polar_data(["import", *paths]) in (0, 10):
+        log("DATA", GREEN, "Shared data copied in. Anything it lacks is downloaded once the app is up.")
+    else:
+        log("DATA", YELLOW, "The shared copy could not be used in full (see above). What is "
+            "still missing is downloaded once the app is up.")
 
 
 def migrate() -> None:
@@ -504,6 +694,19 @@ def main() -> None:
         help="Do not start the feeds worker (no outbound fetches of weather or space weather).",
     )
     parser.add_argument(
+        "--data-from",
+        nargs="+",
+        metavar="PATH",
+        help="Before starting, copy in data shared from another machine: the folder, the .zip, "
+        "or the .zip parts Google Drive gives (made there with --export-data).",
+    )
+    parser.add_argument(
+        "--export-data",
+        metavar="PATH",
+        help="Copy the downloaded data to a folder or a .zip (a name ending in .zip) for "
+        "sharing, then exit. The app is not started or stopped.",
+    )
+    parser.add_argument(
         "--data-tier",
         action="append",
         choices=("core", "lifecycle", "validation", "bulk"),
@@ -513,19 +716,33 @@ def main() -> None:
     args = parser.parse_args()
 
     print(f"{BOLD}{CYAN}=== POLAR WINDOW RUNNER ==={RESET}\n")
+    if os.name == "nt":
+        log("SETUP", RED, "run.py needs macOS or Linux. On Windows, run it inside WSL.")
+        sys.exit(1)
+    check_tools()
+
+    if args.export_data:
+        out = Path(args.export_data).expanduser().resolve()
+        log("DATA", CYAN, f"Exporting the downloaded data to {out}...")
+        sys.exit(polar_data(["export", str(out)]))
 
     # 1. Stop previous instances
     stop_previous_instances(be_port=args.backend_port, fe_port=args.frontend_port)
 
-    # 2. Ensure supporting services (Postgres & Redis)
-    ensure_postgres()
-    ensure_redis()
+    # 2. Ensure supporting services (Postgres & Redis), as .env configures them
+    env = read_env()
+    ensure_postgres(env)
+    ensure_redis(env)
 
     # 3. Install requirements
     if not args.skip_install:
         install_dependencies()
     else:
         log("INSTALL", YELLOW, "Skipping dependency installation (--skip-install).")
+
+    # 3b. Data shared from another machine goes in before the backend loads anything.
+    if args.data_from:
+        import_data(args.data_from)
 
     # 4. Run frontend and backend together; once both answer, download any
     #    missing datasets in the background (README "Required data").

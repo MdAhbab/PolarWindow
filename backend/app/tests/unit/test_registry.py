@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+
 from app.core.kernels import ALL_KERNELS
 from app.data import registry, sync
 
@@ -25,6 +30,15 @@ def test_downloadable_datasets_have_an_address() -> None:
             assert d.cmr_collection and d.needs_key, d.id
         if d.method == "s3_prefix":
             assert d.s3_prefix and d.s3_suffix, d.id
+        if d.method == "built":
+            assert d.build and d.urls, d.id
+
+
+def test_a_single_file_download_goes_to_a_file() -> None:
+    """A folder or a pattern cannot be one download: such data is ``built`` or listed."""
+    for d in registry.DATASETS:
+        if d.method in ("file", "kernel"):
+            assert not d.dest.endswith("/") and "*" not in d.dest, d.id
 
 
 def test_catalogue_links_point_at_data_nasa_gov() -> None:
@@ -42,3 +56,14 @@ def test_readme_table_matches_the_registry() -> None:
     """Regenerate with `uv run polar-data readme --write` when this fails."""
     text = sync.README_PATH.read_text(encoding="utf-8")
     assert sync.readme_block(text) == sync.readme_table()
+
+
+def test_built_data_is_found_by_its_pattern_and_never_downloaded(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(sync, "get_settings", lambda: SimpleNamespace(data_dir=tmp_path))
+    asos = registry.by_id("iem:asos-archive")
+    assert sync._sync_built(asos).status == "skipped"
+    (tmp_path / "hindcast").mkdir()
+    (tmp_path / "hindcast/asos_XMR_2021_2025.csv").write_text("station,valid,sknt\n")
+    assert sync._sync_built(asos).status == "present"
