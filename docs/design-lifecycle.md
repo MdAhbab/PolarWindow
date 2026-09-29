@@ -528,9 +528,10 @@ into the hub header.
   stood in and why), the distance with its range over the published drag range,
   the limit, the mission's own simulation, the 99 % landing area and whether it
   holds the real point, when it was checked, and its sources (a URL as a link by
-  its host). Neither the limit nor the air is written on the screen. With a
-  capsule and no check served, the splashdown zone says "The capsule model has
-  not been checked against a real landing here."
+  its host). Neither the limit nor the air is written in the screen's code (the
+  default air model may change); both are read from the answer. With a capsule
+  and no check served, the splashdown zone says "The capsule model has not been
+  checked against a real landing here."
 - **Rows:** Booster landing zone · Splashdown zone · The capsule model, checked
   against a real landing · Team limits · How sure is this? · Where does this
   come from?

@@ -141,7 +141,7 @@ OSIRIS-REx capsule's reconstructed entry, Goldstone radar DEM, IRBEM references)
 
 ### Cited catalogues (`data/catalogues/*.json`, ADR-10)
 
-`launch_sites`, `vehicles`, `weather_rules` (NASA FS-2020-05-568-KSC, verbatim),
+`launch_sites`, `vehicles` (incorporating published 3-sigma injection accuracies from SpaceX Falcon 9 User's Guide Rev 4 Table 3-1, Falcon Heavy User's Guide Rev 2 Table 3-1; assumed where unpublished), `weather_rules` (NASA FS-2020-05-568-KSC, verbatim),
 `recovery_zones` (Launch Library 2 landing records), `ground_stations`, `relays`,
 `landing_attempts`, `risk_scales` and `lessons`. Every record carries its sources and
 the date it was compiled; `make catalogues` validates them. A value no source
@@ -157,7 +157,7 @@ publishes is absent with a reason, never filled in.
 | `data/hindcast/gefs_reforecast_wind_*.json` | `make hindcast-reforecast` | GEFSv12 2000-2019 reforecast against pad stations (IEM) |
 | `data/hindcast/hrrr_wind_*.json` | `make hindcast-hrrr` | HRRR v4 2021-2025 byte-range archive on AWS against pad stations |
 | `data/radiation/*.json` | `make space-climate` | Oulu neutron monitor (NMDB), GOES events (NCEI), DONKI |
-| `data/capsule/orex_check.json` | `make validate-capsule` | the entry model against OSIRIS-REx's landing |
+| `data/capsule/orex_check.json` | `make validate-capsule` | the entry model against OSIRIS-REx's landing under NRLMSIS 2.1, corroborated by TIMED/SABER and Table Mountain lidar profiles |
 
 ### Live feeds (ADR-8; `make feeds`, listed at `GET /feeds`)
 

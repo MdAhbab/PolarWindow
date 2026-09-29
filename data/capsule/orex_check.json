@@ -532,5 +532,5 @@
     "Emmert et al., NRLMSIS 2.0: A whole-atmosphere empirical model of temperature and neutral species densities, Earth and Space Science 8, e2020EA001321 (2021), doi:10.1029/2020EA001321 (Table 1: the data sets it was fitted to; Table 2 and section 6.1: how it compares with NRLMSISE-00)",
     "GATS, SABER Calibration and Measurement Algorithm Document, 22 September 2022, section 5.2.1.1 (how temperature and pressure are retrieved): https://saber.gats-inc.com/documents/SABER-CMAD-9-22-2022.pdf"
   ],
-  "checked_at": "2026-09-29T15:22:46+00:00"
+  "checked_at": "2026-09-29T16:32:40+00:00"
 }

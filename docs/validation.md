@@ -108,11 +108,12 @@ degree and order 8 resolve the first ~1.5 h out of parking orbit (accounting for
    - Event 2 (20:45:00 UTC): before [20:15..20:45] dr = 0.31 m, dv = 0.2 mm/s;
      centred [20:00..20:30] dr = 119.8 m, dv = 133.1 mm/s; after [20:45..21:15]
      dr = 0.82 m, dv = 1.2 mm/s.
-   Applying these two velocity changes drops the 24 h position error from
-   4.395 km to 1.652 km. Applying the half-hour piecewise-constant accelerations
-   leaves an end position error of only 8.04 m, confirming that the numerical
-   integrator, ephemeris frames, and physical force models are exact to within
-   8 m over the full day.
+   The model alone gives 4.40 km (plan 1 km, not met). Applying these two velocity
+   changes of 0.060 and 0.133 m/s (small burns or venting), if they were known in
+   advance, drops the 24 h position error from 4.40 km to 1.65 km. Applying the
+   half-hour piecewise-constant accelerations measured from the same NASA reconstruction
+   leaves a residual of 8.0 m. This is not a model accuracy result; it shows that
+   the remaining 4.40 km is explained by those unmodelled accelerations.
 
 **Lunar orbit gravity degree and switch-on radius.** Testing GRGM1200A at perilune
 passes (closest passes of the Moon, half-hour windows) shows that a point-mass Moon

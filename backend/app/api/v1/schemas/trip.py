@@ -47,10 +47,13 @@ class Assumption(_M):
     what: str
     value: str
     basis: Literal["published", "assumed"] = Field(
-        description="A figure a launch vehicle's guide publishes, or one the service assumes."
+        default="assumed",
+        description="A figure a launch vehicle's guide publishes, or one the service assumes.",
     )
     source: str | None = Field(
-        description="Where a published figure is from (the guide, table and page); null if assumed."
+        default=None,
+        description="Where a published figure is from (the guide, table and page); "
+        "null if assumed.",
     )
 
 

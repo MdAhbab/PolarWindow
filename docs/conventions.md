@@ -185,8 +185,13 @@ professional name of a key number is shown only when its label is pressed
 | forecasts disagree | models conflict, disagreement |
 | checked against observations | verified, ground-truthed |
 | could see the lander | orbiter pass, relay pass (for active orbiters overhead) |
-| rover line of sight | rover viewshed, rover LOS |
-| radio path | first Fresnel zone clearance, RF clearance |
+| what the rover or lander can see (line of sight) | viewshed, rover LOS |
+| radio path clear | first Fresnel zone clearance, RF clearance |
+| checked against past weather | reforecast, hindcast |
+| better than usual at the limit | Brier skill score, BSS |
+| how close the forecast was across all winds | CRPS, Continuous Ranked Probability Score |
+| air model with solar activity | NRLMSISE-00, NRLMSIS 2.1 |
+| Earth gravity model | EGM2008 |
 | planned relay | speculative relay, unlaunched relay |
 
 ## Motion

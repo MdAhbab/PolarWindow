@@ -1012,13 +1012,25 @@ ADR-17 (project manager data), ADR-18 (kernel pinning).
 | Launch weather | `/missions/{id}/launch/weather` | `weather_rules`, `verification` | `weather_rules` (verbatim), GEFS, HRRR, NWS, GLM, LL2, GEFSv12 reforecast, ASOS/IEM observations |
 | Trip | `/missions/{id}/trip` (+ export) | `propagate`, `forces`, `gravity`, `eclipse`, `lincov`, `belts`, `gcr` | NAIF SPKs, EGM2008, GRGM1200A, DONKI, OMNI, Oulu |
 | Contact | `/missions/{id}/contact` (+ plan, bookings, rover, viewshed tiles, relays) | `contact`, `network`, `visibility`, `relay`, `rover`, `viewshed` | DSN station kernels, `ground_stations`, `relays`, JPL Horizons orbiters, 20 m LOLA DEM |
-| Return | `/missions/{id}/return` | `entry`, `atmosphere` (capsule model check) | `recovery_zones`, `vehicles`, NRLMSISE-00 (OMNI2 indices), GFS-Wave |
+| Return | `/missions/{id}/return` | `entry`, `atmosphere` (capsule model check) | `recovery_zones`, `vehicles`, NRLMSIS 2.1 (OMNI2 indices), GFS-Wave |
 | Space weather | `/space-weather` | none | SWPC, DONKI |
 
 Every value is a `Quantity` with its provenance and ± or the reason it has none
 (ADR-9); no section returns a verdict, score or overall chance (invariant 9).
 
 Key lifecycle enhancements:
+- **Capsule entry atmosphere:** The default atmosphere for the capsule entry
+  model is NRLMSIS 2.1, chosen from independent TIMED/SABER satellite radiometry
+  and Table Mountain lidar profiles for 2023-09-24 at 30 to 70 km altitude. It
+  brings the modelled OSIRIS-REx sample return capsule touchdown to within
+  6.6 km of the recovery site (3.9 to 9.3 km across the drag coefficient range),
+  meeting the 10 km requirement.
+- **Published injection accuracies and correction budget:** Falcon 9, Falcon
+  Heavy, Vulcan Centaur and New Glenn incorporate launch vehicle injection
+  covariance matrices from published payload user guides (Falcon 9 GTO 3-sigma
+  apogee ±200 km, perigee ±10 km, inclination ±0.1° from Table 3-1; assumed
+  ranges where unpublished). Linear covariance and Monte Carlo budgets agree
+  within 7.1%, meeting the 10% plan tolerance.
 - **Planned relays and active orbiters (ADR-16):** planned relays (Lunar Pathfinder,
   Altus-1) sweep 36 x 36 nodes and phases, presenting contact as minimum to maximum
   ranges with launch status beside them; the catalogue is exposed via `GET /relays`
