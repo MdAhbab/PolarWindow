@@ -430,24 +430,51 @@ in about 21 % of July's 20 UTC hours and none of January's.
 `test_radiation.py` pins the cosmic-ray and past-event checks.
 
 **Belts: the engine against a second implementation** (plan: IRBEM within 5 % of SPENVIS
-running AE8/AP8). SPENVIS is a web service and was not run here. Instead, along each flown
+running AE8/AP8). SPENVIS needs an account and was not run here. Instead, along each flown
 trajectory (one-minute samples within 15 Earth radii, from NASA's reconstruction), the
-fluence from IRBEM (the engine, compiled in spacepy's wheel; its own magnetic shells from
-IGRF) is compared with NASA SPDF's own AE8/AP8 code (`radbelt`; its own shells from its
-IGRF). Solar-maximum maps for all four (the year before each launch was near the cycle's
-peak in OMNI's sunspot record).
+fluence from IRBEM (the engine, compiled in spacepy's wheel) is compared with NASA SPDF's
+own AE8/AP8 code (`radbelt`), twice. Solar-maximum maps for all four (the year before each
+launch was near the cycle's peak in OMNI's sunspot record).
 
-| Mission | 1-min samples | e >1 MeV IRBEM | SPDF | diff | p >10 MeV IRBEM | SPDF | diff |
+The two codes do not place a point on the same magnetic shell. IRBEM's `fly_in_nasa_aeap1`
+works out McIlwain L and B/B0 with the field each map was built with: Jensen and Cain 1960
+for AE8 MIN, AE8 MAX and AP8 MIN, GSFC 12/66 updated to 1970 for AP8 MAX, with B0 from
+McIlwain's moment (31,165.3 nT/L³). These are the fields SPENVIS's model description lists
+for the maps (spenvis.oma.be, help/background/traprad, Table 1). SPDF's driver uses IGRF
+of the flight date and the field line's own minimum for B0. So the first table feeds
+IRBEM's L and B/B0 into both codes: it checks the maps and how they are read (energy grid,
+interpolation, MIN or MAX). The second gives SPDF its own shells: it shows what the choice
+of field changes.
+
+| Mission | 1-min samples | e >1 MeV IRBEM | SPDF, same shells | diff | p >10 MeV IRBEM | SPDF, same shells | diff |
 |---|---|---|---|---|---|---|---|
 | IM-1 | 0 | – | – | – | – | – | – |
-| IM-2 | 437 | 1.09e10 | 1.13e10 | −2.8 % | 8.55e5 | 1.44e6 | −40.5 % |
-| Blue Ghost 1 | 3,311 | 2.04e10 | 2.15e10 | −5.0 % | 8.00e8 | 7.94e8 | +0.7 % |
-| Peregrine | 867 | 2.35e10 | 2.33e10 | +0.8 % | 2.67e8 | 2.80e8 | −4.8 % |
+| IM-2 | 437 | 1.09e10 | 1.09e10 | 0.0 % | 8.55e5 | 8.55e5 | 0.0 % |
+| Blue Ghost 1 | 3,311 | 2.04e10 | 2.04e10 | 0.0 % | 8.00e8 | 8.00e8 | 0.0 % |
+| Peregrine | 867 | 2.35e10 | 2.35e10 | 0.0 % | 2.67e8 | 2.67e8 | 0.0 % |
 
-Electrons agree within 5 % on every trip; protons on the two trips that spend hours in
-the inner belt (Blue Ghost's four passes, Peregrine's two). IM-2's proton fluence, a
-thousand times smaller, differs by 40 %: it comes from minutes at the inner belt's lower
-edge, where the flux changes steeply with B/B0 and the two codes' shells differ most.
+| Mission | e >1 MeV SPDF, IGRF of the day | IRBEM against it | p >10 MeV SPDF, IGRF of the day | IRBEM against it |
+|---|---|---|---|---|
+| IM-2 | 1.13e10 | −2.8 % | 1.44e6 | −40.5 % |
+| Blue Ghost 1 | 2.15e10 | −5.0 % | 7.94e8 | +0.7 % |
+| Peregrine | 2.33e10 | +0.8 % | 2.80e8 | −4.8 % |
+
+With the same shells the two codes agree to 0.0 % on every trip: the maps and their reading
+are the same. The 40 % on IM-2's protons is the field alone. Read with SPDF's code and
+shells from other fields, IM-2's proton fluence is 8.55e5 with GSFC 12/66 (the map's own
+field), 8.73e5 with IGRF of 1970 (+2 %), 1.66e6 with IGRF of the flight date (+94 %), and
+1.45e6 with IGRF of the flight date and the field line's minimum as B0 (+70 %; SPDF's
+choice). It is the 55 years of change in Earth's field, not the field model or the code:
+the dipole has weakened and the South Atlantic Anomaly has drifted west (about 0.3° a year,
+SPENVIS's description), so today's field puts the same point on a shell nearer the belt's
+floor. IM-2's protons come from minutes at the inner belt's lower edge, where the flux
+changes steeply with B/B0, so they feel this most; the trips that spend hours inside the
+belt (Blue Ghost's four passes, Peregrine's two) move by 5 % or less. The engine is left as
+it is, reading each map with the field it was built with, which is what SPENVIS's model
+description lists; it has not been checked against a SPENVIS run. Reading the maps with
+today's field instead would roughly double IM-2's proton number, which is inside the ×/÷2
+the maps are read with. (IRBEM's IGRF in spacepy's build ends at 2025.0 and uses that for
+2025 dates; this only enters the IGRF-of-the-day line above.)
 IM-1's reconstruction starts 242,000 km out, a day and a half after launch, past the
 belts, so it has none; the answer
 says the climb out is not counted (a lower bound). The maps themselves are read as good

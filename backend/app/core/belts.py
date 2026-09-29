@@ -4,8 +4,9 @@ AE8 (electrons) and AP8 (protons) are NASA's static maps of the particles
 trapped in Earth's magnetic field, one for solar minimum and one for solar
 maximum (Vette 1991; Sawyer and Vette 1976). They are evaluated here with
 IRBEM (the library the SPENVIS and spacepy tools also build on), which works
-out each point's magnetic shell (McIlwain L and B/B0, IGRF field) and reads
-the maps there. The library comes compiled in spacepy's wheel; it is loaded
+out each point's magnetic shell (McIlwain L and B/B0) with the field each map
+was built with (Jensen and Cain 1960; GSFC 12/66 updated to 1970 for AP8 MAX)
+and reads the maps there. The library comes compiled in spacepy's wheel; it is loaded
 directly so that importing spacepy (which reaches for the network and a data
 directory) is not needed.
 
@@ -131,6 +132,74 @@ def integral_flux(
         got = flux[: len(energies_mev), :m]
         out[:, a:b] = np.where((got <= BAD * 0.1) | ~np.isfinite(got), 0.0, got)
     return out
+
+
+#: The internal field each map was built with, as IRBEM numbers it (options(5)): Jensen
+#: and Cain 1960 for AE8 MIN, AE8 MAX and AP8 MIN, GSFC 12/66 updated to 1970 for AP8 MAX.
+BUILT_WITH = {("e", "min"): 2, ("e", "max"): 2, ("p", "min"): 2, ("p", "max"): 3}
+#: McIlwain's dipole moment (nT RE^3) that IRBEM divides by L^3 to get B0 for the maps.
+MCILWAIN_M_NT = 31165.3
+
+
+def field_lines(
+    times: list[datetime], xyz_geo_km: FloatArray, field: int, year: int | None = None
+) -> tuple[FloatArray, FloatArray, FloatArray]:
+    """McIlwain L, the local field and the field line's minimum (nT) at each point, from
+    IRBEM's internal ``field`` (0 IGRF, 2 Jensen and Cain 1960, 3 GSFC 12/66), taken at
+    each time's date or, with ``year``, on 1 January of that year. NaN where the field
+    line is not closed or the point is outside the field model."""
+    xyz = np.asarray(xyz_geo_km, dtype=np.float64) / RE_KM
+    n = xyz.shape[0]
+    res = np.full((3, n), np.nan)
+    lib = _lib()
+    i4 = ctypes.c_int
+    opts = np.array([0, 0, 0, 0, field], dtype=np.int32)
+    for a in range(0, n, NTIME_MAX):
+        b = min(n, a + NTIME_MAX)
+        m = b - a
+        yr = np.zeros(NTIME_MAX, np.int32)
+        doy = np.zeros(NTIME_MAX, np.int32)
+        ut = np.zeros(NTIME_MAX)
+        for k, t in enumerate(times[a:b]):
+            tt = t.timetuple()
+            yr[k], doy[k] = (year, 1) if year is not None else (tt.tm_year, tt.tm_yday)
+            ut[k] = t.hour * 3600 + t.minute * 60 + t.second + t.microsecond * 1e-6
+        x = [np.zeros(NTIME_MAX) for _ in range(3)]
+        for c in range(3):
+            x[c][:m] = xyz[a:b, c]
+        maginput = np.zeros((NTIME_MAX, 25))  # Fortran maginput(25, ntime_max)
+        out = [np.zeros(NTIME_MAX) for _ in range(6)]  # Lm, L*, Blocal, Bmin, XJ, MLT
+
+        def ptr(arr: npt.NDArray[np.generic]) -> ctypes.c_void_p:
+            return arr.ctypes.data_as(ctypes.c_void_p)
+
+        with _LOCK:
+            lib.make_lstar1_(
+                ctypes.byref(i4(m)),
+                ctypes.byref(i4(0)),  # no external field
+                ptr(opts),
+                ctypes.byref(i4(1)),  # GEO Cartesian, Earth radii
+                ptr(yr),
+                ptr(doy),
+                ptr(ut),
+                *(ptr(c) for c in x),
+                ptr(maginput),
+                *(ptr(o) for o in out),
+            )
+        lv, bl, bm = np.abs(out[0][:m]), out[2][:m], out[3][:m]
+        ok = (lv > 0) & (lv < 1e30) & (bl > 0) & (bl < 1e30) & (bm > 0) & (bm < 1e30)
+        for i, v in enumerate((lv, bl, bm)):
+            res[i, a:b] = np.where(ok, v, np.nan)
+    return res[0], res[1], res[2]
+
+
+def shells(
+    particle: Particle, solar: Solar, times: list[datetime], xyz_geo_km: FloatArray
+) -> tuple[FloatArray, FloatArray]:
+    """McIlwain L and B/B0 at each point, as :func:`integral_flux` reads the maps there:
+    the field the map was built with (:data:`BUILT_WITH`), B0 from McIlwain's moment."""
+    lm, blocal, _ = field_lines(times, xyz_geo_km, BUILT_WITH[(particle, solar)])
+    return lm, blocal / (MCILWAIN_M_NT / lm**3)
 
 
 def fluence(t_s: FloatArray, flux: FloatArray) -> float:
