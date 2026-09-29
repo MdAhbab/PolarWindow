@@ -453,41 +453,57 @@ would be needed.
 `app/feeds/hindcast_reforecast.py`). NOAA's GEFS v12 reforecast (the model the live ensemble
 runs; 00 UTC, the control and four perturbed runs, 0.25°, 2000–2019 on NOAA's open-data bucket
 on AWS) is read for one day in three from 2007, in a fixed random order, from the first part
-of each global message (`parsers/grib_prefix.py`, equal to ecCodes on a cut of the field); 845
-of the 1,583 days planned are cached (2007-01-08 to 2019-12-31). The outcome is the station's sustained wind in its
-report nearest the valid time (within 30 minutes; a station with fewer reports has fewer cases),
-the limit is 10.52 m/s at 10 m as above, and the reference is the station's own month-by-hour
-frequency (and wind) over 2000–2019. Every interval is 95 %, from resampling whole months of
-cases (days in a month are not independent). Winds are 10 m; the runs are the reforecast's, not the
-archived live ensemble's (whose 31 runs and 0.5° cell are what the 2025 check used).
+of each global message (`parsers/grib_prefix.py`, equal to ecCodes on a cut of the field); all
+1,583 days planned are cached (2007-01-02 to 2019-12-31). The outcome is the station's sustained
+wind in its report nearest the valid time (within 30 minutes; a station with fewer reports has
+fewer cases), the limit is 10.52 m/s at 10 m as above, and the reference is the station's own
+month-by-hour frequency (and wind) over 2000–2019. Every interval is 95 %, from resampling whole
+months of cases (days in a month are not independent). Winds are 10 m; the runs are the
+reforecast's, not the archived live ensemble's (whose 31 runs and 0.5° cell are what the 2025
+check used).
 
 | Station, lead | Cases | Above the limit | Brier (GEFS) | Brier (climatology) | Brier skill | CRPS skill | CRPS skill, fair | Mean wind, runs / station (m/s) |
 |---|---|---|---|---|---|---|---|---|
-| KXMR 24 h | 786 | 0 | 0.0134 | 0.0000 | not worked out | −0.95 (−1.10 to −0.80) | −0.86 (−1.02 to −0.72) | 5.3 / 3.1 |
-| KXMR 48 h | 801 | 2 | 0.0096 | 0.0025 | not worked out | −0.90 (−1.06 to −0.76) | −0.80 (−0.95 to −0.66) | 5.3 / 3.2 |
-| KVBG 24 h | 565 | 34 | 0.0346 | 0.0553 | 0.37 (0.15 to 0.57) | 0.33 (0.27 to 0.38) | 0.37 (0.31 to 0.42) | 5.5 / 5.8 |
-| KVBG 48 h | 566 | 38 | 0.0471 | 0.0604 | 0.22 (0.02 to 0.42) | 0.31 (0.26 to 0.36) | 0.37 (0.32 to 0.41) | 5.5 / 5.7 |
+| KXMR 24 h | 1,459 | 1 | 0.0097 | 0.0007 | not worked out | −0.97 (−1.08 to −0.86) | −0.89 (−1.00 to −0.78) | 5.3 / 3.1 |
+| KXMR 48 h | 1,482 | 3 | 0.0090 | 0.0020 | not worked out | −0.99 (−1.12 to −0.88) | −0.89 (−1.01 to −0.78) | 5.3 / 3.2 |
+| KVBG 24 h | 1,080 | 75 | 0.0437 | 0.0623 | 0.30 (0.16 to 0.41) | 0.33 (0.29 to 0.37) | 0.37 (0.33 to 0.40) | 5.4 / 5.7 |
+| KVBG 48 h | 1,082 | 74 | 0.0464 | 0.0607 | 0.24 (0.09 to 0.38) | 0.33 (0.29 to 0.37) | 0.38 (0.35 to 0.42) | 5.5 / 5.7 |
 
 A Brier skill is worked out only from 10 or more cases above the limit (fewer, and one case
-moves it more than the skill); at the Cape there were none at 24 h and two at 48 h, so no Brier
+moves it more than the skill); at the Cape there was one at 24 h and three at 48 h, so no Brier
 skill is given and the continuous score (CRPS skill, which does not need the event to happen)
 is the verdict-free number. The gate pools the two leads' cases in its reliability bins.
 **The Cape does not pass**: the runs' wind is worse than the station's own record (CRPS skill
 below zero at both leads, intervals nowhere near zero), the runs averaging 5.3 m/s against the
-station's 3.1 (the 0.25° cell at the Cape is partly sea, where the wind is stronger than at a
-station inland), and the bin of shares of 0.2 (34 cases) saw the wind above the limit in none of
-them, 0.2 from what the share said and past the 0.1 allowed. So the wind rule's shares at the Cape stay "not checked against
-observations". **Vandenberg passes the plan's gate as written**: Brier skill 0.37 at 24 h and
-0.22 at 48 h against the 0.1 asked, and the only reliability bin with 30 cases or more (shares
-under 0.1: 1,057 cases) sits well inside 0.1 (the wind was above the limit in 2.8 % of them
-against a share of 0). Two things keep that from being more than it is. At 48 h the interval,
-0.02 to 0.42, runs below 0.1, so the gate is passed on the estimate and not with certainty. And
-five runs give shares in steps of 0.2, so every other bin holds 9 to 23 cases and the gate never
-counts them; taken together, the 37 cases at each lead with a share of 0.2 or more had the wind
-above the limit 62 % of the time at 24 h (mean share 63 %) and 51 % at 48 h (mean share 52 %).
-The check is made at 24 and 48 h; a share for a launch further out than 48 h is not covered by
-it and is not shown as checked. The download goes on, and the two
-`data/hindcast/gefs_reforecast_wind_*.json` files are rewritten each time it is scored.
+station's 3.1 and 3.2 (the 0.25° cell at the Cape is partly sea, where the wind is stronger than
+at a station inland), and the bin of shares of 0.2 (56 cases) saw the wind above the limit in
+none of them, 0.2 from what the share said and past the 0.1 allowed. **Vandenberg does not pass
+either, on its reliability and not its skill.** The Brier skill is 0.30 at 24 h and 0.24 at 48 h
+against the 0.1 asked (at 48 h the interval, 0.09 to 0.38, runs a hair under 0.1, so that part is
+met on the estimate and not with certainty). Three reliability bins hold the 30 cases the gate
+counts: shares under 0.1 (2,020 cases; the wind was above the limit in 3.4 % of them, against a
+share of 0), shares of 0.2 (41 cases; 24 %) and the share of 1.0, all five runs over the limit
+(41 cases, 20 at 24 h and 21 at 48 h, so neither lead alone holds the 30 the gate counts). The
+wind was above the limit in 36 of those 41 (88 %, 95 % 75 to 95 %): 0.12 from the share and past
+the 0.1 allowed. The estimate is past the tolerance by 0.02 and the interval takes in the allowed
+band, so the miss is not certain; the gate reads the estimate, as it did when it passed. The
+result moved as days were added, with the method and the gate the same in all three scorings:
+
+| Days scored | KVBG cases above the limit (24 h, 48 h) | KVBG Brier skill (24 h, 48 h) | KVBG shares of 1.0: cases, wind above the limit in | KVBG gate | KXMR CRPS skill at 24 h |
+|---|---|---|---|---|---|
+| 224 | 9, 8 | not worked out | 4, 4 (not counted) | does not pass | −0.90 (−1.25 to −0.61) |
+| 845 | 34, 38 | 0.37, 0.22 | 20, 18 (not counted) | passes | −0.95 (−1.10 to −0.80) |
+| 1,583 | 75, 74 | 0.30, 0.24 | 41, 36 | does not pass | −0.97 (−1.08 to −0.86) |
+
+Five runs give shares in steps of 0.2, so the bins between (shares of 0.4, 0.6 and 0.8: 26, 15
+and 19 cases at Vandenberg) are never counted; taken together, the 68 and 74 cases at 24 and 48 h
+with a share of 0.2 or more had the wind above the limit 60 % of the time at 24 h (mean share
+62 %) and 54 % at 48 h (mean share 57 %). The live ensemble has 31 runs, whose shares are finer,
+so this is the record of five-run shares and not of the live ones. So the wind rule's shares say
+"not checked against observations" at both pads. The check is made at 24 and 48 h, so a pass
+would cover a launch up to 48 h ahead and no further. The download is complete, every day planned
+is cached, and `make hindcast-reforecast` (or `--score-only`) rewrites the two
+`data/hindcast/gefs_reforecast_wind_*.json` files each time it scores.
 
 **HRRR's one forecast against the same stations** (`make hindcast-hrrr`,
 `app/feeds/hindcast_hrrr.py`). The launch weather lists HRRR (3 km, one run) beside the ensemble as

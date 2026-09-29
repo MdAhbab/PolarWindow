@@ -774,3 +774,13 @@ that user. `GET /auth/me` returns the same `user`.
   launch weather. `nomads/gefs_launch` (the GEFS steps nearest each opportunity) had been refused every time
   since its cost, 373 requests, was more than the provider's allowance holds (120); it now costs at most
   what the bucket holds and a run already fetched whole is not asked for again.
+- 2026-09-29 (weather, no shape change): `per_system[].share.checked` is false again for the Falcon 9 wind
+  rule at Vandenberg's pads, so it is false at both pads and `LaunchWeather.note` reads "None has passed a check
+  against observations yet." again for both. The 13-year GEFS reforecast is now scored on all 1,583 days
+  planned (it was 845 when the earlier line saying it is true at Vandenberg was written): the Brier skill still clears the plan's 0.1 (0.30 at
+  24 h, 0.24 at 48 h, 95 % 0.16 to 0.41 and 0.09 to 0.38), but the reliability bin for a share of 1.0 now holds
+  41 cases (20 before, too few to count) and the wind was above the limit in 36 of them, 0.88 against a share of
+  1.0, past the 0.1 the gate allows, so `passes` is false; the meta part "Checked against observations" gives the
+  numbers. The Cape stays false (CRPS skill -0.97 at 24 h, 95 % -1.08 to -0.86). `OneForecast.note` for HRRR
+  now carries the 95 % range of its skill against the station's usual wind and says "no higher or lower"
+  where its lean rounds to nothing. No field is added or removed.
