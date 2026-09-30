@@ -495,17 +495,6 @@ def risk_scales() -> dict[str, Any]:
     }
 
 
-def versions() -> dict[str, str]:
-    """``{catalogue: version}`` for every catalogue that loads."""
-    out = {}
-    for name in CATALOGUES:
-        try:
-            out[name] = load(name).version
-        except CatalogueError:
-            continue
-    return out
-
-
 def check_references() -> list[str]:
     """Cross-catalogue references that do not resolve (pad -> vehicle, zone -> pad, ...)."""
     problems: list[str] = []

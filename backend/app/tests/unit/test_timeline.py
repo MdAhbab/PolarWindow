@@ -1,3 +1,6 @@
+"""Tests for disc-fraction bounds and weighted body timeline tracks."""
+
+
 def test_disc_bounds_bracket_and_sum_to_the_window() -> None:
     """Full disc <= any limb, and both are weighted to the window's length."""
     import numpy as np

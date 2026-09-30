@@ -57,10 +57,6 @@ class Tile:
     source: str
 
 
-def layers() -> tuple[str, ...]:
-    return LAYERS
-
-
 def validate(layer: str, z: int, x: int, y: int) -> None:
     if layer not in LAYERS:
         raise UnknownLayer(f"'{layer}' is not a layer. Available: {', '.join(LAYERS)}.")
@@ -76,7 +72,8 @@ def _regional(path: Path) -> DemTile:
 _locks: dict[tuple[str, int, int, int], asyncio.Lock] = {}
 
 
-def _etag(blob: bytes) -> str:
+def etag(blob: bytes) -> str:
+    """The weak entity tag of a tile's bytes, for ``If-None-Match``."""
     return f'W/"{hashlib.sha256(blob).hexdigest()[:16]}"'
 
 
@@ -118,4 +115,4 @@ async def get_tile(layer: str, z: int, x: int, y: int) -> Tile:
         _locks.pop(key, None)
 
     blob = await asyncio.to_thread(path.read_bytes)
-    return Tile(blob=blob, etag=_etag(blob), source=source)
+    return Tile(blob=blob, etag=etag(blob), source=source)

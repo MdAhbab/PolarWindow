@@ -13,7 +13,6 @@ path is the one that would pass even if the guard did nothing.
 from __future__ import annotations
 
 import json
-from typing import Any
 
 import httpx
 import pytest
@@ -22,20 +21,6 @@ pytestmark = [pytest.mark.requires_db, pytest.mark.requires_kernels, pytest.mark
 
 API = "/api/v1"
 SITE = "connecting-ridge"
-
-
-def gemini_text(payload: dict[str, Any]) -> httpx.Response:
-    """A Gemini generateContent response carrying a JSON answer."""
-    return httpx.Response(
-        200,
-        json={
-            "candidates": [
-                {"content": {"parts": [{"text": json.dumps(payload)}], "role": "model"}}
-            ],
-            "usageMetadata": {"promptTokenCount": 120, "candidatesTokenCount": 60},
-        },
-    )
-
 
 GROUNDED = {
     "status": "ok",

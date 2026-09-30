@@ -79,7 +79,7 @@ HOW_TO_INSTALL = {
     "npm": "Install Node.js 20 or newer (it brings npm): https://nodejs.org, or `brew install node`.",
     "postgres": "Install PostgreSQL 16 (`brew install postgresql@16` on macOS, "
     "`sudo apt install postgresql` on Debian or Ubuntu), or start the database with "
-    "`docker compose up -d db redis`, then run this again.",
+    "`docker compose up -d postgres redis`, then run this again.",
     "redis": "Install Redis (`brew install redis` or `sudo apt install redis-server`), or set "
     "PW_REDIS_ENABLED=false in .env: Redis only caches answers, the app works without it.",
 }
@@ -664,7 +664,7 @@ def run_stack(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Run Polar Window frontend and backend simultaneously with dependency checks."
+        description="Run POLAR WINDOW: its services, backend, workers and frontend together."
     )
     parser.add_argument(
         "--skip-install",

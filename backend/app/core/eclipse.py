@@ -58,28 +58,6 @@ class Occultation:
         """< 0 when the whole Sun is covered."""
         return self.separation - (self.body_radius - self.sun_radius)
 
-    def visible_fraction(self) -> FloatArray:
-        a, b, c = self.sun_radius, self.body_radius, self.separation
-        frac = np.ones_like(c)
-        covered = c <= b - a
-        frac[covered] = 0.0
-        partial = (~covered) & (c < a + b)
-        if np.any(partial):
-            ap, bp, cp = a[partial], b[partial], c[partial]
-            # Area of intersection of two circles (Montenbruck and Gill eq. 3.93).
-            x = (cp**2 + ap**2 - bp**2) / (2.0 * cp)
-            y = np.sqrt(np.clip(ap**2 - x**2, 0.0, None))
-            area = (
-                ap**2 * np.arccos(np.clip(x / ap, -1, 1))
-                + bp**2 * np.arccos(np.clip((cp - x) / bp, -1, 1))
-                - cp * y
-            )
-            # Annular: the body is inside the Sun's disc.
-            annular = cp <= ap - bp
-            area = np.where(annular, np.pi * bp**2, area)
-            frac[partial] = 1.0 - area / (np.pi * ap**2)
-        return frac
-
 
 def occultation(
     sc_to_sun: FloatArray, sc_to_body: FloatArray, r_sun_m: float, r_body_m: float
@@ -107,10 +85,4 @@ def shadow_runs(t_s: FloatArray, occs: list[Occultation]) -> list[Run]:
     parts = [
         intervals.complement(intervals.runs_from_margin(t_s, o.first_contact_margin)) for o in occs
     ]
-    return intervals.any_of(parts) if len(parts) > 1 else parts[0]
-
-
-def dark_runs(t_s: FloatArray, occs: list[Occultation]) -> list[Run]:
-    """Runs of "all of the Sun is covered" (value True)."""
-    parts = [intervals.runs_from_margin(t_s, -o.full_cover_margin) for o in occs]
     return intervals.any_of(parts) if len(parts) > 1 else parts[0]

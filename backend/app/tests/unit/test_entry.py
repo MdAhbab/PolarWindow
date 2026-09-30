@@ -9,6 +9,9 @@ import pytest
 
 from app.core import atmosphere, entry
 
+#: The height of the entry interface the plan names (400,000 ft).
+EI_HEIGHT_M = 121_920.0
+
 
 @pytest.mark.parametrize(
     ("z_m", "t_k", "p_pa", "rho"),
@@ -49,7 +52,7 @@ def test_geodetic_height_on_the_ellipsoid() -> None:
 
 
 def _state(speed: float, fpa_deg: float) -> tuple[np.ndarray, np.ndarray]:
-    r0 = np.array([entry.R_EQ + entry.EI_HEIGHT_M, 0.0, 0.0])
+    r0 = np.array([entry.R_EQ + EI_HEIGHT_M, 0.0, 0.0])
     g = math.radians(fpa_deg)
     v0 = speed * np.array([math.sin(g), math.cos(g), 0.0])
     return r0, v0
@@ -133,7 +136,7 @@ def test_the_air_is_asked_at_seconds_from_entry_and_at_the_height_above_the_elli
         return atmosphere.density(h)
 
     fl = entry.fly(r0, v0, pole, entry.Capsule(beta_kg_m2=63.0, air=air))
-    assert calls[0][0] == 0.0 and calls[0][2] == pytest.approx(entry.EI_HEIGHT_M, abs=1e-6)
+    assert calls[0][0] == 0.0 and calls[0][2] == pytest.approx(EI_HEIGHT_M, abs=1e-6)
     # Steps of at most 2 s: the last stage of the last step may lie just past the ground.
     assert max(t for t, _, _ in calls) <= fl.duration_s + 2.0
     # The height it gets is the position's, floored at the ground.

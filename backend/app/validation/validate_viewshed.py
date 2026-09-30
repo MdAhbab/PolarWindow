@@ -1,6 +1,6 @@
 """Rover-to-lander line of sight on real terrain (plan track T1, F5).
 
-Run: ``make validate-viewshed`` (or ``uv run python -m app.tests.golden.validate_viewshed``).
+Run: ``make validate-viewshed`` (or ``uv run python -m app.validation.validate_viewshed``).
 Prints the docs/validation.md table.
 
 The plan asks for 99 % agreement with ``gdal_viewshed`` outside the uncertain

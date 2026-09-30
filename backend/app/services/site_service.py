@@ -8,7 +8,6 @@ so a number can never differ depending on who asked for it.
 from __future__ import annotations
 
 import asyncio
-import logging
 from collections import OrderedDict
 from collections.abc import Awaitable, Callable, Hashable
 from dataclasses import dataclass
@@ -27,8 +26,6 @@ from app.core.timeline import BodyTrack
 from app.db.repositories.metrics import WindowMetricsRepository
 from app.db.repositories.sites import MaskRecord, MaskRepository, SiteRecord, SiteRepository
 from app.services import cache, geometry_service
-
-log = logging.getLogger(__name__)
 
 
 class SiteNotFound(LookupError):

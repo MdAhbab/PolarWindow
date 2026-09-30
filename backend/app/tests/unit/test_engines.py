@@ -21,13 +21,5 @@ def test_unknown_engine_is_an_error() -> None:
         engine_closure("warp")
 
 
-def test_lifecycle_key_changes_with_closure_and_parts() -> None:
-    a = cache.make_lifecycle_key("contact", engine_closure("vis", "net"), site="x")
-    b = cache.make_lifecycle_key("contact", engine_closure("vis", "net", "link"), site="x")
-    c = cache.make_lifecycle_key("contact", engine_closure("vis", "net"), site="y")
-    assert len({a, b, c}) == 3
-    assert a.startswith(f"pw:{ENGINES['net']}+{ENGINES['vis']}:")
-
-
 def test_surface_key_format_is_unchanged() -> None:
     assert cache.make_key("metrics", site="x").startswith(f"pw:{ENGINE_VERSION}:")

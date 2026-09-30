@@ -28,7 +28,7 @@ from app.core import forces, landing_windows, launchwin, propagate, spice, trans
 from app.core.intervals import Run
 from app.core.quantity import Quantity
 from app.core.spice import R_MOON_M
-from app.core.vec import rotate, unit
+from app.core.vec import unit
 from app.data import catalogues, climatology, thunder_climatology
 from app.db.repositories.jobs import InputRef
 from app.db.session import session_scope
@@ -379,10 +379,7 @@ def _design_all(
     coast_nom = float(np.mean(asc.coasts_s))
     az = climb_direction(asc)
 
-    def parking_at(tl: float) -> transfer.Parking:
-        ph = unit(pad_at(tl))
-        h = launchwin.climb_plane(ph, az)
-        return transfer.Parking(tl, asc.r_park_m * rotate(ph, h, asc.c_rad), h, gm)
+    parking_at = transfer.climb_parking(pad_at, az, asc.c_rad, asc.r_park_m, gm)
 
     out: list[dict[str, Any]] = []
     designs = 0

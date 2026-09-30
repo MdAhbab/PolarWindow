@@ -19,10 +19,6 @@ from app.config import get_settings
 from app.core.gravity import Field
 
 FILE = "gravity/gggrx_1200a_sha.tab"
-SOURCE_URL = (
-    "https://pds-geosciences.wustl.edu/grail/grail-l-lgrs-5-rdr-v1/grail_1001/shadr/"
-    "gggrx_1200a_sha.tab"
-)
 
 
 class GravityMissing(FileNotFoundError):

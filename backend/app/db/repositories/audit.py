@@ -112,17 +112,6 @@ class AuditRepository:
         ).scalars()
         return [_record(r) for r in rows]
 
-    async def for_mission(self, mission_id: str, limit: int = 200) -> list[AuditRecord]:
-        rows = (
-            await self._s.execute(
-                select(AuditEntry)
-                .where(AuditEntry.mission_id == mission_id)
-                .order_by(AuditEntry.seq.desc())
-                .limit(limit)
-            )
-        ).scalars()
-        return [_record(r) for r in rows]
-
     async def verify(self) -> ChainCheck:
         row = (await self._s.execute(text("SELECT first_bad, checked FROM audit_verify()"))).one()
         return ChainCheck(

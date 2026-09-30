@@ -63,8 +63,6 @@ LND: dict[str, Any] = {
     "January 2019 (Zhang et al. 2020, Science Advances 6, eaaz1334), its horizon taken as flat",
     "url": "https://www.science.org/doi/10.1126/sciadv.aaz1334",
 }
-MONTHS = ("January", "February", "March", "April", "May", "June", "July", "August",
-          "September", "October", "November", "December")  # fmt: skip
 
 
 def _q(value: float, unit: str, **kw: Any) -> dict[str, Any]:

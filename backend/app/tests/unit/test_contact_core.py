@@ -76,12 +76,6 @@ def test_longest_wait_is_exact_and_says_when_it_is_cut_short() -> None:
     assert open2 and wait2 == pytest.approx(90.0)
 
 
-def test_ion_contact_plan_lines() -> None:
-    c = [network.Contact("lander", "earth", 100, 200, 1.28)]
-    text = network.ion_contact_plan(c, {"lander": 1, "earth": 2}, 250.0, 0.0)
-    assert text.splitlines() == ["a contact +100 +200 1 2 250", "a range +100 +200 1 2 1"]
-
-
 @pytest.mark.requires_kernels
 def test_station_geometry_matches_spice_observed_from_the_station() -> None:
     import spiceypy as sp

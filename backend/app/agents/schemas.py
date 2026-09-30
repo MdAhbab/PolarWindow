@@ -13,40 +13,11 @@ afford.
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 Status = Literal["ok", "insufficient_data"]
-
-
-class Citation(BaseModel):
-    """Where one number in the output came from.
-
-    Produced by the grounding guard, not by the model. A model-authored
-    citation would be exactly as trustworthy as the number it cites.
-    """
-
-    model_config = ConfigDict(extra="forbid")
-
-    claim: str = Field(description="The text fragment containing the number.")
-    value: float
-    tool: str
-    call_seq: int
-    field: str
-
-
-class AgentEnvelope(BaseModel):
-    """Shared wrapper around every agent response."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    status: Literal["ok", "insufficient_data", "degraded"]
-    reason: str | None = Field(default=None, description="Required whenever status is not 'ok'.")
-    result: dict[str, Any] | None = None
-    provenance: list[Citation] = Field(default_factory=list)
-    run_id: str | None = None
-    meta: dict[str, Any] = Field(default_factory=dict)
 
 
 # --- A1 Site Explainer -----------------------------------------------------

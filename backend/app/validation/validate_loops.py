@@ -1,6 +1,6 @@
 """Phasing loops and correction burns against the flown landers (plan C3 and C4).
 
-Run: ``make validate-trip`` (or ``uv run python -m app.tests.golden.validate_loops``).
+Run: ``make validate-trip`` (or ``uv run python -m app.validation.validate_loops``).
 Prints the tables in docs/validation.md; ``test_loops_vs_clps.py`` pins the
 acceptance numbers from the same code.
 
@@ -35,9 +35,9 @@ import numpy as np
 
 from app.config import get_settings
 from app.core import forces, launchwin, lincov, phasing, propagate, spice, transfer
-from app.core.vec import rotate, unit
+from app.core.vec import unit
 from app.services import ascent, flown_burns
-from app.tests.golden.validate_launch import F9, _flights
+from app.validation.validate_launch import F9, _flights
 
 LOOPS = "blue-ghost-m1"
 DAYS = range(-5, 6)
@@ -185,10 +185,7 @@ def design_days(days: range = DAYS, az_deg: float = 90.0) -> LoopsResult:
     c = float(np.mean([o.launch.c_rad for m, o in flights.items() if m != LOOPS and m in F9]))
     pad_at = ascent.pad_j2000(f.pad_id)
 
-    def parking_at(tl: float) -> transfer.Parking:
-        ph = unit(pad_at(tl))
-        h = launchwin.climb_plane(ph, az_deg)
-        return transfer.Parking(tl, fl.r_park_m * rotate(ph, h, c), h, tables.gm_earth)
+    parking_at = transfer.climb_parking(pad_at, az_deg, c, fl.r_park_m, tables.gm_earth)
 
     moon = unit(forces.body_state(tables, forces.MOON, np.array([target.t_arrive]))[0][:3])
     picked: list[phasing.Day] = []

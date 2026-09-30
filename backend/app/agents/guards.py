@@ -352,11 +352,6 @@ def extract_claims(obj: Any) -> list[Claim]:
     return out
 
 
-def extract_claim_numbers(obj: Any) -> list[tuple[str, float, str]]:
-    """``(path, value, context)`` for every claim; see ``extract_claims``."""
-    return [(c.path, c.value, c.context) for c in extract_claims(obj)]
-
-
 # ---------------------------------------------------------------------------
 # The rules
 # ---------------------------------------------------------------------------

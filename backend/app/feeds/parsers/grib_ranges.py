@@ -31,7 +31,7 @@ class RangeError(ValueError):
     """The message is not in the layout this module reads."""
 
 
-def _sm(raw: bytes) -> int:
+def sign_magnitude(raw: bytes) -> int:
     """GRIB2 signed integer: the top bit is the sign, the rest the magnitude."""
     v = int.from_bytes(raw, "big")
     top = 1 << (8 * len(raw) - 1)
@@ -148,13 +148,13 @@ def layout(head: bytes) -> Simple:
             grid = Lambert(
                 nx=struct.unpack(">I", s[30:34])[0],
                 ny=struct.unpack(">I", s[34:38])[0],
-                la1=_sm(s[38:42]) * 1e-6,
-                lo1=_sm(s[42:46]) * 1e-6,
-                lov=_sm(s[51:55]) * 1e-6,
+                la1=sign_magnitude(s[38:42]) * 1e-6,
+                lo1=sign_magnitude(s[42:46]) * 1e-6,
+                lov=sign_magnitude(s[51:55]) * 1e-6,
                 dx=struct.unpack(">I", s[55:59])[0] * 1e-3,
                 dy=struct.unpack(">I", s[59:63])[0] * 1e-3,
-                latin1=_sm(s[65:69]) * 1e-6,
-                latin2=_sm(s[69:73]) * 1e-6,
+                latin1=sign_magnitude(s[65:69]) * 1e-6,
+                latin2=sign_magnitude(s[69:73]) * 1e-6,
                 radius=radius,
             )
         elif sec == 5:
@@ -170,8 +170,8 @@ def layout(head: bytes) -> Simple:
         grid=grid,
         n=struct.unpack(">I", s5[5:9])[0],
         ref=struct.unpack(">f", s5[11:15])[0],
-        e=_sm(s5[15:17]),
-        d=_sm(s5[17:19]),
+        e=sign_magnitude(s5[15:17]),
+        d=sign_magnitude(s5[17:19]),
         nbits=s5[19],
         data_at=at + 5,
         total=total,

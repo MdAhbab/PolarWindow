@@ -275,6 +275,24 @@ async def _fetch_rows_async(
     return out
 
 
+def _save_tile(
+    product: LolaProduct, heights: npt.NDArray[np.float32], x0: float, y0: float, out_path: Path
+) -> None:
+    """Write a window as the compressed ``.npz`` that ``DemTile.load`` reads.
+
+    ``x0`` and ``y0`` are the polar stereographic coordinates of the window's first sample.
+    """
+    np.savez_compressed(
+        out_path,
+        heights=heights,
+        origin_x_m=np.float64(x0),
+        origin_y_m=np.float64(y0),
+        scale_m=np.float64(product.scale_m),
+        product=np.str_(product.name),
+        vertical_error_m=np.float64(product.vertical_error_m),
+    )
+
+
 async def fetch_window_async(
     product: LolaProduct,
     centre_x_m: float,
@@ -286,15 +304,13 @@ async def fetch_window_async(
 ) -> dict[str, object]:
     """Fetch a square window around a point and save it as a .npz tile.
 
-    Async because the precompute worker is async; ``fetch_window`` below is the
-    synchronous entry point for scripts. Having the sync wrapper call
-    ``asyncio.run`` from inside a running loop is exactly the bug this split
-    fixes -- the worker hit it on its first site.
+    Async because the precompute worker is async: a synchronous version would
+    have to call ``asyncio.run`` from inside a running loop.
 
     Saved as compressed numpy rather than GeoTIFF on purpose: the consumer is
-    ``sampler_from_tile`` below, which wants a plain array and four numbers.
-    Writing a GeoTIFF would mean carrying a rasterio dependency into the read
-    path for no benefit -- and ``core/`` is forbidden from importing rasterio.
+    :meth:`DemTile.load`, which wants a plain array and a few numbers. Writing a
+    GeoTIFF would mean carrying a rasterio dependency into the read path for no
+    benefit -- and ``core/`` is forbidden from importing rasterio.
     """
     half_px = int(math.ceil(radius_m / product.scale_m))
     cs, cl = product.world_to_pixel(np.array([centre_x_m]), np.array([centre_y_m]))
@@ -336,15 +352,7 @@ async def fetch_window_async(
 
     x0, y0 = product.pixel_to_world(np.array([float(sample0)]), np.array([float(line0)]))
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(
-        out_path,
-        heights=heights,
-        origin_x_m=np.float64(x0[0]),
-        origin_y_m=np.float64(y0[0]),
-        scale_m=np.float64(product.scale_m),
-        product=np.str_(product.name),
-        vertical_error_m=np.float64(product.vertical_error_m),
-    )
+    _save_tile(product, heights, float(x0[0]), float(y0[0]), out_path)
     return {
         "product": product.name,
         "path": str(out_path),
@@ -353,21 +361,6 @@ async def fetch_window_async(
         "clipped": clipped,
         "bytes": out_path.stat().st_size,
     }
-
-
-def fetch_window(
-    product: LolaProduct,
-    centre_x_m: float,
-    centre_y_m: float,
-    radius_m: float,
-    out_path: Path,
-    *,
-    timeout: float = 60.0,
-) -> dict[str, object]:
-    """Synchronous entry point, for scripts that are not already in a loop."""
-    return asyncio.run(
-        fetch_window_async(product, centre_x_m, centre_y_m, radius_m, out_path, timeout=timeout)
-    )
 
 
 def fetch_full(
@@ -390,15 +383,7 @@ def fetch_full(
     dn = np.fromfile(raw, dtype="<i2").reshape(product.size_px, product.size_px)
     heights = dn.astype(np.float32) * np.float32(product.scaling_factor)
     x0, y0 = product.pixel_to_world(np.array([0.0]), np.array([0.0]))
-    np.savez_compressed(
-        out_path,
-        heights=heights,
-        origin_x_m=np.float64(x0[0]),
-        origin_y_m=np.float64(y0[0]),
-        scale_m=np.float64(product.scale_m),
-        product=np.str_(product.name),
-        vertical_error_m=np.float64(product.vertical_error_m),
-    )
+    _save_tile(product, heights, float(x0[0]), float(y0[0]), out_path)
     return {"product": product.name, "path": str(out_path), "bytes": out_path.stat().st_size}
 
 
@@ -521,13 +506,3 @@ def make_samplers(
         return np.where(use_fine, fine_err, np.where(np.isfinite(zc), coarse_err, np.nan))
 
     return sample, sigma
-
-
-def make_sampler(
-    lat_deg: float,
-    lon_deg: float,
-    fine: DemTile | None,
-    coarse: DemTile | None = None,
-) -> Callable[[FloatArray, FloatArray], FloatArray]:
-    """The height sampler alone; see ``make_samplers``."""
-    return make_samplers(lat_deg, lon_deg, fine, coarse)[0]

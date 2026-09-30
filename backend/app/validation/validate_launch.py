@@ -1,6 +1,6 @@
 """Launch instants against the flown Falcon 9 lunar launches (plan D1 and C2).
 
-Run: ``make validate-trip`` (or ``uv run python -m app.tests.golden.validate_launch``).
+Run: ``make validate-trip`` (or ``uv run python -m app.validation.validate_launch``).
 Prints the table in docs/validation.md; ``test_launch_vs_clps.py`` pins the
 acceptance numbers from the same code.
 
@@ -37,7 +37,7 @@ import numpy as np
 
 from app.config import get_settings
 from app.core import forces, launchwin, propagate, spice, transfer
-from app.core.vec import rotate, unit
+from app.core.vec import unit
 from app.data import catalogues
 from app.services import ascent
 
@@ -126,10 +126,7 @@ def _designed(
     tables, target, c, moon, k, rr, vv = _arrival(mid, flights)
     pad_at = ascent.pad_j2000(f.pad_id)
 
-    def parking_at(tl: float) -> transfer.Parking:
-        ph = unit(pad_at(tl))
-        h = launchwin.climb_plane(ph, az_deg)
-        return transfer.Parking(tl, fl.r_park_m * rotate(ph, h, c), h, tables.gm_earth)
+    parking_at = transfer.climb_parking(pad_at, az_deg, c, fl.r_park_m, tables.gm_earth)
 
     mh = unit(moon[:3])
     day0 = f.t0_et - 12 * 3600.0

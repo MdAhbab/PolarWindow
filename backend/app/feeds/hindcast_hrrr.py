@@ -143,16 +143,7 @@ class Reader(hr.Fetcher):
 
 
 def read_cache() -> dict[str, dict[str, Any]]:
-    p = cache_path()
-    out: dict[str, dict[str, Any]] = {}
-    if p.exists():
-        for line in p.read_text().splitlines():
-            try:
-                x = json.loads(line)
-            except json.JSONDecodeError:
-                continue  # a line cut short when a run was stopped
-            out[x["init"]] = x
-    return out
+    return hr.read_cache(cache_path())
 
 
 async def fetch(

@@ -214,20 +214,6 @@ class FeedRepository:
         row = await self._s.get(FeedSnapshot, snapshot_id)
         return None if row is None else _snap(row)
 
-    async def raw_of(self, snapshot_id: int) -> tuple[bytes | None, str | None]:
-        row = (
-            await self._s.execute(
-                select(FeedSnapshot.raw, FeedSnapshot.raw_ref).where(FeedSnapshot.id == snapshot_id)
-            )
-        ).one_or_none()
-        return (None, None) if row is None else (row.raw, row.raw_ref)
-
-    async def mark_of_record(self, ids: list[int]) -> None:
-        if ids:
-            await self._s.execute(
-                update(FeedSnapshot).where(FeedSnapshot.id.in_(ids)).values(of_record=True)
-            )
-
     async def gc_raw(self, older_than_days: int) -> int:
         """Drop raw bodies of old snapshots nothing of record depends on."""
         res = await self._s.execute(

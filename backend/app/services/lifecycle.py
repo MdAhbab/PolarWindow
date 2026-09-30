@@ -11,7 +11,8 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from app.config import ENGINES
-from app.core.quantity import Quantity, Share
+from app.core import quantity
+from app.core.quantity import Provenance, Quantity, Share
 
 #: Half the span a published date of each precision covers, seconds.
 HALF_SPAN_S: dict[str, float] = {
@@ -46,8 +47,8 @@ def share(s: Share) -> dict[str, Any]:
     return {"k": s.k, "n": s.n, "lo": s.lo, "hi": s.hi, "checked": s.checked}
 
 
-def missing(unit: str, reason: str, *, provenance: str = "computed") -> dict[str, Any]:
-    return q(Quantity(value=None, unit=unit, provenance=provenance, missing_reason=reason))  # type: ignore[arg-type]
+def missing(unit: str, reason: str, *, provenance: Provenance = "computed") -> dict[str, Any]:
+    return q(quantity.missing(unit, reason, provenance=provenance))
 
 
 def parse_time(text: str) -> datetime:

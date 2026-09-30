@@ -1,6 +1,6 @@
 """The propagator against NASA's reconstructed CLPS trajectories (plan C1).
 
-Run: ``make validate-trip`` (or ``uv run python -m app.tests.golden.validate_trip``).
+Run: ``make validate-trip`` (or ``uv run python -m app.validation.validate_trip``).
 Prints the table that goes into docs/validation.md; the golden test
 ``test_propagate_vs_clps.py`` pins the acceptance numbers from the same code.
 

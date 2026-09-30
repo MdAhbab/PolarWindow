@@ -1,26 +1,124 @@
 # POLAR WINDOW — API reference
 
-Base URL `/api/v1`. Interactive docs at `/api/v1/docs`; the machine-readable
-schema at `/api/v1/openapi.json`, which is what `frontend/src/lib/api/schema.ts`
-is generated from (`make codegen`). **Never hand-write the client.**
+Every endpoint and how to call it. The shapes of the mission sections (Ready,
+Launch, Trip, Contact, Return) and the log of changes to them are in
+[lifecycle-api.md](lifecycle-api.md).
+
+Base URL `/api/v1`. Interactive docs at `/api/v1/docs`. The machine-readable
+schema is at `/api/v1/openapi.json` and committed as `docs/openapi.json`
+(`make openapi`). `frontend/src/lib/api/schema.ts` is generated from it
+(`make codegen`). **Never hand-write the client.**
 
 - Times are **ISO 8601 UTC**, always with `Z`.
-- Durations are **seconds**, always. Hours are a presentation unit and the
-  conversion happens once, in the frontend adapter.
+- Durations are **seconds**, always. Hours are a presentation unit, converted
+  once in the frontend adapter.
 - Angles are **degrees**. Azimuth is from north, clockwise.
-- Reading needs no session: the sites, missions, numbers and tiles are public
-  data. A **session** (a JWT from `POST /auth/demo`, sent as
+- Reading needs no session: sites, missions, numbers and tiles are public data.
+  A **session** (a JWT from `POST /auth/demo`, sent as
   `Authorization: Bearer <token>`) is needed for the four AI panels, which cost
-  model quota, and for the project settings, which change the service for
-  everyone. See *Sign-in* and *Settings* below.
+  model quota, for the project settings, which change the service for everyone,
+  and, with a name, for every change to a record. See *Sign-in*.
+
+---
+
+## Every endpoint
+
+The *Who* column: **public** needs no session, **session** any session,
+**manager** the project manager's session, **named** a session with a name
+(every change is recorded against it, ADR-17). Paths are relative to
+`/api/v1`. Details for the site and mission endpoints follow the table. The
+shapes for the mission sections are in [lifecycle-api.md](lifecycle-api.md).
+
+**Sites and numbers**
+
+| Endpoint | Answers | Who |
+|---|---|---|
+| `GET /sites` | The site list, with a summary of the four numbers over the reference window (filters below) | public |
+| `GET /sites/{id}` | One site with its provenance and a summary of its stored skyline | public |
+| `GET /sites/{id}/horizon` | Skyline elevation by bearing (`step_deg`) | public |
+| `GET /sites/{id}/timeline` | Sun and Earth track as parallel arrays (`start`, `end`, `step_s`) | public |
+| `GET /sites/{id}/windows` | Sunlit, dark, in-contact and blackout stretches with their timing margins | public |
+| `GET /sites/{id}/metrics` | The four numbers, their margins and the autonomy figures | public |
+| `GET /sites/{id}/calendar` | Sun and Earth by day or month over up to 730 days (`start`, `end`, `bucket`) | public |
+| `POST /compare` | Rank up to 8 sites over one window | public |
+| `GET /tiles/{layer}/{z}/{x}/{y}.png`, `GET /tiles/{layer}/{z}/{x}/{y}` | A map tile: `hillshade`, `illumination` or `psr` (the suffix is optional) | public |
+| `GET /tiles/viewshed/{assessment_id}/{z}/{x}/{y}.png` | Rover line-of-sight tiles (`layer=sight\|radio\|terrain`, default `sight`) | public |
+| `GET /healthz` | Liveness, kernels, database, cache, terrain and feeds. Also mounted unprefixed at `/healthz` | public |
+
+**Missions**
+
+| Endpoint | Answers | Who |
+|---|---|---|
+| `GET /missions` | Every CLPS mission (filters below) | public |
+| `GET /missions/{id}` | One mission, fully sourced | public |
+| `GET /missions/{id}/sections` | The six steps and one plain sentence for each | public |
+
+**Mission sections** (a heavy answer that is not stored yet comes back **202**
+with a `JobRef`; poll `GET /jobs/{id}` and ask again when it is `done`)
+
+| Endpoint | Answers | Who |
+|---|---|---|
+| `GET /missions/{id}/ready` | Readiness items, milestones, risks and parts, as entered | public |
+| `GET /missions/{id}/launch` (`from`, `to`) | The flown launch with its published period, or opportunities backed out from the landing (202 possible) | public |
+| `GET /missions/{id}/launch/weather` (`opportunity`, or `t0` and `pad`) | Each launch weather rule at one launch time, with the forecasts' shares and disagreement notes | public |
+| `GET /missions/{id}/trip` | Distance, shadow, burns, correction budget, radiation (202 possible) | public |
+| `GET /missions/{id}/trip/export` (`format=oem\|csv`, default `oem`) | The flown trajectory as a CCSDS OEM or CSV | public |
+| `GET /missions/{id}/contact` (`start`, `end`, `relay`) | Who can hear the lander, and message waits, directly and through planned relays (202 possible) | public |
+| `GET /missions/{id}/contact/rover` (`rover`, `radius_m`, `lander_antenna_m`, `rover_antenna_m`, `freq_mhz`) | Line of sight and radio path between rover and lander over the terrain (202 possible) | public |
+| `GET /missions/{id}/contact/plan` (`format=csv\|ion`, `rate_bps`, `start`, `end`, `relay`) | The contact plan as CSV, or as an ION-DTN plan (which needs `rate_bps`) | public |
+| `GET /missions/{id}/return` | Where the booster comes down, sea and wind, and the capsule entry check | public |
+| `GET /relays` | The relay catalogue, to compare on a mission's Contact answer | public |
+| `GET /space-weather` | What the Sun is doing now, each value with its age and source | public |
+
+**Records the team enters** (every change is audited, and the history is at
+`GET /history`)
+
+| Endpoint | Answers | Who |
+|---|---|---|
+| `POST /missions/{id}/ready/items` | Add a readiness item | named |
+| `PATCH /ready/items/{item_id}` | Move an item to its next state (409 with the allowed states when the move is not allowed) | named |
+| `PUT /ready/items/{item_id}/tests` | Record an environmental test result | named |
+| `GET /ready/items/{item_id}/history` | Change history of one item | public |
+| `GET /missions/{id}/parts`, `POST /missions/{id}/parts` | Flight parts and spares; add a part | public; named |
+| `PATCH /parts/{part_id}` | Change a part's status or place | named |
+| `GET /parts/{part_id}/impact` | What stops working if the part is lost | public |
+| `GET /risk-scales` | The likelihood and consequence scales | public |
+| `GET /missions/{id}/risks`, `POST /missions/{id}/risks` | A mission's risks; add one (ratings per category, never multiplied) | public; named |
+| `PATCH /risks/{risk_id}` | Change a risk | named |
+| `GET /landing-history` | Every lunar landing attempt since 2013 and its cause (counts, no odds) | public |
+| `GET /lessons` (`mission`), `POST /missions/{id}/lessons/{lesson_id}/adopt` | Lessons from past landings; adopt one as a checklist item | public; named |
+| `GET /parameters`, `PUT /parameters/{parameter_id}` | The values the project sets; set one | public; named |
+| `PUT /missions/{id}/launch/official-forecast`, `DELETE /missions/{id}/launch/official-forecast` | Enter the range's official weather forecast; take it back | named |
+| `GET /vehicles/{id}/limits`, `PUT /vehicles/{id}/limits` | Weather limits the team entered for a vehicle, with notes; enter them | public; named |
+| `PUT /missions/{id}/return/limits` | Sea and wind limits for recovering the booster and a capsule | named |
+| `POST /missions/{id}/contact/bookings` | Record a ground station pass the team has booked | named |
+| `GET /history` (`entity`, `id`) | Change history of any entered record. `entity` is `ready_item`, `part`, `risk`, `booking`, `forecast`, `limits`, `parameter`, `lesson`, `milestone`, `feed`, `job` or `settings` | public |
+
+**Agents, sign-in, settings, jobs and feeds**
+
+| Endpoint | Answers | Who |
+|---|---|---|
+| `POST /agents/{explain\|advise\|brief\|ask}` | The four AI helpers | session |
+| `GET /agents/runs` (`limit`, `agent`) | Recent agent runs (the demo log) | public |
+| `POST /auth/demo` | Sign in as the project manager | public |
+| `GET /auth/me` | Who this session belongs to | session |
+| `GET /settings` | Everything the Settings panel shows | manager |
+| `PUT /settings/ai`, `POST /settings/ai/reset`, `POST /settings/ai/retry` | Set the AI on or off and its model order; reset; try skipped models now | named |
+| `DELETE /settings/agent-runs`, `DELETE /settings/cache` | Clear the AI activity log; clear cached results | named |
+| `GET /jobs/{id}` | Where a heavy answer has got to | public |
+| `POST /jobs/{id}/retry` | Work out a failed answer again | named |
+| `GET /feeds` | Every live data source and its age | public |
+| `POST /feeds/{provider}/refresh` | Ask the feeds worker to fetch a provider's products now | named |
 
 ---
 
 ## The `meta` envelope
 
-Every 200 response carries `meta`, and `meta.uncertainty` is **never absent and
-never null**. That is a product rule, enforced by a parameterised test across
-every endpoint, not a convention.
+Every 200 response from the site and mission endpoints carries `meta`, and
+`meta.uncertainty` is **never absent and never null**. That is a product rule,
+and a parameterised test enforces it on the timeline, windows and metrics
+answers. The mission sections use a wider envelope (`LifecycleMeta` in
+[lifecycle-api.md](lifecycle-api.md)).
 
 ```jsonc
 "meta": {
@@ -43,17 +141,18 @@ every endpoint, not a convention.
     "dem_resolution_m": 20.0,
     "coverage": 1.0,            // fraction of sampled terrain inside the DEM
     "horizon_el_deg": 0.0078,   // that error, at the range the skyline is set
-    "edge_timing_s": 61527.5,   // null when `grazing` is true — see below
+    "edge_timing_s": 61527.5,   // null when `grazing` is true, see below
     "grazing": false,
     "penumbra_sun_deg": 0.2665,
     "penumbra_earth_deg": 0.9705,
+    "terrain_modelled": true,   // false outside 80°S: a smooth-sphere skyline
     "notes": ["Terrain is modelled to 50 km around the site; …"]
   }
 }
 ```
 
 **`edge_timing_s: null` is a stronger statement than a large number.** It means
-at least one crossing is a graze — the body approaches the skyline almost
+at least one crossing is a graze: the body approaches the skyline almost
 tangentially and the hour it crosses is not knowable from this data. The totals
 stand; their edges do not. Render the word, not a `±`.
 
@@ -70,8 +169,8 @@ reporting the 20 m figure would claim a precision the answer does not have.
 ## Errors
 
 RFC 9457 problem details, wrapped in `detail`, plus a `ui` block the frontend's
-error panel renders directly — so the copy for a failure lives with the code
-that knows what failed, and can be improved without a frontend deploy.
+error panel renders directly. The copy for a failure lives with the code that
+knows what failed, and can be improved without a frontend deploy.
 
 ```jsonc
 {
@@ -91,17 +190,25 @@ that knows what failed, and can be improved without a frontend deploy.
 
 | Status | `type` | When |
 |---|---|---|
-| 404 | `site-not-found` | Unknown site id |
+| 401 | `not-signed-in` / `session-ended` | No session, or the token expired or was not accepted (with `WWW-Authenticate: Bearer`) |
+| 403 | `not-allowed` | The session's role may not do this |
+| 403 | `name-needed` | A change from a session that has no name |
+| 403 | `sign-in-disabled` | `POST /auth/demo` while `PW_DEMO_SIGN_IN=false` |
+| 404 | `site-not-found` / `mission-not-found` | Unknown site or mission id |
 | 404 | `unknown-layer` / `tile-out-of-scheme` | Bad tile request |
 | 409 | `horizon-not-built` | Site exists, precompute has not run |
+| 413 | `too-large` | A change with a body over `PW_MAX_BODY_BYTES` (64 KB) |
 | 422 | `bad-window` | Step or window outside bounds |
 | 422 | `invalid-request` | Request body or query failed validation |
 | 422 | `too-many-sites` / `unknown-metric` | `/compare` misuse |
+| 422 | `bad-name` | A sign-in name that cannot be used |
+| 429 | `too-many-requests` | One address made more changes in a minute than its allowance (with `Retry-After`) |
+| 503 | `queue-full` | 200 answers are waiting for a compute worker (with `Retry-After: 60`); stored answers still read |
 | 503 | `kernel-missing` | SPICE not loaded |
 | 503 | `dem-missing` | Elevation model absent |
 
 Agent endpoints **do not** use error statuses for "cannot answer". They return
-200 with `status: "insufficient_data"` or `"degraded"` — those are answers, the
+200 with `status: "insufficient_data"` or `"degraded"`. Those are answers, the
 UI has states for both, and turning a working guard into a 5xx would make it
 look like a broken service.
 
@@ -118,7 +225,7 @@ look like a broken service.
 | `lat_min` / `lat_max` | float | −90…0 |
 | `min_sun_fraction` | 0…1 | Coarse filter, reference window |
 | `max_longest_dark_s` | seconds | Coarse filter, reference window |
-| `kind` | `candidate` \| `mission_target` \| `all` | Default `candidate`, so the v1 list is unchanged |
+| `kind` | `candidate` \| `mission_target` \| `all` | Default `candidate` |
 | `limit` / `offset` | int | Default 100 / 0 |
 
 Every site also carries `kind`, `coordinate_rule` (`derived_open_sky` or
@@ -150,7 +257,7 @@ curl "localhost:8000/api/v1/sites?min_sun_fraction=0.7"
 }
 ```
 
-**`summary` is `null` — never zeros — for a site whose precompute has not run.**
+**`summary` is `null`, never zeros, for a site whose precompute has not run.**
 A zero is a measurement; absence is not. The metric filters exclude such sites
 rather than assuming they pass, because they cannot be judged.
 
@@ -159,7 +266,7 @@ caller has on screen. `meta.uncertainty.notes` says so on every response.
 
 ### `GET /sites/{id}`
 
-Adds `provenance` — how this coordinate came to exist — and `horizon`, a summary
+Adds `provenance` (how this coordinate came to exist) and `horizon`, a summary
 of the stored mask.
 
 ```jsonc
@@ -174,7 +281,7 @@ of the stored mask.
 
 ### `GET /sites/{id}/horizon`
 
-`step_deg` must divide 360 and be a multiple of the stored 0.25°.
+`step_deg` (default 1.0) must divide 360 and be a multiple of the stored 0.25°.
 
 ```jsonc
 { "site_id": "connecting-ridge", "azimuth_step_deg": 1.0, "azimuth_count": 360,
@@ -204,13 +311,13 @@ fields is ~1.1 MB as objects and ~210 KB as arrays.
 ```
 
 `state` is **three-valued**: `2` lit, `1` penumbral, `0` dark. The Sun's disc is
-0.27° across seen from the Moon and Earth's is ~0.97°, so there is a real band
-where the body is partly occluded — about 10 % of samples at a polar site. A
-boolean there would be a lie at exactly the point the terrain model is weakest.
+0.27° across seen from the Moon and Earth's is ~0.97°, so about 10 % of samples
+at a polar site fall where the body is partly occluded (`docs/system-design.md`
+§4.3).
 
 ### `GET /sites/{id}/windows`
 
-Derived intervals, each with its timing tolerance and — for a blocked arc — the
+Derived intervals, each with its timing tolerance and, for a blocked arc, the
 bearing and elevation of the terrain responsible.
 
 ```jsonc
@@ -224,13 +331,11 @@ bearing and elevation of the terrain responsible.
 }]
 ```
 
-Naming the cause is the difference between an answer and an assertion.
-
 **`open_start` / `open_end`: the window bounds this arc, not the geometry.** The
 arc was still running when the window opened or was still running when it
-closed, so its `duration_s` is a **lower bound** — the real stretch is longer by
+closed, so its `duration_s` is a **lower bound**: the real stretch is longer by
 an unknown amount. `tolerance_s` is the quadrature sum of the two edges that are
-real crossings; an open edge contributes nothing to it, because there is no
+real crossings. An open edge contributes nothing to it, because there is no
 crossing to time, and its per-edge tolerance is `null`. A client that renders an
 open arc with `≈` rather than `≥` is reporting a number the server did not
 claim.
@@ -255,12 +360,12 @@ The four numbers, and nothing that dilutes them.
 
 The `*_open` flags carry the same meaning here as on an arc: the window, not the
 geometry, ended the stretch, so the figure is a floor. A 30-day window across a
-site whose night runs 322 h reports 167 h with `longest_dark_open: true` — the
+site whose night runs 322 h reports 167 h with `longest_dark_open: true`. The
 number is not wrong, but reading it as the night is.
 
 `margin_fraction` is the server's own reserve on top of the worst compound
 event; `required_autonomy_s` already includes it. Clients convert units and
-nothing else — recomputing the margin client-side is how the headline figure and
+nothing else. Recomputing the margin client-side is how the headline figure and
 the sentence describing it drift apart.
 
 `survival_needed_s` is the whole night, not the blackout, when the blackout
@@ -278,17 +383,15 @@ Each number also carries its own uncertainty and bounds:
 
 **There is no `score` field, and a test asserts there never will be.**
 
----
-
-## `POST /compare`
+### `POST /compare`
 
 ```jsonc
-// request — at most 8 sites
+// request: at most 8 sites; start, end and step_s are optional
 { "site_ids": ["connecting-ridge", "malapert-massif"], "rank_by": "longest_dark_s" }
 ```
 
-`rank_by` ∈ `sunlit_s` | `earth_contact_s` | `longest_dark_s` | `longest_blackout_s`.
-There is deliberately no composite option.
+`rank_by` ∈ `sunlit_s` | `earth_contact_s` | `longest_dark_s` | `longest_blackout_s`
+(default `longest_dark_s`). There is deliberately no composite option.
 
 ```jsonc
 { "rank_by": "longest_dark_s",
@@ -301,10 +404,10 @@ There is deliberately no composite option.
   "unavailable": [{ "site_id": "ghost", "reason": "…" }] }
 ```
 
-**Each value is an interval** (system-design §10.7). A measured value is
-`value ± uncertainty_s`, where the tolerance is the site's own for that metric.
-A window-cut longest gap (`censored: true`) is `[value, ∞)`. One site beats
-another only when their intervals do not overlap in its favour:
+**Each value is an interval** (`docs/system-design.md` §10.7). A measured value
+is `value ± uncertainty_s`, where the tolerance is the site's own for that
+metric. A window-cut longest gap (`censored: true`) is `[value, ∞)`. One site
+beats another only when their intervals do not overlap in its favour:
 
 - `rank` is a number when the place can be stated. Measured sites whose
   intervals overlap share it (`tied_with`, and a group in `ties`).
@@ -316,11 +419,11 @@ another only when their intervals do not overlap in its favour:
 never blanks the comparison.
 
 `/compare` fans out to the same service `GET /metrics` uses, so the two can
-never disagree — asserted by an integration test.
+never disagree. An integration test asserts it.
 
 ---
 
-## Missions (contract v2)
+## Missions
 
 CLPS deliveries, from the cited `data/missions.json` (ADR-5,
 `docs/data-sources.md`). A field no source confirms is `null` and named in
@@ -366,50 +469,30 @@ rises: `feature-schrodinger` returns `earth_contact_s: 0`.
 
 ### `GET /sites/{id}/calendar`
 
-`start`, `end` (≤ 730 days), `bucket=day|month`. Per bucket: sun and Earth
-fractions, sunlit and Earth-contact seconds, and the longest dark and blackout
-stretches with `*_open` when a bucket edge cut them. One hourly timeline over
-the span, split at UTC day or month boundaries. About 115 ms cold for a year by
-month; a cache hit is about 2 ms.
+`start`, `end` (≤ 730 days), `bucket=day|month` (default `month`). Per bucket:
+sun and Earth fractions, sunlit and Earth-contact seconds, and the longest dark
+and blackout stretches with `*_open` when a bucket edge cut them. One hourly
+timeline over the span, split at UTC day or month boundaries. About 115 ms cold
+for a year by month; a cache hit is about 2 ms.
 
 ---
 
-## Mission lifecycle (contract `docs/lifecycle-api.md`)
-
-The lifecycle sections have their own reference, kept with the frontend as the
-contract: `docs/lifecycle-api.md` (shapes and their *Changes*) and
-`docs/openapi.json` (generated, `make openapi`). In short:
-
-| Endpoint | Answer |
-|---|---|
-| `GET /missions/{id}/sections` | each section's state and a line of words |
-| `GET /missions/{id}/ready`, `.../ready/items`, `.../parts`, `.../risks`, `GET /lessons` | readiness items, milestones, parts, risks as entered (writes need a named sign-in; audited; supports PATCH) |
-| `GET /missions/{id}/launch` | the flown launch with published period, or opportunities backed out from the landing (job) |
-| `GET /missions/{id}/launch/weather` | each weather rule at one launch time with ensemble shares, deterministic calls and disagreement notes |
-| `PUT`/`DELETE /missions/{id}/launch/official-forecast`, `GET`/`PUT /vehicles/{id}/limits` | the team's entries (audited) |
-| `GET /missions/{id}/trip` (+ `/export?format=oem\|csv`) | distance, shadow, burns, correction budget, radiation (job) |
-| `GET /missions/{id}/contact` (+ `?relay=`, `/plan.csv`, `/plan.ion`, `/bookings`) | who can hear the lander, message waits directly and with planned relays (job) |
-| `GET /missions/{id}/contact/rover` | rover-to-lander optical line of sight and first Fresnel zone radio path across polar terrain (job) |
-| `GET /relays` | catalogue of planned relay satellite services, launch status, and orbital characteristics |
-| `GET /missions/{id}/return`, `PUT .../return/limits` | the booster's landing, sea and wind, the capsule and its entry model's check |
-| `GET /space-weather` | space weather now, each value with its age and source |
-| `GET /jobs/{id}`, `POST /jobs/{id}/retry` | a heavy answer's progress; retry a failed one |
-| `GET /feeds`, `POST /feeds/{provider}/refresh` | every live source and its age; fetch one now (signed in) |
-
-A heavy answer that is not stored yet comes back **202** with a `JobRef`; poll
-`GET /jobs/{id}` and ask again when it is `done`.
-
 ## Tiles
 
-`GET /tiles/{layer}/{z}/{x}/{y}.png` (the suffix is optional), layers `hillshade` | `illumination` | `psr`. `make seed` pre-renders z0–z5 (4,095 tiles, ~134 MB); z6–z7 render on first request.
+`GET /tiles/{layer}/{z}/{x}/{y}.png` (the suffix is optional), layers
+`hillshade` | `illumination` | `psr`. `make seed` pre-renders z0–z5 (4,095
+tiles, ~134 MB); z6–z7 render on first request.
 
-`GET /tiles/viewshed/{answer}/{z}/{x}/{y}.png?layer=sight|radio|terrain` serves zoom 12 rover viewshed tiles around the lander (polar stereographic, 20 m LOLA elevation window), rendering cells as clear, blocked, or uncertain by both tone and stipple pattern.
+`GET /tiles/viewshed/{assessment_id}/{z}/{x}/{y}.png?layer=sight|radio|terrain`
+serves zoom 12 rover viewshed tiles around the lander (polar stereographic, 20 m
+LOLA elevation window), drawing cells as clear, blocked or uncertain by both tone
+and stipple pattern. `terrain` is the terrain under the answer.
 
 A plain quadtree over the DEM's own ±304 km extent in lunar south polar
 stereographic. `z0` is one tile; each level doubles.
 
 - **200** with `ETag` and `Cache-Control`. `X-Tile-Source: static | dynamic`.
-- **204** when the tile is inside the grid but has no data there. **Not 404** —
+- **204** when the tile is inside the grid but has no data there. **Not 404**:
   the map requests a rectangular grid and the corners of a polar scene are
   legitimately empty.
 - **404** only for an unknown layer or an out-of-scheme `z/x/y`.
@@ -433,6 +516,9 @@ curl -X POST localhost:8000/api/v1/agents/advise \
   -d '{"requirement":"at least 96 hours of Earth contact and no night longer than 150 hours"}'
 ```
 
+Requests: `explain` and `brief` take a `site_id`; `advise` a `requirement`;
+`ask` a `question`. All but `ask` also take an optional `start` and `end`.
+
 Shared envelope:
 
 ```jsonc
@@ -448,7 +534,7 @@ Shared envelope:
   "guard_failures": [] }
 ```
 
-`provenance` is produced by the **grounding guard**, not by the model — a
+`provenance` is produced by the **grounding guard**, not by the model. A
 model-authored citation would be exactly as trustworthy as the number it cites.
 A `user_request` entry means the figure came from the caller's own question,
 which is quoting rather than claiming.
@@ -472,8 +558,8 @@ with `status: "degraded"` and a summary built from the measurements.
 ### `GET /agents/runs`
 
 Every invocation, whatever its outcome, with its tool calls, latency, tokens and
-guard failures. This is the demo's proof that the AI layer is real and bounded.
-Public, like every read.
+guard failures. `limit` (default 50) and `agent` filter it. This is the demo's
+proof that the AI layer is real and bounded. Public, like every read.
 
 ---
 
@@ -481,15 +567,24 @@ Public, like every read.
 
 ### `POST /auth/demo`
 
-A project manager's session with no user name or password: the front page's
-*Open the dashboard* button. For a judged demo; `PW_DEMO_SIGN_IN=false` turns
-it off, and it then answers **403** with a problem detail.
+A project manager's session: the front page's *Open the dashboard* button. For a
+judged demo. `PW_DEMO_SIGN_IN=false` turns it off, and it then answers **403**
+with a problem detail.
+
+The body is optional: `{name, team?}` (`name` 1 to 120 characters, recorded on
+every change made with the session). With no body the name is "Demo project
+manager". A name that cannot be used answers **422**.
 
 ```jsonc
 { "token": "eyJ…", "token_type": "bearer", "subject": "demo-3f9a1c2e",
   "role": "project_manager", "role_name": "Project manager",
+  "user": { "id": 7, "name": "Demo project manager", "team": null },
   "expires_at": "2026-09-25T09:00:00Z" }
 ```
+
+`user` is `null` only for a token issued before names were asked for. Such a
+session can read but not change records: a change answers **403** `name-needed`
+(ADR-17).
 
 The token is an HS256 JWT signed with `PW_JWT_SECRET` (a random secret per
 process when that is blank, so a restart ends every session; the client then
@@ -505,10 +600,11 @@ valid one.
 ## Settings
 
 The project manager's controls. Every route needs a session with the
-`project_manager` role (**401** without one, **403** with another role). Each
-change applies to everyone using the server, and each can be undone or is
-harmless: the AI settings reset to the configured defaults, a cleared result
-is worked out again when next needed, and the run log only ever records.
+`project_manager` role (**401** without one, **403** with another role), and
+every change needs a name. Each change applies to everyone using the server, and
+each can be undone or is harmless: the AI settings reset to the configured
+defaults, a cleared result is worked out again when next needed, and the run log
+only ever records.
 
 | | |
 |---|---|
@@ -532,15 +628,18 @@ Also mounted unprefixed at `/healthz` for container health checks.
 { "status": "ok",            // ok | degraded | down
   "engine_version": "hz-2/vis-2",
   "kernels": { "loaded": true, "count": 6, "furnsh_ms": 27.1, "missing": [] },
-  "db": "ok", "redis": "ok",
-  "dem": { "regional_present": true, "fine_windows": 15, "product": "LOLA LDEM 80S …" } }
+  "db": "ok", "redis": "ok", // redis is "bypass" when the cache is off or down
+  "feeds": { "ok": 12, "stale": 1, "failing": 0 },
+  "dem": { "regional_present": true, "fine_windows": 18, "product": "LOLA LDEM 80S …" } }
 ```
 
-**200 when degraded, 503 only when down.** A missing elevation model still
-leaves every ephemeris endpoint working and the UI has a state for partial data;
-failing the whole check for a partial capability would take the demo down for a
-condition the product already handles. A missing ephemeris is different — there
-are no Sun or Earth positions at all, which is the product.
+**200 when degraded, 503 only when down** (SPICE or the database is missing). A
+missing elevation model still leaves every ephemeris endpoint working and the UI
+has a state for partial data, so failing the whole check for a partial
+capability would take the demo down for a condition the product already handles.
+A failing feed makes it `degraded`; stale data alone does not. A missing
+ephemeris is different: there are no Sun or Earth positions at all, which is the
+product.
 
 ---
 
@@ -551,7 +650,7 @@ Measured over HTTP against the live service on an Apple M3, 24 September 2026 (m
 | Endpoint | Typical | Notes |
 |---|---|---|
 | `/metrics` | 11 ms cold, 0.8 ms cached (median) | one vectorised `spkpos` per body |
-| `/timeline` | 15 ms cold, 4 ms warm; 210 KB | 2,836 samples × 2 bodies |
+| `/timeline` | 15 ms cold, 4 ms warm; 210 KB (about 35 KB gzipped) | 2,836 samples × 2 bodies |
 | `/horizon` | 1 ms | a stored array |
 | `/missions` | 4 ms warm (all 20), 3 ms with a filter | Postgres only, no geometry |
 | `/calendar` | 103 ms cold for 365 days by month | one hourly timeline over the span |

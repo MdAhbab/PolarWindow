@@ -1,9 +1,39 @@
-# Data: downloaded or generated, never committed.
-# `make seed` reproduces all of it in about ten minutes.
+# Environment and local overrides
+.env
+.env.local
+*.local
+
+# OS files
+.DS_Store
+
+# Local service state
+.local/
+
+# Python and tooling caches
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.import_linter_cache/
+.coverage
+htmlcov/
+
+# Node and frontend build artifacts
+node_modules/
+dist/
+dist-ssr/
+*.tsbuildinfo
+test-results/
+playwright-report/
+frontend/test-results/
+frontend/playwright-report/
+
+# Downloaded and generated data (reproducible with `make seed` or `polar-data sync`)
 data/kernels/
 data/dem/
 data/tiles/
-# Downloaded by `polar-data sync` (backend/app/data/registry.py); never committed.
 data/clps/
 data/gravity/
 data/dsn/
@@ -11,52 +41,8 @@ data/validation/
 data/spaceweather/
 data/bulk/
 data/feeds/
-# The weather hindcast's download cache and station record (make hindcast-weather).
+data/sites.json
+data/.sync-state.json
 data/hindcast/*.cache.jsonl
 data/hindcast/asos_*.csv
-data/.sync-state.json
-data/sites.json
-
-# Local service state
-.local/
-
-# Python
-__pycache__/
-*.py[cod]
-.venv/
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.coverage
-htmlcov/
-
-# Node
-node_modules/
-dist/
-dist-ssr/
-*.tsbuildinfo
-e2e/*
-!e2e/*.ts
-!e2e/tsconfig.json
-!e2e/__screens__/
-frontend/e2e/*
-!frontend/e2e/*.ts
-!frontend/e2e/tsconfig.json
-!frontend/e2e/__screens__/
-test-results/
-playwright-report/
-frontend/test-results/
-frontend/playwright-report/
-
-# Env
-.env
-.env.local
-*.local
-
-# OS
-.DS_Store
-
-# Tooling caches
-.import_linter_cache/
-# The thunder climatology's per-day download cache (make thunder-climatology).
 data/climatology/*.cache.jsonl

@@ -1,7 +1,8 @@
 # POLAR WINDOW
 #
-# `make help` lists everything. The order below is the order a new machine
-# needs them in, and `make dev` does the whole thing.
+# `make help` lists every target. On a new machine: make install, make seed, make dev.
+# `python3 run.py` does the same in one command, needs no Docker, and fetches the rest
+# of the data (`polar-data sync`; backend/app/data/registry.py lists it).
 
 SHELL := /bin/bash
 UV    := $(shell command -v uv 2>/dev/null || echo "$$HOME/.local/bin/uv")
@@ -10,61 +11,56 @@ FE    := frontend
 DATA  := data
 
 .DEFAULT_GOAL := help
-.PHONY: missions climatology thunder-climatology space-climate validate-radiation validate-capsule validate-orbiters validate-viewshed hindcast-weather hindcast-reforecast hindcast-hrrr validate-trip test-db help install kernels dem sites seed tiles services db-up migrate dev api worker \
-        compute feeds feeds-once catalogues \
-        frontend test test-fast test-int test-geo lint fmt typecheck contracts \
-        golden-update openapi codegen clean nuke check
+# Every target is a command, not a file (and `frontend` is also a folder), so all are phony.
+.PHONY: $(shell sed -n 's/^\([a-zA-Z_-]*\):.*/\1/p' $(MAKEFILE_LIST))
 
 help: ## Show this help
-	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
-	  | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
+	@awk 'BEGIN {FS = ":.*## "} \
+	  /^##@/ {printf "\n\033[1m%s\033[0m\n", substr($$0, 5)} \
+	  /^[a-zA-Z_-]+:.*## / {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-# --- setup -----------------------------------------------------------------
-
+##@ Set up
 install: ## Install backend and frontend dependencies
 	cd $(BE) && $(UV) sync --extra dev
 	cd $(FE) && npm install
 
-kernels: ## Download and verify the SPICE kernels by sha256 (~130 MB, once; refuses under OFFLINE=1)
+services: ## Start Postgres and Redis with docker compose (local ones work too)
+	docker compose up -d postgres redis
+
+migrate: ## Apply the database migrations
+	cd $(BE) && $(UV) run alembic upgrade head
+
+kernels: ## Download the SPICE kernels, checked by SHA-256 (~130 MB, once; not under OFFLINE=1)
 	cd $(BE) && $(UV) run polar-kernels fetch
 
-dem: ## Fetch the regional LOLA elevation model (~115 MB, once; refuses under OFFLINE=1)
+dem: ## Fetch the regional LOLA terrain model (~115 MB, once; not under OFFLINE=1)
 	cd $(BE) && $(UV) run python -m app.data.ingest_lola regional
 
-sites: dem ## Resolve candidate sites against the elevation model
+sites: dem ## Resolve the candidate sites against the terrain model (writes data/sites.json)
 	cd $(BE) && $(UV) run python -m app.data.ingest_sites \
 	  ../$(DATA)/dem/regional_80m.npz ../$(DATA)/sites.json
 
-missions: migrate ## Load the cited CLPS mission list and create target sites (ADR-5, ADR-6)
+missions: migrate ## Load the cited CLPS mission list and create its target sites (ADR-5, ADR-6)
 	cd $(BE) && $(UV) run python -m app.data.ingest_missions
 
-seed: kernels sites migrate missions ## Everything the API needs before it can answer
+worker: ## Precompute every site's skyline and reference numbers (resumes; the step in seed)
 	cd $(BE) && $(UV) run python -m app.workers.precompute
-	$(MAKE) tiles
 
-tiles: ## Pre-render the map tile pyramid z0-z5 (ADR-4)
+tiles: ## Pre-render the map tiles, zoom 0 to 5 (ADR-4)
 	cd $(BE) && $(UV) run python -m app.data.ingest_lola tiles --max-zoom 5
 
-# --- services --------------------------------------------------------------
+seed: kernels sites missions ## Everything the API needs before it can answer (~10 min, once)
+	$(MAKE) worker
+	$(MAKE) tiles
 
-services: ## Start Postgres and Redis (docker compose, or local if you prefer)
-	docker compose up -d postgres redis
-
-migrate: ## Apply database migrations
-	cd $(BE) && $(UV) run alembic upgrade head
-
-# --- run -------------------------------------------------------------------
-
-dev: ## The whole stack: services, seed, api and frontend
+##@ Run
+dev: ## Services, seed, then the api, both workers and the frontend together
 	$(MAKE) services
 	$(MAKE) seed
-	$(MAKE) -j2 api frontend
+	$(MAKE) -j4 api compute feeds frontend
 
-api: ## Run the API with reload
+api: ## Run the API with reload on :8000
 	cd $(BE) && $(UV) run uvicorn app.main:app --reload --port 8000
-
-worker: ## Run the precompute worker once
-	cd $(BE) && $(UV) run python -m app.workers.precompute
 
 compute: ## Run the compute worker: trip, contact and launch answers (ADR-12)
 	cd $(BE) && $(UV) run python -m app.workers.compute
@@ -75,48 +71,57 @@ feeds: ## Run the feeds worker: records weather, space weather and DSN Now (ADR-
 feeds-once: ## Fetch every due live product once, then exit
 	cd $(BE) && $(UV) run python -m app.workers.feeds --once
 
-climatology: ## Wind at 50 m per month and hour at the pads, from NASA POWER (keyless; writes data/climatology)
+frontend: ## Run the Vite dev server on :5173
+	cd $(FE) && npm run dev
+
+##@ Rebuild the data kept in data/
+climatology: ## Wind at 50 m by month and hour at the pads, from NASA POWER (no key)
 	cd $(BE) && $(UV) run python -m app.data.climatology
 
-thunder-climatology: ## Thunder hours per month and hour at the pads, from GLM (GHRC DAAC via OPeNDAP; needs PW_EARTHDATA_TOKEN; ~1.5 h, cached)
+thunder-climatology: ## Thunder hours by month and hour at the pads, from GLM (needs PW_EARTHDATA_TOKEN; ~1.5 h)
 	cd $(BE) && $(UV) run python -m app.data.thunder_climatology
 
-space-climate: ## Oulu neutron monitor (NMDB), past solar particle events (GOES, NCEI) and DONKI's GOES events, for the radiation screening (writes data/radiation)
+space-climate: ## Oulu neutron monitor, past solar particle events and DONKI's, for the radiation screening
 	cd $(BE) && $(UV) run python -m app.data.space_climate
 
-validate-radiation: ## Belts (IRBEM against NASA SPDF's AE8/AP8), cosmic rays against CRaTER, past events against NOAA's list (prints the docs/validation.md tables)
-	cd $(BE) && $(UV) run python -m app.tests.golden.validate_radiation 2>/dev/null
-
-validate-orbiters: ## Real orbiters' passes against JPL Horizons (az/el 0.02 deg, rise/set 2 s; needs the network; writes data/contact/orbiters_check.json)
-	cd $(BE) && $(UV) run python -m app.tests.golden.validate_orbiters 2>/dev/null
-
-validate-viewshed: ## Rover-to-lander line of sight on the polar terrain against a brute-force line test (gdal_viewshed is not installed; 99 % outside the uncertain band)
-	cd $(BE) && $(UV) run python -m app.tests.golden.validate_viewshed 2>/dev/null
-
-validate-capsule: ## Capsule entry against OSIRIS-REx (landing within 10 km; writes data/capsule/orex_check.json and prints the docs/validation.md tables)
-	cd $(BE) && $(UV) run python -m app.tests.golden.validate_capsule 2>/dev/null
-
-hindcast-weather: ## GEFS wind shares against the Cape's weather station for a year (AWS open data + IEM; ~30 min, cached)
+hindcast-weather: ## GEFS wind shares against the Cape's weather station for a year (~30 min, cached)
 	cd $(BE) && $(UV) run python -m app.feeds.hindcast
 
-hindcast-reforecast: ## GEFSv12 reforecast wind shares against KXMR and KVBG over many years (AWS open data + IEM; resumable, cached per day; stops after HOURS, default 24)
+hindcast-reforecast: ## GEFSv12 reforecast wind shares against KXMR and KVBG, many years (resumable; HOURS, default 24)
 	cd $(BE) && $(UV) run python -m app.feeds.hindcast_reforecast --hours $(or $(HOURS),24)
 
-hindcast-hrrr: ## HRRR's 10 m wind and its over/under call against KXMR and KVBG, 2021-2025 (AWS open data + IEM; resumable, cached per run; stops after HOURS, default 2)
+hindcast-hrrr: ## HRRR's 10 m wind against KXMR and KVBG, 2021-2025 (resumable; stops after HOURS, default 2)
 	cd $(BE) && $(UV) run python -m app.feeds.hindcast_hrrr --hours $(or $(HOURS),2)
 
 catalogues: ## Validate the cited catalogues under data/catalogues
 	cd $(BE) && $(UV) run python -m app.data.catalogues
 
-frontend: ## Run the Vite dev server
-	cd $(FE) && npm run dev
+##@ Check our numbers against real ones (each prints its docs/validation.md tables)
+validate-trip: ## Propagator, shadows, launch times and loops against NASA's reconstructed trajectories (~7 min)
+	cd $(BE) && $(UV) run pytest app/tests/golden/test_propagate_vs_clps.py app/tests/golden/test_eclipse_vs_spice.py -q
+	cd $(BE) && $(UV) run python -m app.validation.validate_trip
+	cd $(BE) && $(UV) run pytest app/tests/golden/test_launch_vs_clps.py -q
+	cd $(BE) && $(UV) run python -m app.validation.validate_launch 2>/dev/null
+	cd $(BE) && $(UV) run pytest app/tests/golden/test_loops_vs_clps.py -q
+	cd $(BE) && $(UV) run python -m app.validation.validate_loops 2>/dev/null
 
-# --- quality ---------------------------------------------------------------
+validate-radiation: ## Belts (IRBEM against SPDF's AE8/AP8), cosmic rays against CRaTER, particle events against NOAA
+	cd $(BE) && $(UV) run python -m app.validation.validate_radiation 2>/dev/null
 
+validate-orbiters: ## Real orbiters' passes against JPL Horizons (network; writes data/contact/orbiters_check.json)
+	cd $(BE) && $(UV) run python -m app.validation.validate_orbiters 2>/dev/null
+
+validate-viewshed: ## Rover-to-lander line of sight on the polar terrain against a brute-force line test
+	cd $(BE) && $(UV) run python -m app.validation.validate_viewshed 2>/dev/null
+
+validate-capsule: ## Capsule entry against OSIRIS-REx's landing (writes data/capsule/orex_check.json)
+	cd $(BE) && $(UV) run python -m app.validation.validate_capsule 2>/dev/null
+
+##@ Test and lint
 test-db: ## Rebuild polar_window_test from the migrations and the seeded rows
 	cd $(BE) && $(UV) run python -m app.tests.fixtures.make_test_db
 
-test: test-db ## Everything, against polar_window_test (needs a seeded dev database)
+test: test-db ## Every backend test, against polar_window_test (needs a seeded dev database)
 	cd $(BE) && $(UV) run pytest -q
 
 test-fast: ## Unit, property and synthetic golden tests. No services, < 20 s
@@ -125,39 +130,26 @@ test-fast: ## Unit, property and synthetic golden tests. No services, < 20 s
 test-int: ## Integration and agent tests
 	cd $(BE) && $(UV) run pytest app/tests/integration -q
 
-test-geo: ## Golden tests against the real kernels and DEM
+test-geo: ## Golden tests against the real kernels and terrain
 	cd $(BE) && $(UV) run pytest app/tests/golden -q
-
-load-compute: ## Load test of the compute queue: every section at once, WORKERS=2 (own database; writes data/load)
-	cd $(BE) && PW_TEST_DB_NAME=polar_window_load $(UV) run python -m app.tests.fixtures.make_test_db
-	cd $(BE) && WORKERS=$${WORKERS:-2} $(UV) run python -m app.tests.load.load_compute
-
-validate-trip: ## Propagator and shadows against NASA's reconstructed trajectories (prints the docs/validation.md table)
-	cd $(BE) && $(UV) run pytest app/tests/golden/test_propagate_vs_clps.py app/tests/golden/test_eclipse_vs_spice.py -q
-	cd $(BE) && $(UV) run python -m app.tests.golden.validate_trip
-	cd $(BE) && $(UV) run pytest app/tests/golden/test_launch_vs_clps.py -q
-	cd $(BE) && $(UV) run python -m app.tests.golden.validate_launch 2>/dev/null
-	cd $(BE) && $(UV) run pytest app/tests/golden/test_loops_vs_clps.py -q
-	cd $(BE) && $(UV) run python -m app.tests.golden.validate_loops 2>/dev/null
 
 test-fe: ## Frontend units: the adapter, the cache keys, the exports
 	cd $(FE) && npm test --silent
 
-lint: ## ruff + mypy strict + the layering contracts
+load-compute: ## Load test of the compute queue, every section at once (WORKERS=2; writes data/load)
+	cd $(BE) && PW_TEST_DB_NAME=polar_window_load $(UV) run python -m app.tests.fixtures.make_test_db
+	cd $(BE) && WORKERS=$${WORKERS:-2} $(UV) run python -m app.tests.load.load_compute
+
+lint: ## ruff, mypy strict and the layering contracts (make fmt fixes the format)
 	cd $(BE) && $(UV) run ruff check app && $(UV) run ruff format --check app
 	cd $(BE) && $(UV) run mypy app
 	cd $(BE) && $(UV) run lint-imports
 
-fmt: ## Format
-	cd $(BE) && $(UV) run ruff format app && $(UV) run ruff check app --fix
-
-typecheck: ## Frontend types
-	cd $(FE) && npm run check
-
 contracts: ## Just the import-linter layering contracts
 	cd $(BE) && $(UV) run lint-imports
 
-check: lint test test-fe typecheck ## Everything CI runs
+fmt: ## Format the backend
+	cd $(BE) && $(UV) run ruff format app && $(UV) run ruff check app --fix
 
 golden-update: ## Re-pin the golden fixtures. Requires GOLDEN_UPDATE_REASON.
 	@test -n "$$GOLDEN_UPDATE_REASON" || { \
@@ -165,9 +157,8 @@ golden-update: ## Re-pin the golden fixtures. Requires GOLDEN_UPDATE_REASON.
 	  echo '  GOLDEN_UPDATE_REASON="..." make golden-update'; exit 1; }
 	cd $(BE) && $(UV) run python app/tests/golden/generate.py
 
-# --- contract --------------------------------------------------------------
-
-openapi: ## Emit docs/openapi.json from the running app definition
+##@ API contract
+openapi: ## Write docs/openapi.json from the app's definition
 	cd $(BE) && $(UV) run python -c "\
 import json, pathlib; from app.main import create_app; \
 p=pathlib.Path('../docs/openapi.json'); p.write_text(json.dumps(create_app().openapi(), indent=2)); \
@@ -176,11 +167,10 @@ print('wrote', p)"
 codegen: openapi ## Regenerate the frontend's typed client from the schema
 	cd $(FE) && npm run codegen
 
-# --- housekeeping ----------------------------------------------------------
-
+##@ Clean up
 clean: ## Remove build output and caches
 	rm -rf $(FE)/dist $(BE)/.pytest_cache $(BE)/.mypy_cache $(BE)/.ruff_cache
 	find . -name '__pycache__' -prune -exec rm -rf {} + 2>/dev/null || true
 
-nuke: clean ## Also remove downloaded data. Re-running `make seed` takes ~10 min.
+nuke: clean ## Also remove the kernels, terrain, tiles and site list; make seed brings them back (~10 min)
 	rm -rf $(DATA)/kernels $(DATA)/dem $(DATA)/tiles $(DATA)/sites.json

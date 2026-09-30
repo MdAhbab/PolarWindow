@@ -50,7 +50,7 @@ MSIS_VERSIONS: dict[str, float] = {"NRLMSISE-00": 0, "NRLMSIS 2.1": 2.1}
 #: The model the entry day's air comes from. Chosen by how near each model's density and
 #: temperature came to air measured between 30 and 70 km, where a capsule loses its speed
 #: (TIMED/SABER's profiles of the day and a Rayleigh lidar's nights beside it), by a rule that
-#: uses no landing (``tests.golden.capsule_air``, docs/validation.md): NRLMSISE-00 is 4 to 7 %
+#: uses no landing (``app.validation.capsule_air``, docs/validation.md): NRLMSISE-00 is 4 to 7 %
 #: too dense at 45 to 70 km in both, NRLMSIS 2.1 within 3 %. The low-orbit drag model
 #: (``core.forces``) stays on NRLMSISE-00; this constant does not touch it.
 DEFAULT_MODEL = "NRLMSIS 2.1"

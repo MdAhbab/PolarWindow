@@ -37,7 +37,6 @@ import numpy as np
 import numpy.typing as npt
 
 FloatArray = npt.NDArray[np.float64]
-BoolArray = npt.NDArray[np.bool_]
 
 #: Runs shorter than this are numerical dust from a tangential crossing, not
 #: events. 1e-6 s over a 708 h window is ~4e-13 relative -- far below any
@@ -161,17 +160,6 @@ def _coalesce(runs: list[Run]) -> list[Run]:
     return out
 
 
-def runs_from_bool(t: FloatArray, value: BoolArray) -> list[Run]:
-    """Runs from a plain boolean series; transitions placed at the midpoint.
-
-    Used where there is no continuous margin to interpolate (the three-state
-    penumbra series, for instance). Midpoint rather than either endpoint keeps
-    the inversion property intact.
-    """
-    margin = np.where(value, 1.0, -1.0).astype(np.float64)
-    return runs_from_margin(t, margin)
-
-
 def total(runs: list[Run], value: bool) -> float:
     """Total time spent in ``value``."""
     return float(sum(r.duration for r in runs if r.value == value))
@@ -191,17 +179,6 @@ def longest(runs: list[Run], value: bool) -> Run | None:
     return best
 
 
-def longest_duration(runs: list[Run], value: bool) -> float:
-    r = longest(runs, value)
-    return r.duration if r is not None else 0.0
-
-
-def fraction(runs: list[Run], value: bool) -> float:
-    """Fraction of the covered span spent in ``value``."""
-    span = covered_span(runs)
-    return total(runs, value) / span if span > 0 else 0.0
-
-
 def covered_span(runs: list[Run]) -> float:
     if not runs:
         return 0.0
@@ -215,7 +192,7 @@ def merge_short_gaps(runs: list[Run], value: bool, min_gap_s: float) -> list[Run
     not end the night, and reporting it as two nights understates the longest
     dark gap -- which is one of the four numbers a mission is decided on.
 
-    Idempotent, and ``longest_duration`` is non-decreasing in ``min_gap_s``.
+    Idempotent, and the longest run of ``value`` is non-decreasing in ``min_gap_s``.
     Both are property-tested.
     """
     if not runs:

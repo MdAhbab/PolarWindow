@@ -30,7 +30,6 @@ Two details that are easy to get wrong and expensive to get wrong:
 
 from __future__ import annotations
 
-import logging
 import math
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -38,8 +37,6 @@ from typing import Final, Protocol
 
 import numpy as np
 import numpy.typing as npt
-
-log = logging.getLogger(__name__)
 
 FloatArray = npt.NDArray[np.float64]
 F32Array = npt.NDArray[np.float32]
@@ -404,27 +401,17 @@ def _centred_windows(n: int, target_count: int) -> npt.NDArray[np.intp]:
     return (centres[:, None] + offsets[None, :]) % n
 
 
-def downsample(mask_el_deg: F32Array, target_count: int) -> F32Array:
+def downsample_mask(mask: HorizonMask, target_count: int) -> tuple[F32Array, F32Array, F32Array]:
     """Reduce a mask to fewer bins by taking the **maximum** around each one.
 
     Never the mean. A skyline is an upper envelope: averaging it invents sky
     where a ridge is, and the ridge is the whole answer at these sites. This is
     the kind of one-word choice that silently adds hours of fictional sunlight.
-    """
-    n = mask_el_deg.shape[0]
-    idx = _centred_windows(n, target_count)
-    if idx.shape[1] == 1:
-        return mask_el_deg.copy()
-    return np.asarray(mask_el_deg[idx].max(axis=1), dtype=np.float32)
 
-
-def downsample_mask(mask: HorizonMask, target_count: int) -> tuple[F32Array, F32Array, F32Array]:
-    """Downsample elevation, range and tolerance together.
-
-    Range and tolerance are taken from the bin that *set* each output
-    elevation, so all three describe the same blocker. Reducing them
-    independently (nearest range, loosest tolerance) produced a triple that no
-    single piece of terrain satisfies.
+    Elevation, range and tolerance are reduced together: range and tolerance are
+    taken from the bin that *set* each output elevation, so all three describe
+    the same blocker. Reducing them independently (nearest range, loosest
+    tolerance) produced a triple that no single piece of terrain satisfies.
     """
     n = mask.azimuth_count
     idx = _centred_windows(n, target_count)
@@ -484,26 +471,3 @@ def spherical_horizon_deg(site_height_m: float, r_body_m: float = R_MOON_M) -> f
     """
     h = max(site_height_m, 0.0)
     return -float(np.degrees(np.arccos(r_body_m / (r_body_m + h)))) if h > 0 else 0.0
-
-
-def make_analytic_sampler(
-    features: list[tuple[float, float, float, float]],
-    *,
-    base_height_m: float = 0.0,
-) -> Callable[[FloatArray, FloatArray], FloatArray]:
-    """A terrain sampler built from Gaussian bumps, for tests and for fallback.
-
-    Each feature is ``(east_m, north_m, height_m, sigma_m)``. Used by the
-    synthetic golden tests so that the full pipeline -- mask, timeline, metrics --
-    can run on a machine with no DEM at all, which is what keeps the golden
-    safety net alive during local development.
-    """
-
-    def sample(x: FloatArray, y: FloatArray) -> FloatArray:
-        z = np.full(np.shape(x), base_height_m, dtype=np.float64)
-        for ex, ny, hm, sigma in features:
-            d2 = (x - ex) ** 2 + (y - ny) ** 2
-            z = z + hm * np.exp(-d2 / (2.0 * sigma * sigma))
-        return z
-
-    return sample

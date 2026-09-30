@@ -1,6 +1,6 @@
 """Radiation screening checks (plan track E).
 
-Run: ``make validate-radiation`` (or ``uv run python -m app.tests.golden.validate_radiation``).
+Run: ``make validate-radiation`` (or ``uv run python -m app.validation.validate_radiation``).
 Prints the tables in docs/validation.md.
 
 * **Belts, two implementations**: along each flown trajectory (one-minute samples
@@ -33,7 +33,6 @@ from app.data import registry, space_climate
 from app.services import ascent, lifecycle, radiation
 
 MISSIONS = ("im-1", "im-2", "blue-ghost-m1", "peregrine-m1")
-TOL_BELTS = 0.05
 CRATER_MICRO = 18.9
 CRATER_D1D2 = 16.5
 

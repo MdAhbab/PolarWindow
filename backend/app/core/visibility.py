@@ -137,11 +137,6 @@ def interp_horizon(horizon_el_deg: FloatArray, az_deg: FloatArray) -> FloatArray
     return np.asarray(np.interp(np.mod(az_deg, 360.0), grid, values), dtype=np.float64)
 
 
-def margin(el_deg: FloatArray, az_deg: FloatArray, horizon_el_deg: FloatArray) -> FloatArray:
-    """Elevation above the local skyline. Positive means visible."""
-    return np.asarray(el_deg - interp_horizon(horizon_el_deg, az_deg), dtype=np.float64)
-
-
 def visibility_state(margin_deg: FloatArray, angular_radius_deg: FloatArray | float) -> IntArray:
     """Three-state visibility from a margin and the body's angular radius.
 
@@ -160,27 +155,6 @@ def visibility_state(margin_deg: FloatArray, angular_radius_deg: FloatArray | fl
     out[margin_deg > r] = LIT
     out[margin_deg < -r] = DARK
     return out
-
-
-def disc_fraction_clear(
-    margin_deg: FloatArray, angular_radius_deg: FloatArray | float
-) -> FloatArray:
-    """Fraction of the body's disc above the skyline, 0..1.
-
-    A circular-segment area, treating the skyline as locally straight across the
-    disc -- true to well under a percent for a 0.26 deg disc against terrain
-    features that subtend tens of degrees.
-
-    Exposed as *partial illumination*, and labelled as such. It is never
-    multiplied by an insolation figure to produce watts, because the terrain
-    resolution does not support that and the brief forbids inventing it.
-    """
-    r = np.asarray(angular_radius_deg, dtype=np.float64)
-    r = np.where(r <= 0.0, 1e-12, r)
-    x = np.clip(margin_deg / r, -1.0, 1.0)
-    # Area of a unit-circle segment above a chord at signed distance -x.
-    area = (np.arccos(-x) - (-x) * np.sqrt(1.0 - x * x)) / np.pi
-    return np.asarray(area, dtype=np.float64)
 
 
 def sun_earth_angular_radius_deg(distance_m: FloatArray, body_radius_m: float) -> FloatArray:

@@ -26,6 +26,12 @@ TOL = 1e-6
 bools = st.lists(st.booleans(), min_size=0, max_size=300)
 
 
+def _longest_s(runs: list[intervals.Run], value: bool) -> float:
+    """Duration of the longest run of ``value``; zero when there is none."""
+    best = intervals.longest(runs, value)
+    return best.duration if best is not None else 0.0
+
+
 def series(values: list[bool], step: float = 1.0) -> tuple[np.ndarray, np.ndarray]:
     """A margin series whose sign follows `values`."""
     t = np.arange(len(values), dtype=np.float64) * step
@@ -99,7 +105,6 @@ def test_longest_is_a_member_and_maximal(values: list[bool], want: bool) -> None
     longest = intervals.longest(runs, want)
     if not durations:
         assert longest is None
-        assert intervals.longest_duration(runs, want) == 0.0
         return
     assert longest is not None
     assert longest.value == want
@@ -169,8 +174,8 @@ def test_merge_is_monotonic_in_epsilon(values: list[bool], e1: float, e2: float)
     lo, hi = sorted((e1, e2))
     t, m = series(values)
     runs = intervals.runs_from_margin(t, m)
-    a = intervals.longest_duration(intervals.merge_short_gaps(runs, False, lo), False)
-    b = intervals.longest_duration(intervals.merge_short_gaps(runs, False, hi), False)
+    a = _longest_s(intervals.merge_short_gaps(runs, False, lo), False)
+    b = _longest_s(intervals.merge_short_gaps(runs, False, hi), False)
     assert b >= a - TOL
 
 

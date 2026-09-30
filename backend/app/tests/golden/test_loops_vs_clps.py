@@ -31,7 +31,7 @@ def ready():
 
 
 def test_blue_ghost_loops_replayed_from_the_burns_found(ready) -> None:
-    from app.tests.golden import validate_loops
+    from app.validation import validate_loops
 
     rp = validate_loops.replay_check()
     names = [b.name for b in rp.burns]
@@ -49,7 +49,7 @@ def test_blue_ghost_loops_replayed_from_the_burns_found(ready) -> None:
 
 
 def test_designed_loops_match_the_flown_ones_on_the_flown_day(ready) -> None:
-    from app.tests.golden import validate_loops
+    from app.validation import validate_loops
 
     lp = validate_loops.design_days()
     by_day = {d.day: d for d in lp.days}
@@ -64,7 +64,7 @@ def test_designed_loops_match_the_flown_ones_on_the_flown_day(ready) -> None:
 
 @pytest.mark.parametrize("mission", MISSIONS)
 def test_linear_and_monte_carlo_budgets_agree(ready, mission) -> None:
-    from app.tests.golden import validate_loops
+    from app.validation import validate_loops
 
     r = validate_loops.corrections(mission)
     assert r.missed == 0
@@ -77,7 +77,7 @@ def test_linear_and_monte_carlo_budgets_agree(ready, mission) -> None:
 def test_a_seeded_run_repeats_bit_for_bit(ready) -> None:
     from app.core import forces, lincov
     from app.services import flown_burns
-    from app.tests.golden import validate_launch, validate_loops
+    from app.validation import validate_launch, validate_loops
 
     f = validate_launch._flights()["im-2"]
     tables = validate_loops._tables_for(f)
@@ -97,7 +97,7 @@ def test_a_seeded_run_repeats_bit_for_bit(ready) -> None:
 
 def test_blue_ghost_climbing_as_flown_lands_on_its_liftoff(ready) -> None:
     """Due east the design lands 139 min early; in the direction it flew, within minutes."""
-    from app.tests.golden import validate_loops
+    from app.validation import validate_loops
 
     az, d0 = validate_loops.flown_direction()
     assert 105 < az < 115

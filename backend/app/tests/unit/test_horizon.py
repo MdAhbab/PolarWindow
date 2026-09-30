@@ -16,7 +16,6 @@ from app.core.horizon import (
     HorizonMask,
     build_mask,
     curvature_drop_m,
-    downsample,
     downsample_mask,
     ray_distances,
 )
@@ -163,11 +162,28 @@ def test_coverage_reports_missing_dem() -> None:
     assert 0.2 < m.coverage < 0.8
 
 
+def _elevations(el, target_count: int):
+    """``downsample_mask``'s elevations, for a skyline whose range and tolerance do not matter."""
+    n = el.shape[0]
+    mask = HorizonMask(
+        el_deg=el,
+        range_m=np.full(n, 40_000.0, dtype=np.float32),
+        tol_deg=np.full(n, 0.003, dtype=np.float32),
+        max_el_deg=float(el.max()),
+        max_el_bearing_deg=float(np.argmax(el)) * 360.0 / n,
+        azimuth_step_deg=360.0 / n,
+        max_range_m=50_000.0,
+        coverage=1.0,
+        compute_ms=0.0,
+    )
+    return downsample_mask(mask, target_count)[0]
+
+
 def test_downsample_takes_the_maximum_never_the_mean() -> None:
     """Averaging a skyline invents sky where a ridge is."""
     el = np.zeros(1440, dtype=np.float32)
     el[5] = 12.0  # one narrow ridge at 1.25 deg, nearest the 1-degree output bin
-    out = downsample(el, 360)
+    out = _elevations(el, 360)
     assert out.shape == (360,)
     assert float(out[1]) == pytest.approx(12.0), "the ridge was averaged away"
     assert float(np.mean(el[2:7])) < 12.0, "sanity: a mean would have lost it"
@@ -182,13 +198,13 @@ def test_downsample_is_centred_on_each_output_bearing() -> None:
     """
     el = np.zeros(1440, dtype=np.float32)
     el[7] = 9.0  # 1.75 deg: nearest output bearing is 2 deg
-    out = downsample(el, 360)
+    out = _elevations(el, 360)
     assert float(out[2]) == pytest.approx(9.0)
     assert float(out[1]) == pytest.approx(0.0), "ridge reported a quarter-bin early"
 
     wrap = np.zeros(1440, dtype=np.float32)
     wrap[1439] = 5.0  # 359.75 deg belongs to due north, across the wrap
-    assert float(downsample(wrap, 360)[0]) == pytest.approx(5.0)
+    assert float(_elevations(wrap, 360)[0]) == pytest.approx(5.0)
 
 
 def test_downsample_mask_keeps_elevation_range_and_tolerance_together() -> None:
@@ -235,7 +251,7 @@ def test_per_sample_error_sets_each_bearings_tolerance() -> None:
 
 def test_downsample_rejects_a_non_divisor() -> None:
     with pytest.raises(ValueError, match="cannot downsample"):
-        downsample(np.zeros(1440, dtype=np.float32), 500)
+        _elevations(np.zeros(1440, dtype=np.float32), 500)
 
 
 def test_azimuth_step_must_divide_360() -> None:

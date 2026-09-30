@@ -1,4 +1,4 @@
-"""Shared response pieces: the `meta` envelope and the error contract.
+"""Shared response pieces: the `meta` envelope of a site answer, and the lifecycle number shape.
 
 Every 200 response in this API carries `meta`, and `meta.uncertainty` is never
 absent and never null. That is a product rule, not a convention: the frontend's
@@ -80,33 +80,6 @@ class Meta(BaseModel):
     engine_version: str
     cache: Literal["hit", "miss", "bypass", "memo"] = "miss"
     compute_ms: float | None = None
-
-
-class ErrorUI(BaseModel):
-    """What the frontend's ErrorPanel renders, with no translation layer.
-
-    The panel already takes a title, a detail and a "what still works" line;
-    supplying all three from the server means an error message can be improved
-    without a frontend deploy, and means no error ever renders as a shrug.
-    """
-
-    model_config = ConfigDict(extra="forbid")
-
-    still_works: str
-    retryable: bool = False
-    action: str | None = None
-
-
-class Problem(BaseModel):
-    """RFC 9457 problem details, plus the UI block."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    type: str
-    title: str
-    status: int
-    detail: str
-    ui: ErrorUI
 
 
 # ---------------------------------------------------------------------------

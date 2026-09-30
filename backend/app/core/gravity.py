@@ -41,16 +41,6 @@ class Field:
     s: FloatArray
     degree: int
 
-    def truncated(self, n: int) -> Field:
-        n = min(n, self.degree)
-        return Field(
-            self.gm,
-            self.radius_m,
-            self.c[: n + 1, : n + 1].copy(),
-            self.s[: n + 1, : n + 1].copy(),
-            n,
-        )
-
 
 @njit(cache=True)  # type: ignore[misc]
 def _potential(

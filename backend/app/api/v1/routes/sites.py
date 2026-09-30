@@ -6,7 +6,6 @@ model -- enforced by an import-linter contract, not by discipline alone.
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Path, Query
@@ -22,7 +21,6 @@ from app.services import site_service
 router = APIRouter(prefix="/sites", tags=["sites"])
 
 SiteId = Annotated[str, Path(description="Site slug, e.g. `connecting-ridge`.")]
-Window = Annotated[tuple[datetime, datetime, int], Depends(deps.window_params)]
 
 
 @router.get("", response_model=SiteList, summary="List candidate sites")

@@ -65,11 +65,3 @@ class RefreshOut(BaseModel):
     provider: str
     products: int
     message: str
-
-
-class FeedSummary(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    ok: int
-    stale: int
-    failing: int

@@ -1,8 +1,46 @@
-# POLAR WINDOW — api, worker, postgres, redis.
+# POLAR WINDOW: `docker compose up` runs the whole backend.
 #
-# `data/` is a bind mount rather than a named volume on purpose: the SPICE
-# kernels and the LOLA subset are ~250 MB that take ten minutes to fetch, and
-# a bind mount means `docker compose down -v` cannot silently destroy them.
+#   postgres, redis  the stores
+#   migrate          applies the database migrations, then exits
+#   data             fetches the data that data/ lacks and builds the sites' skylines, then exits
+#   api              FastAPI on :8000
+#   compute          the compute worker: trip, contact and launch answers (ADR-12)
+#   feeds            the feeds worker, the one service that fetches live data (ADR-8)
+#
+# The api and both workers start once `data` has finished. On a new machine that is
+# the download of the kernels, terrain and the rest (about 600 MB); on one that has
+# them it is a check. The frontend is not a service: `make frontend` serves it on
+# :5173 against this api.
+#
+# Settings come from .env (copy .env.example), the same file make and run.py read.
+# Only the three that differ inside a container are set here. Docker Compose 2.24 or
+# newer is needed for the optional .env.
+#
+# `data/` is a bind mount rather than a named volume on purpose: the kernels and the
+# terrain take a long time to fetch, and a bind mount means `docker compose down -v`
+# cannot silently destroy them. Every service writes there (the SPICE metakernel, map
+# tiles, raw feed bodies), so on Linux it must be writable by uid 10001:
+# `sudo chown -R 10001 data`.
+
+x-env: &env
+  PW_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/polar_window
+  PW_REDIS_URL: redis://redis:6379/0
+  PW_DATA_DIR: /data
+
+# One image for every service below, built once from ./backend.
+x-app: &app
+  build: ./backend
+  image: polar-window-backend
+  env_file:
+    - path: .env
+      required: false
+  environment: *env
+  volumes: ['./data:/data']
+
+x-ready: &ready
+  postgres: {condition: service_healthy}
+  redis: {condition: service_healthy}
+  data: {condition: service_completed_successfully}
 
 services:
   postgres:
@@ -30,26 +68,42 @@ services:
       timeout: 3s
       retries: 20
 
-  api:
-    build:
-      context: ./backend
-    environment:
-      PW_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/polar_window
-      PW_REDIS_URL: redis://redis:6379/0
-      PW_DATA_DIR: /data
-      PW_CORS_ORIGINS: http://localhost:5173,http://localhost:5174,http://localhost:4173
-      PW_GEMINI_API_KEY: ${PW_GEMINI_API_KEY:-}
-    volumes: ['./data:/data']
-    ports: ['8000:8000']
+  migrate:
+    <<: *app
+    command: alembic upgrade head
     depends_on:
       postgres: {condition: service_healthy}
-      redis: {condition: service_healthy}
-    # The API never downloads kernels at boot. It checks, and reports a missing
-    # one through /healthz with the exact filename and the command that fixes
-    # it — a visible failure rather than a slow mystery.
+    restart: 'no'
+
+  # Seeding, not a daemon: `polar-data sync` (backend/app/data/registry.py lists what
+  # it fetches) downloads what is missing, loads the missions and builds the skylines,
+  # and is a quick check when there is nothing to do. The validation tier only checks
+  # our numbers and is left out; `docker compose run --rm data polar-data sync --tier
+  # validation` adds it. A failed download must not keep the app from starting: it is
+  # in this service's log, and the api reports what is missing through /healthz. Re-run
+  # `docker compose run --rm data`, then `docker compose restart api compute`.
+  #
+  # The first two commands build data/sites.json, which polar-data sync needs and does
+  # not yet build itself; they are skipped once the file exists.
+  data:
+    <<: *app
     command: >
-      sh -c "alembic upgrade head &&
-             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+      sh -c "[ -f /data/sites.json ] ||
+             { python -m app.data.ingest_lola regional &&
+               python -m app.data.ingest_sites /data/dem/regional_80m.npz /data/sites.json; };
+             polar-data sync --tier core --tier lifecycle || true"
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    restart: 'no'
+
+  # The API never downloads kernels at boot. It checks, and reports a missing one
+  # through /healthz with the exact filename and the command that fixes it, a
+  # visible failure rather than a slow mystery.
+  api:
+    <<: *app
+    ports: ['8000:8000']
+    depends_on: *ready
+    restart: unless-stopped
     healthcheck:
       test: ['CMD', 'python', '-c', "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/healthz').status==200 else 1)"]
       interval: 10s
@@ -57,20 +111,22 @@ services:
       retries: 10
       start_period: 30s
 
-  worker:
-    build:
-      context: ./backend
+  compute:
+    <<: *app
+    command: python -m app.workers.compute
     environment:
-      PW_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/polar_window
-      PW_REDIS_URL: redis://redis:6379/0
-      PW_DATA_DIR: /data
-    volumes: ['./data:/data']
-    depends_on:
-      postgres: {condition: service_healthy}
-    # Runs to completion and exits. Precompute is a seeding step, not a daemon:
-    # a mask depends only on the site, so there is nothing to poll for.
-    command: python -m app.workers.precompute
-    restart: 'no'
+      <<: *env
+      # Recorded with every answer. The image has no git, so name the commit:
+      # PW_CODE_VERSION=$(git rev-parse --short=12 HEAD) docker compose up
+      PW_CODE_VERSION: ${PW_CODE_VERSION:-}
+    depends_on: *ready
+    restart: unless-stopped
+
+  feeds:
+    <<: *app
+    command: python -m app.workers.feeds
+    depends_on: *ready
+    restart: unless-stopped
 
 volumes:
   pgdata:

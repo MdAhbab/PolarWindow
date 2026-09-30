@@ -12,12 +12,9 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.data import catalogues
 from app.db.repositories.missions import MissionRecord, MissionRepository
 from app.services import lifecycle, mission_service, ready_service
 from app.services.mission_service import MissionNotFound
-
-ORDER = ("ready", "launch", "trip", "landing", "contact", "return")
 
 
 def _status(
@@ -29,15 +26,6 @@ def _status(
 def _when(text: str) -> str:
     t = lifecycle.parse_time(text)
     return t.strftime("%-d %b %Y %H:%M UTC") if "T" in text else t.strftime("%-d %b %Y")
-
-
-def _name(cat: str, rid: str | None) -> str | None:
-    if not rid:
-        return None
-    try:
-        return str(catalogues.load(cat).get(rid).name)
-    except (KeyError, catalogues.CatalogueError):
-        return None
 
 
 async def _ready(session: AsyncSession, m: MissionRecord) -> dict[str, Any]:
@@ -66,7 +54,7 @@ async def _launch(session: AsyncSession, m: MissionRecord) -> dict[str, Any]:
     if job and job[0] in ("queued", "running"):
         return _status("launch", "computing", "Launch opportunities are being worked out.", job[1])
     if not lc.get("t0") and lc.get("pad_id") and lc.get("vehicle_id") and m.site_id:
-        pad = _name("launch_sites", lc.get("pad_id"))
+        pad = mission_service.catalogue_name("launch_sites", lc.get("pad_id"))
         return _status(
             "launch",
             "available",
@@ -74,8 +62,8 @@ async def _launch(session: AsyncSession, m: MissionRecord) -> dict[str, Any]:
             job[1] if job and job[0] == "done" else None,
         )
     t0 = lc.get("t0")
-    veh = _name("vehicles", lc.get("vehicle_id"))
-    pad = _name("launch_sites", lc.get("pad_id"))
+    veh = mission_service.catalogue_name("vehicles", lc.get("vehicle_id"))
+    pad = mission_service.catalogue_name("launch_sites", lc.get("pad_id"))
     if t0:
         where = " ".join(x for x in (f"on {veh}" if veh else "", f"from {pad}" if pad else "") if x)
         return _status(
@@ -188,7 +176,7 @@ def _return(m: MissionRecord) -> dict[str, Any]:
     if m.status in ready_service.CANCELLED:
         return _status("return", "not_applicable", "This delivery was cancelled.")
     lc = m.lifecycle or {}
-    veh = _name("vehicles", lc.get("vehicle_id"))
+    veh = mission_service.catalogue_name("vehicles", lc.get("vehicle_id"))
     if veh:
         return _status(
             "return",
