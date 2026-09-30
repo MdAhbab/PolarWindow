@@ -1,6 +1,5 @@
-import { useEffect, useId, useRef, useState } from 'react'
 import type { Arc, SiteMetrics, TrackSample } from '../lib/types'
-import { useReducedMotion, easeOut } from '../hooks/useMotion'
+import { useReducedMotion } from '../hooks/useMotion'
 import { bearing, degrees, hoursSpoken } from '../lib/format'
 import { crossingBands, type Band } from '../lib/bands'
 
@@ -12,10 +11,6 @@ const W = 34
 const C_SUN = 2 * Math.PI * R_SUN
 const C_EARTH = 2 * Math.PI * R_EARTH
 
-/** Radius and width of the reveal mask: wide enough to cover both rings. */
-const R_MASK = 175
-const W_MASK = 96
-const C_MASK = 2 * Math.PI * R_MASK
 
 /**
  * Turn an alternating arc list into an SVG stroke-dasharray.
@@ -77,29 +72,12 @@ export function TwoClockRings({
   showCentre?: boolean
   className?: string
 }) {
-  const rawId = useId()
-  const maskId = `pw-sweep-${rawId.replace(/:/g, '')}`
   const reduced = useReducedMotion()
-  const [progress, setProgress] = useState(reduced ? 1 : 0)
-  const raf = useRef(0)
-
-  // M2 — the arcs draw in clockwise from day 0 under a rotating mask, so the
-  // gaps arrive in order and read as events in a month rather than wedges.
-  useEffect(() => {
-    if (reduced) {
-      setProgress(1)
-      return
-    }
-    setProgress(0)
-    const start = performance.now()
-    const tick = (now: number) => {
-      const p = Math.min(1, (now - start) / 600)
-      setProgress(easeOut(p))
-      if (p < 1) raf.current = requestAnimationFrame(tick)
-    }
-    raf.current = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf.current)
-  }, [metrics.siteId, metrics.windowStartH, metrics.windowHours, reduced])
+  // M2 — the rings arrive with a short clockwise turn into place, from day 0,
+  // on every new site or dates: transform and opacity only, restarted by the
+  // key below. Under reduced motion they are simply there.
+  const arrive = reduced ? '' : 'pw-ring-in'
+  const arrivalKey = `${metrics.siteId}|${metrics.windowStartH}|${metrics.windowHours}`
 
   const win = metrics.windowHours
   const sunDash = dashFromArcs(metrics.sun.arcs, win, C_SUN)
@@ -146,23 +124,7 @@ export function TwoClockRings({
         </text>
       </g>
 
-      <defs>
-        <mask id={maskId}>
-          <circle
-            cx={CX}
-            cy={CY}
-            r={R_MASK}
-            fill="none"
-            stroke="#fff"
-            strokeWidth={W_MASK}
-            strokeDasharray={C_MASK}
-            strokeDashoffset={C_MASK * (1 - progress)}
-            transform={`rotate(-90 ${CX} ${CY})`}
-          />
-        </mask>
-      </defs>
-
-      <g mask={`url(#${maskId})`}>
+      <g key={arrivalKey} className={arrive} style={{ transformOrigin: `${CX}px ${CY}px`, transformBox: 'view-box' }}>
         <circle cx={CX} cy={CY} r={R_SUN} fill="none" stroke="url(#pw-blocked)" strokeWidth={W} />
         <circle
           cx={CX}

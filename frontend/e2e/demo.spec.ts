@@ -18,7 +18,7 @@ test('front page: one click signs in and the guide opens on the first feature', 
   await page.getByRole('button', { name: 'Open the dashboard' }).first().click()
   await expect(page).toHaveURL(/\/missions$/)
   const guide = page.getByRole('region', { name: 'Guide' })
-  await expect(guide).toContainText('1 of 10')
+  await expect(guide).toContainText('1 of 5')
   await expect(guide).toContainText('Find a CLPS mission')
   await expect(page.locator('[data-guide-active]')).toHaveAttribute('data-guide', 'missions-filters')
   await expectNoSeriousAxe(page, '/missions with the guide open')

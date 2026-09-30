@@ -96,7 +96,7 @@ export function GuideBar() {
       <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-3 lg:flex-row lg:items-center lg:gap-6 lg:px-6">
         <div className="flex min-w-0 grow flex-col gap-1.5">
           <div className="flex items-center gap-3">
-            <span className="shrink-0 text-tag font-semibold tracking-caps-md text-ink-3 uppercase">
+            <span className="shrink-0 text-caption font-semibold text-ink-3">
               Guide · {step + 1} of {GUIDE_STEPS.length}
             </span>
             <span className="flex grow gap-1" aria-hidden="true">
@@ -127,6 +127,11 @@ export function GuideBar() {
           ) : (
             <Button size="sm" variant="primary" onClick={() => goTo(step + 1)}>
               Next
+            </Button>
+          )}
+          {!last && (
+            <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>
+              Skip the tour
             </Button>
           )}
           <button

@@ -29,7 +29,7 @@ describe('guide', () => {
 
   it('stays short, and introduces the six mission steps in one step', async () => {
     const { GUIDE_STEPS } = await fresh()
-    expect(GUIDE_STEPS.length).toBeLessThanOrEqual(10)
+    expect(GUIDE_STEPS.length).toBeLessThanOrEqual(5)
     const journey = GUIDE_STEPS.filter((s) => s.target === 'journey')
     expect(journey).toHaveLength(1)
     expect(journey[0].path).toMatch(/^\/missions\/[^/]+\/(ready|launch|trip|contact|return)$/)

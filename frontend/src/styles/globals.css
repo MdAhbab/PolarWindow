@@ -358,6 +358,17 @@ details[open] > .pw-disclosure-body {
   transform-origin: left center;
 }
 
+/* M2: the two rings turning into place around their centre. */
+.pw-ring-in {
+  animation: pw-ring-in 600ms var(--ease-settle) both;
+}
+@keyframes pw-ring-in {
+  from {
+    opacity: 0.4;
+    transform: rotate(-20deg);
+  }
+}
+
 /* A number that changed: the new value, at once, settling into place. */
 .pw-number-in {
   animation: pw-number-in var(--pw-dur-base) var(--ease-settle);
