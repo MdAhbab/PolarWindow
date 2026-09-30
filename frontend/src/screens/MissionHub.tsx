@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { PageHeader } from '../components/Page'
 import { Icon } from '../components/Icon'
 import { useMission as useMissionQuery } from '../lib/api/queries'
@@ -43,6 +43,16 @@ export function MissionHub() {
   const setWindow = useStore((s) => s.setWindow)
   const applied = useRef<string | null>(null)
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // "Next step" at the foot of a step opens the next one at its top, with
+  // focus on its place in the step bar, as if that had been pressed.
+  useEffect(() => {
+    if ((location.state as { from?: string } | null)?.from !== 'next-step') return
+    const bar = document.querySelector<HTMLElement>('nav[aria-label="Mission sections"]')
+    bar?.querySelector<HTMLElement>('[aria-current="page"]')?.focus({ preventScroll: true })
+    if (bar) window.scrollTo(0, Math.max(0, bar.getBoundingClientRect().top + window.scrollY - 16))
+  }, [location.key, location.state])
 
   // A mission sets the dates to its time on the surface (system-design
   // §10.6), once per mission and whichever step is opened first, so Surface
@@ -160,6 +170,7 @@ function StepFooter({ base, next, missionId }: { base: string; missionId: string
       {next && (
         <Link
           to={sectionPath(missionId, next.id)}
+          state={{ from: 'next-step' }}
           viewTransition
           className="group flex min-w-0 items-center justify-between gap-4 border border-line bg-panel px-5 py-3 no-underline transition-[border-color,box-shadow] duration-[var(--pw-dur-base)] hover:border-line-strong hover:shadow-lift sm:min-w-[340px]"
         >

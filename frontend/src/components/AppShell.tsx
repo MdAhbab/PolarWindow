@@ -63,15 +63,21 @@ function useRouteFocus() {
     previous.current = pathname
     // A mission's hub names its own page ("IM-2, Trip"), once its record is in.
     if (!missionOf(pathname)) document.title = `${TITLES[pathname] ?? 'POLAR WINDOW'} · POLAR WINDOW`
-    if (first.current) {
+    // The first page, and the second run React's strict mode makes of this
+    // effect in development, are not a move: focus stays where the browser put it.
+    if (first.current || before === pathname) {
       first.current = false
       return
     }
     // Moving between one mission's six steps is a move inside one page, like
     // a tab: focus stays on the step that was pressed, so the next one is one
     // arrow or Tab away. Anywhere else, focus goes to the new content.
-    if (missionOf(pathname) && missionOf(pathname) === missionOf(before)) return
-    document.getElementById('pw-main')?.focus()
+    const onStep = (p: string) => /^\/missions\/[^/]+\/[^/]+/.test(p)
+    if (onStep(pathname) && onStep(before) && missionOf(pathname) === missionOf(before)) return
+    // A new page starts at its top. Focus without the browser's own scroll,
+    // which would bring main's middle into view on a long page.
+    document.getElementById('pw-main')?.focus({ preventScroll: true })
+    window.scrollTo(0, 0)
   }, [pathname])
 }
 

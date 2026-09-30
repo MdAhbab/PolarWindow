@@ -24,7 +24,7 @@ export function BlackoutScreen() {
 
   if (!metrics || !packet || view.error) {
     return (
-      <div className="flex grow flex-col gap-6 p-4 lg:p-6">
+      <div className="pw-page flex grow flex-col gap-6 py-5 lg:py-6">
         <div className="max-w-2xl">
           {view.error ? (
             <ProblemPanel error={view.error} fallbackTitle="Cannot plan this window" onRetry={view.refetch} />
@@ -52,7 +52,7 @@ export function BlackoutScreen() {
 
   return (
     <div className="flex grow flex-col">
-      <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-line px-4 py-4 lg:px-6">
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-line pw-page py-4">
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="text-small font-semibold text-ink-3">Plan for time without contact</span>
           <SiteTitle />
@@ -66,7 +66,7 @@ export function BlackoutScreen() {
         </div>
       </div>
 
-      <div className="flex grow flex-col gap-6 p-4 lg:flex-row lg:p-6">
+      <div className="flex grow flex-col gap-6 pw-page py-5 lg:flex-row lg:py-6">
         {/* min-w-0: the timeline and the ledger are wider than this column and
             scroll inside their own panels. Without it the column takes their
             width as its minimum and pushes the packet off the right edge. */}
@@ -156,7 +156,7 @@ export function BlackoutScreen() {
 
         <aside className="flex w-full shrink-0 flex-col border border-line-strong bg-raised lg:w-[400px]">
           <div className="flex flex-col gap-1.5 border-b border-line-strong p-5">
-            <div className="text-caption font-semibold tracking-caps-lg text-ink-3 uppercase">
+            <div className="text-small font-semibold text-ink-2">
               Working alone
             </div>
             <div className="text-subhead font-semibold">What the lander must handle on its own</div>
@@ -223,9 +223,8 @@ export function BlackoutScreen() {
             {metrics.sun.longestDownH > SURVIVAL_LIMIT_H && (
               <p className="flex items-start gap-2 text-small leading-5 text-alert">
                 <Icon name="alert" size={16} strokeWidth={2.2} className="mt-0.5 shrink-0" />
-                No plan saves this site: the night alone is{' '}
-                {Math.round(metrics.sun.longestDownH - SURVIVAL_LIMIT_H)} h past the {SURVIVAL_LIMIT_H} h
-                battery limit.
+                The night alone is {Math.round(metrics.sun.longestDownH - SURVIVAL_LIMIT_H)} h past the{' '}
+                {SURVIVAL_LIMIT_H} h battery limit, whatever the plan for working alone.
               </p>
             )}
             <Button

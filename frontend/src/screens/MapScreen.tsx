@@ -113,12 +113,17 @@ export function MapScreen() {
 
   return (
     <div className="flex grow flex-col">
-      <h1 className="sr-only">Map of the south pole and its candidate sites</h1>
-      <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-line px-4 py-4 lg:px-6">
-        <DateSlider />
+      <div className="flex flex-wrap items-center gap-x-10 gap-y-3 border-b border-line pw-page py-4">
+        <div className="flex min-w-0 flex-col gap-0.5 lg:max-w-sm">
+          <h1 className="text-title-lg font-semibold tracking-title text-ink">Candidate landing sites</h1>
+          <p className="text-small leading-5 text-ink-2">Spots near the south pole, measured for sunlight and contact with Earth. Choose one on the map or in the list.</p>
+        </div>
+        <div className="basis-full lg:basis-0 lg:grow">
+          <DateSlider />
+        </div>
       </div>
 
-      <div className="flex grow flex-col gap-4 p-4 lg:flex-row lg:items-start lg:gap-6 lg:p-6">
+      <div className="flex grow flex-col gap-4 pw-page py-5 lg:flex-row lg:items-start lg:gap-6 lg:py-6">
         {/* On a phone the map comes first and the chosen site's numbers right
             under it, so a tap on a pin shows its answer without scrolling. */}
         <aside className="order-3 flex w-full shrink-0 flex-col gap-3 lg:order-none lg:w-[280px]" aria-label="Search and filters">

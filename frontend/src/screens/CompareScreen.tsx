@@ -208,7 +208,7 @@ export function CompareScreen() {
 
   if (!ready) {
     return (
-      <div className="flex grow flex-col gap-6 p-4 lg:p-6">
+      <div className="pw-page flex grow flex-col gap-6 py-5 lg:py-6">
         <DateSlider />
         <div className="max-w-2xl">
           {error ? (
@@ -254,11 +254,14 @@ export function CompareScreen() {
 
   return (
     <div className="flex grow flex-col">
-      <h1 className="sr-only">Compare sites</h1>
-      <div className="flex flex-wrap items-end gap-x-8 gap-y-4 border-b border-line px-4 py-4 lg:px-6">
+      <div className="flex flex-wrap items-end gap-x-8 gap-y-4 border-b border-line pw-page py-4">
+        <div className="flex min-w-0 basis-full flex-col gap-0.5">
+          <h1 className="text-title-lg font-semibold tracking-title text-ink">Compare sites</h1>
+          <p className="text-small leading-5 text-ink-2">The same dates at each site, side by side. Nothing is combined into a score: rank by one number at a time.</p>
+        </div>
         <DateSlider />
         <div data-guide="rank-by" className="flex min-w-0 max-w-full flex-col gap-2">
-          <label htmlFor="pw-rank" className="text-caption font-semibold tracking-caps text-ink-3 uppercase xl:hidden">
+          <label htmlFor="pw-rank" className="text-small font-semibold text-ink-2 xl:hidden">
             Rank by
           </label>
           <select
@@ -287,7 +290,7 @@ export function CompareScreen() {
       </p>
 
       {(seeded || unavailable.length > 0 || ranking.error) && (
-        <div className="flex flex-col gap-1 border-b border-line px-4 py-3 text-small leading-5 text-ink-2 lg:px-6">
+        <div className="flex flex-col gap-1 border-b border-line pw-page py-3 text-small leading-5 text-ink-2">
           {seeded && (
             <p>
               Started from {seeded.name}: its landing spot and the three candidate sites nearest to it by distance.
@@ -307,7 +310,7 @@ export function CompareScreen() {
         </div>
       )}
 
-      <div className="grow p-4 lg:p-6">
+      <div className="grow pw-page py-5 lg:py-6">
         {wide ? (
           <div ref={ref} className="relative" style={{ height: colH }}>
             {compareIds.map((id) => {
@@ -355,7 +358,7 @@ export function CompareScreen() {
         )}
       </div>
 
-      <footer className="border-t border-line bg-panel px-4 py-4 lg:px-6">
+      <footer className="border-t border-line bg-panel pw-page py-4">
         <p className="max-w-4xl text-control leading-6 text-ink">
           {!leads ? (
             <>No clear leader on {termLabel(rankBy).label.toLowerCase()}{bestLabel ? '' : ' yet'}.</>
@@ -383,7 +386,7 @@ export function CompareScreen() {
         </p>
       </footer>
 
-      <div className="px-4 py-6 lg:px-6">
+      <div className="pw-page py-6">
         <AdvisePanel start={w.start} end={w.end} />
       </div>
     </div>
@@ -422,7 +425,7 @@ function CompareCard({
   ] as const
 
   return (
-    <Panel className={`flex flex-col ${over ? 'border-alert!' : leading ? 'border-ink!' : ''}`} as="section">
+    <Panel className={`flex flex-col border-t-2 ${over ? 'border-t-alert!' : leading ? 'border-t-ink!' : ''}`} as="section">
       <div className="flex items-start gap-3 border-b border-line p-4">
         <span
           className={`inline-flex size-7 shrink-0 items-center justify-center text-body font-bold ${
