@@ -1,7 +1,7 @@
 """Measured air between 30 and 70 km near OSIRIS-REx's entry track, reduced to the two small
 files that ``capsule_air`` compares the atmosphere models with (plan track H).
 
-Run: ``uv run python -m app.tests.golden.capsule_air_data`` (needs the network). The lidar's files
+Run: ``uv run python -m app.validation.capsule_air_data`` (needs the network). The lidar's files
 are HDF4, which ``pyhdf`` reads and the project does not depend on: run it with ``pyhdf`` on the
 path, for example ``PYTHONPATH=<a folder holding only pyhdf> uv run python -m ...``. The originals
 are kept under ``data/bulk/capsule_air`` (not committed); the two results are committed.

@@ -21,7 +21,7 @@ pytestmark = [pytest.mark.requires_kernels, pytest.mark.requires_clps_spice, pyt
 @pytest.fixture(scope="module")
 def rows():
     from app.services import ascent
-    from app.tests.golden import validate_launch
+    from app.validation import validate_launch
 
     for m in validate_launch.F9:
         if not ascent.spk_path(m).exists():

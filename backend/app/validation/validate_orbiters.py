@@ -1,6 +1,6 @@
 """Real orbiters' passes over landing sites against JPL Horizons (plan track T1, F2).
 
-Run: ``make validate-orbiters`` (or ``uv run python -m app.tests.golden.validate_orbiters``).
+Run: ``make validate-orbiters`` (or ``uv run python -m app.validation.validate_orbiters``).
 Needs the network (JPL Horizons, about 30 requests). Prints the docs/validation.md
 table and writes ``data/contact/orbiters_check.json`` (committed).
 

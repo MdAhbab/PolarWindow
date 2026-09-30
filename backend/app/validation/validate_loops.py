@@ -1,6 +1,6 @@
 """Phasing loops and correction burns against the flown landers (plan C3 and C4).
 
-Run: ``make validate-trip`` (or ``uv run python -m app.tests.golden.validate_loops``).
+Run: ``make validate-trip`` (or ``uv run python -m app.validation.validate_loops``).
 Prints the tables in docs/validation.md; ``test_loops_vs_clps.py`` pins the
 acceptance numbers from the same code.
 
@@ -37,7 +37,7 @@ from app.config import get_settings
 from app.core import forces, launchwin, lincov, phasing, propagate, spice, transfer
 from app.core.vec import rotate, unit
 from app.services import ascent, flown_burns
-from app.tests.golden.validate_launch import F9, _flights
+from app.validation.validate_launch import F9, _flights
 
 LOOPS = "blue-ghost-m1"
 DAYS = range(-5, 6)

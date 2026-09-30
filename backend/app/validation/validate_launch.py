@@ -1,6 +1,6 @@
 """Launch instants against the flown Falcon 9 lunar launches (plan D1 and C2).
 
-Run: ``make validate-trip`` (or ``uv run python -m app.tests.golden.validate_launch``).
+Run: ``make validate-trip`` (or ``uv run python -m app.validation.validate_launch``).
 Prints the table in docs/validation.md; ``test_launch_vs_clps.py`` pins the
 acceptance numbers from the same code.
 

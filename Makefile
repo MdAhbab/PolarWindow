@@ -85,16 +85,16 @@ space-climate: ## Oulu neutron monitor (NMDB), past solar particle events (GOES,
 	cd $(BE) && $(UV) run python -m app.data.space_climate
 
 validate-radiation: ## Belts (IRBEM against NASA SPDF's AE8/AP8), cosmic rays against CRaTER, past events against NOAA's list (prints the docs/validation.md tables)
-	cd $(BE) && $(UV) run python -m app.tests.golden.validate_radiation 2>/dev/null
+	cd $(BE) && $(UV) run python -m app.validation.validate_radiation 2>/dev/null
 
 validate-orbiters: ## Real orbiters' passes against JPL Horizons (az/el 0.02 deg, rise/set 2 s; needs the network; writes data/contact/orbiters_check.json)
-	cd $(BE) && $(UV) run python -m app.tests.golden.validate_orbiters 2>/dev/null
+	cd $(BE) && $(UV) run python -m app.validation.validate_orbiters 2>/dev/null
 
 validate-viewshed: ## Rover-to-lander line of sight on the polar terrain against a brute-force line test (gdal_viewshed is not installed; 99 % outside the uncertain band)
-	cd $(BE) && $(UV) run python -m app.tests.golden.validate_viewshed 2>/dev/null
+	cd $(BE) && $(UV) run python -m app.validation.validate_viewshed 2>/dev/null
 
 validate-capsule: ## Capsule entry against OSIRIS-REx (landing within 10 km; writes data/capsule/orex_check.json and prints the docs/validation.md tables)
-	cd $(BE) && $(UV) run python -m app.tests.golden.validate_capsule 2>/dev/null
+	cd $(BE) && $(UV) run python -m app.validation.validate_capsule 2>/dev/null
 
 hindcast-weather: ## GEFS wind shares against the Cape's weather station for a year (AWS open data + IEM; ~30 min, cached)
 	cd $(BE) && $(UV) run python -m app.feeds.hindcast
@@ -134,11 +134,11 @@ load-compute: ## Load test of the compute queue: every section at once, WORKERS=
 
 validate-trip: ## Propagator and shadows against NASA's reconstructed trajectories (prints the docs/validation.md table)
 	cd $(BE) && $(UV) run pytest app/tests/golden/test_propagate_vs_clps.py app/tests/golden/test_eclipse_vs_spice.py -q
-	cd $(BE) && $(UV) run python -m app.tests.golden.validate_trip
+	cd $(BE) && $(UV) run python -m app.validation.validate_trip
 	cd $(BE) && $(UV) run pytest app/tests/golden/test_launch_vs_clps.py -q
-	cd $(BE) && $(UV) run python -m app.tests.golden.validate_launch 2>/dev/null
+	cd $(BE) && $(UV) run python -m app.validation.validate_launch 2>/dev/null
 	cd $(BE) && $(UV) run pytest app/tests/golden/test_loops_vs_clps.py -q
-	cd $(BE) && $(UV) run python -m app.tests.golden.validate_loops 2>/dev/null
+	cd $(BE) && $(UV) run python -m app.validation.validate_loops 2>/dev/null
 
 test-fe: ## Frontend units: the adapter, the cache keys, the exports
 	cd $(FE) && npm test --silent

@@ -488,7 +488,7 @@ _SPECIFIC: Final[tuple[Dataset, ...]] = (
         used_for="Re-making the two small profiles the capsule's atmosphere models are checked "
         "against. The profiles themselves are kept in the repository.",
         licence="US government work (public domain)",
-        build="uv run python -m app.tests.golden.capsule_air_data (needs pyhdf)",
+        build="uv run python -m app.validation.capsule_air_data (needs pyhdf)",
     ),
 )
 

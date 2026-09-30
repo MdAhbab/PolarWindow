@@ -176,8 +176,8 @@ lunar transfer and Earth escape.
 | `data/hindcast/hrrr_wind_*.json` | `make hindcast-hrrr` | HRRR v4 2021-2025 byte-range archive on AWS against pad stations |
 | `data/radiation/*.json` | `make space-climate` | Oulu neutron monitor (NMDB), GOES events (NCEI), DONKI |
 | `data/capsule/orex_check.json` | `make validate-capsule` | the entry model against OSIRIS-REx's landing under NRLMSIS 2.1, the air model chosen from the two profile files below |
-| `data/capsule/saber_20230924.json` | `uv run python -m app.tests.golden.capsule_air_data` | TIMED/SABER Level 2A version 2.08 limb profiles of 24 September 2023 (136 profiles, 28 to 49° N), from NASA's CDAWeb copy of the GATS archive, `https://cdaweb.gsfc.nasa.gov/sp_phys/data/timed/saber/level2a_netCDF/2023/267/`; the producer marks the files "Unvalidated" |
-| `data/capsule/tmf_lidar_202309.json` | `uv run python -m app.tests.golden.capsule_air_data` (needs `pyhdf`) | NASA JPL Table Mountain Facility Rayleigh lidar (34.4° N; NDACC), temperature and density profiles for nine nights from 19 to 30 September 2023, `https://www-air.larc.nasa.gov/pub/NDACC/PUBLIC/stations/table.mountain.ca/hdf/lidar/` |
+| `data/capsule/saber_20230924.json` | `uv run python -m app.validation.capsule_air_data` | TIMED/SABER Level 2A version 2.08 limb profiles of 24 September 2023 (136 profiles, 28 to 49° N), from NASA's CDAWeb copy of the GATS archive, `https://cdaweb.gsfc.nasa.gov/sp_phys/data/timed/saber/level2a_netCDF/2023/267/`; the producer marks the files "Unvalidated" |
+| `data/capsule/tmf_lidar_202309.json` | `uv run python -m app.validation.capsule_air_data` (needs `pyhdf`) | NASA JPL Table Mountain Facility Rayleigh lidar (34.4° N; NDACC), temperature and density profiles for nine nights from 19 to 30 September 2023, `https://www-air.larc.nasa.gov/pub/NDACC/PUBLIC/stations/table.mountain.ca/hdf/lidar/` |
 
 ### Live feeds (ADR-8; `make feeds`, listed at `GET /feeds`)
 

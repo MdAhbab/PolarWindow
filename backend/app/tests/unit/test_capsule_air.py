@@ -12,8 +12,8 @@ import pytest
 from app.config import get_settings
 from app.data.space_climate import omni_dir
 from app.services import capsule
-from app.tests.golden import capsule_air as air
-from app.tests.golden import capsule_air_data as data
+from app.validation import capsule_air as air
+from app.validation import capsule_air_data as data
 
 T0 = datetime(2023, 9, 24, 14, 41, tzinfo=UTC)
 

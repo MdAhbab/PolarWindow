@@ -20,7 +20,7 @@ pytestmark = [pytest.mark.requires_kernels, pytest.mark.requires_clps_spice, pyt
 @pytest.fixture(scope="module")
 def vt():
     from app.data import gravity
-    from app.tests.golden import validate_trip
+    from app.validation import validate_trip
 
     s = get_settings()
     for path, _, _ in validate_trip.FLOWN.values():

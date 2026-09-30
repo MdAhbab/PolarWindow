@@ -1,6 +1,6 @@
 """Capsule entry against OSIRIS-REx (plan track H).
 
-Run: ``make validate-capsule`` (or ``uv run python -m app.tests.golden.validate_capsule``).
+Run: ``make validate-capsule`` (or ``uv run python -m app.validation.validate_capsule``).
 Prints the tables in docs/validation.md.
 
 * **Entry state.** The sample return capsule's reconstructed trajectory (NAIF's
@@ -60,7 +60,7 @@ from app.config import get_settings
 from app.core import atmosphere, entry, spice
 from app.data import msis_indices, registry
 from app.services import capsule
-from app.tests.golden import capsule_air, capsule_air_data
+from app.validation import capsule_air, capsule_air_data
 
 SRC = "-64090"
 #: Recovery team's measured landing point (Francis et al., AAS 24).

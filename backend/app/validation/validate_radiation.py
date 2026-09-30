@@ -1,6 +1,6 @@
 """Radiation screening checks (plan track E).
 
-Run: ``make validate-radiation`` (or ``uv run python -m app.tests.golden.validate_radiation``).
+Run: ``make validate-radiation`` (or ``uv run python -m app.validation.validate_radiation``).
 Prints the tables in docs/validation.md.
 
 * **Belts, two implementations**: along each flown trajectory (one-minute samples

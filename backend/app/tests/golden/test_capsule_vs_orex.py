@@ -17,7 +17,7 @@ def entry_state():
     from app.config import get_settings
     from app.core import spice
     from app.data import registry
-    from app.tests.golden import validate_capsule
+    from app.validation import validate_capsule
 
     spk = get_settings().data_dir / registry.by_id("naif:orex-src-entry").dest
     if not spk.exists():
@@ -28,7 +28,7 @@ def entry_state():
 
 def test_the_entry_state_is_the_published_one(entry_state) -> None:
     from app.services import capsule
-    from app.tests.golden import validate_capsule
+    from app.validation import validate_capsule
 
     got = capsule.entry_state(entry_state[1], entry_state[2], entry_state[0])
     for k, v in validate_capsule.PUBLISHED.items():
@@ -40,7 +40,7 @@ def test_the_capsule_lands_within_10_km_of_where_it_did_in_the_standard_atmosphe
 ) -> None:
     from app.core import entry
     from app.services import capsule
-    from app.tests.golden import validate_capsule as v
+    from app.validation import validate_capsule as v
 
     et0, r0, v0 = entry_state
     b = v.beta(sum(v.CA) / 2)
@@ -52,7 +52,7 @@ def test_the_capsule_lands_within_10_km_of_where_it_did_in_the_standard_atmosphe
 def _landing_km(entry_state, model: str, ca: float) -> float:
     from app.core import entry
     from app.services import capsule
-    from app.tests.golden import validate_capsule as v
+    from app.validation import validate_capsule as v
 
     et0, r0, v0 = entry_state
     atm = capsule.day_atmosphere(et0, model)
@@ -73,7 +73,7 @@ def test_the_days_air_lands_it_where_docs_validation_says_which_is_inside_the_10
     capsule entry): this pins the result recorded there, so that a change of the air or of the
     model shows up here first."""
     from app.services import capsule
-    from app.tests.golden import validate_capsule as v
+    from app.validation import validate_capsule as v
 
     assert capsule.DEFAULT_MODEL == "NRLMSIS 2.1"
     middle = _landing_km(entry_state, capsule.DEFAULT_MODEL, sum(v.CA) / 2)
@@ -88,7 +88,7 @@ def test_the_older_model_flown_for_comparison_lands_where_it_did_over_the_limit(
 ) -> None:
     """NRLMSISE-00 is 4 to 7 % too dense at 45 to 70 km against measured air, and lands the
     capsule 12.1 km from the measured point: it is recorded, not used."""
-    from app.tests.golden import validate_capsule as v
+    from app.validation import validate_capsule as v
 
     d = _landing_km(entry_state, "NRLMSISE-00", sum(v.CA) / 2)
     assert d == pytest.approx(12.1, abs=0.3)

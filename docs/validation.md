@@ -47,7 +47,7 @@ reported and **no cause is asserted**.
 # The trip propagator against flown trajectories (plan C1)
 
 Measured on commit `d01b407` with `make validate-trip`
-(`backend/app/tests/golden/validate_trip.py`; the acceptance numbers are
+(`backend/app/validation/validate_trip.py`; the acceptance numbers are
 pinned by `test_propagate_vs_clps.py`).
 
 **Method.** The references are NASA's reconstructed trajectories in NAIF's
@@ -152,7 +152,7 @@ about Earth and Moon (under 1 m; Blue Ghost 24 h round trip returns to 5.8 mm).
 
 # Launch instants and direct transfers against the flown launches (plan D1, C2, D2)
 
-`make validate-trip` prints this table (`app/tests/golden/validate_launch.py`;
+`make validate-trip` prints this table (`app/validation/validate_launch.py`;
 the acceptance is pinned in `test_launch_vs_clps.py`). Each Falcon 9 lunar
 launch is predicted with its own flight left out of the vehicle's climb.
 
@@ -303,7 +303,7 @@ flown ones (2.2°, 16–18 min); four predictors tried held out are above.
 
 # Phasing loops and correction burns against the flown landers (plan C3, C4)
 
-`make validate-trip` prints these tables (`app/tests/golden/validate_loops.py`;
+`make validate-trip` prints these tables (`app/validation/validate_loops.py`;
 the acceptance is pinned in `test_loops_vs_clps.py`).
 
 **Burns read from the reconstruction.** Each half hour of NASA's
@@ -609,7 +609,7 @@ in about 21 % of July's 20 UTC hours and none of January's.
 
 # Radiation screening (plan track E)
 
-`make validate-radiation` (`app/tests/golden/validate_radiation.py`) prints these tables;
+`make validate-radiation` (`app/validation/validate_radiation.py`) prints these tables;
 `test_radiation.py` pins the cosmic-ray and past-event checks.
 
 **Belts: the engine against a second implementation** (plan: IRBEM within 5 % of SPENVIS
@@ -691,7 +691,7 @@ values after March 2020, so the events during a flown trip are listed from NASA 
 
 # Capsule entry against OSIRIS-REx (plan track H)
 
-`make validate-capsule` (`app/tests/golden/validate_capsule.py`, about 7 minutes; the model
+`make validate-capsule` (`app/validation/validate_capsule.py`, about 7 minutes; the model
 is `app/core/entry.py`, flown for a day by `app/services/capsule.py`). The model is a point
 mass with a ballistic coefficient β, falling from the entry interface through an atmosphere
 that turns with the Earth, under gravity with J2; no lift, no parachutes, and a wind only in
@@ -704,7 +704,7 @@ I densities from 86 to 150 km) stands in when the OMNI files lack the day; the a
 which air was used. Nothing returns to Earth on a CLPS mission, so the model is checked on
 the one recent sample return with a published entry state and a measured landing point.
 
-**Choosing the atmosphere from measured air** (`app/tests/golden/capsule_air.py`).
+**Choosing the atmosphere from measured air** (`app/validation/capsule_air.py`).
 The default model was chosen from the air measured between 30 and 70 km on the entry day.
 A capsule loses its speed there: a density 5 % higher over 30 to 50 km moves the landing
 2.4 km, and over 50 to 70 km 2.3 km. The measurements do not use where the capsule landed.
@@ -879,7 +879,7 @@ state. A capsule's zone weather (B2) waits for the same.
 
 # Real orbiters over the landing sites against JPL Horizons (plan T1, F2)
 
-`make validate-orbiters` (`app/tests/golden/validate_orbiters.py`; needs the network,
+`make validate-orbiters` (`app/validation/validate_orbiters.py`; needs the network,
 about 30 requests to Horizons; writes `data/contact/orbiters_check.json`). LRO, Danuri,
 Chandrayaan-2 and CAPSTONE fly over the sites. The Contact answer shows their passes as
 "could see the lander", never as a relay: none of them offers to relay for a lander.
