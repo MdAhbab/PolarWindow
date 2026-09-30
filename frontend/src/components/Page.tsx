@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useTransitionClick } from '../lib/viewTransition'
 import { Link } from 'react-router-dom'
 
 export interface Crumb {
@@ -12,6 +13,7 @@ export interface Crumb {
  * one. The last crumb is the page itself and is not a link.
  */
 export function Breadcrumbs({ items }: { items: Crumb[] }) {
+  const go = useTransitionClick()
   return (
     <nav aria-label="Breadcrumb" className="min-w-0">
       <ol className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-small text-ink-3">
@@ -22,7 +24,7 @@ export function Breadcrumbs({ items }: { items: Crumb[] }) {
               {c.to && !last ? (
                 <Link
                   to={c.to}
-                  viewTransition
+                  onClick={go(c.to)}
                   className="-mx-1 inline-flex min-h-8 items-center rounded-control px-1 font-medium text-ink-2 underline decoration-line-strong underline-offset-[3px] hover:text-ink hover:decoration-current"
                 >
                   {c.label}

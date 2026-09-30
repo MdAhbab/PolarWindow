@@ -46,7 +46,7 @@ export function TripSection({ mission: m }: { mission: MissionDetail }) {
               icon="ring"
               title="No trip to show yet"
               detail={trip.none_reason ?? 'No trajectory is available for this mission.'}
-              stillWorks="Landing, Contact and the other steps do not depend on the trip and work as usual."
+              stillWorks="Surface, Contact and the other steps do not depend on the trip and work as usual."
             />
           ) : (
             <TripAnswer trip={trip} meta={meta} missionId={m.id} />

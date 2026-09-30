@@ -313,11 +313,12 @@
 }
 
 /* ------------------------------------------------------------------
-   Motion. Transform and opacity only, so nothing moves the layout, and
-   nothing starts below 0.4 opacity where it carries a number, so no
-   figure is ever hidden or shown wrong while it moves. Each class is
-   applied only when motion is on (decided in code); the blanket rule at
-   the end is the floor.
+   Motion. Transform and opacity only, so nothing moves the layout. Text
+   and numbers arriving only move, never fade: their contrast is the same
+   at every frame, so nothing is hidden or hard to read while it moves.
+   Opacity is kept for things without words (backdrops, skeletons, the
+   old page leaving). Each class is applied only when motion is on
+   (decided in code); the blanket rule at the end is the floor.
    ------------------------------------------------------------------ */
 
 /* Sheets (§10.6): in from the right on the move curve, out at half the time. */
@@ -335,7 +336,7 @@ dialog.pw-sheet-out::backdrop {
 }
 
 /* Something that has just arrived: a section's answer after its skeleton, a
-   page's content, a toast. Starts readable (0.4), so a number is never hidden. */
+   page's content. A short rise, fully readable from the first frame. */
 .pw-arrive {
   animation: pw-arrive var(--pw-dur-slow) var(--ease-settle) both;
 }
@@ -364,7 +365,6 @@ details[open] > .pw-disclosure-body {
 }
 @keyframes pw-ring-in {
   from {
-    opacity: 0.4;
     transform: rotate(-20deg);
   }
 }
@@ -419,25 +419,21 @@ details[open] > .pw-disclosure-body {
 }
 @keyframes pw-arrive {
   from {
-    opacity: 0.4;
     transform: translateY(6px);
   }
 }
 @keyframes pw-drop {
   from {
-    opacity: 0.4;
     transform: translateY(-4px);
   }
 }
 @keyframes pw-grow-x {
   from {
-    opacity: 0.4;
-    transform: scaleX(0.94);
+    transform: scaleX(0.96);
   }
 }
 @keyframes pw-number-in {
   from {
-    opacity: 0.55;
     transform: translateY(4px);
   }
 }
@@ -459,7 +455,6 @@ details[open] > .pw-disclosure-body {
 }
 @keyframes pw-toast-in {
   from {
-    opacity: 0;
     transform: translateY(12px);
   }
 }
@@ -473,11 +468,16 @@ details[open] > .pw-disclosure-body {
 }
 
 /* Moving between pages and a mission's steps (the View Transitions API, via
-   React Router's `viewTransition`). The header and the step bar stay put; the
+   `useTransitionClick` in lib/viewTransition.ts). The header and the step bar stay put; the
    content cross-fades with a short rise, and the open step's mark slides to
    the step pressed. Browsers without the API simply change the page. */
 ::view-transition-old(root),
 ::view-transition-new(root) {
+  animation: none;
+}
+/* The content does not morph between shapes: the old fades where it was and
+   the new rises where it is. */
+::view-transition-group(pw-content) {
   animation: none;
 }
 ::view-transition-old(pw-content) {

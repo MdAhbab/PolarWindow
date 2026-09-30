@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
+import { useTransitionClick } from '../lib/viewTransition'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { useMission } from '../lib/store'
@@ -104,6 +105,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   useKeyboardMap({ reducedMotion: useReducedMotion() })
   useRouteFocus()
   const inSites = SITE_PATHS.some((p) => pathname.startsWith(p))
+  const go = useTransitionClick()
   const saved = provenance === 'snapshot'
 
   return (
@@ -117,7 +119,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </a>
 
       <header className="pw-page flex shrink-0 items-center gap-x-8 border-b border-line bg-canvas py-1.5">
-        <NavLink to="/missions" viewTransition className="flex h-12 shrink-0 items-center gap-2.5 no-underline" aria-label="POLAR WINDOW, CLPS missions">
+        <NavLink to="/missions" onClick={go('/missions')} className="flex h-12 shrink-0 items-center gap-2.5 no-underline" aria-label="POLAR WINDOW, CLPS missions">
           <Mark />
           <Wordmark />
         </NavLink>
@@ -127,7 +129,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <NavLink
               key={n.to}
               to={n.to}
-              viewTransition
+              onClick={go(n.to)}
               aria-current={n.match(pathname) ? 'page' : undefined}
               className={`inline-flex shrink-0 items-center px-3 text-control whitespace-nowrap no-underline transition-colors duration-[var(--pw-dur-quick)] ${
                 n.match(pathname) ? 'font-semibold text-ink shadow-tab' : 'font-medium text-ink-2 hover:text-ink'
@@ -186,7 +188,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <NavLink
               key={n.to}
               to={n.to}
-              viewTransition
+              onClick={go(n.to)}
               className={({ isActive }) =>
                 `inline-flex h-12 min-w-0 grow basis-0 items-center justify-center px-3 text-body whitespace-nowrap no-underline transition-colors duration-[var(--pw-dur-quick)] sm:grow-0 sm:basis-auto ${
                   isActive ? 'font-semibold text-ink shadow-tab' : 'font-medium text-ink-2 hover:text-ink'
@@ -206,7 +208,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         tabIndex={-1}
         className="flex grow flex-col pb-[calc(4rem+var(--pw-guide-h,0px))] outline-none lg:pb-[var(--pw-guide-h,0px)]"
       >
-        <ErrorBoundary resetKey={pathname}>{children}</ErrorBoundary>
+        {/* The part that cross-fades when the page changes. On a mission's
+            step only the step itself does (MissionHub names it), so the
+            header and the step bar hold still. One name per page. */}
+        <div className={`flex grow flex-col ${/^\/missions\/[^/]+\/[^/]+/.test(pathname) ? '' : 'pw-content'}`}>
+          <ErrorBoundary resetKey={pathname}>{children}</ErrorBoundary>
+        </div>
         {/* U13: one line per screen instead of "≈" before every value. */}
         <p className="pw-page mt-auto border-t border-line py-3 text-caption leading-caption text-ink-3">{ESTIMATES}</p>
       </main>
@@ -224,7 +231,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <NavLink
               key={n.to}
               to={n.to}
-              viewTransition
+              onClick={go(n.to)}
               aria-current={on ? 'page' : undefined}
               className={`relative flex h-16 min-w-0 grow basis-0 flex-col items-center justify-center gap-1 no-underline ${
                 on ? 'text-ink' : 'text-ink-3'

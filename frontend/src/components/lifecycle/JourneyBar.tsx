@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useTransitionClick } from '../../lib/viewTransition'
 import type { SectionId, SectionState, SectionStatusDTO } from '../../lib/api/lifecycle'
 import { useMotionClass } from '../../hooks/useMotion'
 import { Icon, type IconName } from '../Icon'
@@ -83,6 +84,7 @@ export function JourneyBar({
   problem?: string
 }) {
   const byId = new Map(statuses?.map((s) => [s.section, s]))
+  const go = useTransitionClick()
   return (
     <nav aria-label="Mission sections" data-guide="journey" className="flex flex-col gap-2">
       <ol className="grid grid-cols-3 gap-px border border-line bg-line md:grid-cols-6">
@@ -93,7 +95,7 @@ export function JourneyBar({
             <li key={s.id} className="flex min-w-0">
               <Link
                 to={sectionPath(missionId, s.id)}
-                viewTransition
+                onClick={go(sectionPath(missionId, s.id))}
                 aria-current={active ? 'page' : undefined}
                 className={`relative flex min-h-14 w-full min-w-0 flex-col justify-center gap-1 px-3 py-2 no-underline transition-colors duration-[var(--pw-dur-quick)] ${
                   active ? 'bg-panel text-ink' : 'bg-canvas text-ink-2 hover:bg-inset hover:text-ink'
@@ -140,6 +142,7 @@ export function StepCards({
 }) {
   const byId = new Map(statuses?.map((s) => [s.section, s]))
   const arrive = useMotionClass('pw-arrive')
+  const go = useTransitionClick()
   return (
     <nav aria-label="Mission sections" data-guide="journey" className="flex flex-col gap-3">
       <ol className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -153,7 +156,7 @@ export function StepCards({
             >
               <Link
                 to={sectionPath(missionId, s.id)}
-                viewTransition
+                onClick={go(sectionPath(missionId, s.id))}
                 className="group flex w-full min-w-0 flex-col gap-3 border border-line bg-panel p-5 no-underline shadow-rest transition-[border-color,box-shadow,transform] duration-[var(--pw-dur-base)] ease-[var(--ease-settle)] hover:-translate-y-0.5 hover:border-line-strong hover:shadow-lift"
               >
                 <span className="flex items-center justify-between gap-3">

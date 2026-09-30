@@ -708,7 +708,7 @@ test('working it out (contract fixtures): a 202 shows its progress and what stil
   await page.goto('/missions/im-2/trip')
   await expect(page.getByText('Working it out', { exact: true }).last()).toBeVisible()
   await expect(page.getByRole('progressbar', { name: 'Progress' })).toHaveAttribute('aria-valuenow', '35')
-  await expect(page.locator('main')).toContainText('The other sections and the landing numbers are unaffected')
+  await expect(page.locator('main')).toContainText('The other steps are unaffected')
   // The numbers' labels are there, with no values yet.
   await expect(page.locator('main')).toContainText('Longest time in shadow')
   await expectNoSeriousAxe(page, 'trip while working it out')
@@ -797,8 +797,9 @@ test('settings (contract fixtures): data sources with their age, the risk scale,
   await expect(sheet.getByLabel('Value, in hours')).toHaveValue('96')
   await expect(sheet).toContainText('120 h → 96 h')
   await expect(sheet).toContainText('Set to 120 h')
+  // People is part of Project, shown open there.
   await sheet.getByRole('tab', { name: 'Project' }).click()
-  await sheet.locator('summary', { hasText: 'People' }).click()
+  await expect(sheet.getByRole('heading', { name: 'People' })).toBeVisible()
   await expect(sheet.getByLabel('Your name').first()).toBeVisible()
   await expectNoSeriousAxe(page, 'settings with the project rows open')
 })
@@ -1141,9 +1142,9 @@ test('return (live API): where each flown booster came down, and a planned one n
   // The source is named once, in the sources row, not inside the answer; the answer's time is its newest input's, not the request's.
   await expect(answer).not.toContainText('Launch Library 2')
   await expect(main.getByText(/^Worked out /).first()).not.toHaveText('Worked out just now')
-  await expect(row('Where does this come from?').locator('summary')).toContainText('1 source')
-  await row('Where does this come from?').locator('summary').click()
-  await expect(row('Where does this come from?')).toContainText('Launch Library 2 landing records')
+  await expect(row('Sources').locator('summary')).toContainText('1 source')
+  await row('Sources').locator('summary').click()
+  await expect(row('Sources')).toContainText('Launch Library 2 landing records')
   // The capsule model's check against OSIRIS-REx: the service's words, then the numbers and where they are from.
   const check = row('The capsule model, checked against a real landing')
   // Whether the plan's limit is met, and which air the modelled fall went through, are read from the answer, not from here.
@@ -1174,10 +1175,10 @@ test('return (live API): where each flown booster came down, and a planned one n
   await expect(main).toContainText('GFS-Wave, run of')
   // Each forecast number says how old it is, and the sources row lists GFS-Wave with its run and fetch.
   await expect(main.getByText(/^as of .+ ago$/)).toHaveCount(2)
-  await expect(row('Where does this come from?').locator('summary')).toContainText('2 sources')
-  await row('Where does this come from?').locator('summary').click()
-  await expect(row('Where does this come from?')).toContainText(/GFS-Wave \(NOAA\)issued .+ · fetched .+ ago/)
-  await row('Where does this come from?').locator('summary').click()
+  await expect(row('Sources').locator('summary')).toContainText('2 sources')
+  await row('Sources').locator('summary').click()
+  await expect(row('Sources')).toContainText(/GFS-Wave \(NOAA\)issued .+ · fetched .+ ago/)
+  await row('Sources').locator('summary').click()
   await expect(row('Booster landing zone').locator('summary')).toContainText('not published yet')
   await row('Booster landing zone').locator('summary').click()
   await expect(row('Booster landing zone')).toContainText(/The sea is read near [\d.]+°N [\d.]+°W\./)

@@ -118,7 +118,7 @@ export function SectionStates<T>({
           icon="ring"
           title="Not served yet"
           detail="The service running here does not answer this step yet."
-          stillWorks="Landing and the steps it does answer work as usual."
+          stillWorks="Surface and the steps it does answer work as usual."
         />
       )
     }

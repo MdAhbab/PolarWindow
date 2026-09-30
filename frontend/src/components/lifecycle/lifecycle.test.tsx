@@ -628,7 +628,7 @@ describe('useSection follows a 202 through its job', () => {
     await waitFor(() => expect(result.current.status).toBe('error'))
     const e = (result.current as { error: { title: string; detail: string; stillWorks: string } }).error
     expect(e.detail).toBe('Out of memory')
-    expect(e.stillWorks).toMatch(/other sections/)
+    expect(e.stillWorks).toMatch(/other steps/)
   })
 })
 

@@ -175,6 +175,9 @@ test('beats 4 and 7: VIPER month strip and the far side', async ({ page, context
   await openRow(page, 'Change the dates')
   await expect(page.getByRole('option', { name: /^April 2027: sunlight 8 percent/ })).toBeVisible()
   await expect(page.getByRole('option', { name: /^November 2027: sunlight 41 percent/ })).toBeVisible()
+  await expect(page.locator('main')).toContainText('For the centre of Mons Mouton')
+  // The record, on the mission's home, says what kind of point it is.
+  await page.goto('/missions/blue-moon-mk1-viper')
   await expect(page.locator('main')).toContainText('centre of Mons Mouton, not a landing point')
 
   await page.goto('/missions/apex-1/surface')

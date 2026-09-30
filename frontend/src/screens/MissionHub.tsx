@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useRef } from 'react'
+import { useTransitionClick } from '../lib/viewTransition'
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { PageHeader } from '../components/Page'
 import { Icon } from '../components/Icon'
@@ -138,7 +139,7 @@ export function MissionHub() {
           <StepFooter missionId={m.id} base={base} next={nextStep} />
         </>
       ) : (
-        <div className="pw-content grid gap-8 xl:grid-cols-12">
+        <div className="grid gap-8 xl:grid-cols-12">
           <section aria-labelledby="steps-h" className="flex min-w-0 flex-col gap-3 xl:col-span-8">
             <h2 id="steps-h" className="text-body font-semibold text-ink-2">
               Six steps, from getting ready to coming home
@@ -157,11 +158,12 @@ export function MissionHub() {
 
 /** The end of a step: the way on to the next one, and back to the mission. */
 function StepFooter({ base, next, missionId }: { base: string; missionId: string; next: (typeof SECTIONS)[number] | null }) {
+  const go = useTransitionClick()
   return (
     <nav aria-label="Next step" className="flex flex-col gap-3 border-t border-line pt-6 sm:flex-row sm:items-stretch sm:justify-between">
       <Link
         to={base}
-        viewTransition
+        onClick={go(base)}
         className="inline-flex h-12 items-center gap-2 self-start rounded-control px-1 text-body font-semibold text-ink-2 no-underline hover:text-ink sm:self-center"
       >
         <Icon name="back" size={16} strokeWidth={2} />
@@ -171,7 +173,7 @@ function StepFooter({ base, next, missionId }: { base: string; missionId: string
         <Link
           to={sectionPath(missionId, next.id)}
           state={{ from: 'next-step' }}
-          viewTransition
+          onClick={go(sectionPath(missionId, next.id), { state: { from: 'next-step' } })}
           className="group flex min-w-0 items-center justify-between gap-4 border border-line bg-panel px-5 py-3 no-underline transition-[border-color,box-shadow] duration-[var(--pw-dur-base)] hover:border-line-strong hover:shadow-lift sm:min-w-[340px]"
         >
           <span className="flex min-w-0 flex-col">

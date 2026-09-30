@@ -68,6 +68,68 @@ The rules that do not change: no verdicts; every number with its range or
 reason, source and age; the Words table; a table twin for every chart; status
 as glyph and words; axe clean in both themes; nothing wider than 375 px.
 
+**Built** (branch `featured-frontend`)
+
+*Tokens* (`src/styles/globals.css`): the colour and type tokens stay; added
+elevation (`shadow-rest`, `-lift`, `-raised`, `-overlay`, lighter in the light
+theme), space roles (`gutter` 16 px, 32 px from `lg` via `.pw-page`; `stack`,
+`block`), radius (0 / 2 px / pill, unchanged) and motion (`--ease-settle`,
+`--ease-move`, `--ease-leave`; `--pw-dur-quick` 140, `-base` 220, `-slow` 380,
+`-sheet` 420 ms). Links in running text are underlined.
+
+*Parts* (one each, used everywhere): `PageHeader` + `Breadcrumbs`
+(`components/Page.tsx`); `SectionLayout`, `Answer` (one sentence and at most one
+quieter line), `NumberRow` + `QuantityTile`/`KeyNumberTile`, `ChartPanel` (table
+twin), `Rows` → `RowGroup` "Details" and "About these numbers" ("How this was
+worked out", "Sources"); `Disclosure`; `Sheet` (sizes 400/480/720);
+`Tabs`; `Button`, `Segmented`, `Field`; `Toaster` + `toast()`; `Skeleton`,
+`SectionSkeleton`, `ProgressTrack`, `WorkingPanel`, `StatePanel`, `ErrorPanel`,
+`ConnectionBanner`, `NotFound`, `ErrorBoundary` (`components/States.tsx`).
+
+*Shell*: two views, **Missions** and **Landing sites** (Map · Site · Compare ·
+Plan as tabs under the header; Skyline and the report have breadcrumbs). One
+header row on a phone, the two views at the bottom in ink (not amber). The
+data-source badge moved into a line under the header that says what a saved
+copy or being offline means. Unknown addresses get a 404 page; a screen that
+throws gets a panel with a way back, not a blank page. A new page opens at its
+top (it used to open scrolled down on a phone).
+
+*Mission home*: `/missions/:id` is the mission's record beside six step cards
+(question, state as glyph and words, the service's summary in full, one tap).
+Each step page has breadcrumbs, the step bar (its mark slides to the step
+pressed) and ends with "All six steps" and "Next step". Landing is now
+**Surface** (`/surface`; `/landing` redirects), in the same template: an answer
+sentence built from the four numbers, Listen beside it, the date bars as its
+chart with the stretch table as twin.
+
+*Less to read*: answers are one sentence (Trip, Launch, Return), with the
+published liftoff, the sea and the capsule in one quieter line. Method notes
+(the opportunity note, the landing rule, the link-budget note) moved into "How
+this was worked out", which also holds when and with what it was worked out; a
+no-margin or missing reason two tiles share is said once; numbered burns share
+one key; tile labels are sentence case and wrap as words. The guide is five
+steps and has "Skip the tour".
+
+*Settings*: one 720 px sheet with six tabs by task: Project (signed in, sign
+out, your name on changes, AI, service state, clean-up), Parameters, Risk
+scale, Data sources, Appearance (theme, motion, shortcuts, guide), Offline
+copy. A save is said in a toast drawn inside the open sheet; a changed
+parameter's toast has Undo (puts the value before it back).
+
+*Motion* (transform and opacity only; each branch decided in code, the CSS
+floor behind it): page and step changes cross-fade through the View
+Transitions API (`useTransitionClick` in `lib/viewTransition.ts`: React
+Router's own prop needs a data router, and the app uses `<BrowserRouter>`);
+only the step content is named on a step page, so the header and the step bar
+hold still; disclosures drop open; sheets slide
+in and out; skeletons pulse and content arrives with a short rise; charts
+grow in from their baseline; the 202 bar scales (a sliding band before there
+is a figure); the rings turn into place (M2) and the skyline paths settle in
+(M5); a changed number settles into place instead of rolling through wrong
+values (M4). Text and numbers only move, never fade, so their contrast holds
+at every frame (axe runs mid-animation in the tests). No motion library was
+added.
+
 ---
 
 ## 2026-09-27 · The lifecycle screens (first plan)

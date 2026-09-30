@@ -51,7 +51,7 @@ export function LaunchSection({ mission: m }: { mission: MissionDetail }) {
                 icon="ring"
                 title="No launch to show yet"
                 detail={data.none_reason}
-                stillWorks="Landing, Contact and the other steps do not depend on the launch and work as usual."
+                stillWorks="Surface, Contact and the other steps do not depend on the launch and work as usual."
               />
               <Rows about={<SourcesRow meta={meta} />} />
             </>
