@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react'
 import { useTransitionClick } from '../lib/viewTransition'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
@@ -11,11 +11,13 @@ import { IconButton, SampleDataBadge, SvgDefs } from './ui'
 import { ConnectionBanner, ErrorBoundary, useOnline } from './States'
 import { Toaster } from './Toast'
 import { RunLogDrawer } from './RunLog'
-import { SettingsSheet } from './SettingsSheet'
 import { GuideBar } from './GuideBar'
 import { useGuide } from '../lib/guide'
 import { ESTIMATES, isoDateWords } from '../lib/format'
 import { snapshotCapturedAt } from '../lib/api/snapshot'
+
+/** Settings loads the first time it is opened, not with every page. */
+const SettingsSheet = lazy(() => import('./SettingsSheet').then((m) => ({ default: m.SettingsSheet })))
 
 /**
  * Two views: the missions, and the landing sites with their four pages.
@@ -105,6 +107,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   useKeyboardMap({ reducedMotion: useReducedMotion() })
   useRouteFocus()
   const inSites = SITE_PATHS.some((p) => pathname.startsWith(p))
+  // Once opened, Settings stays mounted, so it can slide out when closed.
+  const settingsLoaded = useRef(false)
+  if (settingsOpen) settingsLoaded.current = true
   const go = useTransitionClick()
   const saved = provenance === 'snapshot'
 
@@ -247,7 +252,11 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <GuideBar />
       <RunLogDrawer />
-      <SettingsSheet />
+      {settingsLoaded.current && (
+        <Suspense fallback={null}>
+          <SettingsSheet />
+        </Suspense>
+      )}
       <Toaster />
     </div>
   )

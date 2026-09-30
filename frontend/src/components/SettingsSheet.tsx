@@ -1,5 +1,5 @@
 import { useId, useState, type ReactNode } from 'react'
-import { create } from 'zustand'
+import { useSettingsTab, type SettingsTab } from '../lib/settingsTab'
 import { useNavigate } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { useMission } from '../lib/store'
@@ -14,8 +14,6 @@ import { Skeleton } from './States'
 import { Sheet } from './Sheet'
 import { Button, Segmented, Tabs } from './ui'
 
-export type SettingsTab = 'project' | 'parameters' | 'risk' | 'sources' | 'appearance' | 'offline'
-
 const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'project', label: 'Project' },
   { id: 'parameters', label: 'Parameters' },
@@ -24,12 +22,6 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'appearance', label: 'Appearance' },
   { id: 'offline', label: 'Offline copy' },
 ]
-
-/** Which group Settings opens on; a link elsewhere ("See the data sources") can choose it. */
-export const useSettingsTab = create<{ tab: SettingsTab; setTab: (t: SettingsTab) => void }>((set) => ({
-  tab: 'project',
-  setTab: (tab) => set({ tab }),
-}))
 
 /**
  * Settings: one place for everything that is not the data, grouped by task.

@@ -114,7 +114,9 @@ steps and has "Skip the tour".
 out, your name on changes, AI, service state, clean-up), Parameters, Risk
 scale, Data sources, Appearance (theme, motion, shortcuts, guide), Offline
 copy. A save is said in a toast drawn inside the open sheet; a changed
-parameter's toast has Undo (puts the value before it back).
+parameter's toast has Undo (puts the value before it back). Settings loads the
+first time it is opened (its own 24 kB chunk), so the main bundle went from
+592.8 kB (182.6 kB gzipped) to 577.9 kB (179.6 kB) while gaining the new parts.
 
 *Motion* (transform and opacity only; each branch decided in code, the CSS
 floor behind it): page and step changes cross-fade through the View

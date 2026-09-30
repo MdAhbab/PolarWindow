@@ -1,5 +1,5 @@
 import type { FeedDTO } from '../../lib/api/lifecycle'
-import { useSettingsTab } from '../SettingsSheet'
+import { useSettingsTab } from '../../lib/settingsTab'
 import { useHealth } from '../../lib/api/queries'
 import { useFeeds } from '../../lib/api/lifecycleQueries'
 import { useSnapshotActive } from '../../lib/api/snapshot'
