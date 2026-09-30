@@ -7,6 +7,8 @@ import { useReducedMotion } from '../hooks/useMotion'
 import { Icon, Mark, Wordmark } from './Icon'
 import { useProvenance } from '../lib/useProvenance'
 import { IconButton, SampleDataBadge, SvgDefs } from './ui'
+import { ConnectionBanner, ErrorBoundary, useOnline } from './States'
+import { Toaster } from './Toast'
 import { RunLogDrawer } from './RunLog'
 import { SettingsSheet } from './SettingsSheet'
 import { GuideBar } from './GuideBar'
@@ -15,17 +17,23 @@ import { ESTIMATES, isoDateWords } from '../lib/format'
 import { snapshotCapturedAt } from '../lib/api/snapshot'
 
 /**
- * The five tabs (§10.1), in order. The skyline page is reached from Site
- * ("See the skyline") and the report from Site and Mission detail; both keep
- * their routes.
+ * Two views: the missions, and the landing sites with their four pages.
+ * A mission's six steps live inside its own page; the skyline and the report
+ * are reached from Site and keep their routes.
  */
-const NAV = [
-  { to: '/missions', label: 'Missions', icon: 'pin' as const },
-  { to: '/map', label: 'Map', icon: 'layers' as const },
-  { to: '/site', label: 'Site', icon: 'clocks' as const },
-  { to: '/compare', label: 'Compare', icon: 'compare' as const },
-  { to: '/plan', label: 'Plan', icon: 'gap' as const },
+const VIEWS = [
+  { to: '/missions', label: 'Missions', icon: 'pin' as const, match: (p: string) => p.startsWith('/missions') },
+  { to: '/map', label: 'Landing sites', icon: 'layers' as const, match: (p: string) => SITE_PATHS.some((s) => p.startsWith(s)) },
 ]
+
+/** The landing-site pages, as tabs under the header while one is open. */
+const SITE_PAGES = [
+  { to: '/map', label: 'Map' },
+  { to: '/site', label: 'Site' },
+  { to: '/compare', label: 'Compare' },
+  { to: '/plan', label: 'Plan' },
+]
+const SITE_PATHS = ['/map', '/site', '/compare', '/plan', '/skyline', '/report']
 
 const TITLES: Record<string, string> = {
   '/missions': 'CLPS missions',
@@ -75,6 +83,8 @@ function missionOf(pathname: string): string | null {
 export function AppShell({ children }: { children: ReactNode }) {
   const provenance = useProvenance()
   const capturedAt = snapshotCapturedAt()
+  const online = useOnline()
+  const { pathname } = useLocation()
   // Selectors, not the whole store: during M1 the cursor changes sixty times a
   // second, and a whole-store subscription re-rendered the shell on each one.
   const { settingsOpen, setSettingsOpen } = useMission(
@@ -87,6 +97,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const setGuideOpen = useGuide((g) => g.setOpen)
   useKeyboardMap({ reducedMotion: useReducedMotion() })
   useRouteFocus()
+  const inSites = SITE_PATHS.some((p) => pathname.startsWith(p))
+  const saved = provenance === 'snapshot'
 
   return (
     <div className="flex min-h-full flex-col bg-canvas text-ink">
@@ -98,51 +110,39 @@ export function AppShell({ children }: { children: ReactNode }) {
         Skip to the content
       </a>
 
-      <header className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-2 border-b border-line px-4 py-2 lg:px-6">
-        <NavLink to="/missions" className="flex h-12 items-center gap-2.5 no-underline" aria-label="POLAR WINDOW, CLPS missions">
+      <header className="pw-page flex shrink-0 items-center gap-x-8 border-b border-line bg-canvas py-1.5">
+        <NavLink to="/missions" viewTransition className="flex h-12 shrink-0 items-center gap-2.5 no-underline" aria-label="POLAR WINDOW, CLPS missions">
           <Mark />
           <Wordmark />
         </NavLink>
 
-        <nav aria-label="Views" className="-mx-2 hidden grow gap-1 overflow-x-auto px-2 lg:flex">
-          {NAV.map((n) => (
+        <nav aria-label="Views" className="hidden h-12 items-stretch gap-1 lg:flex">
+          {VIEWS.map((n) => (
             <NavLink
               key={n.to}
               to={n.to}
-              className={({ isActive }) =>
-                `inline-flex h-12 shrink-0 items-center gap-2 px-3 text-body font-medium whitespace-nowrap no-underline ${
-                  isActive
-                    ? 'font-semibold text-ink shadow-tab'
-                    : 'text-ink-2 hover:text-ink'
-                }`
-              }
+              viewTransition
+              aria-current={n.match(pathname) ? 'page' : undefined}
+              className={`inline-flex shrink-0 items-center px-3 text-control whitespace-nowrap no-underline transition-colors duration-[var(--pw-dur-quick)] ${
+                n.match(pathname) ? 'font-semibold text-ink shadow-tab' : 'font-medium text-ink-2 hover:text-ink'
+              }`}
             >
-              <Icon name={n.icon} size={17} className="lg:hidden" aria-hidden="true" />
-              <span>{n.label}</span>
+              {n.label}
             </NavLink>
           ))}
         </nav>
 
-        {/* Said only when it matters: live measurements are the normal case,
-            so the badge appears for partial data, a saved copy or no data. */}
-        {provenance !== 'measured' && (
-          <div className="order-3 w-full lg:order-none lg:ml-auto lg:w-auto">
-            <SampleDataBadge
-              provenance={provenance}
-              note={provenance === 'snapshot' && capturedAt ? `Saved ${isoDateWords(capturedAt)}.` : undefined}
-            />
-          </div>
-        )}
-        <div className={`ml-auto flex items-center gap-2 ${provenance !== 'measured' ? 'lg:ml-0' : ''}`}>
+        <div className="ml-auto flex items-center gap-2">
           <button
             type="button"
             aria-pressed={guideOpen}
+            aria-label="Guide"
             onClick={() => setGuideOpen(!guideOpen)}
             title={guideOpen ? 'Hide the guide' : 'Show the guide: a short tour of every feature'}
-            className="inline-flex h-12 items-center gap-2 rounded-control border border-line-strong px-3 text-body font-semibold text-ink hover:bg-inset"
+            className="inline-flex h-12 min-w-12 items-center justify-center gap-2 rounded-control border border-line-strong px-3 text-body font-semibold text-ink transition-colors duration-[var(--pw-dur-quick)] hover:bg-inset aria-pressed:bg-inset"
           >
             <Icon name="info" size={18} aria-hidden="true" />
-            Guide
+            <span className="hidden sm:inline">Guide</span>
           </button>
           <IconButton
             name="settings"
@@ -158,6 +158,41 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
+      {/* Said only when it matters: live measurements are the normal case, so
+          the line appears offline, for a saved copy, partial data or no data. */}
+      <ConnectionBanner
+        offline={!online}
+        saved={saved}
+        savedOn={capturedAt ? isoDateWords(capturedAt) : undefined}
+        badge={
+          provenance !== 'measured' ? (
+            <SampleDataBadge
+              provenance={provenance}
+              note={saved && capturedAt ? `Saved ${isoDateWords(capturedAt)}.` : undefined}
+            />
+          ) : undefined
+        }
+      />
+
+      {inSites && (
+        <nav aria-label="Landing site pages" className="pw-page flex border-b border-line">
+          {SITE_PAGES.map((n) => (
+            <NavLink
+              key={n.to}
+              to={n.to}
+              viewTransition
+              className={({ isActive }) =>
+                `inline-flex h-12 min-w-0 grow basis-0 items-center justify-center px-3 text-body whitespace-nowrap no-underline transition-colors duration-[var(--pw-dur-quick)] sm:grow-0 sm:basis-auto ${
+                  isActive ? 'font-semibold text-ink shadow-tab' : 'font-medium text-ink-2 hover:text-ink'
+                }`
+              }
+            >
+              {n.label}
+            </NavLink>
+          ))}
+        </nav>
+      )}
+
       {/* Below lg the fixed tab bar, and at every width the guide bar when it
           is open, must never cover the last line. */}
       <main
@@ -165,37 +200,42 @@ export function AppShell({ children }: { children: ReactNode }) {
         tabIndex={-1}
         className="flex grow flex-col pb-[calc(4rem+var(--pw-guide-h,0px))] outline-none lg:pb-[var(--pw-guide-h,0px)]"
       >
-        {children}
+        <ErrorBoundary resetKey={pathname}>{children}</ErrorBoundary>
         {/* U13: one line per screen instead of "≈" before every value. */}
-        <p className="border-t border-line px-4 py-3 text-caption leading-caption text-ink-3 lg:px-6">{ESTIMATES}</p>
+        <p className="pw-page mt-auto border-t border-line py-3 text-caption leading-caption text-ink-3">{ESTIMATES}</p>
       </main>
 
-      {/* U3: fixed to the bottom on a phone, all five tabs, clear of the home
-          indicator. It used to sit at the end of a 2,366 px page and drop
-          Blackout. */}
+      {/* On a phone the two views sit at the bottom, in reach of a thumb and
+          clear of the home indicator. The open one is marked in ink, with a
+          bar and bold words: amber means sunlight. */}
       <nav
         aria-label="Views"
         className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-canvas pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
-        {NAV.map((n) => (
-          <NavLink
-            key={n.to}
-            to={n.to}
-            className={({ isActive }) =>
-              `flex h-16 min-w-0 grow basis-0 flex-col items-center justify-center gap-1 no-underline ${
-                isActive ? 'text-sun' : 'text-ink-3'
-              }`
-            }
-          >
-            <Icon name={n.icon} size={22} strokeWidth={1.7} />
-            <span className="text-tag font-semibold">{n.label}</span>
-          </NavLink>
-        ))}
+        {VIEWS.map((n) => {
+          const on = n.match(pathname)
+          return (
+            <NavLink
+              key={n.to}
+              to={n.to}
+              viewTransition
+              aria-current={on ? 'page' : undefined}
+              className={`relative flex h-16 min-w-0 grow basis-0 flex-col items-center justify-center gap-1 no-underline ${
+                on ? 'text-ink' : 'text-ink-3'
+              }`}
+            >
+              {on && <span aria-hidden="true" className="absolute inset-x-6 top-0 h-[3px] bg-ink" />}
+              <Icon name={n.icon} size={22} strokeWidth={on ? 2 : 1.7} />
+              <span className={`text-caption ${on ? 'font-semibold' : 'font-medium'}`}>{n.label}</span>
+            </NavLink>
+          )
+        })}
       </nav>
 
       <GuideBar />
       <RunLogDrawer />
       <SettingsSheet />
+      <Toaster />
     </div>
   )
 }

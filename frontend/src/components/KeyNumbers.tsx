@@ -1,5 +1,6 @@
 import { useId, useState, type ReactNode } from 'react'
-import { useCountUp } from '../hooks/useCountUp'
+import { useMotionClass } from '../hooks/useMotion'
+import { Skeleton } from './States'
 import { bound, hoursSpoken, percent, plusMinus, termLabel } from '../lib/format'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
 import type { Arc, SiteMetrics } from '../lib/types'
@@ -97,14 +98,14 @@ export function KeyNumberTile({
   age?: string
 }) {
   const shown = state === 'ready' || state === 'uncertain'
-  // NaN while there is no value: the first real value is set directly, and
-  // the roll (M4) only ever runs between two real values, never from zero.
-  const rolled = useCountUp(shown ? value : Number.NaN)
+  // M4: the figure is always the real value. When it changes it settles into
+  // place (a short rise from 0.55 opacity), so no wrong value is ever drawn,
+  // and under reduced motion it is simply replaced.
+  const settle = useMotionClass('pw-number-in')
   const [explained, setExplained] = useState(false)
   const explainId = useId()
-  // One sentence with the final value, its unit and its margin. The visible
-  // figure rolls through intermediate values (M4) and its ± sits in a separate
-  // element, so reading the visuals aloud announced "±17.1" with no unit.
+  // One sentence with the value, its unit and its margin: the ± sits in a
+  // separate element, so reading the visuals aloud announced "±17.1" with no unit.
   const said =
     spoken ??
     (unit === 'h'
@@ -119,12 +120,11 @@ export function KeyNumberTile({
 
   const numberClass =
     size === 'lg'
-      ? // The four stay together as a 2×2 on a phone; at 64 px a three-digit
-        // value is wider than its tile below 640 px, so it steps down to the
-        // md size there rather than overflowing (WCAG 1.4.10).
-        'text-figure-md leading-figure-md sm:text-figure-lg sm:leading-figure-lg'
+      ? // The four stay together as a 2×2 on a phone, where a three-digit
+        // value and its unit must fit half the width (WCAG 1.4.10).
+        'text-figure leading-figure sm:text-figure-md sm:leading-figure-md'
       : size === 'md'
-        ? 'text-figure-md leading-figure-md'
+        ? 'text-figure leading-figure sm:text-figure-md sm:leading-figure-md'
         : 'text-figure leading-figure'
 
   const explains = Boolean(means || source)
@@ -137,17 +137,13 @@ export function KeyNumberTile({
 
   return (
     <div
-      className={`border bg-panel px-5 py-5 ${border} ${
+      className={`border bg-panel p-4 sm:px-5 ${border} ${
         inRow ? 'row-span-6 grid grid-rows-subgrid content-start gap-y-2' : 'flex flex-col gap-2'
       }`}
     >
-      {/* Two lines tall even when the label fits on one, so the four values
-          sit on one baseline when a neighbour's label wraps. */}
-      <div
-        className={`flex min-h-8 items-start gap-2 text-caption font-semibold tracking-caps uppercase ${
-          tone === 'alert' ? 'text-alert' : state === 'uncertain' ? 'text-ink-2' : 'text-ink-3'
-        }`}
-      >
+      {/* Sentence case, so a long label wraps as words; the row keeps the
+          four values on one baseline when one label wraps. */}
+      <div className={`flex items-start gap-2 text-small leading-5 font-medium ${tone === 'alert' ? 'text-alert' : 'text-ink-2'}`}>
         {tone === 'alert' ? (
           <Icon name="alert" size={14} strokeWidth={2.2} />
         ) : state === 'uncertain' ? (
@@ -161,7 +157,7 @@ export function KeyNumberTile({
             aria-expanded={explained}
             aria-controls={explainId}
             onClick={() => setExplained((v) => !v)}
-            className="-my-2 -mr-2 flex grow cursor-pointer items-start justify-between gap-2 py-2 pr-2 text-left uppercase hover:text-ink"
+            className="-my-2 -mr-2 flex grow cursor-pointer items-start justify-between gap-2 py-2 pr-2 text-left hover:text-ink"
           >
             <span>{label}</span>
             <Icon name="info" size={14} strokeWidth={2} className="mt-px shrink-0 opacity-70" />
@@ -186,29 +182,34 @@ export function KeyNumberTile({
         {state === 'blank' ? (
           <span className={`font-semibold tracking-figure text-line-strong ${numberClass}`}>—</span>
         ) : state === 'computing' ? (
-          <span className={`font-semibold tracking-figure text-line-strong ${numberClass}`}>——</span>
+          <span className={`inline-flex items-center ${numberClass}`}>
+            <Skeleton className="h-[0.8em] w-24" />
+            <span className="sr-only">Loading</span>
+          </span>
         ) : display !== undefined ? (
-          <span className={`font-semibold tracking-figure tnum ${numberClass} ${TONE_TEXT[tone]}`}>{display}</span>
+          <span key={display} className={`font-semibold tracking-figure tnum ${numberClass} ${TONE_TEXT[tone]} ${settle}`}>
+            {display}
+          </span>
         ) : (
-          <span className={`font-semibold tracking-figure tnum ${numberClass} ${TONE_TEXT[tone]}`}>
+          <span key={value} className={`font-semibold tracking-figure tnum ${numberClass} ${TONE_TEXT[tone]} ${settle}`}>
             {bound(open)}
-            {Math.round(rolled)}
+            {Math.round(value)}
           </span>
         )}
         <span className="flex items-baseline gap-2">
           {margin !== undefined && state !== 'blank' && state !== 'computing' ? (
-            <span className="text-subhead text-uncertain tnum">{margin}</span>
+            <span className="text-title text-uncertain tnum sm:text-subhead">{margin}</span>
           ) : (
             toleranceH !== undefined &&
             state !== 'blank' &&
-            state !== 'computing' && <span className="text-subhead text-uncertain tnum">{plusMinus(toleranceH)}</span>
+            state !== 'computing' && <span className="text-title text-uncertain tnum sm:text-subhead">{plusMinus(toleranceH)}</span>
           )}
-          {unit && <span className="text-large text-ink-2">{unit}</span>}
+          {unit && <span className="text-title text-ink-2 sm:text-large">{unit}</span>}
         </span>
       </div>
 
       {bar ? (
-        <div className="relative flex h-1.5 bg-dark-fill">
+        <div className="relative flex h-1 overflow-hidden bg-dark-fill">
           {state === 'ready' || state === 'uncertain' ? (
             range ? (
               <>
@@ -219,13 +220,14 @@ export function KeyNumberTile({
                 />
               </>
             ) : (
+              // Scaled, not resized: it moves on the compositor and shifts nothing.
               <div
-                className={`${TONE_BAR[tone]} transition-[width] duration-[600ms]`}
-                style={{ width: `${clampPct(fraction ?? 0)}%` }}
+                className={`absolute inset-0 origin-left ${TONE_BAR[tone]} transition-transform duration-[var(--pw-dur-slow)] ease-[var(--ease-settle)]`}
+                style={{ transform: `scaleX(${clampPct(fraction ?? 0) / 100})` }}
               />
             )
           ) : (
-            <div className="w-1/3 bg-line-strong" />
+            <div className="w-1/3 bg-line" />
           )}
         </div>
       ) : inRow ? (
@@ -318,7 +320,7 @@ export function KeyNumberRow({
   }
 
   return (
-    <div className={`grid gap-4 ${grid}`}>
+    <div className={`grid gap-3 ${grid}`}>
       <KeyNumberTile
         label={t.sun.label}
         means={t.sun.means}

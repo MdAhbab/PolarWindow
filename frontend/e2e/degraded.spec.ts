@@ -25,6 +25,7 @@ test('API unreachable: saved answers, the Saved copy badge, and a degraded agent
 
   await page.getByRole('link', { name: /^IM-2,/ }).click()
   await expect(page.locator('main')).toContainText('6 Mar 2025, 17:30 UTC')
+  await page.getByRole('link', { name: /^4\s*Surface/ }).click()
   await expect(page.locator('main')).toContainText('100% of the time')
 
   await page.getByRole('link', { name: 'Missions' }).first().click()

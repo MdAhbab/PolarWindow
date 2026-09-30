@@ -1,7 +1,8 @@
 import { lazy, Suspense, useEffect, useMemo, type ReactNode } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
-import { ErrorPanel, LoadingPanel } from './components/States'
+import { ErrorPanel, NotFound, Skeleton } from './components/States'
+import { Mark } from './components/Icon'
 import { MapScreen } from './screens/MapScreen'
 import { TwoClockScreen } from './screens/TwoClockScreen'
 import { CompareScreen } from './screens/CompareScreen'
@@ -33,7 +34,7 @@ export default function App() {
       <Route
         path="/"
         element={
-          <Suspense fallback={<div className="min-h-full bg-canvas" />}>
+          <Suspense fallback={<FrontPageLoading />}>
             <LandingScreen />
           </Suspense>
         }
@@ -104,8 +105,16 @@ function Dashboard() {
   if (sites.isPending) {
     return (
       <AppShell>
-        <div className="mx-auto w-full max-w-2xl p-8">
-          <LoadingPanel done={0} total={1} />
+        <div className="pw-page flex flex-col gap-6 py-6" aria-busy="true">
+          <span className="sr-only" role="status">
+            Loading the missions and landing sites
+          </span>
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-9 w-72 max-w-full" />
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Skeleton className="h-80" />
+            <Skeleton className="h-80" />
+          </div>
         </div>
       </AppShell>
     )
@@ -161,8 +170,20 @@ function Dashboard() {
         <Route path="/clocks" element={<Navigate to="/site" replace />} />
         <Route path="/horizon" element={<Navigate to="/skyline" replace />} />
         <Route path="/blackout" element={<Navigate to="/plan" replace />} />
-        <Route path="*" element={<Navigate to="/missions" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </AppShell>
+  )
+}
+
+/** While the front page's own chunk (the Moon) downloads: the name, not a blank screen. */
+function FrontPageLoading() {
+  return (
+    <div className="flex min-h-full flex-col items-center justify-center gap-4 bg-canvas text-ink" aria-busy="true">
+      <Mark />
+      <p role="status" className="text-small text-ink-3">
+        Opening POLAR WINDOW…
+      </p>
+    </div>
   )
 }

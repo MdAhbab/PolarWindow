@@ -146,14 +146,14 @@ describe('SectionStates: the same states on every section', () => {
   it('loading: the numbers’ labels with no values, never zeros', () => {
     show({ status: 'pending' })
     expect(screen.getByText('Longest time in shadow')).toBeTruthy()
-    expect(screen.getAllByText('——')).toHaveLength(4)
+    expect(screen.getAllByText('Loading')).toHaveLength(4)
   })
 
   it('working it out: real progress and what still works', () => {
     show({ status: 'working', job: { job_id: 1, status: 'running', progress: 0.35, message: 'Working out passes', poll_after_s: 2 } })
     expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('35')
     expect(screen.getByText('Working out passes')).toBeTruthy()
-    expect(screen.getByText(/The other sections and the landing numbers are unaffected/)).toBeTruthy()
+    expect(screen.getByText(/The other steps are unaffected/)).toBeTruthy()
   })
 
   it('a queued job says it has not started, without a fake number', () => {
@@ -200,7 +200,7 @@ describe('JourneyBar', () => {
       '/missions/im-2/ready',
       '/missions/im-2/launch',
       '/missions/im-2/trip',
-      '/missions/im-2/landing',
+      '/missions/im-2/surface',
       '/missions/im-2/contact',
       '/missions/im-2/return',
     ])

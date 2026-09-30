@@ -30,7 +30,7 @@ test('the hub (contract fixtures): six steps in order, one open at a time, each 
   await page.goto('/missions/im-2/ready')
   const links = steps(page).getByRole('link')
   await expect(links).toHaveCount(6)
-  await expect(links).toHaveText([/^1\s*Ready/, /^2\s*Launch/, /^3\s*Trip/, /^4\s*Landing/, /^5\s*Contact/, /^6\s*Return/])
+  await expect(links).toHaveText([/^1\s*Ready/, /^2\s*Launch/, /^3\s*Trip/, /^4\s*Surface/, /^5\s*Contact/, /^6\s*Return/])
   // Each step says its state in words, and its summary.
   await expect(links.nth(0)).toHaveAccessibleName(/Ready.*Available.*5 of 9 items ready; 1 blocked/)
   await expect(links.nth(4)).toHaveAccessibleName(/Contact.*Working it out/)
@@ -46,8 +46,14 @@ test('the hub (contract fixtures): six steps in order, one open at a time, each 
   await expect(links.nth(2)).toBeFocused()
   await expect(page.getByRole('heading', { name: QUESTIONS.trip })).toBeVisible()
 
-  // /missions/:id opens on Landing, the page this product began with.
+  // /missions/:id is the mission's home: the six steps as cards, none open.
   await page.goto('/missions/im-2')
+  await expect(links).toHaveCount(6)
+  await expect(links.nth(3)).not.toHaveAttribute('aria-current', 'page')
+  await expect(links.nth(0)).toHaveAccessibleName(/Ready.*Available.*5 of 9 items ready; 1 blocked/)
+  // Surface is the fourth step; its old address still lands on it.
+  await page.goto('/missions/im-2/landing')
+  await expect(page).toHaveURL(/\/missions\/im-2\/surface$/)
   await expect(links.nth(3)).toHaveAttribute('aria-current', 'page')
   await expect(page.locator('[data-guide="sun-earth"]')).toBeVisible()
   // An unknown step goes back to the mission.

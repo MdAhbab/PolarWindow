@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { Children, cloneElement, isValidElement, type ReactNode } from 'react'
 import type { QuantityDTO } from '../../lib/api/lifecycle'
 import { hostWords, isUrl, provenanceWords, quantityView, unitWords } from '../../lib/lifecycle/quantity'
 import { termLabel } from '../../lib/format'
@@ -26,7 +26,14 @@ export function QuantityTile({
   age,
   inRow = true,
   icon,
+  sameReasonAs,
 }: {
+  /**
+   * Set by `NumberRow` when a tile before this one in the row gives the same
+   * reason for having no margin: the reason is said once, and this tile points
+   * to it instead of repeating it.
+   */
+  sameReasonAs?: string
   /** A key of `TERM` in `format.ts`: the label, its meaning and its other name. */
   term: string
   q: QuantityDTO | null | undefined
@@ -51,7 +58,12 @@ export function QuantityTile({
   const unit = joined || v.kind === 'missing' ? '' : v.unit
   // "From TLI …" becomes "from TLI …", but an acronym that opens the reason ("TLI to …") keeps its case.
   const lower = (t: string) => (/^[A-Z]{2}/.test(t) ? t : t.charAt(0).toLowerCase() + t.slice(1))
-  const lines = [note, v.noMarginReason ? `No margin: ${lower(v.noMarginReason)}` : undefined, v.missingReason].filter(Boolean)
+  const noMargin = v.noMarginReason
+    ? sameReasonAs
+      ? `No margin, for the same reason as ${sameReasonAs.charAt(0).toLowerCase()}${sameReasonAs.slice(1)}`
+      : `No margin: ${lower(v.noMarginReason)}`
+    : undefined
+  const lines = [note, noMargin, v.missingReason].filter(Boolean)
   const fraction = scale && v.value !== null ? v.value / scale : undefined
   const range = scale && v.kind === 'range' && v.lo !== undefined && v.hi !== undefined ? { lo: v.lo / scale, hi: v.hi / scale } : undefined
   return (
@@ -141,7 +153,23 @@ export function CountTile({
   )
 }
 
-/** The fixed row of at most four key numbers: 2 × 2 on a phone, four across from 1024 px. */
+/**
+ * The fixed row of at most four key numbers: 2 × 2 on a phone, four across
+ * from 1024 px. A reason for having no margin that two tiles share is said
+ * once, under the first.
+ */
 export function NumberRow({ children }: { children: ReactNode }) {
-  return <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">{children}</div>
+  const seen = new Map<string, string>()
+  const tiles = Children.toArray(children).map((child) => {
+    if (!isValidElement<Parameters<typeof QuantityTile>[0]>(child) || child.type !== QuantityTile) return child
+    const reason = child.props.q?.no_margin_reason
+    if (!reason) return child
+    const first = seen.get(reason)
+    if (first === undefined) {
+      seen.set(reason, termLabel(child.props.term).label)
+      return child
+    }
+    return cloneElement(child, { sameReasonAs: first })
+  })
+  return <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{tiles}</div>
 }

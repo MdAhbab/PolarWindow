@@ -98,9 +98,8 @@ function ReadyAnswer({
           stillWorks="Every other step, and the landing history and lessons below, work without it."
           action={addButton}
         />
-        <Rows>
+        <Rows about={<SourcesRow meta={meta} />}>
           <HistoryRows ready={ready} missionId={missionId} canWrite={canWrite} />
-          <SourcesRow meta={meta} />
         </Rows>
         {sheets}
       </>
@@ -159,7 +158,7 @@ function ReadyAnswer({
         table={<ReadinessTable items={ready.items} />}
       />
       {addButton && <div>{addButton}</div>}
-      <Rows>
+      <Rows about={<><HowSure meta={meta} /><SourcesRow meta={meta} /></>}>
         <RiskRow risks={ready.risks} missionId={missionId} canWrite={canWrite} />
         <PartsRow ready={ready} missionId={missionId} canWrite={canWrite} />
         <Disclosure title="Milestones" meta={`${ready.milestones.filter((x) => !x.done).length} to come`}>
@@ -186,8 +185,6 @@ function ReadyAnswer({
           )}
         </Disclosure>
         <HistoryRows ready={ready} missionId={missionId} canWrite={canWrite} />
-        <HowSure meta={meta} />
-        <SourcesRow meta={meta} />
       </Rows>
       {sheets}
     </>

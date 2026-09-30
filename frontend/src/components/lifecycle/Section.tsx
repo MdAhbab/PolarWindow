@@ -7,8 +7,9 @@ import { useMission } from '../../lib/store'
 import { dateTimeWords } from '../../lib/format'
 import { ageWords, hostWords } from '../../lib/lifecycle/quantity'
 import { Icon, type IconName } from '../Icon'
-import { ProblemPanel, UncertaintyNote } from '../States'
-import { Button, Disclosure, Panel, SectionLabel } from '../ui'
+import { ProblemPanel, ProgressTrack, Skeleton, UncertaintyNote } from '../States'
+import { useMotionClass } from '../../hooks/useMotion'
+import { Button, Disclosure, Panel, RowGroup, SectionLabel } from '../ui'
 import { NumberRow } from './QuantityTile'
 import { KeyNumberTile } from '../KeyNumbers'
 import { termLabel } from '../../lib/format'
@@ -27,7 +28,9 @@ export function SectionLayout({ question, children }: { question: string; childr
   const id = useId()
   return (
     <section aria-labelledby={id} className="flex w-full min-w-0 flex-col gap-6">
-      <SectionLabel id={id}>{question}</SectionLabel>
+      <h2 id={id} className="text-body font-semibold text-ink-3">
+        {question}
+      </h2>
       {children}
     </section>
   )
@@ -35,13 +38,15 @@ export function SectionLayout({ question, children }: { question: string; childr
 
 /**
  * The answer: one plain sentence, and how old it is. Counts and quantities,
- * never a verdict (invariant 9).
+ * never a verdict (invariant 9). It arrives with a short rise, never from
+ * invisible, so it can be read at once.
  */
 export function Answer({ children, meta }: { children: ReactNode; meta?: LifecycleMetaDTO }) {
   const at = meta ? Date.parse(meta.computed_at) : NaN
+  const arrive = useMotionClass('pw-arrive')
   return (
-    <div className="-mt-3 flex flex-col gap-2">
-      <p data-guide="section-answer" className="max-w-4xl text-subhead leading-8 font-medium text-ink">
+    <div className={`-mt-4 flex flex-col gap-2 ${arrive}`}>
+      <p data-guide="section-answer" className="max-w-4xl text-title-lg leading-7 font-medium text-ink sm:text-subhead sm:leading-8">
         {children}
       </p>
       {meta && !Number.isNaN(at) && (
@@ -122,36 +127,47 @@ export function SectionStates<T>({
       {view.status === 'working' ? (
         <WorkingPanel job={view.job} />
       ) : (
-        <div className="-mt-3 h-8 w-2/3 max-w-xl bg-inset" aria-hidden="true" />
+        <div className="-mt-4 flex flex-col gap-2" aria-hidden="true">
+          <Skeleton className="h-7 w-full max-w-3xl" />
+          <Skeleton className="h-7 w-1/2 max-w-md" />
+          <Skeleton className="mt-1 h-4 w-28" />
+        </div>
       )}
+      <span className="sr-only" role="status">
+        {view.status === 'working' ? '' : 'Loading this step'}
+      </span>
       <PendingNumbers terms={terms} />
+      <Skeleton className="h-64" />
     </>
   )
 }
 
-/** A 202: the answer is being worked out. Real progress, no spinner. */
+/**
+ * A 202: the answer is being worked out. Real progress when the service gives
+ * a figure, a moving band while it has none (still under reduced motion), and
+ * the service's own words for what it is doing.
+ */
 export function WorkingPanel({ job }: { job: JobRefDTO }) {
   const pct = job.progress === null ? null : Math.round(job.progress * 100)
   return (
-    <Panel className="-mt-3 flex flex-col gap-3 p-5">
-      <div className="flex items-center gap-2 text-control font-semibold text-ink">
-        <Icon name="quarter" size={18} />
-        {job.status === 'queued' ? 'Waiting its turn to be worked out' : 'Working it out'}
+    <Panel className="-mt-4 flex flex-col gap-3 p-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <div className="flex items-center gap-2 text-control font-semibold text-ink">
+          <Icon name="quarter" size={18} />
+          {job.status === 'queued' ? 'Waiting its turn to be worked out' : 'Working it out'}
+        </div>
+        {pct !== null && <span className="font-mono text-small text-ink-2 tnum">{pct}%</span>}
       </div>
       <p className="text-body text-ink-2">{job.message}</p>
-      <div
-        className="flex h-2 bg-dark-fill"
-        role="progressbar"
-        aria-label="Progress"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={pct ?? undefined}
-        aria-valuetext={pct === null ? 'Not started yet' : `${pct} percent`}
-      >
-        <div className="bg-terrain-high transition-[width] duration-200" style={{ width: `${pct ?? 0}%` }} />
-      </div>
-      <p className="text-small leading-5 text-ink-2">
-        This page updates itself when the answer is ready. The other sections and the landing numbers are unaffected.
+      <ProgressTrack
+        label="Progress"
+        max={100}
+        now={pct ?? undefined}
+        fraction={pct === null ? null : pct / 100}
+        valueText={pct === null ? 'Not started yet' : `${pct} percent`}
+      />
+      <p className="text-small leading-5 text-ink-3">
+        This page updates itself when the answer is ready. The other steps are unaffected.
       </p>
     </Panel>
   )
@@ -175,7 +191,7 @@ export function StatePanel({
   action?: ReactNode
 }) {
   return (
-    <Panel className="-mt-3 flex flex-col gap-3 p-5">
+    <Panel className="-mt-4 flex flex-col gap-3 p-5">
       <div className="flex items-center gap-2 text-title font-semibold text-ink">
         <Icon name={icon} size={18} />
         {title}
@@ -212,6 +228,8 @@ export function ChartPanel({
   const showTable = useMission((s) => s.tableOpen)
   const toggle = useMission((s) => s.toggleTable)
   const id = useId()
+  const reveal = useMotionClass('pw-chart-reveal')
+  const drop = useMotionClass('pw-arrive')
   return (
     <Panel as="section" guide={guide} className="flex min-w-0 flex-col gap-4 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -223,9 +241,9 @@ export function ChartPanel({
           {showTable ? 'Hide the table' : 'Read the chart as a table'}
         </Button>
       </div>
-      {chart}
+      <div className={`min-w-0 ${reveal}`}>{chart}</div>
       {legend}
-      <div id={`${id}-table`} hidden={!showTable}>
+      <div id={`${id}-table`} hidden={!showTable} className={showTable ? drop : ''}>
         {showTable && table}
       </div>
     </Panel>
@@ -262,28 +280,41 @@ export function UncertaintyParts({ parts, small }: { parts: LifecycleMetaDTO['un
   )
 }
 
-/** "How sure is this?": each source of error in the answer, in plain words. */
+/**
+ * "How this was worked out": each source of error in the answer in plain
+ * words, the section's own method notes, and when and with what it was
+ * worked out.
+ */
 export function HowSure({ meta, children }: { meta: LifecycleMetaDTO; children?: ReactNode }) {
   const parts = meta.uncertainty.parts
+  const at = Date.parse(meta.computed_at)
+  const engines = Object.entries(meta.engines)
   return (
-    <Disclosure title="How sure is this?" meta={parts.length ? `${parts.length} source${parts.length === 1 ? '' : 's'} of error` : undefined}>
+    <Disclosure
+      title="How this was worked out"
+      meta={parts.length ? `${parts.length} source${parts.length === 1 ? '' : 's'} of error` : undefined}
+    >
       {parts.length ? (
         <UncertaintyParts parts={parts} />
       ) : (
         <p className="text-body text-ink-2">Each number’s own margin is shown beside it.</p>
       )}
       {children}
+      <p className="text-caption leading-caption text-ink-3">
+        Worked out {Number.isNaN(at) ? '' : dateTimeWords(at)}
+        {meta.compute_ms !== null ? ` in ${(meta.compute_ms / 1000).toFixed(1)} s` : ''}
+        {engines.length ? '. Calculation versions: ' : '.'}
+        {engines.length > 0 && <span className="font-mono">{engines.map(([k, v]) => `${k} ${v}`).join(', ')}</span>}
+      </p>
     </Disclosure>
   )
 }
 
-/** "Where does this come from?": sources with their age and licence, and the engines used (invariants 10, 11). */
+/** "Sources": each one with its issue time, age and licence (invariants 10, 11). */
 export function SourcesRow({ meta, children }: { meta: LifecycleMetaDTO; children?: ReactNode }) {
-  const at = Date.parse(meta.computed_at)
-  const engines = Object.entries(meta.engines)
   return (
-    <Disclosure title="Where does this come from?" meta={`${meta.sources.length} source${meta.sources.length === 1 ? '' : 's'}`}>
-      {meta.sources.length > 0 && (
+    <Disclosure title="Sources" meta={`${meta.sources.length} source${meta.sources.length === 1 ? '' : 's'}`}>
+      {meta.sources.length > 0 ? (
         <ul className="flex flex-col gap-3">
           {meta.sources.map((s, i) => {
             const fetched = s.fetched_at ? Date.parse(s.fetched_at) : null
@@ -312,19 +343,24 @@ export function SourcesRow({ meta, children }: { meta: LifecycleMetaDTO; childre
             )
           })}
         </ul>
+      ) : (
+        <p className="text-body text-ink-2">Worked out by POLAR WINDOW from the inputs listed under each number.</p>
       )}
       {children}
-      <p className="text-caption leading-caption text-ink-3">
-        Worked out {Number.isNaN(at) ? '' : dateTimeWords(at)}
-        {meta.compute_ms !== null ? ` in ${(meta.compute_ms / 1000).toFixed(1)} s` : ''}
-        {engines.length ? '. Calculation versions: ' : '.'}
-        {engines.length > 0 && <span className="font-mono">{engines.map(([k, v]) => `${k} ${v}`).join(', ')}</span>}
-      </p>
     </Disclosure>
   )
 }
 
-/** The closed rows under a section, spaced as on the mission page. */
-export function Rows({ children }: { children: ReactNode }) {
-  return <div className="flex flex-col gap-3">{children}</div>
+/**
+ * The closed rows under a section: its own rows as "Details", then how it
+ * was worked out and its sources, always last and always in that order.
+ * Sections pass their rows as children and the two fixed rows as `about`.
+ */
+export function Rows({ children, about }: { children?: ReactNode; about?: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-6">
+      {children && <RowGroup title="Details">{children}</RowGroup>}
+      {about && <RowGroup title="About these numbers">{about}</RowGroup>}
+    </div>
+  )
 }

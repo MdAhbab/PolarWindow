@@ -51,3 +51,11 @@ function bezier(x1: number, y1: number, x2: number, y2: number, x: number): numb
   t = Math.max(0, Math.min(1, t))
   return ((ay * t + by) * t + cy) * t
 }
+
+/**
+ * A motion class, or nothing under reduced motion. The branch is made here in
+ * code (invariant 8); the CSS floor in globals.css only catches what slips by.
+ */
+export function useMotionClass(cls: string): string {
+  return useReducedMotion() ? '' : cls
+}

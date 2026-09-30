@@ -1,4 +1,6 @@
-import type { ReactNode } from 'react'
+import { Component, useSyncExternalStore, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
+import { useMotionClass, useReducedMotion } from '../hooks/useMotion'
 import { Icon } from './Icon'
 import { Button, Panel, SectionLabel } from './ui'
 
@@ -19,8 +21,10 @@ export function EmptyState({
   secondary?: { label: string; onClick: () => void }
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-4 px-8 py-16 text-center">
-      <Icon name="filter" size={44} strokeWidth={1.4} className="text-terrain-mid" />
+    <div className="flex flex-col items-center justify-center gap-3 px-6 py-14 text-center">
+      <span className="flex size-14 items-center justify-center border border-line bg-inset text-ink-3" aria-hidden="true">
+        <Icon name="filter" size={26} strokeWidth={1.6} />
+      </span>
       <div className="text-subhead font-semibold text-ink">{title}</div>
       <div className="max-w-[460px] text-body leading-6 text-ink-2">{detail}</div>
       <div className="flex flex-wrap justify-center gap-3">
@@ -65,16 +69,12 @@ export function LoadingPanel({
           {done} / {total} {unit}
         </span>
       </div>
-      <div
-        className="flex h-2 bg-dark-fill"
-        role="progressbar"
-        aria-label={`${unit.charAt(0).toUpperCase()}${unit.slice(1)} loaded`}
-        aria-valuemin={0}
-        aria-valuemax={total || 1}
-        aria-valuenow={done}
-      >
-        <div className="bg-terrain-high transition-[width] duration-200" style={{ width: `${pct}%` }} />
-      </div>
+      <ProgressTrack
+        label={`${unit.charAt(0).toUpperCase()}${unit.slice(1)} loaded`}
+        max={total || 1}
+        now={done}
+        fraction={pct / 100}
+      />
       <p className="text-small leading-5 text-ink-2">
         {note ??
           'Each site’s skyline was measured once, ahead of time, from the terrain map. What happens now is the quick part: tracing the Sun and Earth across the sky for these dates and checking them against that skyline. Each site appears as soon as its own answer arrives.'}
@@ -98,20 +98,20 @@ export function ErrorPanel({
   action?: { label: string; onClick: () => void }
 }) {
   return (
-    <Panel className="flex flex-col gap-4 border-alert p-6">
+    <Panel className="flex flex-col gap-4 border-l-2 border-l-alert p-5 sm:p-6">
       <div className="flex items-start gap-3">
-        <Icon name="alert" size={26} strokeWidth={2} className="shrink-0 text-alert" />
+        <Icon name="alert" size={22} strokeWidth={2} className="mt-0.5 shrink-0 text-alert" />
         <div className="flex flex-col gap-1.5">
           <div className="text-title-lg font-semibold text-ink">{title}</div>
           <div className="text-body leading-6 text-ink-2">{detail}</div>
         </div>
       </div>
-      <Panel className="flex flex-col gap-1.5 p-4">
-        <SectionLabel>What still works</SectionLabel>
+      <div className="flex flex-col gap-1 border-l-2 border-line-strong pl-3 sm:ml-[34px]">
+        <SectionLabel as="div">What still works</SectionLabel>
         <div className="text-small leading-5 text-ink-2">{stillWorks}</div>
-      </Panel>
+      </div>
       {(onRetry || action) && (
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-3 sm:ml-[34px]">
           {action && (
             <Button variant="primary" onClick={action.onClick}>
               {action.label}
@@ -119,7 +119,7 @@ export function ErrorPanel({
           )}
           {onRetry && (
             <Button variant={action ? 'secondary' : 'primary'} onClick={onRetry}>
-              Retry
+              Try again
             </Button>
           )}
         </div>
@@ -197,4 +197,205 @@ export function ProblemPanel({
       action={action}
     />
   )
+}
+
+/**
+ * A progress bar: the fill is scaled, never resized, so it moves on the
+ * compositor and nothing around it shifts. With no figure yet (a job still
+ * queued) a short band slides along the track instead, and stands still under
+ * reduced motion.
+ */
+export function ProgressTrack({
+  label,
+  max = 100,
+  now,
+  fraction,
+  valueText,
+}: {
+  label: string
+  max?: number
+  now?: number
+  /** 0–1, or null when there is no figure yet. */
+  fraction: number | null
+  valueText?: string
+}) {
+  const reduced = useReducedMotion()
+  return (
+    <div
+      className="relative h-2 overflow-hidden bg-dark-fill"
+      role="progressbar"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={max}
+      aria-valuenow={now}
+      aria-valuetext={valueText}
+    >
+      {fraction === null ? (
+        <div className={`absolute inset-y-0 left-0 w-1/4 bg-terrain-high ${reduced ? 'opacity-60' : 'pw-indeterminate'}`} />
+      ) : (
+        <div
+          className="absolute inset-0 origin-left bg-terrain-high transition-transform duration-[var(--pw-dur-slow)] ease-[var(--ease-settle)]"
+          style={{ transform: `scaleX(${Math.max(0, Math.min(1, fraction))})` }}
+        />
+      )}
+    </div>
+  )
+}
+
+/**
+ * A grey block standing in for content that is on its way, the size of what
+ * will replace it, so nothing moves when the content arrives. It breathes
+ * (opacity only) unless motion is reduced.
+ */
+export function Skeleton({ className = '' }: { className?: string }) {
+  const pulse = useMotionClass('pw-skeleton')
+  return <div aria-hidden="true" className={`bg-inset ${pulse} ${className}`} />
+}
+
+/**
+ * The shape of a section while its answer loads: the answer's lines, four
+ * tiles and a chart, at their final sizes.
+ */
+export function SectionSkeleton({ tiles = 4, chart = true }: { tiles?: number; chart?: boolean }) {
+  return (
+    <div className="flex flex-col gap-6" aria-hidden="true">
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-7 w-full max-w-3xl" />
+        <Skeleton className="h-7 w-2/3 max-w-xl" />
+        <Skeleton className="mt-1 h-4 w-32" />
+      </div>
+      {tiles > 0 && (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {Array.from({ length: tiles }, (_, i) => (
+            <Skeleton key={i} className="h-[136px]" />
+          ))}
+        </div>
+      )}
+      {chart && <Skeleton className="h-64" />}
+    </div>
+  )
+}
+
+/**
+ * Said once, under the header, whenever the numbers on screen are not live:
+ * the browser is offline, or the app is answering from its saved copy. Each
+ * says what it means for the numbers and what the person can do.
+ */
+export function ConnectionBanner({
+  offline,
+  saved,
+  savedOn,
+  badge,
+}: {
+  /** The browser says it has no network. */
+  offline: boolean
+  /** The app is answering from the saved copy. */
+  saved: boolean
+  /** When the saved copy was taken, in words. */
+  savedOn?: string
+  /** The data-source badge, which names the state for assistive technology. */
+  badge?: ReactNode
+}) {
+  if (!offline && !saved && !badge) return null
+  return (
+    <div className="pw-page flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line bg-panel py-2 text-caption leading-caption text-ink-2 sm:text-small sm:leading-5">
+      {offline && (
+        <span className="flex items-center gap-2">
+          <Icon name="offline" size={16} strokeWidth={1.8} className="shrink-0 text-ink" />
+          <span>
+            <span className="font-semibold text-ink">You are offline.</span> Pages already opened still work; new ones
+            come from the saved copy where it has them.
+          </span>
+        </span>
+      )}
+      {!offline && badge}
+      {!offline && saved && (
+        <span>
+          The live service is not answering: these are its answers{savedOn ? ` saved ${savedOn}` : ''}. Pages not saved
+          say so.
+        </span>
+      )}
+    </div>
+  )
+}
+
+/** Whether the browser has a network, kept up to date. */
+export function useOnline(): boolean {
+  return useSyncExternalStore(
+    (l) => {
+      window.addEventListener('online', l)
+      window.addEventListener('offline', l)
+      return () => {
+        window.removeEventListener('online', l)
+        window.removeEventListener('offline', l)
+      }
+    },
+    () => navigator.onLine,
+    () => true,
+  )
+}
+
+/** An address that is not a page: say so, and offer the two ways on. */
+export function NotFound({ what = 'page' }: { what?: string }) {
+  return (
+    <div className="pw-page mx-auto flex w-full max-w-2xl flex-col gap-5 py-16">
+      <p className="font-mono text-caption text-ink-3">404</p>
+      <h1 className="text-heading-lg leading-9 font-semibold tracking-heading text-ink">There is no {what} at this address</h1>
+      <p className="text-body leading-6 text-ink-2">
+        The link may be old, or the address mistyped. Nothing else is affected: every mission and every landing site is
+        where it was.
+      </p>
+      <div className="flex flex-wrap gap-3">
+        <Link
+          to="/missions"
+          className="inline-flex h-12 items-center gap-2 rounded-control bg-ink px-4 text-control font-semibold text-canvas hover:bg-ink-2"
+        >
+          Go to the missions
+        </Link>
+        <Link
+          to="/map"
+          className="inline-flex h-12 items-center gap-2 rounded-control border border-line-strong px-4 text-control font-semibold text-ink hover:bg-inset"
+        >
+          Go to the landing sites
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * A screen that throws is replaced by this, not by a blank page: what
+ * happened, that nothing was changed, and a way back. The header and
+ * navigation around it keep working. `resetKey` (the address) clears it when
+ * the person moves on.
+ */
+export class ErrorBoundary extends Component<{ children: ReactNode; resetKey?: string }, { error: Error | null }> {
+  state = { error: null as Error | null }
+
+  static getDerivedStateFromError(error: Error) {
+    return { error }
+  }
+
+  componentDidUpdate(prev: { resetKey?: string }) {
+    if (prev.resetKey !== this.props.resetKey && this.state.error) this.setState({ error: null })
+  }
+
+  render() {
+    if (!this.state.error) return this.props.children
+    return (
+      <div className="pw-page mx-auto w-full max-w-2xl py-10">
+        <ErrorPanel
+          title="This page stopped working"
+          detail={
+            <>
+              Something on it failed while drawing: <span className="font-mono text-small">{this.state.error.message}</span>
+            </>
+          }
+          stillWorks="Nothing was saved or changed. The other pages, and this one after a reload, work as usual."
+          onRetry={() => this.setState({ error: null })}
+          action={{ label: 'Reload the page', onClick: () => window.location.reload() }}
+        />
+      </div>
+    )
+  }
 }

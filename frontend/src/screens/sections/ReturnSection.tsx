@@ -96,9 +96,7 @@ function ReturnAnswer({ ret, meta, missionId, status }: { ret: ReturnDTO; meta: 
           }
           stillWorks="Every other step is unaffected."
         />
-        <Rows>
-          <SourcesRow meta={meta} />
-        </Rows>
+        <Rows about={<SourcesRow meta={meta} />} />
       </>
     )
   }
@@ -187,7 +185,7 @@ function ReturnAnswer({ ret, meta, missionId, status }: { ret: ReturnDTO; meta: 
           table={<LimitTable rows={rows} />}
         />
       )}
-      <Rows>
+      <Rows about={<><HowSure meta={meta} /><SourcesRow meta={meta} /></>}>
         {b && (
           <Disclosure title="Booster landing zone" meta={b.zone && b.landing !== 'unknown' ? zoneWords(b.zone) : NO_ZONE[b.landing]}>
             <p className="text-body leading-6 text-ink-2">
@@ -217,8 +215,6 @@ function ReturnAnswer({ ret, meta, missionId, status }: { ret: ReturnDTO; meta: 
         </Disclosure>
         {c?.model_check && <CapsuleCheckRow check={c.model_check} />}
         {(recovered || capsule) && <LimitsRow ret={ret} missionId={missionId} />}
-        <HowSure meta={meta} />
-        <SourcesRow meta={meta} />
       </Rows>
     </>
   )

@@ -91,11 +91,16 @@ test('demo path: volatiles → IM-2 → shift the date → compare → ask → r
   await expect(page).toHaveURL(/\/missions\/im-2$/)
   await expect(page.getByRole('heading', { level: 1 })).toContainText('IM-2')
   const main = page.locator('main')
+  // The mission's home: its record and the six steps, each one tap away.
   await expect(main).toContainText('6 Mar 2025, 17:30 UTC')
+  await expect(page.getByRole('navigation', { name: 'Mission sections' }).getByRole('link')).toHaveCount(6)
+  await expectNoSeriousAxe(page, '/missions/im-2')
+  await page.getByRole('link', { name: /^4\s*Surface/ }).click()
+  await expect(page).toHaveURL(/\/missions\/im-2\/surface$/)
   await expect(main).toContainText('as flown')
   await expect(main).not.toContainText('[')
   await expect(main).not.toContainText('±0.0')
-  await expectNoSeriousAxe(page, '/missions/im-2')
+  await expectNoSeriousAxe(page, '/missions/im-2/surface')
 
   // Shift the date: a burst of month picks leaves one live request per
   // endpoint, the superseded ones cancelled, and the old numbers dimmed.
@@ -165,20 +170,20 @@ test('demo path: volatiles → IM-2 → shift the date → compare → ask → r
 test('beats 4 and 7: VIPER month strip and the far side', async ({ page, context }) => {
   await returningVisitor(context)
   const problems = watchConsole(page)
-  await page.goto('/missions/blue-moon-mk1-viper')
+  await page.goto('/missions/blue-moon-mk1-viper/surface')
   await expect(page.locator('main')).toContainText('Landing known only to the year; choose a date below')
   await openRow(page, 'Change the dates')
   await expect(page.getByRole('option', { name: /^April 2027: sunlight 8 percent/ })).toBeVisible()
   await expect(page.getByRole('option', { name: /^November 2027: sunlight 41 percent/ })).toBeVisible()
   await expect(page.locator('main')).toContainText('centre of Mons Mouton, not a landing point')
 
-  await page.goto('/missions/apex-1')
+  await page.goto('/missions/apex-1/surface')
   const main = page.locator('main')
   await expect(main).toContainText('No terrain data outside 80°S')
   await expect(main).toContainText('For the centre of Schrödinger')
   // Earth contact is zero on the far side: a measurement, shown as 0.
   const earth = main.locator('div.border.bg-panel', { hasText: 'Time in contact with Earth' }).first()
   await expect(earth).toContainText('about 0 hours')
-  await expectNoSeriousAxe(page, '/missions/apex-1')
+  await expectNoSeriousAxe(page, '/missions/apex-1/surface')
   expect(problems).toEqual([])
 })

@@ -54,9 +54,7 @@ export function LaunchSection({ mission: m }: { mission: MissionDetail }) {
                 detail={data.none_reason}
                 stillWorks="Landing, Contact and the other steps do not depend on the launch and work as usual."
               />
-              <Rows>
-                <SourcesRow meta={meta} />
-              </Rows>
+              <Rows about={<SourcesRow meta={meta} />} />
             </>
           ) : data.opportunities.length ? (
             <LaunchAnswer cal={data} meta={meta} missionId={m.id} />
@@ -68,14 +66,13 @@ export function LaunchSection({ mission: m }: { mission: MissionDetail }) {
                 detail={`None of the days searched meets the landing rule: ${data.landing_rule.note}`}
                 stillWorks="Try other dates below. The other steps are unaffected."
               />
-              <Rows>
+              <Rows about={<SourcesRow meta={meta} />}>
                 <DatesRow
                   from={from}
                   to={to}
                   datesNote={data.dates_note}
                   onApply={(f, t) => setParams({ ...(f ? { from: f } : {}), ...(t ? { to: t } : {}) })}
                 />
-                <SourcesRow meta={meta} />
               </Rows>
             </>
           )
@@ -184,7 +181,7 @@ function LaunchAnswer({ cal, meta, missionId }: { cal: LaunchCalendarDTO; meta: 
         }
         table={<LaunchTable opportunities={cal.opportunities} />}
       />
-      <Rows>
+      <Rows about={<><HowSure meta={meta} /><SourcesRow meta={meta} /></>}>
         <FlightRow o={o} flown={flown} />
         <Disclosure
           title={flown ? 'Weather rules for this launch' : 'Weather rules for this opportunity'}
@@ -232,8 +229,6 @@ function LaunchAnswer({ cal, meta, missionId }: { cal: LaunchCalendarDTO; meta: 
             onApply={(f, t) => setParams({ ...(f ? { from: f } : {}), ...(t ? { to: t } : {}) })}
           />
         )}
-        <HowSure meta={meta} />
-        <SourcesRow meta={meta} />
       </Rows>
     </>
   )

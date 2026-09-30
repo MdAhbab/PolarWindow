@@ -104,7 +104,7 @@ function TripAnswer({ trip, meta, missionId }: { trip: TripDTO; meta: LifecycleM
         legend={<Legend items={TripLegendItems(trip)} />}
         table={<TripTable trip={trip} stretches={stretches} />}
       />
-      <Rows>
+      <Rows about={<><HowSure meta={meta} /><SourcesRow meta={meta} /></>}>
         <RadiationRow r={trip.radiation} note={trip.radiation_note} />
         <Disclosure title="Burns" meta={trip.burns.length ? `${trip.burns.length}` : 'none listed'}>
           {trip.burns.length === 0 ? (
@@ -132,8 +132,6 @@ function TripAnswer({ trip, meta, missionId }: { trip: TripDTO; meta: LifecycleM
         {trip.moon_pull && <MoonPullRow pull={trip.moon_pull} />}
         {/* Only a flown trip can be exported; a designed one answers 409 no-export. */}
         {trip.source === 'flown' && <TripDownloads trip={trip} missionId={missionId} />}
-        <HowSure meta={meta} />
-        <SourcesRow meta={meta} />
       </Rows>
     </>
   )

@@ -11,7 +11,7 @@ const ROUTES = [
   '/missions/im-2/ready',
   '/missions/im-2/launch',
   '/missions/im-2/trip',
-  '/missions/im-2/landing',
+  '/missions/im-2/surface',
   '/missions/im-2/contact',
   '/missions/im-2/return',
   // The steps the service answers, for two more flown missions: IM-1's trip
@@ -130,7 +130,8 @@ test('axe and the fixed tab bar on a phone', async ({ page, context }) => {
   ]) {
     await page.goto(r)
     await page.waitForLoadState('networkidle')
-    await expect(tabs.getByRole('link')).toHaveCount(5)
+    // Two views: the missions and the landing sites.
+    await expect(tabs.getByRole('link')).toHaveCount(2)
     await expect(tabs).toHaveCSS('position', 'fixed')
     await expectNoSeriousAxe(page, `${r} at 375 px`)
     // Nothing runs off the side: no sideways scroll on a phone.

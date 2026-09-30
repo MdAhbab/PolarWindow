@@ -147,6 +147,11 @@ const PATHS: Record<string, JSX.Element> = {
     </>
   ),
   plus: <path d="M12 5 V19 M5 12 H19" />,
+  arrow: <path d="M5 12 H19 M13 6 L19 12 L13 18" />,
+  undo: <path d="M9 14 L4 9 L9 4 M4 9 H15 A5 5 0 0 1 15 19 H11" />,
+  offline: (
+    <path d="M2 8.5 C8 3.5 16 3.5 22 8.5 M5 12 C9.5 8.5 14.5 8.5 19 12 M8.5 15.5 C10.5 14 13.5 14 15.5 15.5 M12 19 V19.01 M3 3 L21 21" />
+  ),
   speaker: (
     <>
       <path d="M11 5 L6 9 H3 V15 H6 L11 19 Z" />
