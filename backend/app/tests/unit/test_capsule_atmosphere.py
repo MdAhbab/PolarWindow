@@ -1,5 +1,6 @@
-"""The capsule's air: NRLMSISE-00 for the entry day along the flight, and the standard
-atmosphere when the day's solar flux and geomagnetic activity are missing."""
+"""The capsule's air: NRLMSIS 2.1 (NRLMSISE-00 when asked for) for the entry day along the
+flight, and the standard atmosphere when the day's solar flux and geomagnetic activity are
+missing."""
 
 from __future__ import annotations
 
@@ -68,14 +69,31 @@ def test_the_days_atmosphere_is_msis_driven_by_that_days_indices(monkeypatch) ->
     monkeypatch.setattr(msis_indices, "at", lambda _t: ix)
     monkeypatch.setattr(spice, "rotations", lambda *_a, **_k: np.eye(3)[None])
     atm = capsule.day_atmosphere(0.0)
-    assert atm.name == "NRLMSISE-00" and atm.fallback_reason is None
+    assert capsule.DEFAULT_MODEL == "NRLMSIS 2.1"
+    assert atm.name == capsule.DEFAULT_MODEL and atm.fallback_reason is None
     assert (atm.f107_sfu, atm.f107_mean_sfu, atm.ap_3h) == (174.1, 149.3, 4.0)
     assert atm.files == ix.files and atm.air is not None
     h = 40_000.0
-    assert atm.air(0.0, _over(0.0, h), h) == pytest.approx(_density(T0, 0.0, 0.0, h, 0))
-    newer = capsule.day_atmosphere(0.0, "NRLMSIS 2.1")
-    assert newer.name == "NRLMSIS 2.1" and newer.air is not None
-    assert newer.air(0.0, _over(0.0, h), h) == pytest.approx(_density(T0, 0.0, 0.0, h, 2.1))
+    assert atm.air(0.0, _over(0.0, h), h) == pytest.approx(_density(T0, 0.0, 0.0, h, 2.1))
+    older = capsule.day_atmosphere(0.0, "NRLMSISE-00")
+    assert older.name == "NRLMSISE-00" and older.air is not None
+    assert older.air(0.0, _over(0.0, h), h) == pytest.approx(_density(T0, 0.0, 0.0, h, 0))
+    # The two models differ where a capsule slows (the reason the default is not the older one).
+    assert older.air(0.0, _over(0.0, 60_000.0), 60_000.0) > 1.03 * atm.air(
+        0.0, _over(0.0, 60_000.0), 60_000.0
+    )
+
+
+def test_a_column_of_heights_is_the_density_and_temperature_at_each_of_them() -> None:
+    heights = np.array([35_000.0, 50_000.0, 65_000.0])
+    rho, temp = capsule.msis_column(T0, 39.0, -115.0, heights, 174.1, 149.3, AP, 2.1)
+    assert rho.shape == temp.shape == (3,)
+    for k, h in enumerate(heights):
+        assert rho[k] == pytest.approx(_density(T0, -115.0, 39.0, float(h), 2.1))
+        assert rho[k] == pytest.approx(
+            capsule.msis_density(T0, 39.0, -115.0, float(h), 174.1, 149.3, AP, 2.1)
+        )
+    assert np.all(np.diff(rho) < 0) and np.all((temp > 180.0) & (temp < 300.0))
 
 
 def test_the_standard_atmosphere_stands_in_when_the_day_has_no_indices(monkeypatch) -> None:

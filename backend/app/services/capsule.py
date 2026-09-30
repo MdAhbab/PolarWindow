@@ -2,7 +2,7 @@
 
 Wraps ``core.entry`` with the Earth's orientation from SPICE (the true pole at
 the entry time, and ITRF93 to turn the landing point into latitude and
-longitude), the air of the entry day (NRLMSISE-00 from that day's solar flux
+longitude), the air of the entry day (NRLMSIS 2.1 from that day's solar flux
 and geomagnetic activity, the U.S. Standard Atmosphere 1976 when those are not
 on disk), and the words that go with the numbers.
 """
@@ -47,8 +47,13 @@ def to_ground(et: float, r_j2000_m: FloatArray) -> tuple[float, float, float]:
 STANDARD_NAME = "U.S. Standard Atmosphere 1976"
 #: The empirical models the capsule can fly through: name -> pymsis ``version``.
 MSIS_VERSIONS: dict[str, float] = {"NRLMSISE-00": 0, "NRLMSIS 2.1": 2.1}
-#: The model the entry day's air comes from (the plan and the LEO drag model use it).
-DEFAULT_MODEL = "NRLMSISE-00"
+#: The model the entry day's air comes from. Chosen by how near each model's density and
+#: temperature came to air measured between 30 and 70 km, where a capsule loses its speed
+#: (TIMED/SABER's profiles of the day and a Rayleigh lidar's nights beside it), by a rule that
+#: uses no landing (``tests.golden.capsule_air``, docs/validation.md): NRLMSISE-00 is 4 to 7 %
+#: too dense at 45 to 70 km in both, NRLMSIS 2.1 within 3 %. The low-orbit drag model
+#: (``core.forces``) stays on NRLMSISE-00; this constant does not touch it.
+DEFAULT_MODEL = "NRLMSIS 2.1"
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,6 +77,37 @@ def standard(fallback_reason: str | None = None) -> Atmosphere:
     return Atmosphere(STANDARD_NAME, None, fallback_reason=fallback_reason)
 
 
+def msis_column(
+    when: datetime,
+    lat_deg: float,
+    lon_deg: float,
+    h_m: FloatArray,
+    f107: float,
+    f107a: float,
+    ap: tuple[float, ...],
+    version: float = 0,
+) -> tuple[FloatArray, FloatArray]:
+    """(total mass density kg/m^3, temperature K) at the heights ``h_m`` (geodetic) of one
+    place and time (UTC), from NRLMSISE-00 (``version`` 0) or NRLMSIS 2.x, for the given solar
+    flux and geomagnetic activity (``data.msis_indices``; ap in the storm-time mode, which takes
+    the 3-hour values)."""
+    from pymsis import msis  # imported here: only the capsule check needs it
+
+    out = msis.calculate(
+        np.datetime64(when.astimezone(UTC).replace(tzinfo=None), "ms"),
+        lon_deg,
+        lat_deg,
+        np.asarray(h_m, dtype=np.float64) / 1000.0,
+        [f107],
+        [f107a],
+        [list(ap)],
+        version=version,
+        geomagnetic_activity=-1,
+    )
+    cols = np.asarray(out, dtype=np.float64).reshape(-1, 11)
+    return cols[:, 0], cols[:, 10]
+
+
 def msis_density(
     when: datetime,
     lat_deg: float,
@@ -82,23 +118,9 @@ def msis_density(
     ap: tuple[float, ...],
     version: float = 0,
 ) -> float:
-    """NRLMSISE-00 (``version`` 0; 2.1 for NRLMSIS 2.1) total mass density, kg/m^3, at a
-    geodetic position and time (UTC) for the given solar flux and geomagnetic activity
-    (``data.msis_indices``; ap in the storm-time mode, which takes the 3-hour values)."""
-    from pymsis import msis  # imported here: only the capsule check needs it
-
-    out = msis.calculate(
-        np.datetime64(when.astimezone(UTC).replace(tzinfo=None), "ms"),
-        lon_deg,
-        lat_deg,
-        h_m / 1000.0,
-        [f107],
-        [f107a],
-        [list(ap)],
-        version=version,
-        geomagnetic_activity=-1,
-    )
-    return float(np.asarray(out).reshape(-1, 11)[0, 0])
+    """``msis_column``'s density at one height, kg/m^3."""
+    rho, _ = msis_column(when, lat_deg, lon_deg, np.array([h_m]), f107, f107a, ap, version)
+    return float(rho[0])
 
 
 def msis_air(
@@ -124,9 +146,9 @@ def msis_air(
 
 
 def day_atmosphere(et0: float, model: str = DEFAULT_MODEL) -> Atmosphere:
-    """The air of the entry day: ``model`` driven by that day's solar flux and geomagnetic
-    activity from the OMNI files on disk, or the U.S. Standard Atmosphere 1976 (with the
-    reason) when the files lack them."""
+    """The air of the entry day: ``model`` (NRLMSIS 2.1 unless another is asked for) driven by
+    that day's solar flux and geomagnetic activity from the OMNI files on disk, or the U.S.
+    Standard Atmosphere 1976 (with the reason) when the files lack them."""
     when = utc(et0)
     ix = msis_indices.at(when)
     if ix is None:

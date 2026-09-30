@@ -26,7 +26,7 @@ class Node(_M):
     kind: Literal["station", "relay", "lander", "rover", "earth"]
     name: str
     operator: str | None
-    status: Literal["operating", "planned", "not_launched"]
+    status: Literal["operating", "planned", "not_launched", "launched_not_operating"]
     orbit: Literal["real", "planned"] | None
     launch_note: str | None
 
@@ -149,7 +149,11 @@ class Orbiter(_M):
     name: str
     operator: str | None
     naif_id: int | None
-    note: str = Field(description="Geometry only: none of these orbiters relays for a lander.")
+    note: str | None = Field(
+        description="What is this orbiter's own: where its recorded trajectory ends before, or "
+        "starts after, the dates, so no pass there is worked out. Null when it covers them all. "
+        "That none of these orbiters relays for a lander is `Contact.orbiters_note`, once."
+    )
     source: OrbiterSource | None = Field(description="The recorded JPL Horizons trajectory.")
     covered: StretchOut | None = Field(description="The part of the dates the trajectory covers.")
     passes: list[OrbiterPass] = Field(description="Above the landing spot's terrain skyline.")
@@ -214,7 +218,8 @@ class Viewshed(_M):
     ranges_m: list[float] = Field(description="Distance from the lander, 20 steps to radius_m.")
     sight: list[list[State]] = Field(description="Clear line of sight, [bearing][range].")
     radio: list[list[State]] = Field(
-        description="Radio path clear: the first Fresnel zone as well, [bearing][range]."
+        description="Radio path clear: the space around the line of sight that the radio signal "
+        "needs as well, [bearing][range]."
     )
 
 
@@ -257,7 +262,8 @@ class RoverOut(_M):
         description="Percent out of sight; a range when uncertain cells could go either way."
     )
     radio_not_clear_share: QuantityOut = Field(
-        description="Percent where the radio path is not clear (first Fresnel zone)."
+        description="Percent where the radio path is not clear (the space around the line of "
+        "sight that the radio signal needs is blocked)."
     )
     longest_out_of_sight_m: QuantityOut
     resolvable: bool

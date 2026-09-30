@@ -77,26 +77,59 @@ at that point in the flight.
 | LRO | 2025-03-20 00:01 | lunar orbit, 80–100 km | 24 h | 0.05 km | 0.05 km |
 | LRO | 2025-03-21 01:41 | lunar orbit, 80–100 km | 24 h | 0.03 km | 0.03 km |
 | IM-1 | 2024-02-19 20:26 | cruise | 8.5 h (longest stretch) | 0.64 km | 0.64 km |
-| IM-2 | 2025-02-27 01:51 | cruise | 24 h | **4.61 km** | 4.43 km |
+| IM-2 | 2025-02-27 01:51 | cruise | 24 h | **4.40 km** | 4.43 km |
 
 Raising the Moon's field from degree 100 to 200 changes the lunar-orbit rows
 by at most 8 m. A 24 h forward-and-back run from Blue Ghost's reconstructed
 state returns to within **5.8 mm**.
 
-**Against the plan's tolerances.** Reconstructions: ≤1 km after 24 h is met
+**Against the plan's tolerances.** Reconstructions: <=1 km after 24 h is met
 for Blue Ghost 1 and for IM-2 in lunar orbit, **not for IM-2's cruise
-(4.61 km)**; ≤5 km after 72 h is met (1.08 and 1.46 km). LRO: ≤1 km after
-24 h is met (0.03–0.05 km). Round trip ≤1 m is met.
+(4.40 km)**; <=5 km after 72 h is met (1.08 and 1.46 km). LRO: <=1 km after
+24 h is met (0.03-0.05 km). Round trip <=1 m is met.
 
-**Why IM-2's cruise misses.** Throughout its cruise IM-2's reconstruction
-carries an acceleration the force model does not have: median 6.4e-7 m/s²
-over the whole file, about 1e-6 m/s² in the stretch used (IM-1's is
-1.8e-6 m/s², Blue Ghost's 2.9e-7 m/s²). Held for a day, 1e-6 m/s² moves a
-spacecraft ½·a·t² ≈ 3.7 km, which is the size of the miss. The residual is
-constant within each hour of the reconstruction and steps between hours, as
-an estimated acceleration in an orbit-determination solution would; whether
-it is thruster activity, venting or the solution's own estimate is not
-published, and we do not assert one.
+**Why IM-2's cruise misses (4.40 km vs 1 km plan).** EGM2008 tesseral terms up to
+degree and order 8 resolve the first ~1.5 h out of parking orbit (accounting for
+1.2e-6 m/s^2 tesseral residual at 22,500 km, reducing 24 h error from 4.616 km to
+4.395 km). Residual analysis of the remaining 4.395 km reveals:
+1. Piecewise-constant acceleration: across 48 half-hour blocks on a 30-min TDB
+   grid, median unmodelled acceleration is 6.71e-7 m/s^2 (mean 6.95e-7 m/s^2),
+   constant within each half-hour (spread 0.10%), with sharp steps at 30-min
+   boundaries (93.6% of boundary steps exceed the 90th percentile of mid-block
+   steps). The direction is median 58 deg from anti-Sun (Cr*A/m fit R^2 0.20,
+   ruling out unmodelled SRP as the primary cause).
+2. Two single-sample velocity changes in the reconstruction: at 19:00:00 UTC
+   (dv = 0.0601 m/s) and 20:45:00 UTC (dv = 0.1330 m/s). Fine-scan propagation of
+   30-min windows before, centred on, and after each shows that both are velocity
+   changes (small burns or venting) rather than data-join artefacts:
+   - Event 1 (19:00:00 UTC): before [18:30..19:00] dr = 0.41 m, dv = 0.4 mm/s;
+     centred [18:45..19:15] dr = 54.2 m, dv = 60.2 mm/s; after [19:00..19:30]
+     dr = 0.25 m, dv = 0.3 mm/s.
+   - Event 2 (20:45:00 UTC): before [20:15..20:45] dr = 0.31 m, dv = 0.2 mm/s;
+     centred [20:00..20:30] dr = 119.8 m, dv = 133.1 mm/s; after [20:45..21:15]
+     dr = 0.82 m, dv = 1.2 mm/s.
+   The model alone gives 4.40 km (plan 1 km, not met). Applying these two velocity
+   changes of 0.060 and 0.133 m/s (small burns or venting), if they were known in
+   advance, drops the 24 h position error from 4.40 km to 1.65 km. Applying the
+   half-hour piecewise-constant accelerations measured from the same NASA reconstruction
+   leaves a residual of 8.0 m. This is not a model accuracy result; it shows that
+   the remaining 4.40 km is explained by those unmodelled accelerations.
+
+**Lunar orbit gravity degree and switch-on radius.** Testing GRGM1200A at perilune
+passes (closest passes of the Moon, half-hour windows) shows that a point-mass Moon
+(degree 0) leaves false velocity residuals of 0.5 to 1.6 m/s per pass (0.76 m/s for
+Blue Ghost 157x5,700 km; 0.82 m/s for LRO 80-100 km), which trips phasing
+burn-detection thresholds (0.05 m/s). Degree 50 suppresses the maximum pass
+residual to 16 mm/s (median < 10 mm/s, 0.8 mm/s on Blue Ghost), safely beneath the
+threshold while taking ~0.02-0.03 s per pass. Degree 100 drops residual to
+0.5-3 mm/s but is 4-5x slower (~0.12-0.14 s/pass). Degree 200 provides negligible
+accuracy improvement (<0.1 mm/s) at 20x the cost (~0.5-0.6 s/pass). Degree 50 is
+therefore retained as the production default for fast phasing and burn identification,
+with degree 100 available where millimeter precision is required. For switch-on
+radius, eccentric lunar orbits like Blue Ghost (apoapsis 4.28 lunar radii) incur 2 to
+31 km error if harmonics are switched off inside the orbit (r < 5 lunar radii); at
+5 to 10 lunar radii (the default 17,380 km = 10 R_moon), error is stable at 37-65 m
+over 24 h and closed orbits remain within the harmonic potential.
 
 **Leak detection (Peregrine).** Peregrine's reconstruction needs an
 unexplained push for its whole flight: median 7.6e-5 m/s², 90th percentile
@@ -106,16 +139,16 @@ traces the loss to a helium pressure control valve that failed to seal
 the residual is where that shows in the trajectory, and nothing here
 estimates the leak itself.
 
-**What replaces GMAT.** The plan's reference for the propagator was GMAT
-R2026a run offline (`make gmat-golden`). GMAT is not installed on this
-machine and no container runtime is available, so the GMAT comparisons (a
-5-day coast to 10 m and 1 mm/s; a 100 km polar lunar orbit for 24 h to 10 m)
-have **not been run**. In their place, `test_propagate.py` checks the
-integrator against closed forms: two-body motion against Kepler's equation
-over five orbits (under 1 mm), the J2 nodal drift against the textbook rate
-(within 2 %), forward-and-back in a 100 km lunar orbit with a lumpy field and
-sunlight pressure (under 1 m; measured 0.2–0.9 mm), and the same trip about
-the Earth and about the Moon (under 1 m).
+**What replaces GMAT.** An attempt was made to install NASA GMAT R2026a for
+automated golden comparisons (`make gmat-golden`). GMAT is not distributed via
+Homebrew, the 455 MB macOS package on SourceForge throttled/hung during download
+(~25 KB/s over 5+ h), and no native ARM64 headless distribution is available for
+this environment. As planned, we do not retry or block on GMAT. In its place,
+`test_propagate.py` validates the propagator against closed-form and self-consistency
+benchmarks: two-body motion against Kepler's equation over five orbits (under 1 mm),
+J2 nodal drift against textbook rates (within 2 %), forward-and-back in a 100 km
+lunar orbit with spherical harmonics and SRP (0.2-0.9 mm), and round-trip propagation
+about Earth and Moon (under 1 m; Blue Ghost 24 h round trip returns to 5.8 mm).
 
 # Launch instants and direct transfers against the flown launches (plan D1, C2, D2)
 
@@ -353,30 +386,62 @@ back to where it passed closest to Earth near the flown departure (propagating
 the arrival itself back would not do: a close pass of the Moon spreads any
 difference by thousands of kilometres). Three corrections (a day after
 leaving Earth, half-way, a day before arriving) aim the estimated state at the
-planned position at the planned arrival time. Errors, all assumed (no user
-guide with injection accuracy is in the catalogue, and the lander makers
-publish no navigation or engine figures): leaving Earth, 1 km in position and
-0.5 / 1.0 / 0.5 m/s (up, along, sideways); knowledge at each correction 1 km and
-1 mm/s; each burn 1% and 1° (Gates' model) plus 1 cm/s. Linear: the errors
-pushed through state transition matrices of each stretch (100,000 draws, since
-Gates' errors grow with the burn). Monte Carlo: 1,000 seeded runs through the
-force model, each correction refined twice on the run's own estimated state.
+planned position at the planned arrival time.
 
-| Mission | Planned departure | 95th linear / runs | 99th linear / runs (95 % interval) | Arrival altitude 1st–99th % | Flown corrections found |
-|---|---|---|---|---|---|
-| blue-ghost-m1 | 5,390 km up, +8 min | 14.71 / 14.16 m/s | 19.33 / 18.08 m/s (16.52–19.85) | 156.2–160.2 km | 1.15 m/s |
-| im-1 | 622 km up, +170 min | 20.91 / 21.64 m/s | 27.45 / 28.50 m/s (25.93–30.40) | 110.6–114.5 km | none (in its gaps) |
-| im-2 | 1,002 km up, −28 min | 21.29 / 21.45 m/s | 27.82 / 28.89 m/s (26.24–30.24) | 99.8–103.8 km | 0.06, 0.13, 1.06, 2.11, 9.71, 6.06, 4.72 m/s |
+The budget is worked out twice. First, every error is assumed: 1 km in position
+and 0.5 / 1.0 / 0.5 m/s radial / along / cross-track speed at leaving Earth;
+knowledge at each correction 1 km and 1 mm/s; each burn 1% and 1° Gates' model
+plus 1 cm/s. Second, the errors at departure come from the orbital injection accuracy
+published in the launch vehicle's user guide. For Falcon 9 that is the Launch Vehicle
+Payload User's Guide, Rev 2, 21 October 2015, Table 3-2, page 16: GTO 3-sigma errors of
+±500 km in apogee, ±10 km in perigee and ±0.1° in inclination. Only that revision prints an
+accuracy (the guides of April 2020, September 2021 and May 2025 have none), so it is the
+accuracy given for the vehicle of 2015, not a figure for Block 5. That guide has rows for
+low Earth orbit and GTO only, none for trans-lunar injection or escape. The errors at
+departure are therefore worked out from the GTO row (`lincov.from_guide`), each as
+1 sigma, one third of the printed ±. The perigee gives a radial position error of 3.3 km,
+the apogee an along-track speed error of 2.7 m/s and the inclination a cross-track speed
+error of 6.0 m/s. The other three errors keep their assumed values (1.0 km along, 1.0 km
+across, 0.5 m/s radial). Linear: the errors pushed through
+state transition matrices of each stretch (100,000 draws). Monte Carlo: 1,000 seeded
+runs through the force model, each correction refined twice on the run's own estimated state.
 
-The two methods agree within 7% (Blue Ghost's 99th percentile; the others
-within 4%); no run missed the Moon. Nearly all of the total is the first
-correction, which removes the departure error. These are budgets for the
-assumed errors, not what the missions needed: Blue Ghost's one correction
-(1.15 m/s) sits well inside its budget, and IM-2's add up to 24 m/s, near its
-99th percentile. IM-1's planned departure is 170 min after its real one, 622 km up: its
-corrections (in the reconstruction's gaps) changed the path enough that the
-path back from the Moon with no burn passes Earth that much later; the budget
-is about that plan.
+**Every error assumed:**
+
+| Mission | Planned departure | Errors at leaving Earth | 95th linear / runs | 99th linear / runs (95 % interval) | Arrival altitude 1st–99th % | Flown corrections found |
+|---|---|---|---|---|---|---|
+| blue-ghost-m1 | 5,390 km up, +8 min | 1.0 / 1.0 / 1.0 km; 0.5 / 1.0 / 0.5 m/s | 14.64 / 14.16 m/s | 19.24 / 18.08 m/s (16.52–19.85) | 156.2–160.2 km | 1.15 m/s |
+| im-1 | 622 km up, +170 min | 1.0 / 1.0 / 1.0 km; 0.5 / 1.0 / 0.5 m/s | 20.90 / 21.64 m/s | 27.43 / 28.50 m/s (25.93–30.40) | 110.6–114.5 km | none (in its gaps) |
+| im-2 | 1,002 km up, −28 min | 1.0 / 1.0 / 1.0 km; 0.5 / 1.0 / 0.5 m/s | 21.29 / 21.45 m/s | 27.84 / 28.89 m/s (26.24–30.24) | 99.8–103.8 km | 0.06, 0.13, 1.06, 2.11, 9.71, 6.06, 4.72 m/s |
+
+**Errors worked out from the published injection accuracy (Falcon 9 User's Guide, Rev 2, Table 3-2, GTO row):**
+
+| Mission | Planned departure | Errors at leaving Earth | 95th linear / runs | 99th linear / runs (95 % interval) | Arrival altitude 1st–99th % | Flown corrections found |
+|---|---|---|---|---|---|---|
+| blue-ghost-m1 | 5,390 km up, +8 min | 3.3 / 1.0 / 1.0 km; 0.5 / 2.7 / 6.0 m/s | 40.78 / 40.63 m/s | 53.97 / 54.24 m/s (50.29–58.52) | 156.4–160.2 km | 1.15 m/s |
+| im-1 | 622 km up, +170 min | 3.3 / 1.0 / 1.0 km; 0.5 / 2.7 / 6.0 m/s | 61.96 / 60.13 m/s | 81.47 / 77.24 m/s (70.85–81.43) | 110.6–114.6 km | none (in its gaps) |
+| im-2 | 1,002 km up, −28 min | 3.3 / 1.0 / 1.0 km; 0.5 / 2.7 / 6.0 m/s | 62.71 / 63.27 m/s | 82.40 / 88.66 m/s (80.00–94.73) | 99.7–103.9 km | 0.06, 0.13, 1.06, 2.11, 9.71, 6.06, 4.72 m/s |
+
+Each correction, 95th / 99th percentile of the runs (m/s), assumed then published:
+| Mission | First | Second | Third |
+|---|---|---|---|
+| blue-ghost-m1 | 13.69 / 17.51 then 39.33 / 52.21 | 0.55 / 0.84 then 1.67 / 2.50 | 0.09 / 0.10 then 0.12 / 0.18 |
+| im-1 | 20.80 / 27.39 then 57.94 / 74.66 | 0.93 / 1.25 then 2.47 / 3.51 | 0.11 / 0.15 then 0.22 / 0.33 |
+| im-2 | 20.49 / 27.71 then 61.75 / 85.17 | 0.93 / 1.43 then 2.56 / 4.08 | 0.09 / 0.12 then 0.16 / 0.29 |
+
+With published injection accuracy, the 95th and 99th percentile budgets are approximately
+2.7x to 3.1x larger (e.g. Blue Ghost 95th 14.16 -> 40.63 m/s; IM-1 21.64 -> 60.13 m/s; IM-2
+21.45 -> 63.27 m/s), because the speed errors worked out from Falcon 9's published GTO
+accuracy (2.7 m/s along-track, 6.0 m/s cross-track) are larger than the 1.0 and 0.5 m/s
+assumed. Linear covariance
+and Monte Carlo agree within 7.1% in all cases (well within the 10% plan tolerance: Blue Ghost
++0.4% / -0.5%, IM-1 +3.0% / +5.5%, IM-2 -0.9% / -7.1%). No run missed the Moon. Nearly all of
+the total is the first correction, which removes the departure error. These are budgets for
+the published errors, not what the missions needed: Blue Ghost's one correction (1.15 m/s) sits
+well inside its budget, and IM-2's add up to 24 m/s, well within its 95th percentile. IM-1's
+planned departure is 170 min after its real one, 622 km up: its corrections (in the
+reconstruction's gaps) changed the path enough that the path back from the Moon with no burn
+passes Earth that much later; the budget is about that plan.
 
 # Launch weather: wind climatology and the check against observations (plan T4 B1, Verification)
 
@@ -421,41 +486,119 @@ would be needed.
 `app/feeds/hindcast_reforecast.py`). NOAA's GEFS v12 reforecast (the model the live ensemble
 runs; 00 UTC, the control and four perturbed runs, 0.25°, 2000–2019 on NOAA's open-data bucket
 on AWS) is read for one day in three from 2007, in a fixed random order, from the first part
-of each global message (`parsers/grib_prefix.py`, equal to ecCodes on a cut of the field); 845
-of the 1,583 days planned are cached (2007-01-08 to 2019-12-31). The outcome is the station's sustained wind in its
-report nearest the valid time (within 30 minutes; a station with fewer reports has fewer cases),
-the limit is 10.52 m/s at 10 m as above, and the reference is the station's own month-by-hour
-frequency (and wind) over 2000–2019. Every interval is 95 %, from resampling whole months of
-cases (days in a month are not independent). Winds are 10 m; the runs are the reforecast's, not the
-archived live ensemble's (whose 31 runs and 0.5° cell are what the 2025 check used).
+of each global message (`parsers/grib_prefix.py`, equal to ecCodes on a cut of the field); all
+1,583 days planned are cached (2007-01-02 to 2019-12-31). The outcome is the station's sustained
+wind in its report nearest the valid time (within 30 minutes; a station with fewer reports has
+fewer cases), the limit is 10.52 m/s at 10 m as above, and the reference is the station's own
+month-by-hour frequency (and wind) over 2000–2019. Every interval is 95 %, from resampling whole
+months of cases (days in a month are not independent). Winds are 10 m; the runs are the
+reforecast's, not the archived live ensemble's (whose 31 runs and 0.5° cell are what the 2025
+check used).
 
 | Station, lead | Cases | Above the limit | Brier (GEFS) | Brier (climatology) | Brier skill | CRPS skill | CRPS skill, fair | Mean wind, runs / station (m/s) |
 |---|---|---|---|---|---|---|---|---|
-| KXMR 24 h | 786 | 0 | 0.0134 | 0.0000 | not worked out | −0.95 (−1.10 to −0.80) | −0.86 (−1.02 to −0.72) | 5.3 / 3.1 |
-| KXMR 48 h | 801 | 2 | 0.0096 | 0.0025 | not worked out | −0.90 (−1.06 to −0.76) | −0.80 (−0.95 to −0.66) | 5.3 / 3.2 |
-| KVBG 24 h | 565 | 34 | 0.0346 | 0.0553 | 0.37 (0.15 to 0.57) | 0.33 (0.27 to 0.38) | 0.37 (0.31 to 0.42) | 5.5 / 5.8 |
-| KVBG 48 h | 566 | 38 | 0.0471 | 0.0604 | 0.22 (0.02 to 0.42) | 0.31 (0.26 to 0.36) | 0.37 (0.32 to 0.41) | 5.5 / 5.7 |
+| KXMR 24 h | 1,459 | 1 | 0.0097 | 0.0007 | not worked out | −0.97 (−1.08 to −0.86) | −0.89 (−1.00 to −0.78) | 5.3 / 3.1 |
+| KXMR 48 h | 1,482 | 3 | 0.0090 | 0.0020 | not worked out | −0.99 (−1.12 to −0.88) | −0.89 (−1.01 to −0.78) | 5.3 / 3.2 |
+| KVBG 24 h | 1,080 | 75 | 0.0437 | 0.0623 | 0.30 (0.16 to 0.41) | 0.33 (0.29 to 0.37) | 0.37 (0.33 to 0.40) | 5.4 / 5.7 |
+| KVBG 48 h | 1,082 | 74 | 0.0464 | 0.0607 | 0.24 (0.09 to 0.38) | 0.33 (0.29 to 0.37) | 0.38 (0.35 to 0.42) | 5.5 / 5.7 |
 
 A Brier skill is worked out only from 10 or more cases above the limit (fewer, and one case
-moves it more than the skill); at the Cape there were none at 24 h and two at 48 h, so no Brier
+moves it more than the skill); at the Cape there was one at 24 h and three at 48 h, so no Brier
 skill is given and the continuous score (CRPS skill, which does not need the event to happen)
 is the verdict-free number. The gate pools the two leads' cases in its reliability bins.
 **The Cape does not pass**: the runs' wind is worse than the station's own record (CRPS skill
 below zero at both leads, intervals nowhere near zero), the runs averaging 5.3 m/s against the
-station's 3.1 (the 0.25° cell at the Cape is partly sea, where the wind is stronger than at a
-station inland), and the bin of shares of 0.2 (34 cases) saw the wind above the limit in none of
-them, 0.2 from what the share said and past the 0.1 allowed. So the wind rule's shares at the Cape stay "not checked against
-observations". **Vandenberg passes the plan's gate as written**: Brier skill 0.37 at 24 h and
-0.22 at 48 h against the 0.1 asked, and the only reliability bin with 30 cases or more (shares
-under 0.1: 1,057 cases) sits well inside 0.1 (the wind was above the limit in 2.8 % of them
-against a share of 0). Two things keep that from being more than it is. At 48 h the interval,
-0.02 to 0.42, runs below 0.1, so the gate is passed on the estimate and not with certainty. And
-five runs give shares in steps of 0.2, so every other bin holds 9 to 23 cases and the gate never
-counts them; taken together, the 37 cases at each lead with a share of 0.2 or more had the wind
-above the limit 62 % of the time at 24 h (mean share 63 %) and 51 % at 48 h (mean share 52 %).
-The check is made at 24 and 48 h; a share for a launch further out than 48 h is not covered by
-it and is not shown as checked. The download goes on, and the two
-`data/hindcast/gefs_reforecast_wind_*.json` files are rewritten each time it is scored.
+station's 3.1 and 3.2 (the 0.25° cell at the Cape is partly sea, where the wind is stronger than
+at a station inland), and the bin of shares of 0.2 (56 cases) saw the wind above the limit in
+none of them, 0.2 from what the share said and past the 0.1 allowed. **Vandenberg does not pass
+either, on its reliability and not its skill.** The Brier skill is 0.30 at 24 h and 0.24 at 48 h
+against the 0.1 asked (at 48 h the interval, 0.09 to 0.38, runs a hair under 0.1, so that part is
+met on the estimate and not with certainty). Three reliability bins hold the 30 cases the gate
+counts: shares under 0.1 (2,020 cases; the wind was above the limit in 3.4 % of them, against a
+share of 0), shares of 0.2 (41 cases; 24 %) and the share of 1.0, all five runs over the limit
+(41 cases, 20 at 24 h and 21 at 48 h, so neither lead alone holds the 30 the gate counts). The
+wind was above the limit in 36 of those 41 (88 %, 95 % 75 to 95 %): 0.12 from the share and past
+the 0.1 allowed. The estimate is past the tolerance by 0.02 and the interval takes in the allowed
+band, so the miss is not certain; the gate reads the estimate, as it did when it passed. The
+result moved as days were added, with the method and the gate the same in all three scorings:
+
+| Days scored | KVBG cases above the limit (24 h, 48 h) | KVBG Brier skill (24 h, 48 h) | KVBG shares of 1.0: cases, wind above the limit in | KVBG gate | KXMR CRPS skill at 24 h |
+|---|---|---|---|---|---|
+| 224 | 9, 8 | not worked out | 4, 4 (not counted) | does not pass | −0.90 (−1.25 to −0.61) |
+| 845 | 34, 38 | 0.37, 0.22 | 20, 18 (not counted) | passes | −0.95 (−1.10 to −0.80) |
+| 1,583 | 75, 74 | 0.30, 0.24 | 41, 36 | does not pass | −0.97 (−1.08 to −0.86) |
+
+Five runs give shares in steps of 0.2, so the bins between (shares of 0.4, 0.6 and 0.8: 26, 15
+and 19 cases at Vandenberg) are never counted; taken together, the 68 and 74 cases at 24 and 48 h
+with a share of 0.2 or more had the wind above the limit 60 % of the time at 24 h (mean share
+62 %) and 54 % at 48 h (mean share 57 %). The live ensemble has 31 runs, whose shares are finer,
+so this is the record of five-run shares and not of the live ones. So the wind rule's shares say
+"not checked against observations" at both pads. The check is made at 24 and 48 h, so a pass
+would cover a launch up to 48 h ahead and no further. The download is complete, every day planned
+is cached, and `make hindcast-reforecast` (or `--score-only`) rewrites the two
+`data/hindcast/gefs_reforecast_wind_*.json` files each time it scores.
+
+**HRRR's one forecast against the same stations** (`make hindcast-hrrr`,
+`app/feeds/hindcast_hrrr.py`). The launch weather lists HRRR (3 km, one run) beside the ensemble as
+one forecast, "over" or "under" the limit; this asks how good that wind and that call have been.
+It reads HRRR version 4 (December 2020 on, the version the live feed reads) from NOAA's open-data
+bucket on AWS: the 00 and 12 UTC runs on every second day of 2021 to 2025, 1,826 runs (2021-01-02 to
+2025-12-31; every run planned was in the archive), at 1, 6, 12 and 18 h, the leads the live feed
+keeps. The 10 m wind at the grid point nearest each station (0.7 km from KXMR, 0.3 km from KVBG) is
+read as the two bytes of the message that hold it (`parsers/grib_ranges.py`, after the file's index
+says where the message starts): about 46 kB a run instead of the eight 2.4 MB messages it comes
+from. The reader is equal to ecCodes on every value of five messages cut around the Cape and on
+20,000 scattered values of a full-size grid ecCodes wrote (`tests/unit/test_grib_ranges.py`), and it
+was checked once against a real archive message (the 2025-06-01 00 UTC run at 6 h): 222,259 values
+drawn from its 1,905,141 (largest difference 0.0), the own coordinates of every grid point (none
+read as another cell) and 1,521 random places (none named another cell than ecCodes does), and
+both stations fall in the cells ecCodes names. The outcome and the station's record are those above
+(the station's sustained wind in its report nearest the valid time, within 30 minutes; its
+month-by-hour record for 2000–2019), the limit 10.52 m/s at 10 m. The wind is scored against the
+record twice: the typical (median) wind for that month and hour used as a forecast (the mean
+absolute error), and the whole range of what has happened then (the CRPS; a single forecast's CRPS
+is its absolute error, so this is the skill the GEFS check reports, and the harder bar for one
+forecast to clear). The over or under call is scored as a share of 0 or 1 (Brier) against the
+station's month-by-hour frequency. Intervals are 95 %, from resampling whole months of cases.
+
+| Station, lead | Cases | Lean, HRRR minus station (m/s) | Mean absolute error (m/s) | Skill against the typical wind (mean absolute error) | CRPS skill | Station above the limit / HRRR said over / of them right | Brier skill of the call |
+|---|---|---|---|---|---|---|---|
+| KXMR 1 h | 1,744 | +0.32 | 1.13 | 0.26 (0.22 to 0.31) | −0.02 (−0.09 to 0.03) | 3 / 2 / 1 | not worked out |
+| KXMR 6 h | 1,733 | +0.18 | 1.23 | 0.19 (0.14 to 0.23) | −0.14 (−0.20 to −0.08) | 8 / 9 / 3 | not worked out |
+| KXMR 12 h | 1,746 | +0.61 | 1.29 | 0.15 (0.09 to 0.20) | −0.20 (−0.28 to −0.12) | 5 / 8 / 2 | not worked out |
+| KXMR 18 h | 1,744 | +0.12 | 1.22 | 0.18 (0.13 to 0.23) | −0.14 (−0.21 to −0.07) | 9 / 11 / 5 | not worked out |
+| KXMR, the four leads together | 6,967 | | | | | 25 / 30 / 11 | −0.32 (−0.79 to 0.08) |
+| KVBG 1 h | 1,728 | 0.00 | 0.99 | 0.42 (0.39 to 0.45) | 0.19 (0.14 to 0.22) | 30 / 8 / 7 | 0.16 (0.01 to 0.32) |
+| KVBG 6 h | 1,739 | +0.43 | 1.23 | 0.28 (0.23 to 0.33) | 0.01 (−0.06 to 0.07) | 11 / 5 / 3 | 0.12 (−0.33 to 0.48) |
+| KVBG 12 h | 1,749 | +0.29 | 1.19 | 0.31 (0.27 to 0.34) | 0.02 (−0.03 to 0.06) | 33 / 15 / 8 | −0.01 (−0.25 to 0.25) |
+| KVBG 18 h | 1,740 | +0.62 | 1.37 | 0.22 (0.17 to 0.26) | −0.09 (−0.15 to −0.04) | 9 / 7 / 3 | not worked out |
+| KVBG, the four leads together | 6,956 | | | | | 83 / 35 / 21 | 0.06 (−0.06 to 0.20) |
+
+At both pads and every lead HRRR's 10 m wind leans a little high (0.1 to 0.6 m/s above the
+station's, level with it at Vandenberg's 1 h) and is off by 1.0 to 1.4 m/s on average, 15 to 42 %
+less than the typical wind for the month and hour is off, every interval clear of zero. Against
+the whole range seen at that month and hour it does better only at Vandenberg's 1 h (0.19, 0.14 to
+0.22); it cannot be told apart from it at Vandenberg's 6 and 12 h and at the Cape's 1 h, and it does
+worse at the Cape's 6, 12 and 18 h (−0.14 to −0.20) and at Vandenberg's 18 h (−0.09), each interval
+clear of zero. The limit was passed in the station's report in 25 of 6,967 cases at the Cape (0.4 %)
+and 83 of 6,956 at Vandenberg (1.2 %). At the Cape HRRR said "over" 30 times, right 11 times, and
+missed 14 of the 25; at Vandenberg it said "over" 35 times, right 21 times, and missed 62 of the
+83. Fewer than 10 cases were above the limit at any lead at the Cape and at Vandenberg's 18 h, so
+no Brier skill is worked out there; at Vandenberg the call's is 0.16 (0.01 to 0.32) at 1 h, 0.12
+(−0.33 to 0.48) at 6 h and −0.01 (−0.25 to 0.25) at 12 h. Nothing here shows the single call
+beating what the station's own record says about that hour: over the four leads together the skill
+is 0.06 (−0.06 to 0.20) at Vandenberg and −0.32 (−0.79 to 0.08) at the Cape. No gate applies to
+one forecast, which is not a share, so nothing here makes a rule say "checked against
+observations"; the numbers go beside the forecast instead. `OneForecast.note` gives them for the
+lead nearest the step shown (the mean absolute error, the lean, the skill against the typical wind
+with its 95 % range, and the call's record over the four leads), and the disagreement flag counts
+NWS and HRRR as disagreeing only when they are on opposite sides of the limit and further apart
+than HRRR's own root-mean-square error at that lead (1.3 to 1.8 m/s at 10 m, carried to the rule's
+height on the same neutral profile). Not covered: the 162 ft wind the rule names (no public
+station measures it, so the check is at 10 m), runs at other hours than 00 and 12 UTC (the live
+feed reads the latest run), and leads between the four. `make hindcast-hrrr` resumes from
+`data/hindcast/hrrr_wind.cache.jsonl` and rewrites `data/hindcast/hrrr_wind_{region}.json`; the last
+115 runs took 1.1 s each with 12 requests in flight, so a fresh cache takes about 35 minutes.
 
 **Lightning climatology** (`make thunder-climatology`, `app/data/thunder_climatology.py`).
 NASA MSFC's Combined GLM Hourly Thunder Hour data (GHRC DAAC, doi:10.5067/GLM/HTH/DATA301),
@@ -552,7 +695,7 @@ values after March 2020, so the events during a flown trip are listed from NASA 
 is `app/core/entry.py`, flown for a day by `app/services/capsule.py`). The model is a point
 mass with a ballistic coefficient β, falling from the entry interface through an atmosphere
 that turns with the Earth, under gravity with J2; no lift, no parachutes, and a wind only in
-the footprint. The air is NRLMSISE-00 (Picone et al. 2002, run through `pymsis` 0.13.0)
+the footprint. The air is NRLMSIS 2.1 (Emmert et al. 2022, run through `pymsis` 0.13.0)
 driven by the entry day's 10.7 cm solar flux and 3-hour geomagnetic ap from NASA's OMNI
 files (`app/data/msis_indices.py`: the flux of the day before, its 81-day mean, and the
 seven ap numbers the model's storm-time mode takes), asked for at the capsule's own place
@@ -560,6 +703,76 @@ and time all the way down. The U.S. Standard Atmosphere 1976 (equations to 86 km
 I densities from 86 to 150 km) stands in when the OMNI files lack the day; the answer says
 which air was used. Nothing returns to Earth on a CLPS mission, so the model is checked on
 the one recent sample return with a published entry state and a measured landing point.
+
+**Choosing the atmosphere from measured air** (`app/tests/golden/capsule_air.py`).
+The default model was chosen from the air measured between 30 and 70 km on the entry day.
+A capsule loses its speed there: a density 5 % higher over 30 to 50 km moves the landing
+2.4 km, and over 50 to 70 km 2.3 km. The measurements do not use where the capsule landed.
+They are only partly independent of the models, and the rule that chose the model was
+written after both landing results were known (four cautions follow the tables). Two sets
+of measurements are on disk:
+* TIMED/SABER Level 2A version 2.08: 136 limb profiles of temperature and density on 24
+  September 2023, 28 to 49° N (NASA CDAWeb archive). The producer marks the files
+  "Unvalidated".
+* NASA JPL Table Mountain Facility Rayleigh lidar: nine nights of temperature and density
+  profiles from 19 to 30 September 2023, 34.4° N (NDACC archive).
+
+Each model is evaluated against each profile on 1 km vertical bins. A model's score is the
+root mean square of its mean log density bias over eight 5 km bands from 30 to 70 km:
+
+TIMED/SABER, 24 September 2023, 28 to 49 N (136 profiles); model / measured density - 1, %:
+| Model | 30-35 | 35-40 | 40-45 | 45-50 | 50-55 | 55-60 | 60-65 | 65-70 km | Score | Shape only |
+|---|---|---|---|---|---|---|---|---|---|---|
+| NRLMSISE-00 | +1.6 | +1.1 | +2.1 | +3.6 | +5.1 | +5.2 | +4.3 | +4.6 | 3.69 | 2.50 |
+| NRLMSIS 2.1 | -1.0 | -0.6 | -0.2 | -0.6 | +0.0 | +0.5 | +0.1 | +0.8 | 0.56 | 1.08 |
+| U.S. Standard Atmosphere 1976 | -3.0 | -3.5 | -2.9 | -3.2 | -0.9 | +3.1 | +5.6 | +8.9 | 4.39 | 5.99 |
+
+Model - measured temperature, K:
+| Model | 30-35 | 35-40 | 40-45 | 45-50 | 50-55 | 55-60 | 60-65 | 65-70 km | RMS |
+|---|---|---|---|---|---|---|---|---|---|
+| NRLMSISE-00 | +0.8 | +3.7 | +4.3 | +3.2 | +1.0 | +0.9 | +5.2 | +9.0 | 4.36 |
+| NRLMSIS 2.1 | +0.9 | +1.0 | +0.2 | +1.8 | +1.4 | +0.4 | +2.9 | +3.5 | 1.86 |
+| U.S. Standard Atmosphere 1976 | +0.9 | +3.9 | +5.2 | +11.4 | +13.2 | +9.9 | +10.9 | +11.2 | 9.27 |
+
+Table Mountain lidar, nine nights 19 to 30 September 2023 (9 profiles); model / measured density - 1, %:
+| Model | 30-35 | 35-40 | 40-45 | 45-50 | 50-55 | 55-60 | 60-65 | 65-70 km | Score | Shape only |
+|---|---|---|---|---|---|---|---|---|---|---|
+| NRLMSISE-00 | +1.5 | +0.9 | +3.0 | +5.8 | +6.9 | +7.2 | +6.0 | +6.0 | 5.05 | 4.02 |
+| NRLMSIS 2.1 | -1.1 | -0.8 | +0.2 | +0.8 | +1.4 | +2.4 | +2.0 | +2.8 | 1.63 | 2.57 |
+| U.S. Standard Atmosphere 1976 | -3.1 | -3.5 | -1.6 | -0.9 | +0.9 | +4.6 | +6.5 | +9.6 | 4.62 | 6.76 |
+
+Model - measured temperature, K:
+| Model | 30-35 | 35-40 | 40-45 | 45-50 | 50-55 | 55-60 | 60-65 | 65-70 km | RMS |
+|---|---|---|---|---|---|---|---|---|---|
+| NRLMSISE-00 | +1.5 | +6.2 | +6.1 | +2.9 | +0.7 | +0.6 | +5.4 | +9.5 | 5.10 |
+| NRLMSIS 2.1 | +1.4 | +2.7 | +2.2 | +3.0 | +2.4 | +1.3 | +4.2 | +5.3 | 3.08 |
+| U.S. Standard Atmosphere 1976 | +2.0 | +6.4 | +6.4 | +10.3 | +12.1 | +9.5 | +11.7 | +12.9 | 9.55 |
+
+The gap between NRLMSIS 2.1 and NRLMSISE-00 exceeds 3 percentage points for both instruments
+(SABER: 0.56 % vs 3.69 %; lidar: 1.63 % vs 5.05 %). NRLMSIS 2.1 also scores lower under every
+profile cut (by latitude, local solar time, or leaving out each lidar night). This agrees with
+the model authors' own published evaluations (Emmert et al. 2021, 2022: NRLMSIS 2.0/2.1 follows
+the mesosphere and stratosphere substantially better than NRLMSISE-00). **NRLMSIS 2.1 is
+therefore the default model.**
+
+**Four cautions on this choice.**
+1. The rule was written after both landing results were known (12.1 km in NRLMSISE-00, 6.6 km
+   in NRLMSIS 2.1). The score and the one-point tie went into the first comparison script
+   (SABER only) before it was run. The lidar was scored the same way afterwards. "The lower
+   score for both instruments" was written after SABER's scores had been seen. Nothing in
+   the comparison flies a capsule or reads where one lands. The profile cuts check the rule
+   and do not enter it.
+2. NRLMSIS 2.0 was fitted to SABER temperatures for 2002 to 2016 at 40 to 97.5 km (Emmert
+   et al. 2021, Table 1), and NRLMSIS 2.1 is NRLMSIS 2.0 with nitric oxide added. SABER's
+   agreement on a day in 2023 is therefore a test in time, not against another instrument.
+3. The lidar is in no fit. Its file names MERRA-2 as the source it scales density and
+   temperature to (the height of the scaling is not given), and MERRA-2 is in NRLMSIS 2.0's
+   fit up to 55 km. The level of the lidar's density is therefore not independent of that fit;
+   its change with height is. The "Shape only" column keeps that part: each of the seven
+   bands above 35 km is taken relative to the 30 to 35 km band, so the level of the measured
+   density drops out. NRLMSIS 2.1 still scores lower on it for both instruments (SABER: 1.08
+   vs 2.50; lidar: 2.57 vs 4.02).
+4. The producer marks the SABER files "Unvalidated".
 
 **Entry state.** The sample return capsule's reconstructed trajectory in NAIF's PDS
 archive (`src_230924_230924_230930_od383a_v1.bsp`, in the registry as
@@ -574,55 +787,47 @@ capsule's mass at entry (49.64 kg as built plus the 121.6 g sample), Stardust's 
 (0.8128 m, the same forebody) and its hypersonic axial force coefficient, 1.48 to 1.56
 (Mitcheltree et al. 1997). Flown to the touchdown height, 1,288 m, in each atmosphere over
 the published drag range, and compared with the recovery team's measured point,
-40.3719° N, 113.24° W. Before, the standard atmosphere; now, NRLMSISE-00 for the day; the
-newer NRLMSIS 2.1 is flown for comparison only:
+40.3719° N, 113.24° W:
 
 | Atmosphere | C_A 1.48 | C_A 1.52 | C_A 1.56 | Entry to ground | Peak deceleration |
 |---|---|---|---|---|---|
-| U.S. Standard Atmosphere 1976 (before) | 6.7 km | **9.5 km** | 12.2 km | 530 s | 31.0 g |
-| NRLMSISE-00, 24 September 2023 (now) | 9.4 km | **12.1 km** | 14.8 km | 537 s | 32.3 g |
-| NRLMSIS 2.1, 24 September 2023 | 3.9 km | 6.6 km | 9.3 km | 531 s | 32.0 g |
+| U.S. Standard Atmosphere 1976 | 6.7 km | **9.5 km** | 12.2 km | 530 s | 31.0 g |
+| NRLMSISE-00, 24 September 2023 (comparison) | 9.4 km | **12.1 km** | 14.8 km | 537 s | 32.3 g |
+| NRLMSIS 2.1, 24 September 2023 (default) | 3.9 km | **6.6 km** | 9.3 km | 531 s | 32.0 g |
 
 The day's indices were the 10.7 cm flux of 23 September, 174.1 solar flux units (81-day mean
 149.3), and a 3-hour ap of 4 at the time (the day's storm began in the 18 to 21 UTC block,
-after the landing). NRLMSISE-00's flights, β from each C_A:
+after the landing). NRLMSIS 2.1 flights, β from each C_A:
 
 | C_A | β (kg/m²) | Landing | From the measured point | Entry to ground | Peak deceleration |
 |---|---|---|---|---|---|
-| 1.48 | 64.8 | 40.3535 N, 113.3479 W | 9.4 km | 531 s | 32.2 g |
-| 1.52 | 63.1 | 40.3459 N, 113.3788 W | **12.1 km** | 537 s | 32.3 g |
-| 1.56 | 61.5 | 40.3385 N, 113.4089 W | 14.8 km | 543 s | 32.4 g |
+| 1.48 | 64.8 | 40.3687 N, 113.2861 W | 3.9 km | 525 s | 31.9 g |
+| 1.52 | 63.1 | 40.3612 N, 113.3169 W | **6.6 km** | 531 s | 32.0 g |
+| 1.56 | 61.5 | 40.3539 N, 113.3468 W | 9.3 km | 536 s | 32.2 g |
 
-**The plan's 10 km is not met with the day's air.** NRLMSISE-00 lands the capsule 12.1 km
-from the measured point (9.4 to 14.8 km over the drag range: only its low-drag end is inside
-the limit), 2.6 km farther than the standard atmosphere did (9.5 km, met with 0.5 km to
-spare). The answer says so (`passed: false`), names the air, and gives the other airs'
-distances. NRLMSIS 2.1 lands 6.6 km away and would pass; it is not used, because the model
-was fixed before the runs (the plan names NRLMSISE-00, which the low-orbit drag model uses
-too) and not by which one lands nearest. All three miss on the same side, short and
-west-southwest (257° from the measured point in the standard atmosphere). So did the
-mission's own six-degree-of-freedom simulation from the same reconstructed entry state
-with the parachutes as flown and its pre-flight atmosphere (Earth-GRAM) and winds: 8.9 km
-at 257° (Francis et al., the table of comparison cases, "Cht Seq + ESF").
+**The plan's 10 km tolerance is met with the day's air.** In NRLMSIS 2.1, the capsule lands
+6.6 km from the measured point (3.9 to 9.3 km over the drag range: every case is inside the
+10 km limit). The answer serves `passed: true`. NRLMSISE-00 lands 12.1 km away (9.4 to 14.8 km)
+and fails the limit; U.S. Standard Atmosphere 1976 lands 9.5 km away (6.7 to 12.2 km).
+All three miss on the same side, short and west-southwest (257° from the measured point in the
+standard atmosphere), matching the mission team's own pre-flight simulation (8.9 km at 257°,
+Francis et al. AAS 24).
 
-**What decides the landing.** The middle case in NRLMSISE-00 with the density 5 % higher over
+**What decides the landing.** The middle case in NRLMSIS 2.1 with the density 5 % higher over
 one band of heights at a time:
 
-| NRLMSISE-00, density 5 % higher between | Landing moves | From the measured point |
+| NRLMSIS 2.1, density 5 % higher between | Landing moves | From the measured point |
 |---|---|---|
-| 0 and 30 km | 0.08 km | 12.2 km |
-| 30 and 50 km | 2.34 km | 14.5 km |
-| 50 and 70 km | 2.37 km | 14.5 km |
-| 70 and 90 km | 0.28 km | 12.4 km |
-| 90 and 125 km | 0.01 km | 12.1 km |
+| 0 and 30 km | 0.09 km | 6.7 km |
+| 30 and 50 km | 2.42 km | 9.0 km |
+| 50 and 70 km | 2.28 km | 8.9 km |
+| 70 and 90 km | 0.25 km | 6.9 km |
+| 90 and 125 km | 0.01 km | 6.6 km |
 
 The landing rests on the air between 30 and 70 km, where the capsule loses its speed. It does
-not rest on the Sun: the solar flux and the geomagnetic activity, which are all that make
-NRLMSISE-00 the day's, act above 100 km. With the flux at 70 solar flux units (solar minimum)
-or 250 (maximum) the landing is 11.7 or 11.8 km from the measured point instead of 12.1,
-with ap held at 4 all the way down 12.0 km, and in a severe storm (ap 100 all the way down)
-12.9 km. The 12.1 km is the model's average stratosphere and mesosphere for the place and
-the season; the day's indices move it by 0.8 km at most.
+not rest on the Sun: with the flux at 70 solar flux units (solar minimum) or 250 (maximum)
+the landing is identical to 0.01 km (6.6 km from the measured point), with ap held at 4 or in
+a severe storm (ap 100) 6.6 km. The solar and geomagnetic indices act above 90 km.
 
 **The models against the day's radiosonde.** The National Weather Service's balloon from Salt
 Lake City at 12 UTC (130 km from the touchdown, up to 33 km; Iowa Environmental Mesonet
@@ -642,7 +847,8 @@ geometric and its temperatures virtual, against each model at the balloon's plac
 The standard atmosphere is 3 to 7 % thinner than the day's air from 10 to 30 km;
 NRLMSISE-00 is within 2.5 % of the balloon at every height and NRLMSIS 2.1 within 2.8 %. Below
 30 km the empirical models have the day's air right, and the landing hardly depends on it
-(0.08 km for 5 %). Where it does depend, above 30 km, nothing measured that day is on disk.
+(0.09 km for 5 %). Above 30 km, the SABER satellite and Table Mountain lidar profiles are the
+measurements (with the four cautions above).
 
 **What the mission's team found.** Its reconstruction of the day's air, from NASA's GEOS
 analysis, "showed notably lower atmospheric densities in the upper atmosphere than the
@@ -650,34 +856,26 @@ nominal GRAM atmosphere predicted, and was even lower than the predicted GRAM 3�
 for a significant portion of the drag pulse". Put into their simulation, with the winds it
 came with, it landed 15.1 km northeast of the pre-flight prediction, 3.5 km beyond the
 measured point ("Cht Seq + ESF + Atm"; 2.7 km with the winds of the balloon flown after the
-landing instead). An average like NRLMSISE-00, which knows a day only through its flux and
-geomagnetic activity, cannot show a thin day. The capsule flew with no parachute until 1.4 km
-above the ground (the signals to the drogue's mortar and to the cutters that free its bridle
-were reversed), so a model without parachutes follows the real flight nearly to the ground;
-the team found that the parachutes as flown moved the touchdown point by 0.4 km and, in
-their no-parachute contingency, by under 100 m. The time to the ground (537 s) is not
-comparable with the observed 615 s: the observed flight ended under the main parachute, 285 s
-over its last 1.4 km, and the model has no parachute and one axial force coefficient all the
-way down.
+landing instead). The capsule flew with no parachute until 1.4 km above the ground (the signals
+to the drogue's mortar and to the cutters that free its bridle were reversed), so a model
+without parachutes follows the real flight nearly to the ground; the team found that the
+parachutes as flown moved the touchdown point by 0.4 km and, in their no-parachute contingency,
+by under 100 m.
 
 **Footprint.** A seeded Monte Carlo of 200 runs: the flight path angle from TCM-12's
 delivery accuracy (0.073° at 3σ, AAS 24-058 Table 5), heading and speed from the E-1 day
 solution (Table 12), β ±2.6 % (the published C_A range as one sigma), and, assumed, the
-density ±5 % and a wind below 30 km of 10 m/s in each direction. Its 99 % ellipse is 51.2
-by 21.8 km in NRLMSISE-00 (51.4 by 21.4 km in the standard atmosphere), long axis 77° from
-north, and holds the measured point in both (the mission's design ellipse was 84 by 20 km).
-In the standard atmosphere, without the wind the ellipse was 0.3 km wide and missed the
-measured point, which lies about 0.9 km across the track: the wind is what sets the width.
+density ±5 % and a wind below 30 km of 10 m/s in each direction. Its 99 % ellipse is 51.1
+by 21.5 km in NRLMSIS 2.1 (51.4 by 21.4 km in the standard atmosphere), long axis 77° from
+north, and holds the measured point in both. Without the wind, the ellipse in NRLMSIS 2.1 is
+43.7 by 0.3 km: the wind is what sets the cross-track width.
 
 The result is written to `data/capsule/orex_check.json` and served in
 `GET /missions/{id}/return` as `capsule.model_check`.
 
 **Not done.** The Moon-to-Earth return trajectory to the entry interface (C1/C2 reversed)
 is not built: no CLPS mission brings anything back, and no planned one publishes an entry
-state. A capsule's zone weather (B2) waits for the same. The day's air from 30 to 76 km,
-which the landing depends on, is not measured or analysed in what is on disk; NASA's
-GEOS-FP analysis of it (the family of analyses the mission's team used, open on the NCCS
-OPeNDAP server) is the input to try next.
+state. A capsule's zone weather (B2) waits for the same.
 
 # Real orbiters over the landing sites against JPL Horizons (plan T1, F2)
 

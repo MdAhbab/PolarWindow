@@ -619,8 +619,7 @@ async def launch_weather(
                 " ".join(
                     x for x in (verification.summary(region, r.id) for r in rules) if x is not None
                 )
-                or "No rule has been checked against observations (hindcast) yet, so each "
-                "share says so.",
+                or "No rule has been checked against observations yet, so each share says so.",
             ),
         ],
         # GLM is fetched only near a launch: an old one is not shown and is not a stale answer.

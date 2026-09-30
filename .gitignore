@@ -35,6 +35,18 @@ node_modules/
 dist/
 dist-ssr/
 *.tsbuildinfo
+e2e/*
+!e2e/*.ts
+!e2e/tsconfig.json
+!e2e/__screens__/
+frontend/e2e/*
+!frontend/e2e/*.ts
+!frontend/e2e/tsconfig.json
+!frontend/e2e/__screens__/
+test-results/
+playwright-report/
+frontend/test-results/
+frontend/playwright-report/
 
 # Env
 .env

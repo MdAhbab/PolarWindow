@@ -220,7 +220,8 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   to leave Earth for the Moon, flight time, time in orbit around the Moon
   with what is assumed, the landing and the stretch the landing rule allows)
   · Weather rules for this opportunity (meta: "{n} rules; models disagree on
-  {k}", "; no forecast for this date" when `weather` is `none`) · Official
+  {k}; {c} checked against observations", each part only when it is more than
+  none; "; no forecast for this date" when `weather` is `none`) · Official
   launch forecast · Team weather limits · Other launches from this range that
   day (with `range_note`) · Space weather now · Change the dates (up to 180
   days; not shown for a flown mission) · How sure is this? · Where does this
@@ -254,10 +255,27 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   ENS, AIFS ENS), each cell "{k} of {n} runs" with a small bar and its
   interval as a hatch; missing cells give their reason. A rule's class is in
   words: "a model can answer this", "the model sees the ingredients",
-  "observation only: no forecast number". "Models disagree" with the
-  uncertain glyph when the intervals do not overlap. One forecast: "over" or
-  "under", never a probability. Each rule links its source. Nothing adds them
-  up. The last column also has what was seen ("Seen now: clear." or "Seen
+  "observation only: no forecast number". Whether the shares shown have been
+  checked against observations is said in that line, once for the rule ("checked
+  against observations", "not yet checked against observations", or by system
+  when they differ; nothing for a rule with no share), and again for screen
+  readers on each share (`share.checked`, invariant 12). "Models disagree" with
+  the uncertain glyph, and under it the service's sentence
+  (`disagreement_note`: who puts the wind where, against which limit or which
+  runs), when a single forecast is on the other side of the limit from the
+  runs or two single forecasts are on opposite sides. One forecast: each named
+  in full ("National Weather Service (NWS) forecast:", "High-Resolution Rapid
+  Refresh (HRRR) forecast:"), then the value with "over the limit" or "under
+  the limit", never a probability; under it how the number was made (the
+  Quantity's reason for having no margin: HRRR from the model's 10 m and 80 m
+  winds, NWS's 10 m wind carried to the rule's height) and the forecast's own
+  `note` as served (HRRR: how its 10 m wind did against the station's record;
+  NWS: it keeps no archive, so it cannot be checked). Each rule links its
+  source. Nothing adds them up. Under the table, "How these numbers were worked
+  out" lists the weather answer's own uncertainty parts (the shares' sample and
+  interval, the height, and what the check against observations found, with
+  whether it passed its gate), the numbers behind every "checked". The last
+  column also has what was seen ("Seen now: clear." or "Seen
   now:" with the count, for lightning within six hours; said to be now, not
   at the launch) and past years for a wind rule ("Past years (2001-2024):
   over the limit 1.0% of the time." with its source and hours counted) and
@@ -312,7 +330,15 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   service's `label` first, "not a prediction"; one sentence with the runs,
   95 and 99 of 100, the interval allowing for the number of runs, the linear
   check, runs that missed the Moon, the arrival height; a table of the three
-  corrections and their total, taken run by run; every assumed error; the
+  corrections and their total, taken run by run; every error the budget rests
+  on, each with its `basis` ("published" in the launch vehicle's guide, or
+  "assumed") after its value and, for a published one, its `source` as served
+  (guide, table, page) under it; over the list a heading that says the mix in
+  plain words ("3 of the 7 errors here are published in the launch vehicle's
+  guide; the other 4 are assumed"; "Every error here is assumed" when none is)
+  and, when the served sources of the published speed errors say the guide's
+  row for a transfer orbit to geosynchronous orbit stands in for a launch to the
+  Moon, that the speed errors on leaving Earth are worked out from it; the
   plan and flown notes. None: `corrections_note`) · Where the Moon's pull wins
   (only when `moon_pull` is given) · Download the trip (flown trips only: CCSDS
   OEM and CSV, one block per stretch NASA's reconstruction covers, said in the
@@ -500,14 +526,20 @@ into the hub header.
   read ("The sea is read near {lat} {lon}."), since that point is chosen, not
   a published zone.
 - **The capsule model, checked against a real landing** (`capsule.model_check`,
-  shown whenever it is served, capsule or not): meta "{d} km from it; the limit
-  is {l} km"; the body is the service's `note` first, then the case, the
-  distance with its range over the published drag range, the limit, the
-  mission's own simulation, the 99 % landing area and whether it holds the real
-  point, when it was checked, and its sources (a URL as a link by its host).
-  Over the limit: "{x} km over the limit." with the triangle (invariant 4).
-  With a capsule and no check served, the splashdown zone says "The capsule
-  model has not been checked against a real landing here."
+  shown whenever it is served, capsule or not): meta "{d} km from it; the
+  plan's {l} km is met" or "is not met" (`passed` and `limit_km`, as served);
+  the body is the service's `note` first, then whether the limit is met in a
+  sentence ("The plan's {l} km is met, with {g} km to spare." or "The plan's
+  {l} km is not met: {x} km over the limit." with the triangle, invariant 4),
+  then the case, "The air the modelled fall went through" (`atmosphere`, as
+  served: which air model and what it was given, or which standard atmosphere
+  stood in and why), the distance with its range over the published drag range,
+  the limit, the mission's own simulation, the 99 % landing area and whether it
+  holds the real point, when it was checked, and its sources (a URL as a link by
+  its host). Neither the limit nor the air is written in the screen's code (the
+  default air model may change); both are read from the answer. With a capsule
+  and no check served, the splashdown zone says "The capsule model has not been
+  checked against a real landing here."
 - **Rows:** Booster landing zone · Splashdown zone · The capsule model, checked
   against a real landing · Team limits · How sure is this? · Where does this
   come from?
@@ -543,8 +575,12 @@ Four additions, each a group or a closed row:
 - **People:** who is signed in (name, team), "Sign in with your name".
 - **Data sources:** one row per feed (`GET /feeds`): provider and product,
   state as glyph and words (● Working, ◔ Out of date, ▲ Failing), last good
-  fetch as an age, next run, licence, the last error; "Refresh now" for a
-  signed-in manager.
+  fetch as an age, next run, licence, the last error, and the service's own
+  `note` on the product's line when it gives one (a product fetched only in the
+  six hours before a launch opportunity, today the lightning mapper, holds
+  nothing when none is near: "no data yet · Fetched only in the 6 hours before
+  … that is not a fault.", and it is not called out of date); "Refresh now" for
+  a signed-in manager.
 - **Risk scale:** the likelihood and consequence levels in use, with their
   source and notes (read-only). When the levels have no words beyond their
   numbers (the scale as shipped: GSFC-HDBK-8005A leaves the words to a
@@ -576,8 +612,9 @@ guide stays ten steps and the mission steps stay last.
   ink on canvas, as a pressed segment already is.
 - Radius 0 on data surfaces, 2 px on controls; no animation is added, so each
   new chart is its own reduced-motion version (stated in code comments).
-- Model disagreement: the uncertain glyph and the words "Models disagree".
-  "Not yet checked": caption text on every share line.
+- Model disagreement: the uncertain glyph and the words "Models disagree",
+  then the service's sentence. "Checked against observations" / "not yet
+  checked": one phrase in each rule's line, and spoken on every share.
 
 ## 9. Words
 

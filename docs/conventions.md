@@ -181,6 +181,19 @@ professional name of a key number is shown only when its label is pressed
 | booster landing zone | droneship area, LZ |
 | splashdown zone | recovery area |
 | the trip | cruise, transit, trans-lunar phase |
+| launch period | launch window, the window (for an interval with open and close) |
+| forecasts disagree | models conflict, disagreement |
+| checked against observations | verified, ground-truthed |
+| could see the lander | orbiter pass, relay pass (for active orbiters overhead) |
+| what the rover or lander can see (line of sight) | viewshed, rover LOS |
+| the space around the line of sight that the radio signal needs | first Fresnel zone, Fresnel zone clearance, RF clearance |
+| NOAA’s forecast model re-run for past years | reforecast, hindcast |
+| how much better than the past-years rate its calls were | Brier skill, Brier skill score, BSS |
+| how close its wind speeds came | CRPS, CRPS skill, Continuous Ranked Probability Score |
+| air model with solar activity | NRLMSISE-00, NRLMSIS 2.1 |
+| Earth gravity model | EGM2008 |
+| planned relay | speculative relay, unlaunched relay |
+| launched, not working | uncommissioned relay, silent relay |
 
 ## Motion
 

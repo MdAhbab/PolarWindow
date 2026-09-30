@@ -12,12 +12,14 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
 
 from app.core import forces, lincov, phasing, propagate, transfer
 from app.core.flown import FlownLaunch
+from app.data import catalogues
 from app.services.ascent import coverage, states_of
 
 FloatArray = npt.NDArray[np.float64]
@@ -30,9 +32,10 @@ MIN_PERIGEE_ALT_M = 150e3
 #: Perigees farther than this from the Earth's centre are not departures.
 LEAVE_WITHIN_M = 60_000e3
 
-#: Errors assumed for the correction budget (one sigma). No vehicle user guide with
-#: injection accuracy is in the catalogue, and the lander makers publish no
-#: navigation or engine figures, so each is assumed and said so.
+#: Errors assumed for the correction budget (one sigma). A vehicle whose user guide prints
+#: its injection accuracy has the errors at leaving Earth that it gives put in place of the
+#: assumed ones (``guide_for``); the lander makers publish no navigation or engine
+#: figures, so every other error is assumed and said so.
 ASSUMED = lincov.Errors(
     tli_pos_m=(1000.0, 1000.0, 1000.0),
     tli_vel_m_s=(0.5, 1.0, 0.5),
@@ -48,6 +51,189 @@ ASSUMED_WORDS: tuple[tuple[str, str], ...] = (
     ("Where the team thinks the lander is, at each correction", "1 km and 1 mm/s"),
     ("How well a burn fires", "1 % of its size and 1 degree of pointing, plus 1 cm/s"),
 )
+
+
+@dataclass(frozen=True, slots=True)
+class Guide:
+    """A launch vehicle guide's published injection accuracy, in the row of the table nearest
+    a departure for the Moon (its lunar transfer row when it has one, else its transfer
+    orbit to geosynchronous)."""
+
+    vehicle: str
+    row: lincov.GuideRow
+    orbit: str  # the guide's words for the row's orbit
+    cited: str  # the guide, table and page
+    sigma_assumed: bool  # the guide does not say how many standard deviations its ± is
+    to_the_moon: bool  # the row is the guide's own for a launch to the Moon, not one borrowed
+
+
+def guide_for(vehicle_id: str | None) -> Guide | None:
+    """The vehicle's published injection accuracy (``vehicles`` catalogue), or None when its
+    guide prints none."""
+    if vehicle_id is None:
+        return None
+    v = catalogues.load("vehicles").get(vehicle_id)
+    if not v.injection_accuracy or v.injection_sigma is None:
+        return None
+    rows = v.injection_accuracy
+    picked = (
+        [r for r in rows if r.kind == "lunar_transfer"]
+        or [
+            r
+            for r in rows
+            if r.kind == "gto" and r.perigee_alt_km is not None and r.apogee_alt_km is not None
+        ]
+        or [r for r in rows if r.kind == "gto"]
+    )
+    if not picked:
+        return None
+    r = picked[0]
+    row = lincov.GuideRow(
+        r.perigee_alt_km,
+        r.apogee_alt_km,
+        r.perigee_pm_km,
+        r.apogee_pm_km,
+        r.inclination_pm_deg,
+        v.injection_sigma,
+    )
+    return Guide(
+        v.name,
+        row,
+        r.orbit,
+        r.cited,
+        "injection_sigma" in v.assumed_fields,
+        r.kind == "lunar_transfer",
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class Input:
+    """One error the budget rests on, in words: ``basis`` says whether it is a published
+    figure or an assumed one, and ``source`` where a published one is from."""
+
+    what: str
+    value: str
+    basis: Literal["published", "assumed"]
+    source: str | None
+
+
+def _km(m: float) -> str:
+    return f"{m / 1000.0:.2g} km"
+
+
+def _speed(m_s: float) -> str:
+    return f"{m_s:.1f} m/s" if m_s >= 1.0 else f"{m_s:.2g} m/s"
+
+
+def _deviations(sigma: float) -> str:
+    n = {1.0: "one", 3.0: "three"}.get(sigma, f"{sigma:g}")
+    return f"{n} standard {'deviation' if sigma == 1.0 else 'deviations'}"
+
+
+def _row_why(guide: Guide) -> str:
+    """Which row of the guide the errors are taken from, and why that one."""
+    if guide.to_the_moon:
+        return "This is the guide’s row for a launch to the Moon."
+    return (
+        "The guide has no row for a launch to the Moon, so its row for a transfer orbit to "
+        "geosynchronous orbit is used in its place."
+    )
+
+
+def label(guide: Guide | None, derived: list[lincov.Derived]) -> str:
+    """What the budget says it is: a budget, not a prediction, and which of its errors are
+    the launch vehicle’s published figures and which are assumed."""
+    if guide is None or not derived:
+        return "A budget for these assumed errors, not a prediction of what the mission needed."
+    row = (
+        "its row for a launch to the Moon"
+        if guide.to_the_moon
+        else "its row for a transfer orbit to geosynchronous orbit, because the guide has no "
+        "row for a launch to the Moon"
+    )
+    return (
+        "A budget for these errors, not a prediction of what the mission needed. The accuracy "
+        f"published in the user’s guide for {guide.vehicle} is used for the errors at leaving "
+        f"Earth that it covers, worked out from {row}. Every other error is assumed."
+    )
+
+
+def input_words(
+    errors: lincov.Errors, derived: list[lincov.Derived], guide: Guide | None
+) -> list[Input]:
+    """The errors the budget rests on, one row each: what the guide gave (``derived``, what
+    ``lincov.from_guide`` put in place of the assumed values) with where it is from, and
+    what is assumed."""
+    if guide is None or not derived:
+        return [Input(w, v, "assumed", None) for w, v in ASSUMED_WORDS]
+    got = {d.axis for d in derived}
+    row = guide.row
+    pos, vel = errors.tli_pos_m, errors.tli_vel_m_s
+    unsaid = (
+        " The guide does not say how many standard deviations its figure is; three is taken."
+        if guide.sigma_assumed
+        else ""
+    )
+    cite = f"{guide.cited}; row: {guide.orbit}. {_row_why(guide)} "
+    dev = _deviations(row.sigma)
+    out: list[Input] = []
+    if "pos_radial" in got:
+        out.append(
+            Input(
+                "Leaving Earth, position up or down",
+                _km(pos[0]),
+                "published",
+                f"{cite}The orbit’s lowest point within {row.perigee_pm_km:g} km at {dev}, so "
+                f"one standard deviation is {_km(pos[0])}.{unsaid}",
+            )
+        )
+        out.append(
+            Input(
+                "Leaving Earth, position along the path and sideways",
+                f"{_km(pos[1])} each",
+                "assumed",
+                None,
+            )
+        )
+    else:
+        out.append(
+            Input("Leaving Earth, position", f"{_km(pos[0])} in each direction", "assumed", None)
+        )
+    how = (
+        "The orbit’s highest point within {pm:g} km at {dev}. The speed error at the lowest "
+        "point that would move the highest point that far is {v} at one standard deviation, "
+        "taken as the same at leaving Earth for the Moon."
+    )
+    tilt = (
+        "The orbit’s tilt within {pm:g}° at {dev}. The sideways speed error at the lowest "
+        "point that would tilt it that far is {v} at one standard deviation, taken as the "
+        "same at leaving Earth for the Moon."
+    )
+    out.append(Input("Leaving Earth, speed up or down", _speed(vel[0]), "assumed", None))
+    if "vel_along" in got:
+        out.append(
+            Input(
+                "Leaving Earth, speed along the path",
+                _speed(vel[1]),
+                "published",
+                cite + how.format(pm=row.apogee_pm_km, dev=dev, v=_speed(vel[1])) + unsaid,
+            )
+        )
+    else:
+        out.append(Input("Leaving Earth, speed along the path", _speed(vel[1]), "assumed", None))
+    if "vel_cross" in got:
+        out.append(
+            Input(
+                "Leaving Earth, speed sideways",
+                _speed(vel[2]),
+                "published",
+                cite + tilt.format(pm=row.inclination_pm_deg, dev=dev, v=_speed(vel[2])) + unsaid,
+            )
+        )
+    else:
+        out.append(Input("Leaving Earth, speed sideways", _speed(vel[2]), "assumed", None))
+    out += [Input(w, v, "assumed", None) for w, v in ASSUMED_WORDS[2:]]
+    return out
 
 
 def burns(
@@ -126,6 +312,9 @@ class Budget:
     planned: Planned
     linear: lincov.Budget
     runs: lincov.Budget
+    #: The errors it was worked out for, and which of them the vehicle's guide gave.
+    errors: lincov.Errors
+    derived: list[lincov.Derived]
 
 
 def budget(
@@ -134,18 +323,27 @@ def budget(
     tables: forces.Tables,
     named: list[tuple[phasing.Burn, str]],
     *,
+    guide: Guide | None = None,
     samples: int = 1000,
     seed: int = 0,
     progress: Callable[[int], None] | None = None,
 ) -> Budget | None:
-    """The correction budget about the planned flight, linear and by seeded runs."""
+    """The correction budget about the planned flight, linear and by seeded runs: with the
+    errors at leaving Earth that the vehicle's ``guide`` gives, in place of the assumed
+    ones, when there is one."""
     planned = planned_flight(mission_id, fl, tables, named)
     if planned is None:
         return None
+    errors = ASSUMED
+    derived: list[lincov.Derived] = []
+    if guide is not None:
+        errors, derived = lincov.from_guide(
+            ASSUMED, guide.row, planned.plan.y_tli, tables.gm_earth, tables.r_earth_m
+        )
     model = forces.Model()
     nom = lincov.nominal(tables, model, planned.plan)
-    lin = lincov.linear(tables, nom, planned.plan, ASSUMED, seed=seed)
+    lin = lincov.linear(tables, nom, planned.plan, errors, seed=seed)
     runs = lincov.monte_carlo(
-        tables, model, nom, planned.plan, ASSUMED, samples=samples, seed=seed, progress=progress
+        tables, model, nom, planned.plan, errors, samples=samples, seed=seed, progress=progress
     )
-    return Budget(planned, lin, runs)
+    return Budget(planned, lin, runs, errors, derived)

@@ -117,7 +117,54 @@ test('launch (contract fixtures): choosing an opportunity sets the four numbers;
   await expect(rules).toContainText('Models disagree')
   await expect(rules).toContainText('not yet checked against observations')
   await expect(rules).toContainText('Observation only: no forecast number')
+  // Two single forecasts beside the runs, each named in full with how it did; the disagreement is a sentence.
+  const wind = rules.getByRole('row').filter({ hasText: 'Sustained wind at 162 ft' })
+  await expect(wind).toContainText('HRRR puts the wind at 14.2 m/s, over the limit, and NWS at 8.9 m/s, under it.')
+  await expect(wind).toContainText('High-Resolution Rapid Refresh (HRRR) forecast: 14.2 m/s, over the limit.')
+  await expect(wind).toContainText("HRRR's 10 m wind was off by 1.2 m/s on average")
+  await expect(wind).toContainText('National Weather Service (NWS) forecast: 8.9 m/s, under the limit.')
+  await expect(wind).toContainText('keeps no archive of its forecasts, so this one cannot be checked against observations.')
+  // The row's closed line counts them, and under the table is what the service says about the check (its own parts, as served).
+  await expect(page.locator('summary', { hasText: 'Weather rules for this opportunity' })).toContainText('6 rules; models disagree on 1')
+  const row = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Weather rules for this opportunity' }) })
+  await expect(row).toContainText('How these numbers were worked out')
+  for (const part of fixtureJson('launch-weather.json').meta.uncertainty.parts as { source: string; note: string }[]) {
+    await expect(row).toContainText(part.source)
+    await expect(row).toContainText(part.note)
+  }
+  await expect(row).toContainText('It did not pass the gate')
   await expectNoSeriousAxe(page, '/missions/im-2/launch with the weather open')
+})
+
+test('launch weather (contract fixtures): a rule whose shares were checked against observations says so, in the rule and in the closed row; both themes, a phone', async ({
+  page,
+  context,
+}) => {
+  await returningVisitor(context)
+  await serveLifecycleFixtures(context)
+  // The wind rule's shares, checked; the rest as they are (the check's own sentence under the table is left alone: this test is about the rule's line and the closed row).
+  await context.route(/localhost:8000\/api\/v1\/missions\/[^/]+\/launch\/weather/, async (route) => {
+    const body = fixtureJson('launch-weather.json')
+    for (const p of body.data.rules[0].per_system) if (p.share) p.share.checked = true
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body), headers: { 'access-control-allow-origin': '*' } })
+  })
+  await page.goto('/missions/im-2/launch')
+  const summary = page.locator('summary', { hasText: 'Weather rules for this opportunity' })
+  await expect(summary).toContainText('6 rules; models disagree on 1; 1 checked against observations')
+  await summary.click()
+  const rules = page.getByRole('table').filter({ hasText: 'model runs that break it' })
+  await expect(rules.getByRole('row').filter({ hasText: 'Sustained wind at 162 ft' })).toContainText('A forecast model can answer this · checked against observations')
+  await expect(rules.getByRole('row').filter({ hasText: 'No precipitation at the pad' })).toContainText('not yet checked against observations')
+  await expectNoSeriousAxe(page, 'launch weather with a checked rule (dark)')
+  await page.evaluate(() => localStorage.setItem('pw-prefs', JSON.stringify({ theme: 'light', motion: 'full', shortcuts: true })))
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.reload()
+  await page.locator('summary', { hasText: 'Weather rules for this opportunity' }).click()
+  const cards = page.getByRole('list', { name: 'Weather rules' })
+  await expect(cards).toContainText('HRRR puts the wind at 14.2 m/s')
+  await expect(cards).toContainText('National Weather Service (NWS) forecast: 8.9 m/s, under the limit.')
+  await expectNoSeriousAxe(page, 'launch weather with a checked rule (light, 375 px)')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the weather rules scroll sideways at 375 px').toBeLessThanOrEqual(375)
 })
 
 test('team weather limits (contract fixtures): the form starts from the limits as entered, with their notes, and sends every one again', async ({
@@ -473,8 +520,11 @@ test('rover line of sight (contract fixtures): the answer first, the map in thre
   await expect(row.getByRole('button', { name: 'Radio path' })).toHaveAttribute('aria-pressed', 'true')
   await expect(row.getByRole('img', { name: /^Radio path between Yaoki and the lander/ })).toBeVisible()
   await expect.poll(() => [...layers].sort().join(',')).toBe('radio,sight,terrain')
+  // What the radio path needs beyond the line of sight, in plain words.
+  await expect(row).toContainText('the ground must also stay out of the space around the line of sight that the radio signal needs')
   // The table twin, from the same rays: both the line of sight and the radio path.
   await row.getByRole('button', { name: 'Read the chart as a table' }).click()
+  await expect(row.getByRole('columnheader', { name: 'Radio path (the space around the line of sight that the radio signal needs)' })).toBeVisible()
   const ray = row.getByRole('row', { name: /^100°/ })
   await expect(ray).toContainText('In sight 25–125 m; uncertain 150–175 m; blocked 200–500 m')
   await expect(ray).toContainText('In sight 25–100 m; uncertain 125–150 m; blocked 175–500 m')
@@ -572,6 +622,42 @@ test('rover line of sight (contract fixtures): a site outside the terrain map sa
   const row = page.getByTestId('rover-sight')
   await expect(row).toContainText('Cannot be said here. Reiner Gamma is outside the polar terrain map (south of 80°S)')
   await expect(row.getByRole('img')).toHaveCount(0)
+})
+
+test('the capsule model (contract fixtures): whether the plan’s limit is met and the air the fall went through, in the row and its closed line; both themes, a phone', async ({
+  page,
+  context,
+}) => {
+  await returningVisitor(context)
+  await serveLifecycleFixtures(context)
+  const check = (returnJson: { data: { capsule: { model_check: { atmosphere: string; passed: boolean; limit_km: number } } } }) => returnJson.data.capsule.model_check
+  const served = check(fixtureJson('return.json'))
+  await page.goto('/missions/im-2/return')
+  const row = page.locator('details').filter({ has: page.locator('summary', { hasText: 'The capsule model, checked against a real landing' }) })
+  // The fixture is the served answer: NRLMSIS 2.1 flown, 6.6 km from the real landing point, the plan's limit met.
+  await expect(row.locator('summary')).toContainText('6.6 km from it; the plan’s 10 km is met')
+  await row.locator('summary').click()
+  // The air and the limit as the fixture serves them: met, with what is to spare and no triangle.
+  await expect(row).toContainText('The air the modelled fall went through')
+  await expect(row).toContainText(served.atmosphere)
+  await expect(row).toContainText('The plan’s 10 km is met, with 3.4 km to spare.')
+  await expect(row).not.toContainText('not met')
+  await expectNoSeriousAxe(page, 'the capsule model row open (dark)')
+  // The same row with the limit not met (a synthetic answer): its triangle, and by how much.
+  await context.route(/localhost:8000\/api\/v1\/missions\/im-2\/return$/, async (route) => {
+    const body = fixtureJson('return.json')
+    Object.assign(body.data.capsule.model_check, { distance_km: 12.1, distance_range_km: [9.4, 14.8], passed: false, note: 'The entry model lands its capsule 12.1 km from where the recovery team found it (the limit is 10 km, not met).' })
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body), headers: { 'access-control-allow-origin': '*' } })
+  })
+  await page.evaluate(() => localStorage.setItem('pw-prefs', JSON.stringify({ theme: 'light', motion: 'full', shortcuts: true })))
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.reload()
+  const notMet = page.locator('details').filter({ has: page.locator('summary', { hasText: 'The capsule model, checked against a real landing' }) })
+  await expect(notMet.locator('summary')).toContainText('12.1 km from it; the plan’s 10 km is not met')
+  await notMet.locator('summary').click()
+  await expect(notMet).toContainText('The plan’s 10 km is not met: 2.1 km over the limit.')
+  await expectNoSeriousAxe(page, 'the capsule model row open (light, 375 px)')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the capsule row scrolls sideways at 375 px').toBeLessThanOrEqual(375)
 })
 
 test('team sea limits (contract fixtures): the form starts from what is entered, and sends both parts', async ({ page, context }) => {
@@ -683,10 +769,16 @@ test('settings (contract fixtures): data sources with their age, the risk scale,
   await page.getByRole('button', { name: 'Settings' }).click()
   const sheet = page.getByRole('dialog', { name: 'Settings' })
   await sheet.locator('summary', { hasText: 'Data sources' }).click()
-  await expect(sheet).toContainText('4 products from 4 providers: 2 working, 1 out of date, 1 failing')
+  await expect(sheet).toContainText('5 products from 5 providers: 3 working, 1 out of date, 1 failing')
   await expect(sheet).toContainText('DSN Now')
   await expect(sheet).toContainText('Failing')
   await expect(sheet).toContainText('data from 11 h ago')
+  // The lightning mapper is fetched only near a launch: it holds nothing now, says why in the service's words, and is no fault.
+  const glm = sheet.getByRole('listitem').filter({ hasText: /^glm, florida/ }).last()
+  await expect(glm).toHaveText(
+    "glm, florida · no data yet · Fetched only in the 6 hours before a designed launch opportunity from this range's pads, so it holds nothing when none is near; that is not a fault.",
+  )
+  await expect(glm).not.toContainText('out of date')
   await sheet.locator('summary', { hasText: 'Risk scale' }).click()
   await expect(sheet).toContainText('never multiplied into a score')
   await expect(sheet).toContainText('No words are entered for the levels yet')
@@ -719,6 +811,11 @@ test('settings (live API): the parameters and the risk scale as the server has t
   await expect(sheet).toContainText(/Change history/i)
   await sheet.locator('summary', { hasText: 'Risk scale' }).click()
   await expect(sheet.getByRole('link', { name: 'standards.nasa.gov' })).toBeVisible()
+  // The feeds: every note the service gives is on its product's line.
+  const feeds = ((await (await page.request.get(`${API}/feeds`)).json()) as { feeds: { product: string; note: string | null }[] }).feeds
+  await sheet.locator('summary', { hasText: 'Data sources' }).click()
+  await expect(sheet).toContainText(/\d+ products from \d+ providers/)
+  for (const note of new Set(feeds.map((f) => f.note).filter((n): n is string => Boolean(n)))) await expect(sheet).toContainText(note)
   await expectNoSeriousAxe(page, 'settings, live parameters and risk scale')
 })
 
@@ -920,7 +1017,28 @@ test('trip corrections and launch weather words (live API): Blue Ghost’s burns
   await expect(budget).toContainText(/In 1,000 runs of the flight as planned/)
   await expect(budget).toContainText('allowing for the number of runs')
   await expect(budget.getByRole('table').getByRole('row')).toHaveCount(5)
-  await expect(budget).toContainText('Every error here is assumed')
+  // Every error the budget rests on, as served: its value, whether it is published or assumed, and a published one's source.
+  const errors = (
+    (await (await page.request.get(`${API}/missions/blue-ghost-m1/trip`)).json()) as {
+      data: { corrections: { assumptions: { what: string; value: string; basis: 'published' | 'assumed'; source: string | null }[] } }
+    }
+  ).data.corrections.assumptions
+  const published = errors.filter((a) => a.basis === 'published')
+  const heading = budget.getByRole('heading', { level: 4 })
+  await expect(heading).toContainText(
+    published.length
+      ? `${published.length} of the ${errors.length} errors here ${published.length === 1 ? 'is' : 'are'} published in the launch vehicle’s guide`
+      : 'Every error here is assumed',
+  )
+  // The speed errors on leaving Earth say where they are worked out from when the served sources say it.
+  if (published.some((a) => /speed/i.test(a.what) && /geosynchronous/i.test(a.source ?? ''))) {
+    await expect(heading).toContainText('The speed errors on leaving Earth are worked out from the guide’s published accuracy for a transfer orbit to geosynchronous orbit')
+  }
+  for (const a of errors) {
+    const shown = budget.locator('dt', { hasText: a.what }).locator('xpath=following-sibling::dd[1]')
+    await expect(shown, a.what).toContainText(`${a.value} · ${a.basis}`)
+    if (a.source) await expect(shown, a.what).toContainText(`Source: ${a.source}`)
+  }
   await expectNoSeriousAxe(page, '/missions/blue-ghost-m1/trip (live) with its burns and corrections open')
 
   // IM-1: no burn found outside the gaps in the reconstruction, and a budget all the same.
@@ -962,6 +1080,39 @@ test('trip corrections and launch weather words (live API): Blue Ghost’s burns
   await expect(row('Weather rules for this opportunity')).toContainText(cal.opportunities.at(-1)!.weather_note, { timeout: 30_000 })
 })
 
+test('launch weather (live API): the forecasts for a launch a few hours ahead, each with the service’s note, and any disagreement in the service’s sentence', async ({ page, context }) => {
+  test.setTimeout(120_000)
+  await returningVisitor(context)
+  // No planned opportunity is a few hours away, so the screen is given the service's answer for a launch time at the Cape three hours
+  // ahead (the same endpoint, `t0` and `pad`) in place of the one it asks for; the words on the screen are the served ones.
+  const hour = new Date(Math.ceil((Date.now() + 3 * 3_600_000) / 3_600_000) * 3_600_000).toISOString().replace('.000Z', 'Z')
+  const served = await page.request.get(`${API}/missions/im-2/launch/weather`, { params: { t0: hour, pad: 'ksc-lc-39a' } })
+  expect(served.ok(), 'the service answered the launch weather for a time and a pad').toBeTruthy()
+  const wx = (await served.json()) as {
+    data: { rules: { text: string; disagreement: boolean; disagreement_note: string | null; one_forecast: { system: string; note: string | null }[] }[] }
+  }
+  const forecasts = wx.data.rules.flatMap((r) => r.one_forecast)
+  expect(forecasts.length, 'at least the National Weather Service’s hourly forecast is in the answer').toBeGreaterThan(0)
+  await context.route(/localhost:8000\/api\/v1\/missions\/im-2\/launch\/weather/, (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(wx), headers: { 'access-control-allow-origin': '*' } }),
+  )
+  await page.goto('/missions/im-2/launch')
+  await expect(page.locator('[data-guide="section-answer"]')).toContainText('It launched on', { timeout: 90_000 })
+  await openRow(page, 'Weather rules for this launch')
+  const rules = page.getByRole('table').filter({ hasText: 'model runs that break it' })
+  for (const f of forecasts) {
+    if (f.note) await expect(rules).toContainText(f.note)
+    await expect(rules).toContainText(f.system === 'NWS' ? 'National Weather Service (NWS) forecast:' : 'High-Resolution Rapid Refresh (HRRR) forecast:')
+  }
+  for (const r of wx.data.rules) {
+    if (r.disagreement_note) await expect(rules).toContainText(r.disagreement_note)
+    expect(Boolean(r.disagreement_note), `${r.text}: the sentence is there when the rule is marked as disagreeing`).toBe(r.disagreement)
+  }
+  // No rule shown as checked unless a share was (the service says which).
+  await expect(page.locator('summary', { hasText: 'Weather rules for this launch' })).toContainText(/\d+ rules?/)
+  await expectNoSeriousAxe(page, '/missions/im-2/launch with the forecasts of a launch three hours ahead (live)')
+})
+
 test('return (live API): where each flown booster came down, and a planned one not published yet', async ({ page, context }) => {
   test.setTimeout(90_000)
   await returningVisitor(context)
@@ -989,8 +1140,14 @@ test('return (live API): where each flown booster came down, and a planned one n
   await expect(row('Where does this come from?')).toContainText('Launch Library 2 landing records')
   // The capsule model's check against OSIRIS-REx: the service's words, then the numbers and where they are from.
   const check = row('The capsule model, checked against a real landing')
-  await expect(check.locator('summary')).toContainText(/[\d.]+ km from it; the limit is 10 km/)
+  // Whether the plan's limit is met, and which air the modelled fall went through, are read from the answer, not from here.
+  const served = ((await (await page.request.get(`${API}/missions/im-1/return`)).json()).data.capsule as { model_check: { atmosphere: string; passed: boolean; limit_km: number } }).model_check
+  expect(served.atmosphere.length, 'the service says which air the modelled fall went through').toBeGreaterThan(0)
+  await expect(check.locator('summary')).toContainText(new RegExp(`[\\d.]+ km from it; the plan’s ${served.limit_km} km is ${served.passed ? 'met' : 'not met'}`))
   await check.locator('summary').click()
+  await expect(check).toContainText('The air the modelled fall went through')
+  await expect(check).toContainText(served.atmosphere)
+  await expect(check).toContainText(new RegExp(`The plan’s ${served.limit_km} km is ${served.passed ? 'met, with' : 'not met:'} [\\d.]+ km ${served.passed ? 'to spare' : 'over the limit'}\\.`))
   await expect(check).toContainText('where the recovery team found it')
   await expect(check).toContainText('OSIRIS-REx sample return capsule')
   await expect(check.getByRole('link', { name: /naif\.jpl\.nasa\.gov/ })).toHaveCount(1)
@@ -1139,21 +1296,34 @@ test('radiation and space weather (live API): Blue Ghost’s screening with its 
   await expect(page.locator('[data-guide="section-answer"]')).toContainText('It launched on', { timeout: 90_000 })
   await openRow(page, 'Space weather now')
   const sw = row('Space weather now')
-  // The feeds worker records SWPC every few minutes, so every reading is shown, each with its age.
-  await expect(sw.getByText(/^Now: /)).toHaveText(
-    /^Now: Kp [\d.]+, protons above 10 MeV at [\d.]+ pfu, X-ray flares class [ABCMX][\d.]+, solar wind at [\d.]+ km\/s; (no alerts in the last 24 hours|\d+ alerts? in the last 24 hours|SWPC’s alerts of the last 24 hours are not shown here)\.$/,
+  // The feeds worker records SWPC every few minutes, so each reading is shown with its age. A reading with no recent value (Kp has been
+  // missing at times) is left out of the line and gives its reason in the list, so the line and the list must say the same.
+  const line = sw.getByText(/^Now: /)
+  const item = 'Kp [\\d.]+|[Pp]rotons above 10 MeV at [\\d.]+ pfu|[Ss]olar wind at [\\d.]+ km\\/s|X-ray flares class [ABCMX][\\d.]+'
+  await expect(line).toHaveText(
+    new RegExp(
+      `^Now: (?:${item})(?:, (?:${item})){0,3}; (no alerts in the last 24 hours|\\d+ alerts? in the last 24 hours|SWPC’s alerts of the last 24 hours are not shown here)\\.$`,
+    ),
     { timeout: 30_000 },
   )
+  const said = (await line.textContent()) ?? ''
   const reading = (label: string) => sw.locator('dt', { hasText: label }).locator('xpath=following-sibling::dd[1]')
-  for (const label of [
-    'Geomagnetic activity (Kp, 0 to 9)',
-    'Protons above 10 MeV',
-    'Protons above 100 MeV',
-    'Solar wind speed',
-    'Magnetic field from the Sun, north–south (Bz)',
-    'X-ray flares (class)',
-  ]) {
-    await expect(reading(label), label).toHaveText(/^-?[\w.]+ (pfu |km\/s |nT )?· as of (just now|\d+ min ago|\d+ h ago)$/)
+  const valueWithAge = /^-?[\w.]+ (pfu |km\/s |nT )?· as of (just now|\d+ min ago|\d+ h ago)$/
+  for (const [label, words] of [
+    ['Geomagnetic activity (Kp, 0 to 9)', /Kp [\d.]+/],
+    ['Protons above 10 MeV', /[Pp]rotons above 10 MeV at [\d.]+ pfu/],
+    ['Solar wind speed', /[Ss]olar wind at [\d.]+ km\/s/],
+    ['X-ray flares (class)', /X-ray flares class [ABCMX][\d.]+/],
+  ] as const) {
+    const cell = ((await reading(label).textContent()) ?? '').trim()
+    const hasValue = valueWithAge.test(cell)
+    expect(words.test(said), `${label}: the line has it exactly when the list gives its value (the list says "${cell}")`).toBe(hasValue)
+    if (!hasValue) expect(cell.length, `${label}: gives the reason it is not shown`).toBeGreaterThan(0)
+  }
+  // Two more readings are only in the list: a value with its age, or the reason it has none.
+  for (const label of ['Protons above 100 MeV', 'Magnetic field from the Sun, north–south (Bz)']) {
+    const cell = ((await reading(label).textContent()) ?? '').trim()
+    expect(valueWithAge.test(cell) || (cell.length > 0 && !/^-?[\d.]+ /.test(cell)), `${label}: "${cell}"`).toBe(true)
   }
   // "None" only when the service says its list is current and empty; a list it cannot show says why, with SWPC's own.
   const live = (await (await page.request.get(`${API}/space-weather`)).json()) as {

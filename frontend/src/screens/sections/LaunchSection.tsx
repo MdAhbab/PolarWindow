@@ -17,7 +17,7 @@ import { useEnteredLimits, useHistory, useLifecycleWrite, useSection, useSection
 import { dateTimeWords, dateWords } from '../../lib/format'
 import { ageWords, formatValue, hostWords, provenanceWords, quantityText } from '../../lib/lifecycle/quantity'
 import { NumberRow, QuantityTile } from '../../components/lifecycle/QuantityTile'
-import { Answer, ChartPanel, HowSure, Legend, Rows, SectionLayout, SectionStates, SourcesRow, StatePanel } from '../../components/lifecycle/Section'
+import { Answer, ChartPanel, HowSure, Legend, Rows, SectionLayout, SectionStates, SourcesRow, StatePanel, UncertaintyParts } from '../../components/lifecycle/Section'
 import { LaunchCalendar, LaunchTable, opportunityName, periodWords } from '../../components/lifecycle/LaunchCalendar'
 import { WeatherRuleTable, rulesSummary } from '../../components/lifecycle/WeatherRules'
 import { Field, FormSheet, HistoryList, Select, TextArea, TextInput, isHttpUrl } from '../../components/lifecycle/Forms'
@@ -351,6 +351,13 @@ function WeatherBody({ wx, meta, note }: { wx: LaunchWeatherDTO; meta: Lifecycle
         added up; the launch team decides.
       </p>
       <WeatherRuleTable rules={wx.rules} />
+      {/* Ensemble shares, the height, and what the check against observations found: the numbers behind "checked". */}
+      {meta.uncertainty.parts.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <p className="text-small font-semibold text-ink">How these numbers were worked out</p>
+          <UncertaintyParts parts={meta.uncertainty.parts} small />
+        </div>
+      )}
     </>
   )
 }

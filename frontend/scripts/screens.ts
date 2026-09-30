@@ -59,6 +59,57 @@ async function settle(page: Page) {
   await page.waitForTimeout(600)
 }
 
+/**
+ * The screens that are not a page with rows open: the launch weather for a launch a few hours ahead, and Settings.
+ * No planned opportunity is a few hours away, so the first is given the service's own answer for a launch time at
+ * the Cape three hours ahead (the same endpoint, with `t0` and `pad`) in place of the one the screen asks for; the
+ * words on it are the served ones.
+ */
+const extras: [name: string, run: (page: Page) => Promise<void>, fullPage: boolean][] = [
+  [
+    'launch-im-2-weather-forecasts',
+    async (page) => {
+      const hour = new Date(Math.ceil((Date.now() + 3 * 3_600_000) / 3_600_000) * 3_600_000).toISOString().replace('.000Z', 'Z')
+      const served = await (await fetch(`${API}/missions/im-2/launch/weather?t0=${hour}&pad=ksc-lc-39a`)).text()
+      const pattern = /\/missions\/im-2\/launch\/weather/
+      await page.route(pattern, (route) =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: served, headers: { 'access-control-allow-origin': '*' } }),
+      )
+      await page.goto(`${APP}/missions/im-2/launch`)
+      await settle(page)
+      await page.locator('main summary', { hasText: 'Weather rules for this launch' }).first().click()
+      await page.unroute(pattern)
+    },
+    true,
+  ],
+  [
+    // Settings → Data sources, scrolled to the lightning mapper: its note says why it holds nothing.
+    'settings-data-sources',
+    async (page) => {
+      await page.goto(`${APP}/missions`)
+      await settle(page)
+      await page.getByRole('button', { name: 'Settings' }).click()
+      const sheet = page.getByRole('dialog', { name: 'Settings' })
+      await sheet.locator('summary', { hasText: 'Data sources' }).click()
+      await sheet.getByRole('listitem').filter({ hasText: /^glm, / }).last().scrollIntoViewIfNeeded()
+    },
+    false,
+  ],
+  [
+    // Settings → Project, the parameters and the risk scale open.
+    'settings-project',
+    async (page) => {
+      await page.goto(`${APP}/missions`)
+      await settle(page)
+      await page.getByRole('button', { name: 'Settings' }).click()
+      const sheet = page.getByRole('dialog', { name: 'Settings' })
+      for (const title of ['Parameters', 'Risk scale']) await sheet.locator('summary', { hasText: title }).click()
+      await sheet.locator('summary', { hasText: 'Parameters' }).scrollIntoViewIfNeeded()
+    },
+    false,
+  ],
+]
+
 async function main() {
   mkdirSync(OUT, { recursive: true })
   const signIn = (await (await fetch(`${API}/auth/demo`, { method: 'POST' })).json()) as {
@@ -93,23 +144,17 @@ async function main() {
       if (open.length) await settle(page)
       await page.screenshot({ path: join(OUT, `${name}.${device}.png`), fullPage: true })
     }
-    // Settings → Project, the parameters and the risk scale open.
-    if (ONLY && !ONLY.includes('settings-project')) {
-      await context.close()
-      continue
+    // Screens that need more than a page and its rows: each takes its own picture.
+    const shot = (name: string, full: boolean) => page.screenshot({ path: join(OUT, `${name}.${device}.png`), fullPage: full })
+    for (const [name, run, full] of extras.filter(([n]) => !ONLY || ONLY.includes(n))) {
+      await run(page)
+      await settle(page)
+      await shot(name, full)
     }
-    await page.goto(`${APP}/missions`)
-    await settle(page)
-    await page.getByRole('button', { name: 'Settings' }).click()
-    const sheet = page.getByRole('dialog', { name: 'Settings' })
-    for (const title of ['Parameters', 'Risk scale']) await sheet.locator('summary', { hasText: title }).click()
-    await sheet.locator('summary', { hasText: 'Parameters' }).scrollIntoViewIfNeeded()
-    await settle(page)
-    await page.screenshot({ path: join(OUT, `settings-project.${device}.png`) })
     await context.close()
   }
   await browser.close()
-  const n = ONLY ? ONLY.length : PAGES.length + 1
+  const n = ONLY ? ONLY.length : PAGES.length + extras.length
   console.log(`Saved ${n * 2} screenshots to ${OUT}`)
 }
 

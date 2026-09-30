@@ -1,1 +1,1 @@
-{"status":"degraded","engine_version":"hz-2/vis-2","kernels":{"loaded":true,"count":10,"furnsh_ms":113,"missing":[],"error":null},"db":"ok","redis":"ok","feeds":{"ok":53,"stale":2,"failing":2},"dem":{"regional_present":true,"fine_windows":18,"product":"LOLA LDEM 80S (PDS Geosciences Node)"}}
+{"status":"ok","engine_version":"hz-2/vis-2","kernels":{"loaded":true,"count":10,"furnsh_ms":100.8,"missing":[],"error":null},"db":"ok","redis":"ok","feeds":{"ok":57,"stale":0,"failing":0},"dem":{"regional_present":true,"fine_windows":18,"product":"LOLA LDEM 80S (PDS Geosciences Node)"}}

@@ -5,7 +5,8 @@ The launch weather shows HRRR (3 km, one run) as a single "over" or "under" at t
 rule's limit. Nothing said how good that call is, so this reads HRRR's archive on
 AWS (``noaa-hrrr-bdp-pds``, keyless), version 4 (December 2020 on, the one the live
 feed reads), for the 00 and 12 UTC runs on every ``--stride``-th day of 2021-2025
-at the leads the feed keeps (1, 6, 12, 18 h): the 10 m wind at the grid point nearest
+(by default every second day: 1,826 runs, about 35 minutes for a fresh cache) at the
+leads the feed keeps (1, 6, 12, 18 h): the 10 m wind at the grid point nearest
 each pad's weather station (Cape Canaveral Skid Strip ASOS KXMR, Vandenberg ASOS KVBG),
 read as two bytes of the message (``parsers.grib_ranges``, equal to ecCodes) after the
 message's index says where it starts. Each file is cached as it arrives, in a fixed
@@ -55,7 +56,7 @@ LEADS = nomads.HRRR_LEADS_H
 INITS = (0, 12)
 YEARS = (2021, 2025)
 CLIM_YEARS = (2000, 2019)
-STRIDE = 6
+STRIDE = 2
 STATIONS = hr.STATIONS
 PARALLEL = 16
 AT_ONCE = 6

@@ -22,15 +22,16 @@ import { JourneyBar } from './JourneyBar'
 import { ReadinessList, RiskTable, sortItems } from './Readiness'
 import { LimitBars, LimitTable } from './LimitBars'
 import { coverageGaps, tripStretches } from './TripStrip'
-import { CorrectionsRow, shadowAndContact } from '../../screens/sections/TripSection'
-import { climatologyWords, observedWords, percentWords } from './WeatherRules'
+import { CorrectionsRow, errorsHeading, shadowAndContact } from '../../screens/sections/TripSection'
+import { checkWords, climatologyWords, forecastLine, observedWords, percentWords, rulesSummary, WeatherRuleTable } from './WeatherRules'
 import { RadiationRow, radiationSentence, screeningFigure } from './Radiation'
 import { eventCountWords, outlookSentence, readingAge, spaceWeatherSentence, SpaceWeatherRow } from './SpaceWeather'
 import spaceWeatherFixture from '../../lib/api/__fixtures__/lifecycle/space-weather.json'
+import weatherFixture from '../../lib/api/__fixtures__/lifecycle/launch-weather.json'
 import type { RadiationDTO, SpaceWeatherDTO } from '../../lib/api/lifecycle'
 import { forecastChangeWords, limitDraft, limitsToSend, shownForecast } from '../../screens/sections/LaunchSection'
-import type { EnteredLimitDTO, RuleRowDTO } from '../../lib/api/lifecycle'
-import { CapsuleCheckRow, seaWords, zoneWords } from '../../screens/sections/ReturnSection'
+import type { EnteredLimitDTO, LaunchWeatherDTO, RuleRowDTO } from '../../lib/api/lifecycle'
+import { capsuleLimitWords, CapsuleCheckRow, seaWords, zoneWords } from '../../screens/sections/ReturnSection'
 import returnFixture from '../../lib/api/__fixtures__/lifecycle/return.json'
 import { oldFeedsWords } from './OldFeeds'
 import type { CapsuleModelCheckDTO, FeedDTO } from '../../lib/api/lifecycle'
@@ -379,9 +380,9 @@ describe('the charts’ arrays, shared with their tables', () => {
     expect(screen.getByText('Corrections on the way')).toBeTruthy()
     expect(screen.getByText(c.label)).toBeTruthy()
     const text = document.body.textContent ?? ''
-    expect(text).toContain('a budget: 18.1 m/s in 99 of 100 runs')
+    expect(text).toContain('a budget: 88.7 m/s in 99 of 100 runs')
     expect(text).toContain('In 1,000 runs of the flight as planned')
-    expect(text).toContain('(16.5–19.9 m/s, allowing for the number of runs)')
+    expect(text).toContain('(80–94.7 m/s, allowing for the number of runs)')
     expect(text).toContain('Every run passed close to the Moon.')
     const table = screen.getByRole('table')
     // Three corrections and their total, each at 95 and at 99 of 100 runs.
@@ -394,6 +395,55 @@ describe('the charts’ arrays, shared with their tables', () => {
     expect(screen.queryByRole('table')).toBeNull()
   })
 
+  describe('the errors a budget rests on: which the guide publishes, which are assumed, and from where', () => {
+    const pub = (what: string, value: string, source: string) => ({ what, value, basis: 'published' as const, source })
+    const asm = (what: string, value: string) => ({ what, value, basis: 'assumed' as const, source: null })
+    const cite =
+      'Falcon 9 User’s Guide Rev 2, Table 3-2, page 16; row: Geosynchronous transfer orbit (185 km x 35,786 km). The guide has no row for a launch to the Moon, so its row for a transfer orbit to geosynchronous orbit is used in its place. '
+    const mixed = [
+      pub('Leaving Earth, position up or down', '3.3 km', `${cite}The orbit’s lowest point within 10 km at three standard deviations, so one standard deviation is 3.3 km.`),
+      asm('Leaving Earth, position along the path and sideways', '1 km each'),
+      asm('Leaving Earth, speed up or down', '0.5 m/s'),
+      pub('Leaving Earth, speed along the path', '2.7 m/s', `${cite}The orbit’s highest point within 500 km at three standard deviations.`),
+      pub('Leaving Earth, speed sideways', '6.0 m/s', `${cite}The orbit’s tilt within 0.1° at three standard deviations.`),
+      asm('Where the team thinks the lander is, at each correction', '1 km and 1 mm/s'),
+      asm('How well a burn fires', '1 % of its size and 1 degree of pointing, plus 1 cm/s'),
+    ]
+    it('says the mix in plain words, and where the speed errors come from when the answer says so', () => {
+      expect(errorsHeading(mixed)).toEqual({
+        mix: '3 of the 7 errors here are published in the launch vehicle’s guide; the other 4 are assumed',
+        speed:
+          'The speed errors on leaving Earth are worked out from the guide’s published accuracy for a transfer orbit to geosynchronous orbit, since it has no row for a launch to the Moon.',
+      })
+      expect(errorsHeading(mixed.slice(0, 3)).mix).toBe('1 of the 3 errors here is published in the launch vehicle’s guide; the other 2 are assumed')
+      expect(errorsHeading(mixed.filter((a) => a.basis === 'published')).mix).toBe('Every error here is published in the launch vehicle’s guide')
+    })
+    it('says every error is assumed when none is published, and nothing of a row the answer does not name', () => {
+      expect(errorsHeading(mixed.filter((a) => a.basis === 'assumed'))).toEqual({ mix: 'Every error here is assumed', speed: null })
+      // A saved copy from before the basis was served has none: read as assumed.
+      expect(errorsHeading([{ what: 'How well a burn fires', value: '1 %' } as never]).mix).toBe('Every error here is assumed')
+      // Published, but from a row of the guide's own for a launch to the Moon: no word of a transfer orbit.
+      const own = [pub('Leaving Earth, speed along the path', '2.0 m/s', 'Vulcan User’s Guide, Table 2.3-1, page 2-9; row: Lunar Transfer/Earth Escape.')]
+      expect(errorsHeading(own).speed).toBeNull()
+      // A published position alone does not make the speed errors worked out from it.
+      expect(errorsHeading([mixed[0]]).speed).toBeNull()
+    })
+    it('shows each error with its basis, and a published one with its source as served', () => {
+      const c = { ...trip.data.corrections!, assumptions: mixed } as unknown as NonNullable<typeof trip.data.corrections>
+      render(<CorrectionsRow c={c} note={null} />)
+      const heading = screen.getByRole('heading', { level: 4, name: /^3 of the 7 errors here are published in the launch vehicle’s guide; the other 4 are assumed/ })
+      expect(heading.textContent).toContain('The speed errors on leaving Earth are worked out from the guide’s published accuracy for a transfer orbit to geosynchronous orbit')
+      expect(screen.queryByText('Every error here is assumed')).toBeNull()
+      for (const a of mixed) {
+        const dd = screen.getByText(a.what).nextElementSibling as HTMLElement
+        expect(dd.textContent).toContain(a.value)
+        expect(dd.textContent).toContain(` · ${a.basis}`)
+        if (a.source) expect(dd.textContent).toContain(`Source: ${a.source}`)
+        else expect(dd.textContent).not.toContain('Source')
+      }
+    })
+  })
+
   it('weather rules: a small share keeps a digit, and lightning is seen now, not at the launch', () => {
     expect(percentWords(0.0099)).toBe('1.0%')
     expect(percentWords(0.004)).toBe('0.4%')
@@ -402,6 +452,62 @@ describe('the charts’ arrays, shared with their tables', () => {
     expect(observedWords({ state: 'clear', detail: 'None within 10 nmi.' }).lead).toBe('Seen now: clear.')
     expect(observedWords({ state: 'seen', detail: '3 flashes within 10 nmi.' })).toEqual({ lead: 'Seen now:', detail: '3 flashes within 10 nmi.' })
     expect(observedWords({ state: 'no_data', detail: 'Watched by the range.' })).toEqual({ detail: 'Watched by the range.' })
+  })
+
+  describe('one forecast beside the runs, and who disagrees', () => {
+    const rules = (weatherFixture as unknown as { data: LaunchWeatherDTO }).data.rules
+    const wind = rules[0]
+    const hrrr = wind.one_forecast[0]
+    const nws = wind.one_forecast[1]
+
+    it('each forecast is named in full, answers first, then how the number was made and how that forecast did', () => {
+      const h = forecastLine(hrrr)
+      expect(h.lead).toBe('High-Resolution Rapid Refresh (HRRR) forecast:')
+      expect(h.answer).toBe('14.2 m/s, over the limit.')
+      expect(h.how).toBe("One forecast, at the rule's height from the model's 10 m and 80 m winds.")
+      expect(h.note).toMatch(/^Checked against KXMR for 2021 to 2025/)
+      const n = forecastLine(nws)
+      expect(n.lead).toBe('National Weather Service (NWS) forecast:')
+      expect(n.answer).toBe('8.9 m/s, under the limit.')
+      expect(n.note).toBe('The National Weather Service keeps no archive of its forecasts, so this one cannot be checked against observations.')
+    })
+
+    it('says whether the shares shown were checked: all, none, or by system; nothing where no share is shown', () => {
+      const share = (checked: boolean) => ({ k: 3, n: 31, lo: 0.02, hi: 0.26, checked })
+      const per = (...cs: (boolean | null)[]) => ({
+        per_system: cs.map((c, i) => ({ system: (['GEFS', 'ECMWF-ENS', 'AIFS-ENS'] as const)[i], share: c === null ? null : share(c), missing_reason: c === null ? 'not recorded' : null })),
+      })
+      expect(checkWords(per(true, null, null))).toBe('checked against observations')
+      expect(checkWords(per(false, false, null))).toBe('not yet checked against observations')
+      expect(checkWords(per(true, false, null))).toBe('checked against observations for NOAA GEFS, not yet for ECMWF ENS')
+      expect(checkWords(per(null, null, null))).toBeNull()
+      expect(checkWords({ per_system: [] })).toBeNull()
+    })
+
+    it('the closed row counts the rules that disagree and the rules checked against observations', () => {
+      expect(rulesSummary(rules)).toBe('6 rules; models disagree on 1')
+      const checked = rules.map((r, i) => (i === 0 ? { ...r, per_system: r.per_system.map((p, j) => (j === 0 && p.share ? { ...p, share: { ...p.share, checked: true } } : p)) } : r))
+      expect(rulesSummary(checked)).toBe('6 rules; models disagree on 1; 1 checked against observations')
+      expect(rulesSummary([wind])).toBe('1 rule; models disagree on 1')
+    })
+
+    it('the table gives the disagreement in a sentence and each forecast with its note; a checked rule says so', () => {
+      render(<WeatherRuleTable rules={rules} />)
+      // The table and the phone list carry the same words.
+      expect(screen.getAllByText('Models disagree').length).toBeGreaterThan(0)
+      expect(screen.getAllByText(wind.disagreement_note as string).length).toBeGreaterThan(0)
+      expect(screen.getAllByText(nws.note as string).length).toBeGreaterThan(0)
+      expect(screen.getAllByText(hrrr.note as string).length).toBeGreaterThan(0)
+      expect(screen.getAllByText('High-Resolution Rapid Refresh (HRRR) forecast:').length).toBeGreaterThan(0)
+      // Only the wind rule disagrees, so the sentence is shown once per layout, not for every rule.
+      expect(screen.getAllByText('Models disagree')).toHaveLength(2)
+      expect(document.body.textContent).toContain('A forecast model can answer this · not yet checked against observations')
+      expect(document.body.textContent).not.toContain('· checked against observations ·')
+      cleanup()
+      const checked = rules.map((r, i) => (i === 0 ? { ...r, per_system: r.per_system.map((p) => (p.share ? { ...p, share: { ...p.share, checked: true } } : p)) } : r))
+      render(<WeatherRuleTable rules={checked} />)
+      expect(document.body.textContent).toContain('A forecast model can answer this · checked against observations · nasa.gov')
+    })
   })
 
   it('team weather limits: start as entered; an empty field is no limit; a limit for a rule not shown is sent as it stands', () => {
@@ -615,6 +721,16 @@ describe('Space weather now', () => {
       'Now: Kp 1, protons above 10 MeV at 0.23 pfu, X-ray flares class B4.7, solar wind at 456 km/s; 2 alerts in the last 24 hours.',
     )
   })
+  it('leaves out a reading with no recent value from the line, and its own line in the list says why', async () => {
+    const noKp = { ...sw, now: { ...sw.now, kp: { ...sw.now.kp, value: null, missing_reason: 'The newest Kp reading is 5 hours old.' } } }
+    expect(spaceWeatherSentence(noKp, meta)).toBe(
+      'Now: Protons above 10 MeV at 0.23 pfu, solar wind at 456 km/s, X-ray flares class B4.7; 2 alerts in the last 24 hours.',
+    )
+    vi.spyOn(api, 'spaceWeather').mockResolvedValue({ ...spaceWeatherFixture, data: noKp } as never)
+    renderApp(<SpaceWeatherRow />)
+    fireEvent.click(screen.getByText('Space weather now'))
+    expect(await screen.findByText('The newest Kp reading is 5 hours old.')).toBeTruthy()
+  })
   it('an empty alert list is "no alerts" only when the service says the list is current', () => {
     const quiet = { ...sw, now: { ...sw.now, alerts: [] } }
     expect(spaceWeatherSentence(quiet, meta)).toMatch(/; no alerts in the last 24 hours\.$/)
@@ -665,22 +781,60 @@ describe('Weather rules: past years', () => {
 })
 
 describe('Return: the capsule model, checked against a real landing', () => {
+  // The fixture is the served answer: NRLMSIS 2.1 flown, 6.6 km from the real landing point, the plan's limit met.
   const check = (returnFixture.data.capsule as { model_check: CapsuleModelCheckDTO }).model_check
-  it('says the service’s words first, then the numbers, the date and the sources', () => {
+  // A limit not met is a synthetic input, since the service serves the check as met.
+  const notMet: CapsuleModelCheckDTO = {
+    ...check,
+    distance_km: 12.1,
+    distance_range_km: [9.4, 14.8],
+    passed: false,
+    note: 'The entry model lands its capsule 12.1 km from where the recovery team found it (the limit is 10 km, not met).',
+  }
+  it('says the service’s words first, whether the plan’s limit is met, the air, then the numbers, the date and the sources', () => {
     render(<CapsuleCheckRow check={check} />)
     expect(screen.getByText('The capsule model, checked against a real landing')).toBeTruthy()
-    expect(screen.getByText('9.5 km from it; the limit is 10 km')).toBeTruthy()
+    expect(screen.getByText('6.6 km from it; the plan’s 10 km is met')).toBeTruthy()
     expect(screen.getByText(check.note)).toBeTruthy()
-    expect(screen.getByText('9.5 km (6.7 to 12.2 km over the published drag range)')).toBeTruthy()
-    expect(screen.getByText('51.4 by 21.4 km; holds the real landing point')).toBeTruthy()
-    expect(screen.getByText('28 September 2026, 15:19 UTC')).toBeTruthy()
+    // The air the modelled fall went through, as served.
+    expect(screen.getByText('The air the modelled fall went through')).toBeTruthy()
+    expect(screen.getByText(check.atmosphere)).toBeTruthy()
+    expect(check.atmosphere).toMatch(/^NRLMSIS 2\.1, /)
+    expect(screen.getByText('6.6 km (3.9 to 9.3 km over the published drag range)')).toBeTruthy()
+    expect(screen.getByText('51.1 by 21.5 km; holds the real landing point')).toBeTruthy()
+    expect(screen.getByText('29 September 2026, 16:32 UTC')).toBeTruthy()
     expect(screen.getByRole('link', { name: /naif\.jpl\.nasa\.gov/ }).getAttribute('href')).toBe(check.sources[0])
-    expect(screen.queryByText(/over the limit/)).toBeNull()
   })
-  it('a check over its limit says by how much, in words and a shape', () => {
-    render(<CapsuleCheckRow check={{ ...check, distance_km: 12.5, passed: false, measured_inside_ellipse: false }} />)
-    expect(screen.getByText('2.5 km over the limit.')).toBeTruthy()
-    expect(screen.getByText('51.4 by 21.4 km; does not hold the real landing point')).toBeTruthy()
+  it('a limit not met says by how much, in words and a shape', () => {
+    render(<CapsuleCheckRow check={notMet} />)
+    expect(screen.getByText('12.1 km from it; the plan’s 10 km is not met')).toBeTruthy()
+    expect(screen.getByText('The plan’s 10 km is not met: 2.1 km over the limit.')).toBeTruthy()
+    cleanup()
+    render(<CapsuleCheckRow check={{ ...notMet, distance_km: 12.5, measured_inside_ellipse: false }} />)
+    expect(screen.getByText('The plan’s 10 km is not met: 2.5 km over the limit.')).toBeTruthy()
+    expect(screen.getByText('51.1 by 21.5 km; does not hold the real landing point')).toBeTruthy()
+  })
+  it('a limit met says so, with what is to spare, and no shape', () => {
+    render(<CapsuleCheckRow check={check} />)
+    expect(screen.getByText('The plan’s 10 km is met, with 3.4 km to spare.')).toBeTruthy()
+    expect(screen.queryByText(/not met/)).toBeNull()
+  })
+  it('a saved copy recorded before the air was served leaves the line out rather than empty', () => {
+    const { atmosphere: _air, ...old } = check
+    render(<CapsuleCheckRow check={old as CapsuleModelCheckDTO} />)
+    expect(screen.queryByText('The air the modelled fall went through')).toBeNull()
+    expect(screen.getByText('6.6 km from it; the plan’s 10 km is met')).toBeTruthy()
+  })
+  it('reads the limit and the air from the answer, not from the screen', () => {
+    const other = { ...check, limit_km: 15, passed: true, distance_km: 12.1, atmosphere: 'The U.S. Standard Atmosphere 1976: the solar files have no values for that day.' }
+    expect(capsuleLimitWords(other)).toEqual({
+      met: true,
+      short: 'the plan’s 15 km is met',
+      long: 'The plan’s 15 km is met, with 2.9 km to spare.',
+    })
+    render(<CapsuleCheckRow check={other} />)
+    expect(screen.getByText('12.1 km from it; the plan’s 15 km is met')).toBeTruthy()
+    expect(screen.getByText(other.atmosphere)).toBeTruthy()
   })
 })
 
@@ -798,6 +952,11 @@ describe('Rover and lander line of sight', () => {
     // The switch asks for the radio path's tiles.
     fireEvent.click(screen.getByRole('button', { name: 'Radio path' }))
     expect(Array.from(screen.getByTestId('site-tile-map').querySelectorAll('image')).some((i) => /\?layer=radio$/.test(i.getAttribute('href') ?? ''))).toBe(true)
+    // What the radio path needs beyond the line of sight is said in plain words, above the map and over the table, never by its term.
+    expect(screen.getByText('Where the radio path is clear too: the ground must also stay out of the space around the line of sight that the radio signal needs, so less of the ground is clear.')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Read the chart as a table' }))
+    expect(screen.getByRole('columnheader', { name: 'Radio path (the space around the line of sight that the radio signal needs)' })).toBeTruthy()
+    expect(document.body.textContent).not.toMatch(/Fresnel/i)
     unmount()
 
     render(<ViewshedPanel v={v} roverName="Yaoki" tile={null} at={null} />)

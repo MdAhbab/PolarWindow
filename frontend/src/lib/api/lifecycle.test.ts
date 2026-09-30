@@ -120,6 +120,12 @@ describe('lifecycle contract fixtures', () => {
       }
       const systems = r.per_system.map((p: { system: string }) => p.system)
       expect(new Set(systems).size).toBe(systems.length)
+      // A single forecast carries its own note (how it did, or why it cannot be checked); the disagreement is a sentence.
+      for (const f of r.one_forecast) {
+        expect(['NWS', 'HRRR', 'GEOS-FP']).toContain(f.system)
+        expect(f).toHaveProperty('note')
+      }
+      expect(Boolean(r.disagreement_note), r.id).toBe(r.disagreement)
     }
     expect(w).not.toHaveProperty('overall')
   })

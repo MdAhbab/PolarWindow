@@ -23,19 +23,23 @@ Prints the tables in docs/validation.md.
   ESF + Atm"). The capsule flew without either parachute until 1.4 km above the
   ground (the drogue's release and mortar signals were reversed), so a model
   with no parachutes follows the real flight nearly to the ground.
-* **Atmosphere.** The model flies through NRLMSISE-00 driven by the entry day's
+* **Atmosphere.** The model flies through NRLMSIS 2.1 driven by the entry day's
   solar flux and geomagnetic activity (``data.msis_indices``, from the OMNI files
   on disk); the U.S. Standard Atmosphere 1976 stands in when those are missing.
-  Both are flown here, and NRLMSIS 2.1 for comparison, over the published drag
-  range, so the table says what the atmosphere does to the landing, how far the
-  models' densities are from the standard atmosphere along the flight, and what
-  the day's solar flux and geomagnetic activity change. The check is judged on
-  the model the service uses (``capsule.DEFAULT_MODEL``, the one the plan names),
-  not on the one that lands nearest. Two more tables say what the result rests
-  on: which heights decide the landing (the density raised 5 % in one band at a
-  time), and the models' densities against the day's own radiosonde.
+  Which empirical model is the default is decided by how near each comes to measured air
+  between 30 and 70 km (``capsule_air``: TIMED/SABER's profiles of the day and a Rayleigh
+  lidar's nights beside it, ``capsule_air_data`` for where they are from), by a rule that
+  reads no landing (``capsule_air`` says how it came about, after the first landings were
+  known), and this script stops if the default is not the model the measurements pick. All
+  of them are flown here over the published drag range,
+  so the table says what the atmosphere does to the landing, how far the models' densities
+  are from the standard atmosphere along the flight, and what the day's solar flux and
+  geomagnetic activity change. Two more tables say what the result rests on: which heights
+  decide the landing (the density raised 5 % in one band at a time), and the models'
+  densities against the day's own radiosonde.
 * **Footprint.** A seeded Monte Carlo from the published delivery accuracy and
-  assumed spreads of beta, density and the wind below 30 km, for the 99 % ellipse.
+  assumed spreads of beta, density and the wind below 30 km, for the 99 % ellipse
+  (and again with no wind, to show what sets its width).
 
 The result is written to ``data/capsule/orex_check.json`` (committed), which
 ``GET /missions/{id}/return`` serves as the capsule model's check.
@@ -46,6 +50,7 @@ from __future__ import annotations
 import json
 import math
 import sys
+from dataclasses import replace
 from datetime import UTC, datetime
 from typing import Any
 
@@ -55,6 +60,7 @@ from app.config import get_settings
 from app.core import atmosphere, entry, spice
 from app.data import msis_indices, registry
 from app.services import capsule
+from app.tests.golden import capsule_air, capsule_air_data
 
 SRC = "-64090"
 #: Recovery team's measured landing point (Francis et al., AAS 24).
@@ -74,15 +80,27 @@ SOURCES = (
     "Capsule (AAS 24), https://ntrs.nasa.gov/citations/20240000629",
     "Wibben et al., AAS 24-058, Table 12 (reconstructed entry state)",
     "Mitcheltree et al. 1997 and Wilmoth et al. 1997 (Stardust capsule shape and axial force)",
+    "Emmert et al., NRLMSIS 2.1: an empirical model of nitric oxide incorporated into MSIS, "
+    "J. Geophys. Res. Space Physics 127, e2022JA030896 (2022) (the air flown, run through "
+    "pymsis 0.13.0; NRLMSIS 2.0 with nitric oxide added)",
     "Picone et al., NRLMSISE-00 empirical model of the atmosphere: statistical comparisons and "
     "scientific issues, J. Geophys. Res. 107(A12), 1468 (2002), doi:10.1029/2002JA009430 "
-    "(run through pymsis)",
-    "Emmert et al., NRLMSIS 2.1: an empirical model of nitric oxide incorporated into MSIS, "
-    "J. Geophys. Res. Space Physics 127, e2022JA030896 (2022) (the comparison run)",
+    "(flown for comparison)",
     "NASA SPDF, OMNI hourly data: the 10.7 cm solar flux and the 3-hour ap from NOAA NGDC",
     "National Weather Service radiosonde, Salt Lake City (KSLC, WMO 72572), 24 September 2023 "
     "12 UTC, from the Iowa Environmental Mesonet archive: "
     "https://mesonet.agron.iastate.edu/json/raob.py?ts=202309241200&station=KSLC",
+    "TIMED/SABER Level 2A version 2.08 temperature and number density, 24 September 2023 "
+    "(GATS, from NASA CDAWeb): " + capsule_air_data.SABER_URL,
+    "NASA JPL Table Mountain Facility Rayleigh lidar temperature and density, 19 to 30 "
+    "September 2023 (NDACC): " + capsule_air_data.TMF_URL,
+    "Emmert et al., NRLMSIS 2.0: A whole-atmosphere empirical model of temperature and "
+    "neutral species densities, Earth and Space Science 8, e2020EA001321 (2021), "
+    "doi:10.1029/2020EA001321 (Table 1: the data sets it was fitted to; Table 2 and section "
+    "6.1: how it compares with NRLMSISE-00)",
+    "GATS, SABER Calibration and Measurement Algorithm Document, 22 September 2022, section "
+    "5.2.1.1 (how temperature and pressure are retrieved): "
+    "https://saber.gats-inc.com/documents/SABER-CMAD-9-22-2022.pdf",
 )
 OUT = "capsule/orex_check.json"
 TOUCHDOWN_M = 1288.0
@@ -145,10 +163,11 @@ def _footprint(
     v0: np.ndarray,
     atm: capsule.Atmosphere,
     ref: capsule.Landing,
+    spread: entry.Spread = SPREAD,
 ) -> tuple[int, dict[str, float], bool]:
     """(runs, the 99 % ellipse about the middle landing, whether it holds the measured point)."""
     fp = capsule.footprint(
-        et0, r0, v0, entry.Capsule(beta(sum(CA) / 2), air=atm.air), SPREAD, TOUCHDOWN_M, RUNS
+        et0, r0, v0, entry.Capsule(beta(sum(CA) / 2), air=atm.air), spread, TOUCHDOWN_M, RUNS
     )
     en = [capsule.local_km(ref.lat_deg, ref.lon_deg, x.lat_deg, x.lon_deg) for x in fp]
     ell = entry.ellipse_km(np.array([e for e, _ in en]), np.array([n for _, n in en]))
@@ -196,7 +215,7 @@ def _what_moves_the_landing(
     et0: float, r0: np.ndarray, v0: np.ndarray, used: capsule.Atmosphere
 ) -> None:
     """The landing of the middle case (km from the measured point) when the density is scaled,
-    and when NRLMSISE-00 is given other solar flux and geomagnetic activity."""
+    and when the day's model is given other solar flux and geomagnetic activity."""
     b = beta(sum(CA) / 2)
     print("\n| Change | From the measured point | East, north of the measured point |")
     print("|---|---|---|")
@@ -336,11 +355,22 @@ def main() -> None:
     for k, v in PUBLISHED.items():
         print(f"| {k} | {v} | {got[k]:.3f} | {got[k] - v:+.3f} |")
 
-    # The air the model flies through, and the others for comparison.
+    # The air the model flies through, and the others for comparison. The default must be the
+    # model the measurements of the air between 30 and 70 km pick (capsule_air).
+    evidence = capsule_air.evidence()
+    capsule_air.print_tables(evidence)
+    if evidence["chosen"] != capsule.DEFAULT_MODEL:
+        raise SystemExit(
+            f"capsule.DEFAULT_MODEL is {capsule.DEFAULT_MODEL}, but the measured air picks "
+            f"{evidence['chosen']}"
+        )
     used = capsule.day_atmosphere(et0)
     atmospheres = [capsule.standard()]
     if used.air is not None:
-        atmospheres += [used, capsule.day_atmosphere(et0, "NRLMSIS 2.1")]
+        atmospheres += [
+            used if name == used.name else capsule.day_atmosphere(et0, name)
+            for name in capsule.MSIS_VERSIONS
+        ]
     else:
         atmospheres = [used]
     print(
@@ -387,6 +417,16 @@ def main() -> None:
                 f"{'inside' if inside else 'outside'} it."
             )
 
+    # What sets the ellipse's width: the same runs with no wind.
+    calm_n, calm, calm_inside = _footprint(
+        et0, r0, v0, used, flown[used.name][1][2], replace(SPREAD, wind_m_s=0.0)
+    )
+    print(
+        f"\nFootprint in {used.name} with no wind, {calm_n} runs: 99 % ellipse "
+        f"{2 * calm['semi_major_km']:.1f} by {2 * calm['semi_minor_km']:.1f} km; the measured "
+        f"point is {'inside' if calm_inside else 'outside'} it."
+    )
+
     mid = flown[used.name][1]
     ds = [r[3] for r in flown[used.name]]
     _, ell, inside = feet[used.name]
@@ -413,6 +453,7 @@ def main() -> None:
         "case": "OSIRIS-REx sample return capsule, 24 September 2023",
         "entry_utc": spice.et_to_utc(et0),
         "atmosphere": _atmosphere(used),
+        "atmosphere_choice": evidence,
         "measured": {"lat_deg": MEASURED[0], "lon_deg": MEASURED[1]},
         "modelled": {"lat_deg": round(mid[2].lat_deg, 4), "lon_deg": round(mid[2].lon_deg, 4)},
         "distance_km": round(mid[3], 1),
@@ -425,6 +466,11 @@ def main() -> None:
         "beta_kg_m2": round(mid[1], 1),
         "ellipse_99_km": [round(2 * ell["semi_major_km"], 1), round(2 * ell["semi_minor_km"], 1)],
         "measured_inside_ellipse": inside,
+        "ellipse_99_no_wind_km": [
+            round(2 * calm["semi_major_km"], 1),
+            round(2 * calm["semi_minor_km"], 1),
+        ],
+        "measured_inside_ellipse_no_wind": calm_inside,
         "runs": feet[used.name][0],
         "sources": list(SOURCES),
         "checked_at": datetime.now(UTC).replace(microsecond=0).isoformat(),

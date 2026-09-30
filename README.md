@@ -11,12 +11,14 @@ and real Sun and Earth positions, and each one shows how far it could be off.
 
 Each mission is also followed through its delivery, section by section: **Ready**
 (readiness items, parts, risks, as the team enters them), **Launch** (the flown
-launch, or opportunities backed out from the landing, with each launch weather
-rule and what the forecasts say), **Trip** (distance, shadow, burns, correction
-budget, a radiation screening), **Contact** (who can hear the lander), **Return**
-(where the booster comes down, sea and wind) and space weather now. No section
-gives a verdict: the evidence is shown rule by rule and people decide
-(`docs/lifecycle-api.md`).
+launch with its published period, or opportunities backed out from the landing with
+solved climb azimuths, launch weather rules, forecast disagreement checks, and multi-year
+hindcast verification), **Trip** (distance, shadow, burns, correction budget, EGM2008
+gravity, a radiation screening), **Contact** (who can hear the lander, planned relays
+as ranges, active orbiter passes, and rover line-of-sight viewshed tiles), **Return**
+(where the booster comes down, sea and wind, capsule entry check against OSIRIS-REx)
+and space weather now. No section gives a verdict: the evidence is shown rule by rule
+and people decide (`docs/lifecycle-api.md`).
 
 ```bash
 make install     # backend and frontend dependencies
@@ -26,8 +28,11 @@ make compute     # the compute worker: trip, contact and launch answers
 make feeds       # the feeds worker: weather, space weather, launch schedules
 ```
 
-Or `python3 run.py`: it starts Postgres and Redis, installs what is missing, and
-runs the API and the frontend together. The frontend also runs with no backend
+Or `python3 run.py`: it starts Postgres and Redis (on a machine that has never
+run the app it creates the project's own database in `.local/pgdata`), installs
+what is missing, runs the API, the workers and the frontend together, and then
+downloads the data the app reads, or copies it from a friend's machine (see
+[Required data](#required-data)). The frontend also runs with no backend
 at all from a saved copy of the API's answers: `cd frontend && npm run build:snapshot && npm run preview`.
 
 ---
@@ -297,8 +302,30 @@ Keys are optional. Without `PW_EARTHDATA_TOKEN` (a free
 [NASA Earthdata Login](https://urs.earthdata.nasa.gov) token) the bulk archives
 are skipped and the rest works. `PW_NASA_API_KEY` (free from
 [api.nasa.gov](https://api.nasa.gov)) only raises the space-weather rate limit.
-Live feeds (weather forecasts, space weather now) are not files and are not in
-this table; they are fetched on a schedule once those sections exist.
+Live feeds (weather forecasts, space weather now, DSN Now, the orbiters' tracks
+from JPL Horizons) are not files and are not in this table; the feeds worker
+fetches them on a schedule.
+
+**Copying the data instead of downloading it.** The first download takes hours,
+because some NASA archive servers send about 30 kB/s. A machine that has the
+data can pass it on (about 1.1 GB, all public data, nothing secret in it):
+
+```bash
+python3 run.py --export-data ~/polar-window-data.zip   # or a folder, for example in Google Drive
+```
+
+Share the file or the folder. On the other machine, before the first start:
+
+```bash
+python3 run.py --data-from ~/Downloads/polar-window-data.zip
+```
+
+`--data-from` takes the `.zip`, the folder, or the folder holding the several
+`.zip` parts Google Drive makes when it downloads a large folder. Every file is
+checked against the SHA-256 listed at export: a damaged file is not used (it is
+downloaded instead), a file already on the machine is never replaced, and what
+the copy lacks is downloaded as usual. Without starting the app:
+`uv run polar-data export PATH` and `uv run polar-data import PATH` in `backend/`.
 
 This table is generated from `backend/app/data/registry.py`; a test fails if
 the two disagree. Regenerate it with `uv run polar-data readme`.
@@ -344,6 +371,8 @@ the two disagree. Regenerate it with `uv run polar-data readme`.
 | [Goldstone radar elevation model of the lunar south pole (~150 m)](https://pds-geosciences.wustl.edu/lunar/gdscc-l-dss14_dss13_dss15_dss25-5-v1/lram_10xx/data/south_pole_mosaic.img) ([data.nasa.gov](https://data.nasa.gov/dataset/goldstone-moon-dss14-dss13-dss15-dss25-5-altimetry-v1-0)) | NASA JPL Goldstone Solar System Radar / PDS Geosciences | 64 MB | `validation/goldstone/south_pole_mosaic.img` | An independent terrain measurement (radar, not laser) to check the skylines built from LOLA. | none |
 | [Goldstone south pole elevation model label (projection and units)](https://pds-geosciences.wustl.edu/lunar/gdscc-l-dss14_dss13_dss15_dss25-5-v1/lram_10xx/data/south_pole_mosaic.lbl) ([data.nasa.gov](https://data.nasa.gov/dataset/goldstone-moon-dss14-dss13-dss15-dss25-5-altimetry-v1-0)) | NASA JPL Goldstone Solar System Radar / PDS Geosciences | 4.9 kB | `validation/goldstone/south_pole_mosaic.lbl` | Reads the Goldstone elevation model correctly. | none |
 | [OSIRIS-REx sample return capsule, reconstructed from release to entry interface (OD 383a), 24 September 2023](https://naif.jpl.nasa.gov/pub/naif/pds/pds4/orex/orex_spice/spice_kernels/spk/src_230924_230924_230930_od383a_v1.bsp) | NASA NAIF / PDS (OSIRIS-REx SPICE archive) | 58 kB | `validation/orex/src_230924_230924_230930_od383a_v1.bsp` | The entry state the capsule entry model starts from, to check its landing point against the measured one. | none |
+| [NOAA GEFS 10 m wind at the Cape, one year of archived forecasts (reduced here)](https://noaa-gefs-pds.s3.amazonaws.com) | NOAA NCEP, via AWS Open Data | 481 kB | `hindcast/gefs_wind_florida.cache.jsonl` | Re-running the one-year check of the wind rules' shares against the Cape's weather station. The result itself is kept in the repository. | none |
+| [Measured air at 30-70 km on OSIRIS-REx's entry day: TIMED/SABER and the Table Mountain lidar (originals)](https://cdaweb.gsfc.nasa.gov/sp_phys/data/timed/saber/level2a_netCDF/2023/267/) | NASA TIMED/SABER (CDAWeb) and NASA JPL Table Mountain Facility (NDACC) | 82 MB | `bulk/capsule_air/` | Re-making the two small profiles the capsule's atmosphere models are checked against. The profiles themselves are kept in the repository. | none |
 
 **Large archives, fetched only on request (`polar-data sync --tier bulk`)**
 
@@ -351,6 +380,9 @@ the two disagree. Regenerate it with `uv run polar-data readme`.
 |---|---|---|---|---|---|
 | [KSC Advanced Ground Based Field Mill network, 1997-2012](https://data.ghrc.earthdata.nasa.gov/ghrcw-protected/kscmill__1/) ([data.nasa.gov](https://data.nasa.gov/dataset/ksc-advanced-ground-based-field-mill-v1-7b0b5)) | NASA MSFC GHRC DAAC | 1.5 TB | `bulk/kscmill/` | How often the electric field at Kennedy exceeds the launch limit, by month and hour: the history behind the field-mill launch rule. | NASA Earthdata Login (free) |
 | [Combined GLM hourly thunder-hour data, 2019-2025](https://data.ghrc.earthdata.nasa.gov/ghrcw-protected/glmhth__1/) ([data.nasa.gov](https://data.nasa.gov/dataset/combined-geostationary-lightning-mapper-glm-hourly-thunder-hour-data-product)) | NASA MSFC GHRC DAAC | 77 GB | `bulk/glm_thunder_hours/` | How often lightning is seen near each launch pad, by month and hour, for dates beyond the weather forecast. | NASA Earthdata Login (free) |
+| [NOAA GEFSv12 reforecast, 10 m wind at the pads, 2000-2019 (reduced here)](https://noaa-gefs-retrospective.s3.amazonaws.com) | NOAA PSL and EMC, via AWS Open Data | 759 kB | `hindcast/gefs_reforecast_wind.cache.jsonl` | Re-running the many-year check of the wind rules at the Cape and Vandenberg. Only the pads' grid points are read, by byte ranges, from a 50 GB archive; the result is kept in the repository. | none |
+| [NOAA HRRR version 4, 10 m wind at the pads, 2021-2025 (reduced here)](https://noaa-hrrr-bdp-pds.s3.amazonaws.com) | NOAA NCEP, via AWS Open Data | 590 kB | `hindcast/hrrr_wind.cache.jsonl` | Re-running the check of HRRR's wind at the Cape and Vandenberg, read by byte ranges from a 100 GB archive. The result is kept in the repository. | none |
+| [Hourly wind at the Cape (KXMR) and Vandenberg (KVBG) weather stations (ASOS)](https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py) | Iowa Environmental Mesonet (Iowa State University), from NWS ASOS | 10 MB | `hindcast/asos_*.csv` | The observed wind that every weather check is scored against; fetched by the three weather-check commands. | none |
 
 <!-- required-data:end -->
 

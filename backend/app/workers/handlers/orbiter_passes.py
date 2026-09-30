@@ -135,6 +135,22 @@ def passes(
     return Passes(runs, a, b, tols, grazes, peaks)
 
 
+def edges(name: str, got: Passes, start: datetime, t1: float) -> str | None:
+    """Where the recorded trajectory starts after the dates begin or ends before they end."""
+    said = []
+    if got.a > intervals.EPS_S:
+        at = start + timedelta(seconds=got.a)
+        said.append(
+            lifecycle.trajectory_edge(name, at, ends=False) + " No pass before then is worked out."
+        )
+    if got.b < t1 - 1e-6:
+        at = start + timedelta(seconds=got.b)
+        said.append(
+            lifecycle.trajectory_edge(name, at, ends=True) + " No pass after then is worked out."
+        )
+    return " ".join(said) or None
+
+
 def block(
     rec: Any,
     snap: dict[str, Any] | None,
@@ -142,8 +158,10 @@ def block(
     start: datetime,
     t1: float,
     missing: str | None,
+    trajectory_gap: str | None = None,
 ) -> dict[str, Any]:
-    """One orbiter in the Contact answer."""
+    """One orbiter in the Contact answer. Its ``note`` says only what is its own: where the
+    recorded trajectory stops short of the dates (the section's note says the rest)."""
     src = None
     if snap is not None:
         src = lifecycle.source_ref(
@@ -158,7 +176,7 @@ def block(
         "name": rec.name,
         "operator": rec.operator,
         "naif_id": rec.naif_id,
-        "note": NOTE,
+        "note": trajectory_gap if got is None else edges(rec.name, got, start, t1),
         "source": src,
         "covered": None,
         "passes": [],

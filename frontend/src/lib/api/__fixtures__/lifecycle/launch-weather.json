@@ -4,7 +4,7 @@
   "lead_time_h": 38,
   "pad_id": "lc-39a",
   "vehicle_id": "falcon-9",
-  "note": "Each rule as published, with what the recorded forecasts say at the launch time. Shares count one forecast system's runs; they are never combined.",
+  "note": "Each rule as published, with what the recorded forecasts say at the launch time. Shares count one forecast system's runs; they are never combined. None has passed a check against observations yet.",
   "rules": [
    {
     "id": "wind-162ft",
@@ -61,31 +61,51 @@
     ],
     "one_forecast": [
      {
-      "system": "NWS",
+      "system": "HRRR",
       "value": {
-       "value": 8.9,
+       "value": 14.2,
        "unit": "m/s",
-       "provenance": "published",
+       "provenance": "computed",
        "pm": null,
        "lo": null,
        "hi": null,
        "factor": null,
        "open": false,
-       "no_margin_reason": "One forecast has no spread.",
+       "no_margin_reason": "One forecast, at the rule's height from the model's 10 m and 80 m winds.",
        "missing_reason": null,
        "source": null
       },
-      "over": false
+      "over": true,
+      "note": "Checked against KXMR for 2021 to 2025 (1733 runs at this lead): HRRR's 10 m wind was off by 1.2 m/s on average, 0.2 m/s above the station's, and 19% closer to what was measured than the station's usual wind for that month and hour (95 % 14 to 23%). At the limit brought to 10 m, over all leads: the station reported wind above it 25 times in 6967 runs, HRRR called 11 of them, and 19 of its 30 calls of over were wrong."
+     },
+     {
+      "system": "NWS",
+      "value": {
+       "value": 8.9,
+       "unit": "m/s",
+       "provenance": "computed",
+       "pm": null,
+       "lo": null,
+       "hi": null,
+       "factor": null,
+       "open": false,
+       "no_margin_reason": "One forecast: the Service's wind at 10 m carried to the rule's height on a neutral profile over open flat ground (roughness 0.03 m).",
+       "missing_reason": null,
+       "source": null
+      },
+      "over": false,
+      "note": "The National Weather Service keeps no archive of its forecasts, so this one cannot be checked against observations."
      }
     ],
-    "disagreement": false,
+    "disagreement": true,
     "observed": null,
     "climatology": {
      "share": 0.0099,
      "years": "2001-2024",
      "source": "NASA POWER hourly wind at 50 m from the MERRA-2 reanalysis (the rule's 162 ft is 49 m), the 678 hours of February at 00 UTC in those years; a reanalysis cell's hourly mean is smoother than the pad's tower."
     },
-    "class": "model"
+    "class": "model",
+    "disagreement_note": "HRRR puts the wind at 14.2 m/s, over the limit, while 3 of 31 GEFS runs break it (95% range 2.0% to 26%). HRRR puts the wind at 14.2 m/s, over the limit, and NWS at 8.9 m/s, under it."
    },
    {
     "id": "rain",
@@ -144,10 +164,11 @@
      }
     ],
     "one_forecast": [],
-    "disagreement": true,
+    "disagreement": false,
     "observed": null,
     "climatology": null,
-    "class": "model"
+    "class": "model",
+    "disagreement_note": null
    },
    {
     "id": "thick-cloud",
@@ -203,7 +224,8 @@
     "disagreement": false,
     "observed": null,
     "climatology": null,
-    "class": "proxy"
+    "class": "proxy",
+    "disagreement_note": null
    },
    {
     "id": "lightning",
@@ -234,7 +256,8 @@
      "detail": "No lightning seen by GOES within 10 nautical miles in the last 30 minutes"
     },
     "climatology": null,
-    "class": "observation"
+    "class": "observation",
+    "disagreement_note": null
    },
    {
     "id": "upper-shear",
@@ -276,7 +299,8 @@
     "one_forecast": [],
     "disagreement": false,
     "observed": null,
-    "climatology": null
+    "climatology": null,
+    "disagreement_note": null
    },
    {
     "id": "cumulus-tops",
@@ -321,7 +345,8 @@
     "one_forecast": [],
     "disagreement": false,
     "observed": null,
-    "climatology": null
+    "climatology": null,
+    "disagreement_note": null
    }
   ],
   "official": {
@@ -350,8 +375,16 @@
    "kind": "composite",
    "parts": [
     {
-     "source": "Model spread",
-     "note": "Each share is k of n runs with an exact 95% range."
+     "source": "Ensemble shares",
+     "note": "k of N runs break the rule at the forecast step nearest the launch (within 3 hours); the ± is the exact 95 % interval for that many runs."
+    },
+    {
+     "source": "Height",
+     "note": "Winds at the rule's height are interpolated from the model's 10 m and 80 m winds on a logarithmic profile."
+    },
+    {
+     "source": "Checked against observations",
+     "note": "Checked against KXMR (sustained wind at 10 m above 10.52 m/s (23.5 mph); forecasts from GEFSv12 reforecast (NOAA PSL/EMC), 00 UTC runs, control and 4 perturbed runs, 0.25 degree) for 2007-01-02 to 2019-12-31, 1583 forecast days: 24 h: Brier skill not worked out (too few cases above the limit) over 1459 cases, 1 case of the wind above the limit; CRPS skill -0.97 (-1.08 to -0.86); 48 h: Brier skill not worked out (too few cases above the limit) over 1482 cases, 3 cases of the wind above the limit; CRPS skill -0.99 (-1.12 to -0.88). It did not pass the gate (Brier skill >= 0.1 at each lead (from at least 10 cases above the limit) and reliability within 0.1 in bins with >= 30 cases)."
     }
    ]
   },

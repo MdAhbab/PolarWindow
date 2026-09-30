@@ -171,6 +171,8 @@ export function DataSources({ enabled, live }: { enabled: boolean; live: boolean
                         {f.age_s !== null ? `data from ${ageFromSeconds(f.age_s)}` : 'no data yet'}
                         {s.words !== 'Working' ? ` · ${s.words.toLowerCase()}` : ''}
                         {err ? ` · ${err}` : ''}
+                        {/* The service's own reason (a product fetched only near a launch holds nothing otherwise, which is no fault). */}
+                        {f.note ? ` · ${f.note}` : ''}
                       </li>
                     )
                   })}

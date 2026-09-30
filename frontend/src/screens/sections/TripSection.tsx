@@ -1,7 +1,7 @@
 import { api } from '../../lib/api/client'
 import { API_BASE } from '../../lib/api/client'
 import type { MissionDetail } from '../../lib/api/adapters'
-import type { LifecycleMetaDTO, QuantityDTO, TripDTO } from '../../lib/api/lifecycle'
+import type { AssumptionDTO, LifecycleMetaDTO, QuantityDTO, TripDTO } from '../../lib/api/lifecycle'
 import { useSection, useSectionStatus } from '../../lib/api/lifecycleQueries'
 import { formatValue, quantityText } from '../../lib/lifecycle/quantity'
 import { dateTimeWords } from '../../lib/format'
@@ -181,6 +181,35 @@ function spread(q: QuantityDTO): string | null {
 }
 
 /**
+ * The heading over the errors a budget rests on, in plain words, read from each
+ * one's `basis` and `source` as served: how many the launch vehicle's guide
+ * publishes and how many are assumed; and, when the served sources of the
+ * published speed errors say the guide's row for a transfer orbit to
+ * geosynchronous orbit stands in for a launch to the Moon, that they are worked
+ * out from it. A saved copy from before `basis` was served has none and reads
+ * as assumed.
+ */
+export function errorsHeading(list: Pick<AssumptionDTO, 'what' | 'basis' | 'source'>[]): { mix: string; speed: string | null } {
+  const n = list.length
+  const published = list.filter((a) => a.basis === 'published').length
+  const rest = n - published
+  const mix =
+    published === 0
+      ? 'Every error here is assumed'
+      : rest === 0
+        ? 'Every error here is published in the launch vehicle’s guide'
+        : `${published} of the ${n} errors here ${published === 1 ? 'is' : 'are'} published in the launch vehicle’s guide; the other ${rest} ${rest === 1 ? 'is' : 'are'} assumed`
+  const speeds = list.filter((a) => a.basis === 'published' && /speed/i.test(a.what) && /geosynchronous/i.test(a.source ?? ''))
+  const noLunarRow = speeds.some((a) => /no row for a launch to the Moon/i.test(a.source ?? ''))
+  return {
+    mix,
+    speed: speeds.length
+      ? `The speed errors on leaving Earth are worked out from the guide’s published accuracy for a transfer orbit to geosynchronous orbit${noLunarRow ? ', since it has no row for a launch to the Moon' : ''}.`
+      : null,
+  }
+}
+
+/**
  * How much the corrections on the way could need under assumed errors: a
  * budget over many runs, never a prediction (the service's `label` says so
  * first). Each size says its sample ("in 99 of 100 runs", of how many).
@@ -195,6 +224,7 @@ export function CorrectionsRow({ c, note }: { c: TripDTO['corrections']; note: s
   }
   const interval = spread(c.total_p99_m_s)
   const arrival = spread(c.arrival_altitude_km)
+  const errors = errorsHeading(c.assumptions)
   const cell = 'px-3 py-2 text-small text-ink-2 align-top'
   const num = `${cell} text-right font-mono tnum whitespace-nowrap text-ink`
   const head = 'px-3 py-2.5 text-tag font-semibold tracking-caps-md text-ink-3 uppercase align-bottom'
@@ -242,12 +272,19 @@ export function CorrectionsRow({ c, note }: { c: TripDTO['corrections']; note: s
         The total is taken run by run, not by adding up the sizes above.
       </p>
       <div className="flex flex-col gap-2">
-        <h4 className="text-small font-semibold text-ink">Every error here is assumed</h4>
-        <dl className="grid grid-cols-1 gap-x-6 gap-y-1.5 text-small sm:grid-cols-[max-content_1fr]">
+        <h4 className="text-small font-semibold text-ink">
+          {errors.mix}
+          {errors.speed && <span className="mt-0.5 block font-normal text-ink-2">{errors.speed}</span>}
+        </h4>
+        <dl className="grid grid-cols-1 gap-x-6 gap-y-3 text-small sm:grid-cols-[max-content_1fr] sm:gap-y-2">
           {c.assumptions.map((a) => (
-            <div key={a.what} className="contents">
+            <div key={a.what} className="flex flex-col gap-0.5 sm:contents">
               <dt className="text-ink-3">{a.what}</dt>
-              <dd className="text-ink">{a.value}</dd>
+              <dd className="text-ink">
+                {a.value}
+                <span className="text-ink-3"> · {a.basis === 'published' ? 'published' : 'assumed'}</span>
+                {a.source && <span className="mt-0.5 block text-caption leading-caption text-ink-3">Source: {a.source}</span>}
+              </dd>
             </div>
           ))}
         </dl>

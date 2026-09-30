@@ -4,7 +4,7 @@ A point mass with a ballistic coefficient beta = m / (C_D A), falling from the
 entry interface through an atmosphere that turns with the Earth, under Earth's
 gravity with J2. The air is the U.S. Standard Atmosphere 1976
 (``core.atmosphere``) unless the caller gives a density (``Capsule.air``: the
-capsule service gives NRLMSISE-00 for the entry day). No lift and no
+capsule service gives an empirical model's for the entry day). No lift and no
 parachutes: the plan asks for beta as the input, and for a blunt capsule the
 parachutes change the landing point little (the OSIRIS-REx team found its
 no-parachute touchdown within 100 m of the nominal one). A wind, when given, is
@@ -41,6 +41,15 @@ OMEGA_EARTH = 7.292115e-5  # rad/s
 EI_HEIGHT_M = 121_920.0
 #: A given wind blows below this height.
 WIND_TOP_M = 30_000.0
+#: The integrator's tolerances. The empirical models give their density as single-precision
+#: numbers (noise of 1e-7 relative in NRLMSISE-00, 2e-6 in NRLMSIS 2.1), and an eighth-order
+#: integrator asked for 1e-9 spends six times the steps following that noise, for nothing:
+#: at these the landing point is within 0.5 m of the landing at tolerances ten times tighter
+#: and a hundred times looser (OSIRIS-REx case; NRLMSIS 2.1 moves 0.02 m and 0.04 m, NRLMSISE-00
+#: 0.00 m and 0.5 m, the standard atmosphere 0.00 m and 0.04 m), and a flight in NRLMSIS 2.1
+#: takes one second, not thirteen.
+RTOL = 1e-8
+ATOL = 1e-5
 
 #: Air density (kg/m^3) at (seconds from the entry state, inertial position, height
 #: above WGS84).
@@ -154,8 +163,8 @@ def fly(
         (0.0, max_s),
         np.concatenate([r0_m, v0_m_s]),
         method="DOP853",
-        rtol=1e-9,
-        atol=1e-6,
+        rtol=RTOL,
+        atol=ATOL,
         events=ground,
         max_step=2.0,
     )

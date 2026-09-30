@@ -59,7 +59,7 @@ async def test_im1_contact_over_its_surface_days(anon_client) -> None:
     assert len(stations) == 14
     assert d["link_budget_note"].startswith("Line of sight only")
     assert 1.1 < d["light_time_s"]["min"] < d["light_time_s"]["max"] < 1.5
-    assert body["meta"]["engines"] == {"link": "link-1", "net": "net-5", "vis": "vis-2"}
+    assert body["meta"]["engines"] == {"link": "link-1", "net": "net-6", "vis": "vis-2"}
     assert any("mask" in p["source"].lower() for p in body["meta"]["uncertainty"]["parts"])
 
 
@@ -151,7 +151,7 @@ async def test_a_planned_relay_added_to_a_south_pole_site(anon_client) -> None:
     assert n["longest_message_wait_min"]["hi"] <= alone["longest_message_wait_min"]["value"] + 1e-6
     relay_node = next(x for x in d["nodes"] if x["kind"] == "relay")
     assert relay_node["orbit"] == "planned" and relay_node["launch_note"]
-    assert body["meta"]["engines"]["net"] == "net-5"
+    assert body["meta"]["engines"]["net"] == "net-6"
 
 
 async def test_a_mission_s_own_relay_over_a_near_side_site(anon_client) -> None:
@@ -242,7 +242,7 @@ async def test_rover_line_of_sight_at_a_polar_site(anon_client) -> None:
     a = d["assumptions"]
     assert a["lander_antenna_m"]["provenance"] == "assumed" and a["radio_mhz"]["value"] == 2400
     assert d["terrain"]["post_m"] == 20.0
-    assert body["meta"]["engines"] == {"los": "los-1"}
+    assert body["meta"]["engines"] == {"los": "los-2"}
 
 
 async def test_rover_outside_the_polar_terrain_is_not_resolvable(anon_client) -> None:

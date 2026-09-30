@@ -39,6 +39,8 @@ ENGINE_VERSION = "hz-2/vis-2"
 #: net-2: a number with no edge inside the dates says so instead of "± 0".
 #: net-3 / traj-2: a zero-length "longest" is never "cut short"; Trip lists its covered stretches.
 #: traj-3: Trip lists the burns found in the reconstruction and a correction budget.
+#: traj-4: the correction budget takes the errors at leaving Earth that the launch vehicle's
+#:         guide publishes, and says which they are; the budgets served before did not.
 #: lw:   launch opportunities (daily launch instants, landing windows, direct transfer)
 #: lw-2: one opportunity per sweep of the climb plane past the Moon; plain words; weather_note.
 #: lw-3: weather "climatology" beyond 16 days where a wind climatology can be read.
@@ -54,17 +56,21 @@ ENGINE_VERSION = "hz-2/vis-2"
 #:       inside the pad's azimuth limits; a flown launch's climb direction is computed.
 #: lw-6: a launch is a window or an instant as published (Launch Library 2); a vehicle
 #:       whose direct lunar launches flew windows gets one between the pad's limits.
+#: net-6: an orbiter's note says only what is its own (where its recorded trajectory stops);
+#:        a relay may be "launched, not operating"; no number changes.
+#: los-2: the note says "the space around the line of sight that the radio signal needs" and
+#:        "terrain map"; no number changes.
 ENGINES: dict[str, str] = {
     "hz": "hz-2",
     "vis": "vis-2",
-    "traj": "traj-3",
+    "traj": "traj-4",
     "ecl": "ecl-1",
     "wx": "wx-2",
     "rad": "rad-3",
     "link": "link-1",
-    "net": "net-5",
+    "net": "net-6",
     "ready": "ready-1",
-    "los": "los-1",
+    "los": "los-2",
     "lw": "lw-6",
 }
 

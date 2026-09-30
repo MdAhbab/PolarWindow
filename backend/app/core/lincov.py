@@ -25,6 +25,12 @@ Two ways of working out the sizes, which must agree:
 
 The 99th-percentile total comes with a bootstrap interval. The numbers are a
 budget for the errors assumed, never a prediction of what a mission needs.
+
+A launch vehicle's user guide prints the accuracy of the orbit it injects into, as a
+plus-or-minus of perigee and apogee altitude and of inclination at three standard
+deviations. ``from_guide`` turns those into the errors at TLI they stand for (the
+radial position, the along-track and cross-track velocity) and leaves every other
+error as it was assumed: a guide says nothing of the rest.
 """
 
 from __future__ import annotations
@@ -70,6 +76,32 @@ class Errors:
 
 
 @dataclass(frozen=True, slots=True)
+class GuideRow:
+    """One row of a launch vehicle guide's table of orbit-injection accuracy: the
+    plus-or-minus of the osculating elements at injection. ``perigee_alt_km`` and
+    ``apogee_alt_km`` are the guide's reference orbit (None: the orbit of the plan).
+    ``sigma`` is the number of standard deviations the plus-or-minus stands for."""
+
+    perigee_alt_km: float | None
+    apogee_alt_km: float | None
+    perigee_pm_km: float | None
+    apogee_pm_km: float | None
+    inclination_pm_deg: float | None
+    sigma: float
+
+
+@dataclass(frozen=True, slots=True)
+class Derived:
+    """One TLI error a guide's row gives: ``axis`` is ``"pos_radial"``, ``"vel_along"`` or
+    ``"vel_cross"``, ``value`` the one-sigma error (m or m/s), ``from_element`` the printed
+    element it comes from ("apogee", "perigee", "inclination")."""
+
+    axis: str
+    value: float
+    from_element: str
+
+
+@dataclass(frozen=True, slots=True)
 class Plan:
     t_tli: float
     y_tli: FloatArray  # Earth-centred J2000 just after TLI
@@ -80,6 +112,68 @@ class Plan:
 def default_times(t_tli: float, t_arrive: float) -> tuple[float, float, float]:
     """TCM-1 a day after TLI, TCM-2 half-way, TCM-3 a day before arrival."""
     return (t_tli + DAY, 0.5 * (t_tli + t_arrive), t_arrive - DAY)
+
+
+def osculating_radii(y: FloatArray, mu: float) -> tuple[float, float]:
+    """(perigee radius, apogee radius), m, of the two-body orbit through ``y``; the apogee is
+    infinite for an orbit that does not close."""
+    r = float(np.linalg.norm(y[:3]))
+    h = float(np.linalg.norm(np.cross(y[:3], y[3:])))
+    energy = 0.5 * float(y[3:] @ y[3:]) - mu / r
+    e = float(np.linalg.norm(np.cross(y[3:], np.cross(y[:3], y[3:])) / mu - y[:3] / r))
+    rp = h * h / mu / (1.0 + e)
+    return rp, (h * h / mu / (1.0 - e) if energy < 0.0 and e < 1.0 else math.inf)
+
+
+def apogee_per_speed(mu: float, rp_m: float, ra_m: float) -> float:
+    """How far the apogee radius moves, m, for 1 m/s more speed at perigee (two-body)."""
+    vp = math.sqrt(2.0 * mu * ra_m / (rp_m * (ra_m + rp_m)))
+    # v_p^2 = 2 mu ra / (rp (ra + rp)):  d v_p / d ra = mu / (v_p (ra + rp)^2)
+    return vp * (ra_m + rp_m) ** 2 / mu
+
+
+def from_guide(
+    base: Errors, row: GuideRow, y_tli: FloatArray, mu: float, r_earth_m: float
+) -> tuple[Errors, list[Derived]]:
+    """``base`` with the TLI errors ``row`` gives put in place of the assumed ones, and what
+    was put in place. Each element is one standard deviation of the printed plus-or-minus
+    (``row.sigma`` of them make it), worked out in the row's own reference orbit, or in the
+    orbit of the plan when the row names none:
+
+    * the apogee's error is a speed error along the track at perigee (two-body), the speed
+      that moves the apogee by that much;
+    * the inclination's error is a speed error across the track, ``v_p`` times the angle,
+      the speed that turns the orbit's plane by it when injected at a node;
+    * the perigee altitude's error is a radial position error.
+
+    The argument of perigee and the node are angles about the orbit that a guide's launch
+    time and window set, not errors of the burn, so they give nothing; nor does a row give
+    the other axes: those keep the assumed values."""
+    if row.perigee_alt_km is not None and row.apogee_alt_km is not None:
+        rp, ra = r_earth_m + 1000.0 * row.perigee_alt_km, r_earth_m + 1000.0 * row.apogee_alt_km
+    else:
+        rp, ra = osculating_radii(y_tli, mu)
+    found: list[Derived] = []
+    pos = list(base.tli_pos_m)
+    vel = list(base.tli_vel_m_s)
+    if row.perigee_pm_km is not None:
+        pos[0] = 1000.0 * row.perigee_pm_km / row.sigma
+        found.append(Derived("pos_radial", pos[0], "perigee"))
+    if row.apogee_pm_km is not None and math.isfinite(ra):
+        vel[1] = 1000.0 * row.apogee_pm_km / row.sigma / apogee_per_speed(mu, rp, ra)
+        found.append(Derived("vel_along", vel[1], "apogee"))
+    if row.inclination_pm_deg is not None and math.isfinite(ra):
+        vp = math.sqrt(2.0 * mu * ra / (rp * (ra + rp)))
+        vel[2] = vp * math.radians(row.inclination_pm_deg) / row.sigma
+        found.append(Derived("vel_cross", vel[2], "inclination"))
+    errors = Errors(
+        (pos[0], pos[1], pos[2]),
+        (vel[0], vel[1], vel[2]),
+        base.od_pos_m,
+        base.od_vel_m_s,
+        base.gates,
+    )
+    return errors, found
 
 
 def rtn(y: FloatArray) -> FloatArray:

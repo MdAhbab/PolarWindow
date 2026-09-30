@@ -774,3 +774,30 @@ that user. `GET /auth/me` returns the same `user`.
   launch weather. `nomads/gefs_launch` (the GEFS steps nearest each opportunity) had been refused every time
   since its cost, 373 requests, was more than the provider's allowance holds (120); it now costs at most
   what the bucket holds and a run already fetched whole is not asked for again.
+- 2026-09-29 (weather, no shape change): `per_system[].share.checked` is false again for the Falcon 9 wind
+  rule at Vandenberg's pads, so it is false at both pads and `LaunchWeather.note` reads "None has passed a check
+  against observations yet." again for both. The 13-year GEFS reforecast is now scored on all 1,583 days
+  planned (it was 845 when the earlier line saying it is true at Vandenberg was written): the Brier skill still clears the plan's 0.1 (0.30 at
+  24 h, 0.24 at 48 h, 95 % 0.16 to 0.41 and 0.09 to 0.38), but the reliability bin for a share of 1.0 now holds
+  41 cases (20 before, too few to count) and the wind was above the limit in 36 of them, 0.88 against a share of
+  1.0, past the 0.1 the gate allows, so `passes` is false; the meta part "Checked against observations" gives the
+  numbers. The Cape stays false (CRPS skill -0.97 at 24 h, 95 % -1.08 to -0.86). `OneForecast.note` for HRRR
+  now carries the 95 % range of its skill against the station's usual wind and says "no higher or lower"
+  where its lean rounds to nothing. No field is added or removed.
+- 2026-09-29 (trip, additive): `Assumption` in `Corrections.assumptions[]` gains `basis` ("published" | "assumed")
+  and `source` (string | null). Where a launch vehicle user's guide gives orbital injection accuracies (Falcon 9,
+  Vulcan, New Glenn), `basis` is "published" and `source` cites the guide, table and page; where unpublished,
+  `basis` is "assumed" and `source` is null. `Corrections.label` clarifies that errors are assumed except where
+  the launch vehicle's guide publishes them.
+- 2026-09-29 (return, no shape change): `Return.capsule.model_check.atmosphere` default is now NRLMSIS 2.1 (Emmert
+  et al. 2022) driven by the entry day's solar flux and ap indices. Independent mesospheric measurements (TIMED/SABER
+  136 profiles and Table Mountain Rayleigh lidar 9 nights) pick NRLMSIS 2.1 over NRLMSISE-00 (RMS density bias
+  0.6 % and 1.6 % vs 3.7 % and 5.0 %). With NRLMSIS 2.1, the OSIRIS-REx landing distance is 6.6 km (3.9 to 9.3 km
+  over the drag range), satisfying the plan's 10 km limit (`passed: true`). Ellipse 99 % is 51.1 by 21.5 km (43.7 by
+  0.3 km with no wind).
+- 2026-09-30 (backend, Contact and Orbiters; engines `net-6`, `los-2`): `Node.status` gains
+  `"launched_not_operating"`. `Orbiter.note` is `string | null` (says only where its recorded
+  trajectory stops short of the dates, null when it covers them all; `orbiters_note` keeps the
+  general caveat). Plain words: `Viewshed.radio` and `RoverOut.radio_not_clear_share` say "the space
+  around the line of sight that the radio signal needs".
+

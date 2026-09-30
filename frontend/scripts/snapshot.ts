@@ -72,7 +72,10 @@ async function record(page: Page) {
       pendingKeys.add(key)
       const read = (async () => {
         try {
-          const body = await res.json()
+          const body = await Promise.race([
+            res.json(),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000)),
+          ])
           const file = `r/${String(++n).padStart(4, '0')}.json`
           writeFileSync(join(OUT, file), JSON.stringify(body))
           entries[key] = { file, status: res.status() }
@@ -91,10 +94,17 @@ async function record(page: Page) {
 }
 
 async function settle(page: Page) {
-  await page.waitForLoadState('networkidle')
+  try {
+    await page.waitForLoadState('networkidle', { timeout: 8000 })
+  } catch {
+    /* proceed if background polling is active */
+  }
   await page.waitForTimeout(400)
   // Every answer's body read before the page moves on and the browser drops it.
-  await Promise.allSettled([...reading])
+  await Promise.race([
+    Promise.allSettled([...reading]),
+    new Promise((resolve) => setTimeout(resolve, 5000)),
+  ])
 }
 
 /**
@@ -234,7 +244,7 @@ async function main() {
     .getByLabel('Your question')
     .fill('Which south-pole missions look for ice, and how long is their longest night?')
   await page.getByRole('button', { name: 'Ask', exact: true }).click()
-  await page.getByText(/Summary from measurements|AI answer/).first().waitFor()
+  await page.locator('main').getByText(/Summary from measurements|AI answer ·/).first().waitFor()
   await page.locator('summary', { hasText: /numbers, each checked/ }).first().click()
   await page.getByRole('button', { name: 'How the AI got this' }).first().click()
   await settle(page)
@@ -242,16 +252,16 @@ async function main() {
   for (const id of ['im-2', 'blue-ghost-m1', 'blue-moon-mk1-viper']) {
     await visit(page, `/missions/${id}`)
     await page.locator('summary', { hasText: 'What is it like at this site?' }).click()
-    await page.getByText(/Summary from measurements|AI answer/).first().waitFor()
+    await page.locator('main').getByText(/Summary from measurements|AI answer ·/).first().waitFor()
   }
   await visit(page, '/compare')
   await page.locator('summary', { hasText: 'Find sites that meet a requirement' }).click()
   await page.getByLabel('The requirement, in your own words').fill('200 W solar and at least 4 hours of Earth contact per day')
   await page.getByRole('button', { name: 'Find sites' }).click()
-  await page.getByText(/Summary from measurements|AI answer/).first().waitFor()
+  await page.locator('main').getByText(/Summary from measurements|AI answer ·/).first().waitFor()
   await visit(page, '/report')
   await page.getByRole('button', { name: 'Write a summary memo' }).click()
-  await page.getByText(/Summary from measurements|AI answer/).first().waitFor()
+  await page.locator('main').getByText(/Summary from measurements|AI answer ·/).first().waitFor()
   await settle(page)
 
   await browser.close()

@@ -309,8 +309,11 @@ export interface RuleRowDTO {
   /** The team's note with an entered limit. */
   limit_note: string | null
   per_system: { system: ModelSystem; share: ShareDTO | null; missing_reason: string | null }[]
-  one_forecast: { system: 'NWS' | 'HRRR' | 'GEOS-FP'; value: QuantityDTO; over: boolean }[]
+  /** Single forecasts, each with how it did against a station's record (HRRR) or why it cannot be checked (NWS). */
+  one_forecast: { system: 'NWS' | 'HRRR' | 'GEOS-FP'; value: QuantityDTO; over: boolean; note: string | null }[]
   disagreement: boolean
+  /** Who disagrees and how, in one or two sentences; null when none does. */
+  disagreement_note: string | null
   observed: { state: 'clear' | 'seen' | 'no_data'; detail: string } | null
   /** How often the limit was broken in past years at the launch's month and hour (wind rules with a known limit). */
   climatology: { share: number; years: string; source: string } | null
@@ -453,7 +456,19 @@ export interface SpaceWeatherDTO {
   note: string
 }
 
-/** Never a prediction: sizes of the corrections under the listed assumed errors, over many runs. */
+/**
+ * One error the correction budget rests on: a figure a launch vehicle's guide
+ * publishes (with where it is from), or one the service assumes.
+ */
+export interface AssumptionDTO {
+  what: string
+  value: string
+  basis: 'published' | 'assumed'
+  /** Where a published figure is from (the guide, table and page); null if assumed. */
+  source: string | null
+}
+
+/** Never a prediction: sizes of the corrections under the listed errors, over many runs. */
 export interface CorrectionsDTO {
   label: string
   burns: { name: string; t: string; p95_m_s: QuantityDTO; p99_m_s: QuantityDTO }[]
@@ -467,7 +482,7 @@ export interface CorrectionsDTO {
   runs: number
   /** Runs with no close pass of the Moon. */
   missed: number
-  assumptions: { what: string; value: string }[]
+  assumptions: AssumptionDTO[]
   plan_note: string
   flown_note: string
 }
@@ -481,7 +496,7 @@ export interface NodeDTO {
   kind: 'station' | 'relay' | 'lander' | 'rover' | 'earth'
   name: string
   operator: string | null
-  status: 'operating' | 'planned' | 'not_launched'
+  status: 'operating' | 'planned' | 'not_launched' | 'launched_not_operating'
   orbit: 'real' | 'planned' | null
   launch_note: string | null
 }
@@ -548,7 +563,7 @@ export interface OrbiterDTO {
   name: string
   operator: string | null
   naif_id: number | null
-  note: string
+  note: string | null
   /** The recorded JPL Horizons trajectory. */
   source: { name: string; url: string | null; issued_at: string | null; fetched_at: string | null; licence: string | null; snapshot_id: number | null } | null
   /** The part of the dates the trajectory covers. */
@@ -688,6 +703,8 @@ export interface CapsuleModelCheckDTO {
   distance_range_km: number[]
   limit_km: number
   passed: boolean
+  /** The air the modelled fall went through and what it was given, in plain words (always present). */
+  atmosphere: string
   /** The mission's own simulation. */
   mission_team_km: number
   /** The 99 % area, long by wide. */
@@ -724,6 +741,11 @@ export interface FeedDTO {
   last_error?: string | null
   licence: string | null
   breaker: 'closed' | 'open' | 'half_open'
+  /**
+   * Why the row is as it is, in the service's words, when it says: a product fetched only while a
+   * launch is near holds nothing when none is, which is not a fault. Null otherwise.
+   */
+  note: string | null
 }
 
 export interface FeedsDTO {
@@ -790,6 +812,7 @@ export type ContractChecks = [
   Fits<Present<S['Orbiter']>, OrbiterDTO>,
   Fits<Present<S['RoverOut']>, RoverSightDTO>,
   Fits<Present<S['Trip']>, TripDTO>,
+  Fits<Present<S['Assumption']>, AssumptionDTO>,
   Fits<Present<S['LaunchCalendar']>, LaunchCalendarDTO>,
   Fits<Present<S['LaunchWeather']>, LaunchWeatherDTO>,
   Fits<Present<S['Return']>, ReturnDTO>,

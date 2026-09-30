@@ -1380,6 +1380,18 @@ export interface components {
             what: string;
             /** Value */
             value: string;
+            /**
+             * Basis
+             * @description A figure a launch vehicle's guide publishes, or one the service assumes.
+             * @default assumed
+             * @enum {string}
+             */
+            basis: "published" | "assumed";
+            /**
+             * Source
+             * @description Where a published figure is from (the guide, table and page); null if assumed.
+             */
+            source?: string | null;
         };
         /** Attempt */
         Attempt: {
@@ -1669,8 +1681,8 @@ export interface components {
         };
         /**
          * CapsuleModelCheck
-         * @description The capsule entry model (3-DOF, through NRLMSISE-00 for the entry day) flown from
-         *     OSIRIS-REx's reconstructed entry state, against where its capsule landed.
+         * @description The capsule entry model (3-DOF, through an empirical model of the entry day's air)
+         *     flown from OSIRIS-REx's reconstructed entry state, against where its capsule landed.
          */
         CapsuleModelCheck: {
             /** Case */
@@ -1968,7 +1980,7 @@ export interface components {
         Corrections: {
             /**
              * Label
-             * @description Always says these sizes are a budget for assumed errors.
+             * @description Says these sizes are a budget, not a prediction, and that the errors are assumed except where a launch vehicle's guide publishes them.
              */
             label: string;
             /** Burns */
@@ -2915,7 +2927,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "operating" | "planned" | "not_launched";
+            status: "operating" | "planned" | "not_launched" | "launched_not_operating";
             /** Orbit */
             orbit: ("real" | "planned") | null;
             /** Launch Note */
@@ -3082,9 +3094,9 @@ export interface components {
             naif_id: number | null;
             /**
              * Note
-             * @description Geometry only: none of these orbiters relays for a lander.
+             * @description What is this orbiter's own: where its recorded trajectory ends before, or starts after, the dates, so no pass there is worked out. Null when it covers them all. That none of these orbiters relays for a lander is `Contact.orbiters_note`, once.
              */
-            note: string;
+            note: string | null;
             /** @description The recorded JPL Horizons trajectory. */
             source: components["schemas"]["OrbiterSource"] | null;
             /** @description The part of the dates the trajectory covers. */
@@ -3840,7 +3852,7 @@ export interface components {
             viewshed_tile: string | null;
             /** @description Percent out of sight; a range when uncertain cells could go either way. */
             out_of_sight_share: components["schemas"]["QuantityOut"];
-            /** @description Percent where the radio path is not clear (first Fresnel zone). */
+            /** @description Percent where the radio path is not clear (the space around the line of sight that the radio signal needs is blocked). */
             radio_not_clear_share: components["schemas"]["QuantityOut"];
             longest_out_of_sight_m: components["schemas"]["QuantityOut"];
             /** Resolvable */
@@ -4704,7 +4716,7 @@ export interface components {
             sight: ("clear" | "blocked" | "uncertain")[][];
             /**
              * Radio
-             * @description Radio path clear: the first Fresnel zone as well, [bearing][range].
+             * @description Radio path clear: the space around the line of sight that the radio signal needs as well, [bearing][range].
              */
             radio: ("clear" | "blocked" | "uncertain")[][];
         };

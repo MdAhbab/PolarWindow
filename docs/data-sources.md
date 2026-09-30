@@ -133,17 +133,37 @@ Every file is listed once in the registry, with its URL, size, sha256 and what i
 used for; the README's "Required data" table is generated from it
 (`uv run polar-data readme --write`) and `polar-data sync` downloads it. Tiers:
 `core` (the product will not start without it), `lifecycle` (NASA's reconstructed
-CLPS trajectories from NAIF, GRAIL gravity, DSN station kernels), `bulk` (large and
-optional: GLM thunder hours) and `validation` (only for `make validate-*`: the
-OSIRIS-REx capsule's reconstructed entry, IRBEM references).
+CLPS trajectories from NAIF, GRAIL gravity, EGM2008 Earth gravity from ICGEM,
+JPL Horizons lunar orbiter states, DSN station kernels), `bulk` (large archives
+fetched on demand: GLM thunder hours, KSC field mill, GEFSv12 reforecast, HRRR archive
+on AWS, ASOS station archives) and `validation` (only for `make validate-*`: the
+OSIRIS-REx capsule's reconstructed entry, the air measured at 30 to 70 km on its entry day
+from TIMED/SABER and the Table Mountain lidar (`nasa:capsule-air`), Goldstone radar DEM,
+IRBEM references).
 
 ### Cited catalogues (`data/catalogues/*.json`, ADR-10)
 
-`launch_sites`, `vehicles`, `weather_rules` (NASA FS-2020-05-568-KSC, verbatim),
+`launch_sites`, `vehicles` (with the injection accuracies printed in each vehicle's own user guide, listed below; assumed where unpublished), `weather_rules` (NASA FS-2020-05-568-KSC, verbatim),
 `recovery_zones` (Launch Library 2 landing records), `ground_stations`, `relays`,
 `landing_attempts`, `risk_scales` and `lessons`. Every record carries its sources and
 the date it was compiled; `make catalogues` validates them. A value no source
 publishes is absent with a reason, never filled in.
+
+Injection accuracies in `vehicles`, row by row, with the page:
+
+| Vehicle | Document | Sigma | Read from |
+|---|---|---|---|
+| Falcon 9 | Falcon 9 Launch Vehicle Payload User's Guide, Rev 2 (21 October 2015), section 3.6, Table 3-2, page 16 of 69 | 3, as printed | SpaceX's file as archived on 23 December 2016: `https://web.archive.org/web/20161223112909/http://www.spacex.com/sites/spacex/files/falcon_9_users_guide_rev_2.0.pdf` |
+| Vulcan Centaur | Vulcan Launch Systems User's Guide, October 2023, section 2.3, Table 2.3-1, printed page 2-9 (page 22 of 85 in the PDF) | not stated; 3 assumed | `https://www.ulalaunch.com/docs/default-source/rockets/2023_vulcan_user_guide.pdf` |
+| New Glenn | New Glenn Payload User's Guide, October 2018 (Rev C), section 2.6, Table 2-3, page 31 of 124 | 3, as printed | a copy on `yellowdragonblogdotcom.wordpress.com` uploaded in January 2019, because `blueorigin.com` answered every download with HTTP 429 |
+| Falcon Heavy | none published, so none is entered | not applicable | not applicable |
+
+Only Rev 2 (October 2015) of SpaceX's Falcon guide prints an orbit-insertion accuracy. The
+guides of April 2020, September 2021 and May 2025 were read and have none, so it is the
+accuracy the guide gave for the vehicle of 2015, not a figure for Block 5. Falcon 9's is not
+carried over to Falcon Heavy. The Falcon 9 and New Glenn guides have low Earth orbit and
+geosynchronous transfer orbit rows only. The Vulcan guide has seven rows, one of them for
+lunar transfer and Earth escape.
 
 ### Computed once and committed
 
@@ -152,8 +172,12 @@ publishes is absent with a reason, never filled in.
 | `data/climatology/power_ws50m_*.json` | `make climatology` | NASA POWER hourly wind at 50 m, 2001–2024 |
 | `data/climatology/glm_thunder_*.json` | `make thunder-climatology` | GLM thunder hours, GHRC DAAC (Earthdata token) |
 | `data/hindcast/gefs_wind_florida.json` | `make hindcast-weather` | GEFS on AWS against the Cape's station (IEM) |
+| `data/hindcast/gefs_reforecast_wind_*.json` | `make hindcast-reforecast` | GEFSv12 2000-2019 reforecast against pad stations (IEM) |
+| `data/hindcast/hrrr_wind_*.json` | `make hindcast-hrrr` | HRRR v4 2021-2025 byte-range archive on AWS against pad stations |
 | `data/radiation/*.json` | `make space-climate` | Oulu neutron monitor (NMDB), GOES events (NCEI), DONKI |
-| `data/capsule/orex_check.json` | `make validate-capsule` | the entry model against OSIRIS-REx's landing |
+| `data/capsule/orex_check.json` | `make validate-capsule` | the entry model against OSIRIS-REx's landing under NRLMSIS 2.1, the air model chosen from the two profile files below |
+| `data/capsule/saber_20230924.json` | `uv run python -m app.tests.golden.capsule_air_data` | TIMED/SABER Level 2A version 2.08 limb profiles of 24 September 2023 (136 profiles, 28 to 49° N), from NASA's CDAWeb copy of the GATS archive, `https://cdaweb.gsfc.nasa.gov/sp_phys/data/timed/saber/level2a_netCDF/2023/267/`; the producer marks the files "Unvalidated" |
+| `data/capsule/tmf_lidar_202309.json` | `uv run python -m app.tests.golden.capsule_air_data` (needs `pyhdf`) | NASA JPL Table Mountain Facility Rayleigh lidar (34.4° N; NDACC), temperature and density profiles for nine nights from 19 to 30 September 2023, `https://www-air.larc.nasa.gov/pub/NDACC/PUBLIC/stations/table.mountain.ca/hdf/lidar/` |
 
 ### Live feeds (ADR-8; `make feeds`, listed at `GET /feeds`)
 
@@ -171,6 +195,7 @@ past its staleness budget its numbers are replaced by the reason.
 | NDBC | buoy 41009 | 3 h | recorded only (shown at `/feeds`) |
 | Launch Library 2 | upcoming launches at the Florida and Vandenberg ranges | 12 h | launch weather (other launches from the range that day) |
 | NASA DSN Now | which dishes are tracking what | 15 min | recorded only (shown at `/feeds`) |
+| NASA JPL Horizons | active lunar orbiter state vectors (LRO, KPLO, Capstone, THEMIS) | 7 d | contact (orbiter line of sight) |
 
 Not recorded, with the reason: GEOS-FP (host unreachable from here), ECMWF ENS/AIFS
 (whole-globe fields, too heavy for a routine fetch), NGA's NAVAREA IV warnings (the

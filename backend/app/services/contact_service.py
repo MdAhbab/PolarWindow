@@ -120,6 +120,24 @@ def _extra_relays(m: MissionRecord, asked: list[str] | None) -> list[str]:
     return sorted(out)
 
 
+def _trajectory_gap(
+    name: str, spans: list[tuple[datetime, datetime]], start: datetime, end: datetime
+) -> str | None:
+    """Why no recorded trajectory covers the dates, in one sentence, where the spans that are
+    recorded say: JPL Horizons has none after a day (a span that starts and ends at once), or
+    what is recorded ends before the dates or starts after them."""
+    none_after = max((b for a, b in spans if b <= a), default=None)
+    if none_after is not None:
+        return lifecycle.horizons_has_none(name, none_after)
+    ended = max((b for a, b in spans if b <= start), default=None)
+    if ended is not None:
+        return lifecycle.trajectory_edge(name, ended, ends=True)
+    began = min((a for a, b in spans if a >= end), default=None)
+    if began is not None:
+        return lifecycle.trajectory_edge(name, began, ends=False)
+    return None
+
+
 async def _orbiters(
     session: AsyncSession, mission_id: str, start: datetime, end: datetime
 ) -> list[dict[str, Any]]:
@@ -135,7 +153,7 @@ async def _orbiters(
         if rec.role != "validation_only" or rec.naif_id is None:
             continue
         best: tuple[timedelta, Any] | None = None
-        spans: list[str] = []
+        spans: list[tuple[datetime, datetime]] = []
         for key in (f"{rec.id}@{mission_id}", rec.id):
             span = await repo.latest_ok_span("horizons", "vectors", key)
             if span is None:
@@ -143,10 +161,9 @@ async def _orbiters(
             sid, v0, v1, fetched = span
             if v0 is None or v1 is None:
                 continue
+            spans.append((v0, v1))
             if v1 <= v0:  # Horizons had nothing for the dates asked
-                spans.append(f"none after {v1:%Y-%m-%d}")
                 continue
-            spans.append(f"{v0:%Y-%m-%d} to {v1:%Y-%m-%d}")
             cover = min(end, v1) - max(start, v0)
             if cover > timedelta(0) and (best is None or cover > best[0]):
                 best = (cover, (sid, fetched))
@@ -157,16 +174,22 @@ async def _orbiters(
                     "snapshot_id": best[1][0],
                     "fetched_at": lifecycle.iso(best[1][1]),
                     "missing": None,
+                    "gap": None,
                 }
             )
         else:
+            gap = _trajectory_gap(rec.name, spans, start, end)
+            recorded = "; ".join(f"{a:%Y-%m-%d} to {b:%Y-%m-%d}" for a, b in spans if b > a)
             out.append(
                 {
                     "id": rec.id,
                     "snapshot_id": None,
                     "fetched_at": None,
                     "missing": "No JPL Horizons trajectory is recorded for these dates"
-                    + (f" (recorded: {'; '.join(spans)})." if spans else " yet."),
+                    + (f" (recorded: {recorded})" if recorded else "" if spans else " yet")
+                    + "."
+                    + (f" {gap}" if gap else ""),
+                    "gap": gap,
                 }
             )
     return out

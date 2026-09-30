@@ -306,6 +306,17 @@ def _booster(
 CAPSULE_CHECK = "capsule/orex_check.json"
 
 
+#: Said after the reason the air model was chosen, so that the reason is not read as a test
+#: the model could have failed on its own: the rule was written once the landings were known
+#: (12.1 km in NRLMSISE-00, 6.6 km in NRLMSIS 2.1), and NRLMSIS 2.x was fitted to SABER's
+#: measurements of 2002 to 2016, so SABER's agreement on a day in 2023 is a test in time and
+#: not against another instrument (``golden.capsule_air``, and Emmert et al. 2021, Table 1).
+AIR_CHOICE_CAVEAT = (
+    "This is not a fully separate check: the rule for choosing was written after the landing "
+    "results were known, and NRLMSIS 2.x was fitted to SABER’s measurements from 2002 to 2016."
+)
+
+
 def _atmosphere_words(c: dict[str, Any]) -> str:
     """The air the modelled fall went through, and what it was given, in plain words."""
     a = c.get("atmosphere") or {}
@@ -316,12 +327,15 @@ def _atmosphere_words(c: dict[str, Any]) -> str:
             f"{name}, the average density of the air at each height, with no input from that "
             f"day{f'; used because {why}' if why else ''}."
         )
+    why = (c.get("atmosphere_choice") or {}).get("basis")
+    maker = "the U.S. Naval Research Laboratory’s " if name.startswith("NRLMSIS") else ""
     return (
-        f"{name}, an empirical model of the air’s density at each height and place, given "
+        f"{name}, {maker}empirical model of the air’s density at each height and place, given "
         f"that day’s solar radio flux (10.7 cm: {a['f107_sfu']:g} solar flux units the day "
         f"before, {a['f107_mean_81_day_sfu']:g} averaged over 81 days) and geomagnetic "
         f"activity (ap {a['ap_3_hour']:g} at the time). The U.S. Standard Atmosphere 1976 "
         f"takes its place when a day has none of these."
+        f"{f' {why} {AIR_CHOICE_CAVEAT}' if why else ''}"
     )
 
 

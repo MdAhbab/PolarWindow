@@ -92,3 +92,19 @@ def test_the_entry_day_of_osiris_rex_from_the_omni_files() -> None:
     assert (now, h3, h6, h9) == (4.0, 6.0, 7.0, 5.0)
     assert daily == pytest.approx((7 + 5 + 7 + 6 + 4 + 4 + 67 + 67) / 8)
     assert math.isfinite(d12_33) and math.isfinite(d36_57)
+
+
+def test_several_times_are_the_same_as_one_at_a_time_and_a_time_with_no_files_gives_none() -> None:
+    if not list(omni_dir().glob("omni2_h0_mrg1hr_20230701_v01.cdf")):
+        pytest.skip("OMNI hourly file for July to December 2023 not on disk (make space-climate)")
+    times = [
+        datetime(2023, 9, 22, 4, 19, tzinfo=UTC),
+        datetime(2023, 9, 24, 14, 41, 55, tzinfo=UTC),
+        datetime(2023, 9, 28, 23, 59, tzinfo=UTC),
+    ]
+    many = msis_indices.at_many(times)
+    for t, ix in zip(times, many, strict=True):
+        assert ix is not None and ix == msis_indices.at(t)
+    assert msis_indices.at_many([]) == []
+    with pytest.raises(ValueError, match="time zone"):
+        msis_indices.at_many([datetime(2023, 9, 24)])

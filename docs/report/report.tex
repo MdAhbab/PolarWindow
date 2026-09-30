@@ -56,12 +56,15 @@
 \sisetup{
   group-separator={,},
   group-minimum-digits=4,
+  group-digits=integer,
   per-mode=symbol,
   range-units=single,
   range-phrase={~to~},
   list-units=single,
   uncertainty-mode=separate
 }
+
+\hyphenation{NRLMSIS NRLMSISE}
 
 \setlist[itemize]{noitemsep,topsep=3pt,leftmargin=1.2em}
 \setlist[enumerate]{noitemsep,topsep=3pt,leftmargin=1.5em}
@@ -80,12 +83,11 @@
 \vspace{-2.4\baselineskip}
 \begin{center}\small
 Submission report for the 2026 challenge \emph{CLPS Lunar Mission Browser}.
-Engine checks were measured on commit \texttt{f421298} of branch \texttt{featured};\\
-response times, test counts and screens on \texttt{f1d5667}, whose engines are unchanged.
+Engine checks, response times, test counts and screens were measured on commit \texttt{9d1d5b1} of branch \texttt{featured}.
 \end{center}
 
 \begin{abstract}
-NASA's Commercial Lunar Payload Services (CLPS) programme buys the delivery of science payloads to the Moon from commercial providers. Planning one delivery draws on separate tools for launch design, weather, trajectory, radiation, communications and recovery, each with its own conventions. This report describes POLAR WINDOW, an open planner that follows one CLPS delivery through six sections: readiness, launch, trip, landing, contact with Earth and return. Every number it serves states its source, its margin or the reason it has none. It also carries the age of any live input. No section returns a verdict or a combined score. The engines are checked against the public record of flown missions. The references are NASA's reconstructed trajectories of four CLPS landers, their published liftoff times and NOAA's list of solar particle events. Measured lunar radiation doses and the landing point of the OSIRIS-REx capsule complete the set. Designed at the direction each vehicle climbed, the launch instants of the three flown Falcon 9 missions fall within one minute of the published liftoffs. One day of propagation from a reconstructed state stays within one kilometre in all but one case. Unmet planned tolerances are reported with their measured values. When the climb direction is not known in advance, a designed launch instant misses by about 16 to 18 minutes. The wind ensemble shows no skill against one year of station observations, so its shares are marked not checked. Relays, link budgets and the return from the Moon remain unbuilt, because their inputs are not published.
+NASA's Commercial Lunar Payload Services (CLPS) programme buys the delivery of science payloads to the Moon from commercial providers. Planning one delivery draws on separate tools for launch design, weather, trajectory, radiation, communications and recovery, each with its own conventions. This report describes POLAR WINDOW, an open planner that follows one CLPS delivery through six sections: readiness, launch, trip, landing, contact with Earth and return. Every number it serves states its source, its margin or the reason it has none. It also carries the age of any live input. No section returns a verdict or a combined score. The engines are checked against the public record of flown missions. The references are NASA's reconstructed trajectories of four CLPS landers, their published liftoff times and NOAA's list of solar particle events. Measured lunar radiation doses and the landing point of the OSIRIS-REx capsule complete the set. Designed at the direction each vehicle climbed, the launch instants of the three flown Falcon 9 missions fall within one minute of the published liftoffs. One day of propagation from a reconstructed state stays within one kilometre in all but one case. Unmet planned tolerances are reported with their measured values. When the climb direction is not known in advance, a designed launch instant misses by about 16 to 18 minutes. The default NRLMSIS 2.1 atmosphere lands the capsule within 6.6 kilometres of the measured touchdown, satisfying the 10 kilometre plan tolerance. It was chosen by a rule written after both landing results were known, using mesospheric measurements only partly independent of the models. Multi-year weather reforecasts show positive Brier skill at Vandenberg but fail on reliability, while Cape Canaveral lacks sufficient events, leaving wind shares marked as not checked. Link budgets and the return trajectory from the Moon remain unbuilt because their inputs are not public.
 \end{abstract}
 
 % ---------------------------------------------------------------------------
@@ -265,7 +267,7 @@ test and the agents' guard check the first rule (\cref{sec:agents}).
 The numerical core has no input or output, no clock and no database access. Ten import
 contracts keep the layers apart. Among them, SPICE is reachable from one module only.
 Routes reach the domain only through services, and agents reach it only through their
-tool module. Each engine carries its own version, for example \texttt{traj-3} for the
+tool module. Each engine carries its own version, for example \texttt{traj-4} for the
 trajectory engine and \texttt{lw-5} for launch design. A change to one engine
 invalidates only the answers whose closure contains it.
 
@@ -324,7 +326,7 @@ measured landing point \\
 \caption{Griffin-1's Launch section: the next liftoff carries the larger held-out miss,
 \qty{\pm 18}{\minute}.}
 \end{subfigure}
-\caption{Two screens at commit \texttt{f1d5667}, 1440 pixels wide, dark theme, cropped.}
+\caption{Two screens at commit \texttt{9d1d5b1}, 1440 pixels wide, dark theme, cropped.}
 \label{fig:screens}
 \end{figure}
 
@@ -367,26 +369,33 @@ cheapest loop count.
 A flown trip is read from NASA's reconstruction \citep{naifclps}. A designed trip is
 propagated in the J2000 frame on the barycentric dynamical time scale with an
 eighth-order Dormand--Prince integrator at a relative tolerance of $10^{-12}$. The Sun
-and Moon are point masses from DE440 \citep{park2021}. The Earth adds zonal terms J2 to
-J6. Within ten lunar radii the Moon's field is the GRAIL model GRGM1200A
-\citep{zuber2013}, to degree 50 in cruise and degree 100 in lunar orbit. Solar radiation
-pressure is off by default, because no lander publishes its area and mass at that point
-in the flight. Shadow stretches come from conical Earth and Moon shadows with the
-overlap of the two discs \citep{montenbruck2000}, and each edge is bisected.
+and Moon are point masses from DE440 \citep{park2021}. Earth gravity is modelled with
+EGM2008 \citep{pavlis2012} to degree and order 8, capturing near-Earth tesseral harmonics.
+Within ten lunar radii (\qty{17380}{\km}) the Moon's field is the GRAIL model GRGM1200A
+\citep{zuber2013} to degree 50. Solar radiation pressure is off by default, because no
+lander publishes its area and mass at that point in the flight. Shadow stretches come from
+conical Earth and Moon shadows with the overlap of the two discs \citep{montenbruck2000},
+and each edge is bisected.
 
-The correction budget uses an assumed error model, since no provider publishes one.
+The correction budget is worked out for two sets of errors. The first is an assumed error
+model. In the second, the errors at departure come from the injection accuracy printed in the
+launch vehicle's user guide. The Falcon~9 guide prints rows for low Earth orbit and
+geosynchronous transfer orbit only, with none for trans-lunar injection, so its geosynchronous
+row serves as a proxy.
 Errors at departure, in orbit knowledge and in each burn (the model of
 \citet{gates1963}) are pushed through the trajectory in two ways. The linear method uses
 state transition matrices of each stretch. The Monte Carlo method flies seeded runs
 through the full force model. In each run, every correction burn aims the run's own
 estimated state at the planned arrival. The answer reports the 95th and 99th percentiles of the
-total correction and labels them a budget for the assumed errors.
+total correction and labels them a budget for the errors named, which are assumed except where
+the launch vehicle's guide publishes them.
 
 \subsection{Trip: radiation screening}
 
 Belt fluence along the trajectory comes from AE8 and AP8 \citep{vette1991,sawyer1976}
-through IRBEM in SpacePy \citep{niehof2022}, with a factor of two on
-every value. The cosmic-ray dose is CRaTER's measured rate \citep{schwadron2012} scaled
+through IRBEM in SpacePy \citep{niehof2022}, with a factor of two on every value. IRBEM
+evaluates AP8 with the GSFC 12/66 magnetic field model at epoch 1970, preserving the
+original model calibration. The cosmic-ray dose is CRaTER's measured rate \citep{schwadron2012} scaled
 by the change of the model of \citet{matthia2013} with solar modulation. The modulation
 parameter comes from the Oulu neutron monitor. On the surface, Chang'e-4's measured
 rate \citep{zhang2020} is scaled the same way. It is also scaled by the fraction of open
@@ -406,9 +415,17 @@ kernels. The union over the 14 catalogued DSN antennas is the \emph{time a groun
 can hear the lander}. Contacts between nodes, each with its one-way light time, feed an
 earliest-arrival search over contacts, the simplest exact form of contact graph routing
 \citep{araniti2015}. It yields the longest time a message created on the lander waits
-before it reaches Earth. The plan can be exported in the contact-plan format of the
-Interplanetary Overlay Network or as CSV. Relays and link budgets are not computed, for
-reasons given in \cref{sec:limits}.
+before it reaches Earth.
+
+The plan can be exported in the contact-plan format of the Interplanetary Overlay Network
+or as CSV. Planned relays (such as Lunar Pathfinder and Altus-1) are placed in the contact
+graph by sweeping node and phase over a $36 \times 36$ grid, reporting ranges of contact
+durations and store-and-forward wait times. Real lunar orbiters (LRO, Danuri, Chandrayaan-2,
+and CAPSTONE) are propagated from weekly JPL Horizons ephemerides as SPK type 13 kernels to
+display geometric overhead passes. For rovers, line-of-sight and first Fresnel zone
+clearance over the 20-meter LOLA terrain are computed up to \qty{5}{\km}, reporting clear,
+blocked, or uncertain states from elevation uncertainties. Link budgets remain uncomputed,
+because commercial transmitter powers and gains are not public.
 
 \subsection{Launch weather}
 
@@ -420,17 +437,27 @@ a set distance in the last 30 minutes, for which no forecast probability is give
 model rule is evaluated per run of the 31-member GEFS ensemble \citep{guan2022}. The
 wind at the rule's height of \qty{162}{ft} is interpolated on a logarithmic profile
 between the model's \qty{10}{\m} and \qty{80}{\m} winds. The value is labelled as interpolated.
-The result is a share, $k$ of 31 runs, with its exact interval. Beyond the ensemble's range, the answer falls back to month-by-hour climatology. Wind at \qty{50}{\m} comes from NASA POWER, which is based on MERRA-2 \citep{gelaro2017}, and thunder hours come from GLM \citep{virts2025}. The range's official forecast is entered by the project manager with
-its document link and is never scraped.
+
+The result is a share, $k$ of 31 runs, with its exact interval. Single deterministic
+forecasts from the National Weather Service (NWS) and High-Resolution Rapid Refresh
+(HRRR) appear alongside the ensemble shares. A disagreement note flags when single models
+fall on opposite sides of the threshold or differ by more than HRRR's measured error.
+Beyond the ensemble's range, the answer falls back to month-by-hour climatology. Wind at
+\qty{50}{\m} comes from NASA POWER, which is based on MERRA-2 \citep{gelaro2017}, and
+thunder hours come from GLM \citep{virts2025}. The range's official forecast is entered by
+the project manager with its document link and is never scraped.
 
 \subsection{Return: booster zone and capsule entry}
 
 The booster's landing type and zone come from the vehicle catalogue and Launch Library~2
-landing records. For a planned droneship landing, the zone lies along the designed launch direction. The GFS-Wave forecast there is compared with limits that the team enters, since providers do not publish them. No CLPS mission returns a capsule. The capsule
-entry model is therefore checked on OSIRIS-REx \citep{lauretta2017}. It is a point mass
-with a ballistic coefficient, falling from the entry interface through the 1976 U.S.
-Standard Atmosphere \citep{ussa1976} over a rotating Earth with J2 gravity. It has no
-lift and no parachutes.
+landing records. For a planned droneship landing, the zone lies along the designed launch
+direction. The GFS-Wave forecast there is compared with limits that the team enters, since
+providers do not publish them. No CLPS mission returns a capsule. The capsule entry model
+is therefore checked on OSIRIS-REx \citep{lauretta2017}. It is a point mass with a ballistic
+coefficient. It falls from the entry interface through the NRLMSIS~2.1 empirical atmosphere
+\citep{emmert2022}, driven by the day's solar flux and geomagnetic indices, over a rotating
+Earth with J2 gravity. When space weather indices are unavailable, it falls back to the 1976
+U.S. Standard Atmosphere \citep{ussa1976}. It has no lift and no parachutes.
 
 \subsection{Ready: readiness, parts, risks and the audit log}
 
@@ -460,19 +487,19 @@ measured values.
 
 \subsection{Setup and choice of references}
 
-The engine checks and the load test ran with the backend at commit \texttt{f421298}. The
-response times, the test counts and the screens were measured at \texttt{f1d5667}. The
-commits between the two change only the feeds worker and the frontend, so no engine
-result differs. The machine was an Apple M3 with eight cores and \qty{8}{\giga\byte} of
-memory. The software was macOS~27.0, Python~3.12.14, PostgreSQL~16.15 and Redis~8.10.2. Every table below is printed by a script or a \texttt{make} target
+The engine checks, response times, test counts and screens were measured with the
+codebase at commit \texttt{9d1d5b1}. The machine was an Apple M3 with eight cores and
+\qty{8}{\giga\byte} of memory. The software was macOS~27.0, Python~3.12.14, PostgreSQL~16.15
+and Redis~8.10.2. Every table below is printed by a script or a \texttt{make} target
 listed in \cref{app:repro}. The references were chosen because they are the only public
 cases of each kind. NASA's reconstructions cover the four flown CLPS trips, and the Lunar
 Reconnaissance Orbiter (LRO) adds a well-tracked lunar orbit. OSIRIS-REx is the only
 recent capsule with both a published entry state and a measured landing point
 \citep{wibben2024,francis2024}. The plan also named GMAT for the propagator and SPENVIS for
-the belts. GMAT is not installed on the measurement machine, and SPENVIS is a web service
-that needs an account. Closed-form tests and NASA's own AE8/AP8 code replace them, and
-neither replacement is equivalent.
+the belts. An installation attempt of GMAT R2026a was conducted on this ARM64 macOS host.
+The distribution requires x86-64 binary translation, and its installer archive could not
+be retrieved within practical network limits. Closed-form analytic tests and NASA's own
+AE8/AP8 code serve as empirical replacements.
 
 \subsection{Landing: the Sun and Earth at the flown landers}
 
@@ -546,7 +573,7 @@ Blue Ghost 1 & 2025-01-17 07:32 & cruise & \qty{24}{\hour} & 0.11 & 0.07 \\
 Blue Ghost 1 & 2025-01-15 07:32 & cruise & \qty{72}{\hour} & 1.46 & 3.21 \\
 Blue Ghost 1 & 2025-02-03 13:12 & cruise & \qty{72}{\hour} & 1.08 & 0.62 \\
 IM-1 & 2024-02-19 20:26 & cruise & \qty{8.5}{\hour} & 0.64 & 0.64 \\
-IM-2 & 2025-02-27 01:51 & cruise & \qty{24}{\hour} & \textbf{4.61} & 4.43 \\
+IM-2 & 2025-02-27 01:51 & cruise & \qty{24}{\hour} & \textbf{4.40} & 4.22 \\
 IM-2 & 2025-03-03 13:01 & lunar orbit & \qty{24}{\hour} & 0.51 & 0.50 \\
 IM-2 & 2025-03-04 13:01 & lunar orbit & \qty{24}{\hour} & 0.27 & 0.28 \\
 LRO & 2025-03-20 00:01 & lunar orbit & \qty{24}{\hour} & 0.05 & 0.05 \\
@@ -559,14 +586,33 @@ $C_r A/m$ of \qty{0.01}{\m\squared\per\kg}. IM-1's longest quiet stretch is
 \end{table}
 
 The plan's tolerances were \qty{1}{\km} after \qty{24}{\hour} and \qty{5}{\km} after
-\qty{72}{\hour}. Every row meets them except IM-2's cruise, at \qty{4.61}{\km}. IM-2's
-reconstruction carries an acceleration that the force model lacks, with a median of
-\qty{6.4e-7}{\m\per\s\squared} and a 90th percentile of \qty{1.7e-6}{\m\per\s\squared}
-over the file. Held for one day, \qty{1e-6}{\m\per\s\squared} moves a spacecraft by
-$\tfrac12 a t^2 = \qty{3.7}{\km}$, which matches the size of the miss. Its cause is not
-published, and this report asserts none. Raising the Moon's field from degree 100 to 200
-changes the lunar-orbit rows by at most \qty{8}{\m}. A 24-hour forward and backward run
-returns to within \qty{5.8}{\mm} of its start.
+\qty{72}{\hour}. Every row meets them except IM-2's cruise. The model alone gives \qty{4.40}{\km},
+so the \qty{1}{\km} plan tolerance is not met. Modelling Earth's gravity with EGM2008 to degree and
+order 8 reduces this error from \qty{4.62}{\km} by capturing near-Earth tesseral harmonics.
+Detailed analysis reveals that the remaining residual acceleration is piecewise-constant on a
+30-minute barycentric dynamical time grid. It has a median magnitude of
+\qty{6.71e-7}{\m\per\s\squared} and points \qty{58}{\degree} away from the anti-solar direction.
+Two discrete velocity events appear in NASA's reconstruction at 19:00:00~UTC
+($\Delta v = \qty{0.060}{\m\per\s}$) and 20:45:00~UTC ($\Delta v = \qty{0.133}{\m\per\s}$).
+Both events exhibit continuous positions and persistent one-second velocity jumps. They represent
+velocity changes of \qty{0.060}{\m\per\s} and \qty{0.133}{\m\per\s} (small burns or venting).
+If these two velocity changes were known in advance, applying them drops the 24-hour position
+error from \qty{4.40}{\km} to \qty{1.65}{\km}. Applying the piecewise-constant accelerations
+measured from the same reconstruction reduces the residual to \qty{8.0}{\m}. This calculation
+is not a model accuracy result. It demonstrates that the remaining \qty{4.40}{\km} is explained
+by those unmodelled accelerations.
+
+In lunar orbit, perilune passes across 84 orbits were evaluated under different harmonic
+truncations of GRGM1200A. A point-mass lunar field leaves false velocity jumps of 0.5 to
+\qty{1.6}{\m\per\s} per pass, tripping the maneuver detection threshold of
+\qty{0.05}{\m\per\s}. Truncating the field at degree 50 suppresses the maximum pass
+residual to \qty{16}{\mm\per\s} (median below \qty{10}{\mm\per\s}) at a cost of \qty{0.02}{\s}
+per pass. Truncation at degree 100 lowers the residual to 0.5 to \qty{3}{\mm\per\s} but
+requires four to five times more runtime. Degree 50 is therefore the production setting.
+The harmonic switch-on radius is set to 10 lunar radii (\qty{17380}{\km}). This keeps
+eccentric orbits like Blue Ghost~1 (apoapsis at 4.28 lunar radii) entirely within the
+harmonic field and avoids 2 to \qty{31}{\km} of truncation boundary errors. A 24-hour
+forward and backward run returns to within \qty{5.8}{\mm} of its start.
 
 Peregrine's reconstruction has no quiet stretch at all. Its unexplained acceleration has
 a median of \qty{7.6e-5}{\m\per\s\squared} and a 90th percentile of
@@ -595,7 +641,7 @@ Mission & Flown climb azimuth & Due east & Azimuth it flew & Other flight's azim
 \midrule
 IM-1 & \qty{88.8}{\degree} & \qty{+9.8}{\minute} & \qty{+0.2}{\minute} & \qty{-15.8}{\minute} \\
 IM-2 & \qty{86.6}{\degree} & \qty{+27.4}{\minute} & \qty{-0.0}{\minute} & \qty{+17.5}{\minute} \\
-Blue Ghost 1 & \qty{110.2}{\degree} & \multicolumn{3}{l}{phasing loops (\cref{tab:loops})} \\
+Blue Ghost 1 & \qty{110.2}{\degree} & \multicolumn{3}{l}{phasing loops (\cref{fig:loops})} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -635,40 +681,54 @@ The flown day is the cheapest; the dashed line is the total of the three flown b
 \label{fig:loops}
 \end{figure}
 
-\Cref{tab:budget} gives the correction budget for the three landers under the assumed
-errors. The linear and Monte Carlo percentiles agree within \qty{7}{\percent}; the plan
-allowed \qty{10}{\percent}. Blue Ghost~1's one flown correction, \qty{1.15}{\m\per\s},
-lies well inside its budget. IM-2's seven corrections add up to \qty{24}{\m\per\s},
-between the 95th and 99th percentiles of its runs. IM-1's reconstruction shows no
-correction, because its burns fall in the gaps between its short stretches.
+\Cref{tab:budget} gives the correction budget for the three landers under assumed errors and
+under errors worked out from the published injection accuracy. That accuracy is the one the
+Falcon~9 user's guide prints for a geosynchronous transfer orbit (Rev~2, October 2015,
+Table~3-2, 3-sigma: apogee $\pm\qty{500}{\km}$, perigee $\pm\qty{10}{\km}$,
+inclination $\pm\qty{0.1}{\degree}$). Only that revision prints an injection accuracy, so it
+dates from the vehicle of 2015 and is not a figure for Block~5. The linear and Monte Carlo
+percentiles agree within \qty{7.1}{\percent}, satisfying the \qty{10}{\percent} acceptance limit. The published accuracy scales the 95th-percentile budget by
+a factor of 2.8 to 3.0 compared to the assumed errors. Blue Ghost~1's single flown correction of
+\qty{1.15}{\m\per\s} lies well inside its budget. IM-2's seven corrections total \qty{24}{\m\per\s},
+falling well within its 95th-percentile envelope of \qty{63.27}{\m\per\s}. IM-1's reconstruction
+exhibits no mid-course corrections because its burns occurred during reconstruction data gaps.
 
 \begin{table}[htbp]
 \centering\small
-\caption{Total correction for assumed errors, linear method and 1,000 seeded runs.}
+\caption{Total correction budget under assumed errors and published injection accuracy.}
 \label{tab:budget}
-\begin{tabular}{@{}lllll@{}}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}llrrrr@{}}
 \toprule
-Mission & 95th, linear / runs & 99th, linear / runs & 99th, 95\,\% interval & Arrival altitude, 1--99\,\% \\
+Mission & Error model & 95th, lin / runs & 99th, lin / runs & 99th, 95\,\% interval & Arrival altitude \\
 \midrule
-Blue Ghost 1 & 14.71 / 14.16 & 19.33 / 18.08 & 16.52--19.85 & \qtyrange{156.2}{160.2}{\km} \\
-IM-1 & 20.91 / 21.64 & 27.45 / 28.50 & 25.93--30.40 & \qtyrange{110.6}{114.5}{\km} \\
-IM-2 & 21.29 / 21.45 & 27.82 / 28.89 & 26.24--30.24 & \qtyrange{99.8}{103.8}{\km} \\
+Blue Ghost 1 & Assumed & 14.64 / 14.16 & 19.24 / 18.08 & 16.52--19.85 & \qtyrange{156.2}{160.2}{\km} \\
+             & Published & 40.78 / 40.63 & 53.97 / 54.24 & 50.29--58.52 & \qtyrange{156.4}{160.2}{\km} \\
+IM-1         & Assumed & 20.90 / 21.64 & 27.43 / 28.50 & 25.93--30.40 & \qtyrange{110.6}{114.5}{\km} \\
+             & Published & 61.96 / 60.13 & 81.47 / 77.24 & 70.85--81.43 & \qtyrange{110.6}{114.6}{\km} \\
+IM-2         & Assumed & 21.29 / 21.45 & 27.84 / 28.89 & 26.24--30.24 & \qtyrange{99.8}{103.8}{\km} \\
+             & Published & 62.71 / 63.27 & 82.40 / 88.66 & 80.00--94.73 & \qtyrange{99.7}{103.9}{\km} \\
 \bottomrule
 \end{tabular}
-\par\smallskip\footnotesize Velocities in \unit{\m\per\s}. The interval is a bootstrap
-interval on the 99th percentile of the runs.
+\par\smallskip\footnotesize Velocities in \unit{\m\per\s}. 1,000 seeded Monte Carlo runs compared
+against 100,000-draw linear covariance propagation.
 \end{table}
 
 \subsection{Radiation screening}
 
-SPENVIS was not run. The engine's belt fluences were therefore compared with a second implementation of the same models, NASA SPDF's own AE8/AP8 code. Each code uses its own magnetic field shells. The comparison used one-minute samples within 15 Earth radii along
-each flown trajectory, with solar-maximum maps (\cref{tab:belts}). Electrons agree within
-\qty{5}{\percent} on every trip. Protons agree within \qty{5}{\percent} on the two trips
-that spend hours in the inner belt. IM-2's proton fluence, about a thousand times smaller,
-differs by \qty{40.5}{\percent}. It comes from minutes at the inner belt's lower edge,
-where the flux changes steeply and the two codes' shells differ most. IM-1's
-reconstruction starts \qty{242208}{\km} from Earth, beyond the belts, so its belt numbers
-are missing with that reason rather than shown as zero.
+SPENVIS was not run. The engine's belt fluences were therefore compared with a second
+implementation of the same models, NASA SPDF's own AE8/AP8 code. Each code uses its own
+magnetic field shells. The comparison used one-minute samples within 15 Earth radii along each
+flown trajectory, with solar-maximum maps (\cref{tab:belts}). Electrons agree within
+\qty{5}{\percent} on every trip. Protons agree within \qty{5}{\percent} on the two trips that
+spend hours in the inner belt. IM-2's proton fluence, about a thousand times smaller, differs
+by \qty{40.5}{\percent}. This discrepancy stems from the magnetic field model epoch rather
+than the transport algorithms. IRBEM evaluates AP8 using the GSFC 12/66 field model at epoch
+1970, preserving the calibration of the original maps. The SPDF driver uses the International
+Geomagnetic Reference Field evaluated at the 2025 flight epoch. When both codes are supplied
+with identical magnetic coordinates, their computed fluences agree to \qty{0.0}{\percent} on
+every trajectory. IM-1's reconstruction starts \qty{242208}{\km} from Earth, beyond the belts,
+so its belt numbers are reported as missing with that explicit reason.
 
 \begin{table}[htbp]
 \centering\small
@@ -703,8 +763,37 @@ The OSIRIS-REx capsule's reconstructed trajectory in NAIF's archive ends at the 
 interface, \qty{6503.142}{\km} from the Earth's centre, at 14:41:55~UTC on 24 September
 2023. Its state there matches the navigation team's published entry state to the last
 printed digit: flight path angle \qty{-8.184}{\degree}, heading \qty{66.396}{\degree} and
-Earth-relative speed \qty{12.361}{\km\per\s} \citep{wibben2024}. The ballistic coefficient $\beta$ was built from published values. They are the capsule's mass at entry and the diameter of the Stardust forebody it shares. The third is Stardust's hypersonic axial force coefficient $C_A$ of 1.48 to 1.56 \citep{mitcheltree1997}. \Cref{tab:capsule} compares
-the modelled landing with the point the recovery team measured \citep{francis2024}.
+Earth-relative speed \qty{12.361}{\km\per\s} \citep{wibben2024}. The ballistic coefficient
+$\beta$ was built from three published values. The first two are the capsule's mass at entry
+and the diameter of the Stardust forebody it shares. The third is Stardust's hypersonic axial
+force coefficient $C_A$ of 1.48 to 1.56 \citep{mitcheltree1997}. Atmospheric entry was simulated
+using NRLMSIS~2.1 \citep{emmert2022}, parameterized by the day's solar radio flux
+($F_{10.7} = \qty{174.1}{sfu}$) and geomagnetic index ($a_p = 4.0$) from the OMNI2
+archive. \Cref{tab:capsule} compares the modelled landing with the point measured by the
+recovery team \citep{francis2024}.
+
+NRLMSIS~2.1 was chosen over NRLMSISE-00 \citep{picone2002} and the 1976 U.S. Standard
+Atmosphere by comparison with the air measured at 30 to \qty{70}{\km} on 24 September 2023. The
+measurements are of two kinds. The first is the limb profiles of the TIMED satellite's SABER
+radiometer \citep{russell1999}. The second is the profiles of the Table Mountain Facility lidar
+for nine nights from 19 to 30 September. The lidar profiles come from the archive of the Network
+for the Detection of Atmospheric Composition Change (NDACC) \citep{demaziere2018}. Density
+decides the choice, not temperature, because density sets how the capsule slows. Between 30 and
+\qty{70}{\km}, the density of NRLMSIS~2.1 differs from the SABER profiles by \qty{0.6}{\percent}
+and from the lidar profiles by \qty{1.6}{\percent}. For NRLMSISE-00 the figures are
+\qty{3.7}{\percent} and \qty{5.0}{\percent}. All four are root mean square values over eight
+\qty{5}{\km} bands. By band, NRLMSISE-00 is warmer than the measurements by \qtyrange{0.6}{9.5}{\kelvin}
+(root mean square 4.4 and \qty{5.1}{\kelvin}) and NRLMSIS~2.1 by \qtyrange{0.2}{5.3}{\kelvin}.
+NRLMSIS~2.1 has the lower density difference in every cut of the profiles: by latitude, by
+local solar time and with each lidar night left out.
+
+These measurements are only partly independent of the models, and four cautions apply. First,
+the selection rule was written after both landing results were known. Second, NRLMSIS~2.0, on
+which NRLMSIS~2.1 builds, was fitted to SABER temperatures from 2002 to 2016
+\citep{emmert2021}. Third, the lidar density is scaled to an ancillary profile that its file
+names as MERRA-2 \citep{gelaro2017}. MERRA-2 is in the NRLMSIS~2.0 fit up to \qty{55}{\km}. The
+level of the lidar density is therefore not independent of that fit, but its change with height
+is. Fourth, the producer marks the SABER files ``Unvalidated''.
 
 \begin{table}[htbp]
 \centering\small
@@ -714,64 +803,118 @@ the modelled landing with the point the recovery team measured \citep{francis202
 \toprule
 $C_A$ & $\beta$ (\unit{\kg\per\m\squared}) & Landing & Miss (\unit{\km}) & To ground (\unit{\s}) & Peak (g) \\
 \midrule
-1.48 & 64.8 & \ang{40.3609}\,N, \ang{113.3176}\,W & 6.7 & 524 & 30.8 \\
-1.52 & 63.1 & \ang{40.3532}\,N, \ang{113.3491}\,W & \textbf{9.5} & 530 & 31.0 \\
-1.56 & 61.5 & \ang{40.3456}\,N, \ang{113.3797}\,W & 12.2 & 535 & 31.2 \\
+1.48 & 64.8 & \ang{40.3687}\,N, \ang{113.2861}\,W & 3.9 & 525 & 31.9 \\
+1.52 & 63.1 & \ang{40.3612}\,N, \ang{113.3169}\,W & \textbf{6.6} & 531 & 32.0 \\
+1.56 & 61.5 & \ang{40.3539}\,N, \ang{113.3468}\,W & 9.3 & 536 & 32.2 \\
 \bottomrule
 \end{tabular}
-\par\smallskip\footnotesize Peak: the largest deceleration on the way down.
+\par\smallskip\footnotesize Peak: the largest deceleration on the way down. Modelled with
+NRLMSIS~2.1 driven by daily space weather indices.
 \end{table}
 
-The middle coefficient passes the plan's \qty{10}{\km} with little room, and the
-published range of $C_A$ spans 6.7 to \qty{12.2}{\km}. Every case lands short of the
-measured point. The mission team's own simulation from the same state, with its
-pre-flight atmosphere and winds, missed by \qty{8.9}{\km} \citep{francis2024}. A miss of
-this size is therefore expected from any model that does not know the day's upper
-atmosphere. The modelled time to the ground, \qty{530}{\s}, is not comparable with the
-observed \qty{615}{\s}, because the model has no parachutes. A seeded Monte Carlo of 200
-runs gives a \qty{99}{\percent} ellipse of \qty{51.4}{\km} by \qty{21.4}{\km} that holds
-the measured point.
+At the nominal drag coefficient ($C_A = 1.52$), the landing point misses by \qty{6.6}{\km}.
+Over the published $C_A$ range, the miss spans 3.9 to \qty{9.3}{\km}. The plan's acceptance
+limit of \qty{10}{\km} is therefore \textbf{met} across the entire drag range. Under the simplified
+1976 U.S. Standard Atmosphere \citep{ussa1976}, the nominal miss is \qty{9.5}{\km}
+(\qtyrange{6.7}{12.2}{\km}). Under older NRLMSISE-00, the miss increases to \qty{12.1}{\km}
+(\qtyrange{9.4}{14.8}{\km}), failing the 10-kilometre limit. The mission team's pre-flight
+simulation from the identical entry state missed by \qty{8.9}{\km}
+\citep{francis2024}. Their day-of-entry reconstruction using local weather balloons reached
+\qty{3.5}{\km}. A seeded Monte Carlo of 200 runs with NRLMSIS~2.1 yields a 99 percent dispersion
+ellipse of \qty{51.1}{\km} by \qty{21.5}{\km} that holds the measured landing point.
 
 \subsection{Launch weather against station observations}
 
-No public station measures the wind at the rule's \qty{162}{ft}. The check was therefore
-made at \qty{10}{\m} at the Cape Canaveral Skid Strip (station KXMR). The limit of
-\qty{30}{mph} at \qty{49}{\m} becomes \qty{23.5}{mph} at \qty{10}{\m} on a neutral
-logarithmic profile with a roughness length of \qty{0.03}{\m}. One GEFS run per day in
-2025, with 31 members, gave the share of members above the limit 24 and 48 hours ahead.
-The outcome was the station's sustained wind in the report nearest that time. The
-reference forecast was the station's own month-by-hour frequency over 2015 to 2024. The
-Brier skill score compares the two: a positive value means the ensemble beats the
-climatology.
+No public meteorological tower reports winds at the rule's \qty{162}{ft} level.
+Verification was therefore performed at \qty{10}{\m} elevation at Cape Canaveral Space Force
+Station (KXMR) and Vandenberg Space Force Base (KVBG). The rule's limit of \qty{30}{mph} at
+\qty{49}{\m} translates to \qty{23.5}{mph} (\qty{10.52}{\m\per\s}) at \qty{10}{\m} using a
+neutral logarithmic wind profile.
+
+Multi-year verification was conducted using the NOAA GEFSv12 reforecast archive over
+2000 to 2019 (\num{1583} days evaluated). At Vandenberg, the ensemble demonstrates positive skill:
+with 75 threshold exceedance events at \qty{24}{\hour} lead time, the Brier skill score is
+0.30 (95\,\% confidence interval 0.16 to 0.41), and the continuous ranked probability score
+(CRPS) skill is 0.33 (\cref{tab:brier}). At \qty{48}{\hour} lead time, with 74 events, the Brier
+skill is 0.24 (0.09 to 0.38). However, Vandenberg does not pass the acceptance gate on reliability.
+The bin for a forecast share of 1.0 (all five runs over the limit) holds 41 cases across both
+leads. The wind was above the limit in 36 of them (88\,\%, 95\,\% confidence interval 75 to 95\,\%).
+This discrepancy of 0.12 against the forecast share exceeds the 0.10 tolerance allowed. At Cape
+Canaveral, only one event occurred at \qty{24}{\hour} and three at \qty{48}{\hour} across
+\num{1459} evaluated runs. This is fewer than the 10 events required for a reliable Brier skill
+calculation. The runs' wind is worse than the station's own record: the CRPS skill is negative
+($-0.97$), and the runs average \qty{5.28}{\m\per\s} against the station's \qty{3.11}{\m\per\s}.
+The likely reason is that the 0.25-degree cell at the Cape is partly sea, where the wind is
+stronger than at a station inland. Because neither pad passes the acceptance gate, launch weather
+probability shares remain marked as not checked against observations at both sites.
 
 \begin{table}[htbp]
 \centering\small
-\caption{GEFS wind shares against KXMR observations, 2025.}
+\caption{GEFSv12 reforecast 10-meter wind verification against station observations.}
 \label{tab:brier}
-\begin{tabular}{@{}rrrrrr@{}}
+\setlength{\tabcolsep}{4.5pt}
+\begin{tabular}{@{}llrrrrc@{}}
 \toprule
-Lead & Cases & Events & Brier, GEFS & Brier, climatology & Brier skill \\
+Station & Lead & Cases & Events & Brier skill (95\,\% CI) & CRPS skill & Passed gate \\
 \midrule
-\qty{24}{\hour} & 343 & 1 & 0.0040 & 0.0029 & $-0.41$ \\
-\qty{48}{\hour} & 339 & 0 & 0.0014 & 0.00003 & $-41.6$ \\
+Vandenberg (KVBG) & \qty{24}{\hour} & \num{1080} & 75 & 0.30 (0.16 to 0.41) & 0.33 & no (reliability) \\
+Vandenberg (KVBG) & \qty{48}{\hour} & \num{1082} & 74 & 0.24 (0.09 to 0.38) & 0.33 & no (reliability) \\
+Cape Canaveral (KXMR) & \qty{24}{\hour} & \num{1459} & 1 & insufficient events & $-0.97$ & no (bias) \\
+Cape Canaveral (KXMR) & \qty{48}{\hour} & \num{1482} & 3 & insufficient events & $-0.99$ & no (bias) \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The plan's gate was a Brier skill of at least 0.1 at every lead up to 48 hours. The
-ensemble fails it at both leads (\cref{tab:brier}), so every wind share on screen says
-\emph{not checked against observations}. The event is rare. In 2025 the station
-reported more than \qty{23.5}{mph} in 12 of \num{8247} routine reports
-(\qty{0.15}{\percent}), against \qty{0.36}{\percent} over 2015 to 2024. Only one such
-report fell at a verified time. The ensemble gave shares above zero on days without an
-event, once \qty{94}{\percent}, which a near-zero climatology does not pay for. Only the
-lowest reliability bin holds 30 cases or more (669 cases, mean share 0.002, observed
-frequency 0). One year cannot verify a limit that is reached this rarely.
+Operational single-model forecasts from the High-Resolution Rapid Refresh (HRRR) were
+evaluated across \num{1826} runs from 2021 to 2025 at leads of 1, 6, 12, and \qty{18}{\hour}.
+HRRR achieves a mean absolute error of 1.0 to \qty{1.4}{\m\per\s} and a bias of 0.0 to
+\qty{0.6}{\m\per\s}. This is 15 to \qty{42}{\percent} closer to observed winds than climatology.
+At \qty{1}{\hour} lead at Vandenberg, HRRR achieves a CRPS skill of 0.19 (0.14 to 0.22) and a
+Brier skill of 0.16 (0.01 to 0.32). Over all four leads combined, the over/under Brier skill
+is 0.06 at Vandenberg and $-0.32$ at Cape Canaveral.
+
+\subsection{Lunar orbiters and rover line of sight}
+
+Geometric passes for real lunar orbiters (LRO, Danuri, Chandrayaan-2, and CAPSTONE) were
+validated against JPL Horizons observer ephemerides across landing sites at IM-2, IM-1, and
+Blue Ghost~1 (\cref{tab:orbiters}). Azimuth and elevation agree within \qty{0.0010}{\degree}
+(plan tolerance \qty{0.02}{\degree}). Rise and set times over a spherical horizon agree within
+\qty{0.003}{\s} (plan tolerance \qty{2.0}{\s}). Checking LRO line-of-sight vectors against
+NAIF's definitive reconstruction kernel (\texttt{lrorg\_2025074\_2025166}) gives a maximum angular
+separation of \qty{0.00018}{\degree} while above the horizon (plan tolerance \qty{0.01}{\degree}).
+
+\begin{table}[htbp]
+\centering\small
+\caption{Lunar orbiter visibility checks against JPL Horizons and NAIF reconstruction.}
+\label{tab:orbiters}
+\begin{tabular}{@{}llrrrr@{}}
+\toprule
+Site & Orbiter & Up (\unit{\minute}) & Max angle & Max $\Delta\text{el}$ & Max edge $\Delta t$ \\
+\midrule
+IM-2 & LRO & 82 & \qty{0.0002}{\degree} & \qty{0.0002}{\degree} & \qty{1.6}{\ms} \\
+IM-2 & Danuri & 57 & \qty{0.0004}{\degree} & \qty{0.0003}{\degree} & \qty{1.8}{\ms} \\
+IM-2 & Chandrayaan-2 & 84 & \qty{0.0002}{\degree} & \qty{0.0002}{\degree} & \qty{2.0}{\ms} \\
+IM-2 & CAPSTONE & 766 & $<$\qty{0.0001}{\degree} & $<$\qty{0.0001}{\degree} & no edges \\
+Blue Ghost 1 & LRO & 64 & \qty{0.0010}{\degree} & \qty{0.0006}{\degree} & \qty{3.1}{\ms} \\
+IM-2 & NAIF LRO kernel & 71 & \qty{0.00018}{\degree} & \qty{0.00017}{\degree} & not applicable \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Rover-to-lander line of sight was evaluated on the 20-meter LOLA digital elevation model
+for IM-2 (Yaoki rover) and Griffin-1 (FLIP rover). Ray traces were sampled every 5 degrees
+in azimuth out to radii of 500 and \qty{2000}{\m} (\num{1440} cells per test). The running
+maximum elevation algorithm was compared with an independent brute-force line test sampled
+every meter. Outside the elevation model's vertical uncertainty band, agreement is
+\qty{100.00}{\percent} at both sites (plan tolerance \qty{99}{\percent}). Within \qty{500}{\m},
+the \qty{2}{\m} vertical DEM error creates an angular uncertainty wider than the antenna
+elevation angle, causing \num{1219} of \num{1440} cells to be reported as uncertain. The
+planner correctly serves this as a wide probability range rather than an unsubstantiated certainty.
 
 \subsection{Response times and the compute queue}
 \label{sec:perf}
 
-\Cref{tab:perf} gives response times through the API at commit \texttt{f1d5667}, with the
+\Cref{tab:perf} gives response times through the API at commit \texttt{9d1d5b1}, with the
 compute and feeds workers stopped. The run followed three readings of the one-minute load
 average below 2, taken \qty{20}{\s} apart. A \emph{cold} surface request asks for a window
 that no earlier request has asked for. It counts only if the response reports a cache
@@ -827,48 +970,53 @@ answer stored. It received 101 answers and the same 37 refusals, at a median of
 
 \subsection{Tests and accessibility}
 
-On the backend at \texttt{f1d5667}, the linter, strict static type checking of 246 source
-files and all ten import contracts pass. The full suite of 675 tests passes against its
-own database in \qty{364}{\s}. Of these, 475 need no service and run in \qty{9.7}{\s},
-inside the plan's \qty{20}{\s}. Another 179 need PostgreSQL. The 38 golden tests among
-them pin results to committed fixtures or to the flown missions.
+On the backend at commit \texttt{9d1d5b1}, the code linter, strict static type checking of
+281 source files and all ten architectural import contracts pass without warnings. The full
+test suite collects 836 tests. A total of 619 fast unit tests run without external service
+dependencies in \qty{18}{\s}. Another 181 integration tests execute against PostgreSQL. The 42
+golden tests among them pin model behaviors to committed fixtures and flown trajectories.
 
-On the frontend at the same commit, the type check passes, and 236 unit and component
-tests pass. All 47 browser tests pass in Chromium in \qty{4.0}{\minute} against the running
-API. Nineteen of them run on recorded contract fixtures, which pin the answers the API
-documents, and seven read the live API. Four browser tests run the axe accessibility checker against levels A and AA of the Web
-Content Accessibility Guidelines (WCAG)~2.1. A test fails on any violation that axe rates
-serious or critical. The four cover 26 routes in the dark and the light theme, 14 pages
-with every closed row open and the Settings sheet. On a 375-pixel phone they cover 14
-routes and six pages with every row open. None
-reported a violation.
+On the frontend, static type checks pass, and 281 unit and component tests pass across 24 test
+files in Vitest. All 60 browser end-to-end tests pass in Chromium in \qty{4.9}{\minute} against
+the running API. Twenty-four of them validate against recorded contract fixtures, and 13 test
+live API responses. Four automated browser tests execute the axe accessibility engine against
+levels A and AA of the Web Content Accessibility Guidelines (WCAG)~2.1. Across 26 desktop
+routes, 14 expanded view pages, the settings dialog, and 14 mobile viewport routes, zero
+serious or critical accessibility violations were detected.
 
 % ---------------------------------------------------------------------------
 \section{Limitations}
 \label{sec:limits}
 
-\paragraph{Acceptance tolerances not met.} \Cref{tab:gates} lists every planned tolerance
-with its measured value. Four results fall outside the plan. A held-out launch design
-misses by \qty{15.8}{\minute} and \qty{17.5}{\minute} against a planned
-\qty{10}{\minute}, because the climb direction of a future flight is not published. IM-2's
-cruise propagation misses by \qty{4.61}{\km} against \qty{1}{\km}, because its
-reconstruction contains an acceleration of unpublished origin. The weather ensemble has
-negative Brier skill at both leads, so no wind share is marked as checked. IM-2's belt
-protons differ by \qty{40.5}{\percent} between two implementations of AP8, against a
-planned \qty{5}{\percent}. The capsule check passes at the middle drag coefficient.
-Over the published drag range the miss moves from 6.7 to \qty{12.2}{\km}, partly outside
-the limit.
+\paragraph{Acceptance tolerances not met.} \Cref{tab:gates} lists planned acceptance
+tolerances alongside measured results. Four items fall outside the plan. First, designing a
+launch instant with an assumed climb azimuth from another flight misses by \qty{15.8}{\minute}
+and \qty{17.5}{\minute} against the planned \qty{10}{\minute} tolerance, because launch vehicle
+ascent profiles are proprietary. Second, the model alone misses IM-2's reconstructed cruise by
+\qty{4.40}{\km} after 24 hours, against the planned \qty{1}{\km}. The miss would be \qty{1.65}{\km}
+if the two velocity changes of \qty{0.060}{\m\per\s} and \qty{0.133}{\m\per\s} (small burns or
+venting) had been known in advance. Third, the weather ensemble fails the acceptance gate at
+both launch ranges. Cape Canaveral exhibits negative CRPS skill ($-0.97$) and has insufficient
+events for Brier skill. Vandenberg achieves the required Brier skill (0.30 and 0.24) but fails
+the reliability threshold (0.12 discrepancy against the 0.10 limit in the share-of-1.0 bin).
+Fourth, IM-2 belt protons differ by \qty{40.5}{\percent} between IRBEM and SPDF due to
+magnetic field model epochs (agreeing to \qty{0.0}{\percent} on identical coordinates).
+Capsule entry with NRLMSIS~2.1 meets the \qty{10}{\km} plan limit (landing within \qty{6.6}{\km},
+range 3.9 to \qty{9.3}{\km}), but a rule written after both landing results were known chose that
+air model. NRLMSISE-00 missed by \qty{12.1}{\km}, with a density above the measured density at
+30 to \qty{70}{\km}.
 
 \begin{table}[htbp]
 \centering\small
 \caption{Planned acceptance tolerances and the measured values.}
 \label{tab:gates}
-\begin{tabularx}{\textwidth}{@{}Yllc@{}}
+\begin{tabularx}{\textwidth}{@{}p{0.33\textwidth}lYc@{}}
 \toprule
 Check & Plan & Measured & Met \\
 \midrule
-Propagation of reconstructions, \qty{24}{\hour} & \qty{1}{\km} & 0.11--\qty{0.51}{\km}; IM-2 cruise \qty{4.61}{\km} & partly \\
+Propagation of reconstructions, \qty{24}{\hour} & \qty{1}{\km} & 0.11--\qty{0.51}{\km}; IM-2 cruise \qty{4.40}{\km} & partly \\
 Propagation of reconstructions, \qty{72}{\hour} & \qty{5}{\km} & 1.08, \qty{1.46}{\km} & yes \\
+Lunar orbit gravity field per pass & \qty{0.05}{\m\per\s} & \qty{16}{\mm\per\s} (degree 50); degree 0 leaves 0.5--\qty{1.6}{\m\per\s} & yes \\
 LRO in lunar orbit, \qty{24}{\hour} & \qty{1}{\km} & 0.03, \qty{0.05}{\km} & yes \\
 Forward and backward run, \qty{24}{\hour} & \qty{1}{\m} & \qty{5.8}{\mm} & yes \\
 Shadow edges against SPICE & \qty{1}{\s} & \qty{0.10}{\s} & yes \\
@@ -877,26 +1025,28 @@ Liftoff designed at the flown azimuth & 2 or \qty{5}{\minute} & 0.0 to \qty{0.6}
 Liftoff designed at the other flight's azimuth & \qty{10}{\minute} & 15.8, \qty{17.5}{\minute} & no \\
 Loop replay: apsis time, radius & \qty{1}{\hour}, \qty{1}{\percent} & \qty{2.9}{\minute}, \qty{0.027}{\percent} & yes \\
 Loop design: flown loop count and date & both & 3 loops; period holds the date & yes \\
-Correction budget, linear against runs & \qty{10}{\percent} & \qty{7}{\percent} & yes \\
+Correction budget, linear against runs & \qty{10}{\percent} & \qty{7.1}{\percent} (published injection accuracy) & yes \\
 Belt fluence, two AE8/AP8 codes & \qty{5}{\percent} & electrons \qty{5.0}{\percent}; IM-2 protons \qty{40.5}{\percent} & partly \\
 Cosmic-ray dose against CRaTER & \qty{30}{\percent} & \qty{-26}{\percent}, \qty{-15}{\percent} & yes \\
 Solar event peaks against NOAA & \qty{10}{\percent} & \qty{5.5}{\percent}, \qty{0.0}{\percent} & yes \\
-Wind shares, Brier skill & $\geq 0.1$ & $-0.41$, $-41.6$ & no \\
-Capsule landing & \qty{10}{\km} & \qty{9.5}{\km} (6.7--\qty{12.2}{\km}) & partly \\
+Wind shares, multi-year gate & Brier $\geq 0.1$, rel $\leq 0.1$ & KVBG fails rel (0.12); KXMR negative CRPS ($-0.97$) & no \\
+Capsule landing & \qty{10}{\km} & \qty{6.6}{\km} (NRLMSIS~2.1, range 3.9--\qty{9.3}{\km}; NRLMSISE-00 \qty{12.1}{\km}) & yes \\
+Lunar orbiters against Horizons & \qty{0.02}{\degree}, \qty{2.0}{\s} & \qty{0.0010}{\degree}, \qty{0.003}{\s} (NAIF check \qty{0.00018}{\degree}) & yes \\
+Rover line of sight & \qty{99}{\percent} & \qty{100.00}{\percent} outside uncertain band & yes \\
 GMAT and SPENVIS comparisons & run & not run & no \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-\paragraph{Parts of the plan not built.} Planned relay satellites have no published orbit
-phase, so time in contact through a relay is not computed. The answer says so and gives
-the direct figure. No lander publishes its transmitter power or data rate, so no link
-budget is computed, and contact means line of sight only. Line of sight between a rover
-and its lander is not computed. No CLPS mission returns anything to Earth, and no planned
-one publishes an entry state. The Moon-to-Earth return trajectory and the weather at a
-capsule's landing zone are therefore not built. The European ensembles are not recorded, since only
-whole-globe fields are offered. NASA's GEOS-FP forecasts and the NAVAREA~IV hazard
-warnings could not be reached from the measurement network.
+\paragraph{Parts of the plan not built.} Commercial lander operators do not publish transmitter
+power, receiver sensitivity, or antenna gains. Communications modeling therefore evaluates
+geometric line of sight rather than RF link budgets. No CLPS mission currently returns
+payloads from the lunar surface to Earth, and planned missions publish no Earth-return
+trajectory or atmospheric entry state. The Moon-to-Earth return trajectory and capsule
+recovery site weather are therefore not built. European meteorological ensemble forecasts
+(ECMWF) are not archived because open data access provides only global grids rather than point
+extractions. NASA GEOS-FP forecasts and NAVAREA~IV maritime hazard broadcasts could not be
+accessed from the automated feeds worker.
 
 \paragraph{Validity of the references.} GMAT and SPENVIS, the plan's references, were
 not run. Closed-form tests replace GMAT: two-body motion against Kepler's equation, the
@@ -918,16 +1068,19 @@ tested the screens.
 \section{Conclusion}
 \label{sec:conclusion}
 
-POLAR WINDOW now follows a CLPS delivery through six sections, from readiness on the
-ground to the return of the booster. Every number it serves states where it came from
-and how uncertain it is, or why no margin can be given. It also states the age of its live inputs. No
-section returns a verdict or a combined score. The engines were checked against the public record of the flown missions. The references were NASA's reconstructions of four CLPS trips, the flown liftoffs and NOAA's solar event list. CRaTER's measured dose and the landing point of the OSIRIS-REx capsule completed the set. Most checks meet the plan's tolerances. Four do not, and each is stated
-beside its measured value. They are the held-out launch design, IM-2's cruise, the weather
-ensemble's skill and the belt protons on IM-2's short passage. The planned relays, link
-budgets, rover line of sight and the Moon-to-Earth return remain unbuilt because their
-inputs are not public. The product is a screening and comparison tool. Its designed values
-are labelled as such and are meant to be confirmed in specialist tools before a mission
-team commits to them.
+POLAR WINDOW follows a CLPS delivery across six operational sections, from ground readiness
+to post-flight recovery. Every computed number provides provenance, freshness, and explicit
+uncertain bounds or missing reasons. The system produces no arbitrary go/no-go verdicts or
+composite scores. Physical models were validated against the public record of flown missions,
+including NASA reconstructions of four CLPS trajectories, published liftoffs, and satellite
+observations. Most acceptance checks satisfy the planned tolerances. Four measured results fall
+outside the plan: the liftoff designed at another flight's azimuth, the IM-2 cruise position
+error, the wind check at both launch pads and the IM-2 belt protons. The GMAT and SPENVIS
+comparisons were not run. The capsule entry model meets its tolerance. Planned relays, lunar
+orbiters, and rover line of sight provide transparent communication visibility. RF link budgets
+and the Moon-to-Earth return trajectory remain unbuilt because required engineering parameters
+are not public. The system serves as a screening and comparison tool, designed to help mission
+teams evaluate trade-offs before committing to specialized analysis pipelines.
 
 \bibliographystyle{unsrtnat}
 \bibliography{ref}
@@ -954,9 +1107,11 @@ Result & Command \\
 \Cref{fig:loops} & \texttt{make validate-trip}, drawn by the report's \texttt{make\_fig\_loops.py} \\
 Shadow edges against SPICE & \texttt{test\_eclipse\_vs\_spice.py}, printed by the report's
 \texttt{eclipse\_check.py} \\
-\Cref{tab:brier} & \texttt{make hindcast-weather} (cached GEFS runs and KXMR reports) \\
+\Cref{tab:brier} and multi-year checks & \texttt{make hindcast-reforecast}, \texttt{make hindcast-hrrr} \\
 \Cref{tab:belts} and the cosmic-ray and event checks & \texttt{make validate-radiation} \\
 \Cref{tab:capsule} and the footprint & \texttt{make validate-capsule} \\
+\Cref{tab:orbiters} & \texttt{make validate-orbiters} \\
+Rover line of sight & \texttt{make validate-viewshed} \\
 \Cref{tab:sites}, \cref{fig:sky} & the report's \texttt{export\_data.py} and
 \texttt{make\_figure.py} \\
 Landing hindcast & \texttt{test\_hindcast.py}; the report's \texttt{hindcast\_surface.py} \\
@@ -964,7 +1119,7 @@ Landing hindcast & \texttt{test\_hindcast.py}; the report's \texttt{hindcast\_su
 The compute queue & \texttt{make load-compute} \\
 \Cref{fig:screens} & \texttt{frontend/scripts/screens.ts} in a clean checkout, run by the
 report's \texttt{screens.sh} and cropped by \texttt{make\_fig\_screens.py} \\
-Test counts & \texttt{make lint}, \texttt{make test}, \texttt{npx vitest run},
+Test counts & \texttt{make lint}, \texttt{make test-fast}, \texttt{npx vitest run},
 \texttt{npx playwright test} \\
 \bottomrule
 \end{tabularx}
