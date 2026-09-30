@@ -1,53 +1,18 @@
 # POLAR WINDOW — System Design
 
-Status: accepted for the hackathon build (M1–M8); **extended 2026-09-23 for the
-CLPS-first scope (contract v2, §10)**.
-Author: backend/architecture pass, 2026-09-18; CLPS pass, 2026-09-23.
-Scope: everything behind `frontend/`. The frontend's visual design is fixed and
-out of scope; its *data source* is what changes.
+Architecture, domain models, compute core, service boundaries, and lifecycle engines for POLAR WINDOW.
 
 ---
 
-## 0. What already exists, and what that constrains
+## 0. Architecture Principles and Constraints
 
-`frontend/` is a complete, working React 19 + Vite + Tailwind v4 application with
-its own TypeScript geometry engine in `frontend/src/lib/geometry/`. It already:
+The system couples a React frontend with a FastAPI backend backed by PostgreSQL, Redis, SPICE ephemerides, and LOLA lunar elevation data.
 
-- ray-casts a 360-bearing horizon mask against a **synthetic** height field,
-- projects Sun/Earth sub-points into a local ENU frame with a **mean-element**
-  analytic ephemeris,
-- refines every skyline crossing by bisection and attaches a timing tolerance,
-- derives the four key numbers and the compound (no-Sun ∧ no-link) events,
-- runs the whole thing in a Web Worker and streams per-site results to a
-  zustand store.
+Key constraints that shape this architecture:
 
-That is not a mockup to be replaced. It is a **reference implementation of the
-contract**, and it tells us three things that shape this design:
-
-1. **The DTO shape is already decided.** `SiteMetrics`, `BodyResult`, `Arc`,
-   `TrackSample`, `HorizonMask` in `frontend/src/lib/types.ts` are what the
-   components consume. The backend's response schemas mirror them 1:1 (snake_case
-   on the wire, camelCase after a thin adapter). Any other choice means rewriting
-   components, which the brief forbids.
-2. **Only two functions are actually wrong.** `terrain.heightAt()` (synthetic,
-   should be LOLA) and `ephemeris.subSolarPoint/subEarthPoint()` (mean-element,
-   should be SPICE). Everything downstream of them — mask, track, arcs, metrics —
-   is correct in structure. The Python `core/` is a port of that structure with
-   the two inputs made real, which also gives us a free cross-check: the two
-   implementations must agree on synthetic inputs.
-3. **The client already has a compute-progress state machine**
-   (`idle|running|ready|error`, `done/total`, per-site streaming). Replacing a
-   Worker with HTTP must preserve that, or the loading UI degrades. This drives
-   the per-site-parallel fetch design in §6 rather than one fat `/compare` call.
-
-### The invariant that outranks the others
-
-`conventions.md` invariant 1: *no hardcoded metric; every number on screen is derived*.
-The backend inherits it as: **no endpoint returns a number it did not compute
-from an ephemeris and a height field, and every response states which ones those
-were.** That is why `meta.uncertainty` is mandatory rather than decorative, and
-why the agent layer's grounding guard (§8) is the highest-risk component in the
-system.
+1. **DTO alignment.** The backend response schemas mirror the data structures consumed by frontend views (`SiteMetrics`, `BodyResult`, `Arc`, `TrackSample`, `HorizonMask`). Responses use `snake_case` on the wire, converted to `camelCase` by the client adapter.
+2. **Derived metrics invariant.** As stated in `docs/conventions.md` invariant 1, no endpoint returns a hardcoded metric. Every value is derived from physics models, ephemerides, and elevation data. Responses explicitly state inputs and uncertainties in a mandatory `meta` envelope.
+3. **Compute progress streaming.** The frontend streams per-site metrics and manages asynchronous job lifecycles. The backend provides predictable single-flight execution and cache semantics for parallel queries.
 
 ---
 
@@ -77,13 +42,11 @@ system.
 | N3 | Cold start **< 20 s** including kernel furnsh | Judges restart things. de440 is ~114 MB; it must be baked into the image layer, not downloaded at boot. |
 | N4 | Agent p95 **< 20 s**, hard timeout 20 s, 1 retry, then deterministic fallback | A demo that hangs on an LLM call is a failed demo. The fallback is non-negotiable. |
 | N5 | Correctness: golden fixtures stable to **±0.05° elevation, ±0.02 h arc edges** | Tighter than the DEM's own contribution (±2 m at 1.4 km ⇒ ±0.08°), so the test catches refactor drift without failing on float noise. |
-| N6 | Availability: single-node, no HA | It is a hackathon. Documented explicitly so nobody mistakes it for a production posture. |
+| N6 | Availability: single-node, no HA | Single-node demo posture. Documented explicitly so nobody mistakes it for a high-availability production deployment. |
 
 ### Constraints
 
-- ~One engineer, a hackathon time budget. Every "proper" choice that costs a day
-  and buys robustness nobody will observe is the wrong choice; this is stated
-  once here and then applied consistently in the ADRs.
+- Design choices prioritize determinism, verifiable provenance, and reproducible evaluation.
 - SPICE (CSPICE via spiceypy) is **not thread-safe** and holds **process-global**
   kernel state after `furnsh`. This is the single hardest constraint in the
   backend and it shapes §4.
@@ -205,25 +168,6 @@ in the adapter, once.
 │ compute_ms        float                            │
 └────────────────────────────────────────────────────┘
    UNIQUE (site_id, engine_version, azimuth_count)
-
-NOT BUILT — superseded by the on-demand calendar (§10.6, ADR-1 amendment 2026-09-23).
-┌────────────────────────────────────────────────────┐
-│ visibility_tables    — the COARSE precomputed layer│
-├────────────────────────────────────────────────────┤
-│ id            uuid PK                              │
-│ site_id       text FK                              │
-│ body          text   'sun' | 'earth'               │
-│ engine_version text                                │
-│ mask_id       uuid FK → horizon_masks              │
-│ epoch_start   timestamptz    covers the demo year  │
-│ epoch_end     timestamptz                          │
-│ step_s        int            3600 (1 h)            │
-│ az_deg        bytea  float32[n]                    │
-│ el_deg        bytea  float32[n]                    │
-│ margin_deg    bytea  float32[n]   el − mask(az)    │
-│ computed_at   timestamptz                          │
-└────────────────────────────────────────────────────┘
-   UNIQUE (site_id, body, engine_version, step_s, epoch_start)
 
 ┌────────────────────────────────────────────────────┐
 │ site_window_metrics  — memoised four-numbers       │
@@ -413,129 +357,12 @@ computed the field carries the reason (`"grazing": true` with
 `"edge_timing_s": null`), because invariant 2 says show the word, not a fake
 precision.
 
-### 5.2 Endpoints
+### 5.2 Endpoints and Contracts
 
-#### `GET /api/v1/sites`
-Query: `q` (name/region substring), `region`, `lat_min`, `lat_max`,
-`min_sun_fraction`, `max_longest_dark_s`, `limit`, `offset`.
-The metric filters are served from `site_window_metrics` against the **default
-reference window** and say so in `meta`; they are a coarse pre-filter, not an
-answer.
+Detailed request/response schemas, parameter options, and payload examples are documented in dedicated reference files:
 
-```jsonc
-{ "items": [ { "id","code","name","lat_deg","lon_deg","elev_m","note",
-               "region","source","source_url",
-               "summary": { "sun_fraction_up","longest_dark_s",
-                            "earth_fraction_up","longest_blackout_s",
-                            "reference_window": {"start","end"} } | null } ],
-  "total": 18, "meta": {...} }
-```
-`summary` is `null` — not zeroed — when the site has not been precomputed. The
-UI's uncertain state exists for exactly this.
-
-#### `GET /api/v1/sites/{id}`
-Adds `horizon` (`max_el_deg`, `max_el_bearing_deg`, `mean_el_deg`,
-`coverage`, `dem_product`) and the full `provenance` block.
-
-#### `GET /api/v1/sites/{id}/horizon`
-Query: `step_deg` (0.25 | 0.5 | 1.0, default 1.0 — the frontend draws 360 points).
-```jsonc
-{ "site_id": "...", "azimuth_step_deg": 1.0, "azimuth_count": 360,
-  "el_deg": [ ... ], "range_m": [ ... ], "tol_deg": [ ... ],
-  "max_el_deg": 5.12, "max_el_bearing_deg": 309.0, "meta": {...} }
-```
-Downsampling 1440 → 360 takes the **maximum** over each group of 4, never the
-mean. A skyline is an upper envelope; averaging it invents sky where a ridge is.
-
-#### `GET /api/v1/sites/{id}/timeline`
-Query: `start`, `end`, `step_s` (300…7200, default 900), `bodies` (default both).
-This is the date-slider endpoint and the one N1 is about.
-```jsonc
-{ "site_id": "...", "start": "...", "end": "...", "step_s": 900,
-  "t_s": [ 0, 900, 1800, ... ],          // seconds from `start`, int32
-  "sun":   { "az_deg": [...], "el_deg": [...], "mask_el_deg": [...],
-             "margin_deg": [...], "state": [2,2,1,0,...] },   // 2 lit 1 penumbral 0 dark
-  "earth": { ... },
-  "meta": {...} }
-```
-Parallel arrays, not an array of objects: 2,835 samples × 2 bodies × 5 fields is
-~1.1 MB as objects and ~230 KB as arrays, before compression.
-
-#### `GET /api/v1/sites/{id}/windows`
-Derived intervals. This is what `Arc` becomes.
-```jsonc
-{ "site_id","start","end",
-  "sun":   { "arcs": [ { "up": true, "start","end","duration_s",
-                         "tolerance_s", "grazing": false,
-                         "blocked_by_bearing_deg": null,
-                         "blocked_by_el_deg": null } ],
-             "up_s","down_s","fraction_up",
-             "longest_down_s","longest_down_tolerance_s" },
-  "earth": { ... },
-  "compound": [ { "start","end","duration_s" } ],
-  "worst_compound_s": 41400,
-  "meta": {...} }
-```
-
-#### `GET /api/v1/sites/{id}/metrics`
-The four numbers, and nothing that dilutes them.
-```jsonc
-{ "site_id","start","end",
-  "sunlit_s": 204120, "earth_contact_s": 89280,
-  "longest_dark_s": 230400, "longest_blackout_s": 928800,
-  "sun_fraction_up": 0.80, "earth_fraction_up": 0.35,
-  "worst_compound_s": 41400,
-  "autonomy": { "required_autonomy_s": 49680, "survival_needed_s": 230400,
-                "compound_inside_dark": true },
-  "meta": {...} }
-```
-Deliberately **no composite score.** `conventions.md` forbids it and the reason is
-sound: a score hides which corner was given up, and the trade is the product.
-
-#### `POST /api/v1/compare`
-```jsonc
-// request
-{ "site_ids": ["a","b","c"], "start": "...", "end": "...",
-  "rank_by": "longest_dark", "step_s": 900 }
-// response
-{ "window": {...}, "rank_by": "longest_dark",
-  "items": [ { "site_id","rank","metrics": {...},
-               "delta_vs_best": { "sunlit_s": -12600, ... } } ],
-  "ties": [["d","e"]],          // explicit, because ranking near-equal sites is a lie
-  "meta": {...} }
-```
-Max 8 site_ids. Computed by fanning out to the same service `GET /metrics` uses,
-so `/compare` can never disagree with the per-site endpoint.
-
-#### `GET /api/v1/tiles/{layer}/{z}/{x}/{y}.png`
-`layer ∈ {hillshade, illumination, psr}`. See ADR-4.
-
-#### `POST /api/v1/agents/{explain|advise|brief|ask}`
-Each returns its agent's pydantic contract plus a shared envelope:
-```jsonc
-{ "status": "ok" | "insufficient_data" | "degraded",
-  "reason": "…",                  // required when not ok
-  "result": { ...agent-specific... } | null,
-  "provenance": [ { "claim": "80 % sunlit", "value": 0.80,
-                    "tool": "get_metrics", "call_seq": 1,
-                    "field": "sun_fraction_up" } ],
-  "run_id": "uuid",               // joins to agent_runs for the demo log
-  "meta": {...} }
-```
-`provenance` is not optional and not cosmetic. It is the artifact the grounding
-guard produces, and the demo shows it.
-
-#### `GET /healthz`
-```jsonc
-{ "status": "ok"|"degraded", "kernels": { "loaded": true, "count": 5,
-  "missing": [], "furnsh_ms": 812 }, "db": "ok", "redis": "ok",
-  "dem": { "present": true, "product": "…", "coverage": "partial" },
-  "engine_version": "hz-2/vis-2" }
-```
-Returns **200 when degraded** and 503 only when SPICE is unloaded, because a
-missing DEM still lets every ephemeris endpoint work and the UI has a state for
-partial data. Failing the whole liveness check for a partial capability would
-take the demo down for a condition the UI already handles.
+- Core site and mission endpoints, envelopes, error formats, and rate limits: see [docs/api.md](api.md).
+- Mission lifecycle sections (Ready, Launch, Trip, Contact, Return) and async job ref contracts: see [docs/lifecycle-api.md](lifecycle-api.md).
 
 ### 5.3 Errors
 

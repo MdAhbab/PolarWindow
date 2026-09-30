@@ -121,6 +121,29 @@ the top elevation decile of a stated ring or disc around the anchor, with a
 maximum slope of 12°. The anchor, search region, offset and rule are stored on
 every site and returned by the API.
 
+### Polar lighting and contact results
+
+Fifteen candidate sites, one lunar day from 14 March 2027:
+
+| code | site | lat | sunlight | contact with Earth | longest night | longest time without contact |
+|---|---|---|---|---|---|---|
+| B | Connecting Ridge | 89.44°S | **81 %** | 61 % | **122 h** | 278 h |
+| E | de Gerlache-Kocher massif | 88.44°S | 74 % | 69 % | ≥ 101 h | 221 h |
+| D | de Gerlache rim | 88.66°S | 74 % | 70 % | ≥ 112 h | 213 h |
+| C | Peak near Shackleton | 89.78°S | 73 % | 63 % | **64 h** | 263 h |
+| N | Sverdrup rim | 87.99°S | 70 % | 45 % | 167 h | 387 h |
+| M | Leibnitz Beta plateau | 85.23°S | 59 % | **76 %** | 291 h | 171 h |
+| J | Nobile rim 1 | 84.36°S | 57 % | **82 %** | 304 h | **130 h** |
+| G | Malapert massif | 85.99°S | 56 % | 80 % | ≥ 288 h | 138 h |
+| A | Shackleton rim, east shoulder | 89.30°S | 47 % | 57 % | 206 h | 304 h |
+
+"≥" marks a night the chosen dates cut short, so the real night is longer.
+
+Physical findings:
+- **The power and contact trade is a latitude trade.** Sites within 1.6° of the pole have 61–70 % contact with Earth; sites four to six degrees out achieve higher contact (>76 %) but experience long nights of 300+ hours.
+- **Elevation enables illumination without sunrise.** High ridge sites look down at a depressed horizon, remaining illuminated when the Sun centre is technically below zero elevation.
+- **Contact is driven by lunar libration.** Earth's elevation oscillates through ~13° over a 27-day synodic cycle, creating multiday visibility dropouts regardless of local hills.
+
 ## The mission lifecycle (tracks T1–T4, E, H)
 
 Three kinds of source feed the sections (Ready, Launch, Trip, Contact, Return and

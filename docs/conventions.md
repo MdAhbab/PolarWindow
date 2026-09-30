@@ -13,7 +13,7 @@ make seed          # kernels, terrain, sites, horizon masks. ~10 min, once.
 make dev           # services + api on :8000 + frontend on :5173
 make test          # every backend test: unit, integration, golden
 make test-fe       # frontend units: the adapter, the cache keys, the exports
-make lint          # ruff, mypy --strict, 8 import contracts
+make lint          # ruff, mypy --strict, 10 import contracts
 make test-fast     # unit + property + synthetic golden. No services, < 20 s.
 ```
 
@@ -64,7 +64,7 @@ backend/app/
   services/        policy. Never imports fastapi.
   api/v1/          routes + pydantic schemas only
   agents/          four agents, six tools, the grounding guard
-  workers/         precompute: masks and reference metrics
+  workers/         compute: heavy lifecycle answers; feeds: live data; precompute: offline seed
 
 frontend/src/
   lib/api/         schema.ts (GENERATED), client.ts, adapters.ts, queries.ts
@@ -92,7 +92,7 @@ lookup plus one vectorised `spkpos`. Never move the ray-cast onto a request path
 cache keys. Do not remove it.
 
 **The layering rule is enforced.** `make contracts` runs import-linter over
-eight contracts. `core/` imports no I/O; routes import neither the ORM nor the
+10 contracts. `core/` imports no I/O; routes import neither the ORM nor the
 data layer; services import no FastAPI; `spiceypy` is reachable only through
 `core/spice.py`; agents reach the domain only through `agents/tools.py`.
 

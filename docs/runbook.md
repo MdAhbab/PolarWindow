@@ -198,22 +198,32 @@ that folder with `npm run snapshot` against a running API.
 
 ## 4. Deploying on one host
 
-This is a single-node demo, not a production service. `docker-compose.yml` runs
-Postgres, Redis, the API and a one-shot worker that builds the skylines.
+This is a single-node demo, not a production service. `docker compose up` runs
+the whole backend: Postgres, Redis, a `migrate` step (the database migrations),
+a `data` step (it fetches what `data/` lacks and builds the skylines), the API on
+:8000, the compute worker and the feeds worker. The frontend is not a service:
+`make frontend` serves it on :5173 against this API.
 
 **Before the first start**
 
-- Run `make seed` for the target `data/` folder. It is a bind mount
-  (`./data:/data`), not a named volume, so `docker compose down -v` cannot
-  destroy the 250 MB of kernels and terrain that take ten minutes to fetch.
-- Leave at least 1 GB free there: kernels 130 MB, terrain about 250 MB, tiles up
-  to 150 MB.
-- Set the environment. `.env.example` lists every variable; these matter most:
+- Copy `.env.example` to `.env` (it is optional, and needs Docker Compose 2.24 or
+  newer). Every service reads it, and so do make and `run.py`. The compose file
+  sets only what differs inside a container: the database URL, the Redis URL and
+  the data folder.
+- `data/` is a bind mount (`./data:/data`), not a named volume, so
+  `docker compose down -v` cannot destroy the kernels and terrain that take so
+  long to fetch. Every service writes there, so on Linux it must be writable by
+  uid 10001 (`sudo chown -R 10001 data`).
+- On a new machine the `data` step downloads about 600 MB (the core and
+  lifecycle tiers) before the API and the workers start. On a machine that has
+  the data it is a check. The README says how to copy the data from another
+  machine first. Leave at least 1 GB free: the map tiles built from the terrain
+  add up to 150 MB.
+- Set what matters in `.env`. `.env.example` lists every variable:
 
 | Setting | Value |
 |---|---|
 | `PW_CORS_ORIGINS` | Must include the origin the frontend is served from. The single most common failure (§2.3). |
-| `PW_DATABASE_URL`, `PW_REDIS_URL` | Point at the compose services, not at localhost. |
 | `PW_DEMO_SIGN_IN` | `true` for the judged demo, `false` anywhere real. |
 | `PW_JWT_SECRET` | A long random value if more than one API process serves requests. Blank is fine for one process: sessions then end on restart and the dashboard signs in again by itself. |
 | `PW_GEMINI_API_KEY` | Optional. Without it every agent answers `degraded` from the measurements. |
@@ -222,26 +232,29 @@ Postgres, Redis, the API and a one-shot worker that builds the skylines.
 **Start**
 
 ```bash
-docker compose up -d postgres redis
-docker compose run --rm worker          # builds skylines and reference numbers
-docker compose up -d api                # alembic upgrade head, then uvicorn
+PW_CODE_VERSION=$(git rev-parse --short=12 HEAD) docker compose up -d
+docker compose logs -f data             # the first start: the downloads
 ```
 
-The API container upgrades the schema when it starts. Upgrades add tables,
-columns, indexes and triggers (one corrects stored values) and drop nothing, so
-running them again is safe. The drops are in the downgrades. Then run the checks
-in §1 and §3.
+`PW_CODE_VERSION` is recorded with every answer. The image has no git, so the
+commit is named here. The `migrate` step runs `alembic upgrade head` and exits.
+Upgrades add tables, columns, indexes and triggers (one corrects stored values)
+and drop nothing, so running them again is safe. The drops are in the downgrades.
 
-The compute and feeds workers (§7) are separate processes: `make compute` and
-`make feeds`. Without them, live numbers age past their budgets and the trip,
-contact and launch sections stay "being worked out".
+A failed download does not keep the app from starting. It is in the `data`
+step's log, and `/healthz` reports what is missing. Fix the cause, then run
+`docker compose run --rm data` and `docker compose restart api compute`. To add
+the validation tier, which only checks our numbers:
+`docker compose run --rm data polar-data sync --tier validation`.
+
+When the stack is up, run the checks in §1 and §3.
 
 **What a demo host leaves out, and why**
 
 | Left out | Why |
 |---|---|
 | Staging, canary or blue-green | One node, one demo. There is nowhere to stage to. |
-| Load testing | The slider's budget is checked by one timed assertion in the integration suite, and the compute queue has its own load run (`docs/test-plan.md`). |
+| Load testing | The slider is spot-checked by one loose timed assertion in the integration suite, and the compute queue has its own load run (`docs/test-plan.md`). |
 | Alerting and on-call | `/healthz` is the monitoring. |
 | Rate limits on reads | Reads are public data. Writes and the AI panels are limited per address (§7), and each AI run is bounded at 20 s with one retry. |
 | Real sign-in | Judges get in with one click, so the session has no password. Before anything real, set `PW_DEMO_SIGN_IN=false` and put an identity provider in front of `/auth`. |

@@ -116,8 +116,9 @@ with a `JobRef`; poll `GET /jobs/{id}` and ask again when it is `done`)
 
 Every 200 response from the site and mission endpoints carries `meta`, and
 `meta.uncertainty` is **never absent and never null**. That is a product rule,
-enforced by a parameterised test across every endpoint. The mission sections use
-a wider envelope (`LifecycleMeta` in [lifecycle-api.md](lifecycle-api.md)).
+and a parameterised test enforces it on the timeline, windows and metrics
+answers. The mission sections use a wider envelope (`LifecycleMeta` in
+[lifecycle-api.md](lifecycle-api.md)).
 
 ```jsonc
 "meta": {
