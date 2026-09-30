@@ -1075,6 +1075,16 @@ list tails are left out and named); the tools run inside
 `job_service.read_only()`, so a question never queues a computation. The
 grounding guard also rejects verdict words.
 
+**The guard has a known limit.** A whole number in an answer counts as grounded
+when some tool value matches it within ±0.5 under any of five conversions (none,
+seconds to hours, seconds to days, fraction to per cent, degrees to arcminutes).
+The more numbers the tools return, the likelier a match by coincidence. Making
+the rule stricter would reject honest rounding ("80 %" for 0.7983) and push the
+model toward raw seconds, so it stays. Two things contain it. Tools return
+finished numbers, not sample arrays, and at most 200 per section. And the
+provenance of each claim names the field it matched, so a coincidental match can
+be seen. Revisit the rule if an agent gains a tool that returns a large array.
+
 ### 11.4 Failure modes added
 
 | Failure | What a person sees | Tested in |
@@ -1087,3 +1097,27 @@ grounding guard also rejects verdict words.
 | request body over 64 KB | 413 Payload Too Large | `test_request_limits.py` |
 | rate limit exceeded | 429 Too Many Requests with Retry-After header | `test_request_limits.py` |
 | queue backlog over 200 jobs | 503 Service Unavailable ("Too many answers are being worked out") | `test_jobs.py` |
+
+---
+
+## 12. Security
+
+This is a demo host serving public data. These are the checks that were made,
+and the rules that keep them true.
+
+| Area | State |
+|---|---|
+| SQL | No user input is interpolated into SQL. Raw `text()` statements use bound parameters or fixed strings, and search terms are bound parameters. |
+| File paths | A tile path is built from a layer checked against a fixed tuple and three bounded integers. No user string reaches the file system. |
+| Agent tools | Arguments are validated by pydantic models that forbid extra fields before anything runs. `'; DROP TABLE sites;--` as a site id fails the model and is recorded as a tool error (tested). Every tool is read-only, and an import contract stops any agent module except `tools.py` from importing a service or repository. |
+| Secrets | The model key, the NASA and Earthdata keys and the token-signing secret come from the environment through typed settings (`app/config.py`). A feed snapshot never stores a key in its URL (ADR-8). |
+| Sessions | HS256 JWT. The signature, issuer, expiry and required claims are checked. A token with another algorithm (such as `none`) or another secret is refused (unit tests). The client sends the token only on calls that need it, so reads carry no credential and cause no CORS preflight. It travels in the `Authorization` header, not a cookie, so a cross-site request carries none. |
+| Settings changes | Model lists are checked against the configured models (no free-text names). Clearing the cache deletes only `pw:*` keys, never the whole Redis database. A destructive action needs a second, explicit step in the UI. |
+| Bounds | Window at most 730 days, step 300 to 7,200 s, compare at most 8 sites, agents at most 4 rounds, 8 tool calls and 20 s. Bodies over 64 KB are refused (413). |
+| Container | Runs as a non-root user. |
+
+Reading is public by design. A session is needed for the two things that are
+not reads: the AI panels, which spend model quota, and every change to the
+project. The one-click sign-in (`POST /auth/demo`) is a stated demo decision
+(ADR-7), switched off with `PW_DEMO_SIGN_IN=false`, and not a claim of access
+control. The checks on every write route are in `docs/test-plan.md`.

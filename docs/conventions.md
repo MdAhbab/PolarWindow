@@ -125,7 +125,10 @@ data layer; services import no FastAPI; `spiceypy` is reachable only through
    from the picture.
 6. **Radius 0 on data surfaces**, 2px on controls, pill only on a view switch
    (the Missions map's *South pole · Whole Moon*). Amber and glow mean sunlight
-   and nothing else: primary buttons are ink, never amber.
+   and nothing else: primary buttons are ink, never amber. Cyan means Earth
+   contact and magenta means over the battery limit, also nothing else. Mission
+   pins, statuses and providers are drawn in ink and told apart by shape and
+   text, and a failed landing is not magenta.
 7. **Real elements.** `<button>`, `<a href>`, `<input>` + `<label>`. Never
    `role`/`onClick` on a div. Minimum target 48×48.
 8. **Every animation has a named static fallback** and branches in code, not
@@ -141,6 +144,13 @@ data layer; services import no FastAPI; `spiceypy` is reachable only through
     replaced by the reason there is no number (ADR-8).
 12. **Every probability states its sample** ("12 of 31 model runs") and
     whether it has been checked against observations (ADR-14).
+13. **Every data component has four states**: loading, empty, error and
+    uncertain. Loading looks like loading, never like empty. Empty names the
+    filter that excluded everything and offers one click to relax it (never
+    "No results"). Error is fed straight from the problem detail (`title`,
+    `detail`, `ui.still_works`) and never renders as a loader. Uncertain keeps
+    the number on screen with its margin or reason: uncertain does not mean
+    hidden.
 
 ---
 
@@ -211,6 +221,101 @@ the viewer something untrue about it.
 
 ---
 
+## Accessibility
+
+The standard is WCAG 2.1 AA, in both themes. Each rule below came out of a real
+review. Keep them.
+
+**How it is checked.** `npm run e2e` runs axe (`@axe-core/playwright`, tags
+`wcag2a wcag2aa wcag21a wcag21aa`) on every route in both themes, on the phone
+layout at 375 px, with every closed row open, inside the dialogs and on the
+offline copy. A serious or critical finding fails the run. Axe catches perhaps
+30 % of the problems, so keyboard use and the accessibility tree are still
+checked by hand.
+
+- **Contrast.** Text needs 4.5:1. Graphics, hatches and the focus ring need 3:1.
+  The measured ratios sit in the comments beside each token in
+  `frontend/src/styles/globals.css`. The light theme darkens amber and cyan on
+  purpose: at their dark-theme values they are 1.8:1 on light stock.
+- **Names.** A control is named for its action ("Switch to the light theme") and
+  the explanation goes in a tooltip. A dialog's close button says what it closes
+  ("Close: AI activity log"). The data-source badge is `role="status"` and its
+  label starts with the status (*Saved copy*, *Partial data*, *No data*). A chart
+  is an image whose text alternative carries the numbers. Every page has one
+  `h1`, and section labels are `h2`.
+- **Focus.** A skip link is first in the tab order. The focus ring is never
+  removed: one `:focus-visible` rule, 2 px, in `--color-focus`.
+- **Keyboard.** A wide chart or table scrolls inside a named, focusable region
+  (`ScrollRegion`). Dialogs keep focus inside, close on Escape and give focus
+  back to the opener. The single-key shortcuts are `[` and `]` (the dates by
+  6 h, with Shift by one day), `T` (the table twin) and Space (play). They can
+  be switched off in Settings (WCAG 2.1.4). Alt+S starts and stops Listen.
+- **Reflow.** No page-level horizontal scroll at 320, 375, 720, 1024 or
+  1280 px, or at 1440 px with 200 % zoom.
+- **Times in words.** A timestamp reads "Day 12, 26 March, 09:40 UTC" on screen
+  and in `aria-valuetext`. ISO 8601 appears only in exports.
+- **Detail on request.** A number's label is a button (`aria-expanded`,
+  `aria-controls`) that opens one sentence on what the number means. Closed
+  rows are `<details>` (`Disclosure`). "Too close to call" on Compare is a
+  button that states the reason.
+- **The list is the way in.** Each mission row is named from the data ("IM-2,
+  Intuitive Machines, landed 6 March 2025, 17:30 UTC, Partly successful,
+  carries volatiles, …") and a filter change is announced ("Showing 5 of 20
+  missions"). The map is a summary sentence, and the list carries the
+  interaction.
+- **Settings** change the model order with *Move up* and *Move down* buttons,
+  not drag and drop. Results are announced in a live region and errors use
+  `role="alert"`. Sign-in is one button, *Open the dashboard*, and a failure is
+  announced in words.
+- **The front page** draws its 3D Moon in an `aria-hidden` canvas that carries
+  nothing the text does not: every idea is real text with a drawing beside it.
+  Reduced motion draws one still frame and turns off the scrolling effects and
+  the pointer tilt. With no WebGL the canvas is hidden and the drawings remain.
+  Below 1024 px the Moon sits behind the text and is dimmed to keep the words at
+  full contrast.
+- **Listen** never starts by itself, is `aria-pressed`, and stops on Escape, on
+  a new screen and in a hidden tab. Where speech synthesis is missing it opens
+  the transcript.
+- **The guide** is a named region, not a dialog, so the page stays usable. Its
+  step text is a polite live region, its buttons are 48 px, and Escape closes
+  it. The element a step describes gets a dashed ink outline that is not the
+  focus ring.
+- **Model text is never rendered as HTML.** A component test injects markup to
+  prove it.
+- **Penumbral reuses the uncertain hatch.** The API returns `lit`, `penumbral`
+  or `dark`. Penumbral takes the −45° hatch, so it needs no new colour and no
+  new legend.
+
+**Contrast, measured from the tokens in `globals.css`**
+
+| Pair | Needs | Dark | Light |
+|---|---|---|---|
+| `ink` on `canvas` | 4.5:1 | 16.33 | 15.92 |
+| `ink-2` on `panel` | 4.5:1 | 7.26 | 10.02 |
+| `ink-3` on `inset` | 4.5:1 | 5.39 | 4.74 |
+| `uncertain` on `inset` | 4.5:1 | 5.14 | 4.74 |
+| `sun` on `panel` | 4.5:1 | 8.72 | 6.15 |
+| `earth` on `panel` | 4.5:1 | 9.08 | 7.22 |
+| `alert` on `alert-wash` | 4.5:1 | 6.30 | 5.81 |
+| `on-sun` on `sun-fill` | 4.5:1 | 9.40 | 4.76 |
+| `hatch` on `dark-fill` | 3:1 | 3.23 | 3.53 |
+| `focus` on `canvas` | 3:1 | 13.98 | 6.39 |
+| `sun-fill` on `dark-fill` | 3:1 | 8.56 | **2.70** |
+| `earth-fill` on `dark-fill` | 3:1 | 8.90 | **2.87** |
+| `line-strong` on `panel` | 3:1 | **1.62** | **1.99** |
+
+**Still open.** The four bold values are token changes: the fix is a value in
+`globals.css`.
+
+- Light theme, month strip: the sunlight and Earth bars sit on `dark-fill` at
+  2.70:1 and 2.87:1, under the 3:1 a graphic needs. Each month's values are in
+  its accessible name.
+- Field borders: `line-strong` on `panel` is 1.62:1 (dark) and 1.99:1 (light).
+  Buttons are named by their text, but the date, search, question and
+  site-picker fields rely on the border.
+
+---
+
 ## Traps, learned the hard way
 
 Each of these reached running code. Do not reintroduce them.
@@ -227,9 +332,17 @@ Each of these reached running code. Do not reintroduce them.
 - **The horizon can be negative and must not be clamped.** A site 1,958 m above the
   lunar reference sphere looks *down* at −2.4°, which is the entire reason it has
   81 % sunlight while the Sun never rises above level.
+- **The ray-march starts two DEM posts out, not at 5 m.** Closer in, the samples
+  land inside the site's own pixel, where interpolation returns the local slope.
+  A half-metre rise over 10 m reads as 2.9° of skyline, and an open site once
+  reported 2.96°.
+- **Store the window that was computed, not the one requested.**
+  `compute_window_metrics` snaps its bounds to the step grid. A reference window
+  stored unsnapped is missed by every lookup, and every site's summary comes
+  back null.
+- **`asyncio.run()` inside an async worker raises.** The DEM fetcher has a sync
+  and an async entry point for this reason.
 - **Prefetched agent facts must enter the grounding pool**, not just the prompt.
-- **respx cannot intercept google-genai** (it runs in a worker thread). Model
-  calls are blocked at our own `_generate` seam.
 
 ## Still a placeholder
 
@@ -245,9 +358,8 @@ Each of these reached running code. Do not reintroduce them.
 
 ## Things that are deliberately not done yet
 
-- No screen-reader user has tested the arc-list announcements. That is the
-  first thing to fix, and the accessibility copy says so rather than claiming
-  a pass.
+- No screen-reader user has tested the arc list, the mission list or the guide.
+  That is the first thing to fix. Until then, nothing here claims a pass.
 - The map's hillshade and terminator are schematic and labelled as such; the
   per-site DEM covers 20 km at 20 m, the map view ~300 km at 80 m.
 - The exports on S5 and S6 emit CSV and SPICE interval lists from the arcs

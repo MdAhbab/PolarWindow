@@ -177,8 +177,8 @@ backend/
   app/agents/      four agents, six tools, the number guard
   app/workers/     precompute: skylines and reference numbers
 data/              CLPS mission records, each field with a source and access date
-docs/              system design, seven ADRs, API, data sources, validation,
-                   test plan, runbook, accessibility, and the judge report
+docs/              system design, decision records, API, data sources, validation,
+                   test plan, runbook, and the judge report
 ```
 
 The layering is enforced, not trusted: `make contracts` runs import-linter over
@@ -244,7 +244,14 @@ Named, rather than left for someone to find:
   80 m), not a per-pixel figure.
 - Outside 80°S there is no terrain data, so a skyline there is a flat horizon and
   says so on screen.
-- No screen-reader user has tested the announcements yet.
+- No screen-reader user has tested the arc list, the mission list or the guide. Two
+  colour pairs also fall short of WCAG contrast: the light theme's month-strip bars
+  and the borders of input fields. Each is a one-value token change (see
+  `docs/conventions.md`, Accessibility).
+- The AI answers' number check accepts a whole number that matches any tool value
+  within ±0.5 under five unit conversions, so a match by coincidence is possible.
+  Each claim's provenance names the field it matched (`docs/system-design.md`
+  §11.3).
 - The launch wind forecast shares are not checked against enough observations
   (one year at the Cape had one event), so they are shown as not checked.
 - A designed launch time for a planned mission climbs in the direction of the
@@ -278,9 +285,8 @@ Single-key shortcuts can be switched off in Settings (WCAG 2.1.4).
 | `docs/data-sources.md` | Every dataset and where it comes from |
 | `docs/validation.md` | Hindcast of flown landers; the trip, launch, weather, radiation and capsule checks |
 | `docs/test-plan.md` | What is tested and why |
-| `docs/accessibility.md` | WCAG audit and fixes |
-| `docs/runbook.md`, `docs/deploy-checklist.md` | Running and deploying it |
-| `docs/conventions.md` | Invariants, and the plain-English word list |
+| `docs/runbook.md` | Running, deploying and fixing it |
+| `docs/conventions.md` | Invariants, the plain-English word list and the accessibility rules |
 
 ## Required data
 

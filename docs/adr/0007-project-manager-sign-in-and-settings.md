@@ -76,8 +76,8 @@ Three things are required of the next version:
 ## Consequences
 
 - Anyone who can reach the front page is a project manager. That is the
-  requirement for judging, stated in the API docs, the security review and the
-  deploy checklist, and it is one environment variable from off.
+  requirement for judging, stated in the API docs, the security section of the
+  system design and the runbook, and it is one environment variable from off.
 - The integration client is signed in by default; `anon_client` tests the
   401s. The e2e helpers sign in from Node, so a test that blocks the API in the
   browser still starts in the dashboard.

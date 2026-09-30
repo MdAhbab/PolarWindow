@@ -1,9 +1,8 @@
 # POLAR WINDOW — runbook
 
-For whoever is holding this at a demo, or picking it up cold.
+For whoever is holding this at a demo, deploying it, or picking it up cold.
 
-Read §1 first. Almost every failure this project has is one of the four in §2,
-and three of them are the same failure.
+Read §1 first. Almost every failure is one of the four in §2.
 
 ---
 
@@ -18,18 +17,16 @@ make seed        # kernels + terrain + sites + masks. ~10 min, once.
 make dev         # services, api on :8000, frontend on :5173
 ```
 
-`python3 run.py` does all of this in one command, and on a machine without
-Docker or a database it creates the project's own PostgreSQL in `.local/pgdata`
-(this machine only, no password) on the port in `PW_DATABASE_URL`. When the
-NASA servers are slow, copy the data from a machine that has it instead of
-downloading it: `python3 run.py --export-data <folder or .zip>` there, then
-`python3 run.py --data-from <that folder, .zip, or Google Drive's .zip parts>`
-here (README, "Required data"). Each file is checked against the SHA-256 listed
-at export.
+`python3 run.py` does all of this in one command. On a machine without Docker or
+a database it creates the project's own PostgreSQL in `.local/pgdata` (this
+machine only, no password) on the port in `PW_DATABASE_URL`. When the NASA
+servers are slow, copy the data from a machine that has it (`--export-data` and
+`--data-from`, in the README's quick start).
 
 `make seed` is a **hard prerequisite**, not an optimisation. Until it runs the
 API starts, answers `/healthz`, and returns 409 with a readable message for
-every geometry request. It does four things, and each is separately re-runnable:
+every geometry request. It runs the steps below, and each is separately
+re-runnable:
 
 | Step | Downloads | Time | Idempotent |
 |---|---|---|---|
@@ -49,10 +46,13 @@ curl -s localhost:8000/api/v1/sites | jq '.items | length'
 # 15               (candidates; ?kind=all gives 22)
 curl -s localhost:8000/api/v1/missions | jq '.total'
 # 20
+curl -s localhost:8000/api/v1/sites/connecting-ridge/metrics \
+  | jq '{sun: (.sunlit_s/3600|round), night: (.longest_dark_s/3600|round), cache: .meta.cache}'
+# roughly {"sun": 574, "night": 122, "cache": "miss"}, then "hit" on a repeat
 ```
 
 If `fine_windows` is less than the site count, some per-site terrain windows
-failed to download. That is **not fatal** — those sites fall back to the 80 m
+failed to download. That is **not fatal**. Those sites fall back to the 80 m
 regional tile, report lower `coverage`, and say so in `meta.uncertainty`. Re-run
 `make worker` to retry them.
 
@@ -81,8 +81,8 @@ If NAIF is unreachable (corporate networks often block it), download the five
 files listed by `/healthz` in a browser into `data/kernels/` and re-run. The
 metakernel is *generated* from what is on disk, so nothing else needs editing.
 
-A **truncated** kernel is worse than a missing one — a partial SPK can `furnsh`
-without error and then return wrong vectors — so every file is size-checked
+A **truncated** kernel is worse than a missing one: a partial SPK can `furnsh`
+without error and then return wrong vectors. So every file is size-checked
 before use. If you see "looks truncated", delete it and re-fetch.
 
 ### 2.2 "This site has not been surveyed yet" (409)
@@ -121,8 +121,8 @@ curl -s localhost:8000/api/v1/sites/connecting-ridge/metrics | jq .meta
 ```
 
 `cache: "hit"` with an old `computed_at` means Redis is serving a previous
-engine version — it should be impossible, since the version is in the cache key,
-but if it happens: Settings → Project → *Clear saved results* (it deletes only
+engine version. That should be impossible, since the version is in the cache
+key. If it happens: Settings → Project → *Clear saved results* (it deletes only
 this service's `pw:*` keys), then `make seed`. From a shell, the same thing is
 `curl -X DELETE -H "authorization: Bearer $TOKEN" localhost:8000/api/v1/settings/cache`.
 
@@ -155,13 +155,13 @@ cd backend && uv run python -m app.workers.precompute --force
 Fifteen minutes, in this order:
 
 ```bash
-make lint            # ruff, mypy --strict, 8 layering contracts
+make lint            # ruff, mypy --strict, the layering contracts
 make test            # rebuilds polar_window_test, then every backend test
-make test-fe         # the adapter, the cache keys, the exports
+make test-fe         # frontend unit and component tests
 curl -s localhost:8000/healthz | jq .status          # "ok", not "degraded"
 ```
 
-Then, by hand — these are the things no test covers:
+Then, by hand. These are the things no test covers:
 
 1. **Open `/site`.** No data-source badge should show in the header. If one
    says *Partial data*, `/healthz` is telling you something; fix that first.
@@ -170,8 +170,8 @@ Then, by hand — these are the things no test covers:
 3. **Open `/compare`.** Change the ranking metric; the order must change.
 4. **Stop the API and reload.** The *Saved copy* badge appears and the
    missions still load from the offline copy.
-5. **Call one agent.** Prompt quality is *not* covered by CI — every test mocks
-   the model — so this is a genuine manual gate:
+5. **Call one agent.** Prompt quality is *not* covered by CI, because every test
+   scripts the model, so this is a genuine manual gate:
    ```bash
    curl -s -X POST localhost:8000/api/v1/agents/explain \
      -H 'content-type: application/json' -d '{"site_id":"connecting-ridge"}' | jq '.status, .result.paragraph'
@@ -179,7 +179,10 @@ Then, by hand — these are the things no test covers:
    `"degraded"` without `PW_GEMINI_API_KEY` is **correct behaviour**, not a
    failure: the paragraph is generated from the measurements. With a key, read
    the paragraph and check it says something true.
-6. **Open `/agents/runs`.** It should have rows. This is the demo's evidence.
+6. **Open Settings → Project and read the AI activity log** (or
+   `GET /api/v1/agents/runs`). It should have rows. This is the demo's evidence.
+   To start with an empty log, clear it first (§2, the project manager's
+   controls).
 
 **Rehearse with the network off.** Set `OFFLINE=1` (in `.env` or the shell)
 and restart the API. Nothing is downloaded (a missing kernel or DEM is a loud
@@ -187,9 +190,68 @@ error naming the fix), the agents answer from the measurements without calling
 the model, and every other endpoint behaves exactly as online, because all of
 it is local. `make test-fast` also runs with no services at all.
 
+**The offline copy.** The frontend also builds without a backend:
+`npm run build:snapshot` serves the demo path from `public/snapshot/`. Refresh
+that folder with `npm run snapshot` against a running API.
+
 ---
 
-## 4. Operating notes
+## 4. Deploying on one host
+
+This is a single-node demo, not a production service. `docker-compose.yml` runs
+Postgres, Redis, the API and a one-shot worker that builds the skylines.
+
+**Before the first start**
+
+- Run `make seed` for the target `data/` folder. It is a bind mount
+  (`./data:/data`), not a named volume, so `docker compose down -v` cannot
+  destroy the 250 MB of kernels and terrain that take ten minutes to fetch.
+- Leave at least 1 GB free there: kernels 130 MB, terrain about 250 MB, tiles up
+  to 150 MB.
+- Set the environment. `.env.example` lists every variable; these matter most:
+
+| Setting | Value |
+|---|---|
+| `PW_CORS_ORIGINS` | Must include the origin the frontend is served from. The single most common failure (§2.3). |
+| `PW_DATABASE_URL`, `PW_REDIS_URL` | Point at the compose services, not at localhost. |
+| `PW_DEMO_SIGN_IN` | `true` for the judged demo, `false` anywhere real. |
+| `PW_JWT_SECRET` | A long random value if more than one API process serves requests. Blank is fine for one process: sessions then end on restart and the dashboard signs in again by itself. |
+| `PW_GEMINI_API_KEY` | Optional. Without it every agent answers `degraded` from the measurements. |
+| `PW_DOWNLOAD_KERNELS_ON_START` | Keep `false`. A container that silently pulls 114 MB at boot turns a fast, obvious failure into a slow mystery. |
+
+**Start**
+
+```bash
+docker compose up -d postgres redis
+docker compose run --rm worker          # builds skylines and reference numbers
+docker compose up -d api                # alembic upgrade head, then uvicorn
+```
+
+The API container upgrades the schema when it starts. Upgrades add tables,
+columns, indexes and triggers (one corrects stored values) and drop nothing, so
+running them again is safe. The drops are in the downgrades. Then run the checks
+in §1 and §3.
+
+The compute and feeds workers (§7) are separate processes: `make compute` and
+`make feeds`. Without them, live numbers age past their budgets and the trip,
+contact and launch sections stay "being worked out".
+
+**What a demo host leaves out, and why**
+
+| Left out | Why |
+|---|---|
+| Staging, canary or blue-green | One node, one demo. There is nowhere to stage to. |
+| Load testing | The slider's budget is checked by one timed assertion in the integration suite, and the compute queue has its own load run (`docs/test-plan.md`). |
+| Alerting and on-call | `/healthz` is the monitoring. |
+| Rate limits on reads | Reads are public data. Writes and the AI panels are limited per address (§7), and each AI run is bounded at 20 s with one retry. |
+| Real sign-in | Judges get in with one click, so the session has no password. Before anything real, set `PW_DEMO_SIGN_IN=false` and put an identity provider in front of `/auth`. |
+| Secrets manager | One optional API key, from the environment. |
+| High availability | Single node by design. |
+| Backups | `make seed` rebuilds the sites and skylines in about ten minutes. It cannot rebuild what was recorded or entered: the feeds' snapshots (forecasts of record), the change history, the team's readiness items, parts, risks and limits, and the AI activity log. Back the database up if those matter. |
+
+---
+
+## 5. Operating notes
 
 **Tests have their own database.** `make test` first runs `make test-db`, which
 rebuilds `polar_window_test` from the migrations plus a copy of the seeded rows,
@@ -208,35 +270,39 @@ its SHA256; `polar-kernels fetch` downloads what is missing (refused under
 | Gemini | Agents return `degraded` with a deterministic summary. Nothing else. |
 | LOLA subset | Masks fall back to a spherical horizon, `coverage` drops, responses say so. |
 | SPICE | No Sun or Earth positions. `/healthz` 503. Sites, terrain and tiles still serve. |
-| Postgres | Total. No fallback — sites and masks live there. |
+| Postgres | Total. No fallback: sites and masks live there. |
 
 **Logs.** `docker compose logs -f api`. A guard rejection logs at WARNING with
-the agent, the attempt and the violation kind; that is expected traffic, not an
+the agent, the attempt and the violation kind. That is expected traffic, not an
 error.
 
-**The SPICE thread.** All ephemeris access is serialised through one thread per
-process, because CSPICE is not thread-safe and `furnsh` mutates process-global
-state. If concurrent cold timelines start queuing, add API replicas — not
-threads. Kernel state is per-process and read-only after startup, so replicas
-are free.
+**The SPICE thread.** All ephemeris access goes through one thread per process
+(`docs/system-design.md` §4.2). If concurrent cold timelines start queuing, add
+API replicas, not threads. Kernel state is per-process and read-only after
+startup, so replicas are free.
 
-**Database size.** Trivial: 15 masks at ~17 KB, 15 metric rows, and however many
-agent runs the demo produces. The DEM subset (~250 MB on the volume) is the only
-thing that is large, and it is not in Postgres.
+**Database size.** Small: 15 masks at ~17 KB, 15 metric rows, and whatever the
+feeds worker, the team's entries and the agent runs add. The DEM subset (~250 MB
+on the volume) is the only thing that is large, and it is not in Postgres.
 
 ---
 
-## 5. Rollback
+## 6. Rollback
 
-There is no deployment pipeline to roll back — this is a single-node demo. What
-you can revert:
+There is no deployment pipeline to roll back. What you can revert:
 
 | Change | Revert |
 |---|---|
 | Geometry (`core/`) | Restore the code; run `make test-geo`. The golden fixtures will fail loudly if the physics moved, with the worst offending bearing and both values. |
 | Engine version bump | Put the old value back in `config.py` and `make worker --force`. Old masks are orphaned, not deleted. |
-| Migration | `cd backend && uv run alembic downgrade -1` |
+| Migration | `cd backend && uv run alembic downgrade -1`. The schema is additive, so the previous image still runs. |
 | Frontend | `git revert`, `make codegen` if the API contract moved. |
+| The AI layer misbehaves | Turn the AI off in Settings, or unset `PW_GEMINI_API_KEY` and restart. Every agent answers from the measurements. The four numbers are unaffected. |
+| Redis misbehaves | `PW_REDIS_ENABLED=false`. It costs latency, changes no number and reports `cache: "bypass"`. |
+
+**Rollback does not need a data reload.** Masks are stamped with
+`engine_version`. An older image reads its own masks or rebuilds them, and never
+silently serves geometry from a different engine.
 
 **Golden fixtures cannot be regenerated by accident.** `make golden-update`
 refuses without `GOLDEN_UPDATE_REASON`, and writes that reason into the manifest
@@ -244,32 +310,6 @@ alongside the kernel set and DEM product. A golden diff in review is the signal
 that a refactor changed the physics.
 
 ---
-
-## 6. Things that will bite
-
-Learned the hard way while building this, recorded so nobody rediscovers them:
-
-- **A crater's IAU coordinate is its floor.** Shackleton's published centre is
-  at −2,767 m — a permanently shadowed hole. Site coordinates here are derived
-  from the DEM. Do not "correct" them back to catalogue values.
-- **Grid north is not true north** in a polar stereographic projection. It
-  rotates with longitude. A ray-march done in grid coordinates reports every
-  blocker at the wrong bearing — 166° wrong at Shackleton. `local_frame()`
-  measures the convergence; do not remove it.
-- **The LOLA polar products are true at the pole**, not at a standard parallel.
-  `+lat_ts=-87.5` looks plausible and is wrong by 0.2 % in range.
-- **Near-field DEM noise looks exactly like a ridge.** At 40 m a 2 m vertical
-  error is 2.9° of apparent skyline, which is larger than most real horizons
-  here. The mask only counts a blocker that clears its own noise floor.
-- **The horizon can be negative and must not be clamped.** A site standing
-  1,958 m above the lunar reference sphere looks *down* at a −2.4° horizon, and that is
-  the entire reason it has 81 % sunlight while the Sun never rises above level.
-- **`asyncio.run()` inside an async worker** raises. The DEM fetcher has both a
-  sync and an async entry point for this reason.
-- **respx cannot intercept google-genai**, because the SDK's sync client runs
-  inside `asyncio.to_thread`. Model calls are blocked at our own `_generate`
-  seam instead — a test that sets a fake key really did reach the live API and
-  get a 400 before that was fixed.
 
 ## 7. The mission lifecycle: processes, keys, feed outages
 
@@ -313,7 +353,7 @@ its progress.
 **Sections answer 503 "Too many answers are being worked out".** 200 jobs are
 waiting (`PW_MAX_QUEUED_JOBS`); stored answers still read. Start more compute
 workers (`POLAR_COMPUTE_WORKERS`) or wait; `make load-compute` measures what two
-workers get through (docs/test-plan.md §11.4).
+workers get through (`docs/test-plan.md`, "Load on the compute queue").
 
 **A write answers 429.** One address made more changes in a minute than its
 allowance (`PW_RATE_SIGN_IN_PER_MIN` 60, `PW_RATE_AGENTS_PER_MIN` 20,
@@ -328,4 +368,4 @@ and reset when it restarts. Bodies over `PW_MAX_BODY_BYTES` (64 KB) are refused 
 `make validate-capsule` (~20 s), `make validate-radiation`, `make space-climate`.
 Their results are committed under `data/` (see `docs/data-sources.md`).
 
-Run `make help` to inspect all available make targets and their descriptions.
+Run `make help` to list every make target with its description.
