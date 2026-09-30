@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { create } from 'zustand'
 import { useMotionClass } from '../hooks/useMotion'
 import { Icon } from './Icon'
@@ -16,6 +17,13 @@ interface ToastState {
   toasts: Toast[]
   show: (t: Omit<Toast, 'id'>) => number
   dismiss: (id: number) => void
+  /**
+   * Open sheets, innermost last. A modal sheet makes the page behind it
+   * inert, so while one is open the toasts are drawn inside it.
+   */
+  hosts: HTMLElement[]
+  addHost: (el: HTMLElement) => void
+  removeHost: (el: HTMLElement) => void
 }
 
 let next = 1
@@ -25,10 +33,14 @@ export const useToasts = create<ToastState>((set) => ({
   show: (t) => {
     const id = next++
     // At most three at once; the oldest goes first.
-    set((s) => ({ toasts: [...s.toasts.slice(-2), { ...t, id }] }))
+    // The same words again replace the older toast rather than stack under it.
+    set((s) => ({ toasts: [...s.toasts.filter((x) => x.message !== t.message).slice(-2), { ...t, id }] }))
     return id
   },
   dismiss: (id) => set((s) => ({ toasts: s.toasts.filter((x) => x.id !== id) })),
+  hosts: [],
+  addHost: (el) => set((s) => ({ hosts: [...s.hosts.filter((h) => h !== el), el] })),
+  removeHost: (el) => set((s) => ({ hosts: s.hosts.filter((h) => h !== el) })),
 }))
 
 /** Say that something was saved (or refused), from anywhere. */
@@ -90,18 +102,24 @@ function ToastItem({ t }: { t: Toast }) {
  */
 export function Toaster() {
   const toasts = useToasts((s) => s.toasts)
-  return (
+  const host = useToasts((s) => s.hosts[s.hosts.length - 1] ?? null)
+  const region = (
     <div
       role="status"
       aria-live="polite"
       aria-label="Notifications"
-      className="pointer-events-none fixed inset-x-0 bottom-[calc(1rem+var(--pw-guide-h,0px))] z-50 flex justify-center px-4 sm:justify-end sm:px-6"
+      className={
+        host
+          ? 'pointer-events-none absolute inset-x-0 bottom-0 z-50 flex justify-center p-4'
+          : 'pointer-events-none fixed inset-x-0 bottom-[calc(5rem+var(--pw-guide-h,0px))] z-50 flex justify-center px-4 sm:justify-end sm:px-6 lg:bottom-[calc(1.5rem+var(--pw-guide-h,0px))]'
+      }
     >
-      <ol className="flex w-full flex-col items-end gap-2 sm:w-auto">
+      <ol className={`flex w-full flex-col items-end gap-2 ${host ? '' : 'sm:w-auto'}`}>
         {toasts.map((t) => (
           <ToastItem key={t.id} t={t} />
         ))}
       </ol>
     </div>
   )
+  return host ? createPortal(region, host) : region
 }

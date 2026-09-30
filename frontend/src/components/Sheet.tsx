@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, type ReactNode } from 'react'
 import type React from 'react'
 import { useReducedMotion } from '../hooks/useMotion'
 import { Icon } from './Icon'
+import { useToasts } from './Toast'
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])'
@@ -25,13 +26,16 @@ export function Sheet({
   title,
   children,
   wide = false,
+  size,
 }: {
   open: boolean
   onClose: () => void
   title: string
   children: ReactNode
-  /** 480 px at ≥ 768 (the run log); the settings sheet is narrower. */
+  /** 480 px at ≥ 768 (the run log and the forms); 400 px otherwise. */
   wide?: boolean
+  /** `xl`: 720 px at ≥ 768, for a sheet with its own tabs (Settings). */
+  size?: 'xl'
 }) {
   const ref = useRef<HTMLDialogElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
@@ -70,6 +74,14 @@ export function Sheet({
     // In case the animation never runs (a hidden tab), close anyway.
     window.setTimeout(done, 400)
   }
+
+  // While open, toasts are drawn inside this sheet: the page behind is inert.
+  useEffect(() => {
+    const d = ref.current
+    if (!open || !d) return
+    useToasts.getState().addHost(d)
+    return () => useToasts.getState().removeHost(d)
+  }, [open])
 
   useEffect(() => {
     const d = ref.current
@@ -141,7 +153,7 @@ export function Sheet({
         if (e.target === ref.current) animateClose()
       }}
       className={`fixed inset-y-0 right-0 left-auto m-0 h-full max-h-none w-full max-w-none overflow-hidden border-0 border-l border-line-strong bg-raised p-0 text-ink shadow-overlay backdrop:bg-canvas/80 ${
-        wide ? 'md:w-[480px]' : 'md:w-[400px]'
+        size === 'xl' ? 'md:w-[720px]' : wide ? 'md:w-[480px]' : 'md:w-[400px]'
       }`}
     >
       <div className="flex h-full flex-col">

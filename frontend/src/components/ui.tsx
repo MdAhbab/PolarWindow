@@ -464,3 +464,69 @@ export function SvgDefs() {
     </svg>
   )
 }
+
+/**
+ * Tabs: one row of choices, one panel. The keyboard pattern is the usual
+ * one: Tab reaches the chosen tab, the arrow keys move and choose, Home and
+ * End go to the ends. The caller draws the panel with `role="tabpanel"`,
+ * `id={`${baseId}-panel`}` and `aria-labelledby={`${baseId}-${value}`}`.
+ * Vertical from `md` when the caller's class makes it a column.
+ */
+export function Tabs<T extends string>({
+  label,
+  baseId,
+  tabs,
+  value,
+  onChange,
+  className = '',
+}: {
+  label: string
+  baseId: string
+  tabs: { id: T; label: string }[]
+  value: T
+  onChange: (v: T) => void
+  className?: string
+}) {
+  const move = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const i = tabs.findIndex((t) => t.id === value)
+    const next =
+      e.key === 'ArrowRight' || e.key === 'ArrowDown'
+        ? (i + 1) % tabs.length
+        : e.key === 'ArrowLeft' || e.key === 'ArrowUp'
+          ? (i - 1 + tabs.length) % tabs.length
+          : e.key === 'Home'
+            ? 0
+            : e.key === 'End'
+              ? tabs.length - 1
+              : null
+    if (next === null) return
+    e.preventDefault()
+    onChange(tabs[next].id)
+    document.getElementById(`${baseId}-${tabs[next].id}`)?.focus()
+  }
+  return (
+    <div role="tablist" aria-label={label} onKeyDown={move} className={`flex overflow-x-auto md:flex-col md:overflow-visible ${className}`}>
+      {tabs.map((t) => {
+        const on = t.id === value
+        return (
+          <button
+            key={t.id}
+            id={`${baseId}-${t.id}`}
+            type="button"
+            role="tab"
+            aria-selected={on}
+            aria-controls={`${baseId}-panel`}
+            tabIndex={on ? 0 : -1}
+            onClick={() => onChange(t.id)}
+            className={`relative flex h-12 shrink-0 items-center px-4 text-body whitespace-nowrap transition-colors duration-[var(--pw-dur-quick)] md:px-5 ${
+              on ? 'font-semibold text-ink' : 'font-medium text-ink-2 hover:bg-inset hover:text-ink'
+            }`}
+          >
+            {on && <span aria-hidden="true" className="absolute inset-x-3 bottom-0 h-[3px] bg-ink md:inset-x-auto md:inset-y-2 md:left-0 md:h-auto md:w-[3px]" />}
+            {t.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}

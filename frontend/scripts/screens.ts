@@ -21,9 +21,10 @@ const API = process.env.API_BASE ?? 'http://localhost:8000/api/v1'
 const OUT = process.env.SCREENS_OUT ?? join(dirname(fileURLToPath(import.meta.url)), '..', 'e2e', '__screens__')
 const ONLY = process.env.SCREENS_ONLY?.split(',').map((x) => x.trim()).filter(Boolean)
 
-/** The hub (Landing open, the surface stay) and the steps the service answers; some with rows open. */
+/** The mission home, Surface and the steps the service answers; some with rows open. */
 const PAGES: [name: string, path: string, open?: string[]][] = [
   ['hub-im-2', '/missions/im-2'],
+  ['surface-im-2', '/missions/im-2/surface'],
   ['ready-im-2', '/missions/im-2/ready'],
   ['launch-im-1-flown', '/missions/im-1/launch'],
   ['launch-peregrine-m1-flown', '/missions/peregrine-m1/launch', ['The flight as launched']],
@@ -90,21 +91,21 @@ const extras: [name: string, run: (page: Page) => Promise<void>, fullPage: boole
       await settle(page)
       await page.getByRole('button', { name: 'Settings' }).click()
       const sheet = page.getByRole('dialog', { name: 'Settings' })
-      await sheet.locator('summary', { hasText: 'Data sources' }).click()
+      await sheet.getByRole('tab', { name: 'Data sources' }).click()
       await sheet.getByRole('listitem').filter({ hasText: /^glm, / }).last().scrollIntoViewIfNeeded()
     },
     false,
   ],
   [
-    // Settings → Project, the parameters and the risk scale open.
+    // Settings → Parameters: each value, who set it, and a way to change it.
     'settings-project',
     async (page) => {
       await page.goto(`${APP}/missions`)
       await settle(page)
       await page.getByRole('button', { name: 'Settings' }).click()
       const sheet = page.getByRole('dialog', { name: 'Settings' })
-      for (const title of ['Parameters', 'Risk scale']) await sheet.locator('summary', { hasText: title }).click()
-      await sheet.locator('summary', { hasText: 'Parameters' }).scrollIntoViewIfNeeded()
+      await sheet.getByRole('tab', { name: 'Parameters' }).click()
+      await sheet.getByRole('tabpanel').getByText(/of \d entered/).waitFor()
     },
     false,
   ],

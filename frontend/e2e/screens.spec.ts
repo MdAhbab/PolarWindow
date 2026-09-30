@@ -59,18 +59,17 @@ for (const theme of ['dark', 'light'] as const) {
     await page.goto('/missions')
     await page.getByRole('button', { name: 'Settings' }).click()
     const sheet = page.getByRole('dialog', { name: 'Settings' })
-    await expect(sheet.locator('summary', { hasText: 'Parameters' })).toContainText(/\d of \d entered/)
-    for (const s of await sheet.locator('summary').all()) await s.click()
-    // Data sources grows as its list arrives, so a click on a row below it can land elsewhere: make sure Parameters is open.
-    const params = sheet.locator('details').filter({ has: page.locator('summary', { hasText: /^Parameters/ }) })
-    const battery = sheet.getByRole('button', { name: /for Battery limit/ })
-    await expect(async () => {
-      if (!(await params.evaluate((d) => (d as HTMLDetailsElement).open))) await params.locator('summary').first().click()
-      await expect(battery).toBeVisible({ timeout: 2_000 })
-    }).toPass({ timeout: 30_000 })
-    await battery.click()
+    // Each group of Settings, every row in it open, axe on each.
+    for (const tab of ['Project', 'Risk scale', 'Data sources', 'Appearance', 'Offline copy']) {
+      await sheet.getByRole('tab', { name: tab }).click()
+      for (const s of await sheet.getByRole('tabpanel').locator('summary').all()) await s.click()
+      await expectNoSeriousAxe(page, `settings, ${tab}, every row open (${theme})`)
+    }
+    await sheet.getByRole('tab', { name: 'Parameters' }).click()
+    await expect(sheet.getByRole('tabpanel')).toContainText(/\d of \d entered/)
+    await sheet.getByRole('button', { name: /for Battery limit/ }).click()
     await expect(sheet.getByText('Change history')).toBeVisible()
-    await expectNoSeriousAxe(page, `settings with every row open (${theme})`)
+    await expectNoSeriousAxe(page, `settings with a parameter's form open (${theme})`)
     expect(problems).toEqual([])
   })
 }
@@ -185,10 +184,14 @@ test('settings on a phone: every project row and a parameter form fit, with no s
   await page.goto('/missions')
   await page.getByRole('button', { name: 'Settings' }).click()
   const sheet = page.getByRole('dialog', { name: 'Settings' })
-  await expect(sheet.locator('summary', { hasText: 'Parameters' })).toContainText(/\d of \d entered/)
-  // Open every row, never closing one already open (a click toggles).
-  for (const s of await sheet.locator('summary').all()) if ((await s.locator('xpath=..').getAttribute('open')) === null) await s.click()
-  await openRow(page, /^Parameters/)
+  // Every group: its rows open, nothing wider than the phone.
+  for (const tab of ['Project', 'Risk scale', 'Data sources', 'Appearance', 'Offline copy']) {
+    await sheet.getByRole('tab', { name: tab }).click()
+    for (const s of await sheet.getByRole('tabpanel').locator('summary').all()) await s.click()
+    expect(await sheet.evaluate((el) => el.scrollWidth - el.clientWidth), `settings, ${tab}, scrolls sideways at 375 px`).toBeLessThanOrEqual(0)
+  }
+  await sheet.getByRole('tab', { name: 'Parameters' }).click()
+  await expect(sheet.getByRole('tabpanel')).toContainText(/\d of \d entered/)
   await sheet.getByRole('button', { name: /for Lowest Sun height/ }).click()
   const value = sheet.getByLabel('Value, in degrees')
   await expect(value).toBeVisible()
@@ -251,6 +254,7 @@ test('the timeline has a table twin, by button and by T; the shortcut can be swi
   const sheet = page.getByRole('dialog', { name: 'Settings' })
   await expect(sheet).toBeVisible()
   await expectNoSeriousAxe(page, 'settings sheet')
+  await sheet.getByRole('tab', { name: 'Appearance' }).click()
   await sheet.getByRole('group', { name: 'Keyboard shortcuts' }).getByRole('button', { name: 'Off' }).click()
   await page.keyboard.press('Escape')
   await expect(sheet).toBeHidden()

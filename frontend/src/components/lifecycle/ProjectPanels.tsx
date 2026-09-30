@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { api, ApiError } from '../../lib/api/client'
 import type { AuditEntryDTO, FeedDTO, ParameterDTO, RiskScaleDTO } from '../../lib/api/lifecycle'
 import { useFeeds, useHistory, useLifecycleWrite, useParameters, useRiskScales } from '../../lib/api/lifecycleQueries'
@@ -6,7 +6,9 @@ import { hasOwnName, useSession, SignInFailed } from '../../lib/session'
 import { dateTimeWords } from '../../lib/format'
 import { ageFromSeconds, formatValue, hostWords, quantityText, unitWords } from '../../lib/lifecycle/quantity'
 import { Icon, type IconName } from '../Icon'
+import { useSnapshotActive } from '../../lib/api/snapshot'
 import { Button } from '../ui'
+import { toast } from '../Toast'
 import { Field, HistoryList, TextArea, TextInput, useNamedWriter, WriteProblem } from './Forms'
 import { CATEGORY_WORDS } from './Readiness'
 
@@ -16,7 +18,32 @@ import { CATEGORY_WORDS } from './Readiness'
  * and the team's parameters. Each is a closed row, as the rest of the group.
  */
 
+/**
+ * Inside Settings' tabs each panel is the whole page, so its rows are drawn
+ * open, as a titled section, and what they would load on opening loads now.
+ */
+export const FlatRows = createContext(false)
+
 function Row({ title, meta, children, onOpen }: { title: string; meta?: string; children: ReactNode; onOpen?: () => void }) {
+  const flat = useContext(FlatRows)
+  const opened = useRef(false)
+  useEffect(() => {
+    if (flat && !opened.current) {
+      opened.current = true
+      onOpen?.()
+    }
+  }, [flat, onOpen])
+  if (flat) {
+    return (
+      <section className="flex flex-col gap-3">
+        <div className="flex flex-col gap-0.5">
+          <h3 className="text-title font-semibold text-ink">{title}</h3>
+          {meta && <p className="text-small text-ink-3">{meta}</p>}
+        </div>
+        {children}
+      </section>
+    )
+  }
   return (
     <details
       className="group flex flex-col gap-3"
@@ -221,13 +248,18 @@ export function RiskScalePanel({ enabled }: { enabled: boolean }) {
   const q = useRiskScales(enabled && open)
   const scale = q.data?.scales.find((s) => s.id === q.data?.default_id) ?? q.data?.scales[0]
   const numbersOnly = scale ? levelsHaveNoWords(scale) : false
+  const saved = useSnapshotActive()
   return (
     <Row title="Risk scale" meta={scale?.name} onOpen={() => setOpen(true)}>
       {q.isPending ? (
         <p className="text-small text-ink-3">Loading the scale…</p>
       ) : !scale ? (
         <p className="text-small leading-5 text-ink-2">
-          {q.error instanceof ApiError && q.error.status === 404 ? 'This server does not offer a risk scale yet.' : 'The scale could not be loaded.'}
+          {saved
+            ? 'The saved copy does not hold the risk scale; it is read from the live service.'
+            : q.error instanceof ApiError && q.error.status === 404
+              ? 'This server does not offer a risk scale yet.'
+              : 'The scale could not be loaded.'}
         </p>
       ) : (
         <>
@@ -340,9 +372,29 @@ function ParameterForm({ p, id }: { p: ParameterDTO; id: string }) {
           }
           setErr(undefined)
           if (!(await writer.ensure())) return
+          // The value before this change, so the toast can put it back.
+          const before = p.value.value
+          const beforeNote = p.note ?? null
           try {
             await save.mutateAsync({ value: v, note: note.trim() || null })
             setSaved(true)
+            toast(`Saved: ${p.name}, ${valueWithUnit(v, p.value.unit)}.`, {
+              action:
+                before === null || before === v
+                  ? undefined
+                  : {
+                      label: 'Undo',
+                      run: () =>
+                        void save
+                          .mutateAsync({ value: before, note: beforeNote })
+                          .then(() => {
+                            setValue(String(before))
+                            setNote(beforeNote ?? '')
+                            toast(`Put back: ${p.name}, ${valueWithUnit(before, p.value.unit)}.`)
+                          })
+                          .catch(() => toast('The change could not be undone; the history below shows the value in use.', { tone: 'problem' })),
+                    },
+            })
           } catch {
             // shown below, in the server's words
           }
@@ -360,9 +412,12 @@ function ParameterForm({ p, id }: { p: ParameterDTO; id: string }) {
           <Button type="submit" size="sm" variant="primary" disabled={save.isPending || writer.offline}>
             {save.isPending ? 'Saving…' : 'Save'}
           </Button>
-          <p aria-live="polite" className="text-caption text-ink-2">
-            {saved && !save.error ? 'Saved.' : ''}
-          </p>
+          {saved && !save.error && (
+            <span aria-hidden="true" className="flex items-center gap-1.5 text-caption text-ink-2">
+              <Icon name="check" size={14} strokeWidth={2.4} />
+              Saved
+            </span>
+          )}
         </div>
       </form>
       <div className="flex flex-col gap-2">
@@ -386,7 +441,8 @@ export function ParametersPanel({ enabled }: { enabled: boolean }) {
   const q = useParameters(enabled)
   const session = useSession((s) => s.session)
   const [editing, setEditing] = useState<string | null>(null)
-  if (q.error instanceof ApiError && q.error.status === 404) return null
+  if (q.error instanceof ApiError && q.error.status === 404)
+    return <p className="text-body leading-6 text-ink-2">This server does not offer parameters yet.</p>
   const params = q.data?.parameters ?? []
   const entered = params.filter((p) => p.value.value !== null).length
   const canWrite = Boolean(session && !session.offline)
