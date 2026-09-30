@@ -1,6 +1,6 @@
 # ADR-7: One stakeholder, the project manager; one-click sign-in; admin tasks live in their Settings
 
-**Status:** Accepted
+**Status:** Accepted (amended by ADR-17)
 **Date:** 2026-09-24
 **Deciders:** product owner, frontend and backend leads
 **Relates to:** ADR-2 (frontend data fetching), ADR-3 (agents and the model chain), `docs/api.md` *Sign-in* and *Settings*
