@@ -15,11 +15,11 @@ import { SectionLabel } from './ui'
  * `meta.uncertainty` come from the same response as the values they describe,
  * and cannot disagree with them.
  */
-export function Sources({ meta, className = '' }: { meta: Meta | undefined; className?: string }) {
+export function Sources({ meta, className = '', bare = false }: { meta: Meta | undefined; className?: string; bare?: boolean }) {
   if (!meta) {
     return (
       <div className={`flex flex-col gap-1.5 ${className}`}>
-        <SectionLabel as="h3">Sources</SectionLabel>
+        {!bare && <SectionLabel as="h3">Sources</SectionLabel>}
         <p className="text-small text-ink-3">Not known yet: the numbers on this screen are still being worked out.</p>
       </div>
     )
@@ -28,7 +28,7 @@ export function Sources({ meta, className = '' }: { meta: Meta | undefined; clas
   const u = meta.uncertainty
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
-      <SectionLabel as="h3">Sources</SectionLabel>
+      {!bare && <SectionLabel as="h3">Sources</SectionLabel>}
       <ul className="flex flex-col gap-1 text-small leading-5 text-ink-2">
         <li>
           Terrain: {r.demProduct}, {r.demResolutionM.toFixed(0)} m detail, heights within ±

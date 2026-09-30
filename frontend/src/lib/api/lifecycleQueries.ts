@@ -96,7 +96,7 @@ export function useSection<T>(
         detail: {
           title: 'Working this out failed',
           detail: latest.message || 'The calculation stopped before it finished.',
-          ui: { still_works: 'The other sections and the landing numbers are unaffected.', retryable: true },
+          ui: { still_works: 'The other steps are unaffected.', retryable: true },
         },
       }),
       retry: () => {

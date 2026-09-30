@@ -54,7 +54,7 @@ export function DateSlider({ compact = false }: { compact?: boolean }) {
   return (
     <div className="flex grow flex-col gap-2">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <label htmlFor="pw-date" className="text-caption font-semibold tracking-caps text-ink-3 uppercase">
+        <label htmlFor="pw-date" className="text-small font-semibold text-ink-2">
           Dates: {lunarDay ? `one lunar day, ${Math.round(windowHours)} hours` : spanWords(windowHours)}
         </label>
         <span className="font-mono text-caption text-ink-2 sm:text-right">

@@ -16,7 +16,13 @@ import {
   publishedWords,
   publisherFor,
 } from '../lib/missions'
-import { coords, dateTimeWords, isoDateWords, msFromModelH, windowLine } from '../lib/format'
+import { coords, dateTimeWords, isoDateWords, msFromModelH, percent, spanWords, windowLine } from '../lib/format'
+import type { SiteMetrics } from '../lib/types'
+import { ArcTable } from '../components/ArcTable'
+import { Sources } from '../components/Sources'
+import { ChartPanel, Rows, SectionLayout, StatePanel } from '../components/lifecycle/Section'
+import { SECTIONS } from '../components/lifecycle/JourneyBar'
+import { useMotionClass } from '../hooks/useMotion'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
 import { DateSlider } from '../components/DateSlider'
 import { KeyNumberRow } from '../components/KeyNumbers'
@@ -24,23 +30,15 @@ import { Ribbon } from '../components/Ribbon'
 import { WindowPicker } from '../components/WindowPicker'
 import { ExplainPanel } from '../components/Agents'
 import { SummarySpeaker } from '../components/SummarySpeaker'
-import { EmptyState, ProblemPanel, UncertaintyNote } from '../components/States'
-import { Button, Disclosure, Panel, SectionLabel, Unconfirmed } from '../components/ui'
+import { ProblemPanel, Skeleton, UncertaintyNote } from '../components/States'
+import { Button, Disclosure, Panel, RowGroup, SectionLabel, Unconfirmed } from '../components/ui'
 
 /**
- * S10's body, now the hub's Landing section (design-lifecycle.md §4): one
- * mission, fully sourced (§10.3), then the product's question: what do the
- * Sun and Earth do at this target over this mission's days?
- *
- * Layout: at ≥ 1280 the record is the left 5/12 and "Sun & Earth" the sticky
- * right 7/12. Below that the answer follows the record's status and dates
- * (then the four numbers, then the payloads), which is also the DOM order, so
- * reading order and focus order agree at every width. The mission's name and
- * the back link are the hub's header, above the six steps.
+ * A mission's record (§10.3), fully sourced: how it went, its dates, and its
+ * target, payloads and sources on request. It sits on the mission's home
+ * page, beside the six steps.
  */
-export function LandingSection({ mission: m }: { mission: MissionDetail }) {
-  const navigate = useNavigate()
-
+export function MissionRecord({ mission: m }: { mission: MissionDetail }) {
   const asOf = (() => {
     const l = latestAccessed(m.sources)
     return l ? isoDateWords(l) : null
@@ -48,45 +46,17 @@ export function LandingSection({ mission: m }: { mission: MissionDetail }) {
   const u = <Unconfirmed asOf={asOf} />
 
   return (
-    <div className="grid grow gap-6 xl:grid-cols-12 xl:grid-rows-[auto_1fr] xl:items-start">
-      {/* Status and dates. */}
-      <div className="flex min-w-0 flex-col gap-4 xl:col-span-5 xl:col-start-1 xl:row-start-1">
-        <Panel className="flex flex-col gap-3 p-5">
-          <div className="text-title-lg font-semibold text-ink">
-            <span aria-hidden="true">{STATUS_GLYPH[m.status]} </span>
-            {STATUS_LABEL[m.status]}
-          </div>
-          {m.outcomeNote && <OutcomeNote note={m.outcomeNote} />}
-          <MissionDates mission={m} />
-        </Panel>
-      </div>
+    <div className="flex min-w-0 flex-col gap-4">
+      <Panel className="flex flex-col gap-3 p-5">
+        <div className="text-title-lg font-semibold text-ink">
+          <span aria-hidden="true">{STATUS_GLYPH[m.status]} </span>
+          {STATUS_LABEL[m.status]}
+        </div>
+        {m.outcomeNote && <OutcomeNote note={m.outcomeNote} />}
+        <MissionDates mission={m} />
+      </Panel>
 
-      {/* The answer: sticky on the right at ≥ 1280. */}
-      <section
-        aria-labelledby="sun-earth-h"
-        data-guide="sun-earth"
-        className="flex min-w-0 flex-col gap-4 xl:sticky xl:top-4 xl:col-span-7 xl:col-start-6 xl:row-span-2 xl:row-start-1"
-      >
-        <SectionLabel id="sun-earth-h">Sun &amp; Earth at this target</SectionLabel>
-        {m.siteId && m.site && hasSite(m.siteId) ? (
-          <TargetPanel mission={m} siteId={m.siteId} />
-        ) : (
-          <Panel>
-            <EmptyState
-              title="Target not published, so Sun and Earth can't be computed for it yet"
-              detail={
-                m.targetName
-                  ? `The published destination is “${m.targetName}”, which is not a single point with coordinates.`
-                  : 'No destination with coordinates has been published for this mission.'
-              }
-              secondary={{ label: 'Back to missions', onClick: () => navigate('/missions') }}
-            />
-          </Panel>
-        )}
-      </section>
-
-      {/* 4–7: target, payloads, sources: each one row, opened on request. */}
-      <div className="flex min-w-0 flex-col gap-3 xl:col-span-5 xl:col-start-1 xl:row-start-2">
+      <RowGroup title="About this mission">
         <Disclosure title="Target" meta={m.target?.name ?? m.targetName ?? 'not published'}>
           {m.target ? (
             <dl className="grid grid-cols-1 gap-x-4 text-body sm:grid-cols-[max-content_1fr] sm:gap-y-2">
@@ -135,9 +105,54 @@ export function LandingSection({ mission: m }: { mission: MissionDetail }) {
           )}
           <p className="font-mono text-caption text-ink-3">Record version {m.dataVersion}</p>
         </Disclosure>
-      </div>
+      </RowGroup>
     </div>
   )
+}
+
+/**
+ * Step 4, Surface: what the Sun and Earth do at this target over the
+ * mission's days on the surface. The same shape as the other five steps.
+ */
+export function SurfaceSection({ mission: m }: { mission: MissionDetail }) {
+  const navigate = useNavigate()
+  return (
+    <SectionLayout question={SURFACE_QUESTION}>
+      <section aria-label="Sun and Earth at this target" data-guide="sun-earth" className="flex min-w-0 flex-col gap-6">
+        {m.siteId && m.site && hasSite(m.siteId) ? (
+          <TargetPanel mission={m} siteId={m.siteId} />
+        ) : (
+          <StatePanel
+            icon="ring"
+            title="Target not published"
+            detail={
+              m.targetName
+                ? `The published destination is “${m.targetName}”, which is not a single point with coordinates, so the Sun and Earth cannot be worked out for it yet.`
+                : 'No destination with coordinates has been published for this mission, so the Sun and Earth cannot be worked out for it yet.'
+            }
+            stillWorks="The other steps, and the mission’s record, are unaffected."
+            action={<Button onClick={() => navigate('/missions')}>Back to missions</Button>}
+          />
+        )}
+      </section>
+    </SectionLayout>
+  )
+}
+
+const SURFACE_QUESTION = SECTIONS.find((s) => s.id === 'landing')!.question
+
+/** The answer on Surface: the share of time in sunlight and in contact, and the longest night, in one sentence. */
+export function surfaceSentence(metrics: SiteMetrics): string {
+  const span = spanWords(metrics.windowHours)
+  const sunAll = !metrics.sun.longestDownArc && metrics.sun.fractionUp > 0.999
+  const earthAll = !metrics.earth.longestDownArc && metrics.earth.fractionUp > 0.999
+  if (sunAll && earthAll) return `Over these ${span} the Sun stays up and Earth stays in view the whole time.`
+  const sun = sunAll ? 'the Sun stays up' : `the Sun is up ${percent(metrics.sun.fractionUp)} of the time`
+  const earth = earthAll ? 'Earth stays in view' : `Earth is in view ${percent(metrics.earth.fractionUp)} of the time`
+  const night = metrics.sun.longestDownArc
+    ? `; the longest night is ${metrics.sun.longestDownOpen ? 'at least ' : ''}${Math.round(metrics.sun.longestDownH)} hours`
+    : ''
+  return `Over these ${span} ${sun} and ${earth}${night}.`
 }
 
 /** How it went: three lines, and the rest on request. */
@@ -313,7 +328,7 @@ export function initialWindow(m: MissionDetail): { startH: number; hours: number
   return null
 }
 
-function SurfaceWindowLine({ mission: m }: { mission: MissionDetail }) {
+function SurfaceWindowLine({ mission: m, site }: { mission: MissionDetail; site: string }) {
   const sw = m.surfaceWindow
   const s = sw.startIso ? Date.parse(sw.startIso) : null
   const e = sw.endIso ? Date.parse(sw.endIso) : null
@@ -336,10 +351,9 @@ function SurfaceWindowLine({ mission: m }: { mission: MissionDetail }) {
           : `${sw.note} Choose a date below.`
   }
   return (
-    <div className="flex flex-col gap-1">
-      <span className="text-small font-medium text-ink-3">Time on the surface</span>
-      <p className="text-control leading-6 text-ink">{line}</p>
-    </div>
+    <p className="text-caption leading-caption text-ink-3">
+      At {site}. Time on the surface: {line}.
+    </p>
   )
 }
 
@@ -361,6 +375,7 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
     m.surfaceWindow.startIso && m.surfaceWindow.endIso
       ? { startMs: Date.parse(m.surfaceWindow.startIso), endMs: Date.parse(m.surfaceWindow.endIso) }
       : null
+  const arrive = useMotionClass('pw-arrive')
 
   const seed = () => {
     setSite(siteId)
@@ -368,36 +383,43 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <Panel className="flex flex-col gap-3 p-5">
-        <div className="flex flex-col gap-0.5">
-          <span className="text-title font-semibold text-ink">{site.name}</span>
-          <span className="font-mono text-caption text-ink-3">
-            {coords(site.latDeg, site.lonDeg)} ·{' '}
-            {site.elevM !== null ? `height ${site.elevM.toLocaleString()} m` : 'height not known'}
-          </span>
+    <>
+      {metrics ? (
+        <div className={`-mt-4 flex flex-col gap-2 ${arrive}`}>
+          <p data-guide="section-answer" className="max-w-4xl text-title-lg leading-7 font-medium text-ink sm:text-subhead sm:leading-8">
+            {surfaceSentence(metrics)}
+          </p>
+          <SurfaceWindowLine mission={m} site={site.name} />
+          <div data-guide="listen" className="pt-1">
+            <SummarySpeaker view={view} />
+          </div>
         </div>
-        <SurfaceWindowLine mission={m} />
-        <div data-guide="listen">
-          <SummarySpeaker view={view} />
+      ) : view.error ? null : (
+        <div className="-mt-4 flex flex-col gap-2" aria-hidden="true">
+          <Skeleton className="h-7 w-full max-w-3xl" />
+          <Skeleton className="mt-1 h-4 w-64" />
         </div>
-      </Panel>
+      )}
 
-      {featureCentre && (
-        <UncertaintyNote>
-          For the centre of {m.targetName ?? 'the named feature'}; the landing point isn’t published.
-        </UncertaintyNote>
-      )}
-      {!terrainModelled && (
-        <UncertaintyNote>
-          No terrain data outside 80°S, so this is worked out as if the ground were flat. Real hills could block more.
-        </UncertaintyNote>
-      )}
-      {terrainModelled && meta?.uncertainty.partialCoverage && (
-        <UncertaintyNote>
-          Terrain data covers only {Math.round(meta.uncertainty.coverage * 100)}% of the directions around this spot,
-          so these numbers are likely too hopeful.
-        </UncertaintyNote>
+      {(featureCentre || !terrainModelled || (terrainModelled && meta?.uncertainty.partialCoverage)) && (
+        <div className="-mt-2 flex flex-col gap-2">
+          {featureCentre && (
+            <UncertaintyNote>
+              For the centre of {m.targetName ?? 'the named feature'}; the landing point isn’t published.
+            </UncertaintyNote>
+          )}
+          {!terrainModelled && (
+            <UncertaintyNote>
+              No terrain data outside 80°S, so this is worked out as if the ground were flat. Real hills could block more.
+            </UncertaintyNote>
+          )}
+          {terrainModelled && meta?.uncertainty.partialCoverage && (
+            <UncertaintyNote>
+              Terrain data covers only {Math.round(meta.uncertainty.coverage * 100)}% of the directions around this spot,
+              so these numbers are likely too hopeful.
+            </UncertaintyNote>
+          )}
+        </div>
       )}
 
       {view.error ? (
@@ -409,37 +431,63 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
       )}
 
       {metrics && !view.error && (
-        <Panel className="flex flex-col gap-3 p-5">
-          <DateSlider compact />
-          <div className="flex flex-col gap-1.5">
-            <span className="text-tag font-semibold tracking-caps-md text-sun uppercase">Sunlight over these dates</span>
-            <Ribbon
-              arcs={metrics.sun.arcs}
-              windowStartH={metrics.windowStartH}
-              windowHours={metrics.windowHours}
-              tone="sun"
-              cursorH={cursorH}
-              alertOverH={SURVIVAL_LIMIT_H}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <span className="text-tag font-semibold tracking-caps-md text-earth uppercase">Contact with Earth over these dates</span>
-            <Ribbon
-              arcs={metrics.earth.arcs}
-              windowStartH={metrics.windowStartH}
-              windowHours={metrics.windowHours}
-              tone="earth"
-              cursorH={cursorH}
-            />
-          </div>
-        </Panel>
+        <ChartPanel
+          title="Sunlight and contact with Earth over these dates"
+          chart={
+            <div className="flex flex-col gap-4">
+              <DateSlider compact />
+              <div className="flex flex-col gap-1.5">
+                <span className="text-small font-semibold text-sun">Sunlight</span>
+                <Ribbon
+                  arcs={metrics.sun.arcs}
+                  windowStartH={metrics.windowStartH}
+                  windowHours={metrics.windowHours}
+                  tone="sun"
+                  cursorH={cursorH}
+                  alertOverH={SURVIVAL_LIMIT_H}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-small font-semibold text-earth">Contact with Earth</span>
+                <Ribbon
+                  arcs={metrics.earth.arcs}
+                  windowStartH={metrics.windowStartH}
+                  windowHours={metrics.windowHours}
+                  tone="earth"
+                  cursorH={cursorH}
+                />
+              </div>
+            </div>
+          }
+          table={<ArcTable metrics={metrics} />}
+        />
       )}
 
-      <Disclosure guide="dates" title="Change the dates" meta={windowLine(msFromModelH(windowStartH), windowHours)}>
-        <WindowPicker siteId={siteId} missionWindow={missionWindow} />
-      </Disclosure>
+      <Rows
+        about={
+          <>
+            <Disclosure title="How this was worked out">
+              <p className="text-body leading-6 text-ink-2">
+                The skyline around {site.name} ({coords(site.latDeg, site.lonDeg)},{' '}
+                {site.elevM !== null ? `height ${site.elevM.toLocaleString()} m` : 'height not known'}) was measured
+                once from the terrain map. The Sun and Earth are traced across the sky for these dates and counted up
+                while above it; each time an edge is crossed carries a ± from the map’s height error.
+              </p>
+            </Disclosure>
+            <Disclosure title="Sources" meta="terrain map, Sun and Earth positions">
+              <Sources meta={meta} bare />
+            </Disclosure>
+          </>
+        }
+      >
+        <Disclosure guide="dates" title="Change the dates" meta={windowLine(msFromModelH(windowStartH), windowHours)}>
+          <WindowPicker siteId={siteId} missionWindow={missionWindow} />
+        </Disclosure>
+        <ExplainPanel siteId={siteId} start={w.start} end={w.end} />
+      </Rows>
 
       <div className="flex flex-col gap-2">
+        <h3 className="text-small font-semibold text-ink-2">Go further with this spot</h3>
         <div className="flex flex-wrap gap-3">
           <Button
             onClick={() => {
@@ -471,8 +519,6 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
           Compare adds the three nearest candidate sites: {nearest.map((s) => s.name).join(', ')}.
         </p>
       </div>
-
-      <ExplainPanel siteId={siteId} start={w.start} end={w.end} />
-    </div>
+    </>
   )
 }

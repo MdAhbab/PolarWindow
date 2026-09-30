@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
 import type { SiteMetrics, TrackSample } from '../lib/types'
-import { useReducedMotion, easeOut } from '../hooks/useMotion'
+import { useReducedMotion } from '../hooks/useMotion'
 import { bearing, compass, degrees } from '../lib/format'
 
 const X0 = 60
@@ -52,26 +51,10 @@ export function HorizonProfile({
   className?: string
 }) {
   const reduced = useReducedMotion()
-  const [reveal, setReveal] = useState(reduced ? 1 : 0)
-  const raf = useRef(0)
-
-  // M5 — the Sun path traces along the skyline on entry, so you watch it run
-  // into the ridge rather than finding it already stuck there.
-  useEffect(() => {
-    if (reduced) {
-      setReveal(1)
-      return
-    }
-    setReveal(0)
-    const start = performance.now()
-    const tick = (now: number) => {
-      const p = Math.min(1, (now - start) / 900)
-      setReveal(easeOut(p))
-      if (p < 1) raf.current = requestAnimationFrame(tick)
-    }
-    raf.current = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf.current)
-  }, [metrics.siteId, reduced])
+  // M5 — the Sun and Earth paths settle in from the left on each new site:
+  // transform and opacity only, restarted by the key on their group. Under
+  // reduced motion they are drawn complete.
+  const reveal = reduced ? '' : 'pw-chart-reveal'
 
   const mask = metrics.mask
   const n = mask.elDeg.length
@@ -153,22 +136,10 @@ export function HorizonProfile({
         {...(reduced ? { fillOpacity: 0.34 } : { className: 'breathe' })}
       />
 
-      <path
-        d={earthPath}
-        fill="none"
-        stroke="var(--color-earth)"
-        strokeWidth="3"
-        strokeDasharray="4000"
-        strokeDashoffset={4000 * (1 - reveal)}
-      />
-      <path
-        d={sunPath}
-        fill="none"
-        stroke="var(--color-sun)"
-        strokeWidth="3.5"
-        strokeDasharray="4000"
-        strokeDashoffset={4000 * (1 - reveal)}
-      />
+      <g key={metrics.siteId} className={reveal} style={{ transformBox: 'view-box' }}>
+        <path d={earthPath} fill="none" stroke="var(--color-earth)" strokeWidth="3" />
+        <path d={sunPath} fill="none" stroke="var(--color-sun)" strokeWidth="3.5" />
+      </g>
 
       {metrics.earth.samples.length > 0 && (
         <text

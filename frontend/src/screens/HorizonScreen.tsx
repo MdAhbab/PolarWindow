@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Breadcrumbs } from '../components/Page'
 import { useShallow } from 'zustand/react/shallow'
 import { useMission } from '../lib/store'
 import { useFocusedMetrics, useFocusedView } from '../lib/mission'
@@ -21,7 +21,7 @@ export function HorizonScreen() {
 
   if (!metrics || view.error) {
     return (
-      <div className="flex grow flex-col gap-6 p-4 lg:p-6">
+      <div className="pw-page flex grow flex-col gap-6 py-5 lg:py-6">
         <div className="max-w-2xl">
           {view.error ? (
             <ProblemPanel error={view.error} fallbackTitle="Cannot draw this skyline" onRetry={view.refetch} />
@@ -53,12 +53,10 @@ export function HorizonScreen() {
 
   return (
     <div className="flex grow flex-col">
-      <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-line px-4 py-4 lg:px-6">
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-line pw-page py-4">
         <div className="flex min-w-0 flex-col gap-1">
-          <Link to="/site" className="inline-flex h-8 items-center text-small font-semibold">
-            ← Back to {site.name}
-          </Link>
-          <h1 className="text-heading font-semibold">The skyline from {site.name}</h1>
+          <Breadcrumbs items={[{ label: 'Landing sites', to: '/map' }, { label: site.name, to: '/site' }, { label: 'Skyline' }]} />
+          <h1 className="text-title-lg font-semibold tracking-title text-ink sm:text-heading">The skyline from {site.name}</h1>
         </div>
         <div className="basis-full lg:basis-0 lg:grow">
           <DateSlider />

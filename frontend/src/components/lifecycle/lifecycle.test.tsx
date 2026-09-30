@@ -146,14 +146,14 @@ describe('SectionStates: the same states on every section', () => {
   it('loading: the numbers’ labels with no values, never zeros', () => {
     show({ status: 'pending' })
     expect(screen.getByText('Longest time in shadow')).toBeTruthy()
-    expect(screen.getAllByText('——')).toHaveLength(4)
+    expect(screen.getAllByText('Loading')).toHaveLength(4)
   })
 
   it('working it out: real progress and what still works', () => {
     show({ status: 'working', job: { job_id: 1, status: 'running', progress: 0.35, message: 'Working out passes', poll_after_s: 2 } })
     expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('35')
     expect(screen.getByText('Working out passes')).toBeTruthy()
-    expect(screen.getByText(/The other sections and the landing numbers are unaffected/)).toBeTruthy()
+    expect(screen.getByText(/The other steps are unaffected/)).toBeTruthy()
   })
 
   it('a queued job says it has not started, without a fake number', () => {
@@ -200,7 +200,7 @@ describe('JourneyBar', () => {
       '/missions/im-2/ready',
       '/missions/im-2/launch',
       '/missions/im-2/trip',
-      '/missions/im-2/landing',
+      '/missions/im-2/surface',
       '/missions/im-2/contact',
       '/missions/im-2/return',
     ])
@@ -628,7 +628,7 @@ describe('useSection follows a 202 through its job', () => {
     await waitFor(() => expect(result.current.status).toBe('error'))
     const e = (result.current as { error: { title: string; detail: string; stillWorks: string } }).error
     expect(e.detail).toBe('Out of memory')
-    expect(e.stillWorks).toMatch(/other sections/)
+    expect(e.stillWorks).toMatch(/other steps/)
   })
 })
 
@@ -971,5 +971,27 @@ describe('Rover and lander line of sight', () => {
     const layer = Array.from(screen.getByTestId('site-tile-map').querySelectorAll('image')).find((i) => /\?layer=sight$/.test(i.getAttribute('href') ?? ''))!
     fireEvent.error(layer)
     expect(screen.getByRole('status').textContent).toBe('The map layer did not load, so nothing is drawn over the terrain. The table has the same answer.')
+  })
+})
+
+describe('trip answer and key', () => {
+  it('is one sentence: the length, then shadow and contact', async () => {
+    const { tripSentence } = await import('../../screens/sections/TripSection')
+    expect(tripSentence(24 * 7.7, 'flown', 'The longest time in shadow is 0.75 h, and the longest time without contact is 0.12 h.')).toBe(
+      'The trip takes 7.7 days (as flown); the longest time in shadow is 0.75 h, and the longest time without contact is 0.12 h.',
+    )
+  })
+
+  it('says a run of numbered burns once, and keeps a lone burn by its name', async () => {
+    const { burnKeys } = await import('./TripStrip')
+    expect(burnKeys(['Correction 1', 'Correction 2', 'Correction 3', 'Lunar orbit insertion'])).toEqual([
+      { marks: '1–3', label: 'Corrections' },
+      { marks: '4', label: 'Lunar orbit insertion' },
+    ])
+    expect(burnKeys(['Correction 1', 'Entering lunar orbit', 'Correction 2'])).toEqual([
+      { marks: '1', label: 'Correction 1' },
+      { marks: '2', label: 'Entering lunar orbit' },
+      { marks: '3', label: 'Correction 2' },
+    ])
   })
 })

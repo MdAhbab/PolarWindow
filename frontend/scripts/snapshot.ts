@@ -128,9 +128,13 @@ async function visit(page: Page, path: string) {
 
 /** Every month in a mission's strip, so the dates a viewer picks are there offline. */
 async function everyMonth(page: Page) {
+  // The month strip sits in the closed "Change the dates" row.
+  const row = page.locator('main details').filter({ has: page.locator('summary', { hasText: 'Change the dates' }) }).first()
+  if ((await row.count()) && (await row.getAttribute('open')) === null) await row.locator('summary').click()
+  await settle(page)
   const months = page.getByRole('option')
-  const count = await months.count()
-  for (let i = 0; i < count; i++) {
+  // The strip can redraw as its months' numbers arrive: count again each time.
+  for (let i = 0; i < (await months.count()); i++) {
     await months.nth(i).click()
     await settle(page)
   }
@@ -173,7 +177,9 @@ async function main() {
   // Every mission, its target at its own window, and where it leads.
   const missions = (await (await fetch(`${API}/missions`)).json()) as { items: { id: string; site_id: string | null }[] }
   for (const m of missions.items) {
+    // The mission's home (its record and six steps), then Surface, where its target leads on.
     await visit(page, `/missions/${m.id}`)
+    await visit(page, `/missions/${m.id}/surface`)
     if (!m.site_id) continue
     await page.getByRole('button', { name: 'Open the site page' }).click()
     await settle(page)
@@ -185,7 +191,7 @@ async function main() {
       await settle(page)
     }
     const compare = async () => {
-      await visit(page, `/missions/${m.id}`)
+      await visit(page, `/missions/${m.id}/surface`)
       await page.getByRole('button', { name: 'Compare with nearby sites' }).click()
       await settle(page)
       for (const rank of ['Time in sunlight', 'Time in contact with Earth', 'Longest time without contact', 'Longest night']) {
@@ -205,7 +211,7 @@ async function main() {
   }
   await visit(page, '/missions/nope')
 
-  // Every mission's six steps (Landing is the mission page above). A step the
+  // Every mission's six steps (Surface is visited above). A step the
   // service does not answer yet is saved as its error, which is what it said.
   // A step still being worked out (202) is followed until its answer comes, so
   // the copy holds the answer rather than nothing.
@@ -230,7 +236,7 @@ async function main() {
 
   // The demo's dates: every month for IM-2 and for the Mons Mouton missions.
   for (const id of ['im-2', 'blue-moon-mk1-viper']) {
-    await visit(page, `/missions/${id}`)
+    await visit(page, `/missions/${id}/surface`)
     await everyMonth(page)
     await page.getByRole('button', { name: 'Open the site page' }).click()
     await settle(page)
@@ -250,7 +256,7 @@ async function main() {
   await settle(page)
   await page.keyboard.press('Escape')
   for (const id of ['im-2', 'blue-ghost-m1', 'blue-moon-mk1-viper']) {
-    await visit(page, `/missions/${id}`)
+    await visit(page, `/missions/${id}/surface`)
     await page.locator('summary', { hasText: 'What is it like at this site?' }).click()
     await page.locator('main').getByText(/Summary from measurements|AI answer ·/).first().waitFor()
   }

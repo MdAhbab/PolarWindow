@@ -20,7 +20,7 @@ describe('ProblemPanel', () => {
     expect(screen.getByText('This site has not been surveyed yet')).toBeTruthy()
     expect(screen.getByText("No horizon mask for 'nobile-rim-2'.")).toBeTruthy()
     expect(screen.getByText('Sites that have been surveyed are unaffected.')).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
     expect(retry).toHaveBeenCalled()
   })
 
@@ -28,7 +28,7 @@ describe('ProblemPanel', () => {
     const e = new ApiError(404, { detail: { title: "That mission isn't in the list", ui: { still_works: 'All other missions are available.', retryable: false } } })
     const back = vi.fn()
     render(<ProblemPanel error={e} onRetry={() => {}} action={{ label: 'Back to missions', onClick: back }} />)
-    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Back to missions' }))
     expect(back).toHaveBeenCalled()
   })

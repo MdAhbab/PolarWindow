@@ -96,9 +96,7 @@ function ReturnAnswer({ ret, meta, missionId, status }: { ret: ReturnDTO; meta: 
           }
           stillWorks="Every other step is unaffected."
         />
-        <Rows>
-          <SourcesRow meta={meta} />
-        </Rows>
+        <Rows about={<SourcesRow meta={meta} />} />
       </>
     )
   }
@@ -137,9 +135,13 @@ function ReturnAnswer({ ret, meta, missionId, status }: { ret: ReturnDTO; meta: 
 
   return (
     <>
-      <Answer meta={meta}>
-        {b ? `${b.note} ${seaWords(b)}`.trim() : 'Where the booster comes down is not known.'}{' '}
-        {capsule ? (c?.zone ? `A capsule splashes down ${zoneWords(c.zone)}.` : 'A capsule returns; its splashdown zone is not known yet.') : (c?.reason ?? 'No capsule returns on this mission.')}
+      <Answer
+        meta={meta}
+        extra={`${b ? seaWords(b) : ''} ${
+          capsule ? (c?.zone ? `A capsule splashes down ${zoneWords(c.zone)}.` : 'A capsule returns; its splashdown zone is not known yet.') : (c?.reason ?? 'No capsule returns on this mission.')
+        }`.trim()}
+      >
+        {b ? b.note : 'Where the booster comes down is not known.'}
       </Answer>
       <NumberRow>
         {recovered ? (
@@ -187,7 +189,7 @@ function ReturnAnswer({ ret, meta, missionId, status }: { ret: ReturnDTO; meta: 
           table={<LimitTable rows={rows} />}
         />
       )}
-      <Rows>
+      <Rows about={<><HowSure meta={meta} /><SourcesRow meta={meta} /></>}>
         {b && (
           <Disclosure title="Booster landing zone" meta={b.zone && b.landing !== 'unknown' ? zoneWords(b.zone) : NO_ZONE[b.landing]}>
             <p className="text-body leading-6 text-ink-2">
@@ -217,8 +219,6 @@ function ReturnAnswer({ ret, meta, missionId, status }: { ret: ReturnDTO; meta: 
         </Disclosure>
         {c?.model_check && <CapsuleCheckRow check={c.model_check} />}
         {(recovered || capsule) && <LimitsRow ret={ret} missionId={missionId} />}
-        <HowSure meta={meta} />
-        <SourcesRow meta={meta} />
       </Rows>
     </>
   )

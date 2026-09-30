@@ -1,5 +1,5 @@
 import type React from 'react'
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import { Icon } from './Icon'
 
 /* Every control here is a real button, anchor or input with a label, so Tab
@@ -8,7 +8,7 @@ import { Icon } from './Icon'
 
 const BASE =
   'inline-flex items-center justify-center gap-2 rounded-control font-semibold ' +
-  'transition-colors duration-150 disabled:cursor-not-allowed select-none'
+  'transition-[background-color,border-color,color] duration-[var(--pw-dur-quick)] disabled:cursor-not-allowed select-none'
 
 export function Button({
   children,
@@ -191,20 +191,44 @@ export function Disclosure({
     <details
       open={defaultOpen}
       data-guide={guide}
-      className={`group border border-line bg-panel ${className}`}
+      className={`pw-row group border border-line bg-panel ${className}`}
       onToggle={(e) => {
         if ((e.currentTarget as HTMLDetailsElement).open) onOpen?.()
       }}
     >
-      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-5 py-2.5 text-control font-medium text-ink hover:bg-inset [&::-webkit-details-marker]:hidden">
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2.5 text-control font-medium text-ink transition-colors duration-[var(--pw-dur-quick)] hover:bg-inset sm:px-5 [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
           <span>{title}</span>
           {meta && <span className="text-small font-normal text-ink-3">{meta}</span>}
         </span>
-        <Icon name="chevron" size={16} strokeWidth={2} className="shrink-0 text-ink-3 transition-transform group-open:rotate-180" />
+        <Icon
+          name="chevron"
+          size={16}
+          strokeWidth={2}
+          className="shrink-0 text-ink-3 transition-transform duration-[var(--pw-dur-base)] ease-[var(--ease-settle)] group-open:rotate-180"
+        />
       </summary>
-      <div className="flex flex-col gap-4 px-5 pt-1 pb-5">{children}</div>
+      <div className="pw-disclosure-body flex flex-col gap-4 px-4 pt-1 pb-5 sm:px-5">{children}</div>
     </details>
+  )
+}
+
+/**
+ * Closed rows that belong together, under one short heading: a section's
+ * "Details", "How this was worked out" and "Sources". Inside a group the rows
+ * share their borders, so three rows read as one list, not three boxes.
+ */
+export function RowGroup({ title, children, className = '' }: { title?: string; children: ReactNode; className?: string }) {
+  const id = useId()
+  return (
+    <section aria-labelledby={title ? id : undefined} className={`flex min-w-0 flex-col gap-2 ${className}`}>
+      {title && (
+        <h3 id={id} className="text-small font-semibold text-ink-2">
+          {title}
+        </h3>
+      )}
+      <div className="pw-rows flex flex-col">{children}</div>
+    </section>
   )
 }
 
@@ -226,7 +250,7 @@ export function SectionLabel({
   id?: string
 }) {
   return (
-    <As id={id} className={`text-caption font-semibold tracking-caps text-ink-3 uppercase ${className}`}>
+    <As id={id} className={`text-small font-semibold tracking-title text-ink-2 ${className}`}>
       {children}
     </As>
   )
@@ -438,5 +462,71 @@ export function SvgDefs() {
         </pattern>
       </defs>
     </svg>
+  )
+}
+
+/**
+ * Tabs: one row of choices, one panel. The keyboard pattern is the usual
+ * one: Tab reaches the chosen tab, the arrow keys move and choose, Home and
+ * End go to the ends. The caller draws the panel with `role="tabpanel"`,
+ * `id={`${baseId}-panel`}` and `aria-labelledby={`${baseId}-${value}`}`.
+ * Vertical from `md` when the caller's class makes it a column.
+ */
+export function Tabs<T extends string>({
+  label,
+  baseId,
+  tabs,
+  value,
+  onChange,
+  className = '',
+}: {
+  label: string
+  baseId: string
+  tabs: { id: T; label: string }[]
+  value: T
+  onChange: (v: T) => void
+  className?: string
+}) {
+  const move = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const i = tabs.findIndex((t) => t.id === value)
+    const next =
+      e.key === 'ArrowRight' || e.key === 'ArrowDown'
+        ? (i + 1) % tabs.length
+        : e.key === 'ArrowLeft' || e.key === 'ArrowUp'
+          ? (i - 1 + tabs.length) % tabs.length
+          : e.key === 'Home'
+            ? 0
+            : e.key === 'End'
+              ? tabs.length - 1
+              : null
+    if (next === null) return
+    e.preventDefault()
+    onChange(tabs[next].id)
+    document.getElementById(`${baseId}-${tabs[next].id}`)?.focus()
+  }
+  return (
+    <div role="tablist" aria-label={label} onKeyDown={move} className={`flex overflow-x-auto md:flex-col md:overflow-visible ${className}`}>
+      {tabs.map((t) => {
+        const on = t.id === value
+        return (
+          <button
+            key={t.id}
+            id={`${baseId}-${t.id}`}
+            type="button"
+            role="tab"
+            aria-selected={on}
+            aria-controls={`${baseId}-panel`}
+            tabIndex={on ? 0 : -1}
+            onClick={() => onChange(t.id)}
+            className={`relative flex h-12 shrink-0 items-center px-4 text-body whitespace-nowrap transition-colors duration-[var(--pw-dur-quick)] md:px-5 ${
+              on ? 'font-semibold text-ink' : 'font-medium text-ink-2 hover:bg-inset hover:text-ink'
+            }`}
+          >
+            {on && <span aria-hidden="true" className="absolute inset-x-3 bottom-0 h-[3px] bg-ink md:inset-x-auto md:inset-y-2 md:left-0 md:h-auto md:w-[3px]" />}
+            {t.label}
+          </button>
+        )
+      })}
+    </div>
   )
 }

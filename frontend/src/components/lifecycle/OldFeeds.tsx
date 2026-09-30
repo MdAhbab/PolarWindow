@@ -1,4 +1,5 @@
 import type { FeedDTO } from '../../lib/api/lifecycle'
+import { useSettingsTab } from '../../lib/settingsTab'
 import { useHealth } from '../../lib/api/queries'
 import { useFeeds } from '../../lib/api/lifecycleQueries'
 import { useSnapshotActive } from '../../lib/api/snapshot'
@@ -50,7 +51,10 @@ export function OldFeedsNote() {
       <Icon name="uncertain" size={14} strokeWidth={2.2} className="mt-0.5 shrink-0 text-ink-3" aria-hidden="true" />
       <span className="min-w-0 flex-1">
         {words}{' '}
-        <button type="button" onClick={() => setSettingsOpen(true)} className="min-h-11 font-semibold text-ink underline underline-offset-2 sm:min-h-0">
+        <button type="button" onClick={() => {
+            useSettingsTab.getState().setTab('sources')
+            setSettingsOpen(true)
+          }} className="min-h-11 font-semibold text-ink underline underline-offset-2 sm:min-h-0">
           See the data sources
         </button>
       </span>

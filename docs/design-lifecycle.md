@@ -1,5 +1,141 @@
 # Design: the mission lifecycle screens
 
+## 2026-09-30 · Audit and redesign plan
+
+**Audit** (every route and all six sections of IM-2, 1440 px and 375 px, dark and
+light, offline copy). The app is correct and complete; it reads like an
+engineering tool because of how much is on screen at once, not because of what.
+
+*Cluttered or repeated*
+- A section page spends ~300 px on the mission name and the step bar before its
+  question; on a phone the header alone is three rows (logo, buttons, badge) plus
+  a 64 px tab bar.
+- Answers run long: Launch is two sentences (5 lines at 375 px), Return three.
+- Tile footnotes are paragraphs, and repeat: Trip prints the same "No margin: only
+  the Moon's shadow …" under two tiles; nearly every tile starts "No margin:".
+- Tiles are tall and half empty; upper-case tracked labels wrap to four lines on
+  a phone ("LONGEST TIME WITHOUT CONTACT").
+- Six to nine closed rows per section, each a full-width bar, ungrouped; Contact
+  and Launch add a boxed note between the answer and the numbers.
+- Charts carry long legends (Trip: 12 keys, 8 of them "Correction n").
+- The footer's estimate line speaks about terrain on pages that use none.
+
+*Unclear or inconsistent*
+- The mission page opens on Landing, not on the mission: nothing says what the
+  six steps are or how far each got, and every step reads "Available".
+- Step summaries are cut mid-word ("Launch Compl…"); the step called Landing is
+  the time on the surface.
+- Five top tabs mix the mission path with four site tools (Map, Site, Compare,
+  Plan); Map repeats the Missions page's map.
+- Surface does not follow the section template (no question or answer); Site,
+  Compare and Plan each lay out their date bar and controls differently.
+- The phone tab bar marks the open view in amber, which means sunlight.
+- Compare outlines every card in the alert colour, so nothing stands out.
+
+*Missing or rough states*
+- No not-found page (an unknown address silently opens Missions), no error
+  boundary, no offline banner (a badge only), no toasts after a save.
+- Loading is a panel with a progress bar, not the shape of the page; `/` shows a
+  blank canvas while its chunk loads.
+- The number roll (M4) shows wrong values while it runs.
+- The guide opens by default over the page, ten steps long.
+
+**Plan** (slices, each checked at both widths and themes, then committed)
+1. *Tokens and components* in `src/styles` and `components/ui`: one colour,
+   type, spacing, radius, elevation and motion scale; page header, section card,
+   number tile, row group, table twin, sheet, tabs, buttons, fields, toasts, and
+   the empty, loading, working, error and offline panels.
+2. *Shell*: two top views, **Missions** and **Landing sites** (Map, Site,
+   Compare, Plan as a second row inside it); breadcrumbs on every page; one-row
+   header on a phone, no bottom bar; offline banner; not-found page; error
+   boundary; skeletons shaped like the page.
+3. *Hub as home*: `/missions/:id` shows the mission and six step cards, each with
+   its question, state (glyph and words) and summary, one tap each. Landing is
+   renamed **Surface** (`/surface`; `/landing` still works).
+4. *Sections*: question, one answer sentence, at most four compact tiles (one
+   line under each; a reason shared by two tiles is said once), one chart, then
+   three row groups: **Details**, **How this was worked out**, **Sources**.
+   A "Next step" link at the end of each.
+5. *Secondary screens and Settings*: one page header and date bar for Site,
+   Compare, Plan and Skyline; Settings grouped as Project, Parameters, Risk
+   scale, Data sources, Appearance, Offline copy; toasts on save.
+6. *Motion*: view transitions between pages and steps, disclosure and sheet
+   open/close, skeleton to content, chart reveal, 202 progress; all transform
+   and opacity only, each with a reduced-motion branch; the number roll becomes
+   a fade of the final value. No motion library.
+
+The rules that do not change: no verdicts; every number with its range or
+reason, source and age; the Words table; a table twin for every chart; status
+as glyph and words; axe clean in both themes; nothing wider than 375 px.
+
+**Built** (branch `featured-frontend`)
+
+*Tokens* (`src/styles/globals.css`): the colour and type tokens stay; added
+elevation (`shadow-rest`, `-lift`, `-raised`, `-overlay`, lighter in the light
+theme), space roles (`gutter` 16 px, 32 px from `lg` via `.pw-page`; `stack`,
+`block`), radius (0 / 2 px / pill, unchanged) and motion (`--ease-settle`,
+`--ease-move`, `--ease-leave`; `--pw-dur-quick` 140, `-base` 220, `-slow` 380,
+`-sheet` 420 ms). Links in running text are underlined.
+
+*Parts* (one each, used everywhere): `PageHeader` + `Breadcrumbs`
+(`components/Page.tsx`); `SectionLayout`, `Answer` (one sentence and at most one
+quieter line), `NumberRow` + `QuantityTile`/`KeyNumberTile`, `ChartPanel` (table
+twin), `Rows` → `RowGroup` "Details" and "About these numbers" ("How this was
+worked out", "Sources"); `Disclosure`; `Sheet` (sizes 400/480/720);
+`Tabs`; `Button`, `Segmented`, `Field`; `Toaster` + `toast()`; `Skeleton`,
+`SectionSkeleton`, `ProgressTrack`, `WorkingPanel`, `StatePanel`, `ErrorPanel`,
+`ConnectionBanner`, `NotFound`, `ErrorBoundary` (`components/States.tsx`).
+
+*Shell*: two views, **Missions** and **Landing sites** (Map · Site · Compare ·
+Plan as tabs under the header; Skyline and the report have breadcrumbs). One
+header row on a phone, the two views at the bottom in ink (not amber). The
+data-source badge moved into a line under the header that says what a saved
+copy or being offline means. Unknown addresses get a 404 page; a screen that
+throws gets a panel with a way back, not a blank page. A new page opens at its
+top (it used to open scrolled down on a phone).
+
+*Mission home*: `/missions/:id` is the mission's record beside six step cards
+(question, state as glyph and words, the service's summary in full, one tap).
+Each step page has breadcrumbs, the step bar (its mark slides to the step
+pressed) and ends with "All six steps" and "Next step". Landing is now
+**Surface** (`/surface`; `/landing` redirects), in the same template: an answer
+sentence built from the four numbers, Listen beside it, the date bars as its
+chart with the stretch table as twin.
+
+*Less to read*: answers are one sentence (Trip, Launch, Return), with the
+published liftoff, the sea and the capsule in one quieter line. Method notes
+(the opportunity note, the landing rule, the link-budget note) moved into "How
+this was worked out", which also holds when and with what it was worked out; a
+no-margin or missing reason two tiles share is said once; numbered burns share
+one key; tile labels are sentence case and wrap as words. The guide is five
+steps and has "Skip the tour".
+
+*Settings*: one 720 px sheet with six tabs by task: Project (signed in, sign
+out, your name on changes, AI, service state, clean-up), Parameters, Risk
+scale, Data sources, Appearance (theme, motion, shortcuts, guide), Offline
+copy. A save is said in a toast drawn inside the open sheet; a changed
+parameter's toast has Undo (puts the value before it back). Settings loads the
+first time it is opened (its own 24 kB chunk), so the main bundle went from
+592.8 kB (182.6 kB gzipped) to 577.9 kB (179.6 kB) while gaining the new parts.
+
+*Motion* (transform and opacity only; each branch decided in code, the CSS
+floor behind it): page and step changes cross-fade through the View
+Transitions API (`useTransitionClick` in `lib/viewTransition.ts`: React
+Router's own prop needs a data router, and the app uses `<BrowserRouter>`);
+only the step content is named on a step page, so the header and the step bar
+hold still; disclosures drop open; sheets slide
+in and out; skeletons pulse and content arrives with a short rise; charts
+grow in from their baseline; the 202 bar scales (a sliding band before there
+is a figure); the rings turn into place (M2) and the skyline paths settle in
+(M5); a changed number settles into place instead of rolling through wrong
+values (M4). Text and numbers only move, never fade, so their contrast holds
+at every frame (axe runs mid-animation in the tests). No motion library was
+added.
+
+---
+
+## 2026-09-27 · The lifecycle screens (first plan)
+
 **Status:** built to this plan on branch `featured` · **Date:** 2026-09-27
 **Builds on:** `docs/lifecycle-api.md` (the contract), `docs/conventions.md`
 (invariants 1–12, Words), `docs/design-handoff.md` (tokens, states),

@@ -27,7 +27,7 @@ async function stubSpeech(context: BrowserContext) {
 
 for (const where of [
   { path: '/site', name: /summary of this site/ },
-  { path: '/missions/im-2', name: /summary of this site/ },
+  { path: '/missions/im-2/surface', name: /summary of this site/ },
   { path: '/compare?sites=connecting-ridge,de-gerlache-rim,malapert-massif&rank=night', name: /summary of this comparison/ },
 ]) {
   test(`Listen on ${where.path.split('?')[0]}`, async ({ page, context }) => {

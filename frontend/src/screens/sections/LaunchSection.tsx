@@ -23,7 +23,6 @@ import { WeatherRuleTable, rulesSummary } from '../../components/lifecycle/Weath
 import { Field, FormSheet, HistoryList, Select, TextArea, TextInput, isHttpUrl } from '../../components/lifecycle/Forms'
 import { Button, Disclosure } from '../../components/ui'
 import { Icon } from '../../components/Icon'
-import { UncertaintyNote } from '../../components/States'
 import { SpaceWeatherRow } from '../../components/lifecycle/SpaceWeather'
 import { useCanWrite } from './ReadySection'
 
@@ -52,11 +51,9 @@ export function LaunchSection({ mission: m }: { mission: MissionDetail }) {
                 icon="ring"
                 title="No launch to show yet"
                 detail={data.none_reason}
-                stillWorks="Landing, Contact and the other steps do not depend on the launch and work as usual."
+                stillWorks="Surface, Contact and the other steps do not depend on the launch and work as usual."
               />
-              <Rows>
-                <SourcesRow meta={meta} />
-              </Rows>
+              <Rows about={<SourcesRow meta={meta} />} />
             </>
           ) : data.opportunities.length ? (
             <LaunchAnswer cal={data} meta={meta} missionId={m.id} />
@@ -68,14 +65,13 @@ export function LaunchSection({ mission: m }: { mission: MissionDetail }) {
                 detail={`None of the days searched meets the landing rule: ${data.landing_rule.note}`}
                 stillWorks="Try other dates below. The other steps are unaffected."
               />
-              <Rows>
+              <Rows about={<SourcesRow meta={meta} />}>
                 <DatesRow
                   from={from}
                   to={to}
                   datesNote={data.dates_note}
                   onApply={(f, t) => setParams({ ...(f ? { from: f } : {}), ...(t ? { to: t } : {}) })}
                 />
-                <SourcesRow meta={meta} />
               </Rows>
             </>
           )
@@ -126,21 +122,26 @@ function LaunchAnswer({ cal, meta, missionId }: { cal: LaunchCalendarDTO; meta: 
 
   return (
     <>
-      <Answer meta={meta}>
+      <Answer
+        meta={meta}
+        extra={
+          cal.published_t0?.value != null && (!flown || o.basis === 'reconstructed')
+            ? flown
+              ? `The published liftoff is ${quantityText(cal.published_t0)}.`
+              : `The mission’s published launch time is ${quantityText(cal.published_t0)}.`
+            : undefined
+        }
+      >
         {flown ? (
           <>
             It launched on {quantityText(o.t0)} from {o.pad_name},{' '}
             {o.basis === 'reconstructed' ? 'as worked out again from NASA’s reconstruction of the flight' : 'as published'}.
-            {o.basis === 'reconstructed' && cal.published_t0?.value != null && (
-              <> The published liftoff is {quantityText(cal.published_t0)}.</>
-            )}
           </>
         ) : (
           <>
             {cal.opportunities.length} launch opportunit{cal.opportunities.length === 1 ? 'y' : 'ies'} from {pads.join(' and ')} between{' '}
-            {dateWords(fromMs)} and {dateWords(toMs)}.
-            {next && <> The next is {dateTimeWords((next.t0.value ?? 0) * 1000)} from {next.pad_name}.</>}
-            {cal.published_t0?.value != null && <> The mission’s published launch time is {quantityText(cal.published_t0)}.</>}
+            {dateWords(fromMs)} and {dateWords(toMs)}
+            {next ? <>; the next is {dateTimeWords((next.t0.value ?? 0) * 1000)} from {next.pad_name}.</> : '.'}
           </>
         )}
       </Answer>
@@ -154,7 +155,6 @@ function LaunchAnswer({ cal, meta, missionId }: { cal: LaunchCalendarDTO; meta: 
           <QuantityTile term="sunAtLanding" q={o.landing.sun_elevation_deg} tone="sun" icon="sun" note={sunBandWords(cal.landing_rule)} />
           <QuantityTile term="sunlightAfterLanding" q={o.landing.sunlight_after_h} tone="sun" note={o.landing.earth_up ? 'Earth in view at landing' : 'Earth not in view at landing'} />
         </NumberRow>
-        {o.note && <UncertaintyNote>{o.note}</UncertaintyNote>}
       </div>
       <ChartPanel
         title={flown ? 'The launch (time in UTC)' : 'Launch opportunities by day (times in UTC)'}
@@ -176,15 +176,24 @@ function LaunchAnswer({ cal, meta, missionId }: { cal: LaunchCalendarDTO; meta: 
                   : []),
               ]}
             />
-            <p className="text-caption leading-caption text-ink-3">
-              {flown ? 'The landing rule it is checked against: ' : 'Each opportunity is worked back from a landing that meets the landing rule. '}
-              {cal.landing_rule.note}
-            </p>
           </>
         }
         table={<LaunchTable opportunities={cal.opportunities} />}
       />
-      <Rows>
+      <Rows
+        about={
+          <>
+            <HowSure meta={meta}>
+              {o.note && <p className="text-body leading-6 text-ink-2">{o.note}</p>}
+              <p className="text-body leading-6 text-ink-2">
+                {flown ? 'The landing rule it is checked against: ' : 'Each opportunity is worked back from a landing that meets the landing rule. '}
+                {cal.landing_rule.note}
+              </p>
+            </HowSure>
+            <SourcesRow meta={meta} />
+          </>
+        }
+      >
         <FlightRow o={o} flown={flown} />
         <Disclosure
           title={flown ? 'Weather rules for this launch' : 'Weather rules for this opportunity'}
@@ -232,8 +241,6 @@ function LaunchAnswer({ cal, meta, missionId }: { cal: LaunchCalendarDTO; meta: 
             onApply={(f, t) => setParams({ ...(f ? { from: f } : {}), ...(t ? { to: t } : {}) })}
           />
         )}
-        <HowSure meta={meta} />
-        <SourcesRow meta={meta} />
       </Rows>
     </>
   )

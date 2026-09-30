@@ -5,6 +5,7 @@ import { ApiError } from '../../lib/api/client'
 import type { AuditEntryDTO } from '../../lib/api/lifecycle'
 import { dateTimeWords } from '../../lib/format'
 import { Sheet } from '../Sheet'
+import { toast } from '../Toast'
 import { Button, SectionLabel } from '../ui'
 
 /**
@@ -171,7 +172,6 @@ export function FormSheet({
   savingLabel?: string
 }) {
   const writer = useNamedWriter()
-  const [saved, setSaved] = useState(false)
   return (
     <Sheet open={open} onClose={onClose} title={title} wide>
       {/* Our own messages, beside the field they are about, instead of the browser's bubble. */}
@@ -180,10 +180,10 @@ export function FormSheet({
         className="flex flex-col gap-5 p-5"
         onSubmit={async (e) => {
           e.preventDefault()
-          setSaved(false)
           if (!(await writer.ensure())) return
           const ok = await onSave()
-          if (ok !== false) setSaved(true)
+          // Said in a toast, drawn inside this sheet while it is open.
+          if (ok !== false) toast('Saved.')
         }}
       >
         {intro && <div className="text-small leading-5 text-ink-2">{intro}</div>}
@@ -197,9 +197,7 @@ export function FormSheet({
           <Button variant="ghost" onClick={onClose}>
             Close
           </Button>
-          <p aria-live="polite" className="text-small text-ink-2">
-            {saved && !error ? 'Saved.' : ''}
-          </p>
+
         </div>
       </form>
       {history && <div className="flex flex-col gap-3 border-t border-line p-5">{history}</div>}

@@ -30,7 +30,7 @@ test('the hub (contract fixtures): six steps in order, one open at a time, each 
   await page.goto('/missions/im-2/ready')
   const links = steps(page).getByRole('link')
   await expect(links).toHaveCount(6)
-  await expect(links).toHaveText([/^1\s*Ready/, /^2\s*Launch/, /^3\s*Trip/, /^4\s*Landing/, /^5\s*Contact/, /^6\s*Return/])
+  await expect(links).toHaveText([/^1\s*Ready/, /^2\s*Launch/, /^3\s*Trip/, /^4\s*Surface/, /^5\s*Contact/, /^6\s*Return/])
   // Each step says its state in words, and its summary.
   await expect(links.nth(0)).toHaveAccessibleName(/Ready.*Available.*5 of 9 items ready; 1 blocked/)
   await expect(links.nth(4)).toHaveAccessibleName(/Contact.*Working it out/)
@@ -46,8 +46,14 @@ test('the hub (contract fixtures): six steps in order, one open at a time, each 
   await expect(links.nth(2)).toBeFocused()
   await expect(page.getByRole('heading', { name: QUESTIONS.trip })).toBeVisible()
 
-  // /missions/:id opens on Landing, the page this product began with.
+  // /missions/:id is the mission's home: the six steps as cards, none open.
   await page.goto('/missions/im-2')
+  await expect(links).toHaveCount(6)
+  await expect(links.nth(3)).not.toHaveAttribute('aria-current', 'page')
+  await expect(links.nth(0)).toHaveAccessibleName(/Ready.*Available.*5 of 9 items ready; 1 blocked/)
+  // Surface is the fourth step; its old address still lands on it.
+  await page.goto('/missions/im-2/landing')
+  await expect(page).toHaveURL(/\/missions\/im-2\/surface$/)
   await expect(links.nth(3)).toHaveAttribute('aria-current', 'page')
   await expect(page.locator('[data-guide="sun-earth"]')).toBeVisible()
   // An unknown step goes back to the mission.
@@ -276,7 +282,7 @@ test('old live data (contract fixtures): a degraded service names the old feeds 
   await expectNoSeriousAxe(page, 'the old live data note at 375 px')
   expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the hub scrolls sideways at 375 px').toBeLessThanOrEqual(375)
   await page.getByRole('button', { name: 'See the data sources' }).click()
-  await expect(page.getByRole('dialog')).toContainText('Data sources')
+  await expect(page.getByRole('dialog').getByRole('tab', { name: 'Data sources' })).toHaveAttribute('aria-selected', 'true')
 })
 
 test('official launch forecast (contract fixtures): a save shows the forecast as stored, not the one before; taking it back shows the one before again', async ({ page, context }) => {
@@ -702,7 +708,7 @@ test('working it out (contract fixtures): a 202 shows its progress and what stil
   await page.goto('/missions/im-2/trip')
   await expect(page.getByText('Working it out', { exact: true }).last()).toBeVisible()
   await expect(page.getByRole('progressbar', { name: 'Progress' })).toHaveAttribute('aria-valuenow', '35')
-  await expect(page.locator('main')).toContainText('The other sections and the landing numbers are unaffected')
+  await expect(page.locator('main')).toContainText('The other steps are unaffected')
   // The numbers' labels are there, with no values yet.
   await expect(page.locator('main')).toContainText('Longest time in shadow')
   await expectNoSeriousAxe(page, 'trip while working it out')
@@ -768,7 +774,7 @@ test('settings (contract fixtures): data sources with their age, the risk scale,
   await page.goto('/missions')
   await page.getByRole('button', { name: 'Settings' }).click()
   const sheet = page.getByRole('dialog', { name: 'Settings' })
-  await sheet.locator('summary', { hasText: 'Data sources' }).click()
+  await sheet.getByRole('tab', { name: 'Data sources' }).click()
   await expect(sheet).toContainText('5 products from 5 providers: 3 working, 1 out of date, 1 failing')
   await expect(sheet).toContainText('DSN Now')
   await expect(sheet).toContainText('Failing')
@@ -779,11 +785,11 @@ test('settings (contract fixtures): data sources with their age, the risk scale,
     "glm, florida · no data yet · Fetched only in the 6 hours before a designed launch opportunity from this range's pads, so it holds nothing when none is near; that is not a fault.",
   )
   await expect(glm).not.toContainText('out of date')
-  await sheet.locator('summary', { hasText: 'Risk scale' }).click()
+  await sheet.getByRole('tab', { name: 'Risk scale' }).click()
   await expect(sheet).toContainText('never multiplied into a score')
   await expect(sheet).toContainText('No words are entered for the levels yet')
-  await sheet.locator('summary', { hasText: 'Parameters' }).click()
-  await expect(sheet.locator('summary', { hasText: 'Parameters' })).toContainText('1 of 4 entered')
+  await sheet.getByRole('tab', { name: 'Parameters' }).click()
+  await expect(sheet.getByRole('tabpanel')).toContainText('1 of 4 entered')
   await expect(sheet.getByText('Not entered yet')).toHaveCount(3)
   const change = sheet.getByRole('button', { name: /^Change\s*for Battery limit/ })
   await change.click()
@@ -791,7 +797,9 @@ test('settings (contract fixtures): data sources with their age, the risk scale,
   await expect(sheet.getByLabel('Value, in hours')).toHaveValue('96')
   await expect(sheet).toContainText('120 h → 96 h')
   await expect(sheet).toContainText('Set to 120 h')
-  await sheet.locator('summary', { hasText: 'People' }).click()
+  // People is part of Project, shown open there.
+  await sheet.getByRole('tab', { name: 'Project' }).click()
+  await expect(sheet.getByRole('heading', { name: 'People' })).toBeVisible()
   await expect(sheet.getByLabel('Your name').first()).toBeVisible()
   await expectNoSeriousAxe(page, 'settings with the project rows open')
 })
@@ -801,19 +809,18 @@ test('settings (live API): the parameters and the risk scale as the server has t
   await page.goto('/missions')
   await page.getByRole('button', { name: 'Settings' }).click()
   const sheet = page.getByRole('dialog', { name: 'Settings' })
-  const params = sheet.locator('summary', { hasText: 'Parameters' })
-  await expect(params).toContainText(/\d of 4 entered/)
-  await params.click()
+  await sheet.getByRole('tab', { name: 'Parameters' }).click()
+  await expect(sheet.getByRole('tabpanel')).toContainText(/\d of 4 entered/)
   await expect(sheet).toContainText('Battery limit')
   await expect(sheet).toContainText('Lowest Sun height allowed at landing')
   await sheet.getByRole('button', { name: /for Planned days on the surface/ }).click()
   await expect(sheet.getByLabel('Value, in days')).toBeVisible()
   await expect(sheet).toContainText(/Change history/i)
-  await sheet.locator('summary', { hasText: 'Risk scale' }).click()
+  await sheet.getByRole('tab', { name: 'Risk scale' }).click()
   await expect(sheet.getByRole('link', { name: 'standards.nasa.gov' })).toBeVisible()
   // The feeds: every note the service gives is on its product's line.
   const feeds = ((await (await page.request.get(`${API}/feeds`)).json()) as { feeds: { product: string; note: string | null }[] }).feeds
-  await sheet.locator('summary', { hasText: 'Data sources' }).click()
+  await sheet.getByRole('tab', { name: 'Data sources' }).click()
   await expect(sheet).toContainText(/\d+ products from \d+ providers/)
   for (const note of new Set(feeds.map((f) => f.note).filter((n): n is string => Boolean(n)))) await expect(sheet).toContainText(note)
   await expectNoSeriousAxe(page, 'settings, live parameters and risk scale')
@@ -844,7 +851,7 @@ test('trip and contact (live API): the flown trip with its gaps in the data, and
   await expect(page.locator('[data-guide="section-answer"]')).toContainText('The trip takes', { timeout: 90_000 })
   await expect(main).toContainText('(as flown)')
   // The answer speaks only for the hours the data covers.
-  await expect(page.locator('[data-guide="section-answer"]')).toContainText(/In the [\d.]+ hours NASA’s reconstruction covers, /)
+  await expect(page.locator('[data-guide="section-answer"]')).toContainText(/in the [\d.]+ hours NASA’s reconstruction covers, /)
   await expect(main).toContainText('separate stretches')
   await expect(main).toContainText('No data')
   await page.getByRole('button', { name: 'Read the chart as a table' }).click()
@@ -896,7 +903,7 @@ test('launch (live API): a flown launch worked out again, and a planned mission�
   await page.goto('/missions/im-1/launch')
   await expect(answer).toContainText('It launched on 15 Feb 2024', { timeout: 90_000 })
   await expect(answer).toContainText('as worked out again from NASA’s reconstruction of the flight')
-  await expect(answer).toContainText('The published liftoff is 15 Feb 2024')
+  await expect(main).toContainText('The published liftoff is 15 Feb 2024')
   await expect(main).toContainText('Numbers for the launch on 15 February 2024')
   await expect(main).toContainText('after the published liftoff')
   const flight = await openRow('The flight as launched')
@@ -920,7 +927,7 @@ test('launch (live API): a flown launch worked out again, and a planned mission�
   // Griffin-1 has not flown: a calendar worked back from its landing spot.
   await page.goto('/missions/griffin-1/launch')
   await expect(answer).toContainText(/\d+ launch opportunities from Launch Complex 39A between/, { timeout: 90_000 })
-  await expect(answer).toContainText('The next is')
+  await expect(answer).toContainText('the next is')
   const opps = page.getByRole('group', { name: 'Launch opportunities by day' }).getByRole('button')
   expect(await opps.count()).toBeGreaterThan(1)
   const second = opps.nth(1)
@@ -1069,7 +1076,7 @@ test('trip corrections and launch weather words (live API): Blue Ghost’s burns
 
   // Griffin-1: each opportunity's weather row starts with its own note, as the service words it.
   await page.goto('/missions/griffin-1/launch')
-  await expect(answer).toContainText('The next is', { timeout: 90_000 })
+  await expect(answer).toContainText('the next is', { timeout: 90_000 })
   const cal = (await (await page.request.get(`${API}/missions/griffin-1/launch`)).json()).data as {
     opportunities: { id: string; weather_note: string }[]
   }
@@ -1135,9 +1142,9 @@ test('return (live API): where each flown booster came down, and a planned one n
   // The source is named once, in the sources row, not inside the answer; the answer's time is its newest input's, not the request's.
   await expect(answer).not.toContainText('Launch Library 2')
   await expect(main.getByText(/^Worked out /).first()).not.toHaveText('Worked out just now')
-  await expect(row('Where does this come from?').locator('summary')).toContainText('1 source')
-  await row('Where does this come from?').locator('summary').click()
-  await expect(row('Where does this come from?')).toContainText('Launch Library 2 landing records')
+  await expect(row('Sources').locator('summary')).toContainText('1 source')
+  await row('Sources').locator('summary').click()
+  await expect(row('Sources')).toContainText('Launch Library 2 landing records')
   // The capsule model's check against OSIRIS-REx: the service's words, then the numbers and where they are from.
   const check = row('The capsule model, checked against a real landing')
   // Whether the plan's limit is met, and which air the modelled fall went through, are read from the answer, not from here.
@@ -1168,10 +1175,10 @@ test('return (live API): where each flown booster came down, and a planned one n
   await expect(main).toContainText('GFS-Wave, run of')
   // Each forecast number says how old it is, and the sources row lists GFS-Wave with its run and fetch.
   await expect(main.getByText(/^as of .+ ago$/)).toHaveCount(2)
-  await expect(row('Where does this come from?').locator('summary')).toContainText('2 sources')
-  await row('Where does this come from?').locator('summary').click()
-  await expect(row('Where does this come from?')).toContainText(/GFS-Wave \(NOAA\)issued .+ · fetched .+ ago/)
-  await row('Where does this come from?').locator('summary').click()
+  await expect(row('Sources').locator('summary')).toContainText('2 sources')
+  await row('Sources').locator('summary').click()
+  await expect(row('Sources')).toContainText(/GFS-Wave \(NOAA\)issued .+ · fetched .+ ago/)
+  await row('Sources').locator('summary').click()
   await expect(row('Booster landing zone').locator('summary')).toContainText('not published yet')
   await row('Booster landing zone').locator('summary').click()
   await expect(row('Booster landing zone')).toContainText(/The sea is read near [\d.]+°N [\d.]+°W\./)

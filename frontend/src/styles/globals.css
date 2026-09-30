@@ -102,14 +102,37 @@
   --tracking-caps-xl: 0.18em;
   --tracking-wordmark: 0.2em;
 
+  /* Elevation, three steps: resting on the page, lifted (hover on a card that
+     is a link), and floating over it (sheets, toasts, menus). */
+  --shadow-rest: 0 1px 0 rgba(0, 0, 0, 0.35);
+  --shadow-lift: 0 6px 18px rgba(0, 0, 0, 0.4);
   --shadow-raised: 0 8px 24px rgba(0, 0, 0, 0.45); /* a raised panel, a sheet, the captions */
+  --shadow-overlay: 0 18px 48px rgba(0, 0, 0, 0.55);
   --shadow-page: 0 8px 24px rgba(0, 0, 0, 0.35); /* the printable report page */
-  --shadow-tab: inset 0 -2px 0 var(--color-sun); /* the current view in the navigation */
+  --shadow-tab: inset 0 -2px 0 var(--color-ink); /* the current view in the navigation: ink, amber means sunlight */
+
+  /* Space, by role. Everything else is the 4 px scale. */
+  --spacing-gutter: 16px; /* page edge on a phone; 32 px from lg (see .pw-page) */
+  --spacing-stack: 24px; /* between blocks inside a page */
+  --spacing-block: 40px; /* between a page's major parts */
 
   --radius-*: initial;
   --radius-none: 0px;
   --radius-control: 2px;
   --radius-pill: 999px;
+
+  /* Motion: two curves and four durations. Every use also has a reduced
+     branch (decided in code) and the blanket rule at the end of this file. */
+  --ease-settle: cubic-bezier(0.16, 1, 0.3, 1); /* things arriving: M2, M4, M5, reveals */
+  --ease-move: cubic-bezier(0.2, 0.8, 0.2, 1); /* things moving across: M3, sheets, view changes */
+  --ease-leave: cubic-bezier(0.4, 0, 1, 1); /* things going away */
+}
+
+:root {
+  --pw-dur-quick: 140ms; /* hover, press, chevrons */
+  --pw-dur-base: 220ms; /* reveals, disclosure, toasts, view changes */
+  --pw-dur-slow: 380ms; /* charts, skeleton to content */
+  --pw-dur-sheet: 420ms; /* a sheet sliding in; out is half that */
 }
 
 /* Light theme — for print, projection and bright rooms.
@@ -157,6 +180,11 @@
   --color-uncertain: #5e6670;
 
   --color-focus: #0f5f74;
+
+  --shadow-rest: 0 1px 0 rgba(20, 23, 26, 0.06);
+  --shadow-lift: 0 6px 18px rgba(20, 23, 26, 0.1);
+  --shadow-raised: 0 8px 24px rgba(20, 23, 26, 0.12);
+  --shadow-overlay: 0 18px 48px rgba(20, 23, 26, 0.18);
 }
 
 @layer base {
@@ -210,6 +238,42 @@
   button {
     border-radius: var(--radius-control);
   }
+
+  /* A link in running text is underlined, so it never depends on colour
+     (WCAG 1.4.1). Links styled as buttons, tabs or cards carry a class and
+     set their own look. */
+  a:not([class]) {
+    text-decoration: underline;
+    text-decoration-color: var(--color-line-strong);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    transition: text-decoration-color var(--pw-dur-quick);
+  }
+  a:not([class]):hover {
+    text-decoration-color: currentColor;
+  }
+}
+
+@layer components {
+  /* Rows in a group share their borders: one list, not a stack of boxes. */
+  .pw-rows > * + * {
+    margin-top: -1px;
+  }
+
+  /* The page's padding, the same on every screen. */
+  .pw-page {
+    padding-inline: var(--spacing-gutter);
+  }
+  @media (min-width: 64rem) {
+    .pw-page {
+      padding-inline: 32px;
+    }
+  }
+
+  /* The content that cross-fades between pages and steps. */
+  .pw-content {
+    view-transition-name: pw-content;
+  }
 }
 
 @layer utilities {
@@ -241,18 +305,6 @@
     font-variant-numeric: tabular-nums lining-nums;
   }
 
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-    border: 0;
-  }
-
   /* M6 — uncertainty band. Barely visible by design.
      If you notice it, it is wrong. */
   .breathe {
@@ -260,11 +312,83 @@
   }
 }
 
-/* The run log and settings sheets (§10.6): M3's curve, 460 ms, from the right.
-   Under reduced motion the class is not applied at all (decided in code), and
-   the blanket rule below is the floor. */
+/* ------------------------------------------------------------------
+   Motion. Transform and opacity only, so nothing moves the layout. Text
+   and numbers arriving only move, never fade: their contrast is the same
+   at every frame, so nothing is hidden or hard to read while it moves.
+   Opacity is kept for things without words (backdrops, skeletons, the
+   old page leaving). Each class is applied only when motion is on
+   (decided in code); the blanket rule at the end is the floor.
+   ------------------------------------------------------------------ */
+
+/* Sheets (§10.6): in from the right on the move curve, out at half the time. */
 .pw-sheet-in {
-  animation: pw-sheet-in 460ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: pw-sheet-in var(--pw-dur-sheet) var(--ease-move);
+}
+.pw-sheet-out {
+  animation: pw-sheet-out calc(var(--pw-dur-sheet) / 2) var(--ease-leave) forwards;
+}
+dialog.pw-sheet-in::backdrop {
+  animation: pw-fade-in var(--pw-dur-base) linear;
+}
+dialog.pw-sheet-out::backdrop {
+  animation: pw-fade-out calc(var(--pw-dur-sheet) / 2) linear forwards;
+}
+
+/* Something that has just arrived: a section's answer after its skeleton, a
+   page's content. A short rise, fully readable from the first frame. */
+.pw-arrive {
+  animation: pw-arrive var(--pw-dur-slow) var(--ease-settle) both;
+}
+/* The same, one beat later, for the second thing on a page (the numbers under an answer). */
+.pw-arrive-2 {
+  animation: pw-arrive var(--pw-dur-slow) var(--ease-settle) 60ms both;
+}
+.pw-arrive-3 {
+  animation: pw-arrive var(--pw-dur-slow) var(--ease-settle) 120ms both;
+}
+
+/* A disclosure's body as it opens. Closing is instant: it removes, never hides. */
+details[open] > .pw-disclosure-body {
+  animation: pw-drop var(--pw-dur-base) var(--ease-settle);
+}
+
+/* A chart drawing in: the marks grow from their baseline (left for time). */
+.pw-chart-reveal {
+  animation: pw-grow-x var(--pw-dur-slow) var(--ease-settle) both;
+  transform-origin: left center;
+}
+
+/* M2: the two rings turning into place around their centre. */
+.pw-ring-in {
+  animation: pw-ring-in 600ms var(--ease-settle) both;
+}
+@keyframes pw-ring-in {
+  from {
+    transform: rotate(-20deg);
+  }
+}
+
+/* A number that changed: the new value, at once, settling into place. */
+.pw-number-in {
+  animation: pw-number-in var(--pw-dur-base) var(--ease-settle);
+}
+
+/* A skeleton breathing: opacity only, slow, and static under reduced motion. */
+.pw-skeleton {
+  background: var(--color-inset);
+  animation: pw-pulse 1.6s ease-in-out infinite alternate;
+}
+
+/* Working it out (202) with no progress figure yet: a short band sliding
+   along the track. With a figure, the bar is scaled to it instead. */
+.pw-indeterminate {
+  animation: pw-slide 1.4s var(--ease-move) infinite;
+}
+
+/* A toast arriving from below and leaving the same way. */
+.pw-toast-in {
+  animation: pw-toast-in var(--pw-dur-base) var(--ease-settle);
 }
 
 @keyframes pw-sheet-in {
@@ -275,7 +399,65 @@
     transform: none;
   }
 }
-
+@keyframes pw-sheet-out {
+  from {
+    transform: none;
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes pw-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes pw-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes pw-arrive {
+  from {
+    transform: translateY(6px);
+  }
+}
+@keyframes pw-drop {
+  from {
+    transform: translateY(-4px);
+  }
+}
+@keyframes pw-grow-x {
+  from {
+    transform: scaleX(0.96);
+  }
+}
+@keyframes pw-number-in {
+  from {
+    transform: translateY(4px);
+  }
+}
+@keyframes pw-pulse {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.55;
+  }
+}
+@keyframes pw-slide {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+@keyframes pw-toast-in {
+  from {
+    transform: translateY(12px);
+  }
+}
 @keyframes pw-breathe {
   from {
     opacity: 0.3;
@@ -283,6 +465,30 @@
   to {
     opacity: 0.38;
   }
+}
+
+/* Moving between pages and a mission's steps (the View Transitions API, via
+   `useTransitionClick` in lib/viewTransition.ts). The header and the step bar stay put; the
+   content cross-fades with a short rise, and the open step's mark slides to
+   the step pressed. Browsers without the API simply change the page. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+/* The content does not morph between shapes: the old fades where it was and
+   the new rises where it is. */
+::view-transition-group(pw-content) {
+  animation: none;
+}
+::view-transition-old(pw-content) {
+  animation: pw-fade-out var(--pw-dur-quick) var(--ease-leave) both;
+}
+::view-transition-new(pw-content) {
+  animation: pw-arrive var(--pw-dur-base) var(--ease-settle) both;
+}
+::view-transition-group(pw-step-mark) {
+  animation-duration: var(--pw-dur-base);
+  animation-timing-function: var(--ease-move);
 }
 
 /* The blanket rule is the floor, not the answer — each animation also
@@ -299,6 +505,11 @@
   .breathe {
     opacity: 0.34;
   }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }
 
 :root[data-motion='reduced'] *,
@@ -307,4 +518,9 @@
   animation-duration: 0.001ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.001ms !important;
+}
+:root[data-motion='reduced'] ::view-transition-group(*),
+:root[data-motion='reduced'] ::view-transition-old(*),
+:root[data-motion='reduced'] ::view-transition-new(*) {
+  animation: none !important;
 }

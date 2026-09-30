@@ -347,13 +347,32 @@ export function TripLegendItems(trip: TripDTO) {
     { swatch: <span className="hatch-blocked h-3 w-5" />, label: 'In shadow, or no station can hear it' },
     { swatch: <span className="h-3 w-5 bg-earth-fill" />, label: 'A ground station can hear it' },
     ...(coverageGaps(trip).length ? [{ swatch: <span className="h-3 w-5 border border-dashed border-line-strong" />, label: 'No data' }] : []),
-    ...trip.burns.map((b, i) => ({
+    ...burnKeys(trip.burns.map((b) => b.name)).map((k) => ({
       swatch: (
-        <span className="inline-flex size-4 items-center justify-center bg-ink text-micro font-bold text-canvas">{i + 1}</span>
+        <span className="inline-flex h-4 min-w-4 items-center justify-center bg-ink px-0.5 text-micro font-bold text-canvas">{k.marks}</span>
       ),
-      label: b.name,
+      label: k.label,
     })),
   ]
+}
+
+/**
+ * The burns' key, with a run of numbered burns of one kind said once:
+ * "Correction 1" … "Correction 7" become one key, "1–7 Corrections".
+ */
+export function burnKeys(names: string[]): { marks: string; label: string }[] {
+  const out: { first: number; last: number; base: string; name: string }[] = []
+  names.forEach((name, i) => {
+    const base = name.replace(/\s+\d+$/, '')
+    const prev = out[out.length - 1]
+    if (prev && base !== name && prev.base === base && prev.last === i) prev.last = i + 1
+    else out.push({ first: i + 1, last: i + 1, base: base === name ? '' : base, name })
+  })
+  return out.map((r) =>
+    r.first === r.last
+      ? { marks: String(r.first), label: r.name }
+      : { marks: `${r.first}–${r.last}`, label: /s$/.test(r.base) ? r.base : `${r.base}s` },
+  )
 }
 
 /** The strip's table twin: every stretch and every burn, and the distance once a day. */

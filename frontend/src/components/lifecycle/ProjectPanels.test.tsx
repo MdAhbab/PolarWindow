@@ -5,6 +5,7 @@ import { renderApp } from '../../test/render'
 import { api, ApiError } from '../../lib/api/client'
 import type { AuditEntryDTO, FeedsDTO, ParameterDTO, RiskScaleDTO, RiskScalesDTO } from '../../lib/api/lifecycle'
 import { useSession } from '../../lib/session'
+import { useToasts } from '../Toast'
 import { DataSources, levelsHaveNoWords, parameterChangeWords, ParametersPanel, RiskScalePanel } from './ProjectPanels'
 import parametersFixture from '../../lib/api/__fixtures__/lifecycle/parameters.json'
 import riskScalesFixture from '../../lib/api/__fixtures__/lifecycle/risk-scales.json'
@@ -107,7 +108,12 @@ describe('Settings → Project: parameters as built', () => {
     fireEvent.change(screen.getByLabelText('Note (optional)'), { target: { value: 'Rev D' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     await waitFor(() => expect(put).toHaveBeenCalledWith('battery_limit_h', { value: 100, note: 'Rev D' }))
-    expect(await screen.findByText('Saved.')).toBeTruthy()
+    // Said in a toast, with a way to put the value before it back.
+    await waitFor(() => expect(useToasts.getState().toasts.at(-1)?.message).toMatch(/^Saved: .+, 100 h\.$/))
+    const undo = useToasts.getState().toasts.at(-1)?.action
+    expect(undo?.label).toBe('Undo')
+    undo!.run()
+    await waitFor(() => expect(put).toHaveBeenLastCalledWith('battery_limit_h', { value: 96, note: expect.anything() }))
   })
 
   it('an out-of-range value is refused in the server’s words', async () => {
@@ -135,11 +141,11 @@ describe('Settings → Project: parameters as built', () => {
     expect(screen.queryByText('Saved.')).toBeNull()
   })
 
-  it('a server without parameters: the row is left out', async () => {
+  it('a server without parameters says so, in place of the list', async () => {
     vi.spyOn(api, 'parameters').mockRejectedValue(new ApiError(404, { detail: 'Not Found' }))
     const { container } = renderApp(<ParametersPanel enabled />)
     await waitFor(() => expect(api.parameters).toHaveBeenCalled())
-    await waitFor(() => expect(container.textContent).toBe(''))
+    await waitFor(() => expect(container.textContent).toBe('This server does not offer parameters yet.'))
   })
 })
 

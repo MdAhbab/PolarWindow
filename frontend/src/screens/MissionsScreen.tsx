@@ -202,17 +202,17 @@ export function MissionsScreen() {
 
   return (
     <div className="flex grow flex-col">
-      <header className="flex flex-col gap-1 border-b border-line px-4 py-4 lg:px-6">
+      <header className="flex flex-col gap-1 border-b border-line pw-page py-4">
         <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-          <h1 className="text-heading font-semibold tracking-title">CLPS missions</h1>
+          <h1 className="text-heading leading-8 font-semibold tracking-heading sm:text-heading-lg sm:leading-9">CLPS missions</h1>
           <p aria-live="polite" className="text-body text-ink-2">
             <span className="sr-only">Showing </span>
             {count}
           </p>
         </div>
         <p className="text-body leading-6 text-ink-2">
-          Every NASA CLPS delivery to the Moon, flown and planned. Open one to see the Sun and Earth at its landing
-          spot.
+          Every NASA CLPS delivery to the Moon, flown and planned. Open one to follow it from getting ready to coming
+          home.
         </p>
       </header>
 
@@ -220,7 +220,7 @@ export function MissionsScreen() {
         role="group"
         aria-label="Filters"
         data-guide="missions-filters"
-        className="flex flex-col gap-3 border-b border-line px-4 py-3 lg:px-6"
+        className="flex flex-col gap-3 border-b border-line pw-page py-3"
       >
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <Segmented label="Status" options={STATUS_OPTIONS} value={status} onChange={setStatus} />
@@ -278,7 +278,7 @@ export function MissionsScreen() {
         </div>
       </div>
 
-      <div className="grid gap-6 p-4 lg:p-6 xl:grid-cols-[minmax(0,6fr)_minmax(0,5fr)]">
+      <div className="grid gap-6 pw-page py-5 lg:py-6 xl:grid-cols-[minmax(0,6fr)_minmax(0,5fr)]">
         {/* The list comes first in the DOM: it is the primary accessible path
             and, on a phone, the fastest answer. From 768 px up the map is
             drawn first (left at ≥ 1280). */}
@@ -400,7 +400,7 @@ export function MissionsScreen() {
         </section>
       </div>
 
-      <div className="flex flex-col gap-3 px-4 pb-8 lg:px-6">
+      <div className="pw-page flex flex-col gap-3 pb-8">
         <Disclosure title="Timeline" meta="every dated mission, by provider">
           <ProgrammeTimeline
             missions={shown}

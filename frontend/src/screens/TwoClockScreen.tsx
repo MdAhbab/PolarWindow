@@ -45,7 +45,7 @@ export function TwoClockScreen() {
 
   return (
     <div className="flex grow flex-col">
-      <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-line px-4 py-4 lg:px-6">
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-line pw-page py-4">
         <div className="flex min-w-0 flex-col gap-1">
           <SiteTitle />
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -60,7 +60,7 @@ export function TwoClockScreen() {
         </div>
       </div>
 
-      <div className="flex grow flex-col gap-6 p-4 lg:p-6">
+      <div className="pw-page flex grow flex-col gap-6 py-5 lg:py-6">
         {!terrainModelled && (
           <UncertaintyNote>
             No terrain data outside 80°S, so the Sun and Earth are worked out as if the ground were flat. Real hills

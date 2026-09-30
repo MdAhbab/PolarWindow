@@ -46,7 +46,7 @@ const tile = (label: RegExp) => screen.getByText(label).closest('div.border') as
 describe('KeyNumberRow', () => {
   it('shows the computing state, never zeros, before the numbers arrive', () => {
     render(<KeyNumberRow metrics={undefined} />)
-    expect(screen.getAllByText('——')).toHaveLength(4)
+    expect(screen.getAllByText('Loading')).toHaveLength(4)
     expect(screen.queryByText('0')).toBeNull()
   })
 
