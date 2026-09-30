@@ -135,9 +135,13 @@ function ReturnAnswer({ ret, meta, missionId, status }: { ret: ReturnDTO; meta: 
 
   return (
     <>
-      <Answer meta={meta}>
-        {b ? `${b.note} ${seaWords(b)}`.trim() : 'Where the booster comes down is not known.'}{' '}
-        {capsule ? (c?.zone ? `A capsule splashes down ${zoneWords(c.zone)}.` : 'A capsule returns; its splashdown zone is not known yet.') : (c?.reason ?? 'No capsule returns on this mission.')}
+      <Answer
+        meta={meta}
+        extra={`${b ? seaWords(b) : ''} ${
+          capsule ? (c?.zone ? `A capsule splashes down ${zoneWords(c.zone)}.` : 'A capsule returns; its splashdown zone is not known yet.') : (c?.reason ?? 'No capsule returns on this mission.')
+        }`.trim()}
+      >
+        {b ? b.note : 'Where the booster comes down is not known.'}
       </Answer>
       <NumberRow>
         {recovered ? (

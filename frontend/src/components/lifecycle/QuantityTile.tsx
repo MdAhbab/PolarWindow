@@ -1,4 +1,4 @@
-import { Children, cloneElement, isValidElement, type ReactNode } from 'react'
+import { Children, cloneElement, Fragment, isValidElement, type ReactNode } from 'react'
 import type { QuantityDTO } from '../../lib/api/lifecycle'
 import { hostWords, isUrl, provenanceWords, quantityView, unitWords } from '../../lib/lifecycle/quantity'
 import { termLabel } from '../../lib/format'
@@ -58,12 +58,14 @@ export function QuantityTile({
   const unit = joined || v.kind === 'missing' ? '' : v.unit
   // "From TLI …" becomes "from TLI …", but an acronym that opens the reason ("TLI to …") keeps its case.
   const lower = (t: string) => (/^[A-Z]{2}/.test(t) ? t : t.charAt(0).toLowerCase() + t.slice(1))
+  const as = sameReasonAs ? `${sameReasonAs.charAt(0).toLowerCase()}${sameReasonAs.slice(1)}` : ''
   const noMargin = v.noMarginReason
     ? sameReasonAs
-      ? `No margin, for the same reason as ${sameReasonAs.charAt(0).toLowerCase()}${sameReasonAs.slice(1)}`
+      ? `No margin, for the same reason as ${as}`
       : `No margin: ${lower(v.noMarginReason)}`
     : undefined
-  const lines = [note, noMargin, v.missingReason].filter(Boolean)
+  const missingLine = v.missingReason && sameReasonAs ? `Not known, for the same reason as ${as}` : v.missingReason
+  const lines = [note, noMargin, missingLine].filter(Boolean)
   const fraction = scale && v.value !== null ? v.value / scale : undefined
   const range = scale && v.kind === 'range' && v.lo !== undefined && v.hi !== undefined ? { lo: v.lo / scale, hi: v.hi / scale } : undefined
   return (
@@ -155,14 +157,20 @@ export function CountTile({
 
 /**
  * The fixed row of at most four key numbers: 2 × 2 on a phone, four across
- * from 1024 px. A reason for having no margin that two tiles share is said
- * once, under the first.
+ * from 1024 px. A reason for having no margin, or no number, that two tiles
+ * share is said once, under the first.
  */
 export function NumberRow({ children }: { children: ReactNode }) {
   const seen = new Map<string, string>()
-  const tiles = Children.toArray(children).map((child) => {
+  // Tiles often come in fragments (`<>{a}{b}</>`): flatten them so each is seen.
+  const flat = (nodes: ReactNode): ReactNode[] =>
+    Children.toArray(nodes).flatMap((n) =>
+      isValidElement<{ children?: ReactNode }>(n) && n.type === Fragment ? flat(n.props.children) : [n],
+    )
+  const tiles = flat(children).map((child) => {
     if (!isValidElement<Parameters<typeof QuantityTile>[0]>(child) || child.type !== QuantityTile) return child
-    const reason = child.props.q?.no_margin_reason
+    const q = child.props.q
+    const reason = q?.no_margin_reason ?? (q && q.value === null ? q.missing_reason : null)
     if (!reason) return child
     const first = seen.get(reason)
     if (first === undefined) {
@@ -171,5 +179,10 @@ export function NumberRow({ children }: { children: ReactNode }) {
     }
     return cloneElement(child, { sameReasonAs: first })
   })
-  return <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{tiles}</div>
+  // Keys by place: a flattened fragment's own keys can repeat another's.
+  return (
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {tiles.map((t, i) => (isValidElement(t) ? cloneElement(t, { key: i }) : t))}
+    </div>
+  )
 }

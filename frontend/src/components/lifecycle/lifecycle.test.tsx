@@ -973,3 +973,25 @@ describe('Rover and lander line of sight', () => {
     expect(screen.getByRole('status').textContent).toBe('The map layer did not load, so nothing is drawn over the terrain. The table has the same answer.')
   })
 })
+
+describe('trip answer and key', () => {
+  it('is one sentence: the length, then shadow and contact', async () => {
+    const { tripSentence } = await import('../../screens/sections/TripSection')
+    expect(tripSentence(24 * 7.7, 'flown', 'The longest time in shadow is 0.75 h, and the longest time without contact is 0.12 h.')).toBe(
+      'The trip takes 7.7 days (as flown); the longest time in shadow is 0.75 h, and the longest time without contact is 0.12 h.',
+    )
+  })
+
+  it('says a run of numbered burns once, and keeps a lone burn by its name', async () => {
+    const { burnKeys } = await import('./TripStrip')
+    expect(burnKeys(['Correction 1', 'Correction 2', 'Correction 3', 'Lunar orbit insertion'])).toEqual([
+      { marks: '1–3', label: 'Corrections' },
+      { marks: '4', label: 'Lunar orbit insertion' },
+    ])
+    expect(burnKeys(['Correction 1', 'Entering lunar orbit', 'Correction 2'])).toEqual([
+      { marks: '1', label: 'Correction 1' },
+      { marks: '2', label: 'Entering lunar orbit' },
+      { marks: '3', label: 'Correction 2' },
+    ])
+  })
+})

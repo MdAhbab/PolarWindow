@@ -850,7 +850,7 @@ test('trip and contact (live API): the flown trip with its gaps in the data, and
   await expect(page.locator('[data-guide="section-answer"]')).toContainText('The trip takes', { timeout: 90_000 })
   await expect(main).toContainText('(as flown)')
   // The answer speaks only for the hours the data covers.
-  await expect(page.locator('[data-guide="section-answer"]')).toContainText(/In the [\d.]+ hours NASA’s reconstruction covers, /)
+  await expect(page.locator('[data-guide="section-answer"]')).toContainText(/in the [\d.]+ hours NASA’s reconstruction covers, /)
   await expect(main).toContainText('separate stretches')
   await expect(main).toContainText('No data')
   await page.getByRole('button', { name: 'Read the chart as a table' }).click()
@@ -902,7 +902,7 @@ test('launch (live API): a flown launch worked out again, and a planned mission�
   await page.goto('/missions/im-1/launch')
   await expect(answer).toContainText('It launched on 15 Feb 2024', { timeout: 90_000 })
   await expect(answer).toContainText('as worked out again from NASA’s reconstruction of the flight')
-  await expect(answer).toContainText('The published liftoff is 15 Feb 2024')
+  await expect(main).toContainText('The published liftoff is 15 Feb 2024')
   await expect(main).toContainText('Numbers for the launch on 15 February 2024')
   await expect(main).toContainText('after the published liftoff')
   const flight = await openRow('The flight as launched')
@@ -926,7 +926,7 @@ test('launch (live API): a flown launch worked out again, and a planned mission�
   // Griffin-1 has not flown: a calendar worked back from its landing spot.
   await page.goto('/missions/griffin-1/launch')
   await expect(answer).toContainText(/\d+ launch opportunities from Launch Complex 39A between/, { timeout: 90_000 })
-  await expect(answer).toContainText('The next is')
+  await expect(answer).toContainText('the next is')
   const opps = page.getByRole('group', { name: 'Launch opportunities by day' }).getByRole('button')
   expect(await opps.count()).toBeGreaterThan(1)
   const second = opps.nth(1)
@@ -1075,7 +1075,7 @@ test('trip corrections and launch weather words (live API): Blue Ghost’s burns
 
   // Griffin-1: each opportunity's weather row starts with its own note, as the service words it.
   await page.goto('/missions/griffin-1/launch')
-  await expect(answer).toContainText('The next is', { timeout: 90_000 })
+  await expect(answer).toContainText('the next is', { timeout: 90_000 })
   const cal = (await (await page.request.get(`${API}/missions/griffin-1/launch`)).json()).data as {
     opportunities: { id: string; weather_note: string }[]
   }

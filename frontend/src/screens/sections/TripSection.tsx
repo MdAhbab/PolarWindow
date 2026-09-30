@@ -78,6 +78,11 @@ export function shadowAndContact(n: TripDTO['numbers'], coveredH?: number): stri
   return `In the ${formatValue(coveredH)} hours NASA’s reconstruction covers, ${said[0].toLowerCase()}${said.slice(1)}`
 }
 
+/** One sentence: how long the trip takes, then its shadow and contact. */
+export function tripSentence(hours: number, source: TripDTO['source'], rest: string): string {
+  return `The trip takes ${formatValue(hours / 24)} days (${source === 'flown' ? 'as flown' : 'as designed'}); ${rest.charAt(0).toLowerCase()}${rest.slice(1)}`
+}
+
 function TripAnswer({ trip, meta, missionId }: { trip: TripDTO; meta: LifecycleMetaDTO; missionId: string }) {
   const { t0, t1 } = tripSpan(trip)
   const hours = (t1 - t0) / HOUR
@@ -88,10 +93,10 @@ function TripAnswer({ trip, meta, missionId }: { trip: TripDTO; meta: LifecycleM
   return (
     <>
       <Answer meta={meta}>
-        The trip takes {formatValue(hours / 24)} days ({trip.source === 'flown' ? 'as flown' : 'as designed'}). {shadowAndContact(n, gaps ? coveredH : undefined)}
+        {tripSentence(hours, trip.source, shadowAndContact(n, gaps ? coveredH : undefined))}
       </Answer>
       {/* Only when the data has gaps does the note change what the numbers mean. */}
-      {gaps && trip.coverage_note && <UncertaintyNote className="-mt-3">{trip.coverage_note}</UncertaintyNote>}
+      {gaps && trip.coverage_note && <UncertaintyNote className="-mt-2">{trip.coverage_note}</UncertaintyNote>}
       <NumberRow>
         <QuantityTile term="tripSunlight" q={n.sunlight_h} tone="sun" icon="sun" scale={hours} />
         <QuantityTile term="tripHeard" q={n.heard_h} tone="earth" icon="earth" scale={hours} />

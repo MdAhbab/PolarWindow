@@ -41,14 +41,16 @@ export function SectionLayout({ question, children }: { question: string; childr
  * never a verdict (invariant 9). It arrives with a short rise, never from
  * invisible, so it can be read at once.
  */
-export function Answer({ children, meta }: { children: ReactNode; meta?: LifecycleMetaDTO }) {
+export function Answer({ children, meta, extra }: { children: ReactNode; meta?: LifecycleMetaDTO; extra?: ReactNode }) {
   const at = meta ? Date.parse(meta.computed_at) : NaN
   const arrive = useMotionClass('pw-arrive')
   return (
     <div className={`-mt-4 flex flex-col gap-2 ${arrive}`}>
-      <p data-guide="section-answer" className="max-w-4xl text-title-lg leading-7 font-medium text-ink sm:text-subhead sm:leading-8">
-        {children}
-      </p>
+      {/* The answer, and at most a line more that qualifies it: one block for the guide and the tests. */}
+      <div data-guide="section-answer" className="flex max-w-4xl flex-col gap-1.5">
+        <p className="text-title-lg leading-7 font-medium text-ink sm:text-subhead sm:leading-8">{children}</p>
+        {extra && <p className="text-body leading-6 text-ink-2">{extra}</p>}
+      </div>
       {meta && !Number.isNaN(at) && (
         <p className="text-caption text-ink-3">
           <span title={dateTimeWords(at)}>Worked out {ageWords(at)}</span>

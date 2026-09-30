@@ -16,7 +16,6 @@ import { ContactChart, ContactTable, contactRows, relayState } from '../../compo
 import { Field, FormSheet, HistoryList, Select, TextInput } from '../../components/lifecycle/Forms'
 import { WindowPicker } from '../../components/WindowPicker'
 import { Button, Disclosure } from '../../components/ui'
-import { UncertaintyNote } from '../../components/States'
 import { ViewshedPanel, roverSentence } from '../../components/lifecycle/RoverSight'
 import { RelayCompare } from '../../components/lifecycle/RelayCompare'
 import { RoverInputs } from '../../components/lifecycle/RoverInputs'
@@ -206,7 +205,6 @@ function ContactAnswer({
   return (
     <>
       <Answer meta={meta}>{contactAnswer(contact)}</Answer>
-      {contact.link_budget_note && <UncertaintyNote className="-mt-3">{contact.link_budget_note}</UncertaintyNote>}
       <NumberRow>
         <QuantityTile term="stationHears" q={n.station_hears_h} tone="earth" icon="earth" scale={hours} />
         <QuantityTile
@@ -240,7 +238,16 @@ function ContactAnswer({
         table={<ContactTable contact={contact} rows={rows} />}
       />
       {datesNote && <p className="-mt-3 text-caption leading-caption text-ink-3">{datesNote}</p>}
-      <Rows about={<><HowSure meta={meta} /><SourcesRow meta={meta} /></>}>
+      <Rows
+        about={
+          <>
+            <HowSure meta={meta}>
+              {contact.link_budget_note && <p className="text-body leading-6 text-ink-2">{contact.link_budget_note}</p>}
+            </HowSure>
+            <SourcesRow meta={meta} />
+          </>
+        }
+      >
         {relays.length > 0 && (
           <Disclosure title="Relays" meta={relays.map((r) => (r.state ? `${r.name} · ${r.state.words.toLowerCase()}` : r.name)).join(', ')}>
             {contact.relay_note && <p className="text-body text-ink-2">{contact.relay_note}</p>}
