@@ -186,13 +186,14 @@ professional name of a key number is shown only when its label is pressed
 | checked against observations | verified, ground-truthed |
 | could see the lander | orbiter pass, relay pass (for active orbiters overhead) |
 | what the rover or lander can see (line of sight) | viewshed, rover LOS |
-| radio path clear | first Fresnel zone clearance, RF clearance |
-| checked against past weather | reforecast, hindcast |
-| better than usual at the limit | Brier skill score, BSS |
-| how close the forecast was across all winds | CRPS, Continuous Ranked Probability Score |
+| the space around the line of sight that the radio signal needs | first Fresnel zone, Fresnel zone clearance, RF clearance |
+| NOAA’s forecast model re-run for past years | reforecast, hindcast |
+| how much better than the past-years rate its calls were | Brier skill, Brier skill score, BSS |
+| how close its wind speeds came | CRPS, CRPS skill, Continuous Ranked Probability Score |
 | air model with solar activity | NRLMSISE-00, NRLMSIS 2.1 |
 | Earth gravity model | EGM2008 |
 | planned relay | speculative relay, unlaunched relay |
+| launched, not working | uncommissioned relay, silent relay |
 
 ## Motion
 

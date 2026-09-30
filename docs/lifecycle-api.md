@@ -795,3 +795,9 @@ that user. `GET /auth/me` returns the same `user`.
   0.6 % and 1.6 % vs 3.7 % and 5.0 %). With NRLMSIS 2.1, the OSIRIS-REx landing distance is 6.6 km (3.9 to 9.3 km
   over the drag range), satisfying the plan's 10 km limit (`passed: true`). Ellipse 99 % is 51.1 by 21.5 km (43.7 by
   0.3 km with no wind).
+- 2026-09-30 (backend, Contact and Orbiters; engines `net-6`, `los-2`): `Node.status` gains
+  `"launched_not_operating"`. `Orbiter.note` is `string | null` (says only where its recorded
+  trajectory stops short of the dates, null when it covers them all; `orbiters_note` keeps the
+  general caveat). Plain words: `Viewshed.radio` and `RoverOut.radio_not_clear_share` say "the space
+  around the line of sight that the radio signal needs".
+

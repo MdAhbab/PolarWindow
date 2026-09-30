@@ -100,8 +100,8 @@ degree and order 8 resolve the first ~1.5 h out of parking orbit (accounting for
    ruling out unmodelled SRP as the primary cause).
 2. Two single-sample velocity changes in the reconstruction: at 19:00:00 UTC
    (dv = 0.0601 m/s) and 20:45:00 UTC (dv = 0.1330 m/s). Fine-scan propagation of
-   30-min windows before, centred on, and after each confirms these are real velocity
-   changes (TCMs or thruster activity) rather than data-join artefacts:
+   30-min windows before, centred on, and after each shows that both are velocity
+   changes (small burns or venting) rather than data-join artefacts:
    - Event 1 (19:00:00 UTC): before [18:30..19:00] dr = 0.41 m, dv = 0.4 mm/s;
      centred [18:45..19:15] dr = 54.2 m, dv = 60.2 mm/s; after [19:00..19:30]
      dr = 0.25 m, dv = 0.3 mm/s.
@@ -388,14 +388,21 @@ difference by thousands of kilometres). Three corrections (a day after
 leaving Earth, half-way, a day before arriving) aim the estimated state at the
 planned position at the planned arrival time.
 
-The budget is worked out twice: first with every error assumed (1 km in position
+The budget is worked out twice. First, every error is assumed: 1 km in position
 and 0.5 / 1.0 / 0.5 m/s radial / along / cross-track speed at leaving Earth;
 knowledge at each correction 1 km and 1 mm/s; each burn 1% and 1° Gates' model
-plus 1 cm/s), and second with the orbital injection accuracy published in the launch
-vehicle's user guide (Falcon 9 User's Guide 2015, Table 2-2: GTO 3-sigma errors of
-±200 km in apogee, ±10 km in perigee, ±0.1° in inclination, yielding 1-sigma errors
-at departure of 3.3 km radial, 1.0 km along, 1.0 km across, and 0.5 m/s radial,
-2.7 m/s along-track, 6.0 m/s cross-track speed). Linear: the errors pushed through
+plus 1 cm/s. Second, the errors at departure come from the orbital injection accuracy
+published in the launch vehicle's user guide. For Falcon 9 that is the Launch Vehicle
+Payload User's Guide, Rev 2, 21 October 2015, Table 3-2, page 16: GTO 3-sigma errors of
+±500 km in apogee, ±10 km in perigee and ±0.1° in inclination. Only that revision prints an
+accuracy (the guides of April 2020, September 2021 and May 2025 have none), so it is the
+accuracy given for the vehicle of 2015, not a figure for Block 5. That guide has rows for
+low Earth orbit and GTO only, none for trans-lunar injection or escape. The errors at
+departure are therefore worked out from the GTO row (`lincov.from_guide`), each as
+1 sigma, one third of the printed ±. The perigee gives a radial position error of 3.3 km,
+the apogee an along-track speed error of 2.7 m/s and the inclination a cross-track speed
+error of 6.0 m/s. The other three errors keep their assumed values (1.0 km along, 1.0 km
+across, 0.5 m/s radial). Linear: the errors pushed through
 state transition matrices of each stretch (100,000 draws). Monte Carlo: 1,000 seeded
 runs through the force model, each correction refined twice on the run's own estimated state.
 
@@ -407,7 +414,7 @@ runs through the force model, each correction refined twice on the run's own est
 | im-1 | 622 km up, +170 min | 1.0 / 1.0 / 1.0 km; 0.5 / 1.0 / 0.5 m/s | 20.90 / 21.64 m/s | 27.43 / 28.50 m/s (25.93–30.40) | 110.6–114.5 km | none (in its gaps) |
 | im-2 | 1,002 km up, −28 min | 1.0 / 1.0 / 1.0 km; 0.5 / 1.0 / 0.5 m/s | 21.29 / 21.45 m/s | 27.84 / 28.89 m/s (26.24–30.24) | 99.8–103.8 km | 0.06, 0.13, 1.06, 2.11, 9.71, 6.06, 4.72 m/s |
 
-**Published injection accuracy (Falcon 9 User's Guide 2015, Table 2-2):**
+**Errors worked out from the published injection accuracy (Falcon 9 User's Guide, Rev 2, Table 3-2, GTO row):**
 
 | Mission | Planned departure | Errors at leaving Earth | 95th linear / runs | 99th linear / runs (95 % interval) | Arrival altitude 1st–99th % | Flown corrections found |
 |---|---|---|---|---|---|---|
@@ -424,8 +431,9 @@ Each correction, 95th / 99th percentile of the runs (m/s), assumed then publishe
 
 With published injection accuracy, the 95th and 99th percentile budgets are approximately
 2.7x to 3.1x larger (e.g. Blue Ghost 95th 14.16 -> 40.63 m/s; IM-1 21.64 -> 60.13 m/s; IM-2
-21.45 -> 63.27 m/s), because Falcon 9's published speed accuracy at TLI (2.7 m/s along-track,
-6.0 m/s cross-track) is larger than the 1.0 and 0.5 m/s previously assumed. Linear covariance
+21.45 -> 63.27 m/s), because the speed errors worked out from Falcon 9's published GTO
+accuracy (2.7 m/s along-track, 6.0 m/s cross-track) are larger than the 1.0 and 0.5 m/s
+assumed. Linear covariance
 and Monte Carlo agree within 7.1% in all cases (well within the 10% plan tolerance: Blue Ghost
 +0.4% / -0.5%, IM-1 +3.0% / +5.5%, IM-2 -0.9% / -7.1%). No run missed the Moon. Nearly all of
 the total is the first correction, which removes the departure error. These are budgets for
@@ -696,13 +704,16 @@ I densities from 86 to 150 km) stands in when the OMNI files lack the day; the a
 which air was used. Nothing returns to Earth on a CLPS mission, so the model is checked on
 the one recent sample return with a published entry state and a measured landing point.
 
-**Choosing the atmosphere by independent evidence** (`app/tests/golden/capsule_air.py`).
-The default model was chosen by evidence independent of where the capsule landed: the air
-measured between 30 and 70 km on the entry day, where a capsule loses its speed (a density
-5 % higher over 30 to 50 km moves the landing 2.4 km; over 50 to 70 km, 2.3 km). Two sets of
-measurements are on disk:
+**Choosing the atmosphere from measured air** (`app/tests/golden/capsule_air.py`).
+The default model was chosen from the air measured between 30 and 70 km on the entry day.
+A capsule loses its speed there: a density 5 % higher over 30 to 50 km moves the landing
+2.4 km, and over 50 to 70 km 2.3 km. The measurements do not use where the capsule landed.
+They are only partly independent of the models, and the rule that chose the model was
+written after both landing results were known (four cautions follow the tables). Two sets
+of measurements are on disk:
 * TIMED/SABER Level 2A version 2.08: 136 limb profiles of temperature and density on 24
-  September 2023, 28 to 49° N (NASA CDAWeb archive).
+  September 2023, 28 to 49° N (NASA CDAWeb archive). The producer marks the files
+  "Unvalidated".
 * NASA JPL Table Mountain Facility Rayleigh lidar: nine nights of temperature and density
   profiles from 19 to 30 September 2023, 34.4° N (NDACC archive).
 
@@ -738,10 +749,30 @@ Model - measured temperature, K:
 | U.S. Standard Atmosphere 1976 | +2.0 | +6.4 | +6.4 | +10.3 | +12.1 | +9.5 | +11.7 | +12.9 | 9.55 |
 
 The gap between NRLMSIS 2.1 and NRLMSISE-00 exceeds 3 percentage points for both instruments
-(SABER: 0.56 % vs 3.69 %; lidar: 1.63 % vs 5.05 %), and the choice holds under every profile cut
-(by latitude, local solar time, or leaving out each lidar night). This agrees with published
-evaluations (Emmert et al. 2021, 2022: NRLMSIS 2.0/2.1 follows the mesosphere and stratosphere
-substantially better than NRLMSISE-00). **NRLMSIS 2.1 is therefore the default model.**
+(SABER: 0.56 % vs 3.69 %; lidar: 1.63 % vs 5.05 %). NRLMSIS 2.1 also scores lower under every
+profile cut (by latitude, local solar time, or leaving out each lidar night). This agrees with
+the model authors' own published evaluations (Emmert et al. 2021, 2022: NRLMSIS 2.0/2.1 follows
+the mesosphere and stratosphere substantially better than NRLMSISE-00). **NRLMSIS 2.1 is
+therefore the default model.**
+
+**Four cautions on this choice.**
+1. The rule was written after both landing results were known (12.1 km in NRLMSISE-00, 6.6 km
+   in NRLMSIS 2.1). The score and the one-point tie went into the first comparison script
+   (SABER only) before it was run. The lidar was scored the same way afterwards. "The lower
+   score for both instruments" was written after SABER's scores had been seen. Nothing in
+   the comparison flies a capsule or reads where one lands. The profile cuts check the rule
+   and do not enter it.
+2. NRLMSIS 2.0 was fitted to SABER temperatures for 2002 to 2016 at 40 to 97.5 km (Emmert
+   et al. 2021, Table 1), and NRLMSIS 2.1 is NRLMSIS 2.0 with nitric oxide added. SABER's
+   agreement on a day in 2023 is therefore a test in time, not against another instrument.
+3. The lidar is in no fit. Its file names MERRA-2 as the source it scales density and
+   temperature to (the height of the scaling is not given), and MERRA-2 is in NRLMSIS 2.0's
+   fit up to 55 km. The level of the lidar's density is therefore not independent of that fit;
+   its change with height is. The "Shape only" column keeps that part: each of the seven
+   bands above 35 km is taken relative to the 30 to 35 km band, so the level of the measured
+   density drops out. NRLMSIS 2.1 still scores lower on it for both instruments (SABER: 1.08
+   vs 2.50; lidar: 2.57 vs 4.02).
+4. The producer marks the SABER files "Unvalidated".
 
 **Entry state.** The sample return capsule's reconstructed trajectory in NAIF's PDS
 archive (`src_230924_230924_230930_od383a_v1.bsp`, in the registry as
@@ -816,8 +847,8 @@ geometric and its temperatures virtual, against each model at the balloon's plac
 The standard atmosphere is 3 to 7 % thinner than the day's air from 10 to 30 km;
 NRLMSISE-00 is within 2.5 % of the balloon at every height and NRLMSIS 2.1 within 2.8 %. Below
 30 km the empirical models have the day's air right, and the landing hardly depends on it
-(0.09 km for 5 %). Above 30 km, the SABER satellite and Table Mountain lidar profiles provide
-the independent validation.
+(0.09 km for 5 %). Above 30 km, the SABER satellite and Table Mountain lidar profiles are the
+measurements (with the four cautions above).
 
 **What the mission's team found.** Its reconstruction of the day's air, from NASA's GEOS
 analysis, "showed notably lower atmospheric densities in the upper atmosphere than the

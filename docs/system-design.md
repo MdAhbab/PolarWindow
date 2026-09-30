@@ -1020,17 +1020,24 @@ Every value is a `Quantity` with its provenance and ± or the reason it has none
 
 Key lifecycle enhancements:
 - **Capsule entry atmosphere:** The default atmosphere for the capsule entry
-  model is NRLMSIS 2.1, chosen from independent TIMED/SABER satellite radiometry
-  and Table Mountain lidar profiles for 2023-09-24 at 30 to 70 km altitude. It
-  brings the modelled OSIRIS-REx sample return capsule touchdown to within
-  6.6 km of the recovery site (3.9 to 9.3 km across the drag coefficient range),
-  meeting the 10 km requirement.
-- **Published injection accuracies and correction budget:** Falcon 9, Falcon
-  Heavy, Vulcan Centaur and New Glenn incorporate launch vehicle injection
-  covariance matrices from published payload user guides (Falcon 9 GTO 3-sigma
-  apogee ±200 km, perigee ±10 km, inclination ±0.1° from Table 3-1; assumed
-  ranges where unpublished). Linear covariance and Monte Carlo budgets agree
-  within 7.1%, meeting the 10% plan tolerance.
+  model is NRLMSIS 2.1, chosen from TIMED/SABER satellite radiometry and Table
+  Mountain lidar profiles for 2023-09-24 at 30 to 70 km altitude. It brings the
+  modelled OSIRIS-REx sample return capsule touchdown to within 6.6 km of the
+  recovery site (3.9 to 9.3 km across the drag coefficient range), meeting the
+  10 km requirement. The profiles are only partly independent of the models, and
+  four cautions apply (see `docs/validation.md`). The selection rule was written
+  after both landing results were known. NRLMSIS 2.x was fitted to SABER
+  temperatures for 2002 to 2016. The lidar density is scaled to MERRA-2. The
+  producer marks the SABER files "Unvalidated". NRLMSIS 2.1 has the lower density
+  difference in every cut of the profiles.
+- **Published injection accuracies and correction budget:** Falcon 9, Vulcan
+  Centaur and New Glenn carry the injection accuracies printed in their user
+  guides. Falcon Heavy has none published, so its budget stays assumed. The
+  Falcon 9 guide (Rev 2, 21 October 2015, Table 3-2, page 16) gives 3-sigma
+  accuracies for a geosynchronous transfer orbit: apogee ±500 km, perigee
+  ±10 km, inclination ±0.1°. It has no trans-lunar row, so the errors at
+  departure are worked out from that GTO row. Linear covariance and Monte Carlo
+  budgets agree within 7.1%, meeting the 10% plan tolerance.
 - **Planned relays and active orbiters (ADR-16):** planned relays (Lunar Pathfinder,
   Altus-1) sweep 36 x 36 nodes and phases, presenting contact as minimum to maximum
   ranges with launch status beside them; the catalogue is exposed via `GET /relays`
