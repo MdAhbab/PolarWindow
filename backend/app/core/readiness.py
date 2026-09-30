@@ -33,17 +33,6 @@ ReadyState = Literal[
     "ready",
     "blocked",
 ]
-ItemKind = Literal[
-    "lander",
-    "payload",
-    "rover",
-    "launch_vehicle",
-    "range",
-    "ground_booking",
-    "relay_agreement",
-    "ops_team",
-    "licence",
-]
 
 STATES: Final[tuple[ReadyState, ...]] = (
     "not_started",
@@ -87,14 +76,6 @@ LADDERS: Final[dict[str, tuple[ReadyState, ...]]] = {
     "relay_agreement": _AGREEMENT,
     "ops_team": _AGREEMENT,
     "licence": _AGREEMENT,
-}
-
-#: How a state reads for an item that is an agreement rather than hardware.
-AGREEMENT_WORDS: Final[dict[str, str]] = {
-    "not_started": "not started",
-    "in_build": "in progress",
-    "ready": "in hand",
-    "blocked": "blocked",
 }
 
 

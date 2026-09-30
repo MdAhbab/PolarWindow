@@ -12,7 +12,6 @@ hit rate on the product's primary interaction is zero.
 
 from __future__ import annotations
 
-import logging
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -43,9 +42,6 @@ def nominal_penumbra_deg() -> tuple[float, float]:
     sun = float(np.degrees(np.arcsin(R_SUN_M / MEAN_SUN_DISTANCE_M)))
     earth = float(np.degrees(np.arcsin(R_EARTH_M / MEAN_EARTH_DISTANCE_M)))
     return sun, earth
-
-
-log = logging.getLogger(__name__)
 
 
 class WindowTooLong(ValueError):

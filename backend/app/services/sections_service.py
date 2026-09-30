@@ -17,8 +17,6 @@ from app.db.repositories.missions import MissionRecord, MissionRepository
 from app.services import lifecycle, mission_service, ready_service
 from app.services.mission_service import MissionNotFound
 
-ORDER = ("ready", "launch", "trip", "landing", "contact", "return")
-
 
 def _status(
     section: str, state: str, summary: str, as_of: datetime | None = None

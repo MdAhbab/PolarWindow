@@ -409,27 +409,6 @@ def write_metakernel(directory: Path, specs: Iterable[KernelSpec] = REQUIRED_KER
     return mk
 
 
-def manifest(directory: Path, specs: Iterable[KernelSpec] = REQUIRED_KERNELS) -> dict[str, object]:
-    """Describe the kernel set for ``/healthz`` and for golden-test provenance."""
-    entries: list[dict[str, object]] = []
-    for spec in specs:
-        path = directory / spec.name
-        entries.append(
-            {
-                "name": spec.name,
-                "kind": spec.kind,
-                "present": path.exists(),
-                "bytes": path.stat().st_size if path.exists() else 0,
-                "url": spec.url,
-            }
-        )
-    return {
-        "directory": str(directory),
-        "kernels": entries,
-        "missing": missing(directory, specs),
-    }
-
-
 def main(argv: list[str] | None = None) -> None:
     """``polar-kernels fetch|verify``: the command the error messages name.
 

@@ -31,7 +31,6 @@ from app.config import get_settings
 XLSX = "Horizon-Masks-Download-V2-301O.xlsx"
 XLSX_URL = "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx"
 PDF_URL = "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf"
-DOWNLOADS_URL = "https://deepspace.jpl.nasa.gov/dsndocs/810-005/downloads/"
 
 _NS = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
 _R = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"

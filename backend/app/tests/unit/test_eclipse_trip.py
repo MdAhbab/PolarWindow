@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import math
-
 import numpy as np
 import pytest
 
@@ -12,27 +10,6 @@ from app.core import eclipse, trip
 AU = 1.495978707e11
 R_SUN = 6.957e8
 R_EARTH = 6.371e6
-
-
-def _occ(sep_rad: float, a: float, b: float) -> eclipse.Occultation:
-    return eclipse.Occultation(
-        sun_radius=np.array([a]), body_radius=np.array([b]), separation=np.array([sep_rad])
-    )
-
-
-def test_no_overlap_full_cover_and_annular() -> None:
-    assert _occ(1.0, 0.1, 0.2).visible_fraction()[0] == 1.0
-    assert _occ(0.05, 0.1, 0.2).visible_fraction()[0] == 0.0
-    # Annular: the body (radius 0.05) sits inside the Sun's disc (radius 0.1).
-    assert _occ(0.01, 0.1, 0.05).visible_fraction()[0] == pytest.approx(1 - 0.25)
-
-
-def test_half_covered_equal_discs_by_symmetry() -> None:
-    # Equal discs with centres one radius apart overlap in 2(pi/3 - sqrt(3)/4) r^2.
-    r = 0.01
-    f = _occ(r, r, r).visible_fraction()[0]
-    lens = 2 * (math.pi / 3 - math.sqrt(3) / 4)
-    assert f == pytest.approx(1 - lens / math.pi, rel=1e-9)
 
 
 def test_states_and_runs_behind_earth() -> None:

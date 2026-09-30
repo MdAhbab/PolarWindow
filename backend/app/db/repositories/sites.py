@@ -150,10 +150,6 @@ class SiteRepository:
         stmt = select(Site.kind, func.count()).group_by(Site.kind)
         return {str(k): int(n) for k, n in (await self._s.execute(stmt)).all()}
 
-    async def all_ids(self) -> list[str]:
-        stmt = select(Site.id).where(Site.is_active.is_(True)).order_by(Site.code)
-        return list((await self._s.execute(stmt)).scalars().all())
-
 
 class MaskRepository:
     def __init__(self, session: AsyncSession) -> None:

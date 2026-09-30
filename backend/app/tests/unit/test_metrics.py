@@ -71,48 +71,6 @@ def test_metrics_has_no_composite_score() -> None:
         assert not hasattr(m, forbidden), f"a composite '{forbidden}' appeared"
 
 
-def test_rank_reports_ties_rather_than_ordering_them() -> None:
-    """Ordering two sites that differ by twenty minutes over a month asserts a
-    distinction a 20 m DEM and a lunar ephemeris cannot support."""
-
-    def make(sid: str, dark_h: float) -> metrics.SiteMetrics:
-        return metrics.assemble(
-            sid,
-            0.0,
-            400 * H,
-            arcs([(True, 0, 400 - dark_h), (False, 400 - dark_h, 400)]),
-            arcs([(True, 0, 400)]),
-        )
-
-    entries = [make("a", 100), make("b", 100.2), make("c", 300)]
-    ordered, ties = metrics.rank(entries, "longest_dark_s")
-    assert [m.site_id for m in ordered] == ["a", "b", "c"]
-    assert ties == [["a", "b"]]
-
-
-def test_rank_direction_is_correct_per_metric() -> None:
-    def make(sid: str, sun_h: float) -> metrics.SiteMetrics:
-        return metrics.assemble(
-            sid,
-            0.0,
-            400 * H,
-            arcs([(True, 0, sun_h), (False, sun_h, 400)]),
-            arcs([(True, 0, 400)]),
-        )
-
-    entries = [make("low", 100), make("high", 300)]
-    ordered, _ = metrics.rank(entries, "sunlit_s")
-    assert ordered[0].site_id == "high", "more sunlight should rank first"
-    ordered, _ = metrics.rank(entries, "longest_dark_s")
-    assert ordered[0].site_id == "high", "a shorter night should rank first"
-
-
-def test_unknown_metric_raises() -> None:
-    m = metrics.assemble("s", 0.0, H, arcs([(True, 0, 1)]), arcs([(True, 0, 1)]))
-    with pytest.raises(KeyError, match="unknown metric"):
-        metrics.metric_value(m, "vibes")
-
-
 @given(
     st.lists(st.booleans(), min_size=4, max_size=200),
     st.lists(st.booleans(), min_size=4, max_size=200),
@@ -171,20 +129,3 @@ def test_an_interior_night_is_not_flagged() -> None:
     m = metrics.assemble("s", 0.0, 700 * H, sun, earth)
     assert m.longest_dark_open is False
     assert metrics.autonomy(m).survival_open is False
-
-
-def test_competition_ranks_give_tied_sites_the_same_rank() -> None:
-    """1, 1, 3 -- never 1, 2, 3 for sites the data cannot tell apart."""
-    r = metrics.rank_values(
-        [("a", 100 * H), ("b", 100.4 * H), ("c", 150 * H)], higher_is_better=False
-    )
-    assert r.order == ["a", "b", "c"]
-    assert r.ranks == {"a": 1, "b": 1, "c": 3}
-    assert r.ties == [["a", "b"]]
-
-
-def test_ties_are_anchored_on_the_leader_not_chained() -> None:
-    """A ~ B and B ~ C does not make A ~ C when A and C are 1.8 h apart."""
-    r = metrics.rank_values([("a", 0.0), ("b", 0.9 * H), ("c", 1.8 * H)], higher_is_better=False)
-    assert r.ties == [["a", "b"]]
-    assert r.ranks == {"a": 1, "b": 1, "c": 3}

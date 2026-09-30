@@ -45,7 +45,6 @@ BAD = -1.0e31
 #: The factor AE8/AP8 are usually read with (the maps are long-term averages).
 FACTOR = 2.0
 MODEL = {("e", "min"): 1, ("e", "max"): 2, ("p", "min"): 3, ("p", "max"): 4}
-NAME = {"e": "AE8", "p": "AP8"}
 #: IRBEM keeps state in Fortran common blocks: one call at a time.
 _LOCK = threading.Lock()
 

@@ -178,15 +178,6 @@ def load(directory: Path, *, allow_download: bool = False) -> KernelState:
         return _state
 
 
-def unload() -> None:
-    """Clear kernel state. Used between tests."""
-    global _state
-    with _lock:
-        spice.kclear()
-        _extra.clear()
-        _state = KernelState()
-
-
 def _require_loaded() -> None:
     if not _state.loaded:
         raise KernelError(
@@ -296,33 +287,6 @@ async def ephemeris_async(start_utc: str, end_utc: str, step_s: float) -> Epheme
     """``ephemeris`` on the dedicated SPICE thread: one hop per window, not four."""
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(_get_executor(), ephemeris, start_utc, end_utc, step_s)
-
-
-async def body_vectors_async(body: Body, ets: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
-    """``body_vectors`` on the dedicated SPICE thread.
-
-    Every async caller goes through here. One hop per request, not per sample.
-    """
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(_get_executor(), body_vectors, body, ets)
-
-
-async def utc_to_et_async(utc: str) -> float:
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(_get_executor(), utc_to_et, utc)
-
-
-def angular_radius_deg(body: Body, vectors: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
-    """Apparent angular *radius* of a body, degrees, per sample.
-
-    This is what turns the visibility boolean into the three-state lit /
-    penumbral / dark result. The Sun subtends about 0.26 deg from the Moon; Earth
-    subtends about 0.9 deg, which against a +-6.7 deg libration swing is a real
-    fraction of the contact-window edge rather than a rounding detail.
-    """
-    r = R_SUN_M if body == "sun" else R_EARTH_M
-    dist = np.linalg.norm(vectors, axis=1)
-    return np.asarray(np.degrees(np.arcsin(np.clip(r / dist, -1.0, 1.0))), dtype=np.float64)
 
 
 # ---------------------------------------------------------------------------

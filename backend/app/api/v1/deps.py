@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
-from typing import Annotated, Any
+from typing import Any
 
 from fastapi import Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -24,14 +24,6 @@ from app.services.mission_service import MissionNotFound
 from app.services.site_service import MaskNotBuilt, SiteNotFound
 
 ERROR_BASE = "https://polar-window.dev/errors"
-
-#: The database handle routes pass through to services.
-#:
-#: Deliberately opaque: routes are forbidden from importing sqlalchemy at all
-#: (enforced by import-linter), so they cannot name AsyncSession even in an
-#: annotation. They do not need to -- they never call a method on it, they only
-#: hand it to a service.
-Session = Annotated[Any, Depends(lambda: None)]
 
 
 def problem(

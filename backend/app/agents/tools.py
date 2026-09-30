@@ -21,7 +21,6 @@ of it, and not the model's recollection of it.
 
 from __future__ import annotations
 
-import logging
 import time
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -50,8 +49,6 @@ from app.services import (
     trip_service,
     weather_service,
 )
-
-log = logging.getLogger(__name__)
 
 #: The database handle agents carry through to their tools.
 #:

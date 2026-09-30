@@ -33,7 +33,6 @@ from app.data import registry, space_climate
 from app.services import ascent, lifecycle, radiation
 
 MISSIONS = ("im-1", "im-2", "blue-ghost-m1", "peregrine-m1")
-TOL_BELTS = 0.05
 CRATER_MICRO = 18.9
 CRATER_D1D2 = 16.5
 

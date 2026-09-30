@@ -57,10 +57,6 @@ class Tile:
     source: str
 
 
-def layers() -> tuple[str, ...]:
-    return LAYERS
-
-
 def validate(layer: str, z: int, x: int, y: int) -> None:
     if layer not in LAYERS:
         raise UnknownLayer(f"'{layer}' is not a layer. Available: {', '.join(LAYERS)}.")

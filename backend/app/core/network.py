@@ -82,16 +82,3 @@ def longest_wait(
         if wait > worst:
             worst, when, cut = wait, t, is_open
     return worst, when, cut
-
-
-def ion_contact_plan(
-    contacts: list[Contact], node_numbers: dict[str, int], rate_bytes_s: float, t_ref: float
-) -> str:
-    """An ION-DTN contact plan: ``a contact`` and ``a range`` lines, times relative to ``t_ref``."""
-    lines = []
-    for c in sorted(contacts, key=lambda x: (x.start, x.src, x.dst)):
-        a, b = node_numbers[c.src], node_numbers[c.dst]
-        s, e = c.start - t_ref, c.end - t_ref
-        lines.append(f"a contact +{s:.0f} +{e:.0f} {a} {b} {rate_bytes_s:.0f}")
-        lines.append(f"a range +{s:.0f} +{e:.0f} {a} {b} {max(1, round(c.owlt_s))}")
-    return "\n".join(lines) + "\n"

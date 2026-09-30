@@ -219,7 +219,7 @@ def assemble(
 
 
 # ---------------------------------------------------------------------------
-# Ranking
+# Ranking that respects censoring and each site's own uncertainty
 # ---------------------------------------------------------------------------
 
 #: The four metric keys, and whether more is better.
@@ -230,96 +230,8 @@ METRIC_KEYS: Final[dict[str, bool]] = {
     "longest_blackout_s": False,
 }
 
-#: Two sites whose metric differs by less than this are tied, not ordered.
-#: One hour, because the inputs do not support finer discrimination between
-#: sites and presenting a 12-minute difference as a ranking is a false claim.
-TIE_TOLERANCE_S: Final[float] = 3600.0
-
-
-def metric_value(m: SiteMetrics, key: str) -> float:
-    if key not in METRIC_KEYS:
-        raise KeyError(f"unknown metric: {key!r}. Known: {sorted(METRIC_KEYS)}")
-    return float(getattr(m, key))
-
-
-@dataclass(frozen=True, slots=True)
-class Ranking:
-    """An ordering that admits what it cannot distinguish.
-
-    ``order`` is a strict order, because a list has to be drawn in *some*
-    sequence. ``ranks`` is competition ranking over that order -- tied sites
-    share the rank of the group's leader, and the next rank skips accordingly
-    (1, 1, 3) -- because printing "1" and "2" for two sites the data cannot tell
-    apart asserts a difference that is not there.
-    """
-
-    order: list[str]
-    ranks: dict[str, int]
-    ties: list[list[str]]
-
-
-def rank_values(
-    values: list[tuple[str, float]],
-    *,
-    higher_is_better: bool,
-    tie_tolerance_s: float = TIE_TOLERANCE_S,
-) -> Ranking:
-    """Rank ``(id, value)`` pairs on one metric, reporting ties.
-
-    A tie group is anchored on its leader: every member lies within
-    ``tie_tolerance_s`` of the best value in the group. Chaining neighbours
-    instead (A~B, B~C, therefore A~C) would call two sites 1.8 h apart "tied"
-    under a one-hour tolerance, which is not what the word promises.
-
-    The sort is stable, so equal inputs keep their request order and the
-    result is deterministic.
-    """
-    ordered = sorted(values, key=lambda p: p[1], reverse=higher_is_better)
-    ranks: dict[str, int] = {}
-    ties: list[list[str]] = []
-    group: list[str] = []
-    leader_value = 0.0
-    leader_rank = 0
-    for position, (sid, v) in enumerate(ordered, start=1):
-        if group and abs(v - leader_value) <= tie_tolerance_s:
-            group.append(sid)
-        else:
-            if len(group) > 1:
-                ties.append(group)
-            group = [sid]
-            leader_value = v
-            leader_rank = position
-        ranks[sid] = leader_rank
-    if len(group) > 1:
-        ties.append(group)
-    return Ranking(order=[sid for sid, _ in ordered], ranks=ranks, ties=ties)
-
-
-def rank(
-    entries: list[SiteMetrics], key: str, *, tie_tolerance_s: float = TIE_TOLERANCE_S
-) -> tuple[list[SiteMetrics], list[list[str]]]:
-    """Order sites by one metric, and report which ones are indistinguishable.
-
-    Returns ``(ordered, tie_groups)``. Ties are surfaced rather than broken
-    arbitrarily: with a 20 m DEM and a mean lunar ephemeris, ranking two sites
-    that differ by twenty minutes over a month is inventing a distinction the
-    data does not support.
-    """
-    by_id = {m.site_id: m for m in entries}
-    r = rank_values(
-        [(m.site_id, metric_value(m, key)) for m in entries],
-        higher_is_better=METRIC_KEYS[key],
-        tie_tolerance_s=tie_tolerance_s,
-    )
-    return [by_id[sid] for sid in r.order], r.ties
-
-
-# ---------------------------------------------------------------------------
-# Ranking that respects censoring and each site's own uncertainty (v2)
-# ---------------------------------------------------------------------------
-#
-# `rank_values` above orders raw floats with a fixed one-hour tolerance. That is
-# wrong in two ways the review measured (D20, D21):
+# Ordering raw floats with a fixed one-hour tolerance would be wrong in two ways
+# the review measured (D20, D21):
 #
 # * A longest gap cut by the window edge is a *lower bound*. Ordering 112 h
 #   ("at least") ahead of a measured 122 h asserts something the data does not

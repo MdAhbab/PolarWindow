@@ -105,11 +105,6 @@ async def list_parameters(session: AsyncSession) -> dict[str, Any]:
     }
 
 
-async def values(session: AsyncSession) -> dict[str, float]:
-    """Entered values only, for the engines that use them."""
-    return {k: float(v["value"]) for k, v in (await PmRepository(session).parameters()).items()}
-
-
 async def set_parameter(
     session: AsyncSession, who: Claims, pid: str, value: float, note: str | None
 ) -> dict[str, Any]:

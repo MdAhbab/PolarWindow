@@ -37,8 +37,6 @@ J2 = 1.08262668e-3
 R_EQ = 6_378_137.0
 F_WGS84 = 1.0 / 298.257223563
 OMEGA_EARTH = 7.292115e-5  # rad/s
-#: The height of the entry interface the plan names (400,000 ft).
-EI_HEIGHT_M = 121_920.0
 #: A given wind blows below this height.
 WIND_TOP_M = 30_000.0
 #: The integrator's tolerances. The empirical models give their density as single-precision

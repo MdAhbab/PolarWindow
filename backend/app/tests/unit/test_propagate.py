@@ -160,9 +160,9 @@ def test_earth_and_moon_origins_give_the_same_trip() -> None:
     y0_e = np.array([3.0e8, 1.0e8, 0.0, -600.0, 400.0, 50.0])
     t0, t1 = 500.0, 500.0 + 2 * DAY
     a = propagate.propagate(tab, m_e, t0, y0_e, t1)
-    y0_m = propagate.rebase(tab, np.array([t0]), y0_e, frm=forces.EARTH, to=forces.MOON)[0]
+    y0_m = y0_e - forces.body_state(tab, forces.MOON, np.array([t0]))[0]
     b = propagate.propagate(tab, m_m, t0, y0_m, t1)
-    b_e = propagate.rebase(tab, np.array([t1]), b.state[-1], frm=forces.MOON, to=forces.EARTH)[0]
+    b_e = b.state[-1] + forces.body_state(tab, forces.MOON, np.array([t1]))[0]
     assert np.linalg.norm(a.state[-1, :3] - b_e[:3]) < 1.0
 
 

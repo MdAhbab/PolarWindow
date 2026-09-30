@@ -6,7 +6,7 @@ tables are read from SPICE once per span by :func:`environment`; everything
 after that is arithmetic on arrays, so a propagation can run on any thread.
 
 States are J2000, metres and metres per second, relative to the model's
-origin (Earth or Moon); :func:`rebase` moves them between the two.
+origin (Earth or Moon).
 """
 
 from __future__ import annotations
@@ -164,17 +164,6 @@ def propagate(
         event_states=[np.concatenate(e) if e else np.empty((0, 6)) for e in ev_y],
         nfev=nfev,
     )
-
-
-def rebase(
-    tables: forces.Tables, ets: FloatArray, states: FloatArray, *, frm: int, to: int
-) -> FloatArray:
-    """Move (n, 6) J2000 states between the Earth and Moon origins."""
-    if frm == to:
-        return np.asarray(states, dtype=np.float64)
-    moon = forces.body_state(tables, forces.MOON, np.atleast_1d(ets))
-    sign = 1.0 if (frm == forces.MOON and to == forces.EARTH) else -1.0
-    return np.asarray(np.atleast_2d(states) + sign * moon, dtype=np.float64)
 
 
 def residual_acceleration_vectors(

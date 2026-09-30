@@ -493,6 +493,3 @@ def products(
                 )
             )
     return out
-
-
-FetchFn = Callable[[httpx.AsyncClient, str | None, str | None], Awaitable[http.Fetched]]

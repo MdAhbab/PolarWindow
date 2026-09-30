@@ -16,12 +16,32 @@ import numpy as np
 import pytest
 
 from app.core import timeline, visibility
-from app.core.horizon import HorizonMask, build_mask, make_analytic_sampler
+from app.core.horizon import HorizonMask, build_mask
 from app.core.spice import R_MOON_M
 
 SITE_LAT, SITE_LON, SITE_ELEV = -88.5, 45.0, 1500.0
 STEP_S = 900.0
 N = 2835
+
+
+def make_analytic_sampler(
+    features: list[tuple[float, float, float, float]], *, base_height_m: float = 0.0
+):
+    """A terrain sampler built from Gaussian bumps, so no DEM is needed.
+
+    Each feature is ``(east_m, north_m, height_m, sigma_m)``. The full pipeline (mask,
+    timeline, metrics) then runs on a machine with no DEM at all, which is what keeps this
+    safety net alive during local development.
+    """
+
+    def sample(x, y):
+        z = np.full(np.shape(x), base_height_m, dtype=np.float64)
+        for ex, ny, hm, sigma in features:
+            d2 = (x - ex) ** 2 + (y - ny) ** 2
+            z = z + hm * np.exp(-d2 / (2.0 * sigma * sigma))
+        return z
+
+    return sample
 
 
 def synthetic_mask() -> HorizonMask:

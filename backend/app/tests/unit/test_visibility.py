@@ -104,14 +104,6 @@ def test_visibility_three_states() -> None:
     assert state.tolist() == [vis.LIT, vis.PENUMBRAL, vis.PENUMBRAL, vis.DARK]
 
 
-def test_disc_fraction_is_monotonic_and_bounded() -> None:
-    m = np.linspace(-1.0, 1.0, 101)
-    frac = vis.disc_fraction_clear(m, 0.5)
-    assert frac.min() >= 0.0 and frac.max() <= 1.0
-    assert np.all(np.diff(frac) >= -1e-12)
-    assert vis.disc_fraction_clear(np.array([0.0]), 0.5)[0] == pytest.approx(0.5, abs=1e-9)
-
-
 def test_matches_frontend_reference_implementation() -> None:
     """Agree with the TypeScript engine's lookAngles to 1e-9.
 

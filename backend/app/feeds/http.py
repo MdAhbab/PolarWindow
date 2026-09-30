@@ -252,21 +252,6 @@ async def fetch(
     raise FeedHttpError(f"{_host(url)}: gave up after {retries + 1} attempts ({last_error})")
 
 
-async def fetch_range(
-    client: httpx.AsyncClient,
-    url: str,
-    start: int,
-    end: int | None,
-    *,
-    retries: int = RETRIES,
-    sleep: Callable[[float], object] = asyncio.sleep,
-) -> bytes:
-    """Bytes ``start``..``end`` (inclusive) of an object: one GRIB message, say."""
-    rng = f"bytes={start}-" + ("" if end is None else str(end))
-    got = await fetch(client, url, headers={"Range": rng}, retries=retries, sleep=sleep)
-    return got.body
-
-
 async def _maybe_await(x: object) -> None:
     if asyncio.iscoroutine(x) or isinstance(x, asyncio.Future):
         await x
