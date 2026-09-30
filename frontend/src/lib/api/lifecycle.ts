@@ -456,7 +456,19 @@ export interface SpaceWeatherDTO {
   note: string
 }
 
-/** Never a prediction: sizes of the corrections under the listed assumed errors, over many runs. */
+/**
+ * One error the correction budget rests on: a figure a launch vehicle's guide
+ * publishes (with where it is from), or one the service assumes.
+ */
+export interface AssumptionDTO {
+  what: string
+  value: string
+  basis: 'published' | 'assumed'
+  /** Where a published figure is from (the guide, table and page); null if assumed. */
+  source: string | null
+}
+
+/** Never a prediction: sizes of the corrections under the listed errors, over many runs. */
 export interface CorrectionsDTO {
   label: string
   burns: { name: string; t: string; p95_m_s: QuantityDTO; p99_m_s: QuantityDTO }[]
@@ -470,7 +482,7 @@ export interface CorrectionsDTO {
   runs: number
   /** Runs with no close pass of the Moon. */
   missed: number
-  assumptions: { what: string; value: string }[]
+  assumptions: AssumptionDTO[]
   plan_note: string
   flown_note: string
 }
@@ -484,7 +496,7 @@ export interface NodeDTO {
   kind: 'station' | 'relay' | 'lander' | 'rover' | 'earth'
   name: string
   operator: string | null
-  status: 'operating' | 'planned' | 'not_launched'
+  status: 'operating' | 'planned' | 'not_launched' | 'launched_not_operating'
   orbit: 'real' | 'planned' | null
   launch_note: string | null
 }
@@ -551,7 +563,7 @@ export interface OrbiterDTO {
   name: string
   operator: string | null
   naif_id: number | null
-  note: string
+  note: string | null
   /** The recorded JPL Horizons trajectory. */
   source: { name: string; url: string | null; issued_at: string | null; fetched_at: string | null; licence: string | null; snapshot_id: number | null } | null
   /** The part of the dates the trajectory covers. */
@@ -800,6 +812,7 @@ export type ContractChecks = [
   Fits<Present<S['Orbiter']>, OrbiterDTO>,
   Fits<Present<S['RoverOut']>, RoverSightDTO>,
   Fits<Present<S['Trip']>, TripDTO>,
+  Fits<Present<S['Assumption']>, AssumptionDTO>,
   Fits<Present<S['LaunchCalendar']>, LaunchCalendarDTO>,
   Fits<Present<S['LaunchWeather']>, LaunchWeatherDTO>,
   Fits<Present<S['Return']>, ReturnDTO>,

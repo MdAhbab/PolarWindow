@@ -22,7 +22,7 @@ import { JourneyBar } from './JourneyBar'
 import { ReadinessList, RiskTable, sortItems } from './Readiness'
 import { LimitBars, LimitTable } from './LimitBars'
 import { coverageGaps, tripStretches } from './TripStrip'
-import { CorrectionsRow, shadowAndContact } from '../../screens/sections/TripSection'
+import { CorrectionsRow, errorsHeading, shadowAndContact } from '../../screens/sections/TripSection'
 import { checkWords, climatologyWords, forecastLine, observedWords, percentWords, rulesSummary, WeatherRuleTable } from './WeatherRules'
 import { RadiationRow, radiationSentence, screeningFigure } from './Radiation'
 import { eventCountWords, outlookSentence, readingAge, spaceWeatherSentence, SpaceWeatherRow } from './SpaceWeather'
@@ -380,9 +380,9 @@ describe('the charts’ arrays, shared with their tables', () => {
     expect(screen.getByText('Corrections on the way')).toBeTruthy()
     expect(screen.getByText(c.label)).toBeTruthy()
     const text = document.body.textContent ?? ''
-    expect(text).toContain('a budget: 18.1 m/s in 99 of 100 runs')
+    expect(text).toContain('a budget: 88.7 m/s in 99 of 100 runs')
     expect(text).toContain('In 1,000 runs of the flight as planned')
-    expect(text).toContain('(16.5–19.9 m/s, allowing for the number of runs)')
+    expect(text).toContain('(80–94.7 m/s, allowing for the number of runs)')
     expect(text).toContain('Every run passed close to the Moon.')
     const table = screen.getByRole('table')
     // Three corrections and their total, each at 95 and at 99 of 100 runs.
@@ -393,6 +393,55 @@ describe('the charts’ arrays, shared with their tables', () => {
     render(<CorrectionsRow c={null} note="No trip has been worked out." />)
     expect(screen.getByText('No trip has been worked out.')).toBeTruthy()
     expect(screen.queryByRole('table')).toBeNull()
+  })
+
+  describe('the errors a budget rests on: which the guide publishes, which are assumed, and from where', () => {
+    const pub = (what: string, value: string, source: string) => ({ what, value, basis: 'published' as const, source })
+    const asm = (what: string, value: string) => ({ what, value, basis: 'assumed' as const, source: null })
+    const cite =
+      'Falcon 9 User’s Guide Rev 2, Table 3-2, page 16; row: Geosynchronous transfer orbit (185 km x 35,786 km). The guide has no row for a launch to the Moon, so its row for a transfer orbit to geosynchronous orbit is used in its place. '
+    const mixed = [
+      pub('Leaving Earth, position up or down', '3.3 km', `${cite}The orbit’s lowest point within 10 km at three standard deviations, so one standard deviation is 3.3 km.`),
+      asm('Leaving Earth, position along the path and sideways', '1 km each'),
+      asm('Leaving Earth, speed up or down', '0.5 m/s'),
+      pub('Leaving Earth, speed along the path', '2.7 m/s', `${cite}The orbit’s highest point within 500 km at three standard deviations.`),
+      pub('Leaving Earth, speed sideways', '6.0 m/s', `${cite}The orbit’s tilt within 0.1° at three standard deviations.`),
+      asm('Where the team thinks the lander is, at each correction', '1 km and 1 mm/s'),
+      asm('How well a burn fires', '1 % of its size and 1 degree of pointing, plus 1 cm/s'),
+    ]
+    it('says the mix in plain words, and where the speed errors come from when the answer says so', () => {
+      expect(errorsHeading(mixed)).toEqual({
+        mix: '3 of the 7 errors here are published in the launch vehicle’s guide; the other 4 are assumed',
+        speed:
+          'The speed errors on leaving Earth are worked out from the guide’s published accuracy for a transfer orbit to geosynchronous orbit, since it has no row for a launch to the Moon.',
+      })
+      expect(errorsHeading(mixed.slice(0, 3)).mix).toBe('1 of the 3 errors here is published in the launch vehicle’s guide; the other 2 are assumed')
+      expect(errorsHeading(mixed.filter((a) => a.basis === 'published')).mix).toBe('Every error here is published in the launch vehicle’s guide')
+    })
+    it('says every error is assumed when none is published, and nothing of a row the answer does not name', () => {
+      expect(errorsHeading(mixed.filter((a) => a.basis === 'assumed'))).toEqual({ mix: 'Every error here is assumed', speed: null })
+      // A saved copy from before the basis was served has none: read as assumed.
+      expect(errorsHeading([{ what: 'How well a burn fires', value: '1 %' } as never]).mix).toBe('Every error here is assumed')
+      // Published, but from a row of the guide's own for a launch to the Moon: no word of a transfer orbit.
+      const own = [pub('Leaving Earth, speed along the path', '2.0 m/s', 'Vulcan User’s Guide, Table 2.3-1, page 2-9; row: Lunar Transfer/Earth Escape.')]
+      expect(errorsHeading(own).speed).toBeNull()
+      // A published position alone does not make the speed errors worked out from it.
+      expect(errorsHeading([mixed[0]]).speed).toBeNull()
+    })
+    it('shows each error with its basis, and a published one with its source as served', () => {
+      const c = { ...trip.data.corrections!, assumptions: mixed } as unknown as NonNullable<typeof trip.data.corrections>
+      render(<CorrectionsRow c={c} note={null} />)
+      const heading = screen.getByRole('heading', { level: 4, name: /^3 of the 7 errors here are published in the launch vehicle’s guide; the other 4 are assumed/ })
+      expect(heading.textContent).toContain('The speed errors on leaving Earth are worked out from the guide’s published accuracy for a transfer orbit to geosynchronous orbit')
+      expect(screen.queryByText('Every error here is assumed')).toBeNull()
+      for (const a of mixed) {
+        const dd = screen.getByText(a.what).nextElementSibling as HTMLElement
+        expect(dd.textContent).toContain(a.value)
+        expect(dd.textContent).toContain(` · ${a.basis}`)
+        if (a.source) expect(dd.textContent).toContain(`Source: ${a.source}`)
+        else expect(dd.textContent).not.toContain('Source')
+      }
+    })
   })
 
   it('weather rules: a small share keeps a digit, and lightning is seen now, not at the launch', () => {

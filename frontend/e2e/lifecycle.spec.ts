@@ -1017,7 +1017,28 @@ test('trip corrections and launch weather words (live API): Blue Ghost’s burns
   await expect(budget).toContainText(/In 1,000 runs of the flight as planned/)
   await expect(budget).toContainText('allowing for the number of runs')
   await expect(budget.getByRole('table').getByRole('row')).toHaveCount(5)
-  await expect(budget).toContainText('Every error here is assumed')
+  // Every error the budget rests on, as served: its value, whether it is published or assumed, and a published one's source.
+  const errors = (
+    (await (await page.request.get(`${API}/missions/blue-ghost-m1/trip`)).json()) as {
+      data: { corrections: { assumptions: { what: string; value: string; basis: 'published' | 'assumed'; source: string | null }[] } }
+    }
+  ).data.corrections.assumptions
+  const published = errors.filter((a) => a.basis === 'published')
+  const heading = budget.getByRole('heading', { level: 4 })
+  await expect(heading).toContainText(
+    published.length
+      ? `${published.length} of the ${errors.length} errors here ${published.length === 1 ? 'is' : 'are'} published in the launch vehicle’s guide`
+      : 'Every error here is assumed',
+  )
+  // The speed errors on leaving Earth say where they are worked out from when the served sources say it.
+  if (published.some((a) => /speed/i.test(a.what) && /geosynchronous/i.test(a.source ?? ''))) {
+    await expect(heading).toContainText('The speed errors on leaving Earth are worked out from the guide’s published accuracy for a transfer orbit to geosynchronous orbit')
+  }
+  for (const a of errors) {
+    const shown = budget.locator('dt', { hasText: a.what }).locator('xpath=following-sibling::dd[1]')
+    await expect(shown, a.what).toContainText(`${a.value} · ${a.basis}`)
+    if (a.source) await expect(shown, a.what).toContainText(`Source: ${a.source}`)
+  }
   await expectNoSeriousAxe(page, '/missions/blue-ghost-m1/trip (live) with its burns and corrections open')
 
   // IM-1: no burn found outside the gaps in the reconstruction, and a budget all the same.

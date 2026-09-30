@@ -1335,7 +1335,7 @@
     "open": false,
     "no_margin_reason": null,
     "missing_reason": null,
-    "source": "From 18.9 cGy a year in silicon, measured by CRaTER's microdosimeter on LRO on 20 June 2009, about 10,000 km from the Moon (Mazur et al. 2011, as given by Schwadron et al. 2012, JGR 117, E00H13), scaled by the cosmic-ray model's change between then (W = 5) and 2025-01 (W = 108): ×0.33 (Matthiä et al. 2013, W from the Oulu neutron monitor, NMDB). ±30 % covers the scaling."
+    "source": "From 18.9 cGy a year in silicon, measured by CRaTER's microdosimeter on LRO on 20 June 2009, about 10,000 km from the Moon (Mazur et al. 2011, as given by Schwadron et al. 2012, JGR 117, E00H13), scaled by the cosmic-ray model's change between then (W = 5) and 2025-01 (W = 108): \u00d70.33 (Matthi\u00e4 et al. 2013, W from the Oulu neutron monitor, NMDB). \u00b130 % covers the scaling."
    },
    "surface": {
     "site_id": "mission-blue-ghost-m1",
@@ -1363,7 +1363,7 @@
      "open": false,
      "no_margin_reason": null,
      "missing_reason": null,
-     "source": "From 13.2 ± 1 µGy an hour in silicon, measured on the surface by Chang'e-4's LND from January 2019 (Zhang et al. 2020, Science Advances 6, eaaz1334), its horizon taken as flat, scaled by the cosmic-ray model's change between then (W = 16) and 2025-03 (W = 105): ×0.37 (Matthiä et al. 2013, W from the Oulu neutron monitor, NMDB). ±30 % covers the scaling. Times the site's open sky (1.000)."
+     "source": "From 13.2 \u00b1 1 \u00b5Gy an hour in silicon, measured on the surface by Chang'e-4's LND from January 2019 (Zhang et al. 2020, Science Advances 6, eaaz1334), its horizon taken as flat, scaled by the cosmic-ray model's change between then (W = 16) and 2025-03 (W = 105): \u00d70.37 (Matthi\u00e4 et al. 2013, W from the Oulu neutron monitor, NMDB). \u00b130 % covers the scaling. Times the site's open sky (1.000)."
     }
    },
    "surface_note": "The elevation model does not cover this landing site, so its horizon is taken as flat (open sky 1); the surface dose is an assumption to that extent.",
@@ -1449,7 +1449,7 @@
       "hi": null,
       "factor": null,
       "open": false,
-      "no_margin_reason": "As measured at 1 AU outside Earth's magnetic field (taken as arriving evenly from all directions); King (1974), J. Spacecraft Rockets 11, 401: fitted spectrum J(>E) = 7.9e9 exp((30 - E)/26.5) per cm², as SPENVIS gives it.",
+      "no_margin_reason": "As measured at 1 AU outside Earth's magnetic field (taken as arriving evenly from all directions); King (1974), J. Spacecraft Rockets 11, 401: fitted spectrum J(>E) = 7.9e9 exp((30 - E)/26.5) per cm\u00b2, as SPENVIS gives it.",
       "missing_reason": null,
       "source": null
      },
@@ -1469,7 +1469,7 @@
      "source_url": "https://www.spenvis.oma.be/help/background/flare/flare.html"
     }
    ],
-   "screening_note": "Screening only: long-term average belt maps (good to about a factor of two), cosmic-ray dose scaled from measurements (±30 %), and past events as they were measured at 1 AU. None of it accounts for the spacecraft's own shielding. Confirm in SPENVIS, OLTARIS or CREME-MC before any design decision.",
+   "screening_note": "Screening only: long-term average belt maps (good to about a factor of two), cosmic-ray dose scaled from measurements (\u00b130 %), and past events as they were measured at 1 AU. None of it accounts for the spacecraft's own shielding. Confirm in SPENVIS, OLTARIS or CREME-MC before any design decision.",
    "confirm_in": [
     "SPENVIS (ESA)",
     "OLTARIS (NASA)",
@@ -1477,13 +1477,13 @@
    ]
   },
   "corrections": {
-   "label": "A budget for these assumed errors, not a prediction of what the mission needed.",
+   "label": "A budget for these errors, not a prediction of what the mission needed. The accuracy published in the user\u2019s guide for Falcon 9 Block 5 is used for the errors at leaving Earth that it covers, worked out from its row for a transfer orbit to geosynchronous orbit, because the guide has no row for a launch to the Moon. Every other error is assumed.",
    "burns": [
     {
      "name": "First correction, a day after leaving Earth",
-     "t": "2025-02-28T01:06:00Z",
+     "t": "2025-02-28T00:25:23.097084Z",
      "p95_m_s": {
-      "value": 13.7,
+      "value": 61.746289014151564,
       "unit": "m/s",
       "provenance": "computed",
       "pm": null,
@@ -1496,7 +1496,7 @@
       "source": null
      },
      "p99_m_s": {
-      "value": 17.5,
+      "value": 85.17452447517515,
       "unit": "m/s",
       "provenance": "computed",
       "pm": null,
@@ -1511,9 +1511,9 @@
     },
     {
      "name": "Second correction, half-way",
-     "t": "2025-03-01T20:00:00Z",
+     "t": "2025-03-01T06:24:25.830873Z",
      "p95_m_s": {
-      "value": 0.55,
+      "value": 2.562276971085249,
       "unit": "m/s",
       "provenance": "computed",
       "pm": null,
@@ -1526,7 +1526,7 @@
       "source": null
      },
      "p99_m_s": {
-      "value": 0.84,
+      "value": 4.079653114838826,
       "unit": "m/s",
       "provenance": "computed",
       "pm": null,
@@ -1541,9 +1541,9 @@
     },
     {
      "name": "Third correction, a day before arriving",
-     "t": "2025-03-02T19:00:00Z",
+     "t": "2025-03-02T12:23:28.564662Z",
      "p95_m_s": {
-      "value": 0.085,
+      "value": 0.1592046978378308,
       "unit": "m/s",
       "provenance": "computed",
       "pm": null,
@@ -1556,7 +1556,7 @@
       "source": null
      },
      "p99_m_s": {
-      "value": 0.104,
+      "value": 0.29423575234495414,
       "unit": "m/s",
       "provenance": "computed",
       "pm": null,
@@ -1571,7 +1571,7 @@
     }
    ],
    "total_p95_m_s": {
-    "value": 14.2,
+    "value": 63.2702363004927,
     "unit": "m/s",
     "provenance": "computed",
     "pm": null,
@@ -1584,12 +1584,12 @@
     "source": null
    },
    "total_p99_m_s": {
-    "value": 18.1,
+    "value": 88.6644476596109,
     "unit": "m/s",
     "provenance": "computed",
     "pm": null,
-    "lo": 16.5,
-    "hi": 19.9,
+    "lo": 79.99793663981488,
+    "hi": 94.73041885437588,
     "factor": null,
     "open": false,
     "no_margin_reason": null,
@@ -1597,7 +1597,7 @@
     "source": null
    },
    "linear_p99_m_s": {
-    "value": 19.2,
+    "value": 82.40329675172049,
     "unit": "m/s",
     "provenance": "computed",
     "pm": null,
@@ -1610,12 +1610,12 @@
     "source": null
    },
    "arrival_altitude_km": {
-    "value": 158.3,
+    "value": 101.86276347526943,
     "unit": "km",
     "provenance": "computed",
     "pm": null,
-    "lo": 156.2,
-    "hi": 160.2,
+    "lo": 99.7277574210746,
+    "hi": 103.91859606770711,
     "factor": null,
     "open": false,
     "no_margin_reason": null,
@@ -1626,24 +1626,50 @@
    "missed": 0,
    "assumptions": [
     {
-     "what": "Leaving Earth, position",
-     "value": "1 km in each direction"
+     "what": "Leaving Earth, position up or down",
+     "value": "3.3 km",
+     "basis": "published",
+     "source": "Falcon 9 Launch Vehicle Payload User\u2019s Guide, Rev 2 (21 October 2015), Table 3-2, page 16; row: Geosynchronous transfer orbit (185 km x 35,786 km). The guide has no row for a launch to the Moon, so its row for a transfer orbit to geosynchronous orbit is used in its place. The orbit\u2019s lowest point within 10 km at three standard deviations, so one standard deviation is 3.3 km."
     },
     {
-     "what": "Leaving Earth, speed",
-     "value": "0.5 m/s up or down, 1 m/s along the path, 0.5 m/s sideways"
+     "what": "Leaving Earth, position along the path and sideways",
+     "value": "1 km each",
+     "basis": "assumed",
+     "source": null
+    },
+    {
+     "what": "Leaving Earth, speed up or down",
+     "value": "0.5 m/s",
+     "basis": "assumed",
+     "source": null
+    },
+    {
+     "what": "Leaving Earth, speed along the path",
+     "value": "2.7 m/s",
+     "basis": "published",
+     "source": "Falcon 9 Launch Vehicle Payload User\u2019s Guide, Rev 2 (21 October 2015), Table 3-2, page 16; row: Geosynchronous transfer orbit (185 km x 35,786 km). The guide has no row for a launch to the Moon, so its row for a transfer orbit to geosynchronous orbit is used in its place. The orbit\u2019s highest point within 500 km at three standard deviations. The speed error at the lowest point that would move the highest point that far is 2.7 m/s at one standard deviation, taken as the same at leaving Earth for the Moon."
+    },
+    {
+     "what": "Leaving Earth, speed sideways",
+     "value": "6.0 m/s",
+     "basis": "published",
+     "source": "Falcon 9 Launch Vehicle Payload User\u2019s Guide, Rev 2 (21 October 2015), Table 3-2, page 16; row: Geosynchronous transfer orbit (185 km x 35,786 km). The guide has no row for a launch to the Moon, so its row for a transfer orbit to geosynchronous orbit is used in its place. The orbit\u2019s tilt within 0.1\u00b0 at three standard deviations. The sideways speed error at the lowest point that would tilt it that far is 6.0 m/s at one standard deviation, taken as the same at leaving Earth for the Moon."
     },
     {
      "what": "Where the team thinks the lander is, at each correction",
-     "value": "1 km and 1 mm/s"
+     "value": "1 km and 1 mm/s",
+     "basis": "assumed",
+     "source": null
     },
     {
      "what": "How well a burn fires",
-     "value": "1 % of its size and 1 degree of pointing, plus 1 cm/s"
+     "value": "1 % of its size and 1 degree of pointing, plus 1 cm/s",
+     "basis": "assumed",
+     "source": null
     }
    ],
-   "plan_note": "The flight as planned: NASA's reconstruction just before entering lunar orbit, propagated back to where it passed closest to Earth. Forward from there it arrives where and when the flown one did, with no burn on the way.",
-   "flown_note": "The reconstruction shows corrections of 3.2 m/s after leaving Earth (any in its gaps are not seen)."
+   "plan_note": "The flight as planned: NASA's reconstruction just before entering lunar orbit, propagated back to where it passed closest to Earth (1,002 km up, 28 min before the flown departure). Forward from there it arrives where and when the flown one did, with no burn on the way.",
+   "flown_note": "The reconstruction shows corrections of 0.06 m/s, 0.13 m/s, 1.06 m/s, 2.11 m/s, 9.71 m/s, 6.06 m/s, 4.72 m/s after leaving Earth (any in its gaps are not seen)."
   },
   "corrections_note": null,
   "radiation_note": null
@@ -1655,7 +1681,7 @@
    "parts": [
     {
      "source": "Reconstructed trajectory",
-     "note": "As flown, from the operator’s reconstruction; about 1 km."
+     "note": "As flown, from the operator\u2019s reconstruction; about 1 km."
     },
     {
      "source": "Shadow edges",

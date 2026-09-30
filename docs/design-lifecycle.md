@@ -330,7 +330,15 @@ rows. Copy in quotes is the on-screen text; `{}` is data.
   service's `label` first, "not a prediction"; one sentence with the runs,
   95 and 99 of 100, the interval allowing for the number of runs, the linear
   check, runs that missed the Moon, the arrival height; a table of the three
-  corrections and their total, taken run by run; every assumed error; the
+  corrections and their total, taken run by run; every error the budget rests
+  on, each with its `basis` ("published" in the launch vehicle's guide, or
+  "assumed") after its value and, for a published one, its `source` as served
+  (guide, table, page) under it; over the list a heading that says the mix in
+  plain words ("3 of the 7 errors here are published in the launch vehicle's
+  guide; the other 4 are assumed"; "Every error here is assumed" when none is)
+  and, when the served sources of the published speed errors say the guide's
+  row for a transfer orbit to geosynchronous orbit stands in for a launch to the
+  Moon, that the speed errors on leaving Earth are worked out from it; the
   plan and flown notes. None: `corrections_note`) · Where the Moon's pull wins
   (only when `moon_pull` is given) · Download the trip (flown trips only: CCSDS
   OEM and CSV, one block per stretch NASA's reconstruction covers, said in the
