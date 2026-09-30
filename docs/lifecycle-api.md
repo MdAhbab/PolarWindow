@@ -1,10 +1,12 @@
 # Lifecycle API contract (v1, 2026-09-27)
 
-The shared contract between the backend and the frontend for the six mission
-sections: **Ready · Launch · Trip · Landing (existing surface screens) · Contact · Return**.
-The backend implements these shapes exactly; the frontend builds against them
-(fixtures first, then the generated `schema.ts`). A change to a shape is made
-here first, with a line in *Changes* at the bottom, then in code.
+The shapes of the six mission sections, **Ready · Launch · Trip · Landing · Contact · Return**, and the log of their changes. Every endpoint, the envelope, errors and sign-in are in [api.md](api.md).
+
+This is the contract between the backend and the frontend. The backend
+implements these shapes exactly; the frontend builds against them (fixtures
+first, then the generated `schema.ts`). A change to a shape is made here first,
+with a line in *Changes* at the bottom, then in code. Landing is the existing
+surface screens.
 
 All paths are under `/api/v1`. Reading is public; every write needs a named
 session (ADR-17). Shapes are written TypeScript-style; `?` means optional,
@@ -184,7 +186,7 @@ interface Trip {
 }
 ```
 
-Exports: `GET /missions/{id}/trip/export?format=oem|spk|csv`.
+Exports: `GET /missions/{id}/trip/export?format=oem|csv` (default `oem`).
 
 ## Contact (T1)
 
@@ -268,10 +270,8 @@ licence, breaker: "closed" | "open" | "half_open"}[]}` (Settings → Data source
 
 ## Named sign-in (ADR-17)
 
-`POST /auth/demo` accepts an optional body `{name: string, team?: string}`
-(no body: name "Demo project manager"). The response adds
-`user: {id: number, name: string, team: string | null}`. Every write records
-that user. `GET /auth/me` returns the same `user`.
+The body of `POST /auth/demo` (`{name, team?}`), the `user` in the answer and
+`GET /auth/me` are in [api.md](api.md), *Sign-in*. Every write records that user.
 
 ## Changes
 
