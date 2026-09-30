@@ -29,6 +29,7 @@ from pathlib import Path, PurePosixPath
 from typing import IO, Final
 
 from app.core.kernels import METAKERNEL_NAME
+from app.data.download import sha256_of
 
 MANIFEST: Final[str] = "MANIFEST.json"
 FORMAT: Final[int] = 1
@@ -103,14 +104,6 @@ def shareable(data_dir: Path, repo_root: Path) -> list[str]:
     return sorted(n for n in names if keep(n) and (data_dir / n).is_file())
 
 
-def _sha256(path: Path) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(_CHUNK), b""):
-            h.update(chunk)
-    return h.hexdigest()
-
-
 def _copy(src: IO[bytes], dest: Path) -> tuple[str, int]:
     """Stream ``src`` into ``dest``; the SHA-256 and size of what was written."""
     h, n = hashlib.sha256(), 0
@@ -144,7 +137,7 @@ def export(
     again, so re-exporting into a synced drive folder uploads only the difference.
     """
     entries = [
-        Entry(rel, (data_dir / rel).stat().st_size, _sha256(data_dir / rel)) for rel in files
+        Entry(rel, (data_dir / rel).stat().st_size, sha256_of(data_dir / rel)) for rel in files
     ]
     total = sum(e.size for e in entries)
     text = json.dumps(
@@ -290,7 +283,7 @@ def import_(sources: Sequence[Path], data_dir: Path) -> Summary:
             dest = data_dir / e.path
             if dest.exists():
                 same = (
-                    dest.is_file() and dest.stat().st_size == e.size and _sha256(dest) == e.sha256
+                    dest.is_file() and dest.stat().st_size == e.size and sha256_of(dest) == e.sha256
                 )
                 if same:
                     summary.present += 1

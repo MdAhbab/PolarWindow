@@ -275,6 +275,24 @@ async def _fetch_rows_async(
     return out
 
 
+def _save_tile(
+    product: LolaProduct, heights: npt.NDArray[np.float32], x0: float, y0: float, out_path: Path
+) -> None:
+    """Write a window as the compressed ``.npz`` that ``DemTile.load`` reads.
+
+    ``x0`` and ``y0`` are the polar stereographic coordinates of the window's first sample.
+    """
+    np.savez_compressed(
+        out_path,
+        heights=heights,
+        origin_x_m=np.float64(x0),
+        origin_y_m=np.float64(y0),
+        scale_m=np.float64(product.scale_m),
+        product=np.str_(product.name),
+        vertical_error_m=np.float64(product.vertical_error_m),
+    )
+
+
 async def fetch_window_async(
     product: LolaProduct,
     centre_x_m: float,
@@ -334,15 +352,7 @@ async def fetch_window_async(
 
     x0, y0 = product.pixel_to_world(np.array([float(sample0)]), np.array([float(line0)]))
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(
-        out_path,
-        heights=heights,
-        origin_x_m=np.float64(x0[0]),
-        origin_y_m=np.float64(y0[0]),
-        scale_m=np.float64(product.scale_m),
-        product=np.str_(product.name),
-        vertical_error_m=np.float64(product.vertical_error_m),
-    )
+    _save_tile(product, heights, float(x0[0]), float(y0[0]), out_path)
     return {
         "product": product.name,
         "path": str(out_path),
@@ -373,15 +383,7 @@ def fetch_full(
     dn = np.fromfile(raw, dtype="<i2").reshape(product.size_px, product.size_px)
     heights = dn.astype(np.float32) * np.float32(product.scaling_factor)
     x0, y0 = product.pixel_to_world(np.array([0.0]), np.array([0.0]))
-    np.savez_compressed(
-        out_path,
-        heights=heights,
-        origin_x_m=np.float64(x0[0]),
-        origin_y_m=np.float64(y0[0]),
-        scale_m=np.float64(product.scale_m),
-        product=np.str_(product.name),
-        vertical_error_m=np.float64(product.vertical_error_m),
-    )
+    _save_tile(product, heights, float(x0[0]), float(y0[0]), out_path)
     return {"product": product.name, "path": str(out_path), "bytes": out_path.stat().st_size}
 
 

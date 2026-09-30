@@ -25,16 +25,11 @@ from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
 
+from app.feeds.parsers.grib_ranges import sign_magnitude
+
 
 class PrefixError(ValueError):
     """The message is not in the layout this module reads, or the prefix is too short."""
-
-
-def _sm(raw: bytes) -> int:
-    """GRIB2 signed integer: the top bit is the sign, the rest the magnitude."""
-    v = int.from_bytes(raw, "big")
-    top = 1 << (8 * len(raw) - 1)
-    return -(v & (top - 1)) if v & top else v
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,8 +114,8 @@ def layout(buf: bytes) -> Layout:
             grid = Grid(
                 ni=struct.unpack(">I", s[30:34])[0],
                 nj=struct.unpack(">I", s[34:38])[0],
-                la1=_sm(s[46:50]) * 1e-6,
-                lo1=_sm(s[50:54]) * 1e-6,
+                la1=sign_magnitude(s[46:50]) * 1e-6,
+                lo1=sign_magnitude(s[50:54]) * 1e-6,
                 di=struct.unpack(">I", s[63:67])[0] * 1e-6,
                 dj=struct.unpack(">I", s[67:71])[0] * 1e-6,
             )
@@ -139,8 +134,8 @@ def layout(buf: bytes) -> Layout:
         grid=grid,
         n=struct.unpack(">I", s5[5:9])[0],
         ref=struct.unpack(">f", s5[11:15])[0],
-        e=_sm(s5[15:17]),
-        d=_sm(s5[17:19]),
+        e=sign_magnitude(s5[15:17]),
+        d=sign_magnitude(s5[17:19]),
         nbits=s5[19],
         ng=struct.unpack(">I", s5[31:35])[0],
         wref=s5[35],
@@ -227,9 +222,9 @@ def decode_prefix(head: bytes, k: int) -> npt.NDArray[np.float64]:
     # Spatial differencing: the first ``order`` values are given, the rest are differences.
     at = lay.data_at
     o = lay.octs
-    ival1 = _sm(head[at : at + o])
-    ival2 = _sm(head[at + o : at + 2 * o]) if lay.order == 2 else 0
-    minsd = _sm(head[at + lay.order * o : at + (lay.order + 1) * o])
+    ival1 = sign_magnitude(head[at : at + o])
+    ival2 = sign_magnitude(head[at + o : at + 2 * o]) if lay.order == 2 else 0
+    minsd = sign_magnitude(head[at + lay.order * o : at + (lay.order + 1) * o])
     if lay.order == 1:
         f[0] = ival1
         f[1:] += minsd

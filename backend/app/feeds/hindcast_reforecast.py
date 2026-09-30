@@ -186,8 +186,9 @@ class Fetcher:
         return {"init": d.isoformat(), "speeds": speeds}
 
 
-def read_cache() -> dict[str, dict[str, Any]]:
-    p = cache_path()
+def read_cache(path: Path | None = None) -> dict[str, dict[str, Any]]:
+    """The cached records by their ``init``, from ``path`` (default: this run's cache file)."""
+    p = path or cache_path()
     out: dict[str, dict[str, Any]] = {}
     if p.exists():
         for line in p.read_text().splitlines():

@@ -53,6 +53,11 @@ class BeltsUnavailable(RuntimeError):
     pass
 
 
+def _ptr(arr: npt.NDArray[np.generic]) -> ctypes.c_void_p:
+    """The address of an array's data, for IRBEM's Fortran interface."""
+    return arr.ctypes.data_as(ctypes.c_void_p)
+
+
 @lru_cache(maxsize=1)
 def _lib() -> ctypes.CDLL:
     spec = importlib.util.find_spec("spacepy")
@@ -109,9 +114,6 @@ def integral_flux(
         x1[:m], x2[:m], x3[:m] = xyz[a:b].T
         flux = np.zeros((NENE_MAX, NTIME_MAX))  # Fortran flux(ntime_max, 25)
 
-        def ptr(arr: npt.NDArray[np.generic]) -> ctypes.c_void_p:
-            return arr.ctypes.data_as(ctypes.c_void_p)
-
         with _LOCK:
             lib.fly_in_nasa_aeap1_(
                 ctypes.byref(i4(m)),
@@ -119,14 +121,14 @@ def integral_flux(
                 ctypes.byref(i4(MODEL[(particle, solar)])),
                 ctypes.byref(i4(3)),  # integral flux
                 ctypes.byref(i4(len(energies_mev))),
-                ptr(energy),
-                ptr(year),
-                ptr(doy),
-                ptr(ut),
-                ptr(x1),
-                ptr(x2),
-                ptr(x3),
-                ptr(flux),
+                _ptr(energy),
+                _ptr(year),
+                _ptr(doy),
+                _ptr(ut),
+                _ptr(x1),
+                _ptr(x2),
+                _ptr(x3),
+                _ptr(flux),
             )
         got = flux[: len(energies_mev), :m]
         out[:, a:b] = np.where((got <= BAD * 0.1) | ~np.isfinite(got), 0.0, got)
@@ -169,21 +171,18 @@ def field_lines(
         maginput = np.zeros((NTIME_MAX, 25))  # Fortran maginput(25, ntime_max)
         out = [np.zeros(NTIME_MAX) for _ in range(6)]  # Lm, L*, Blocal, Bmin, XJ, MLT
 
-        def ptr(arr: npt.NDArray[np.generic]) -> ctypes.c_void_p:
-            return arr.ctypes.data_as(ctypes.c_void_p)
-
         with _LOCK:
             lib.make_lstar1_(
                 ctypes.byref(i4(m)),
                 ctypes.byref(i4(0)),  # no external field
-                ptr(opts),
+                _ptr(opts),
                 ctypes.byref(i4(1)),  # GEO Cartesian, Earth radii
-                ptr(yr),
-                ptr(doy),
-                ptr(ut),
-                *(ptr(c) for c in x),
-                ptr(maginput),
-                *(ptr(o) for o in out),
+                _ptr(yr),
+                _ptr(doy),
+                _ptr(ut),
+                *(_ptr(c) for c in x),
+                _ptr(maginput),
+                *(_ptr(o) for o in out),
             )
         lv, bl, bm = np.abs(out[0][:m]), out[2][:m], out[3][:m]
         ok = (lv > 0) & (lv < 1e30) & (bl > 0) & (bl < 1e30) & (bm > 0) & (bm < 1e30)

@@ -22,7 +22,6 @@ never change: a new answer has a new id. Three layers:
 from __future__ import annotations
 
 import asyncio
-import hashlib
 import os
 import uuid
 from functools import lru_cache
@@ -134,10 +133,6 @@ def _render_to_disk(
     return True
 
 
-def _etag(blob: bytes) -> str:
-    return f'W/"{hashlib.sha256(blob).hexdigest()[:16]}"'
-
-
 async def get_tile(
     session: AsyncSession, assessment_id: int, layer: str, z: int, x: int, y: int
 ) -> Tile:
@@ -162,4 +157,4 @@ async def get_tile(
             return Tile(blob=None, etag=None, source="empty")
         source = "dynamic"
     blob = await asyncio.to_thread(path.read_bytes)
-    return Tile(blob=blob, etag=_etag(blob), source=source)
+    return Tile(blob=blob, etag=tile_service.etag(blob), source=source)

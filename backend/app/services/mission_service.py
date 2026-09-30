@@ -10,7 +10,7 @@ plainly when there is none.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,9 +18,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import ENGINE_VERSION, get_settings
 from app.core.horizon import is_terrain_modelled
 from app.core.projections import ellipse_ring
+from app.data import catalogues
 from app.db.repositories.missions import MissionRecord, MissionRepository
 from app.db.repositories.sites import MaskRepository, SiteRecord, SiteRepository
-from app.services import site_service
+from app.services import lifecycle, site_service
 
 #: Half a synodic month: one lunar daylight period at a non-polar site. Used,
 #: and named as an assumption, when a landing date is known but the planned
@@ -35,15 +36,9 @@ class MissionNotFound(LookupError):
     pass
 
 
-def _parse(text: str) -> datetime:
-    t = text.replace("Z", "+00:00")
-    dt = datetime.fromisoformat(t) if "T" in t else datetime.fromisoformat(t + "T00:00:00+00:00")
-    return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
-
-
 def _end_of(d: dict[str, Any]) -> datetime:
     """The last instant a date covers: a day-precision date covers the whole day."""
-    at = _parse(d["date"])
+    at = lifecycle.parse_time(d["date"])
     return at + timedelta(days=1) if d["precision"] == "day" else at
 
 
@@ -85,7 +80,7 @@ def surface_window(m: MissionRecord) -> SurfaceWindow:
             f"The landing date is known only as '{landing['as_published']}', so there is no "
             "single window: compare months on the calendar instead.",
         )
-    start = _parse(landing["date"])
+    start = lifecycle.parse_time(landing["date"])
     eom = m.end_of_mission
     if eom is not None and eom["precision"] in ("minute", "day"):
         return SurfaceWindow(
@@ -289,21 +284,21 @@ async def get_mission(session: AsyncSession, mission_id: str) -> dict[str, Any]:
     }
 
 
+def catalogue_name(cat: str, rid: str | None) -> str | None:
+    """The name of catalogue record ``rid``, or ``None`` when it has none or is not listed."""
+    if not rid:
+        return None
+    try:
+        return str(catalogues.load(cat).get(rid).name)
+    except (KeyError, catalogues.CatalogueError):
+        return None
+
+
 def lifecycle_brief(m: MissionRecord) -> dict[str, Any] | None:
     """The v2 facts with the catalogue names of the vehicle and pad."""
     lc = m.lifecycle
     if not lc:
         return None
-    from app.data import catalogues
-
-    def name_of(cat: str, rid: str | None) -> str | None:
-        if not rid:
-            return None
-        try:
-            return str(catalogues.load(cat).get(rid).name)
-        except (KeyError, catalogues.CatalogueError):
-            return None
-
     t0 = lc.get("t0")
     return {
         **{
@@ -318,8 +313,8 @@ def lifecycle_brief(m: MissionRecord) -> dict[str, Any] | None:
                 "returns",
             )
         },
-        "vehicle_name": name_of("vehicles", lc.get("vehicle_id")),
-        "pad_name": name_of("launch_sites", lc.get("pad_id")),
+        "vehicle_name": catalogue_name("vehicles", lc.get("vehicle_id")),
+        "pad_name": catalogue_name("launch_sites", lc.get("pad_id")),
         "t0": None if t0 is None else {k: t0[k] for k in ("date", "precision", "as_published")},
         "rovers": list(lc.get("rovers") or []),
         "field_sources": dict(lc.get("field_sources") or {}),

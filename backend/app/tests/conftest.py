@@ -186,13 +186,6 @@ def fake_gemini(monkeypatch: pytest.MonkeyPatch) -> Iterator:
     get_settings.cache_clear()
 
 
-@pytest.fixture(scope="session")
-def kernels_available(settings) -> bool:
-    from app.core.kernels import missing
-
-    return not missing(settings.kernel_dir)
-
-
 @pytest.fixture(autouse=True)
 def skip_without_kernels(request: pytest.FixtureRequest) -> None:
     if request.node.get_closest_marker("requires_kernels"):
