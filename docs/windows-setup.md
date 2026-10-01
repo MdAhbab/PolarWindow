@@ -12,6 +12,8 @@ Python 3.12 through uv even if the Python launching the runner is another versio
 Open http://localhost:5173 and choose **Open dashboard**. The API documentation
 is at http://localhost:8000/api/v1/docs. Ctrl+C stops the application workers and
 frontend; PostgreSQL and the cache remain available for the next run.
+Frontend edits reload through Vite. On native Windows, restart the runner after
+backend edits: Uvicorn's console-based reload can interrupt other stack processes.
 
 ## Requirements
 

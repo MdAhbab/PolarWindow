@@ -566,7 +566,11 @@ class Stack:
     def start_backend(self) -> None:
         log("RUN", CYAN, f"Starting Backend on http://localhost:{self.be_port} "
             f"(Docs: http://localhost:{self.be_port}/api/v1/docs)...")
-        cmd = ["uv", "run", "uvicorn", "app.main:app", "--reload", "--port", str(self.be_port)]
+        cmd = ["uv", "run", "uvicorn", "app.main:app", "--port", str(self.be_port)]
+        # Uvicorn's Windows reload sends a console Ctrl+C event, which can also
+        # stop the runner and data downloader sharing that console.
+        if os.name != "nt":
+            cmd.append("--reload")
         self._spawn("backend", cmd, BE_DIR, CYAN)
 
     def start_compute(self) -> None:
