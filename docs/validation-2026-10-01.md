@@ -10,8 +10,10 @@ calling every project validation complete.
 The metre-by-metre brute ray check passes for every classified case. The
 stronger GDAL reference check does not pass overall: Griffin-1 at 500 m
 agrees on 221/252 common-grid targets (87.70%, required 99%). Four other
-covered cases exceed 99%; IM-2's native 4 m raster has nodata and cannot
-provide an independent score. This uses GDAL 3.9.3's public C API, with
+covered cases exceed 99%; the square reference crop of IM-2's native 4 m
+DEM contains nodata, so this reference case remains unresolved. Its separate
+brute-ray check has no classified cells under the 4.12 m height error either.
+This uses GDAL 3.9.3's public C API, with
 matched pixel centres within the requested radius, lunar curvature and the
 same local raster inputs.
 Physical controls for flat ground, a wall and the lunar horizon pass.
@@ -51,6 +53,8 @@ The actual downloaded IM-2 SPENVIS AP-8 MAX / AE-8 MAX spectra meet the 5%
 comparison gate with rad-5: proton +2.56%, electron +1.09%. Only that passage
 has been independently run. Four Blue Ghost and two Peregrine passages are
 prepared but unrun: follow [the manual validation instructions](spenvis-manual-validation.md).
+The six physical trajectory uploads, their manifest and instructions are also
+packaged locally in `data/validation/spenvis/remaining-passages.zip` (128,243 bytes).
 The browser's saved origin block still prevents automating those authenticated
 SPENVIS steps. This is an execution limitation, not a claim that those
 passages pass. Local model-to-model checks are not substitutes for them.
@@ -80,7 +84,7 @@ SHA-256 `9c8b1be07ac6af6e0a4bcf86af59c8f13ec9161e55681413b9a235843cd9ddddf`.
 Raw forecast caches were absent from this checkout. The tracked historical
 benchmark reports are preserved, and both scorers now refuse to replace a
 report when no raw cache exists. Fresh NOAA archives and IEM station records
-are being collected and scored into a separate validation directory.
+have been collected and scored into a separate validation directory.
 
 Use `python -m app.validation.validate_weather hrrr --hours 1` or
 `python -m app.validation.validate_weather gefs --hours 2` to fetch and score;
@@ -108,9 +112,40 @@ typical-wind reference, but that does not prove threshold-event reliability.
 | KVBG | 18 h | 1740 | 21.9% | 9 | insufficient events |
 
 At least 10 above-limit events are required for a Brier skill claim. None of
-the Florida leads and Vandenberg's 18 h lead satisfy that minimum. GEFS
-results will be added after its collection finishes; no failed score is
-promoted to a stronger claim.
+the Florida leads and Vandenberg's 18 h lead satisfy that minimum. The complete
+reports are saved as checked [Florida](validation-evidence/2026-10-01-hrrr-florida.json)
+and [Vandenberg](validation-evidence/2026-10-01-hrrr-vandenberg.json) snapshots.
+
+GEFS's complete requested sample is 2,435 days (every third day, 2000–2019),
+with all five members at both leads and stations present. All planned HRRR
+initializations also have all requested forecast values. Valid station matches
+are fewer than cached forecasts: the scoring requires a usable observation
+within 30 minutes. Florida's matched GEFS cases span 2006–2019; Vandenberg's
+span 2000–2019. Download coverage is not an event-count denominator.
+
+| Station | Lead | Matched cases | Above-limit events | Brier skill | CRPS skill |
+|---|---:|---:|---:|---:|---:|
+| KXMR | 24 h | 1473 | 1 | insufficient events | −97.5% |
+| KXMR | 48 h | 1492 | 3 | insufficient events | −99.2% |
+| KVBG | 24 h | 1582 | 96 | 0.273 | 31.3% |
+| KVBG | 48 h | 1589 | 98 | 0.185 | 31.9% |
+
+Both stations fail the unchanged GEFS gate. Florida has too few events for
+a Brier skill claim and negative speed-distribution skill. Its pooled 20%
+probability bin has 56 cases and no observed above-limit events. Vandenberg
+exceeds the 0.1 Brier skill minimum at both leads, but its pooled calibration
+fails the 0.1 tolerance: the 40% bin observes 58.3% (36 cases), and the 100%
+bin observes 87.0% (46 cases). Overall skill is not calibrated probability.
+The reports retain month-block 95% intervals and the five-member fair CRPS
+diagnostic; no failed score is promoted to a stronger claim.
+
+Checked GEFS snapshots: [Florida](validation-evidence/2026-10-01-gefs-florida.json)
+and [Vandenberg](validation-evidence/2026-10-01-gefs-vandenberg.json).
+[The input manifest](validation-evidence/2026-10-01-weather-inputs.json)
+records SHA-256 hashes of the decoded forecast-point caches, original IEM
+observation CSVs and score snapshots, plus planned/available sample counts.
+Original GRIB byte ranges were decoded and discarded; reproduction downloads
+them from the NOAA archives again. Large local data assets remain ignored by Git.
 
 ## Code checks
 

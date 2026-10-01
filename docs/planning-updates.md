@@ -11,6 +11,14 @@ pooling all leads, and refuses to extrapolate validation beyond its recorded
 is still inferred, and the answer states that limitation. This changes the
 interpretation of the existing hindcasts, not their measured scores.
 
+The subsequent full archive recheck downloaded all 1,826 requested HRRR runs
+and all 2,435 GEFS reforecast days. Scores are stored separately from the
+published benchmark files. GEFS still fails the unchanged event reliability
+gate at both pads: Florida has too few threshold events, while Vandenberg
+has positive overall skill but miscalibrated probability bins. The checked
+scores, input hashes and coverage counts are in
+[the validation audit](validation-2026-10-01.md).
+
 Rover sight uses native terrain, in this order when a complete neighbourhood
 fits: LROC NOBILE04 stereo (3 m), NOBILE03 (4 m), LOLA LDEM_875S_5M (5 m), the site's existing
 20 m LOLA window, and the regional 80 m model. The lander's ground must also be
