@@ -1007,9 +1007,10 @@ either that exact state or uncertain, uncertain exactly where the clearance is i
 band; a 2.5 m wall half way along a 500 m path at 30 GHz leaves the line clear and cuts the
 Fresnel zone (1.12 m at mid-path), and at 2.4 GHz the zone (3.95 m) reaches flat ground.
 
-**Real terrain** (`make validate-viewshed`; plan: 99 % agreement with `gdal_viewshed`
-outside the uncertain band). GDAL is not installed here, so `gdal_viewshed` was not run.
-The nearest check that could be: the engine's states with the height error set to zero,
+**Real terrain** (`make validate-viewshed`; plan: 99 % agreement with GDAL
+outside the uncertain band). The original check below preceded the independent
+GDAL C API check added on 1 October 2026; see its results below. The engine's
+states with the height error set to zero were compared
 against a brute-force test written separately (the terrain every metre along each straight
 line, compared in heights, not angles), on the 20 m polar model around each rover site,
 antennas 2 m (lander) and 0.5 m (rover), counted where the 2 m error does not make a cell
@@ -1052,6 +1053,38 @@ lander's own ground; gaps along a ray stay uncertain. Unit tests also check
 native 3/4 m GeoTIFF pixel centres, nodata preservation, the lander-gap fallback
 and terrain-content invalidation. The `gdal_viewshed` executable was not used;
 this checks the algorithm, not the accuracy of the measured elevations.
+
+**GDAL reference update, 1 October 2026.** `make validate-viewshed-gdal`
+calls GDAL 3.9.3's public `GDALViewshedGenerate` API from Rasterio's bundled
+library. This uses the default Edge algorithm, normal visibility output,
+2 m / 0.5 m antennas, a projected lunar CRS of radius 1,737,400 m and
+curvature coefficient 1 (no atmospheric refraction). Flat-ground, wall and
+lunar-curvature controls pass. The native DEM sampler is resampled onto a
+local ENU raster at its native post. Both algorithms then use that raster
+and the same deduplicated target pixel centres, excluding uncertain cells
+and any snapped pixel centre outside the requested radius.
+Native-sampler results are retained separately as a reprojection diagnostic.
+Input holes are not filled: GDAL's algorithm does not specially process
+input nodata. [GDAL API documentation](https://gdal.org/en/stable/api/gdal_alg.html).
+
+| Site | Post | Radius | Classified common-grid targets | Agree | Result |
+|---|---:|---:|---:|---:|---|
+| IM-2 | 4 m | 500 m | — | — | unresolved: 520 raster cells are nodata |
+| IM-2 | 20 m | 2000 m | 779 | 100.00% | pass |
+| Griffin-1 | 20 m | 500 m | 252 | 87.70% | fail |
+| Griffin-1 | 20 m | 2000 m | 698 | 99.43% | pass |
+| Shackleton rim | 5 m | 500 m | 709 | 100.00% | pass |
+| Shackleton rim | 5 m | 2000 m | 986 | 100.00% | pass |
+
+The 500 m Griffin case has 31 targets marked clear by the engine and blocked
+by GDAL. Matching endpoints and raster inputs does not remove the discrepancy;
+the native-sampler comparison is 87.13%. The cause is not established and the
+engine's near-end ground exclusion differs from GDAL's raster scan. The
+brute-ray result cannot be substituted for the unmet 99% reference requirement.
+This remains a failed scientific gate; no terrain or threshold was altered
+to make it pass. The output is `data/validation/viewshed-gdal/report.json`,
+with source hashes and counts; a checked snapshot is saved with
+[the validation audit](validation-2026-10-01.md).
 
 **The map layer** (`GET /tiles/viewshed/...`, `app/core/viewshed.py: tile_rgba`). The tiles draw the
 states of that answer, not a second calculation, so what is checked is that each ground point lands

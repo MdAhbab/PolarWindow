@@ -3,9 +3,9 @@
 Run: ``make validate-viewshed`` (or ``uv run python -m app.validation.validate_viewshed``).
 Prints the docs/validation.md table.
 
-The plan asks for 99 % agreement with ``gdal_viewshed`` outside the uncertain
-band. GDAL is not installed here, so this is the nearest check that can be
-run: the engine's running maximum of elevation angles against a brute-force
+The plan asks for 99 % agreement with GDAL outside the uncertain band;
+``validate_viewshed_gdal`` now checks that separately through its public C API.
+This runner checks the engine's running maximum of elevation angles against a brute-force
 test written separately -- for every rover position, the terrain sampled every
 metre along the straight line between the antennas, in heights rather than
 angles -- on the selected native terrain around each rover site, with height error

@@ -1,0 +1,713 @@
+{
+  "gdal_version": "3.9.3",
+  "mode": "Edge/Normal",
+  "curvature_coefficient": 1,
+  "moon_radius_m": 1737400.0,
+  "lander_antenna_m": 2.0,
+  "rover_antenna_m": 0.5,
+  "minimum_agreement": 0.99,
+  "method": "Native DEM sampled to local lunar ENU raster at native post; matched pixel centres; common-grid primary and native-sampler diagnostic; uncertainty uses source height error; no nodata filling; deduplicated polar targets.",
+  "source": "https://gdal.org/en/stable/api/gdal_alg.html#_CPPv420GDALViewshedGenerate",
+  "status": "not_passed",
+  "cases": [
+    {
+      "site": "mission-im-2",
+      "name": "IM-2 (Yaoki)",
+      "radius_m": 500.0,
+      "post_m": 4.0,
+      "source": "dem/rover_4m/mission-im-2.npz",
+      "source_sha256": "7c94b178a2c2dd31e2ac4e7b9f38651513cc2f89047ff302aaa668693ea579f5",
+      "status": "unresolved_nodata",
+      "missing_raster_cells": 520
+    },
+    {
+      "site": "mission-im-2",
+      "name": "IM-2 (Yaoki)",
+      "radius_m": 2000.0,
+      "post_m": 20.0,
+      "source": "dem/fine/mission-im-2.npz",
+      "source_sha256": "0a86d0869f034b14cc54af575796c65dddacce5b99d656592751f53eb6292bf5",
+      "unique_targets": 1396,
+      "eligible_targets": 1352,
+      "outside_radius": 44,
+      "status": "pass",
+      "mismatches": {
+        "common_grid": [],
+        "native_sampler": []
+      },
+      "common_grid": {
+        "compared": 779,
+        "agree": 779,
+        "false_clear": 0,
+        "false_blocked": 0,
+        "uncertain": 573,
+        "agreement": 1.0
+      },
+      "native_sampler": {
+        "compared": 783,
+        "agree": 783,
+        "false_clear": 0,
+        "false_blocked": 0,
+        "uncertain": 569,
+        "agreement": 1.0
+      }
+    },
+    {
+      "site": "feature-mons-mouton",
+      "name": "Griffin-1 (FLIP)",
+      "radius_m": 500.0,
+      "post_m": 20.0,
+      "source": "dem/fine/feature-mons-mouton.npz",
+      "source_sha256": "962ae66f5a4e3c15ec6721de706066318f0f8d5e4a76be6937ef01cd0262f319",
+      "unique_targets": 1165,
+      "eligible_targets": 1129,
+      "outside_radius": 36,
+      "status": "fail",
+      "mismatches": {
+        "common_grid": [
+          {
+            "east_m": -220.0,
+            "north_m": 360.0,
+            "distance_m": 421.90046219457975,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -280.0,
+            "north_m": 340.0,
+            "distance_m": 440.45431091090484,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -200.0,
+            "north_m": 340.0,
+            "distance_m": 394.4616584663204,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -180.0,
+            "north_m": 320.0,
+            "distance_m": 367.1511950137164,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -140.0,
+            "north_m": 300.0,
+            "distance_m": 331.058907144937,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -120.0,
+            "north_m": 300.0,
+            "distance_m": 323.10988842807024,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -80.0,
+            "north_m": 240.0,
+            "distance_m": 252.98221281347034,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -180.0,
+            "north_m": 180.0,
+            "distance_m": 254.55844122715712,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -200.0,
+            "north_m": 140.0,
+            "distance_m": 244.13111231467406,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -140.0,
+            "north_m": 140.0,
+            "distance_m": 197.9898987322333,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -200.0,
+            "north_m": 120.0,
+            "distance_m": 233.23807579381202,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -180.0,
+            "north_m": 120.0,
+            "distance_m": 216.33307652783935,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -160.0,
+            "north_m": 120.0,
+            "distance_m": 200.0,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -140.0,
+            "north_m": 120.0,
+            "distance_m": 184.39088914585776,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -180.0,
+            "north_m": 100.0,
+            "distance_m": 205.91260281974002,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -140.0,
+            "north_m": 100.0,
+            "distance_m": 172.04650534085255,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -160.0,
+            "north_m": 80.0,
+            "distance_m": 178.88543819998318,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -40.0,
+            "north_m": 60.0,
+            "distance_m": 72.11102550927978,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -60.0,
+            "north_m": 40.0,
+            "distance_m": 72.11102550927978,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -40.0,
+            "north_m": 40.0,
+            "distance_m": 56.568542494923804,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -20.0,
+            "north_m": 40.0,
+            "distance_m": 44.721359549995796,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": 0.0,
+            "north_m": 40.0,
+            "distance_m": 40.0,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -40.0,
+            "north_m": 20.0,
+            "distance_m": 44.721359549995796,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -20.0,
+            "north_m": 20.0,
+            "distance_m": 28.284271247461902,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": 0.0,
+            "north_m": 20.0,
+            "distance_m": 20.0,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -20.0,
+            "north_m": -20.0,
+            "distance_m": 28.284271247461902,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -60.0,
+            "north_m": -40.0,
+            "distance_m": 72.11102550927978,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -40.0,
+            "north_m": -40.0,
+            "distance_m": 56.568542494923804,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -40.0,
+            "north_m": -60.0,
+            "distance_m": 72.11102550927978,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": 0.0,
+            "north_m": -60.0,
+            "distance_m": 60.0,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": 0.0,
+            "north_m": -80.0,
+            "distance_m": 80.0,
+            "engine_clear": true,
+            "gdal_clear": false
+          }
+        ],
+        "native_sampler": [
+          {
+            "east_m": -220.0,
+            "north_m": 360.0,
+            "distance_m": 421.90046219457975,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -280.0,
+            "north_m": 340.0,
+            "distance_m": 440.45431091090484,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -240.0,
+            "north_m": 340.0,
+            "distance_m": 416.17304093369626,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -200.0,
+            "north_m": 340.0,
+            "distance_m": 394.4616584663204,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -280.0,
+            "north_m": 320.0,
+            "distance_m": 425.20583250938597,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -180.0,
+            "north_m": 320.0,
+            "distance_m": 367.1511950137164,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -180.0,
+            "north_m": 300.0,
+            "distance_m": 349.85711369071805,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -140.0,
+            "north_m": 300.0,
+            "distance_m": 331.058907144937,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -120.0,
+            "north_m": 300.0,
+            "distance_m": 323.10988842807024,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -120.0,
+            "north_m": 280.0,
+            "distance_m": 304.63092423455635,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -80.0,
+            "north_m": 240.0,
+            "distance_m": 252.98221281347034,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -160.0,
+            "north_m": 200.0,
+            "distance_m": 256.12496949731394,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -180.0,
+            "north_m": 180.0,
+            "distance_m": 254.55844122715712,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -200.0,
+            "north_m": 140.0,
+            "distance_m": 244.13111231467406,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -140.0,
+            "north_m": 140.0,
+            "distance_m": 197.9898987322333,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -180.0,
+            "north_m": 120.0,
+            "distance_m": 216.33307652783935,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -160.0,
+            "north_m": 120.0,
+            "distance_m": 200.0,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -140.0,
+            "north_m": 120.0,
+            "distance_m": 184.39088914585776,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -180.0,
+            "north_m": 100.0,
+            "distance_m": 205.91260281974002,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -140.0,
+            "north_m": 100.0,
+            "distance_m": 172.04650534085255,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -160.0,
+            "north_m": 80.0,
+            "distance_m": 178.88543819998318,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -40.0,
+            "north_m": 60.0,
+            "distance_m": 72.11102550927978,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -60.0,
+            "north_m": 40.0,
+            "distance_m": 72.11102550927978,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -40.0,
+            "north_m": 40.0,
+            "distance_m": 56.568542494923804,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -20.0,
+            "north_m": 40.0,
+            "distance_m": 44.721359549995796,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": 0.0,
+            "north_m": 40.0,
+            "distance_m": 40.0,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -40.0,
+            "north_m": 20.0,
+            "distance_m": 44.721359549995796,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -20.0,
+            "north_m": 20.0,
+            "distance_m": 28.284271247461902,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": 0.0,
+            "north_m": 20.0,
+            "distance_m": 20.0,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -20.0,
+            "north_m": -20.0,
+            "distance_m": 28.284271247461902,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -60.0,
+            "north_m": -40.0,
+            "distance_m": 72.11102550927978,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -40.0,
+            "north_m": -40.0,
+            "distance_m": 56.568542494923804,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -40.0,
+            "north_m": -60.0,
+            "distance_m": 72.11102550927978,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": 0.0,
+            "north_m": -60.0,
+            "distance_m": 60.0,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": 0.0,
+            "north_m": -80.0,
+            "distance_m": 80.0,
+            "engine_clear": true,
+            "gdal_clear": false
+          }
+        ]
+      },
+      "common_grid": {
+        "compared": 252,
+        "agree": 221,
+        "false_clear": 31,
+        "false_blocked": 0,
+        "uncertain": 877,
+        "agreement": 0.876984126984127
+      },
+      "native_sampler": {
+        "compared": 272,
+        "agree": 237,
+        "false_clear": 35,
+        "false_blocked": 0,
+        "uncertain": 857,
+        "agreement": 0.8713235294117647
+      }
+    },
+    {
+      "site": "feature-mons-mouton",
+      "name": "Griffin-1 (FLIP)",
+      "radius_m": 2000.0,
+      "post_m": 20.0,
+      "source": "dem/fine/feature-mons-mouton.npz",
+      "source_sha256": "962ae66f5a4e3c15ec6721de706066318f0f8d5e4a76be6937ef01cd0262f319",
+      "unique_targets": 1396,
+      "eligible_targets": 1352,
+      "outside_radius": 44,
+      "status": "pass",
+      "mismatches": {
+        "common_grid": [
+          {
+            "east_m": -200.0,
+            "north_m": 340.0,
+            "distance_m": 394.4616584663204,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -140.0,
+            "north_m": 140.0,
+            "distance_m": 197.9898987322333,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -160.0,
+            "north_m": 120.0,
+            "distance_m": 200.0,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -180.0,
+            "north_m": 100.0,
+            "distance_m": 205.91260281974002,
+            "engine_clear": true,
+            "gdal_clear": false
+          }
+        ],
+        "native_sampler": [
+          {
+            "east_m": -200.0,
+            "north_m": 340.0,
+            "distance_m": 394.4616584663204,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -120.0,
+            "north_m": 280.0,
+            "distance_m": 304.63092423455635,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -140.0,
+            "north_m": 140.0,
+            "distance_m": 197.9898987322333,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -160.0,
+            "north_m": 120.0,
+            "distance_m": 200.0,
+            "engine_clear": true,
+            "gdal_clear": false
+          },
+          {
+            "east_m": -180.0,
+            "north_m": 100.0,
+            "distance_m": 205.91260281974002,
+            "engine_clear": true,
+            "gdal_clear": false
+          }
+        ]
+      },
+      "common_grid": {
+        "compared": 698,
+        "agree": 694,
+        "false_clear": 4,
+        "false_blocked": 0,
+        "uncertain": 654,
+        "agreement": 0.994269340974212
+      },
+      "native_sampler": {
+        "compared": 710,
+        "agree": 705,
+        "false_clear": 5,
+        "false_blocked": 0,
+        "uncertain": 642,
+        "agreement": 0.9929577464788732
+      }
+    },
+    {
+      "site": "shackleton-rim",
+      "name": "Shackleton rim (native 5 m)",
+      "radius_m": 500.0,
+      "post_m": 5.0,
+      "source": "dem/rover_5m/shackleton-rim.npz",
+      "source_sha256": "203830cb5b1824d37115212cb896be80de6d11aa17494a1b363272bc78f8bf16",
+      "unique_targets": 1396,
+      "eligible_targets": 1352,
+      "outside_radius": 44,
+      "status": "pass",
+      "mismatches": {
+        "common_grid": [],
+        "native_sampler": []
+      },
+      "common_grid": {
+        "compared": 709,
+        "agree": 709,
+        "false_clear": 0,
+        "false_blocked": 0,
+        "uncertain": 643,
+        "agreement": 1.0
+      },
+      "native_sampler": {
+        "compared": 730,
+        "agree": 730,
+        "false_clear": 0,
+        "false_blocked": 0,
+        "uncertain": 622,
+        "agreement": 1.0
+      }
+    },
+    {
+      "site": "shackleton-rim",
+      "name": "Shackleton rim (native 5 m)",
+      "radius_m": 2000.0,
+      "post_m": 5.0,
+      "source": "dem/rover_5m/shackleton-rim.npz",
+      "source_sha256": "203830cb5b1824d37115212cb896be80de6d11aa17494a1b363272bc78f8bf16",
+      "unique_targets": 1440,
+      "eligible_targets": 1412,
+      "outside_radius": 28,
+      "status": "pass",
+      "mismatches": {
+        "common_grid": [],
+        "native_sampler": []
+      },
+      "common_grid": {
+        "compared": 986,
+        "agree": 986,
+        "false_clear": 0,
+        "false_blocked": 0,
+        "uncertain": 426,
+        "agreement": 1.0
+      },
+      "native_sampler": {
+        "compared": 995,
+        "agree": 995,
+        "false_clear": 0,
+        "false_blocked": 0,
+        "uncertain": 417,
+        "agreement": 1.0
+      }
+    }
+  ]
+}

@@ -52,13 +52,24 @@ be claimed there. Finer horizontal spacing alone does not guarantee a more
 confident sight decision. This checks
 the sight algorithm, not the terrain against independent measurements.
 
+The subsequent GDAL 3.9.3 reference check uses Rasterio's bundled shared
+library through GDAL's public C API. Its flat-ground, wall and lunar-curvature
+controls pass. On matched pixel centres and a common local lunar raster,
+Griffin-1 at 500 m agrees on 221/252 classified targets (87.70%), below the
+99% requirement; four other covered cases exceed 99%. IM-2's native 4 m
+500 m case remains unresolved because the square raster contains nodata.
+The earlier brute-ray agreement is not an independent-reference pass.
+See [the validation audit](validation-2026-10-01.md).
+
 Pad-limit launch windows must have two converged endpoint designs with valid
 coasts (the nominal lower bound through 120 minutes), 3.5–6.5-day flights,
 and a span shorter than half a day containing the nominal instant. A failed
 endpoint produces a nominal instant with an explicit unresolved-window reason.
 The lunar arrival inclination stays independent of the climb heading. A pad's
-range does not prove vehicle payload capacity or steering capability: planned
-windows still require evidence of published windows on direct lunar flights.
+range does not prove vehicle payload capacity or steering capability. Published
+instantaneous direct-flight windows are already recorded in validation.md;
+the several-hour geometric intervals have not been validated as operational
+vehicle launch windows against those observations.
 
 Lifecycle engines advance to `wx-3`, `los-3`, and `lw-7` so stored answers do
 not retain the old interpretation.
@@ -80,6 +91,17 @@ not retain the old interpretation.
   disagreement with the supplier paper is still unresolved; downloading the
   source does not remove that uncertainty. The earlier HTTP 403 attempt did
   not save a file; the later browser download did.
+- [SSTL Lunar Pathfinder Service Guide V004](https://www.sstl.co.uk/getmedia/9efe3cc5-6b5b-4fd1-bbd7-443bc2d21848/Lunar-Pathfinder-Service-Guide-V004.pdf):
+  section 3.4.2 on page 22 was extracted and visually checked on 1 October.
+  It gives inclination 54.856°, RAAN 0° and argument of pericenter 86.322°
+  as an indicative baseline, subject to change. It does not specify the
+  reference plane or epoch. The catalogue now records these published
+  elements rather than saying the argument of periapsis was unpublished.
+  The conflicting ESA inclination and operational ephemeris remain unresolved;
+  simulation sensitivity ranges are retained. Local source:
+  `data/validation/external-sources/sstl-lunar-pathfinder-service-guide-v004.pdf`
+  (6,681,496 bytes, SHA-256
+  `9c8b1be07ac6af6e0a4bcf86af59c8f13ec9161e55681413b9a235843cd9ddddf`).
 - [SPENVIS registration](https://www.spenvis.oma.be/registration.php) rejects
   Gmail and similar addresses. An affiliation email, title, city, organisation,
   organisation URL and country are required. The user has now supplied a

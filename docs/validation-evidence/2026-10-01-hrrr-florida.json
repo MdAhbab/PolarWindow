@@ -1,0 +1,167 @@
+{
+ "rule_id": "f9-wind-162ft",
+ "region": "florida",
+ "station": "KXMR",
+ "station_point": [
+  28.4677,
+  -80.5668
+ ],
+ "system": "HRRR v4 (NOAA NCEP), 00 and 12 UTC runs, 3 km",
+ "event": "sustained wind at 10 m above 10.52 m/s (23.5 mph)",
+ "threshold_m_s": 10.51944399731159,
+ "roughness_m": 0.03,
+ "period": "2021-01-02..2025-12-31",
+ "years": [
+  2021,
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "runs_fetched": 1826,
+ "climatology_years": "2000-2019",
+ "intervals": "95 % from resampling whole months of cases",
+ "leads": {
+  "1": {
+   "cases": 1744,
+   "bias_m_s": 0.32151700847955694,
+   "rmse_m_s": 1.496381578001027,
+   "mae_m_s": 1.1345748354051648,
+   "mae_climatology_m_s": 1.5409734964322122,
+   "mae_skill": 0.26372852094340027,
+   "mae_skill_95": [
+    0.2161506103408907,
+    0.30695076667796617
+   ],
+   "crps_climatology_m_s": 1.1072468006829614,
+   "crps_skill": -0.024681069031174507,
+   "crps_skill_95": [
+    -0.08852119488393699,
+    0.03327303263801172
+   ],
+   "mean_forecast_m_s": 3.595200749560087,
+   "mean_observed_m_s": 3.273683741080531,
+   "events": 3,
+   "called_over": 2,
+   "hits": 1,
+   "misses": 2,
+   "false_alarms": 1,
+   "brier": 0.0017201834862385322,
+   "brier_climatology": 0.0017179669403126702,
+   "skill": null,
+   "skill_95": null,
+   "skill_note": "not worked out: 3 of 1744 cases above the limit, fewer than the 10 it takes"
+  },
+  "6": {
+   "cases": 1733,
+   "bias_m_s": 0.18497273022780053,
+   "rmse_m_s": 1.6480253846230402,
+   "mae_m_s": 1.228792338944423,
+   "mae_climatology_m_s": 1.5100859139578127,
+   "mae_skill": 0.18627653725750082,
+   "mae_skill_95": [
+    0.13746784748284702,
+    0.23323846937402778
+   ],
+   "crps_climatology_m_s": 1.0799777178443732,
+   "crps_skill": -0.13779415875086998,
+   "crps_skill_95": [
+    -0.20255498109807474,
+    -0.07589832948745168
+   ],
+   "mean_forecast_m_s": 4.06542153448503,
+   "mean_observed_m_s": 3.880448804257229,
+   "events": 8,
+   "called_over": 9,
+   "hits": 3,
+   "misses": 5,
+   "false_alarms": 6,
+   "brier": 0.006347374495095211,
+   "brier_climatology": 0.004623078388727405,
+   "skill": null,
+   "skill_95": null,
+   "skill_note": "not worked out: 8 of 1733 cases above the limit, fewer than the 10 it takes"
+  },
+  "12": {
+   "cases": 1746,
+   "bias_m_s": 0.611107678768531,
+   "rmse_m_s": 1.6720876587737463,
+   "mae_m_s": 1.2888492124676323,
+   "mae_climatology_m_s": 1.5121013109329264,
+   "mae_skill": 0.14764361147703353,
+   "mae_skill_95": [
+    0.09013575598121389,
+    0.19957042365715297
+   ],
+   "crps_climatology_m_s": 1.0784489027674766,
+   "crps_skill": -0.19509529766336997,
+   "crps_skill_95": [
+    -0.27508912158059373,
+    -0.1237981299621451
+   ],
+   "mean_forecast_m_s": 3.6933547196238194,
+   "mean_observed_m_s": 3.0822470408552882,
+   "events": 5,
+   "called_over": 8,
+   "hits": 2,
+   "misses": 3,
+   "false_alarms": 6,
+   "brier": 0.005154639175257732,
+   "brier_climatology": 0.0028539790587491236,
+   "skill": null,
+   "skill_95": null,
+   "skill_note": "not worked out: 5 of 1746 cases above the limit, fewer than the 10 it takes"
+  },
+  "18": {
+   "cases": 1744,
+   "bias_m_s": 0.11565758410238215,
+   "rmse_m_s": 1.6249312424570166,
+   "mae_m_s": 1.2205303980825775,
+   "mae_climatology_m_s": 1.488467125382263,
+   "mae_skill": 0.18000849513614547,
+   "mae_skill_95": [
+    0.12840209503425912,
+    0.22776568205985104
+   ],
+   "crps_climatology_m_s": 1.0711837091870253,
+   "crps_skill": -0.1394221062313381,
+   "crps_skill_95": [
+    -0.20818735108478156,
+    -0.07483986509417091
+   ],
+   "mean_forecast_m_s": 4.030037043837346,
+   "mean_observed_m_s": 3.914379459734965,
+   "events": 9,
+   "called_over": 11,
+   "hits": 5,
+   "misses": 4,
+   "false_alarms": 6,
+   "brier": 0.005733944954128441,
+   "brier_climatology": 0.00516729643584851,
+   "skill": null,
+   "skill_95": null,
+   "skill_note": "not worked out: 9 of 1744 cases above the limit, fewer than the 10 it takes"
+  }
+ },
+ "call_all_leads": {
+  "cases": 6967,
+  "events": 25,
+  "called_over": 30,
+  "hits": 11,
+  "misses": 14,
+  "false_alarms": 19,
+  "brier": 0.004736615472943878,
+  "brier_climatology": 0.0035887385692931913,
+  "skill": -0.3198552587453489,
+  "skill_95": [
+   -0.7891735604898438,
+   0.07549278264952035
+  ],
+  "skill_note": null
+ },
+ "sources": {
+  "forecasts": "https://noaa-hrrr-bdp-pds.s3.amazonaws.com/ (10 m UGRD, VGRD in the wrfsfc files)",
+  "observations": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=XMR&data=sknt&report_type=3"
+ },
+ "built": "2026-10-01T16:20:10+00:00"
+}

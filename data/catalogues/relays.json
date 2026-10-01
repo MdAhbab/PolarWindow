@@ -35,13 +35,19 @@
      "title": "Commercial Data Relay Services in the Cis-Lunar Environment with SSTL's Lunar Pathfinder (Small Satellite Conference paper)",
      "publisher": "Surrey Satellite Technology Ltd, via Utah State University DigitalCommons",
      "accessed": "2026-09-29"
+    },
+    {
+     "url": "https://www.sstl.co.uk/getmedia/9efe3cc5-6b5b-4fd1-bbd7-443bc2d21848/Lunar-Pathfinder-Service-Guide-V004.pdf",
+     "title": "Lunar Pathfinder Service Guide V004, section 3.4.2 (August 2022)",
+     "publisher": "Surrey Satellite Technology Ltd",
+     "accessed": "2026-10-01"
     }
    ],
    "field_sources": {
     "operator": "https://www.sstl.co.uk/space-portfolio/missions-in-build/2025/lunar-pathfinder",
     "status": "https://bsgn.esa.int/service/lunar-pathfinder/",
     "launch_note": "https://bsgn.esa.int/service/lunar-pathfinder/",
-    "orbit_note": "https://www.sstl.co.uk/space-portfolio/missions-in-build/2025/lunar-pathfinder",
+    "orbit_note": "https://www.sstl.co.uk/getmedia/9efe3cc5-6b5b-4fd1-bbd7-443bc2d21848/Lunar-Pathfinder-Service-Guide-V004.pdf",
     "serves_missions": "https://www.jpl.nasa.gov/images/pia26598-blue-ghost-mission-2-gets-stacked-at-jpl/",
     "bands": "https://www.sstl.co.uk/space-portfolio/missions-in-build/2025/lunar-pathfinder",
     "periapsis_km": "https://spacefinland.fi/documents/60305973/0/ESA+-+Moonlight_LP_and_LCNS_Slides+(1).pdf/d5399da8-26d6-016b-2cda-703c8ac70f16?t=1695736353872",
@@ -49,25 +55,26 @@
    },
    "assumed_fields": {
     "inclination_deg": {
-     "reason": "Two inclinations are given for it: 46.8 deg (ESA's slides) and 54.9 deg (SSTL's Small Satellite Conference paper), neither with its reference plane. Both ends are swept; the value is their middle.",
+     "reason": "ESA's slides give 46.8 deg; SSTL's official Service Guide V004 gives 54.856 deg (rounded to 54.9 deg in the supplier paper). The guide calls this an indicative baseline, subject to change, and does not identify its reference plane or epoch. The discrepancy remains unresolved: both ends are swept and the central value is their middle.",
      "url": "https://spacefinland.fi/documents/60305973/0/ESA+-+Moonlight_LP_and_LCNS_Slides+(1).pdf/d5399da8-26d6-016b-2cda-703c8ac70f16?t=1695736353872",
      "lo": 46.8,
      "hi": 54.9
     },
     "arg_periapsis_deg": {
-     "reason": "Not published. ESA and SSTL describe an orbit favouring the south pole, which puts the far point over the south pole: an argument of periapsis near 90 deg (NASA's reference frozen orbits for the south pole keep it between 85.4 and 92.5 deg). Swept from 85 to 95 deg.",
-     "url": "https://ntrs.nasa.gov/api/citations/20250002698/downloads/LCRNS_Reference_Constellation_White_Paper_03_2025.docx",
+     "reason": "SSTL's Service Guide V004 publishes an indicative baseline argument of pericenter of 86.322 deg. Its reference frame and epoch are not specified, and the operational orbit can change. Retain the 85 to 95 deg sensitivity range and its central 90 deg assumption; do not present it as an unpublished or confirmed operational element.",
+     "url": "https://www.sstl.co.uk/getmedia/9efe3cc5-6b5b-4fd1-bbd7-443bc2d21848/Lunar-Pathfinder-Service-Guide-V004.pdf",
      "lo": 85.0,
      "hi": 95.0
     },
     "period_h": {
-     "reason": "Worked out from the perilune and apolune heights by Kepler's third law (the Moon's GM from DE440); not stated as a figure to check against.",
+     "reason": "Calculated from ESA's perilune and apolune heights by Kepler's third law (Moon GM from DE440): 10.84 h. ESA's slides round it to 10 h; the supplier paper gives about 10.8 h. This is a derived planning value, not an operational ephemeris.",
      "url": null
     }
    },
    "unconfirmed_fields": [],
    "notes": [
-    "ESA's Lunar Pathfinder/Moonlight slides were downloaded through the browser on 2026-10-01 (SHA-256 01358401e32fc50695b43a26636178cb29de8dbce153bf69e71ea12ed97b8691). Page 1 was extracted and visually inspected: perilune 673.4 km, apolune 7331.8 km, inclination 46.8 deg and stated period 10 h. The supplier paper's 54.9 deg and its reference plane remain unverified, so the inclination range is retained. The ESA slides' 2025 launch dates are historical. The local source is data/validation/external-sources/esa-moonlight-lunar-pathfinder.pdf; see docs/planning-updates.md."
+    "ESA's Lunar Pathfinder/Moonlight slides were downloaded through the browser on 2026-10-01 (SHA-256 01358401e32fc50695b43a26636178cb29de8dbce153bf69e71ea12ed97b8691). Page 1 was extracted and visually inspected: perilune 673.4 km, apolune 7331.8 km, inclination 46.8 deg and stated period 10 h. Its 2025 launch dates are historical. Local source: data/validation/external-sources/esa-moonlight-lunar-pathfinder.pdf.",
+    "SSTL's official Service Guide V004 was downloaded and page 22 visually inspected on 2026-10-01 (SHA-256 9c8b1be07ac6af6e0a4bcf86af59c8f13ec9161e55681413b9a235843cd9ddddf). Table in section 3.4.2: semi-major axis 5740 km, peri/aposelene 673/7331 km, eccentricity 0.58, inclination 54.856 deg, RAAN 0 deg, argument of pericenter 86.322 deg. The guide describes an indicative baseline that may change, without a reference plane or epoch. The supplier paper corroborates the rounded 54.9/86.3 deg figures; the ESA inclination discrepancy remains unresolved. Local source: data/validation/external-sources/sstl-lunar-pathfinder-service-guide-v004.pdf. Numerical simulation assumptions are retained pending an operational ephemeris."
    ],
    "id": "lunar-pathfinder",
    "name": "Lunar Pathfinder",
@@ -81,7 +88,7 @@
    "inclination_deg": 50.85,
    "arg_periapsis_deg": 90.0,
    "period_h": 10.84,
-   "orbit_note": "SSTL: 'a stable elliptical orbit to provide long duration visibility of the Southern Lunar Hemisphere each day' (an elliptical lunar frozen orbit). Its heights are ESA's; where its node and its place along the orbit will be is not published, so both are swept.",
+   "orbit_note": "An indicative elliptical lunar frozen orbit favouring the Southern Lunar Hemisphere. Heights use ESA's slides; SSTL Service Guide V004 supplies baseline RAAN 0 deg and argument of pericenter 86.322 deg, without a frame or epoch. Operational node and phase are not established, so both are swept. The conflicting published inclinations remain a sensitivity range.",
    "serves_missions": [
     "blue-ghost-m2"
    ],
