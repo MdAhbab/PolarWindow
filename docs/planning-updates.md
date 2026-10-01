@@ -72,11 +72,16 @@ not retain the old interpretation.
   page 1 was inspected with the document reader. It gives 673.4/7331.8 km
   perilune/apolune altitudes, 46.8° inclination and a rounded 10-hour period.
   Its 2025 launch schedule is historical, not a current launch forecast.
-  Browser download remains pending because no browser is connected.
+  Browser download remains pending because no browser is connected. A later
+  direct-file download attempt on 1 October returned HTTP 403; no PDF file
+  was saved by that attempt.
 - [SPENVIS registration](https://www.spenvis.oma.be/registration.php) rejects
   Gmail and similar addresses. An affiliation email, title, city, organisation,
-  organisation URL and country are required. Registration is pending those
-  details and browser access; a SPENVIS validation run has not been performed.
+  organisation URL and country are required. The user has now supplied a
+  university affiliation email; acceptance by SPENVIS has not been tested.
+  Remaining profile fields and browser access are pending; no account has
+  been created and a SPENVIS validation run has not been performed. Private
+  account setup details stay in ignored `.local/account-setup.json`.
 - [Copernicus Marine registration instructions](https://help.marine.copernicus.eu/en/articles/4220332-how-to-register-for-copernicus-marine-service):
   registration and data access are free. An existing Copernicus Data Space
   account can also sign in. Registration, email verification and password
