@@ -85,8 +85,10 @@ not retain the old interpretation.
   organisation URL and country are required. The user has now supplied a
   university affiliation email. The user supplied screenshots confirming a
   successful password change and an authenticated `POLARWIND` project on
-  the Model packages page. Advanced-user access has not been verified, and
-  a SPENVIS validation run has not been performed. After the user reported
+  the Model packages page. Advanced-user access was enabled and the user
+  uploaded the IM-2 trajectory and ran AP-8 MAX/AE-8 MAX. Both downloaded raw
+  spectra now pass the 5% comparison with `rad-5` (+2.56% proton, +1.09% electron).
+  Only this passage has been checked in SPENVIS. After the user reported
   allowing the site, the browser tool still rejected reading the page because
   of its saved blocked-site preference. Continuing UI work requires clearing
   that exact site block. Private account setup details stay in ignored
@@ -97,12 +99,21 @@ not retain the old interpretation.
   registration reached email verification. The user completed the account
   update; the connected browser subsequently showed a signed-in account on
   the data store. A `VHM0` wave subset was requested through the official
-  global-wave download form for 28–29° N, 80–79° W, 1–2 October 2026.
+  global-wave download form for 28–35° N, 80–70° W, 1–2 October 2026.
   The first request reported download completion, but no local NetCDF file
   was verified and a later download-event wait timed out. Browser access
   review then denied the Copernicus request. Account access was confirmed;
-  raw data acquisition and app integration are still pending. The app's
-  existing NOAA GFS-Wave feed remains its recovery-wave source.
+  manual download is needed while that origin remains blocked. The local
+  NetCDF importer and Return integration are implemented. A first verified
+  download contained `VHM0_WW` rather than total `VHM0` and was correctly
+  rejected. The corrected `VHM0` subset was subsequently downloaded and
+  imported successfully: nine 3-hour steps, 85 latitude rows and 121 longitude
+  columns, 1–2 October 2026 UTC. At 30° N, 75° W on 1 October 12:00 UTC it
+  gives 0.80 m, and Return's quantity includes the Copernicus source and valid
+  time. Queries outside coverage are rejected. The original file's SHA-256 is
+  `fa8d29501610fca57a63aa2e6ea3f6ce591bd370595bad77700fa0dafc23b12f`.
+  NOAA GFS-Wave remains the fallback and wind source. See
+  [import instructions and coverage limits](copernicus-marine.md).
 
 ## Native radiation execution and SPENVIS preparation
 
@@ -114,10 +125,13 @@ Load failures remain a declared unavailable input rather than an uncaught DLL
 exception. The engine advances to `rad-4` to recompute cached unavailable results.
 
 The radiation validation runner was executed on native Windows on 1 October.
-It reproduces the tables in `validation.md`: matching magnetic shells agree
-to rounding with NASA SPDF's AE8/AP8 implementation; IM-2 protons still differ
-by about 40.5% when the other implementation chooses its own date-dependent
-shells. This is not a SPENVIS run or a resolved field-model discrepancy.
+After comparing the user's downloaded SPENVIS spectra, engine `rad-5` adds
+the published 0.3°/year SAA longitudinal drift compensation. This resolves the
+IM-2 implementation comparison within the 5% gate. It is not fitted to the
+reference output, and the factor-of-two model uncertainty remains. Corrected
+magnetic shells agree to rounding with NASA SPDF's AE8/AP8 implementation;
+flight-date IGRF shells remain a different configuration (IM-2 proton −22.7%).
+Updated tables and primary references are in `validation.md`.
 
 From `backend/`, run `python -m app.validation.export_spenvis` to prepare inputs
 in ignored `data/validation/spenvis/`. The command exports reconstructed belt
@@ -125,7 +139,9 @@ passages for IM-2, Blue Ghost 1 and Peregrine; IM-1 has no reconstructed belt
 coverage. Each continuous passage is a separate UTC/Earth-fixed Cartesian-km
 upload, accompanied by its duration, source/file hashes, solar phase, sampled
 engine flux and integrated fluence. No missing trajectory gap is integrated.
-The manifest explicitly says `prepared_not_run`.
+The exporter manifest says `prepared_not_run` because export does not execute
+SPENVIS. The separate downloaded-output comparison records
+`passed_for_this_passage` for IM-2.
 
 SPENVIS trajectory uploads require Advanced-user status (editable in My Account).
 For a comparison, use AE8/AP8 integral omnidirectional electrons above 1 MeV
@@ -140,3 +156,15 @@ tracked in Git. Passwords and tokens are not included in the export.
 
 Account passwords, tokens and verification links belong in private local
 configuration, never in the repository.
+
+## Verification of the radiation and Marine changes
+
+On native Windows, 41 targeted unit/integration tests passed, including the
+actual IM-2 SPENVIS regression, packed NetCDF/missing-cell decoding, import
+rejection guards, and the Trip and Return API checks. Ruff and targeted mypy
+checks passed; all ten import-boundary contracts were kept and the dependency
+lock was consistent. The actual corrected Copernicus download was separately
+decoded and checked through Return's wave quantity builder. The restarted app's
+API and frontend responded successfully. Griffin-1's next designed opportunity
+is 13 October, outside the imported 1–2 October subset, so it correctly retains
+NOAA wave evidence. Live provider failures remain visible in health status.

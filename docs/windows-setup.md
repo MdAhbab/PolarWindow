@@ -57,7 +57,9 @@ Even with local services running, an external provider may be unavailable.
 The radiation engine loads IRBEM from SpacePy's bundled Windows library and
 Fortran runtime. No SpacePy import, external DLL installation or system PATH
 change is required. Restart the backend and compute workers after a loader
-update; the `rad-4` engine version recomputes earlier cached unavailable results.
+update. Engine `rad-5` also applies published SAA longitudinal drift compensation
+and recomputes the earlier belt estimates. The factor-of-two model uncertainty
+remains in the answer.
 
 To prepare a separate SPENVIS comparison, run from `backend/`:
 
@@ -67,7 +69,19 @@ To prepare a separate SPENVIS comparison, run from `backend/`:
 
 Uploads, expected engine fluxes and a manifest are saved under ignored
 `data/validation/spenvis/`. The files are prepared inputs; an authenticated
-SPENVIS run and saved raw outputs are still required for a comparison result.
+SPENVIS run and saved raw outputs are required for a comparison result. The
+IM-2 passage has now passed; see [the reproducible comparison](spenvis-manual-validation.md).
+
+For a user-downloaded Copernicus Marine wave subset, install the optional decoder
+and import the original NetCDF from `backend/`:
+
+```powershell
+uv sync --extra dev --extra marine
+.\.venv\Scripts\python.exe -m app.feeds.import_copernicus ..\data\copernicus\your-file.nc
+```
+
+The runtime reads normalized local JSON and does not need account credentials.
+See [download fields, coverage and expiry](copernicus-marine.md).
 
 ## Reusing a teammate's downloaded data
 

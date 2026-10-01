@@ -38,6 +38,8 @@ data/clps/
 data/gravity/
 data/dsn/
 data/validation/
+data/spenvis_*.txt
+data/copernicus/
 data/spaceweather/
 data/bulk/
 data/feeds/

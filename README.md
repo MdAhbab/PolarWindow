@@ -24,6 +24,11 @@ in `.local/` beside the repository. PostgreSQL binaries may be placed in
 An installed Memurai can provide a local Redis-compatible cache; alternatively
 set `PW_REDIS_ENABLED=false`. See [the Windows setup notes](docs/windows-setup.md).
 
+Optional local [Copernicus Marine wave subsets](docs/copernicus-marine.md) can
+provide Return wave height within their downloaded place/time coverage. The
+[SPENVIS comparison guide](docs/spenvis-manual-validation.md) records the passed
+IM-2 radiation check and the remaining unrun passages.
+
 To avoid slow downloads from remote archive servers, export downloaded data from an existing machine:
 
 ```bash

@@ -43,6 +43,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+marine = ["netCDF4==1.7.3"]
 dev = [
     "pytest==8.3.4",
     "pytest-asyncio==0.25.0",
@@ -213,7 +214,10 @@ type = "forbidden"
 allow_indirect_imports = true
 source_modules = ["app"]
 forbidden_modules = ["eccodes", "cfgrib", "h5netcdf", "netCDF4", "xarray", "h5py"]
-ignore_imports = ["app.feeds.parsers.grib -> eccodes", "app.feeds.parsers.glm -> h5py"]
+ignore_imports = [
+    "app.feeds.parsers.grib -> eccodes", "app.feeds.parsers.glm -> h5py",
+    "app.feeds.parsers.copernicus -> netCDF4",
+]
 
 [[tool.importlinter.contracts]]
 name = "spiceypy is reachable only through core.spice"

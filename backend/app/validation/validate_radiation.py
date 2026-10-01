@@ -6,8 +6,8 @@ Prints the tables in docs/validation.md.
 * **Belts, two implementations**: along each flown trajectory (one-minute samples
   within 15 Earth radii), the fluence of electrons above 1 MeV and protons above
   10 MeV from IRBEM (the engine) and from NASA SPDF's AE8/AP8 code (``radbelt``).
-  The plan asks for the engine within 5% of SPENVIS; SPENVIS needs an account and
-  was not run, so this compares the engine with the other public implementation of
+  The separate compare_spenvis runner checks downloaded SPENVIS spectra. This
+  runner compares the engine with the other public implementation of
   the same maps, twice: with the same magnetic shells (IRBEM's L and B/B0, from the
   field each map was built with, as SPENVIS lists them), which checks the maps and
   their reading; and with SPDF's own shells (IGRF of the flight date, B0 the field
@@ -90,9 +90,14 @@ def _why(solar: str, t: np.ndarray, times: list, geo: np.ndarray) -> dict[str, f
     """Proton fluence >10 MeV read with other shells: the same maps and code (SPDF's),
     only the field (and its date) or B0 changed."""
     e = radiation.P_MEV
-    out = {}
+    lm, bb0 = belts.shells("p", solar, times, geo)  # type: ignore[arg-type]
+    ok = np.isfinite(lm)
+    flux = np.zeros(lm.size)
+    flux[ok] = np.asarray(radbelt.aep8(e, lm[ok], bb0[ok], "p", solar), dtype=float)
+    out = {"GSFC 12/66 with published SAA drift compensation":
+           sum(belts.fluence(t[s], flux[s]) for s in radiation._segments(t))}
     for name, field, year, b0_min in (
-        ("GSFC 12/66 (the map's own field)", 3, None, False),
+        ("GSFC 12/66, drift compensation disabled", 3, None, False),
         ("IGRF of 1970", 0, 1970, False),
         ("IGRF of the flight date", 0, None, False),
         ("IGRF of the flight date, B0 the field line's minimum", 0, None, True),

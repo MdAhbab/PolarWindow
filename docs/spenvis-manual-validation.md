@@ -1,8 +1,11 @@
 # Manual SPENVIS comparison
 
-The account is signed in and the user's screenshot shows the `POLARWIND`
-project. No SPENVIS radiation result has been acquired yet. These steps use
-the prepared files in `data/validation/spenvis/`; the files are local and ignored
+The account is signed in and the `POLARWIND` project's IM-2 passage was run on
+1 October 2026. Its downloaded proton and electron spectra pass the 5% comparison
+gate with engine `rad-5`: protons +2.56%, electrons +1.09%. This checks one passage
+against another implementation of the maps, not against particle measurements.
+The other passages still need their own SPENVIS runs. These steps use
+the prepared files in `data/validation/spenvis/`; the generated files are local and ignored
 by Git. Regenerate them from `backend/` with `python -m app.validation.export_spenvis`.
 
 ## First run: IM-2
@@ -27,17 +30,37 @@ by Git. Regenerate them from `backend/` with `python -m app.validation.export_sp
    to 1970 for AP8 MAX, and McIlwain's moment for B0. A run using the
    flight-date IGRF field is a different field comparison. Do not change
    settings blindly if the page exposes different options.
+   The engine also applies the published 0.3°/year eastward evaluation-coordinate
+   rotation to compensate SAA westward drift, since 1960 for AE8/AP8 MIN and
+   1970 for AP8 MAX. Upload coordinates remain the physical trajectory.
 6. Run the models and save the original report plus numerical flux/fluence
    outputs under `data/validation/spenvis/results/im-2/`. Keep the input file,
    dates, model choices, units and any warnings with the outputs. A plot or
    screenshot alone is insufficient for the numerical comparison.
 
-Our reference integrated fluences for this passage are **1.0943897119728935e10
-electrons/cm²** above 1 MeV and **8.554402166990067e5 protons/cm²** above 10 MeV.
-These are engine predictions, not measured values or SPENVIS results. Compare
+Our `rad-5` integrated fluences for this passage are **1.1708994441795319e10
+electrons/cm²** above 1 MeV and **1.1109803569441978e6 protons/cm²** above 10 MeV.
+Integrating the downloaded SPENVIS samples at those thresholds gives
+**1.1582177582412e10 electrons/cm²** and **1.083247566e6 protons/cm²**.
+These are model predictions, not measured values. Compare
 like-for-like settings and quantities; the implementation gate is a 5% relative
 difference. If only sampled flux is exported, integrate it over the actual
 sample times rather than comparing flux with fluence.
+
+After saving the two original spectra in `data/`, run from `backend/`:
+
+```powershell
+.\.venv\Scripts\python.exe -m app.validation.export_spenvis
+.\.venv\Scripts\python.exe -m app.validation.compare_spenvis --mission im-2 --protons ..\data\spenvis_spp.txt --electrons ..\data\spenvis_spe.txt
+```
+
+The comparison requires matching model, passage name, start, duration and sample
+count. It integrates both sets over the exported trajectory's sample times;
+the SPENVIS spectrum has no separate time column, so its trajectory order is
+required. The denominator is SPENVIS. Rounded report totals differ slightly from
+this integration and are retained as a separate record. Results and input hashes
+are saved in `data/validation/spenvis/results/im-2/comparison-summary.json`.
+The committed regression fixture preserves the actual downloaded threshold fluxes.
 
 ## Remaining passages
 

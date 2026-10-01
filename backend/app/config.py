@@ -64,13 +64,14 @@ ENGINE_VERSION = "hz-2/vis-2"
 #: los-3: native 3/4/5 m rover terrain, coverage fallback and content-based job keys.
 #: lw-7: pad-limit endpoints obey coast/flight bounds and surround the nominal instant.
 #: rad-4: load the bundled IRBEM library and Fortran runtime on native Windows/macOS too.
+#: rad-5: apply published SAA drift compensation before reading the static belt maps.
 ENGINES: dict[str, str] = {
     "hz": "hz-2",
     "vis": "vis-2",
     "traj": "traj-4",
     "ecl": "ecl-1",
     "wx": "wx-3",
-    "rad": "rad-4",
+    "rad": "rad-5",
     "link": "link-1",
     "net": "net-6",
     "ready": "ready-1",

@@ -18,7 +18,7 @@ from pathlib import Path
 
 import numpy as np
 
-from app.config import get_settings
+from app.config import ENGINES, get_settings
 from app.core import belts, spice
 from app.services import ascent, lifecycle, radiation
 
@@ -120,6 +120,9 @@ def main() -> None:
         "upload_format_source": "https://www.spenvis.oma.be/help/models/sapre_upl.html",
         "coordinates": "GEO", "position_unit": "km", "date_scale": "UTC",
         "models": ["AE8", "AP8"], "electron_threshold_mev": radiation.E_MEV,
+        "engine": ENGINES["rad"],
+        "saa_correction": {"eastward_deg_per_year": belts.SAA_DRIFT_DEG_YR,
+                           "electron_epoch": 1960, "ap8_max_epoch": 1970},
         "proton_threshold_mev": radiation.P_MEV, "comparison_tolerance_fraction": 0.05,
         "requirements": [
             "Trajectory upload requires Advanced-user access in SPENVIS.",
