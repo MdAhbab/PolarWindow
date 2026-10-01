@@ -54,6 +54,21 @@ protected bulk archives. Keep keys in `.env`, which Git ignores.
 The frontend labels saved snapshots, missing inputs and stale or failing feeds.
 Even with local services running, an external provider may be unavailable.
 
+The radiation engine loads IRBEM from SpacePy's bundled Windows library and
+Fortran runtime. No SpacePy import, external DLL installation or system PATH
+change is required. Restart the backend and compute workers after a loader
+update; the `rad-4` engine version recomputes earlier cached unavailable results.
+
+To prepare a separate SPENVIS comparison, run from `backend/`:
+
+```powershell
+.\.venv\Scripts\python.exe -m app.validation.export_spenvis
+```
+
+Uploads, expected engine fluxes and a manifest are saved under ignored
+`data/validation/spenvis/`. The files are prepared inputs; an authenticated
+SPENVIS run and saved raw outputs are still required for a comparison result.
+
 ## Reusing a teammate's downloaded data
 
 On a machine with the datasets:

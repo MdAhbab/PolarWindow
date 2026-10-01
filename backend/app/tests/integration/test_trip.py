@@ -58,7 +58,7 @@ async def test_im2_flown_trip(anon_client, settings, monkeypatch) -> None:
     mp = d["moon_pull"]
     assert 30_000 < mp["equal_pull_km"] < 45_000 and mp["t_equal_pull"] is not None
     assert {s["light"] for s in d["samples"]} <= {"lit", "penumbral", "dark"}
-    assert r.json()["meta"]["engines"] == {"ecl": "ecl-1", "traj": "traj-4", "rad": "rad-3"}
+    assert r.json()["meta"]["engines"] == {"ecl": "ecl-1", "traj": "traj-4", "rad": "rad-4"}
     assert len(d["covered"]) >= 1 and d["covered"][0]["start"] == d["start"]
     # Burns found in the reconstruction: corrections on the way, then lunar orbit.
     names = [b["name"] for b in d["burns"]]

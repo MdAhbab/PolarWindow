@@ -72,20 +72,70 @@ not retain the old interpretation.
   page 1 was inspected with the document reader. It gives 673.4/7331.8 km
   perilune/apolune altitudes, 46.8° inclination and a rounded 10-hour period.
   Its 2025 launch schedule is historical, not a current launch forecast.
-  Browser download remains pending because no browser is connected. A later
-  direct-file download attempt on 1 October returned HTTP 403; no PDF file
-  was saved by that attempt.
+  Browser download completed on 1 October. The unchanged three-page PDF is
+  saved locally as `data/validation/external-sources/esa-moonlight-lunar-pathfinder.pdf`
+  (802,079 bytes; SHA-256
+  `01358401e32fc50695b43a26636178cb29de8dbce153bf69e71ea12ed97b8691`).
+  Page 1 was extracted and rendered for visual verification. The inclination
+  disagreement with the supplier paper is still unresolved; downloading the
+  source does not remove that uncertainty. The earlier HTTP 403 attempt did
+  not save a file; the later browser download did.
 - [SPENVIS registration](https://www.spenvis.oma.be/registration.php) rejects
   Gmail and similar addresses. An affiliation email, title, city, organisation,
   organisation URL and country are required. The user has now supplied a
   university affiliation email; acceptance by SPENVIS has not been tested.
-  Remaining profile fields and browser access are pending; no account has
-  been created and a SPENVIS validation run has not been performed. Private
-  account setup details stay in ignored `.local/account-setup.json`.
+  The user supplied a screenshot confirming a successful password change.
+  Account login and Advanced-user access have not been verified in the
+  connected browser, and a SPENVIS validation run has not been performed.
+  The current browser access review denied the SPENVIS request; continuing
+  its UI work requires restoring that site permission and a usable login
+  session. Private account setup details stay in ignored `.local/account-setup.json`.
 - [Copernicus Marine registration instructions](https://help.marine.copernicus.eu/en/articles/4220332-how-to-register-for-copernicus-marine-service):
-  registration and data access are free. An existing Copernicus Data Space
-  account can also sign in. Registration, email verification and password
-  setup remain pending browser access and the user's verification steps.
+  registration and data access are free. Registration details were prepared
+  in the browser; the user approved the privacy policy and terms, and the
+  registration reached email verification. The user completed the account
+  update; the connected browser subsequently showed a signed-in account on
+  the data store. A `VHM0` wave subset was requested through the official
+  global-wave download form for 28–29° N, 80–79° W, 1–2 October 2026.
+  The first request reported download completion, but no local NetCDF file
+  was verified and a later download-event wait timed out. Browser access
+  review then denied the Copernicus request. Account access was confirmed;
+  raw data acquisition and app integration are still pending. The app's
+  existing NOAA GFS-Wave feed remains its recovery-wave source.
+
+## Native radiation execution and SPENVIS preparation
+
+The earlier loader looked only for `libirbem.so`, so the installed Windows
+SpacePy wheel was reported unavailable. It now checks the platform's bundled
+library names (including the Windows wheel's `libirbem.dll.a`) and loads its
+bundled Fortran runtime without importing SpacePy or modifying the system PATH.
+Load failures remain a declared unavailable input rather than an uncaught DLL
+exception. The engine advances to `rad-4` to recompute cached unavailable results.
+
+The radiation validation runner was executed on native Windows on 1 October.
+It reproduces the tables in `validation.md`: matching magnetic shells agree
+to rounding with NASA SPDF's AE8/AP8 implementation; IM-2 protons still differ
+by about 40.5% when the other implementation chooses its own date-dependent
+shells. This is not a SPENVIS run or a resolved field-model discrepancy.
+
+From `backend/`, run `python -m app.validation.export_spenvis` to prepare inputs
+in ignored `data/validation/spenvis/`. The command exports reconstructed belt
+passages for IM-2, Blue Ghost 1 and Peregrine; IM-1 has no reconstructed belt
+coverage. Each continuous passage is a separate UTC/Earth-fixed Cartesian-km
+upload, accompanied by its duration, source/file hashes, solar phase, sampled
+engine flux and integrated fluence. No missing trajectory gap is integrated.
+The manifest explicitly says `prepared_not_run`.
+
+SPENVIS trajectory uploads require Advanced-user status (editable in My Account).
+For a comparison, use AE8/AP8 integral omnidirectional electrons above 1 MeV
+and protons above 10 MeV, the manifest's solar phase, the exact passage duration,
+and recorded field/B0 settings. Keep the original model report and raw outputs;
+only then compare integrated fluences with the 5% implementation-comparison gate.
+Preparing these files or agreeing with SPDF does not satisfy that gate.
+
+The unchanged downloaded PDF, generated trajectories, and account screenshots
+stay in ignored local data; reproducible export code and source/status notes are
+tracked in Git. Passwords and tokens are not included in the export.
 
 Account passwords, tokens and verification links belong in private local
 configuration, never in the repository.

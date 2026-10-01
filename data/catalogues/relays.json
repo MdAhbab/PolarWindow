@@ -67,7 +67,7 @@
    },
    "unconfirmed_fields": [],
    "notes": [
-    "ESA's Lunar Pathfinder/Moonlight slides, page 1, were inspected with the document reader on 2026-10-01: perilune 673.4 km, apolune 7331.8 km, inclination 46.8 deg and rounded period 10 h. The supplier paper's 54.9 deg and its reference plane remain unverified, so the inclination range is retained. The ESA slides' 2025 launch dates are historical. Browser download remains pending; see docs/planning-updates.md."
+    "ESA's Lunar Pathfinder/Moonlight slides were downloaded through the browser on 2026-10-01 (SHA-256 01358401e32fc50695b43a26636178cb29de8dbce153bf69e71ea12ed97b8691). Page 1 was extracted and visually inspected: perilune 673.4 km, apolune 7331.8 km, inclination 46.8 deg and stated period 10 h. The supplier paper's 54.9 deg and its reference plane remain unverified, so the inclination range is retained. The ESA slides' 2025 launch dates are historical. The local source is data/validation/external-sources/esa-moonlight-lunar-pathfinder.pdf; see docs/planning-updates.md."
    ],
    "id": "lunar-pathfinder",
    "name": "Lunar Pathfinder",

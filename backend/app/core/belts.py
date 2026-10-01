@@ -21,6 +21,9 @@ from __future__ import annotations
 
 import ctypes
 import importlib.util
+import os
+import sys
+import sysconfig
 import threading
 from dataclasses import dataclass
 from datetime import datetime
@@ -63,10 +66,31 @@ def _lib() -> ctypes.CDLL:
     spec = importlib.util.find_spec("spacepy")
     if spec is None or spec.origin is None:
         raise BeltsUnavailable("spacepy is not installed, so IRBEM (AE8/AP8) is not available")
-    path = Path(spec.origin).parent / "irbempy" / "libirbem.so"
-    if not path.exists():
-        raise BeltsUnavailable(f"IRBEM library not found at {path}")
-    return ctypes.CDLL(str(path))
+    package = Path(spec.origin).parent
+    names = {
+        "win32": ["libirbem.dll.a", "irbem.dll"],
+        "darwin": ["libirbem.dylib", "libirbem.so", "irbem.dylib", "irbem.so"],
+    }.get(sys.platform, ["libirbem.so"])
+    suffix = sysconfig.get_config_var("EXT_SUFFIX")
+    if suffix:
+        names.extend([f"libirbem{suffix}", f"irbem{suffix}"])
+    failures = []
+    for name in names:
+        path = package / "irbempy" / name
+        if not path.is_file():
+            continue
+        try:
+            # SpacePy's Windows wheel bundles the Fortran runtime here. Load it
+            # without importing SpacePy, which creates user state and fetches data.
+            runtime = package / "libs"
+            if sys.platform == "win32" and runtime.is_dir():
+                with os.add_dll_directory(str(runtime)):
+                    return ctypes.CDLL(str(path))
+            return ctypes.CDLL(str(path))
+        except OSError as exc:
+            failures.append(f"{path.name}: {exc}")
+    reason = "; ".join(failures) or f"no shared library in {package / 'irbempy'}"
+    raise BeltsUnavailable(f"IRBEM could not be loaded: {reason}")
 
 
 def available() -> bool:

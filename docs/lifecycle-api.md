@@ -17,6 +17,10 @@ same-opportunity checks before a planned window is published. A failed window
 retains a nominal instant with its reason in the opportunity note. See
 [coverage, validation and account status](planning-updates.md).
 
+The native radiation loader uses engine `rad-4` so cached unavailable belt
+results from the earlier Windows loader are recomputed. Response shapes and
+radiation model settings are unchanged.
+
 All paths are under `/api/v1`. Reading is public; every write needs a named
 session (ADR-17). Shapes are written TypeScript-style; `?` means optional,
 `| null` means the field is always present but may be null.
