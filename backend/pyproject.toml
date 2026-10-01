@@ -28,6 +28,8 @@ dependencies = [
     # --- ai -----------------------------------------------------------------
     "google-genai==2.25.0",
     "pyjwt>=2.10",
+    # Windows has no system IANA timezone database (Gemini quota reset times).
+    "tzdata>=2025.2 ; sys_platform == 'win32'",
     "eccodes==2.48.0",
     "eccodeslib==2.49.0.30 ; sys_platform != 'win32'",
     "defusedxml==0.7.1",

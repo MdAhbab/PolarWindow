@@ -12,6 +12,7 @@ Index of project documentation, its scope, and intended audience.
 | [data-sources.md](data-sources.md) | Provenance, licenses, download URLs, and citations for all external datasets. | Data engineers, reviewers |
 | [conventions.md](conventions.md) | Architecture invariants, numeric standards, coordinate frames, and wording rules. | All contributors |
 | [runbook.md](runbook.md) | Single-host deployment, configuration, troubleshooting, and pre-demo checks. | Operators, demo leads |
+| [windows-setup.md](windows-setup.md) | Native Windows startup, project-local storage, prerequisites and data reuse. | Windows contributors |
 | [test-plan.md](test-plan.md) | Test suites, test commands, pytest markers, and failure mode threat model. | Test engineers, developers |
 | [adr/README.md](adr/README.md) | Index of Architecture Decision Records (ADR-0001 to ADR-0018). | Engineers, architects |
 | [design-lifecycle.md](design-lifecycle.md) | Lifecycle view layout, interaction patterns, and frontend state specifications. | Frontend developers, UI designers |

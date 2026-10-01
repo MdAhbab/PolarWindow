@@ -208,7 +208,8 @@ async def fetch(
             tasks = [asyncio.ensure_future(worker()) for _ in range(workers)]
             loop = asyncio.get_running_loop()
             for sig in (signal.SIGINT, signal.SIGTERM):
-                loop.add_signal_handler(sig, lambda: [t.cancel() for t in tasks])
+                with contextlib.suppress(NotImplementedError):
+                    loop.add_signal_handler(sig, lambda: [t.cancel() for t in tasks])
             with contextlib.suppress(asyncio.CancelledError):
                 await asyncio.gather(*tasks)
 

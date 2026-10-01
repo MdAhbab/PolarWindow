@@ -280,7 +280,11 @@ def main() -> None:
     async def run() -> None:
         loop = asyncio.get_running_loop()
         for sig in (signal.SIGINT, signal.SIGTERM):
-            loop.add_signal_handler(sig, worker.stop)
+            try:
+                loop.add_signal_handler(sig, worker.stop)
+            except NotImplementedError:
+                # Windows event loops do not implement add_signal_handler.
+                signal.signal(sig, lambda *_: loop.call_soon_threadsafe(worker.stop))
         log.info("compute worker %s: kinds %s", worker.owner, sorted(worker.handlers))
         await worker.run_forever()
         from app.db.session import dispose_engine

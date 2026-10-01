@@ -162,6 +162,9 @@ def _sync_seed(d: Dataset) -> Outcome:
 
     py = sys.executable
     _run([py, "-m", "alembic", "upgrade", "head"])
+    s = get_settings()
+    if not s.sites_seed_path.exists():
+        _run([py, "-m", "app.data.ingest_sites", str(s.regional_dem_path), str(s.sites_seed_path)])
     _run([py, "-m", "app.data.ingest_missions"])
     todo = asyncio.run(sites_needing_work())
     if not todo:

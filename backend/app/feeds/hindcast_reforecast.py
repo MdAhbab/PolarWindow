@@ -265,7 +265,8 @@ async def fetch(
             loop = asyncio.get_running_loop()
             for sig in (signal.SIGINT, signal.SIGTERM):
                 # Stopping leaves no half day behind: a day is written whole, or not at all.
-                loop.add_signal_handler(sig, lambda: [t.cancel() for t in tasks])
+                with contextlib.suppress(NotImplementedError):
+                    loop.add_signal_handler(sig, lambda: [t.cancel() for t in tasks])
             with contextlib.suppress(asyncio.CancelledError):
                 await asyncio.gather(*tasks)
 

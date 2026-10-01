@@ -16,6 +16,14 @@ python3 run.py
 
 `python3 run.py` checks and installs dependencies, starts PostgreSQL (creating `.local/pgdata` if no local database exists) and Redis, runs migrations, launches the API server (:8000), compute and feeds background workers, and serves the Vite frontend (:5173). It then downloads required datasets automatically, resuming any interrupted downloads.
 
+On native Windows, use `python run.py`. The runner supports Windows process
+management and keeps temporary files, Python installations and dependency caches
+in `.local/` beside the repository. PostgreSQL binaries may be placed in
+`.local/tools/pgsql/bin/`; a portable Node distribution may be placed in
+`.local/tools/node-v<version>-win-x64/`. Both are added to the runner's PATH.
+An installed Memurai can provide a local Redis-compatible cache; alternatively
+set `PW_REDIS_ENABLED=false`. See [the Windows setup notes](docs/windows-setup.md).
+
 To avoid slow downloads from remote archive servers, export downloaded data from an existing machine:
 
 ```bash
