@@ -10,6 +10,7 @@ change without the geometry changing.
 
 from __future__ import annotations
 
+import asyncio
 import csv
 import io
 from datetime import UTC, datetime, timedelta
@@ -19,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import ENGINE_VERSION, engine_closure, get_settings
 from app.core import relay as core_relay
-from app.data import catalogues
+from app.data import catalogues, rover_terrain
 from app.db.repositories.feeds import FeedRepository
 from app.db.repositories.missions import MissionRecord, MissionRepository
 from app.db.repositories.pm import PmRepository
@@ -593,6 +594,10 @@ async def rover(
         raise BadRequest("Antenna heights must be between 0 and 50 m.")
     if not 30.0 <= f <= 100_000.0:
         raise BadRequest("freq_mhz must be between 30 and 100000.")
+    terrain = await asyncio.to_thread(
+        rover_terrain.terrain_path, site.id, site.lat_deg, site.lon_deg, r
+    )
+    terrain_version = await asyncio.to_thread(rover_terrain.version, terrain)
     params = {
         "mission_id": m.id,
         "data_version": m.data_version,
@@ -600,6 +605,8 @@ async def rover(
         "lat_deg": site.lat_deg,
         "lon_deg": site.lon_deg,
         "surface_engine": ENGINE_VERSION,
+        "terrain_file": terrain.relative_to(get_settings().data_dir).as_posix(),
+        "terrain_version": terrain_version,
         "rover": rv,
         "radius_m": r,
         "lander_antenna_m": la,

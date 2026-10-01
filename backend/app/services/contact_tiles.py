@@ -13,8 +13,8 @@ never change: a new answer has a new id. Three layers:
 
 * ``sight`` and ``radio``: the answer's line of sight and radio path, each cell clear,
   blocked or uncertain, drawn by :func:`app.core.viewshed.tile_rgba`;
-* ``terrain``: the hillshade of the elevation model the answer used, the 20 m polar
-  window around the landing spot where there is one. The regional 80 m model the
+* ``terrain``: the hillshade of the elevation model the answer used, its selected
+  native 3/4/5 m or 20 m window where there is one. The regional 80 m model the
   terrain tiles are made from is too coarse at the zoom of a rover map (its posts are
   bigger than the lander's whole neighbourhood).
 """
@@ -83,10 +83,12 @@ def _window(path: Path) -> DemTile:
     return DemTile.load(path)
 
 
-def _terrain(site_id: str | None) -> DemTile:
-    """The elevation model the rover job read: the site's 20 m window, else the regional one
+def _terrain(site_id: str | None, terrain_file: str | None = None) -> DemTile:
+    """The elevation model the rover job read; older answers use their 20 m window
     (the terrain tiles' own copy, so the 230 MB is held once)."""
     s = get_settings()
+    if terrain_file is not None:
+        return _window(s.data_dir / terrain_file)
     fine = s.fine_dem_path(site_id) if site_id else None
     if fine is not None and fine.exists():
         return _window(fine)
@@ -106,7 +108,9 @@ def _render(
     grid = TileGrid(half_extent_m=_half_extent_m(s.regional_dem_path))
     bounds = grid.bounds(z, x, y)
     if layer == "terrain":
-        return render_layer("hillshade", _terrain(params.get("site_id")), bounds)
+        return render_layer(
+            "hillshade", _terrain(params.get("site_id"), params.get("terrain_file")), bounds
+        )
     frame = local_frame(float(params["lon_deg"]), float(params["lat_deg"]))
     return viewshed.tile_rgba(
         bounds,

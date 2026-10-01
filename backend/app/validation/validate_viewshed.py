@@ -8,8 +8,8 @@ band. GDAL is not installed here, so this is the nearest check that can be
 run: the engine's running maximum of elevation angles against a brute-force
 test written separately -- for every rover position, the terrain sampled every
 metre along the straight line between the antennas, in heights rather than
-angles -- on the 20 m polar model around each rover site, with the height error
-set to zero (so every cell has a state) and compared only where the 2 m error
+angles -- on the selected native terrain around each rover site, with height error
+set to zero and compared only where that terrain's stated error
 would not make it uncertain.
 """
 
@@ -19,14 +19,15 @@ import sys
 
 import numpy as np
 
-from app.config import get_settings
 from app.core import viewshed as vs
 from app.core.horizon import R_MOON_M, curvature_drop_m
 from app.data.lola import DemTile, make_samplers
+from app.data.rover_terrain import terrain_path
 
 SITES = [
     ("IM-2 (Yaoki)", "mission-im-2", -84.7906, 29.1957),
     ("Griffin-1 (FLIP)", "feature-mons-mouton", -84.6, 31.0),
+    ("Shackleton rim (native 5 m)", "shackleton-rim", -89.29924, 131.6425),
 ]
 LANDER, ROVER = 2.0, 0.5
 
@@ -65,18 +66,16 @@ def _run(sample, sig, b: np.ndarray, r: np.ndarray, post: float) -> vs.Viewshed:
 
 
 def main() -> int:
-    s = get_settings()
-    print("| Site | Radius | Cells | Outside the band | Agree | Share out of sight |")
-    print("|---|---:|---:|---:|---:|---|")
+    print("| Site | Post | Radius | Cells | Outside the band | Agree | Share out of sight |")
+    print("|---|---:|---:|---:|---:|---:|---|")
     worst = 1.0
     for name, sid, lat, lon in SITES:
-        fine = DemTile.load(s.fine_dem_path(sid))
-        sample, sigma = make_samplers(lat, lon, fine, None)
-
         def zero(x: np.ndarray, y: np.ndarray) -> np.ndarray:
             return np.zeros(np.shape(x))
 
         for radius in (500.0, 2000.0):
+            fine = DemTile.load(terrain_path(sid, lat, lon, radius))
+            sample, sigma = make_samplers(lat, lon, fine, None)
             b = np.arange(0.0, 360.0, 5.0)
             r = radius * np.arange(1, 21) / 20
 
@@ -84,12 +83,15 @@ def main() -> int:
             noisy = _run(sample, sigma, b, r, fine.scale_m)
             ref = brute(sample, b, r, fine.scale_m)
             keep = noisy.sight != vs.UNCERTAIN
-            agree = float(np.mean(exact.sight[keep] == ref[keep])) if keep.any() else 1.0
-            worst = min(worst, agree)
+            agree = float(np.mean(exact.sight[keep] == ref[keep])) if keep.any() else None
+            if agree is not None:
+                worst = min(worst, agree)
+            agree_words = f"{100 * agree:.2f} %" if agree is not None else "n/a (all uncertain)"
             lo, hi = vs.ground_share(noisy, noisy.sight) or (float("nan"), float("nan"))
             print(
-                f"| {name} | {radius:.0f} m | {b.size * r.size} | {int(keep.sum())} | "
-                f"{100 * agree:.2f} % | {100 * lo:.1f} to {100 * hi:.1f} % |"
+                f"| {name} | {fine.scale_m:g} m | {radius:.0f} m | "
+                f"{b.size * r.size} | {int(keep.sum())} | "
+                f"{agree_words} | {100 * lo:.1f} to {100 * hi:.1f} % |"
             )
     ok = worst >= 0.99
     print(f"\nworst agreement {100 * worst:.2f} %: {'PASS' if ok else 'FAIL'} (plan: 99 %)")

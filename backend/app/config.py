@@ -60,18 +60,21 @@ ENGINE_VERSION = "hz-2/vis-2"
 #:        a relay may be "launched, not operating"; no number changes.
 #: los-2: the note says "the space around the line of sight that the radio signal needs" and
 #:        "terrain map"; no number changes.
+#: wx-3: verification is scoped to scored leads and thresholds; HRRR call counts per lead.
+#: los-3: native 3/4/5 m rover terrain, coverage fallback and content-based job keys.
+#: lw-7: pad-limit endpoints obey coast/flight bounds and surround the nominal instant.
 ENGINES: dict[str, str] = {
     "hz": "hz-2",
     "vis": "vis-2",
     "traj": "traj-4",
     "ecl": "ecl-1",
-    "wx": "wx-2",
+    "wx": "wx-3",
     "rad": "rad-3",
     "link": "link-1",
     "net": "net-6",
     "ready": "ready-1",
-    "los": "los-2",
-    "lw": "lw-6",
+    "los": "los-3",
+    "lw": "lw-7",
 }
 
 
@@ -145,6 +148,15 @@ class Settings(BaseSettings):
 
     def fine_dem_path(self, site_id: str) -> Path:
         return self.dem_dir / "fine" / f"{site_id}.npz"
+
+    def rover_dem_path(self, site_id: str) -> Path:
+        return self.dem_dir / "rover_5m" / f"{site_id}.npz"
+
+    def rover_stereo_path(self, site_id: str) -> Path:
+        return self.dem_dir / "rover_3m" / f"{site_id}.npz"
+
+    def rover_stereo4_path(self, site_id: str) -> Path:
+        return self.dem_dir / "rover_4m" / f"{site_id}.npz"
 
     #: Download kernels at startup if missing. Off by default: a container that
     #: silently pulls 114 MB at boot turns a fast, obvious failure into a slow

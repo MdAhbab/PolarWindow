@@ -39,7 +39,7 @@ _CHUNK: Final[int] = 1 << 20
 #: absolute path and is rewritten on load), and orbiter kernels made from this machine's own
 #: recorded feed snapshots (their names carry snapshot ids another database does not have).
 _SKIP_NAMES: Final[frozenset[str]] = frozenset({".sync-state.json", ".DS_Store", METAKERNEL_NAME})
-_SKIP_SUFFIXES: Final[tuple[str, ...]] = (".part", ".import-part")
+_SKIP_SUFFIXES: Final[tuple[str, ...]] = (".part", ".import-part", ".pending.npz")
 _SKIP_DIRS: Final[tuple[str, ...]] = ("kernels/orbiters/",)
 #: Already compressed, so stored in a ``.zip`` as they are.
 _STORED: Final[frozenset[str]] = frozenset(

@@ -144,7 +144,7 @@ def _gefs_row(
     t0: datetime,
     rule: Any,
     limit: dict[str, Any],
-    checked: bool = False,
+    region: str = "",
 ) -> dict[str, Any]:
     lead_h = (t0 - datetime.now(UTC)).total_seconds() / 3600.0
 
@@ -179,6 +179,10 @@ def _gefs_row(
         k, n = wr.count_breaking(members, float(rule.height_m), lim, rule.comparison or "gt")
         if n == 0:
             continue
+        forecast_lead = float(hit[0]) if hit[0].isdigit() else None
+        tested_limit = lim * vf.neutral_ratio(float(rule.height_m), 10.0, wr.OPEN_FLAT_Z0_M)
+        checked = forecast_lead is not None and (rule.comparison or "gt") == "gt" and \
+            verification.checked(region, rule.id, forecast_lead, threshold_m_s=tested_limit)
         return {
             "system": "GEFS",
             "share": lifecycle.share(share(k, n, checked=checked)),
@@ -229,7 +233,13 @@ def _hrrr(
                 source=snap.snapshot.url if snap.snapshot else None,
             ),
             "over": wr.breaks(value, float(limit["value"]), rule.comparison or "gt"),
-            "note": (verification.hrrr_words(region, lead_h) if lead_h is not None else None)
+            "note": (
+                verification.hrrr_words(
+                    region, lead_h,
+                    wr.to_m_s(float(limit["value"]), unit)
+                    * vf.neutral_ratio(float(rule.height_m), 10.0, wr.OPEN_FLAT_Z0_M),
+                ) if lead_h is not None else None
+            )
             or "HRRR's 10 m wind has not been checked against observations yet.",
         }
     ], lead_h
@@ -479,7 +489,6 @@ async def launch_weather(
     nws = await feed_service.latest(session, "nws", "grid", pad_id)
     glm = await feed_service.latest(session, "goes", "glm", region)
     rows = []
-    lead_h = (when - now).total_seconds() / 3600.0
     for r in rules:
         limit = _limit(r, entered.get(r.id))
         per_system: list[dict[str, Any]] = []
@@ -488,7 +497,7 @@ async def launch_weather(
         disagree: list[str] = []
         if r.rule_class in ("model", "proxy"):
             per_system.append(
-                _gefs_row(gefs, pad_id, when, r, limit, verification.checked(region, r.id, lead_h))
+                _gefs_row(gefs, pad_id, when, r, limit, region)
             )
             per_system += [
                 {"system": s, "share": None, "missing_reason": NOT_RECORDED[s]} for s in SYSTEMS[1:]
@@ -579,9 +588,12 @@ async def launch_weather(
             "time. Shares count one forecast system's runs; they are never combined. "
             + (
                 "The wind rule's GEFS shares have been checked against observations."
-                if any(verification.checked(region, r.id, lead_h) for r in rules)
-                else "The wind rule's GEFS shares were checked against observations only for "
-                f"launches up to {verification.reach_h(region)} h ahead; this one is further out."
+                if any(
+                    (system.get("share") or {}).get("checked")
+                    for row in rows for system in row["per_system"]
+                )
+                else "The wind rule's GEFS checks cover only the scored forecast leads and "
+                "tested limit; this answer has no share covered by those checks."
                 if any(verification.checked(region, r.id) for r in rules)
                 else "None has passed a check against observations yet."
             )

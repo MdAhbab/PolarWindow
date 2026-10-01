@@ -50,7 +50,8 @@ TIERS: Final[tuple[Tier, ...]] = ("core", "lifecycle", "validation", "bulk")
 #: ``sync`` never runs it, it only says whether it is here, and ``polar-data
 #: import`` brings it from a shared copy.
 Method = Literal[
-    "kernel", "file", "lola_regional", "lola_fine", "seed", "cmr", "s3_prefix", "built"
+    "kernel", "file", "lola_regional", "lola_fine", "lola_rover", "seed", "cmr",
+    "s3_prefix", "built"
 ]
 
 DATA_NASA: Final[str] = "https://data.nasa.gov/dataset"
@@ -135,6 +136,26 @@ _OREX_SPK: Final[str] = (
     "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/orex/orex_spice/spice_kernels/spk"
 )
 _SPECIFIC: Final[tuple[Dataset, ...]] = (
+    Dataset(
+        id="lola:ldem_875s_5m",
+        title="Native rover terrain: 3/4 m LROC NOBILE and 5 m LOLA site windows",
+        provider="NASA LRO LROC / LOLA, PDS archives",
+        tier="lifecycle",
+        method="lola_rover",
+        urls=(
+            "https://data.lroc.im-ldi.com/lroc/view_rdr/NAC_DTM_NOBILE04",
+            "https://data.lroc.im-ldi.com/lroc/view_rdr/NAC_DTM_NOBILE03",
+            f"{_LOLA_PDS}/ldem_875s_5m.img",
+        ),
+        dest="dem/rover_3m/, dem/rover_4m/ and dem/rover_5m/",
+        size_bytes=64_000_000,
+        used_for="Rover-to-lander sight and radio paths: native 3/4 m stereo terrain at "
+        "Mons Mouton/Nobile, 5 m LOLA south of 87.5 deg S, including their terrain maps. "
+        "Stereo gaps stay unknown. Coarser 20 m or 80 m terrain is used where a full "
+        "neighbourhood is not covered. Height error is stated for each product.",
+        licence="US government work (public domain)",
+        catalogue=f"{DATA_NASA}/lro-moon-laser-altimeter-4-gdr-v1-0",
+    ),
     Dataset(
         id="lola:ldem_80s_80m",
         title="LOLA south polar elevation model, 80 m (LDEM_80S_80M)",

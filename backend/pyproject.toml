@@ -38,6 +38,8 @@ dependencies = [
     "h5py==3.14.0",
     # AE8/AP8 trapped radiation (IRBEM, shipped compiled in spacepy's wheel).
     "spacepy==0.7.0",
+    # Native LROC terrain GeoTIFF windows; preserves projection, pixel centres and nodata.
+    "rasterio==1.4.3",
 ]
 
 [project.optional-dependencies]
@@ -132,7 +134,7 @@ warn_return_any = false
 # surface stays small and named.
 module = [
     "spiceypy.*", "numba.*", "pymsis.*", "scipy.*", "pyproj.*", "google.*", "zstandard.*", "asyncpg.*",
-    "eccodes.*", "cdflib.*", "spacepy.*", "h5py.*", "radbelt.*",
+    "eccodes.*", "cdflib.*", "spacepy.*", "h5py.*", "radbelt.*", "rasterio.*",
 ]
 ignore_missing_imports = true
 

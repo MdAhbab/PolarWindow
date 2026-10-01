@@ -499,6 +499,7 @@ def _window_ends(
     pad_at = ascent.pad_j2000(p["pad_id"])
     coast = (float(np.mean(asc.coasts_s)), min(asc.coasts_s) - COAST_SLACK_S)
     for o in chosen:
+        # This is the *lunar arrival* inclination, independent of the pad's climb heading.
         target = transfer.Target(o["arrive_et"], R_MOON_M + PERI_ALT_M, o["inc"])
         ends = []
         for az in az_limits:
@@ -514,9 +515,25 @@ def _window_ends(
                 coast,
                 span_s=12 * H,
             )
-            ends.append(None if d is None else _epoch(d.t_launch))
-        if all(e is not None for e in ends):
-            o["open"], o["close"] = min(ends), max(ends)  # type: ignore[type-var]
+            valid = (
+                d is not None
+                and d.converged
+                and coast[1] <= d.coast_s <= COAST_MAX_S
+                and FLIGHT_DAYS[0] <= (d.t_peri - d.t_tli) / DAY <= FLIGHT_DAYS[1]
+                and abs(d.t_launch - o["t_launch_et"]) <= SAME_OPPORTUNITY_S
+            )
+            ends.append(_epoch(d.t_launch) if valid and d is not None else None)
+        valid_ends = [e for e in ends if e is not None]
+        if len(valid_ends) == 2:
+            start, end = min(valid_ends), max(valid_ends)
+            if start <= o["t0"] <= end and end - start < SAME_OPPORTUNITY_S:
+                o["open"], o["close"] = start, end
+                continue
+        o["window_failure"] = (
+            " The pad-limit designs did not both give a valid coast and flight on this "
+            "sweep surrounding the nominal instant, so the window could not be resolved; "
+            "only the nominal instant is shown."
+        )
 
 
 async def _designed(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, Any]], str | None]:
@@ -633,7 +650,8 @@ async def _designed(ctx: JobContext, p: dict[str, Any]) -> tuple[list[dict[str, 
         note = (
             f"{climb_words} The flight is corrected in the full force model to reach a "
             "100 km lunar orbit when the landing time allows; the margin is the largest "
-            "difference from a flown liftoff seen when designing that way." + window_words
+            "difference from a flown liftoff seen when designing that way."
+            + (o.get("window_failure") or window_words)
         )
         if o["long_coast"]:
             lo_c, hi_c = o["flown_coasts"]

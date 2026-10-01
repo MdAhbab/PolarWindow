@@ -382,3 +382,15 @@ and reset when it restarts. Bodies over `PW_MAX_BODY_BYTES` (64 KB) are refused 
 Their results are committed under `data/` (see `docs/data-sources.md`).
 
 Run `make help` to list every make target with its description.
+
+**Native rover terrain.** `python -m app.data.rover_terrain` from `backend/`
+fetches 5 m LOLA site windows south of 87.5 degrees S and 3/4 m LROC NOBILE
+windows inside their footprints. `polar-data sync --tier lifecycle` includes
+the same step after seeding sites. Downloads can take several minutes per
+stereo window; completed windows are reused. The API selects the finest
+window covering the requested neighbourhood with known ground at the lander,
+otherwise 20/80 m terrain, and keys the answer by the selected file's SHA-256.
+Rover map tiles read that same file. Keep completed files immutable; changing
+one after a job is queued requires another request. The surface illumination
+skyline continues to use its separate model. See [coverage and external account
+status](planning-updates.md).

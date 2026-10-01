@@ -79,6 +79,12 @@ def is_present(d: Dataset) -> bool | None:
     if d.method == "lola_fine":
         fine = s.dem_dir / "fine"
         return fine.exists() and any(fine.glob("*.npz"))
+    if d.method == "lola_rover":
+        return any(
+            folder.exists() and any(p for p in folder.glob("*.npz")
+                                    if not p.name.endswith(".pending.npz"))
+            for folder in (s.dem_dir / "rover_5m", s.dem_dir / "rover_3m", s.dem_dir / "rover_4m")
+        )
     if d.method == "seed":
         return None
     if d.method == "built":
@@ -272,11 +278,22 @@ def _sync_built(d: Dataset) -> Outcome:
     )
 
 
+def _sync_lola_rover(d: Dataset) -> Outcome:
+    from app.data.rover_terrain import sync_windows
+
+    present, fetched = asyncio.run(sync_windows())
+    return Outcome(
+        d.id, "fetched" if fetched else "present",
+        f"{present} windows present, {fetched} new", changed_api_data=bool(fetched),
+    )
+
+
 _STEPS = {
     "kernel": _sync_kernel,
     "file": _sync_file,
     "lola_regional": _sync_lola_regional,
     "lola_fine": None,  # built by the seed step, which knows the sites
+    "lola_rover": _sync_lola_rover,
     "seed": _sync_seed,
     "cmr": _sync_cmr,
     "s3_prefix": _sync_s3_prefix,
@@ -293,7 +310,9 @@ def sync(tiers: tuple[Tier, ...]) -> list[Outcome]:
             for d in in_tiers(tiers)
         ]
     outcomes: list[Outcome] = []
-    for d in in_tiers(tiers):
+    # Rover windows query the seeded sites; fetch them after the seed dataset,
+    # including on a first startup with an empty database.
+    for d in sorted(in_tiers(tiers), key=lambda dataset: dataset.method == "lola_rover"):
         step = _STEPS[d.method]
         if step is None:
             continue

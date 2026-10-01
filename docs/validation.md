@@ -1008,6 +1008,27 @@ if anything too wide. No rover drive is published, so the share is over the grou
 the radius, and the longest stretch out of sight is missing with that reason. Reiner Gamma
 (CADRE, Lunar Vertex) is outside the polar model and answers "not resolvable".
 
+**Native terrain update, 1 October 2026.** The same independent ray check was
+rerun on the selected terrain. Both downloaded 3 m windows have unknown
+ground at their landing points. The native 4 m NOBILE03 footprint supplies
+IM-2's 500 m neighbourhood; larger requests fall back to 20 m. Griffin-1
+retains the 20 m results above. IM-2's 4.12 m height error makes every sampled
+cell uncertain, so it has no outside-band agreement score; finer spacing
+does not guarantee a more confident decision. The native 5 m Shackleton rim
+window adds this evidence (antenna heights unchanged):
+
+| Site | Post | Radius | Cells | Outside the band | Agree | Share out of sight |
+|---|---:|---:|---:|---:|---:|---|
+| IM-2 (Yaoki) | 4 m | 500 m | 1440 | 0 | n/a (all uncertain) | 0.0 to 100.0 % |
+| Shackleton rim | 5 m | 500 m | 1440 | 762 | 100.00 % | 67.8 to 100.0 % |
+| Shackleton rim | 5 m | 2000 m | 1440 | 1017 | 100.00 % | 74.6 to 100.0 % |
+
+The finest window must cover the whole requested neighbourhood and the
+lander's own ground; gaps along a ray stay uncertain. Unit tests also check
+native 3/4 m GeoTIFF pixel centres, nodata preservation, the lander-gap fallback
+and terrain-content invalidation. The `gdal_viewshed` executable was not used;
+this checks the algorithm, not the accuracy of the measured elevations.
+
 **The map layer** (`GET /tiles/viewshed/...`, `app/core/viewshed.py: tile_rgba`). The tiles draw the
 states of that answer, not a second calculation, so what is checked is that each ground point lands
 in its cell: `test_viewshed.py` gives every (bearing, range) cell its own random state at 85°S 120°E,
@@ -1015,5 +1036,5 @@ where the polar grid's north lies 120° from true north, and reads 300 cells bac
 points given as bearing and range from the lander; all 300 agree, and with the grid's turn left out
 214 of the 300 read back wrong, so the test does see it. The stripes are those of the whole map, not
 of a tile (checked on tiles at three offsets), so neighbouring tiles join up. The terrain under them
-is the hillshade of the 20 m window the answer read, drawn by the terrain tiles' own renderer; the
+is the hillshade of the selected native or fallback window the answer read, drawn by the terrain tiles' own renderer; the
 regional 80 m model those tiles come from is blocks 34 pixels wide at the zoom of a rover map.

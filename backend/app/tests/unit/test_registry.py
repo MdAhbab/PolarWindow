@@ -23,7 +23,7 @@ def test_every_kernel_is_registered_once() -> None:
 
 def test_downloadable_datasets_have_an_address() -> None:
     for d in registry.DATASETS:
-        if d.method in ("file", "cmr", "kernel", "lola_regional", "lola_fine"):
+        if d.method in ("file", "cmr", "kernel", "lola_regional", "lola_fine", "lola_rover"):
             assert d.urls, d.id
             assert all(u.startswith("https://") for u in d.urls), d.id
         if d.method == "cmr":

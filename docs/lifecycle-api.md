@@ -8,6 +8,15 @@ first, then the generated `schema.ts`). A change to a shape is made here first,
 with a line in *Changes* at the bottom, then in code. Landing is the existing
 surface screens.
 
+The 1 October planning update keeps these response shapes. Engines are
+`wx-3`, `los-3`, and `lw-7`: wind verification follows the selected forecast
+lead and tested threshold; rover terrain selects native 3/4/5 m windows when
+their coverage and lander ground permit, otherwise 20/80 m, and terrain tiles
+use that same selected file; pad-limit endpoints must pass coast, flight and
+same-opportunity checks before a planned window is published. A failed window
+retains a nominal instant with its reason in the opportunity note. See
+[coverage, validation and account status](planning-updates.md).
+
 All paths are under `/api/v1`. Reading is public; every write needs a named
 session (ADR-17). Shapes are written TypeScript-style; `?` means optional,
 `| null` means the field is always present but may be null.

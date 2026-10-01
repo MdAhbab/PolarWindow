@@ -122,6 +122,16 @@ LDEM_80S_20M: Final[LolaProduct] = LolaProduct(
     projection_offset_px=15199.5,
 )
 
+#: Native 5 m posts south of 87.5 S, verified against the detached PDS label.
+#: Finer spacing does not imply better vertical accuracy: retain the 2 m error.
+LDEM_875S_5M: Final[LolaProduct] = LolaProduct(
+    name="LOLA_LDEM_875S_5M",
+    filename="ldem_875s_5m.img",
+    size_px=30336,
+    scale_m=5.0,
+    projection_offset_px=15167.5,
+)
+
 #: 80 m/px, 80S-90S. 115 MB -- small enough to hold entirely.
 LDEM_80S_80M: Final[LolaProduct] = LolaProduct(
     name="LOLA_LDEM_80S_80M",
