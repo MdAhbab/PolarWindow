@@ -333,7 +333,10 @@ def along_trip(
     t, times, geo = belt_samples(sc, cover)
     tr = trapped(t, times, geo, phase, 0.0)
     month = f"{start:%Y-%m}"
-    maps = f"AE8/AP8 {phase.solar.upper()} (IRBEM)"
+    maps = (
+        f"AE8/AP8 {phase.solar.upper()} (IRBEM, with 0.3 degrees/year longitudinal "
+        "South Atlantic Anomaly drift compensation)"
+    )
     why_maps = f"{maps}: {phase.words}."
     r0_km = (
         float(

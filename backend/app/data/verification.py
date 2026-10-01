@@ -15,6 +15,7 @@ out is not covered by it: ``checked`` with ``lead_h`` says false there.
 from __future__ import annotations
 
 import json
+import math
 import re
 from functools import lru_cache
 from typing import Any
@@ -48,12 +49,26 @@ def reach_h(region: str) -> int:
     return max_lead_h(d) if d else 0
 
 
-def checked(region: str, rule_id: str, lead_h: float | None = None) -> bool:
+def checked(
+    region: str, rule_id: str, lead_h: float | None = None,
+    *, threshold_m_s: float | None = None,
+) -> bool:
     """Whether shares for this rule are checked against observations, at ``lead_h`` if given."""
     d = load(region)
     if not (d and d.get("rule_id") == rule_id and d.get("passes")):
         return False
-    return lead_h is None or lead_h <= max_lead_h(d)
+    if threshold_m_s is not None and (
+        d.get("threshold_m_s") is None
+        # The catalogue rounds 162 ft to 49.38 m; permit sub-mm/s conversion noise.
+        or not math.isclose(threshold_m_s, d["threshold_m_s"], rel_tol=0, abs_tol=0.001)
+    ):
+        return False
+    if lead_h is None:
+        return True
+    return math.isfinite(lead_h) and lead_h >= 0 and any(
+        abs(float(k) - lead_h) <= 3.0 and x.get("cases", 0) > 0
+        for k, x in d["leads"].items()
+    )
 
 
 #: The two scores the check reports, as the screens say them. Both are measured against the
@@ -142,7 +157,8 @@ def summary(region: str, rule_id: str) -> str | None:
         + "; ".join(parts)
         + f". {SCALE_WORDS} It {verdict} the gate for saying a rule is checked against "
         f"observations: {_gate_words(d['gate'])}."
-        + (f" It covers launches up to {max_lead_h(d)} h ahead." if d.get("passes") else "")
+        + (f" It covers only leads near {', '.join(sorted(leads, key=int))} h ahead "
+           "(within 3 h of a scored lead)." if d.get("passes") else "")
     )
 
 
@@ -165,6 +181,8 @@ def _hrrr_lead(d: dict[str, Any], lead_h: float) -> dict[str, Any] | None:
     leads = d.get("leads") or {}
     if not leads:
         return None
+    if not math.isfinite(lead_h) or not min(map(int, leads)) <= lead_h <= max(map(int, leads)):
+        return None
     key = min(leads, key=lambda k: abs(int(k) - lead_h))
     x: dict[str, Any] = leads[key]
     return x if x.get("cases") else None
@@ -185,7 +203,7 @@ def hrrr_error_m_s(region: str, lead_h: float) -> float | None:
     return None if x is None else x.get("rmse_m_s")
 
 
-def hrrr_words(region: str, lead_h: float) -> str | None:
+def hrrr_words(region: str, lead_h: float, threshold_m_s: float | None = None) -> str | None:
     """How HRRR's 10 m wind did against the station's, in plain words, or None."""
     d = hrrr_load(region)
     x = _hrrr_lead(d, lead_h) if d else None
@@ -211,8 +229,16 @@ def hrrr_words(region: str, lead_h: float) -> str | None:
             + _range_pct(x.get("mae_skill_95"), skill >= 0)
         )
     text += ". "
-    c = d.get("call_all_leads") or {}
-    if c.get("cases"):
+    c = x
+    tested_threshold = d.get("threshold_m_s")
+    comparable = threshold_m_s is None or (
+        tested_threshold is not None
+        and math.isclose(threshold_m_s, tested_threshold, rel_tol=0, abs_tol=0.001)
+    )
+    if not comparable:
+        return text + "The entered limit differs from the limit tested, so its over-or-under " \
+            "call has not been checked. Only the 10 m wind speed was checked."
+    if c.get("cases") and "events" in c:
         if c["events"] == 0:
             text += (
                 f"The station never reported wind above the limit at 10 m in those runs, so its "
@@ -220,8 +246,9 @@ def hrrr_words(region: str, lead_h: float) -> str | None:
             )
         else:
             text += (
-                f"At the limit brought to 10 m, over all leads: the station reported wind above it "
+                f"At the limit brought to 10 m, at this lead: the station reported wind above it "
                 f"{c['events']} times in {c['cases']} runs, HRRR called {c['hits']} of them, and "
                 f"{c['false_alarms']} of its {c['called_over']} calls of over were wrong."
             )
-    return text.strip()
+    return text.strip() + " Wind at the rule's height was not observed; carrying the model's " \
+        "wind to that height is an assumption."

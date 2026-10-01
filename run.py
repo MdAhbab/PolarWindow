@@ -50,6 +50,39 @@ PGDATA_DIR = LOCAL_DIR / "pgdata"
 PGLOG_FILE = LOCAL_DIR / "pg.log"
 REDIS_DIR = LOCAL_DIR / "redis"
 
+
+def configure_local_storage() -> None:
+    """Keep downloads, interpreter installs and temporary files beside the project."""
+    paths = {
+        "TEMP": LOCAL_DIR / "tmp",
+        "TMP": LOCAL_DIR / "tmp",
+        "UV_CACHE_DIR": LOCAL_DIR / "cache" / "uv",
+        "UV_PYTHON_INSTALL_DIR": LOCAL_DIR / "python",
+        "UV_PYTHON_BIN_DIR": LOCAL_DIR / "tools",
+        "npm_config_cache": LOCAL_DIR / "cache" / "npm",
+        "MPLCONFIGDIR": LOCAL_DIR / "cache" / "matplotlib",
+        "NUMBA_CACHE_DIR": LOCAL_DIR / "cache" / "numba",
+        "XDG_CACHE_HOME": LOCAL_DIR / "cache",
+        "SPACEPY": LOCAL_DIR / "cache" / "spacepy",
+    }
+    for key, path in paths.items():
+        path.mkdir(parents=True, exist_ok=True)
+        os.environ[key] = str(path)
+    os.environ["UV_PYTHON_INSTALL_REGISTRY"] = "false"
+    os.environ["PYTHONUTF8"] = "1"
+    os.environ["PYTHONIOENCODING"] = "utf-8"
+    if os.name == "nt":
+        tools = LOCAL_DIR / "tools"
+        bins = [tools / "pgsql" / "bin", *sorted(tools.glob("node-v*-win-x64"), reverse=True)]
+        local_path = os.pathsep.join(str(p) for p in bins if p.is_dir())
+        os.environ["PATH"] = local_path + os.pathsep + os.environ.get("PATH", "")
+
+
+def npm_command() -> str:
+    """Windows exposes npm through a .cmd launcher."""
+    return shutil.which("npm.cmd" if os.name == "nt" else "npm") or "npm"
+
+
 # Ensure standard user & homebrew bin directories are in PATH
 EXTRA_PATHS = [
     str(Path.home() / ".local" / "bin"),
@@ -120,6 +153,15 @@ def is_unix_socket_open(socket_path: str) -> bool:
 
 def get_pids_on_port(port: int) -> list[int]:
     """Return list of PIDs listening on a specific port using lsof."""
+    if os.name == "nt":
+        res = subprocess.run(
+            ["netstat", "-ano", "-p", "tcp"], capture_output=True, text=True, check=False
+        )
+        return list({
+            int(parts[-1]) for line in res.stdout.splitlines()
+            if len(parts := line.split()) == 5 and parts[3] == "LISTENING"
+            and parts[1].rsplit(":", 1)[-1] == str(port)
+        })
     try:
         res = subprocess.run(
             ["lsof", "-ti", f":{port}"],
@@ -192,7 +234,10 @@ def stop_pids(pids: set[int], desc: str) -> None:
     for pid in remaining:
         try:
             log("CLEANUP", RED, f"Force killing PID {pid}")
-            os.kill(pid, signal.SIGKILL)
+            if os.name == "nt":
+                subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True, check=False)
+            else:
+                os.kill(pid, signal.SIGKILL)
         except ProcessLookupError:
             pass
 
@@ -314,13 +359,17 @@ def start_local_postgres(db: Database) -> bool:
     socket_dir = db.host if db.host.startswith("/") else "/tmp"
     log("SERVICES", YELLOW, f"Starting local PostgreSQL on port {db.port}...")
     PGLOG_FILE.parent.mkdir(parents=True, exist_ok=True)
-    res = subprocess.run(
-        [pg_ctl, "-D", str(PGDATA_DIR), "-l", str(PGLOG_FILE), "-o",
-         f"-p {db.port} -k {socket_dir}", "-w", "start"],
-        env=env, capture_output=True, text=True, check=False,
-    )
+    start_log = LOCAL_DIR / "pg-start.log"
+    # The server inherits pg_ctl's handles on Windows. A PIPE keeps communicate()
+    # waiting for EOF even after pg_ctl exits, so use a project-local file.
+    with start_log.open("w", encoding="utf-8") as output:
+        res = subprocess.run(
+            [pg_ctl, "-D", str(PGDATA_DIR), "-l", str(PGLOG_FILE), "-o",
+             f"-p {db.port}" + (" -h 127.0.0.1" if os.name == "nt" else f" -k {socket_dir}"), "-w", "start"],
+            env=env, stdout=output, stderr=subprocess.STDOUT, check=False,
+        )
     if res.returncode != 0:
-        log("SERVICES", RED, f"Failed to start PostgreSQL ({(res.stderr or res.stdout).strip()}); "
+        log("SERVICES", RED, f"Failed to start PostgreSQL ({start_log.read_text(encoding='utf-8').strip()}); "
             f"its log is {PGLOG_FILE}.")
         return False
     log("SERVICES", GREEN, "PostgreSQL started.")
@@ -386,11 +435,30 @@ def ensure_redis(env: dict[str, str]) -> None:
         log("SERVICES", RED, f"Redis at {host}:{port} does not answer; check PW_REDIS_URL.")
         return
     server = shutil.which("redis-server")
+    if server is None and os.name == "nt":
+        memurai = Path(os.environ.get("ProgramFiles", "C:/Program Files")) / "Memurai" / "memurai.exe"
+        if memurai.is_file():
+            server = str(memurai)
     if server is None:
         log("SERVICES", YELLOW, f"Redis is not running and not installed. {HOW_TO_INSTALL['redis']}")
         return
     log("SERVICES", YELLOW, f"Starting local Redis on port {port}...")
     REDIS_DIR.mkdir(parents=True, exist_ok=True)
+    if os.name == "nt":
+        subprocess.Popen(
+            [server, "--bind", "127.0.0.1", "--port", str(port), "--dir", str(REDIS_DIR),
+             "--save", "", "--appendonly", "no", "--logfile", str(REDIS_DIR / "redis.log")],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            creationflags=subprocess.CREATE_NO_WINDOW,
+        )
+        deadline = time.time() + 10
+        while time.time() < deadline:
+            if is_port_open(port):
+                log("SERVICES", GREEN, "Redis started (cache only, project-local logs).")
+                return
+            time.sleep(0.2)
+        log("SERVICES", RED, f"Redis did not start; check {REDIS_DIR / 'redis.log'}.")
+        return
     res = subprocess.run(
         [server, "--port", str(port), "--dir", str(REDIS_DIR), "--daemonize", "yes"],
         capture_output=True, text=True, check=False,
@@ -420,7 +488,7 @@ def install_dependencies() -> None:
     log("INSTALL", GREEN, "Backend dependencies up to date.")
 
     log("INSTALL", YELLOW, "Installing frontend dependencies with npm...")
-    res_fe = subprocess.run(["npm", "install"], cwd=FE_DIR, check=False)
+    res_fe = subprocess.run([npm_command(), "ci", "--no-audit", "--no-fund"], cwd=FE_DIR, check=False)
     if res_fe.returncode != 0:
         log("INSTALL", RED, "Frontend dependency installation returned a non-zero exit code.")
         sys.exit(res_fe.returncode)
@@ -473,6 +541,7 @@ class Stack:
         self.stop_event = threading.Event()
         self.restarting = threading.Event()
         self.procs: dict[str, subprocess.Popen] = {}
+        self.data_proc: subprocess.Popen | None = None
 
     def _spawn(self, name: str, cmd: list[str], cwd: Path, color: str) -> None:
         proc = subprocess.Popen(
@@ -482,7 +551,10 @@ class Stack:
             stderr=subprocess.STDOUT,
             text=True,
             bufsize=1,
-            preexec_fn=os.setsid,  # own process group, so the whole subtree stops together
+            start_new_session=os.name != "nt",
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0,
+            encoding="utf-8",
+            errors="replace",
         )
         self.procs[name] = proc
         threading.Thread(
@@ -494,7 +566,11 @@ class Stack:
     def start_backend(self) -> None:
         log("RUN", CYAN, f"Starting Backend on http://localhost:{self.be_port} "
             f"(Docs: http://localhost:{self.be_port}/api/v1/docs)...")
-        cmd = ["uv", "run", "uvicorn", "app.main:app", "--reload", "--port", str(self.be_port)]
+        cmd = ["uv", "run", "uvicorn", "app.main:app", "--port", str(self.be_port)]
+        # Uvicorn's Windows reload sends a console Ctrl+C event, which can also
+        # stop the runner and data downloader sharing that console.
+        if os.name != "nt":
+            cmd.append("--reload")
         self._spawn("backend", cmd, BE_DIR, CYAN)
 
     def start_compute(self) -> None:
@@ -512,11 +588,15 @@ class Stack:
 
     def start_frontend(self) -> None:
         log("RUN", GREEN, f"Starting Frontend on http://localhost:{self.fe_port}...")
-        cmd = ["npm", "run", "dev", "--", "--port", str(self.fe_port), "--strictPort"]
+        cmd = [npm_command(), "run", "dev", "--", "--host", "127.0.0.1", "--port", str(self.fe_port), "--strictPort"]
         self._spawn("frontend", cmd, FE_DIR, GREEN)
 
     def _stop(self, proc: subprocess.Popen) -> None:
         if proc.poll() is not None:
+            return
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"], capture_output=True, check=False)
+            proc.wait(timeout=10)
             return
         try:
             os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
@@ -553,6 +633,8 @@ class Stack:
             return
         self.stop_event.set()
         log("SYSTEM", YELLOW, "\nShutting down the backend, the workers and the frontend...")
+        if self.data_proc is not None:
+            self._stop(self.data_proc)
         for proc in self.procs.values():
             self._stop(proc)
         log("SYSTEM", GREEN, "All servers stopped. Goodbye!")
@@ -589,8 +671,10 @@ def sync_data(stack: Stack, tiers: list[str]) -> None:
     proc = subprocess.Popen(
         cmd, cwd=BE_DIR, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1
     )
+    stack.data_proc = proc
     stream_process_output(proc, "DATA", YELLOW, stack.stop_event)
     code = proc.wait()
+    stack.data_proc = None
     if stack.stop_event.is_set():
         return
     if code == 0:
@@ -716,9 +800,7 @@ def main() -> None:
     args = parser.parse_args()
 
     print(f"{BOLD}{CYAN}=== POLAR WINDOW RUNNER ==={RESET}\n")
-    if os.name == "nt":
-        log("SETUP", RED, "run.py needs macOS or Linux. On Windows, run it inside WSL.")
-        sys.exit(1)
+    configure_local_storage()
     check_tools()
 
     if args.export_data:

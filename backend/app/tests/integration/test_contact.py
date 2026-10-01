@@ -241,8 +241,12 @@ async def test_rover_line_of_sight_at_a_polar_site(anon_client) -> None:
     assert "No drive is published for Yaoki" in d["longest_out_of_sight_m"]["missing_reason"]
     a = d["assumptions"]
     assert a["lander_antenna_m"]["provenance"] == "assumed" and a["radio_mhz"]["value"] == 2400
-    assert d["terrain"]["post_m"] == 20.0
-    assert body["meta"]["engines"] == {"los": "los-2"}
+    from app.data.lola import DemTile
+    from app.data.rover_terrain import terrain_path
+
+    chosen = terrain_path("mission-im-2", d["lander"]["lat_deg"], d["lander"]["lon_deg"], 500)
+    assert d["terrain"]["post_m"] == DemTile.load(chosen).scale_m
+    assert body["meta"]["engines"] == {"los": "los-3"}
 
 
 async def test_rover_outside_the_polar_terrain_is_not_resolvable(anon_client) -> None:

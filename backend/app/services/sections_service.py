@@ -25,7 +25,8 @@ def _status(
 
 def _when(text: str) -> str:
     t = lifecycle.parse_time(text)
-    return t.strftime("%-d %b %Y %H:%M UTC") if "T" in text else t.strftime("%-d %b %Y")
+    date = f"{t.day} {t.strftime('%b %Y')}"
+    return f"{date} {t.strftime('%H:%M')} UTC" if "T" in text else date
 
 
 async def _ready(session: AsyncSession, m: MissionRecord) -> dict[str, Any]:

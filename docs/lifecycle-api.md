@@ -8,6 +8,28 @@ first, then the generated `schema.ts`). A change to a shape is made here first,
 with a line in *Changes* at the bottom, then in code. Landing is the existing
 surface screens.
 
+The 1 October planning update keeps these response shapes. Engines are
+`wx-3`, `los-3`, and `lw-7`: wind verification follows the selected forecast
+lead and tested threshold; rover terrain selects native 3/4/5 m windows when
+their coverage and lander ground permit, otherwise 20/80 m, and terrain tiles
+use that same selected file; pad-limit endpoints must pass coast, flight and
+same-opportunity checks before a planned window is published. A failed window
+retains a nominal instant with its reason in the opportunity note. See
+[coverage, validation and account status](planning-updates.md).
+
+Radiation engine `rad-5` recomputes cached belt results with the published
+0.3°/year SAA longitudinal drift compensation. The native Windows loader from
+`rad-4` is retained. Response shapes and the factor-of-two map uncertainty stay
+the same. The IM-2 SPENVIS passage passes the 5% implementation comparison;
+other passages have not been run in SPENVIS.
+
+Return can use a [locally imported Copernicus wave subset](copernicus-marine.md)
+for its existing `wave_height_m` quantity. It retains NOAA wind and source
+references. Selection requires an import no older than 24 hours, a time within
+90 minutes, coverage of the zone, a valid ocean cell and distance at most 20 km.
+Unavailable subset values fall back to NOAA. Subset import time is recorded as
+fetch time; it is never claimed to be the model's forecast issuance time.
+
 All paths are under `/api/v1`. Reading is public; every write needs a named
 session (ADR-17). Shapes are written TypeScript-style; `?` means optional,
 `| null` means the field is always present but may be null.

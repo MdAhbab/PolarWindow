@@ -16,6 +16,19 @@ python3 run.py
 
 `python3 run.py` checks and installs dependencies, starts PostgreSQL (creating `.local/pgdata` if no local database exists) and Redis, runs migrations, launches the API server (:8000), compute and feeds background workers, and serves the Vite frontend (:5173). It then downloads required datasets automatically, resuming any interrupted downloads.
 
+On native Windows, use `python run.py`. The runner supports Windows process
+management and keeps temporary files, Python installations and dependency caches
+in `.local/` beside the repository. PostgreSQL binaries may be placed in
+`.local/tools/pgsql/bin/`; a portable Node distribution may be placed in
+`.local/tools/node-v<version>-win-x64/`. Both are added to the runner's PATH.
+An installed Memurai can provide a local Redis-compatible cache; alternatively
+set `PW_REDIS_ENABLED=false`. See [the Windows setup notes](docs/windows-setup.md).
+
+Optional local [Copernicus Marine wave subsets](docs/copernicus-marine.md) can
+provide Return wave height within their downloaded place/time coverage. The
+[SPENVIS comparison guide](docs/spenvis-manual-validation.md) records the passed
+IM-2 radiation check and the remaining unrun passages.
+
 To avoid slow downloads from remote archive servers, export downloaded data from an existing machine:
 
 ```bash
@@ -132,6 +145,7 @@ the two disagree. Regenerate it with `uv run polar-data readme`.
 | [SPICE PCK earth_1962_260806_2126_combined.bpc](https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/earth_1962_260806_2126_combined.bpc) | NASA JPL NAIF | 31 MB | `kernels/earth_1962_260806_2126_combined.bpc` | Earth orientation (ITRF93): measured to 2026-08-06, predicted to 2126. Without it launch pads and ground stations cannot be placed in space, so launch times and station view periods cannot be computed. | none |
 | [SPICE SPK earthstns_itrf93_260814.bsp](https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/stations/earthstns_itrf93_260814.bsp) | NASA JPL NAIF | 10 kB | `kernels/earthstns_itrf93_260814.bsp` | Deep Space Network antenna positions. Without it the ground stations that can hear a lander cannot be computed. | none |
 | [SPICE FK earth_topo_260814.tf](https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/stations/earth_topo_260814.tf) | NASA JPL NAIF | 10 kB | `kernels/earth_topo_260814.tf` | Local horizon frames at each Deep Space Network antenna. Without it a station's elevation above its horizon cannot be computed. | none |
+| [Native rover terrain: 3/4 m LROC NOBILE and 5 m LOLA site windows](https://data.lroc.im-ldi.com/lroc/view_rdr/NAC_DTM_NOBILE04) ([data.nasa.gov](https://data.nasa.gov/dataset/lro-moon-laser-altimeter-4-gdr-v1-0)) | NASA LRO LROC / LOLA, PDS archives | 64 MB | `dem/rover_3m/, dem/rover_4m/ and dem/rover_5m/` | Rover-to-lander sight and radio paths: native 3/4 m stereo terrain at Mons Mouton/Nobile, 5 m LOLA south of 87.5 deg S, including their terrain maps. Stereo gaps stay unknown. Coarser 20 m or 80 m terrain is used where a full neighbourhood is not covered. Height error is stated for each product. | none |
 | [GRAIL lunar gravity field GRGM1200A (spherical harmonics)](https://pds-geosciences.wustl.edu/grail/grail-l-lgrs-5-rdr-v1/grail_1001/shadr/gggrx_1200a_sha.tab) ([data.nasa.gov](https://data.nasa.gov/dataset/grail-moon-lgrs-derived-gravity-science-data-products-v1-0)) | NASA GRAIL / PDS Geosciences | 88 MB | `gravity/gggrx_1200a_sha.tab` | The Moon's lumpy gravity for the trip and lunar orbit: without it a low lunar orbit drifts kilometres a day from where it really is. | none |
 | [GRAIL GRGM1200A label (reference radius, GM, normalisation)](https://pds-geosciences.wustl.edu/grail/grail-l-lgrs-5-rdr-v1/grail_1001/shadr/gggrx_1200a_sha.lbl) ([data.nasa.gov](https://data.nasa.gov/dataset/grail-moon-lgrs-derived-gravity-science-data-products-v1-0)) | NASA GRAIL / PDS Geosciences | 11 kB | `gravity/gggrx_1200a_sha.lbl` | Reads the gravity field correctly: the label defines its units and frame. | none |
 | [DSN Telecommunications Link Design Handbook 810-005, module 301 (coverage and geometry, antenna horizon masks)](https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf) | NASA JPL Deep Space Network | 3.1 MB | `dsn/810-005-301O.pdf` | Each Deep Space Network antenna's real horizon: the lowest elevation at which it can hear the Moon, by direction. | none |

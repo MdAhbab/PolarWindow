@@ -67,7 +67,7 @@ async def test_im2_launch_worked_out_again_from_its_trajectory(anon_client, sett
     # Published as a single instant (Launch Library 2).
     assert o["kind"] == "instantaneous" and o["window_open"] is None
     assert "single instant" in o["note"]
-    assert body["meta"]["engines"] == {"lw": "lw-6", "traj": "traj-4", "vis": "vis-2"}
+    assert body["meta"]["engines"] == {"lw": "lw-7", "traj": "traj-4", "vis": "vis-2"}
 
 
 @pytest.mark.requires_kernels

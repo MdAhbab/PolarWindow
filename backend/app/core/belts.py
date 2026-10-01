@@ -6,7 +6,10 @@ maximum (Vette 1991; Sawyer and Vette 1976). They are evaluated here with
 IRBEM (the library the SPENVIS and spacepy tools also build on), which works
 out each point's magnetic shell (McIlwain L and B/B0) with the field each map
 was built with (Jensen and Cain 1960; GSFC 12/66 updated to 1970 for AP8 MAX)
-and reads the maps there. The library comes compiled in spacepy's wheel; it is loaded
+and reads the maps there. Before evaluation the point is rotated eastward by
+0.3 degrees/year since the map epoch to compensate the South Atlantic Anomaly's
+westward drift (Heynderickx 1994; ESA UNILIB convention). This does not replace
+the map field with today's IGRF. The library comes compiled in spacepy's wheel; it is loaded
 directly so that importing spacepy (which reaches for the network and a data
 directory) is not needed.
 
@@ -21,9 +24,12 @@ from __future__ import annotations
 
 import ctypes
 import importlib.util
+import os
+import sys
+import sysconfig
 import threading
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -45,6 +51,12 @@ BAD = -1.0e31
 #: The factor AE8/AP8 are usually read with (the maps are long-term averages).
 FACTOR = 2.0
 MODEL = {("e", "min"): 1, ("e", "max"): 2, ("p", "min"): 3, ("p", "max"): 4}
+#: Heynderickx (1994): compensate SAA westward drift with an eastward GEO rotation.
+#: https://space-env.esa.int/Manuals/UNILIB/v3.02/reference/um510.html
+#: https://orfeo.belnet.be/bitstream/handle/internal/6828/A_385.pdf
+SAA_DRIFT_DEG_YR = 0.3
+MAP_EPOCH = {("e", "min"): 1960, ("e", "max"): 1960,
+             ("p", "min"): 1960, ("p", "max"): 1970}
 #: IRBEM keeps state in Fortran common blocks: one call at a time.
 _LOCK = threading.Lock()
 
@@ -63,10 +75,31 @@ def _lib() -> ctypes.CDLL:
     spec = importlib.util.find_spec("spacepy")
     if spec is None or spec.origin is None:
         raise BeltsUnavailable("spacepy is not installed, so IRBEM (AE8/AP8) is not available")
-    path = Path(spec.origin).parent / "irbempy" / "libirbem.so"
-    if not path.exists():
-        raise BeltsUnavailable(f"IRBEM library not found at {path}")
-    return ctypes.CDLL(str(path))
+    package = Path(spec.origin).parent
+    names = {
+        "win32": ["libirbem.dll.a", "irbem.dll"],
+        "darwin": ["libirbem.dylib", "libirbem.so", "irbem.dylib", "irbem.so"],
+    }.get(sys.platform, ["libirbem.so"])
+    suffix = sysconfig.get_config_var("EXT_SUFFIX")
+    if suffix:
+        names.extend([f"libirbem{suffix}", f"irbem{suffix}"])
+    failures = []
+    for name in names:
+        path = package / "irbempy" / name
+        if not path.is_file():
+            continue
+        try:
+            # SpacePy's Windows wheel bundles the Fortran runtime here. Load it
+            # without importing SpacePy, which creates user state and fetches data.
+            runtime = package / "libs"
+            if sys.platform == "win32" and runtime.is_dir():
+                with os.add_dll_directory(str(runtime)):
+                    return ctypes.CDLL(str(path))
+            return ctypes.CDLL(str(path))
+        except OSError as exc:
+            failures.append(f"{path.name}: {exc}")
+    reason = "; ".join(failures) or f"no shared library in {package / 'irbempy'}"
+    raise BeltsUnavailable(f"IRBEM could not be loaded: {reason}")
 
 
 def available() -> bool:
@@ -75,6 +108,33 @@ def available() -> bool:
     except BeltsUnavailable:
         return False
     return True
+
+
+def saa_corrected_geo(
+    particle: Particle, solar: Solar, times: list[datetime], xyz_geo_km: FloatArray
+) -> FloatArray:
+    """Rotate the evaluation point eastward into the static map's epoch.
+
+    This compensates only longitudinal SAA drift, not the full secular field
+    change. Physical trajectory coordinates remain unchanged. Use the same
+    correction for flux and its diagnostic shells; never apply it to uploads.
+    """
+    xyz = np.asarray(xyz_geo_km, dtype=np.float64)
+    if xyz.shape != (len(times), 3) or not np.isfinite(xyz).all():
+        raise ValueError("finite GEO XYZ samples must match the times")
+    years = []
+    for t in times:
+        if t.tzinfo is None or t.utcoffset() is None:
+            raise ValueError("SAA correction requires timezone-aware times")
+        utc = t.astimezone(UTC)
+        start = datetime(utc.year, 1, 1, tzinfo=UTC)
+        end = datetime(utc.year + 1, 1, 1, tzinfo=UTC)
+        years.append(utc.year + (utc - start).total_seconds() / (end - start).total_seconds())
+    angle = np.deg2rad(SAA_DRIFT_DEG_YR * (np.asarray(years) - MAP_EPOCH[particle, solar]))
+    result = xyz.copy()
+    result[:, 0] = np.cos(angle) * xyz[:, 0] - np.sin(angle) * xyz[:, 1]
+    result[:, 1] = np.sin(angle) * xyz[:, 0] + np.cos(angle) * xyz[:, 1]
+    return result
 
 
 def integral_flux(
@@ -88,7 +148,7 @@ def integral_flux(
 
     Points outside the model (beyond its shells, or below its floor) are 0.
     """
-    xyz = np.asarray(xyz_geo_km, dtype=np.float64) / RE_KM
+    xyz = saa_corrected_geo(particle, solar, times, xyz_geo_km) / RE_KM
     n = xyz.shape[0]
     if len(energies_mev) > NENE_MAX:
         raise ValueError(f"at most {NENE_MAX} energies")
@@ -196,7 +256,8 @@ def shells(
 ) -> tuple[FloatArray, FloatArray]:
     """McIlwain L and B/B0 at each point, as :func:`integral_flux` reads the maps there:
     the field the map was built with (:data:`BUILT_WITH`), B0 from McIlwain's moment."""
-    lm, blocal, _ = field_lines(times, xyz_geo_km, BUILT_WITH[(particle, solar)])
+    geo = saa_corrected_geo(particle, solar, times, xyz_geo_km)
+    lm, blocal, _ = field_lines(times, geo, BUILT_WITH[(particle, solar)])
     return lm, blocal / (MCILWAIN_M_NT / lm**3)
 
 

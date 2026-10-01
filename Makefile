@@ -114,6 +114,9 @@ validate-orbiters: ## Real orbiters' passes against JPL Horizons (network; write
 validate-viewshed: ## Rover-to-lander line of sight on the polar terrain against a brute-force line test
 	cd $(BE) && $(UV) run python -m app.validation.validate_viewshed 2>/dev/null
 
+validate-viewshed-gdal: ## Independent GDAL reference on matched lunar raster pixels (99% gate)
+	cd $(BE) && $(UV) run python -m app.validation.validate_viewshed_gdal
+
 validate-capsule: ## Capsule entry against OSIRIS-REx's landing (writes data/capsule/orex_check.json)
 	cd $(BE) && $(UV) run python -m app.validation.validate_capsule 2>/dev/null
 

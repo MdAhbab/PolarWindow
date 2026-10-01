@@ -251,6 +251,9 @@ def test_the_multi_year_check_is_used_first_and_covers_only_the_leads_it_scored(
     try:
         assert ver.checked("vandenberg", "f9-wind-162ft")
         assert ver.checked("vandenberg", "f9-wind-162ft", 47.9)
+        assert not ver.checked("vandenberg", "f9-wind-162ft", 1.0)
+        assert not ver.checked("vandenberg", "f9-wind-162ft", 36.0)
+        assert not ver.checked("vandenberg", "f9-wind-162ft", -1.0)
         assert not ver.checked("vandenberg", "f9-wind-162ft", 120.0)  # further out than 48 h
         assert not ver.checked("vandenberg", "another-rule")
         assert ver.reach_h("vandenberg") == 48 and ver.reach_h("florida") == 0
@@ -260,7 +263,7 @@ def test_the_multi_year_check_is_used_first_and_covers_only_the_leads_it_scored(
             "using forecasts from NOAA’s forecast model re-run for past years (GEFS version 12), "
             "for 2007-01-08 to 2019-12-31"
         ) in text
-        assert "It passed the gate" in text and "up to 48 h ahead" in text
+        assert "It passed the gate" in text and "near 24, 48 h ahead" in text
     finally:
         ver.load.cache_clear()
 
@@ -354,6 +357,11 @@ def _hrrr_check(**call: object) -> dict:
         "mae_m_s": 1.2,
         "mae_skill": 0.25,
         "mae_skill_95": [0.2, 0.3],
+        "events": 10,
+        "called_over": 8,
+        "hits": 6,
+        "false_alarms": 2,
+        **call,
     }
     return {
         "station": "KVBG",
@@ -387,10 +395,36 @@ def test_hrrr_check_is_read_at_the_nearest_lead_and_put_in_words(
         assert "off by 1.2 m/s on average, 0.3 m/s above the station's" in words
         assert "25% closer to what was measured" in words
         assert "usual wind for that month and hour (95 % 20 to 30%)." in words
-        assert "40 times in 2800 runs, HRRR called 24 of them, and 6 of its 30 calls" in words
+        assert "10 times in 700 runs, HRRR called 6 of them, and 2 of its 8 calls" in words
+        assert "at this lead" in words and "over all leads" not in words
+        assert "height was not observed" in words
+        assert ver.hrrr_words("vandenberg", 24.0) is None
+        assert ver.hrrr_words("vandenberg", -1.0) is None
         assert ver.hrrr_words("florida", 6.0) is None
     finally:
         ver.hrrr_load.cache_clear()
+
+
+def test_an_entered_limit_does_not_borrow_the_published_limits_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.data import verification as ver
+
+    check = _hrrr_check()
+    check["threshold_m_s"] = 10.52
+    _on_disk(tmp_path, monkeypatch, **{
+        "hrrr_wind_vandenberg.json": check,
+        "gefs_reforecast_wind_vandenberg.json": _wind_check(True, threshold_m_s=10.52),
+    })
+    ver.hrrr_load.cache_clear()
+    try:
+        words = ver.hrrr_words("vandenberg", 6.0, 8.0) or ""
+        assert "entered limit differs" in words and "HRRR called" not in words
+        assert ver.checked("vandenberg", "f9-wind-162ft", 24, threshold_m_s=10.52)
+        assert not ver.checked("vandenberg", "f9-wind-162ft", 24, threshold_m_s=8.0)
+    finally:
+        ver.hrrr_load.cache_clear()
+        ver.load.cache_clear()
 
 
 def test_hrrr_words_say_no_lean_and_give_a_worse_skill_in_its_own_direction(

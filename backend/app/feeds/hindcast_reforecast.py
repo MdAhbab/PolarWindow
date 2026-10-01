@@ -265,7 +265,8 @@ async def fetch(
             loop = asyncio.get_running_loop()
             for sig in (signal.SIGINT, signal.SIGTERM):
                 # Stopping leaves no half day behind: a day is written whole, or not at all.
-                loop.add_signal_handler(sig, lambda: [t.cancel() for t in tasks])
+                with contextlib.suppress(NotImplementedError):
+                    loop.add_signal_handler(sig, lambda: [t.cancel() for t in tasks])
             with contextlib.suppress(asyncio.CancelledError):
                 await asyncio.gather(*tasks)
 
@@ -430,6 +431,9 @@ def main() -> None:
     if not a.score_only:
         asyncio.run(fetch(a.stride, a.first, a.last, a.hours, a.parallel, a.workers, a.seed))
     cache = read_cache()
+    if not cache:
+        raise SystemExit("No raw GEFS reforecast cache found; existing validation reports kept. "
+                         "Run without --score-only to fetch the archive first.")
     for region in STATIONS:
         obs = asyncio.run(observations(region))
         p = score(region, cache, obs)

@@ -1,7 +1,7 @@
 """The ``rover`` job (T1, F5): can the rover and the lander see each other.
 
-Runs in the compute worker: it reads the landing spot's elevation windows
-(the 20 m polar model around the site, else the 80 m regional one), which the
+Runs in the compute worker: it reads the landing spot's selected native
+3/4/5 m window, else the 20 m or 80 m model, which the
 API process never loads. Inputs: the mission record, its landing spot, the
 rover, and the antenna heights and radio frequency (assumed unless given).
 """
@@ -14,9 +14,10 @@ from typing import Any
 
 import numpy as np
 
-from app.config import ENGINE_VERSION, get_settings
+from app.config import get_settings
 from app.core import viewshed
 from app.core.quantity import Quantity
+from app.data import rover_terrain
 from app.data.lola import DemTile, make_samplers
 from app.db.repositories.jobs import InputRef
 from app.db.repositories.missions import MissionRepository
@@ -77,12 +78,11 @@ async def run(ctx: JobContext) -> HandlerResult:
         m = await MissionRepository(sess).get(p["mission_id"])
     if m is None:
         raise ValueError("the mission is gone")
-    fine_p = s.fine_dem_path(p["site_id"])
-    fine = DemTile.load(fine_p) if fine_p.exists() else None
-    coarse = None if fine is not None else DemTile.load(s.regional_dem_path)
-    tile = fine if fine is not None else coarse
-    assert tile is not None
-    sample, sigma = make_samplers(p["lat_deg"], p["lon_deg"], fine, coarse)
+    path = s.data_dir / p["terrain_file"]
+    if rover_terrain.version(path) != p["terrain_version"]:
+        raise ValueError("Rover terrain changed after this job was queued; request it again.")
+    tile = DemTile.load(path)
+    sample, sigma = make_samplers(p["lat_deg"], p["lon_deg"], tile)
     ctx.progress(0.3, "Elevation model read.")
     radius = float(p["radius_m"])
     ranges = radius * np.arange(1, RANGE_CELLS + 1) / RANGE_CELLS
@@ -145,20 +145,24 @@ async def run(ctx: JobContext) -> HandlerResult:
             "post_m": tile.scale_m,
             "vertical_error_m": tile.vertical_error_m,
         },
-        "note": RADIO_NOTE,
+        "note": RADIO_NOTE + " The finest available terrain covering the lander's ground "
+        "and the whole requested neighbourhood is used. A gap at the lander or a window "
+        "edge can require a coarser model; gaps along a ray remain uncertain.",
     }
     ms = (time.perf_counter() - t_wall) * 1000.0
     meta = lifecycle.meta(
         engines=("los",),
         sources=[
             lifecycle.source_ref(
-                f"LOLA polar terrain map ({tile.product})",
-                "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/",
+                f"Lunar terrain map ({tile.product})",
+                rover_terrain.STEREO_SOURCE if tile.product == rover_terrain.STEREO_PRODUCT
+                else rover_terrain.NOBILE03_SOURCE if tile.product == rover_terrain.NOBILE03_PRODUCT
+                else "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/",
             )
         ],
         parts=[
             (
-                "Terrain height (LOLA polar terrain map)",
+                "Terrain height (lunar terrain map)",
                 f"A cell is uncertain when the map’s height error ({tile.vertical_error_m:g} m "
                 f"for cells {tile.scale_m:g} m wide) could tip it either way; the shares are "
                 "ranges for that reason.",
@@ -176,7 +180,7 @@ async def run(ctx: JobContext) -> HandlerResult:
         result=lifecycle.jsonable({"data": data, "meta": meta}),
         inputs=[
             InputRef("mission", m.id, m.data_version),
-            InputRef("terrain", p["site_id"], f"{tile.product}@{ENGINE_VERSION}"),
+            InputRef("terrain", p["site_id"], p["terrain_version"]),
         ],
         message="Line of sight worked out.",
     )

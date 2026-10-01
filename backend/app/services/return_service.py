@@ -10,6 +10,7 @@ capsule entry model's check against OSIRIS-REx (``make validate-capsule``).
 
 from __future__ import annotations
 
+import asyncio
 import json
 import math
 from datetime import UTC, datetime
@@ -20,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.core.quantity import Quantity
-from app.data import catalogues
+from app.data import catalogues, copernicus_wave
 from app.db.repositories.missions import MissionRecord, MissionRepository
 from app.db.repositories.pm import PmRepository
 from app.services import audit_service, feed_service, lifecycle
@@ -165,18 +166,24 @@ async def _droneship_sea(session: AsyncSession, m: MissionRecord) -> dict[str, A
     latest = await feed_service.latest(session, "nomads", "gfswave", region)
     values = latest.values
     got = None if values is None else sea_at(values, zone, t0)
+    try:
+        marine = await asyncio.to_thread(copernicus_wave.wave_at, zone, t0)
+    except (OSError, ValueError, KeyError, IndexError, TypeError):
+        # A damaged or incomplete local import must not remove NOAA evidence.
+        marine = None
     if got is None:
         why = (
             latest.missing_reason
             if values is None
             else f"GFS-Wave does not reach the next launch opportunity ({when}) yet."
         )
-        return {
+        missing_sea = {
             "zone": zone,
             "note": f" Sea at {where}, for the next opportunity: {why}",
             "times": [worked_out],
             "sources": [],
         }
+        return _with_marine(missing_sea, marine)
     fields, d_km, valid = got
     assert latest.snapshot is not None and values is not None
     how = (
@@ -199,14 +206,36 @@ async def _droneship_sea(session: AsyncSession, m: MissionRecord) -> dict[str, A
             )
         )
 
-    return {
+    return _with_marine({
         "zone": zone,
         "wave_height_m": one("wave_height_m", "m"),
         "wind_m_s": one("wind_m_s", "m/s"),
         "note": f" Sea shown at {where}, for the next opportunity ({when}).",
         "times": [worked_out, latest.snapshot.fetched_at],
         "sources": [latest.source_ref("GFS-Wave (NOAA)")],
-    }
+    }, marine)
+
+
+def _with_marine(sea: dict[str, Any], marine: dict[str, Any] | None) -> dict[str, Any]:
+    """Use the imported wave subset at this place/time; retain NOAA's wind evidence."""
+    if marine is None:
+        return sea
+    note = (
+        f"Copernicus Marine wave subset for {marine['valid']:%d %b %Y %H:%M} UTC, "
+        f"at a grid cell {marine['distance_km']:.1f} km from the zone. "
+        "One model estimate; its forecast issuance time is not provided."
+    )
+    sea["wave_height_m"] = lifecycle.q(Quantity(
+        value=float(marine["wave_height_m"]), unit="m", provenance="published",
+        no_margin_reason=note, source=marine["source_url"],
+    ))
+    sea["note"] += f" Wave height from {note}"
+    sea["times"].append(marine["imported_at"])
+    sea["sources"].append(lifecycle.source_ref(
+        "Copernicus Marine (imported wave subset)", marine["source_url"],
+        fetched_at=marine["imported_at"],
+    ))
+    return sea
 
 
 def _zone_of(m: MissionRecord) -> Any | None:

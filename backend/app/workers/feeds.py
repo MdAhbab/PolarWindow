@@ -84,7 +84,11 @@ async def run(once: bool) -> None:
     wake = asyncio.Event()
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, stop.set)
+        try:
+            loop.add_signal_handler(sig, stop.set)
+        except NotImplementedError:
+            # Windows event loops do not implement add_signal_handler.
+            signal.signal(sig, lambda *_: loop.call_soon_threadsafe(stop.set))
     listener = asyncio.create_task(_listen(wake, stop))
     last_gc = datetime.min.replace(tzinfo=UTC)
     try:

@@ -346,4 +346,4 @@ async def test_space_weather_now_says_what_is_recorded_and_what_is_not(anon_clie
     d = (await anon_client.get(f"{API}/space-weather")).json()["data"]
     assert d["now"]["alerts"] == [] and d["now"]["alerts_missing_reason"] is None
     assert d["now"]["xray_class"] == "C1.2" and d["now"]["xray_missing_reason"] is None
-    assert r.json()["meta"]["engines"] == {"rad": "rad-3"}
+    assert r.json()["meta"]["engines"] == {"rad": "rad-5"}

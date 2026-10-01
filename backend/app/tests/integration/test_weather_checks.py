@@ -7,6 +7,9 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from sqlalchemy import delete, insert
 
+from app.core import verification as vf
+from app.core import weather_rules as wr
+from app.data import verification
 from app.db.models import FeedSnapshot
 from app.db.session import session_scope
 
@@ -130,3 +133,34 @@ async def test_without_a_national_weather_service_wind_only_hrrr_is_listed(anon_
     row = await _row(anon_client)
     assert [f["system"] for f in row["one_forecast"]] == ["HRRR"]
     assert row["disagreement"] is False
+
+
+async def test_gefs_check_follows_forecast_lead_and_entered_limit(
+    anon_client, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    tested_limit = 30 * 0.44704 * vf.neutral_ratio(162 * 0.3048, 10, wr.OPEN_FLAT_Z0_M)
+    monkeypatch.setattr(verification, "summary", lambda *_: "Fixture verification report.")
+    monkeypatch.setattr(verification, "load", lambda _: {
+        "rule_id": RULE, "passes": True, "threshold_m_s": tested_limit,
+        "leads": {"24": {"cases": 100}, "48": {"cases": 100}},
+    })
+    # The valid time is two days from now, but this forecast was issued earlier.
+    # Its actual 72 h lead was never scored, even though the wall-clock lead is 48 h.
+    await _snap("nomads", "gefs_launch", "florida", {
+        "points": {"ksc-lc-39a": {"leads": {"72": {
+            "valid": _iso(T0), "members": {"0": _member(3)},
+        }}}},
+    })
+    row = await _row(anon_client)
+    assert row["per_system"][0]["share"]["checked"] is False
+    async with session_scope() as s:
+        await s.execute(delete(FeedSnapshot))
+    await _feeds(gefs_u80=3, hrrr_u80=3, nws_m_s=2)
+    row = await _row(anon_client)
+    assert row["per_system"][0]["share"]["checked"] is True
+    monkeypatch.setattr(verification, "load", lambda _: {
+        "rule_id": RULE, "passes": True, "threshold_m_s": tested_limit + 1,
+        "leads": {"48": {"cases": 100}},
+    })
+    row = await _row(anon_client)
+    assert row["per_system"][0]["share"]["checked"] is False
