@@ -83,13 +83,14 @@ not retain the old interpretation.
 - [SPENVIS registration](https://www.spenvis.oma.be/registration.php) rejects
   Gmail and similar addresses. An affiliation email, title, city, organisation,
   organisation URL and country are required. The user has now supplied a
-  university affiliation email; acceptance by SPENVIS has not been tested.
-  The user supplied a screenshot confirming a successful password change.
-  Account login and Advanced-user access have not been verified in the
-  connected browser, and a SPENVIS validation run has not been performed.
-  The current browser access review denied the SPENVIS request; continuing
-  its UI work requires restoring that site permission and a usable login
-  session. Private account setup details stay in ignored `.local/account-setup.json`.
+  university affiliation email. The user supplied screenshots confirming a
+  successful password change and an authenticated `POLARWIND` project on
+  the Model packages page. Advanced-user access has not been verified, and
+  a SPENVIS validation run has not been performed. After the user reported
+  allowing the site, the browser tool still rejected reading the page because
+  of its saved blocked-site preference. Continuing UI work requires clearing
+  that exact site block. Private account setup details stay in ignored
+  `.local/account-setup.json`.
 - [Copernicus Marine registration instructions](https://help.marine.copernicus.eu/en/articles/4220332-how-to-register-for-copernicus-marine-service):
   registration and data access are free. Registration details were prepared
   in the browser; the user approved the privacy policy and terms, and the
