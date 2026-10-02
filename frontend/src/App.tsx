@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, type ReactNode } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
 import { ErrorPanel, NotFound, Skeleton } from './components/States'
-import { Mark } from './components/Icon'
+import { BrandLogo } from './components/Brand'
 import { MapScreen } from './screens/MapScreen'
 import { TwoClockScreen } from './screens/TwoClockScreen'
 import { CompareScreen } from './screens/CompareScreen'
@@ -179,8 +179,8 @@ function Dashboard() {
 /** While the front page's own chunk (the Moon) downloads: the name, not a blank screen. */
 function FrontPageLoading() {
   return (
-    <div className="flex min-h-full flex-col items-center justify-center gap-4 bg-canvas text-ink" aria-busy="true">
-      <Mark />
+    <div className="flex min-h-full flex-col items-center justify-center gap-5 bg-canvas text-ink" aria-busy="true">
+      <BrandLogo className="h-14 sm:h-16" />
       <p role="status" className="text-small text-ink-3">
         Opening POLAR WINDOW…
       </p>

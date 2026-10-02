@@ -196,23 +196,3 @@ export function Icon({
   )
 }
 
-/** The mark. A low sun sitting exactly on the horizon, framed by a window. */
-export function Mark({ size = 26, className = '' }: { size?: number; className?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" className={className} role="img" aria-label="Polar Window">
-      <rect x="2.75" y="2.75" width="18.5" height="18.5" fill="var(--color-psr)" />
-      <rect x="2.75" y="15" width="18.5" height="6.25" fill="var(--color-terrain-low)" />
-      <path d="M8 15 a4 4 0 0 1 8 0 z" fill="var(--color-sun-fill)" />
-      <path d="M2.75 15 H21.25" stroke="var(--color-terrain-high)" strokeWidth="1.1" />
-      <rect x="2.75" y="2.75" width="18.5" height="18.5" fill="none" stroke="var(--color-ink)" strokeWidth="1.5" />
-    </svg>
-  )
-}
-
-export function Wordmark({ className = '' }: { className?: string }) {
-  return (
-    <span className={`text-body font-semibold tracking-caps-xl ${className}`}>
-      POLAR<span className="font-normal text-sun">&nbsp;WINDOW</span>
-    </span>
-  )
-}

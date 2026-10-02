@@ -2,7 +2,8 @@ import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as Reac
 import { useLocation, useNavigate } from 'react-router-dom'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { Icon, Mark, Wordmark } from '../components/Icon'
+import { Icon } from '../components/Icon'
+import { BrandLogo, BrandName } from '../components/Brand'
 import { SunPathArt, RidgeArt, EarthArt, IceArt } from '../landing/Illustrations'
 import { createMoonScene, type MoonScene, type SceneState } from '../landing/moonScene'
 import { readPrefs } from '../lib/prefs'
@@ -212,9 +213,8 @@ export default function LandingScreen() {
       {/* The dashboard's island, so the front page and the dashboard read as one product. */}
       <header className="pointer-events-none sticky top-0 z-20 px-3 pt-3 sm:px-4">
         <div className="pw-island pointer-events-auto mx-auto flex w-fit max-w-full items-center gap-3 rounded-pill py-1.5 pr-1.5 pl-4 sm:gap-6">
-          <span className="flex h-12 items-center gap-2.5">
-            <Mark />
-            <Wordmark />
+          <span className="flex h-12 items-center">
+            <BrandName />
           </span>
           {/* Below 640 px the hero's own button is just below; the island keeps the logo alone. */}
           <span className="hidden sm:inline-flex">
@@ -308,7 +308,8 @@ export default function LandingScreen() {
         </Section>
       </main>
 
-      <footer className="relative z-10 border-t border-line px-4 py-6 lg:px-8">
+      <footer className="relative z-10 flex flex-col gap-6 border-t border-line px-4 py-10 lg:px-8">
+        <BrandLogo className="h-12 sm:h-14" />
         <p className="max-w-3xl text-caption leading-caption text-ink-3">
           Not an official product of NASA or any space agency. The globe is drawn for illustration; the south-polar
           terrain is the real LOLA relief map. Sun and Earth are not to scale.

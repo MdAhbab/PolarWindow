@@ -5,7 +5,8 @@ import { useShallow } from 'zustand/react/shallow'
 import { useMission } from '../lib/store'
 import { useKeyboardMap } from '../hooks/useKeyboard'
 import { useReducedMotion } from '../hooks/useMotion'
-import { Icon, Mark, Wordmark } from './Icon'
+import { Icon } from './Icon'
+import { BrandName } from './Brand'
 import { useProvenance } from '../lib/useProvenance'
 import { IconButton, SampleDataBadge, SvgDefs } from './ui'
 import { ConnectionBanner, ErrorBoundary, useOnline } from './States'
@@ -135,8 +136,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             className="flex h-12 shrink-0 items-center gap-2.5 rounded-pill pr-2 no-underline sm:pr-3"
             aria-label="POLAR WINDOW, CLPS missions"
           >
-            <Mark />
-            <Wordmark />
+            <BrandName />
           </NavLink>
 
           <nav aria-label="Views" className="hidden h-12 items-stretch gap-1 lg:flex">

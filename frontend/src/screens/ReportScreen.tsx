@@ -10,7 +10,7 @@ import { Ribbon } from '../components/Ribbon'
 import { LoadingPanel, ProblemPanel } from '../components/States'
 import { BriefPanel } from '../components/Agents'
 import { Button, PROVENANCE_COPY } from '../components/ui'
-import { Mark } from '../components/Icon'
+import { BrandName } from '../components/Brand'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
 import { rankLabel } from '../lib/rank'
 import { comparisonCsv, download } from '../lib/export'
@@ -124,12 +124,7 @@ export function ReportScreen() {
         style={{ minHeight: 1056 }}
       >
         <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b-2 border-ink pb-3">
-          <div className="flex items-center gap-3">
-            <Mark size={30} />
-            <span className="text-title font-semibold tracking-wordmark">
-              POLAR<span className="font-normal text-sun">&nbsp;WINDOW</span>
-            </span>
-          </div>
+          <BrandName mark="h-10" words="h-3" />
           <div className="font-mono text-small leading-5 text-ink-2 sm:text-right">
             Landing site comparison
             <br />

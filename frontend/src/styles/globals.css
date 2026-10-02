@@ -430,6 +430,19 @@
     border-radius: calc(var(--radius-card) - 2px);
   }
 
+  /* ---- The logo: the version for the ground under it ---------------------
+     Light lines on a dark page, ink on a light one, by the nearest
+     data-theme, so the report's light paper inside a dark page gets ink. */
+  .pw-logo-on-light {
+    display: none;
+  }
+  [data-theme='light'] .pw-logo-on-light {
+    display: block;
+  }
+  [data-theme='light'] .pw-logo-on-dark {
+    display: none;
+  }
+
   /* ---- The shell: the island and the dock, glass over the page ----------- */
   .pw-island {
     background: var(--color-glass);
