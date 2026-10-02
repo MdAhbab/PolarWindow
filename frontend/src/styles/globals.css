@@ -122,6 +122,7 @@
   --shadow-page: 0 8px 24px rgba(0, 0, 0, 0.35); /* the printable report page */
   /* Sunlight only (invariant 6): the Sun tile and the Sun's own marks. */
   --shadow-glow-sun: 0 0 64px -12px rgba(242, 163, 60, 0.38);
+  --color-glow-sun: rgba(242, 163, 60, 0.45); /* the Sun ring's own light */
   --shadow-tab: inset 0 -2px 0 var(--color-ink); /* the current view in the navigation: ink, amber means sunlight */
 
   /* Space, by role. Everything else is the 4 px scale. */
@@ -212,6 +213,7 @@
   --shadow-lift: 0 26px 52px -18px rgba(20, 23, 26, 0.24), 0 6px 14px -6px rgba(20, 23, 26, 0.08);
   --shadow-overlay: 0 32px 80px -20px rgba(20, 23, 26, 0.3), 0 8px 20px -8px rgba(20, 23, 26, 0.1);
   --shadow-glow-sun: 0 0 64px -12px rgba(180, 118, 31, 0.3);
+  --color-glow-sun: rgba(180, 118, 31, 0.32);
 }
 
 @layer base {
@@ -360,6 +362,15 @@
   /* Over the battery limit: the core's edge in magenta, with the triangle and the words beside it. */
   .pw-card-alert {
     --pw-edge: color-mix(in srgb, var(--color-alert) 62%, transparent);
+  }
+  /* The Sun's own ring: the one data mark allowed a glow, since the glow means sunlight. Static. */
+  .pw-sun-glow {
+    filter: drop-shadow(0 0 9px var(--color-glow-sun));
+  }
+  @media print {
+    .pw-sun-glow {
+      filter: none;
+    }
   }
   /* Sunlight only. */
   .pw-card-sunlit {

@@ -16,8 +16,8 @@ import {
   publishedWords,
   publisherFor,
 } from '../lib/missions'
-import { coords, dateTimeWords, isoDateWords, msFromModelH, percent, spanWords, windowLine } from '../lib/format'
-import type { SiteMetrics } from '../lib/types'
+import { coords, dateTimeWords, isoDateWords, msFromModelH, windowLine } from '../lib/format'
+import { surfaceSentence } from '../lib/siteSentence'
 import { ArcTable } from '../components/ArcTable'
 import { Sources } from '../components/Sources'
 import { ANSWER_TEXT, ChartPanel, Rows, SectionLayout, StatePanel, UNDER_QUESTION } from '../components/lifecycle/Section'
@@ -190,20 +190,6 @@ export function SurfaceSection({ mission: m }: { mission: MissionDetail }) {
 }
 
 const SURFACE_QUESTION = SECTIONS.find((s) => s.id === 'landing')!.question
-
-/** The answer on Surface: the share of time in sunlight and in contact, and the longest night, in one sentence. */
-export function surfaceSentence(metrics: SiteMetrics): string {
-  const span = spanWords(metrics.windowHours)
-  const sunAll = !metrics.sun.longestDownArc && metrics.sun.fractionUp > 0.999
-  const earthAll = !metrics.earth.longestDownArc && metrics.earth.fractionUp > 0.999
-  if (sunAll && earthAll) return `Over these ${span} the Sun stays up and Earth stays in view the whole time.`
-  const sun = sunAll ? 'the Sun stays up' : `the Sun is up ${percent(metrics.sun.fractionUp)} of the time`
-  const earth = earthAll ? 'Earth stays in view' : `Earth is in view ${percent(metrics.earth.fractionUp)} of the time`
-  const night = metrics.sun.longestDownArc
-    ? `; the longest night is ${metrics.sun.longestDownOpen ? 'at least ' : ''}${Math.round(metrics.sun.longestDownH)} hours`
-    : ''
-  return `Over these ${span} ${sun} and ${earth}${night}.`
-}
 
 /** How it went: three lines, and the rest on request. */
 function OutcomeNote({ note }: { note: string }) {

@@ -135,6 +135,7 @@ export function TwoClockRings({
           strokeWidth={W}
           strokeDasharray={sunDash}
           transform={`rotate(-90 ${CX} ${CY})`}
+          className="pw-sun-glow"
         />
         <circle cx={CX} cy={CY} r={R_EARTH} fill="none" stroke="url(#pw-blocked)" strokeWidth={W} />
         <circle

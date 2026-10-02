@@ -613,14 +613,14 @@ taken as recommended.
 | 1. Tokens and parts | done | `3f29c87` |
 | 2. Shell | done | `944b00a` |
 | 3. The journey and a mission's home (and the Missions page) | done | `1a221f9` |
-| 4. Step pages | next | |
-| 5. Landing sites | to do | |
-| 6. Front page | to do | |
+| 4. Step pages | done | `79762a2` |
+| 5. Landing sites | done | see git log |
+| 6. Front page | next | |
 | 7. Scroll | to do | |
 | 8. Three dimensions | to do | |
 | 9. Polish and performance | to do | |
 
-*What the first three slices added, for whoever picks up slice 4.*
+*What the slices so far added, for whoever picks up the next one.*
 
 - **Classes** (`frontend/src/styles/globals.css`): `pw-card` is the tray
   and lit core in one element, with `-quiet`, `-raised`, `-flush`,
@@ -644,15 +644,51 @@ taken as recommended.
   `JourneyBar` (a step page) and `StepCards` (the home) draw the line from
   per-step segments, each marked `data-journey-segment` and `--pw-i` for
   slice 7's scrubbed draw.
-- **Not yet restyled**: the step pages' answer, footer and next-step card
-  (slice 4); the landing-site page headers, date bar, map, compare cards,
-  plan aside, skyline and report frame (slice 5); the front page (slice 6).
+- **Step pages** (`components/lifecycle/Section.tsx`, slice 4): the
+  question is an eyebrow; `.pw-answer` (globals.css) is the answer's type
+  role, 22 / 28 / 36 px, the biggest text on a step page;
+  `UNDER_QUESTION`, `ANSWER_TEXT` and `AnswerAge` are shared with Surface,
+  whose answer is drawn in `MissionDetailScreen`. `PageHeader` takes
+  `compact`, used on a step so the mission's name steps back behind the
+  answer. The chart card's title is at title size and its table toggle a
+  ghost pill. The foot of a step (`StepFooter` in `MissionHub`) is the
+  page's one primary pill, "Next step" with the arrow orb, with the next
+  step's question beside it as its description. On a phone each step in
+  the step bar keeps a 48 px target (`min-h-12`), which slice 3 had let
+  fall to 44 px.
+- **Landing sites** (slice 5): every landing-site page is one column in
+  `pw-page`: a compact header (`PageHeader compact`, or `SiteTitle`, now
+  the name at display size with the real select laid over it), then the
+  date control card, then the page. `DateSlider` is that card: a Play
+  pill, the track with a filled part and a haloed thumb, and a day
+  counter ("Day 12 of 30", the same count as the Site page's clock) with
+  the time under it; `compact` keeps the bare track inside Surface's chart
+  card. Map: the pole is the hero card, the chosen site a card with its
+  four numbers as small figures and the one primary pill. Site: the answer
+  sentence (`surfaceSentence`, moved to `lib/siteSentence.ts` and shared
+  with Surface) under its question, the clock in a card with the Sun ring's
+  glow (`.pw-sun-glow`, `--color-glow-sun`), the rows as Details and About
+  these numbers, and the three onward links as primary, secondary and
+  ghost pills (`pillClass`, `PillArrow` in ui.tsx). Compare: the ranked
+  measure is each card's hero figure, the other three small, an over-limit
+  card has the magenta edge, and the sentence under the cards is a quiet
+  card. Plan: a bento, the hours and every time without contact on the
+  left, the working-alone card (the big number at 64 px, its five rows as
+  a list) on the right. Skyline: the chart card is the hero, the blocker
+  card beside it. Report: the screen frame is the page's, the paper is
+  unchanged.
+- **Not yet restyled**: the front page (slice 6).
 
 *How each slice was checked.* `npm run check` and `npm test`; then the
 offline build (`npm run build:snapshot && npx vite preview`) driven by
 Playwright over 19 routes at 1440 and 375 px in both themes, with the same
 axe rules as `e2e/helpers.ts`, horizontal overflow and console errors, and
 the phone-dock geometry from `e2e/screens.spec.ts`. Every slice so far
-holds the baseline: no axe findings, no overflow, no console errors. The
-e2e suite itself needs the live API on :8000 and was not run; its four
-tile selectors were updated to `div.pw-tile`.
+holds the baseline: no axe findings, no overflow, no console errors. For
+slices 1–3 the e2e suite was not run (it needs the live API on :8000); its
+four tile selectors were updated to `div.pw-tile`. From slice 4 it runs
+against a local API and compute worker, with the feeds fetched once
+(`make feeds-once`) so the weather and space-weather tests have live
+data: all 60 pass after slice 5. Without fresh feeds, three of them
+(launch weather, return's sea state, space weather now) fail on the
+data's age, not on anything drawn.

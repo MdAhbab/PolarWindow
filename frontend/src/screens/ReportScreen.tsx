@@ -1,5 +1,5 @@
 import { useShallow } from 'zustand/react/shallow'
-import { Breadcrumbs } from '../components/Page'
+import { PageHeader } from '../components/Page'
 import { useSiteMetricsMap } from '../lib/useMetricsMap'
 import { SourcesLine } from '../components/Sources'
 import { useCompare, useFocusedView, useWindowParams } from '../lib/mission'
@@ -90,13 +90,15 @@ export function ReportScreen() {
   }))
 
   return (
-    <div className="flex grow flex-col items-center gap-4 bg-inset p-4 lg:p-8">
-      <div className="flex w-full max-w-[816px] flex-wrap items-end justify-between gap-3 print:hidden">
-        <div className="flex flex-col gap-1">
-          <Breadcrumbs items={[{ label: 'Landing sites', to: '/map' }, { label: 'Compare', to: '/compare' }, { label: 'Printable report' }]} />
-          <h1 className="text-title-lg font-semibold tracking-title text-ink">Printable report · one page</h1>
-        </div>
-        <div className="flex flex-wrap gap-3">
+    <div className="pw-page flex grow flex-col items-center gap-6 pt-6 pb-8 lg:gap-8 lg:pt-8 print:p-0">
+      <div className="w-full max-w-[816px] print:hidden">
+        <PageHeader
+          compact
+          crumbs={[{ label: 'Landing sites', to: '/map' }, { label: 'Compare', to: '/compare' }, { label: 'Printable report' }]}
+          title="Printable report"
+          titleExtra="· one page"
+          actions={
+            <>
           <Button
             onClick={() =>
               download(
@@ -108,8 +110,12 @@ export function ReportScreen() {
           >
             Download as CSV
           </Button>
-          <Button onClick={() => window.print()}>Print or save as PDF</Button>
-        </div>
+              <Button variant="primary" onClick={() => window.print()}>
+                Print or save as PDF
+              </Button>
+            </>
+          }
+        />
       </div>
 
       <article

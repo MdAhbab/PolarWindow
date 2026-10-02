@@ -1,4 +1,4 @@
-import { Breadcrumbs } from '../components/Page'
+import { PageHeader } from '../components/Page'
 import { useShallow } from 'zustand/react/shallow'
 import { useMission } from '../lib/store'
 import { useFocusedMetrics, useFocusedView } from '../lib/mission'
@@ -7,7 +7,7 @@ import { HorizonProfile } from '../components/HorizonProfile'
 import { DateSlider } from '../components/DateSlider'
 import { TERRAIN_BLOCKER_MIN_EL_DEG } from '../components/TwoClockRings'
 import { LoadingPanel, ProblemPanel, UncertaintyNote } from '../components/States'
-import { Disclosure, Panel, ScrollRegion, SectionLabel } from '../components/ui'
+import { Disclosure, Eyebrow, Panel, ScrollRegion } from '../components/ui'
 import { bearing, bound, compassWords, degrees, edgeMargin, hoursWithUnit } from '../lib/format'
 
 /** S4: what the site's own skyline does to the Sun, in one chart and one answer. */
@@ -21,7 +21,7 @@ export function HorizonScreen() {
 
   if (!metrics || view.error) {
     return (
-      <div className="pw-page flex grow flex-col gap-6 py-5 lg:py-6">
+      <div className="pw-page flex grow flex-col gap-6 pt-6 pb-8 lg:pt-8">
         <div className="max-w-2xl">
           {view.error ? (
             <ProblemPanel error={view.error} fallbackTitle="Cannot draw this skyline" onRetry={view.refetch} />
@@ -52,35 +52,33 @@ export function HorizonScreen() {
   const nightWords = worst ? hoursWithUnit(worst.hours, 0, metrics.sun.longestDownOpen) : ''
 
   return (
-    <div className="flex grow flex-col">
-      <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-line pw-page py-4">
-        <div className="flex min-w-0 flex-col gap-1">
-          <Breadcrumbs items={[{ label: 'Landing sites', to: '/map' }, { label: site.name, to: '/site' }, { label: 'Skyline' }]} />
-          <h1 className="text-title-lg font-semibold tracking-title text-ink sm:text-heading">The skyline from {site.name}</h1>
-        </div>
-        <div className="basis-full lg:basis-0 lg:grow">
-          <DateSlider />
-        </div>
-      </div>
+    <div className="pw-page flex grow flex-col gap-6 pt-6 pb-8 lg:gap-8 lg:pt-8">
+      <PageHeader
+        compact
+        crumbs={[{ label: 'Landing sites', to: '/map' }, { label: site.name, to: '/site' }, { label: 'Skyline' }]}
+        title={`The skyline from ${site.name}`}
+      />
+      <DateSlider />
 
-      <div className="flex grow flex-col gap-6 p-4 lg:flex-row lg:items-start lg:p-6">
-        <div className="flex min-w-0 grow flex-col gap-4">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-8">
+        <div className="flex min-w-0 flex-col gap-4">
           {!terrainModelled && (
             <UncertaintyNote>
               No terrain data outside 80°S, so this skyline is a flat horizon, not terrain. Real hills could block more.
             </UncertaintyNote>
           )}
-          <Panel className="flex flex-col">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line px-4 py-3">
-              <SectionLabel>All around the site, by compass direction</SectionLabel>
+          {/* The page's hero: the skyline all around the site, with the Sun's path over it. */}
+          <Panel as="section" className="flex min-w-0 flex-col gap-3 p-4 sm:p-5">
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <h2 className="text-title leading-6 font-semibold tracking-title text-ink">All around the site, by compass direction</h2>
               <span className="ml-auto text-caption text-ink-3">
                 highest point {degrees(metrics.mask.maxElDeg, 2)} at {bearing(metrics.mask.maxElBearingDeg)}
               </span>
             </div>
-            <ScrollRegion label="Skyline chart, scrolls sideways" className="p-3">
+            <ScrollRegion label="Skyline chart, scrolls sideways" className="pb-1">
               <HorizonProfile metrics={metrics} cursorH={cursorH} className="min-w-[860px]" />
             </ScrollRegion>
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line px-4 py-3">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
               <Legend swatch="h-[3px] w-5 bg-sun-fill">The Sun’s path</Legend>
               <Legend swatch="h-[3px] w-5 bg-earth-fill">Earth’s small loop (libration)</Legend>
               <Legend swatch="h-2.5 w-5 bg-terrain-low border-t-2 border-terrain-high">Skyline</Legend>
@@ -95,12 +93,12 @@ export function HorizonScreen() {
           </p>
         </div>
 
-        <aside className="flex w-full shrink-0 flex-col gap-3 lg:w-[320px]">
-          <Panel elevated className="flex flex-col gap-3 p-5">
-            <SectionLabel>What blocks the Sun</SectionLabel>
+        <aside className="flex min-w-0 flex-col gap-4">
+          <Panel elevated className="flex flex-col gap-3 p-5 sm:p-6">
+            <Eyebrow as="h2">What blocks the Sun</Eyebrow>
             {byTerrain ? (
               <>
-                <div className="text-subhead font-semibold">
+                <div className="text-subhead leading-7 font-semibold tracking-heading">
                   A ridge to the {compassWords(blockAz)} ({bearing(blockAz)})
                 </div>
                 <div className="text-small leading-5 text-ink-2">
@@ -108,13 +106,13 @@ export function HorizonScreen() {
                 </div>
               </>
             ) : (
-              <div className="text-subhead font-semibold">
+              <div className="text-subhead leading-7 font-semibold tracking-heading">
                 {worst ? 'Nothing: the Sun sets below the horizon itself' : 'Nothing on these dates'}
               </div>
             )}
             {worst ? (
-              <div className="flex items-baseline gap-2 border-t border-line pt-3">
-                <span className="text-display leading-10 font-semibold tracking-figure-sm tnum">
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 border-t border-line pt-4">
+                <span className="pw-figure text-[44px] leading-[46px]">
                   {bound(metrics.sun.longestDownOpen)}
                   {Math.round(worst.hours)}
                 </span>

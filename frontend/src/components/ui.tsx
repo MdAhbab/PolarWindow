@@ -10,6 +10,33 @@ import { Icon } from './Icon'
 const BASE =
   'pw-press group inline-flex items-center justify-center gap-2 rounded-pill font-semibold disabled:cursor-not-allowed select-none'
 
+const VARIANTS = {
+  primary:
+    // Ink, not amber: amber means sunlight in every chart, so a button in it
+    // read as part of the data.
+    'bg-ink text-canvas hover:bg-ink-2 active:brightness-90 disabled:bg-inset disabled:text-ink-3',
+  secondary:
+    'border border-line-strong bg-tray text-ink hover:bg-inset hover:border-ink-3 disabled:border-line disabled:text-ink-3',
+  ghost: 'text-ink-2 hover:bg-inset hover:text-ink disabled:text-line-strong',
+}
+
+/**
+ * A link drawn as a pill button, for a router `Link` that takes the person to
+ * another page. The primary one carries the arrow (`PillArrow`).
+ */
+export function pillClass(variant: 'primary' | 'secondary' | 'ghost' = 'secondary', arrow = false): string {
+  return `${BASE} h-12 text-control no-underline ${arrow ? 'pl-5 pr-2' : 'px-5'} ${VARIANTS[variant]}`
+}
+
+/** The arrow in its own circle, at the end of a primary pill. */
+export function PillArrow() {
+  return (
+    <span className="pw-orb ml-1" aria-hidden="true">
+      <Icon name="arrow" size={15} strokeWidth={2} />
+    </span>
+  )
+}
+
 export function Button({
   children,
   variant = 'secondary',
@@ -40,15 +67,6 @@ export function Button({
   describedBy?: string
   buttonRef?: React.Ref<HTMLButtonElement>
 }) {
-  const variants = {
-    primary:
-      // Ink, not amber: amber means sunlight in every chart, so a button in it
-      // read as part of the data.
-      'bg-ink text-canvas hover:bg-ink-2 active:brightness-90 disabled:bg-inset disabled:text-ink-3',
-    secondary:
-      'border border-line-strong bg-tray text-ink hover:bg-inset hover:border-ink-3 disabled:border-line disabled:text-ink-3',
-    ghost: 'text-ink-2 hover:bg-inset hover:text-ink disabled:text-line-strong',
-  }
   const sizes = arrow
     ? { md: 'h-12 pl-5 pr-2 text-control', sm: 'h-12 pl-4 pr-2 text-body' }
     : { md: 'h-12 px-5 text-control', sm: 'h-12 px-4 text-body' }
@@ -62,14 +80,10 @@ export function Button({
       aria-expanded={expanded}
       aria-controls={controls}
       aria-describedby={describedBy}
-      className={`${BASE} ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`${BASE} ${VARIANTS[variant]} ${sizes[size]} ${className}`}
     >
       {children}
-      {arrow && (
-        <span className="pw-orb ml-1" aria-hidden="true">
-          <Icon name="arrow" size={15} strokeWidth={2} />
-        </span>
-      )}
+      {arrow && <PillArrow />}
     </button>
   )
 }

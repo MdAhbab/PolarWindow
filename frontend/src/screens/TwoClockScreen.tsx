@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { Link } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { useMission } from '../lib/store'
@@ -9,8 +10,11 @@ import { SiteTitle } from '../components/SitePicker'
 import { TERRAIN_BLOCKER_MIN_EL_DEG, TwoClockRings } from '../components/TwoClockRings'
 import { KeyNumberRow } from '../components/KeyNumbers'
 import { ArcTable } from '../components/ArcTable'
-import { ProblemPanel, UncertaintyNote } from '../components/States'
-import { Button, Disclosure } from '../components/ui'
+import { ProblemPanel, Skeleton, UncertaintyNote } from '../components/States'
+import { Button, Disclosure, Panel, PillArrow, pillClass } from '../components/ui'
+import { ANSWER_TEXT, Rows, UNDER_QUESTION } from '../components/lifecycle/Section'
+import { surfaceSentence } from '../lib/siteSentence'
+import { useMotionClass } from '../hooks/useMotion'
 import { Icon } from '../components/Icon'
 import { WindowPicker } from '../components/WindowPicker'
 import { SummarySpeaker } from '../components/SummarySpeaker'
@@ -42,27 +46,38 @@ export function TwoClockScreen() {
   const metrics = useFocusedMetrics()
   const site = siteById(siteId)
   const terrainModelled = view.meta?.uncertainty.terrainModelled ?? site.terrainModelled
+  const questionId = useId()
+  const arrive = useMotionClass('pw-arrive')
 
   return (
-    <div className="flex grow flex-col">
-      <div className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-line pw-page py-4">
-        <div className="flex min-w-0 flex-col gap-1">
-          <SiteTitle />
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            <span className="font-mono text-caption text-ink-3">
-              {coords(site.latDeg, site.lonDeg)} ·{' '}
-              {site.elevM !== null ? `height ${site.elevM.toLocaleString()} m` : 'height not known'}
-            </span>
-          </div>
-        </div>
-        <div className="basis-full lg:basis-0 lg:grow">
-          <DateSlider />
-        </div>
-      </div>
+    <div className="pw-page flex grow flex-col gap-6 pt-6 pb-8 lg:gap-8 lg:pt-8">
+      <header className="flex min-w-0 flex-col gap-1.5">
+        <SiteTitle />
+        <span className="font-mono text-caption text-ink-3">
+          {coords(site.latDeg, site.lonDeg)} · {site.elevM !== null ? `height ${site.elevM.toLocaleString()} m` : 'height not known'}
+        </span>
+      </header>
+      <DateSlider />
 
-      <div className="pw-page flex grow flex-col gap-6 py-5 lg:py-6">
+      <section aria-labelledby={questionId} className="flex min-w-0 flex-col gap-7 lg:gap-8">
+        <h2 id={questionId} className="pw-eyebrow">
+          What does this spot get over these dates?
+        </h2>
+        {metrics && !view.error ? (
+          <div className={`${UNDER_QUESTION} flex flex-col gap-3 ${arrive}`}>
+            <p className={ANSWER_TEXT}>{surfaceSentence(metrics)}</p>
+            <div data-guide="listen" className="pt-1">
+              <SummarySpeaker view={view} />
+            </div>
+          </div>
+        ) : view.error ? null : (
+          <div className={`${UNDER_QUESTION} flex flex-col gap-2.5`} aria-hidden="true">
+            <Skeleton className="h-8 w-full max-w-4xl lg:h-10" />
+            <Skeleton className="h-8 w-1/2 max-w-xl lg:h-10" />
+          </div>
+        )}
         {!terrainModelled && (
-          <UncertaintyNote>
+          <UncertaintyNote className="-mt-2">
             No terrain data outside 80°S, so the Sun and Earth are worked out as if the ground were flat. Real hills
             could block more.
           </UncertaintyNote>
@@ -75,49 +90,51 @@ export function TwoClockScreen() {
           <KeyNumberRow metrics={metrics} uncertain={!terrainModelled} />
         )}
 
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]">
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,600px)_minmax(0,1fr)] lg:gap-8">
           {metrics && !view.error ? (
-            <div data-guide="rings" className="flex min-w-0 flex-col items-center gap-5">
+            <Panel as="section" guide="rings" className="flex min-w-0 flex-col items-center gap-5 p-4 sm:p-6">
+              <h3 className="self-start text-title leading-6 font-semibold tracking-title text-ink">
+                These dates as a clock
+              </h3>
               <TwoClockRings metrics={metrics} cursorH={cursorH} maxSize={480} />
               <RingKey />
-            </div>
+            </Panel>
           ) : (
             <div />
           )}
 
-          <div className="flex min-w-0 flex-col gap-3">
-            <div data-guide="listen">
-              <SummarySpeaker view={view} />
-            </div>
+          <Rows
+            about={
+              <Disclosure title="How sure is this?" meta="margins, sources, table">
+                <HowSure metrics={metrics} meta={view.meta} terrainModelled={terrainModelled} />
+              </Disclosure>
+            }
+          >
             <Disclosure title="What blocks the Sun and Earth here?">
               <Blockers metrics={metrics} failed={Boolean(view.error)} />
             </Disclosure>
-            <Disclosure
-              title="Change the dates"
-              meta={windowLine(msFromModelH(windowStartH), windowHours)}
-            >
+            <Disclosure title="Change the dates" meta={windowLine(msFromModelH(windowStartH), windowHours)}>
               <WindowPicker siteId={siteId} />
             </Disclosure>
-            <Disclosure title="How sure is this?" meta="margins, sources, table">
-              <HowSure metrics={metrics} meta={view.meta} terrainModelled={terrainModelled} />
-            </Disclosure>
             <ExplainPanel siteId={siteId} start={w.start} end={w.end} />
-            <div className="flex flex-wrap gap-x-6 gap-y-1 pt-1">
-              <Link to="/skyline" className="inline-flex h-11 items-center text-body font-semibold">
-                See the skyline →
-              </Link>
-              <Link to="/plan" className="inline-flex h-11 items-center text-body font-semibold">
-                Plan for time without contact →
-              </Link>
-              <Link to="/report" className="inline-flex h-11 items-center text-body font-semibold">
-                Printable report →
-              </Link>
-            </div>
-          </div>
+          </Rows>
         </div>
 
-        {showTable && metrics && <ArcTable metrics={metrics} />}
-      </div>
+        <nav aria-label="More about this site" className="flex flex-wrap items-center gap-3">
+          <Link to="/plan" className={pillClass('primary', true)}>
+            Plan for time without contact
+            <PillArrow />
+          </Link>
+          <Link to="/skyline" className={pillClass('secondary')}>
+            See the skyline
+          </Link>
+          <Link to="/report" className={pillClass('ghost')}>
+            Printable report
+          </Link>
+        </nav>
+      </section>
+
+      {showTable && metrics && <ArcTable metrics={metrics} />}
     </div>
   )
 }

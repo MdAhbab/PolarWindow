@@ -23,19 +23,25 @@ export function SiteTitle({ prefix = '' }: { prefix?: string }) {
         {name}
       </h1>
       {prefix && (
-        <span aria-hidden="true" className="shrink-0 text-heading font-semibold tracking-title text-ink-2">
+        <span aria-hidden="true" className="pw-display shrink-0 text-[26px] text-ink-2 sm:text-[30px]">
           {prefix}
         </span>
       )}
       <label htmlFor={id} className="sr-only">
         Site
       </label>
-      <span className="relative inline-flex min-w-0 max-w-full items-center">
+      {/* The name drawn at display size, with the real select laid over it: a
+          select sized to its content measured the name too narrow and cut it
+          off. The focus ring is drawn on the name while the select has it. */}
+      <span className="relative -ml-2 inline-flex h-12 min-w-0 max-w-full items-center rounded-control pr-10 pl-2 hover:bg-inset has-[select:focus-visible]:bg-inset has-[select:focus-visible]:outline-2 has-[select:focus-visible]:outline-offset-2 has-[select:focus-visible]:outline-focus has-[select:focus-visible]:outline-solid">
+        <span aria-hidden="true" className="pw-display truncate text-[26px] leading-[30px] text-ink sm:text-[30px] sm:leading-[34px]">
+          {name}
+        </span>
         <select
           id={id}
           value={siteId}
           onChange={(e) => setSite(e.target.value)}
-          className="h-11 max-w-full min-w-0 cursor-pointer appearance-none truncate rounded-control bg-transparent pr-8 text-heading font-semibold tracking-title text-ink [field-sizing:content] hover:bg-inset focus-visible:bg-inset"
+          className="absolute inset-0 h-full w-full cursor-pointer appearance-none rounded-control text-body opacity-0"
         >
           <optgroup label="Candidate sites">
             {candidates.map((s) => (
@@ -54,7 +60,7 @@ export function SiteTitle({ prefix = '' }: { prefix?: string }) {
             </optgroup>
           )}
         </select>
-        <Icon name="chevron" size={18} strokeWidth={2.2} className="pointer-events-none absolute right-2 text-ink-3" />
+        <Icon name="chevron" size={20} strokeWidth={2.2} className="pointer-events-none absolute right-3 text-ink-3" />
       </span>
     </div>
   )

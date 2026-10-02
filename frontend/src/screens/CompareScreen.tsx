@@ -14,7 +14,8 @@ import { LoadingPanel, ProblemPanel } from '../components/States'
 import { AdvisePanel } from '../components/Agents'
 import { Speaker } from '../components/SummarySpeaker'
 import { buildComparisonSummary } from '../lib/summaryScript'
-import { Panel, SectionLabel, Segmented } from '../components/ui'
+import { Eyebrow, Panel, Segmented } from '../components/ui'
+import { PageHeader } from '../components/Page'
 import { Icon } from '../components/Icon'
 import { useReducedMotion } from '../hooks/useMotion'
 import { metricValue, SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
@@ -208,7 +209,7 @@ export function CompareScreen() {
 
   if (!ready) {
     return (
-      <div className="pw-page flex grow flex-col gap-6 py-5 lg:py-6">
+      <div className="pw-page flex grow flex-col gap-6 pt-6 pb-8 lg:pt-8">
         <DateSlider />
         <div className="max-w-2xl">
           {error ? (
@@ -253,22 +254,23 @@ export function CompareScreen() {
   const unavailable = ranking.data?.unavailable ?? []
 
   return (
-    <div className="flex grow flex-col">
-      <div className="flex flex-wrap items-end gap-x-8 gap-y-4 border-b border-line pw-page py-4">
-        <div className="flex min-w-0 basis-full flex-col gap-0.5">
-          <h1 className="text-title-lg font-semibold tracking-title text-ink">Compare sites</h1>
-          <p className="text-small leading-5 text-ink-2">The same dates at each site, side by side. Nothing is combined into a score: rank by one number at a time.</p>
-        </div>
-        <DateSlider />
+    <div className="pw-page flex grow flex-col gap-6 pt-6 pb-8 lg:gap-8 lg:pt-8">
+      <PageHeader
+        compact
+        title="Compare sites"
+        lede="The same dates at each site, side by side. Nothing is combined into a score: rank by one number at a time."
+      />
+      <DateSlider />
+      <div className="flex flex-wrap items-end gap-x-6 gap-y-4">
         <div data-guide="rank-by" className="flex min-w-0 max-w-full flex-col gap-2">
-          <label htmlFor="pw-rank" className="text-small font-semibold text-ink-2 xl:hidden">
+          <label htmlFor="pw-rank" className="pw-eyebrow xl:hidden">
             Rank by
           </label>
           <select
             id="pw-rank"
             value={rankBy}
             onChange={(e) => setRankBy(e.target.value as MetricKey)}
-            className="h-12 rounded-control border border-line-strong bg-canvas px-3 text-control text-ink xl:hidden"
+            className="h-12 rounded-pill border border-line-strong bg-tray px-4 text-control text-ink hover:border-ink-3 xl:hidden"
           >
             {RANKS.map((r) => (
               <option key={r.value} value={r.value}>
@@ -277,7 +279,7 @@ export function CompareScreen() {
             ))}
           </select>
           <div className="hidden flex-col gap-2 xl:flex">
-            <SectionLabel as="div">Rank by</SectionLabel>
+            <Eyebrow as="div">Rank by</Eyebrow>
             <Segmented options={RANKS} value={rankBy} onChange={setRankBy} label="Rank by" />
           </div>
         </div>
@@ -290,7 +292,7 @@ export function CompareScreen() {
       </p>
 
       {(seeded || unavailable.length > 0 || ranking.error) && (
-        <div className="flex flex-col gap-1 border-b border-line pw-page py-3 text-small leading-5 text-ink-2">
+        <div className="-mt-2 flex flex-col gap-1 text-small leading-5 text-ink-2">
           {seeded && (
             <p>
               Started from {seeded.name}: its landing spot and the three candidate sites nearest to it by distance.
@@ -310,7 +312,7 @@ export function CompareScreen() {
         </div>
       )}
 
-      <div className="grow pw-page py-5 lg:py-6">
+      <div className="grow">
         {wide ? (
           <div ref={ref} className="relative" style={{ height: colH }}>
             {compareIds.map((id) => {
@@ -358,8 +360,8 @@ export function CompareScreen() {
         )}
       </div>
 
-      <footer className="border-t border-line bg-panel pw-page py-4">
-        <p className="max-w-4xl text-control leading-6 text-ink">
+      <footer className="pw-card pw-card-quiet px-5 py-4 sm:px-6">
+        <p className="max-w-4xl text-lede leading-7 text-ink">
           {!leads ? (
             <>No clear leader on {termLabel(rankBy).label.toLowerCase()}{bestLabel ? '' : ' yet'}.</>
           ) : tiedWith[best]?.length ? (
@@ -386,9 +388,7 @@ export function CompareScreen() {
         </p>
       </footer>
 
-      <div className="pw-page py-6">
-        <AdvisePanel start={w.start} end={w.end} />
-      </div>
+      <AdvisePanel start={w.start} end={w.end} />
     </div>
   )
 }
@@ -418,30 +418,32 @@ function CompareCard({
   const whyId = useId()
   const margin = SURVIVAL_LIMIT_H - metrics.sun.longestDownH
   const cells = [
-    ['sunHours', 'Sunlight', metrics.sun.upHours, false, 'text-sun'],
-    ['earthHours', 'Contact with Earth', metrics.earth.upHours, false, 'text-earth'],
-    ['longestDark', 'Longest night', metrics.sun.longestDownH, Boolean(metrics.sun.longestDownOpen), over ? 'text-alert' : 'text-ink'],
-    ['longestBlackout', 'Without contact', metrics.earth.longestDownH, Boolean(metrics.earth.longestDownOpen), 'text-ink'],
+    ['sunHours', 'Time in sunlight', metrics.sun.upHours, false, 'text-sun', 'Sunlight'],
+    ['earthHours', 'Time in contact with Earth', metrics.earth.upHours, false, 'text-earth', 'Contact'],
+    ['longestDark', 'Longest night', metrics.sun.longestDownH, Boolean(metrics.sun.longestDownOpen), over ? 'text-alert' : 'text-ink', 'Longest night'],
+    ['longestBlackout', 'Longest time without contact', metrics.earth.longestDownH, Boolean(metrics.earth.longestDownOpen), 'text-ink', 'Without contact'],
   ] as const
+  const hero = cells.find(([key]) => key === rankBy)!
+  const rest = cells.filter(([key]) => key !== rankBy)
 
   return (
-    <Panel className={`flex flex-col border-t-2 ${over ? 'border-t-alert!' : leading ? 'border-t-ink!' : ''}`} as="section">
-      <div className="flex items-start gap-3 border-b border-line p-4">
+    <Panel as="section" alert={over} className="flex flex-col">
+      <div className="flex items-start gap-3 p-4 pb-3 sm:px-5">
         <span
-          className={`inline-flex size-7 shrink-0 items-center justify-center text-body font-bold ${
+          className={`inline-flex size-8 shrink-0 items-center justify-center rounded-pill font-mono text-body font-semibold ${
             rank === null
               ? 'border border-dashed border-uncertain text-uncertain'
               : leading
                 ? 'bg-ink text-canvas'
-                : 'bg-line-strong text-ink'
+                : 'bg-inset text-ink shadow-[inset_0_0_0_1px_var(--color-line-strong)]'
           }`}
           aria-label={rank === null ? 'No place stated' : `Rank ${rank}`}
         >
           {rank ?? '–'}
         </span>
         <div className="flex min-w-0 flex-col gap-0.5">
-          <h2 className="text-title font-semibold">
-            <span className="mr-1.5 font-mono text-body text-ink-3">{site.code}</span>
+          <h2 className="text-title leading-6 font-semibold">
+            <span className="mr-1.5 font-mono text-body font-normal text-ink-3">{site.code}</span>
             {site.name}
           </h2>
           {label &&
@@ -463,7 +465,7 @@ function CompareCard({
                 </p>
               </>
             ) : (
-              <div className="text-small font-semibold text-ink">
+              <div className="text-small font-semibold text-ink-2">
                 {label.kind === 'joint' ? `${label.text}: the data can’t separate them` : label.text}
               </div>
             ))}
@@ -473,26 +475,38 @@ function CompareCard({
         </div>
       </div>
 
-      <dl className="grid grid-cols-2 gap-2 p-4">
-        {cells.map(([key, name, value, open, tone]) => (
-          <div
-            key={key}
-            className={`flex flex-col gap-0.5 px-3 py-2 ${key === rankBy ? 'bg-inset shadow-[inset_0_-2px_0_var(--color-ink-3)]' : ''}`}
-          >
-            <dt className="text-caption text-ink-3">
-              {name}
-              {key === rankBy && <span className="sr-only"> (ranked by this)</span>}
-            </dt>
-            <dd className={`text-figure-sm leading-7 font-semibold tnum ${tone}`}>
-              {bound(open)}
-              {Math.round(value)}
-              <span className="ml-1 text-body font-normal text-ink-3">h</span>
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <div className="flex flex-col gap-4 px-4 pb-4 sm:px-5">
+        {/* The measure the sites are ranked by is the card's hero; the other three step back. */}
+        <dl className="flex flex-col gap-1">
+          <dt className="flex items-center gap-1.5 text-small font-medium text-ink-2">
+            {hero[0] === 'longestDark' && over && <Icon name="alert" size={14} strokeWidth={2.2} className="text-alert" />}
+            {hero[1]}
+            <span className="sr-only"> (ranked by this)</span>
+          </dt>
+          <dd className={`pw-figure text-[44px] leading-[46px] xl:text-[52px] xl:leading-[54px] ${hero[4]}`}>
+            {bound(hero[3])}
+            {Math.round(hero[2])}
+            <span className="ml-1.5 text-large font-normal tracking-normal text-ink-2 [font-stretch:100%]">h</span>
+          </dd>
+        </dl>
+        {/* A subgrid, so a label that wraps does not push its figure below the others. */}
+        <dl className="grid grid-cols-3 gap-x-3 gap-y-1 border-t border-line pt-3">
+          {rest.map(([key, name, value, open, tone, short]) => (
+            <div key={key} className="row-span-2 grid min-w-0 grid-rows-subgrid">
+              <dt className="text-caption leading-4 text-ink-3" title={name}>
+                {short}
+              </dt>
+              <dd className={`pw-figure text-figure-sm leading-7 ${tone}`}>
+                {bound(open)}
+                {Math.round(value)}
+                <span className="ml-1 text-small font-normal tracking-normal text-ink-3 [font-stretch:100%]">h</span>
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
 
-      <div className="flex flex-col gap-3 px-4 pb-4">
+      <div className="flex flex-col gap-3 px-4 pb-4 sm:px-5">
         <div className="flex flex-col gap-1.5">
           <span className="text-caption font-semibold text-sun">Sunlight over these dates</span>
           <Ribbon
@@ -516,8 +530,9 @@ function CompareCard({
         </div>
       </div>
 
-      <div className="mt-auto flex flex-col gap-1 border-t border-line p-4">
-        <p className={`text-small font-semibold ${over ? 'text-alert' : 'text-ink'}`}>
+      <div className="mt-auto flex flex-col gap-1 border-t border-line p-4 sm:px-5">
+        <p className={`flex items-start gap-1.5 text-small font-semibold ${over ? 'text-alert' : 'text-ink'}`}>
+          {over && <Icon name="alert" size={14} strokeWidth={2.2} className="mt-0.5 shrink-0" />}
           {over
             ? `${metrics.sun.longestDownOpen ? 'At least ' : ''}${Math.round(-margin)} h past the ${SURVIVAL_LIMIT_H} h battery limit`
             : metrics.sun.longestDownOpen
@@ -538,7 +553,7 @@ function AddSite({ compareIds }: { compareIds: string[] }) {
   const full = compareIds.length >= 8
   return (
     <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto">
-      <label htmlFor={id} className="text-small font-medium text-ink-3">
+      <label htmlFor={id} className="pw-eyebrow">
         {full ? 'Eight sites is the most' : 'Add a site'}
       </label>
       <select
@@ -546,7 +561,7 @@ function AddSite({ compareIds }: { compareIds: string[] }) {
         value=""
         disabled={full || rest.length === 0}
         onChange={(e) => e.target.value && toggle(e.target.value)}
-        className="h-12 w-full max-w-full rounded-control border border-line-strong bg-canvas px-3 text-control text-ink hover:border-ink-3 disabled:text-ink-3"
+        className="h-12 w-full max-w-full rounded-pill border border-line-strong bg-tray px-4 text-control text-ink hover:border-ink-3 disabled:text-ink-3"
       >
         <option value="">Choose a site…</option>
         {rest.map((s) => (
@@ -570,7 +585,7 @@ function RemoveSite({ siteId, name }: { siteId: string; name: string }) {
       onClick={() => toggle(siteId)}
       aria-label={`Remove ${name} from the comparison`}
       title="Remove from the comparison"
-      className="-mt-2 -mr-2 inline-flex size-12 items-center justify-center rounded-control text-ink-3 hover:bg-inset hover:text-ink"
+      className="pw-press -mt-2 -mr-2 inline-flex size-12 items-center justify-center rounded-pill text-ink-3 hover:bg-inset hover:text-ink"
     >
       <Icon name="close" size={16} />
     </button>
