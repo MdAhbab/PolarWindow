@@ -256,10 +256,14 @@ export function MapScreen() {
           </div>
 
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 pb-4 sm:px-5">
-            <LegendSwatch className="bg-terrain-mid">Terrain (LOLA, 80 m)</LegendSwatch>
+            <LegendSwatch className="bg-terrain-mid">The ground: NASA’s LRO photograph over the LOLA terrain</LegendSwatch>
             <LegendSwatch className="bg-psr">In shadow now, if the ground were flat</LegendSwatch>
             <LegendSwatch className="hatch-uncertain">Shadow-line margin</LegendSwatch>
           </div>
+          <p className="px-4 pb-4 text-caption leading-caption text-ink-3 sm:px-5">
+            The photograph’s own shadows are from the days it was taken. Sunlight for your dates is the amber line and
+            the shaded side.
+          </p>
         </Panel>
 
         <aside className="order-2 flex w-full shrink-0 flex-col gap-4 lg:order-none lg:w-[300px]">

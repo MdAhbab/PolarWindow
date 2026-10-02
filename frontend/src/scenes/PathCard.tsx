@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { API_BASE } from '../lib/api/client'
-import { DATA_MODE } from '../lib/api/snapshot'
+import { snapshotTripFileUrl, useSnapshotActive } from '../lib/api/snapshot'
 import type { TripDTO } from '../lib/api/lifecycle'
 import { useMission } from '../lib/store'
 import { Panel } from '../components/ui'
@@ -9,20 +9,29 @@ import { SceneFrame, hasWebGL } from './SceneFrame'
 
 /**
  * The flown path to the Moon as a card on Trip. It is drawn from the same
- * orbit file the step offers as a download, so it is there only for a flown
- * trip, with the live service, in a browser with WebGL; otherwise the page
- * keeps the day-by-day strip above it, which says the same in a flat drawing.
+ * orbit file the step offers as a download (the offline copy keeps it beside
+ * the answers), so it is there only for a flown trip, in a browser with
+ * WebGL; otherwise the page keeps the day-by-day strip above it, which says
+ * the same in a flat drawing.
  * The lander moves along the path as the card scrolls through the screen.
  */
 export function PathCard({ trip, missionId }: { trip: TripDTO; missionId: string }) {
   const theme = useMission((s) => s.theme)
-  const able = trip.source === 'flown' && DATA_MODE !== 'snapshot' && hasWebGL()
+  // From the offline copy while it is in use: the orbit file is saved there beside the answers.
+  const saved = useSnapshotActive()
+  const able = trip.source === 'flown' && hasWebGL()
   const file = useQuery({
-    queryKey: ['trip-path', missionId],
+    queryKey: ['trip-path', missionId, saved],
     queryFn: async ({ signal }) => {
-      const r = await fetch(`${API_BASE}/missions/${encodeURIComponent(missionId)}/trip/export?format=csv`, { signal })
+      const url = saved
+        ? snapshotTripFileUrl(missionId)
+        : `${API_BASE}/missions/${encodeURIComponent(missionId)}/trip/export?format=csv`
+      const r = await fetch(url, { signal })
       if (!r.ok) throw new Error(`trip export ${r.status}`)
-      return r.text()
+      const text = await r.text()
+      // A copy without this file answers with the page itself: not an orbit file.
+      if (!text.includes('time_utc')) throw new Error('not an orbit file')
+      return text
     },
     enabled: able,
     staleTime: Infinity,

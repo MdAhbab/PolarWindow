@@ -1,5 +1,6 @@
 import { createSky, earthSurface, loadTexture, moonSurface, SURFACE_TURN } from './space'
 import { atmosphere, cloudsUrl, loadGround, type Ground } from './earthrise'
+import polePhotoUrl from '../assets/space/moon-south-pole-wac-2048.jpg'
 import {
   AmbientLight,
   CanvasTexture,
@@ -24,8 +25,8 @@ import {
  * The front page's Moon.
  *
  * The surface is real: NASA's LRO wide-angle camera mosaic over the whole
- * globe (space.ts), and from 80°S to the pole the LOLA hillshade tiles the
- * Map draws, placed in the same south polar stereographic projection
+ * globe (space.ts), and from 80°S to the pole the photograph and LOLA relief
+ * the Map draws, placed in the same south polar stereographic projection
  * (longitude 0 at grid +y, east clockwise). In the dark theme the night sky
  * is behind it.
  *
@@ -86,8 +87,13 @@ export function token(name: string, fallback: string): Color {
 }
 
 /**
- * The real south polar cap: the 16 hillshade tiles at zoom 2 stitched into one
- * 1,024-pixel square, with its edge faded so it meets the drawn globe softly.
+ * The real south polar cap: NASA's LRO camera mosaic of the pole (the
+ * photograph the Map draws, in the same projection), with the LOLA relief
+ * (the 16 hillshade tiles at zoom 2) laid into its shadows, as one
+ * 1,024-pixel square with its edge faded so it meets the globe softly. A
+ * photograph of the pole is black wherever the Sun was not when it was taken;
+ * the relief shows there, where it is the lighter of the two. Without the
+ * photograph the relief is the picture; without the tiles there is no cap.
  */
 export async function poleRelief(tileUrl: (z: number, x: number, y: number) => string): Promise<CanvasTexture | null> {
   const n = 4
@@ -95,25 +101,39 @@ export async function poleRelief(tileUrl: (z: number, x: number, y: number) => s
   const c = document.createElement('canvas')
   c.width = c.height = n * px
   const g = c.getContext('2d')!
+  // The relief on its own sheet first.
+  const relief = document.createElement('canvas')
+  relief.width = relief.height = n * px
+  const rg = relief.getContext('2d')!
+  const picture = (src: string) =>
+    new Promise<HTMLImageElement | null>((resolve) => {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => resolve(img)
+      img.onerror = () => resolve(null)
+      img.src = src
+    })
   const loads: Promise<boolean>[] = []
   for (let tx = 0; tx < n; tx++) {
     for (let ty = 0; ty < n; ty++) {
       loads.push(
-        new Promise((resolve) => {
-          const img = new Image()
-          img.crossOrigin = 'anonymous'
-          img.onload = () => {
-            g.drawImage(img, tx * px, ty * px, px, px)
-            resolve(true)
-          }
-          img.onerror = () => resolve(false)
-          img.src = tileUrl(2, tx, ty)
+        picture(tileUrl(2, tx, ty)).then((img) => {
+          if (img) rg.drawImage(img, tx * px, ty * px, px, px)
+          return Boolean(img)
         }),
       )
     }
   }
-  const ok = (await Promise.all(loads)).filter(Boolean).length
-  if (ok < n * n) return null
+  const [photo, tiles] = await Promise.all([picture(polePhotoUrl), Promise.all(loads)])
+  if (tiles.filter(Boolean).length < n * n) return null
+  if (photo) {
+    g.drawImage(photo, 0, 0, c.width, c.height)
+    // The relief a quarter darker, then kept only where it is lighter than the photograph.
+    rg.fillStyle = 'rgba(0, 0, 0, 0.26)'
+    rg.fillRect(0, 0, relief.width, relief.height)
+    g.globalCompositeOperation = 'lighten'
+  }
+  g.drawImage(relief, 0, 0)
   // Fade the square to a circle at 80°S.
   const half = (n * px) / 2
   const edge = (2 * R_MOON_M * Math.tan((CAP_COLAT_DEG * DEG) / 2) / TILE_HALF_EXTENT_M) * half
@@ -204,8 +224,8 @@ export function createMoonScene(
   // The relief glows faintly on its own, so the real terrain stays readable on
   // the night side too; the Sun adds its light on the day side.
   const capMaterial = new MeshStandardMaterial({
-    // The relief map is a neutral grey; the photograph around it is warmer and a little lighter.
-    color: new Color(1.2, 1.15, 1.08),
+    // The pole's photograph is a neutral grey; the mosaic around it is a little warmer.
+    color: new Color(1.06, 1.03, 0.99),
     roughness: 1,
     metalness: 0,
     transparent: true,
