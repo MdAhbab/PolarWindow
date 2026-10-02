@@ -49,7 +49,7 @@ export function SettingsSheet() {
           tabs={TABS}
           value={tab}
           onChange={setTab}
-          className="shrink-0 border-b border-line md:w-48 md:border-r md:border-b-0 md:py-4"
+          className="shrink-0 gap-1 border-b border-line px-3 py-2 md:w-52 md:border-r md:border-b-0 md:px-3 md:py-4"
         />
         <div
           role="tabpanel"

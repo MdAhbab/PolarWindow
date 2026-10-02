@@ -567,16 +567,11 @@ export function Tabs<T extends string>({
             aria-controls={`${baseId}-panel`}
             tabIndex={on ? 0 : -1}
             onClick={() => onChange(t.id)}
-            className={`relative flex h-12 shrink-0 items-center rounded-control px-4 text-body whitespace-nowrap transition-colors duration-[var(--pw-dur-quick)] md:px-5 ${
-              on ? 'font-semibold text-ink md:bg-inset' : 'font-medium text-ink-2 hover:bg-inset hover:text-ink'
+            // A pill, the chosen one in ink: the same language as the page's other switches.
+            className={`pw-press flex h-12 shrink-0 items-center rounded-pill border-4 border-transparent bg-clip-padding px-4 text-body whitespace-nowrap transition-colors duration-[var(--pw-dur-quick)] ${
+              on ? 'bg-ink font-semibold text-canvas' : 'font-medium text-ink-2 hover:bg-inset hover:text-ink'
             }`}
           >
-            {on && (
-              <span
-                aria-hidden="true"
-                className="absolute inset-x-3 bottom-0 h-[3px] rounded-pill bg-ink md:inset-x-auto md:inset-y-3 md:left-1.5 md:h-auto md:w-[3px]"
-              />
-            )}
             {t.label}
           </button>
         )

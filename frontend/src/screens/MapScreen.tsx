@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { RidgeArt } from '../landing/Illustrations'
 import { Link } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { useSiteMetricsMap } from '../lib/useMetricsMap'
@@ -171,6 +172,7 @@ export function MapScreen() {
             </div>
             {matches.length === 0 ? (
               <EmptyState
+                art={<RidgeArt />}
                 title="No site clears every filter"
                 detail={
                   <>

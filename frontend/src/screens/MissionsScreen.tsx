@@ -24,7 +24,7 @@ import { MoonDiscs } from '../components/MoonDiscs'
 import { PolarMap, POLAR_MAP_EDGE_LAT, type MissionPin } from '../components/PolarMap'
 import { ProgrammeTimeline } from '../components/ProgrammeTimeline'
 import { AskPanel } from '../components/Agents'
-import { EmptyState, LoadingPanel, ProblemPanel } from '../components/States'
+import { EmptyState, FarSide, LoadingPanel, ProblemPanel } from '../components/States'
 import { Button, Chip, Disclosure, Panel, Segmented, Unconfirmed } from '../components/ui'
 import { Icon } from '../components/Icon'
 import { Select } from '../components/Select'
@@ -293,6 +293,7 @@ export function MissionsScreen() {
           ) : shown.length === 0 ? (
             <Panel>
               <EmptyState
+                art={<FarSide className="mx-auto w-24" />}
                 title="No missions match these filters"
                 detail={
                   <>

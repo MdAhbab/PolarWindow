@@ -1,4 +1,5 @@
 import { Component, useSyncExternalStore, type ReactNode } from 'react'
+import farSide from '../assets/space/moon-far-side-640.jpg'
 import { Link } from 'react-router-dom'
 import { useMotionClass, useReducedMotion } from '../hooks/useMotion'
 import { Icon } from './Icon'
@@ -9,25 +10,55 @@ import { Button, Panel, SectionLabel } from './ui'
  * not, and what the person can do next.
  */
 
+/**
+ * The drawing for a state with nothing in it: the pole's own picture with the
+ * thing looked for left out. A low Sun on its flat path, the ground, and a
+ * dashed outline where a pin would stand. No words in it, and nothing to
+ * read from it: the title beside it says what is missing.
+ */
+export function EmptyHorizonArt() {
+  return (
+    <svg viewBox="0 0 176 96" width="176" height="96" aria-hidden="true" className="shrink-0">
+      <path d="M8 46 Q88 26 168 46" fill="none" stroke="var(--color-sun)" strokeWidth="2" strokeDasharray="4 5" opacity="0.8" />
+      <circle cx="140" cy="38" r="8" fill="var(--color-sun-fill)" />
+      <path d="M0 66 L34 66 L52 54 L70 66 L176 66" fill="none" stroke="var(--color-terrain-high)" strokeWidth="2" />
+      <path d="M0 66 L34 66 L52 54 L70 66 L176 66 V90 H0 Z" fill="var(--color-terrain-low)" />
+      <g fill="none" stroke="var(--color-ink-3)" strokeWidth="1.8" strokeDasharray="3 3.5" strokeLinecap="round">
+        <path d="M100 64 C92 53 89 49 89 44 A11 11 0 0 1 111 44 C111 49 108 53 100 64 Z" />
+        <circle cx="100" cy="44" r="3.4" />
+      </g>
+    </svg>
+  )
+}
+
 export function EmptyState({
   title,
   detail,
   primary,
   secondary,
+  art,
 }: {
   title: string
   detail: ReactNode
   primary?: { label: string; onClick: () => void }
   secondary?: { label: string; onClick: () => void }
+  /** A drawing for the place this happens, in place of the plain filter mark; it is hidden from screen readers. */
+  art?: ReactNode
 }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3.5 px-6 py-16 text-center">
-      <span
-        className="flex size-16 items-center justify-center rounded-pill bg-inset text-ink-2 shadow-[inset_0_1px_0_var(--color-hi),0_0_0_1px_var(--color-edge),0_0_0_5px_var(--color-tray),0_0_0_6px_var(--color-line)]"
-        aria-hidden="true"
-      >
-        <Icon name="filter" size={26} strokeWidth={1.6} />
-      </span>
+      {art ? (
+        <div className="w-full max-w-[240px] opacity-90" aria-hidden="true">
+          {art}
+        </div>
+      ) : (
+        <span
+          className="flex size-16 items-center justify-center rounded-pill bg-inset text-ink-2 shadow-[inset_0_1px_0_var(--color-hi),0_0_0_1px_var(--color-edge),0_0_0_5px_var(--color-tray),0_0_0_6px_var(--color-line)]"
+          aria-hidden="true"
+        >
+          <Icon name="filter" size={26} strokeWidth={1.6} />
+        </span>
+      )}
       <div className="pt-2 text-title-lg font-semibold tracking-title text-ink sm:text-subhead">{title}</div>
       <div className="max-w-[460px] text-body leading-6 text-ink-2">{detail}</div>
       <div className="flex flex-wrap justify-center gap-3">
@@ -39,6 +70,24 @@ export function EmptyState({
         {secondary && <Button onClick={secondary.onClick}>{secondary.label}</Button>}
       </div>
     </div>
+  )
+}
+
+/**
+ * The Moon's far side, as NASA's LRO camera saw it: the drawing on the page
+ * that is not there. Decorative, so hidden from screen readers; the words say
+ * what happened.
+ */
+export function FarSide({ className = '' }: { className?: string }) {
+  return (
+    <img
+      src={farSide}
+      alt=""
+      aria-hidden="true"
+      width={640}
+      height={640}
+      className={`aspect-square rounded-pill shadow-[0_0_0_1px_var(--color-line-strong),var(--shadow-raised)] ${className}`}
+    />
   )
 }
 
@@ -345,6 +394,9 @@ export function useOnline(): boolean {
 export function NotFound({ what = 'page' }: { what?: string }) {
   return (
     <div className="pw-page mx-auto flex w-full max-w-2xl flex-col gap-5 py-16">
+      <span className="-mb-1 self-start">
+        <EmptyHorizonArt />
+      </span>
       <p className="pw-eyebrow">Not found · 404</p>
       <h1 className="pw-display text-[32px] leading-[36px] text-ink sm:text-[44px] sm:leading-[48px]">There is no {what} at this address</h1>
       <p className="text-body leading-6 text-ink-2">
