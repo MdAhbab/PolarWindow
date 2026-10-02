@@ -13,9 +13,13 @@ build it in.
 **Preview.** `docs/design/visual-refresh-preview.html` draws three screens in
 the proposed system with the app's own numbers from the saved copy of 30
 September 2026 (a mission's home, a site page, a comparison) and the type,
-surface and control system behind them. Open it in a browser; the half-disc in
-the floating header flips the theme. It is a direction, not a component
-library: the real parts are listed under *Components* below.
+surface and control system behind them. The mission's target card holds a
+live Moon drawn with three.js (loaded from a CDN in the preview; bundled in
+the app), turned to its south pole and lit from the horizon; the journey line
+and the horizon light are scrubbed by the scroll where the browser supports
+it. Open it in a browser; the half-disc in the floating header flips the
+theme. It is a direction, not a component library: the real parts are listed
+under *Components* below.
 
 **One line in `conventions.md` has to change.** It says the frontend's design
 "is finished — do not redesign it". This plan is a redesign of the look, not of
@@ -139,7 +143,12 @@ Seven rules decide the rest:
    and glow only there. Interaction is ink.
 5. Motion tells the Sun's story. Arrivals are staggered and settle; bars and
    the journey line grow from their origin; the Sun's sweep is invited, not
-   hidden. Words move and never fade.
+   hidden. Scrolling drives the longer stories (the journey drawing itself,
+   the lander moving along its path). Words move and never fade.
+5a. Depth where the page is about a place. Three dimensions are used for the
+   Moon, the sky over a site and the path to the Moon, and nowhere else: a
+   scene must show something the flat drawing cannot, carry the same numbers
+   as its table twin, and fall back to that drawing without WebGL.
 6. Fun is precision with warmth: plain sentences the app already writes,
    drawings from the front page used as empty states, one playful moment per
    page (the journey drawing itself, the day counter, the ring turning into
@@ -373,6 +382,118 @@ tabs and their content do not change.
 
 ---
 
+### Three dimensions
+
+The front page already has a Moon (`landing/moonScene.ts`: three.js, the
+real LOLA hillshade tiles wrapped on a sphere, GSAP ScrollTrigger scrubbing
+its tilt and the Sun's position). The dashboard never loads it. The refresh
+brings three.js into the dashboard for exactly four scenes, each on the page
+that is about the place it shows.
+
+| Scene | Page | What it shows that the flat drawing cannot | Data it draws | Fallback |
+|---|---|---|---|---|
+| **The target globe** | a mission's home | The Moon turned to the landing spot, lit by the Sun where it is on the chosen dates (the sub-solar point `useSubSolar` already gives the map), the landing pin, the 80°S circle the map covers. As the record scrolls, the globe tilts toward the pole. | the mission's target, the sub-solar point, the hillshade tiles the front page loads | the small `PolarMap` |
+| **The skyline dome** | Site and Skyline | The 1,440-ray skyline as a wall around the viewer standing at the site; the Sun's path and Earth's loop for the dates as arcs in the sky; the Sun and Earth as discs at the slider's time. Drag to look around; the slider moves the Sun. "The ridge to the south-west blocks the Sun" becomes something you can see. | the horizon mask, the Sun and Earth tracks the two rings use | `HorizonProfile`, which stays as the table twin's picture |
+| **The path to the Moon** | Trip | Earth and Moon at true distance, the lander's path from the trip's own states (the section already offers them as an orbit file), the burns as marks, the Moon's shadow, the point where the Moon's pull wins. Scrolling the page moves the lander along the path and the day-by-day chart's cursor with it. | the trip ephemeris, the burns, the shadow and hearing intervals | the day-by-day chart |
+| **The landing zones** | Return | A small Earth turned to the booster landing zone and the splashdown zone, with the sea state's colour band. Lowest priority. | the zones and the sea state the section already shows | the existing map tile |
+
+*Where 3D is not used.* The Map page keeps its 2D pole on the real relief: a
+3D pole is prettier and less legible, and the map is an instrument. Compare,
+Plan, Ready, Launch and Contact gain nothing from depth. The front page keeps
+its scene and gains grazing light with a softer terminator and a faint
+earthshine on the night side.
+
+*How it loads.* One lazy chunk for three.js (Vite `manualChunks`), shared by
+the four scenes and the front page, fetched after the page's data has arrived
+and the browser is idle, and only when the scene's container is near the
+viewport. The dashboard's main bundle does not grow. A scene renders at a
+pixel ratio of at most 2, pauses when off-screen or when the tab is hidden,
+and is disposed on route change. Under reduced motion (OS or the in-app
+toggle) a scene draws one still frame and redraws on resize only. Without
+WebGL it is not created and the 2D drawing stays. Every canvas is
+`aria-hidden`; the numbers stay in the words and the table twin, as on the
+front page today.
+
+*Budget.* About 160 kB gzipped for the chunk, once, cached across pages; 60
+frames a second on a 2020 laptop and 30 on a mid-range phone with the Sun's
+sweep playing, measured in slice 9; GPU memory under 64 MB per scene.
+
+---
+
+### Scroll
+
+Scroll is the second clock on every page after the Sun's. The mechanism is
+the same everywhere: one-shot reveals through `IntersectionObserver`;
+scrubbed effects through CSS scroll-driven animations (`animation-timeline:
+view()` and `scroll()`), which Chrome, Edge and Safari 26 run and other
+browsers ignore in favour of the one-shot reveal; GSAP ScrollTrigger only
+inside the three.js chunk, to scrub a scene, since the front page already
+pays for it there. No page adds a `scroll` listener.
+
+| Page | What the scroll does |
+|---|---|
+| Front page | As now (the Moon turns to the pole, the Sun circles, Earth rises, the terrain closes in), with the four ideas pinned while the Moon does the work and the feature cards cascading in. |
+| Missions | The map card's pins drop in as it enters; the list's groups cascade; the timeline draws its bars when its row opens. |
+| A mission's home | The journey line draws from the first node to where the mission got to, scrubbed by the scroll; the target globe tilts toward the pole and steps closer as the record scrolls; the cards cascade. |
+| Step pages | The answer never leaves: when the answer sentence scrolls off, a compact strip (the question and the answer at title size) docks under the island, scaled down by the scroll, so a reader deep in the rows still sees what the page answers. Tiles rise, bars grow, the chart draws, rows cascade, the next-step card rises last. |
+| Trip | The scroll moves the lander along its path in the scene and the chart's cursor with it; the burns light as it passes them. |
+| Site, Skyline | The rings turn into place; the dome's arcs draw as it enters. |
+| Compare | The cards cascade; changing the rank slides the columns, as now. |
+| Plan | The hour-by-hour timeline draws left to right as it enters; the packet rows cascade; the big number settles. |
+| Report | Nothing: it is a page for paper. |
+
+Guardrails: transform and opacity only; `content-visibility: auto` on long
+pages so off-screen sections cost nothing; every scrubbed effect has a
+resting state that is complete without it; reduced motion turns all of it
+into the static page.
+
+---
+
+### Every page
+
+The three screens in the preview set the standard; every route, every sheet
+and every state is held to the same list before its slice is done.
+
+1. **A hero.** One element at display scale: a sentence, a number or a picture.
+2. **Surfaces.** Cards are trays with lit cores; no bare hairline box
+   anywhere; at most two surface levels visible at once.
+3. **Type.** Four sizes a page apart; an eyebrow above every section; figures
+   in the Figure role; mono for every stamp.
+4. **Controls.** Pills; the primary action carries the arrow orb; hover
+   lifts, press scales.
+5. **Arrival.** Nothing appears statically: reveals staggered in reading
+   order, charts drawing, bars growing.
+6. **One playful moment.** A scene, a scrubbed draw, a turning ring, a
+   sweeping Sun. One, not three.
+7. **Space.** Sections breathe; nothing touches a container's edge.
+8. **States.** Loading has the page's shape; empty has a drawing; error says
+   what still works; all of them in the card system.
+9. **Both themes, 375 px, reduced motion, axe.** Clean.
+10. **Semantics untouched.** Hues, glyphs, hatches, words, table twins.
+
+| Page | Hero | Playful moment | Depth |
+|---|---|---|---|
+| Front page | the headline over the Moon | the Moon turning as you scroll | the Moon |
+| Missions | the pole on the real relief | pins dropping in; the Sun's sweep | — |
+| A mission's home | the record | the journey drawing itself | the target globe |
+| Ready | the answer sentence; the count of what is ready | the checklist filling | — |
+| Launch | the answer sentence; the launch time | the launch calendar's opportunities lighting in order | — |
+| Trip | the answer sentence | the lander moving with the scroll | the path |
+| Surface | the answer sentence | the date bars drawing; the Sun's sweep | — |
+| Contact | the answer sentence | the ground stations' passes drawing in sequence | — |
+| Return | the answer sentence | the zones' sea-state band filling | the landing zones |
+| Map | the pole | the Sun's sweep across the terminator | — |
+| Site | the answer sentence and the rings | the rings turning into place | the skyline dome |
+| Compare | the ranked figures | the columns sliding | — |
+| Plan | the hours working alone | the timeline drawing | — |
+| Skyline | the skyline chart | the Sun's path drawing | the skyline dome |
+| Report | the page itself | — | — |
+| Settings, Run log | the sheet's title | the sheet's slide; a toast with Undo | — |
+| Guide | the step's title | the dashed outline finding its element | — |
+| Not found, errors, loading | the message | the drawing | — |
+
+---
+
 ### Decisions the owner has to make
 
 | # | Decision | Recommendation |
@@ -382,7 +503,8 @@ tabs and their content do not change.
 | D3 | The floating island and dock in place of the full-width header, sub bar and bottom bar. | Yes. It removes two rows of chrome and gives the pages their first 100 px back. Fallback if the owner prefers a full-width bar: keep the bar, give it the glass treatment, keep the sub-pages as a segmented pill in the page header. |
 | D4 | Fonts: Archivo variable with the width axis instead of four static files; Instrument Serif italic as an accent on the front page only. | Yes to the variable file (the bundle stays within a few kilobytes of today's four weights). The serif is optional; try it on the front page's four ideas and keep it only if it earns its place. |
 | D5 | The front page's amber button. | Keep it as the one written exception: the page shows no data, and amber on the front page is the product's horizon. Everywhere else, primary is ink. |
-| D6 | A small 3D Moon on a mission's home, turned to its landing spot. | Defer. It would load three.js (180 kB) into the dashboard. Revisit after slice 7 as an idle-time, motion-on, desktop-only extra. |
+| D6 | Three dimensions in the dashboard: the target globe, the skyline dome, the path to the Moon, the landing zones. | Yes, as the *Three dimensions* section sets out: one lazy chunk, loaded after the page and only near the viewport, a still frame under reduced motion, the 2D drawing without WebGL. Build in the order globe, dome, path, zones; the zones may be cut. |
+| D8 | Scroll choreography: CSS scroll-driven animations with one-shot reveals as the fallback, GSAP ScrollTrigger only inside the three.js chunk. | Yes. It keeps the main bundle where it is and the pages free of scroll listeners. If the owner wants scrubbed effects in every browser today, GSAP ScrollTrigger (about 13 kB gzipped on top of GSAP's 30 kB) can be loaded with the dashboard instead; the choreography does not change. |
 | D7 | The "design is finished" line in `conventions.md`. | Replace it with a pointer to this document once D1–D3 are agreed. |
 
 The plan below proceeds on the recommendations. Where a decision goes the
@@ -423,16 +545,29 @@ re-recorded before it is committed.
    card. `DateSlider` is shared by four of them and goes first.
 6. **Front page** (S). Display type on the width axis, bezelled idea and
    feature cards, pill buttons, section spacing, the settle curve on the
-   reveals. The Moon scene is untouched.
-7. **Motion and polish** (M). The staggered arrivals, the journey draw, hover
-   and press physics, the labelled play button, the illustrated empty states,
-   the light theme pass, a performance pass (no blur on scrolling content, no
-   layout-triggering animation, frame times on a phone), the final axe run
-   in both themes, screens and offline copy re-recorded, `conventions.md`
-   updated (D7) and this document's *Built* section written.
+   reveals, grazing light and earthshine in the Moon scene.
+7. **Scroll** (M). The staggered arrivals and the one-shot reveals on every
+   page; the scrubbed journey line; the docked answer strip on step pages;
+   the drawing charts (date bars, contact passes, the hour-by-hour timeline,
+   the launch calendar); `content-visibility` on long pages. Decision D8.
+8. **Three dimensions** (L). The shared three.js chunk and its loader (idle,
+   near-viewport, WebGL check, reduced-motion still frame, dispose on route
+   change); the target globe (S) from `moonScene`; the skyline dome (M); the
+   path to the Moon with its scroll scrub (M); the landing zones (S, may be
+   cut). Each scene ships with its 2D fallback in place and its frame times
+   recorded. Decision D6.
+9. **Polish and performance** (M). Hover and press physics, the labelled play
+   button, the illustrated empty states, the light theme pass, the *Every
+   page* list walked on every route, a performance pass (no blur on
+   scrolling content, no layout-triggering animation, frame times on a
+   phone with a scene running and the Sun's sweep playing), the final axe
+   run in both themes, screens and offline copy re-recorded,
+   `conventions.md` updated (D7) and this document's *Built* section
+   written.
 
-Sizes: S under a day, M one to two days, L two to three days, for one person
-who knows the codebase.
+Sizes: S under a day, M one to two days, L three to five days, for one person
+who knows the codebase. Slices 7 and 8 can run in parallel with 5 once 1–4
+are in.
 
 ---
 
@@ -456,5 +591,12 @@ of which move; only the recorded screens change.
   one static weight and about the size of the four static weights shipped
   now; slice 1 records the bundle delta in its commit message.
 - **Review load.** Slice 1 touches every screen. The screens recorded before
-  it are the baseline to compare against; keep them until slice 7 replaces
+  it are the baseline to compare against; keep them until slice 9 replaces
   them.
+- **WebGL on phones and in meetings.** A scene that stutters is worse than
+  no scene. Each scene pauses off-screen, caps its pixel ratio, draws one
+  frame under reduced motion and is cut from the phone layout if slice 8's
+  measurements say so; the 2D drawing is always underneath it.
+- **Scroll-driven CSS is not everywhere yet.** Firefox ignores it, so every
+  scrubbed effect also has a one-shot reveal and a complete resting state;
+  nothing a reader needs depends on the scrub.
