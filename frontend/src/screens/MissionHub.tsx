@@ -52,7 +52,8 @@ export function MissionHub() {
     if ((location.state as { from?: string } | null)?.from !== 'next-step') return
     const bar = document.querySelector<HTMLElement>('nav[aria-label="Mission sections"]')
     bar?.querySelector<HTMLElement>('[aria-current="page"]')?.focus({ preventScroll: true })
-    if (bar) window.scrollTo(0, Math.max(0, bar.getBoundingClientRect().top + window.scrollY - 16))
+    // Clear of the floating island.
+    if (bar) window.scrollTo(0, Math.max(0, bar.getBoundingClientRect().top + window.scrollY - 104))
   }, [location.key, location.state])
 
   // A mission sets the dates to its time on the surface (system-design
@@ -98,7 +99,7 @@ export function MissionHub() {
   const nextStep = i >= 0 && i < SECTIONS.length - 1 ? SECTIONS[i + 1] : null
 
   return (
-    <div className="pw-page flex grow flex-col gap-6 py-5 lg:py-7">
+    <div className="pw-page flex grow flex-col gap-8 pt-6 pb-8 lg:gap-10 lg:pt-10">
       <PageHeader
         crumbs={
           step
@@ -124,6 +125,7 @@ export function MissionHub() {
             statuses={sections.data?.data}
             loading={sections.isPending}
             problem={problem}
+            status={m.status}
           />
           <OldFeedsNote />
           <div className="pw-content flex min-w-0 grow flex-col pt-1">
@@ -139,15 +141,21 @@ export function MissionHub() {
           <StepFooter missionId={m.id} base={base} next={nextStep} />
         </>
       ) : (
-        <div className="grid gap-8 xl:grid-cols-12">
-          <section aria-labelledby="steps-h" className="flex min-w-0 flex-col gap-3 xl:col-span-8">
-            <h2 id="steps-h" className="text-body font-semibold text-ink-2">
+        <div className="flex flex-col gap-12 pt-2 lg:gap-16">
+          <section aria-labelledby="steps-h" className="flex min-w-0 flex-col gap-3">
+            <h2 id="steps-h" className="pw-eyebrow">
               Six steps, from getting ready to coming home
             </h2>
-            <StepCards missionId={m.id} statuses={sections.data?.data} loading={sections.isPending} problem={problem} />
+            <StepCards
+              missionId={m.id}
+              statuses={sections.data?.data}
+              loading={sections.isPending}
+              problem={problem}
+              status={m.status}
+            />
             <OldFeedsNote />
           </section>
-          <aside aria-label="The mission’s record" className="min-w-0 xl:col-span-4">
+          <aside aria-label="The mission’s record" className="min-w-0">
             <MissionRecord mission={m} />
           </aside>
         </div>

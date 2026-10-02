@@ -25,7 +25,7 @@ import { PolarMap, POLAR_MAP_EDGE_LAT, type MissionPin } from '../components/Pol
 import { ProgrammeTimeline } from '../components/ProgrammeTimeline'
 import { AskPanel } from '../components/Agents'
 import { EmptyState, LoadingPanel, ProblemPanel } from '../components/States'
-import { Button, Chip, Disclosure, Panel, SectionLabel, Segmented, Unconfirmed } from '../components/ui'
+import { Button, Chip, Disclosure, Panel, Segmented, Unconfirmed } from '../components/ui'
 import { Icon } from '../components/Icon'
 
 /**
@@ -202,15 +202,21 @@ export function MissionsScreen() {
 
   return (
     <div className="flex grow flex-col">
-      <header className="flex flex-col gap-1 border-b border-line pw-page py-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-          <h1 className="text-heading leading-8 font-semibold tracking-heading sm:text-heading-lg sm:leading-9">CLPS missions</h1>
-          <p aria-live="polite" className="text-body text-ink-2">
+      <header className="flex flex-col gap-3 pw-page pt-6 lg:pt-10">
+        <p className="pw-eyebrow">NASA Commercial Lunar Payload Services</p>
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+          <h1 className="pw-display text-[36px] leading-[38px] sm:text-[48px] sm:leading-[50px] lg:text-[56px] lg:leading-[58px]">
+            CLPS missions
+          </h1>
+          <p
+            aria-live="polite"
+            className="inline-flex h-9 items-center rounded-pill border border-line-strong bg-tray px-4 text-small font-semibold text-ink-2 tnum"
+          >
             <span className="sr-only">Showing </span>
             {count}
           </p>
         </div>
-        <p className="text-body leading-6 text-ink-2">
+        <p className="max-w-3xl text-lede leading-7 text-ink-2">
           Every NASA CLPS delivery to the Moon, flown and planned. Open one to follow it from getting ready to coming
           home.
         </p>
@@ -220,7 +226,7 @@ export function MissionsScreen() {
         role="group"
         aria-label="Filters"
         data-guide="missions-filters"
-        className="flex flex-col gap-3 border-b border-line pw-page py-3"
+        className="flex flex-col gap-3 pw-page pt-6 pb-1"
       >
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <Segmented label="Status" options={STATUS_OPTIONS} value={status} onChange={setStatus} />
@@ -244,7 +250,7 @@ export function MissionsScreen() {
                   const v = e.target.value
                   update((p) => (v ? p.set('provider', v) : p.delete('provider')), v ? { kind: 'provider' } : null)
                 }}
-                className={`h-12 max-w-full rounded-control border bg-canvas px-3 text-small font-semibold hover:border-ink-3 ${
+                className={`h-12 max-w-full rounded-pill border bg-tray pr-9 pl-5 text-small font-semibold transition-colors duration-[var(--pw-dur-quick)] hover:border-ink-3 ${
                   provider ? 'border-ink text-ink' : 'border-line-strong text-ink-2'
                 }`}
               >
@@ -278,7 +284,7 @@ export function MissionsScreen() {
         </div>
       </div>
 
-      <div className="grid gap-6 pw-page py-5 lg:py-6 xl:grid-cols-[minmax(0,6fr)_minmax(0,5fr)]">
+      <div className="grid gap-7 pw-page pt-6 pb-8 lg:pt-8 xl:grid-cols-[minmax(0,6fr)_minmax(0,5fr)]">
         {/* The list comes first in the DOM: it is the primary accessible path
             and, on a phone, the fastest answer. From 768 px up the map is
             drawn first (left at ≥ 1280). */}
@@ -313,9 +319,9 @@ export function MissionsScreen() {
                 if (!ms.length) return null
                 return (
                   <div key={g.id} className="flex flex-col">
-                    <SectionLabel as="h3" className="sticky top-0 z-10 border-b border-line bg-inset px-4 py-2">
+                    <h3 className="pw-eyebrow sticky top-0 z-10 border-b border-line bg-panel/95 px-4 py-3 backdrop-blur-sm sm:px-5">
                       {g.label} · {ms.length}
-                    </SectionLabel>
+                    </h3>
                     <ul>
                       {ms.map((m) => (
                         <li key={m.id}>
@@ -347,8 +353,8 @@ export function MissionsScreen() {
             tabIndex={-1}
             className="pw-card pw-card-flush flex flex-col outline-none focus-visible:outline-2"
           >
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line px-4 py-2">
-              <h2 id="missions-map-h" className="text-control font-semibold text-ink">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 pt-4 pb-1 sm:px-5 sm:pt-5">
+              <h2 id="missions-map-h" className="text-title-lg font-semibold tracking-title text-ink">
                 Where they land
               </h2>
               <div className="ml-auto">
@@ -400,7 +406,7 @@ export function MissionsScreen() {
         </section>
       </div>
 
-      <div className="pw-page flex flex-col gap-3 pb-8">
+      <div className="pw-page flex flex-col gap-4 pb-8">
         <Disclosure title="Timeline" meta="every dated mission, by provider">
           <ProgrammeTimeline
             missions={shown}
@@ -438,12 +444,12 @@ function MissionRow({
       to={`/missions/${m.id}`}
       aria-label={missionAccessibleName(m)}
       {...handlers}
-      className={`flex flex-col gap-1 border-b border-line px-4 py-3 no-underline ${
+      className={`group flex flex-col gap-1 border-b border-line px-4 py-3.5 no-underline transition-colors duration-[var(--pw-dur-quick)] focus-visible:-outline-offset-2 sm:px-5 ${
         highlighted ? 'bg-inset' : 'hover:bg-inset'
       }`}
     >
       <span className="flex items-baseline justify-between gap-3">
-        <span className="text-control font-semibold text-ink">{m.name}</span>
+        <span className="text-control font-semibold text-ink transition-transform duration-[var(--pw-dur-lift)] ease-[var(--ease-settle)] group-hover:translate-x-0.5">{m.name}</span>
         <span className="shrink-0 text-small text-ink-2" title={STATUS_LABEL[m.status]}>
           <span aria-hidden="true">{STATUS_GLYPH[m.status]} </span>
           {STATUS_LABEL[m.status]}
@@ -486,7 +492,7 @@ function PinLegend({ polarCount }: { polarCount: number }) {
     </svg>
   )
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line px-4 py-2.5 text-caption text-ink-2">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line px-4 py-3 text-caption text-ink-2 sm:px-5">
       <span>
         {polarCount} target{polarCount === 1 ? '' : 's'} south of 80°S:
       </span>

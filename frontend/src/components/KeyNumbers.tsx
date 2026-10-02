@@ -142,7 +142,7 @@ export function KeyNumberTile({
 
   return (
     <div
-      className={`pw-card p-4 sm:p-5 ${kind} ${
+      className={`pw-card pw-tile p-4 sm:p-5 ${kind} ${
         inRow ? 'row-span-5 grid grid-rows-subgrid content-start gap-y-2.5' : 'flex flex-col gap-2.5'
       }`}
     >

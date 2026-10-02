@@ -76,7 +76,7 @@ const q = (over: Partial<QuantityDTO>): QuantityDTO => ({
 })
 
 describe('QuantityTile: every margin form, and missing', () => {
-  const tile = (el: HTMLElement) => el.closest('div.pw-card') as HTMLElement
+  const tile = (el: HTMLElement) => el.closest('div.pw-tile') as HTMLElement
 
   it('±: figure, margin, unit; the sentence a screen reader hears', () => {
     render(<QuantityTile term="tripShadow" q={q({ value: 1.2, pm: 0.02 })} inRow={false} />)

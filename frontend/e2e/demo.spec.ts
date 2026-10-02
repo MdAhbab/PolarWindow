@@ -185,7 +185,7 @@ test('beats 4 and 7: VIPER month strip and the far side', async ({ page, context
   await expect(main).toContainText('No terrain data outside 80°S')
   await expect(main).toContainText('For the centre of Schrödinger')
   // Earth contact is zero on the far side: a measurement, shown as 0.
-  const earth = main.locator('div.border.bg-panel', { hasText: 'Time in contact with Earth' }).first()
+  const earth = main.locator('div.pw-tile', { hasText: 'Time in contact with Earth' }).first()
   await expect(earth).toContainText('about 0 hours')
   await expectNoSeriousAxe(page, '/missions/apex-1/surface')
   expect(problems).toEqual([])
