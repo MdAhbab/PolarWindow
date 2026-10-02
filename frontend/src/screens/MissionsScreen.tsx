@@ -310,7 +310,7 @@ export function MissionsScreen() {
                 if (!ms.length) return null
                 return (
                   <div key={g.id} className="flex flex-col">
-                    <h3 className="pw-eyebrow sticky top-0 z-10 border-b border-line bg-panel/95 px-4 py-3 backdrop-blur-sm sm:px-5">
+                    <h3 className="pw-eyebrow sticky top-0 z-10 border-b border-line bg-panel px-4 py-3 sm:px-5">
                       {g.label} · {ms.length}
                     </h3>
                     <ul>

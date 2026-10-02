@@ -317,19 +317,21 @@ export function PolarMap({
       {/* Square by construction, so the buttons below -- positioned in per
           cent of the 700 x 700 view box -- sit exactly on their pins. */}
       <div className="relative aspect-square w-full">
-        <svg viewBox="0 0 700 700" className="absolute inset-0 h-full w-full" role="img" aria-label={summary}>
+        {/* The relief is a picture of its own under the drawing: the Sun's
+            sweep redraws the drawing every frame, and the tiles (sixteen
+            images, sharpened) are then not painted again with it. */}
+        <svg viewBox="0 0 700 700" className="pw-relief absolute inset-0 h-full w-full" aria-hidden="true">
           <defs>
-            <clipPath id={clipId}>
+            <clipPath id={`${clipId}-relief`}>
               <circle cx={CX} cy={CY} r={R_EDGE} />
             </clipPath>
           </defs>
-
           <circle cx={CX} cy={CY} r={R_EDGE} fill="var(--color-terrain-low)" />
-
-          <g clipPath={`url(#${clipId})`}>
-            {/* Relief: the pre-rendered LOLA hillshade pyramid, in the same
-                projection as the pins. A tile that fails to load leaves the
-                plain ground colour, never a broken-image mark. */}
+          {/* The pre-rendered LOLA hillshade pyramid, in the same projection
+              as the pins, a little crisper than the tiles' own soft grey so
+              crater rims read at a glance. A tile that fails to load leaves
+              the plain ground colour, never a broken-image mark. */}
+          <g clipPath={`url(#${clipId}-relief)`} style={{ filter: 'contrast(1.28) brightness(1.04)' }}>
             {tiles
               .filter((t) => !failed.has(t.href))
               .map((t) => (
@@ -345,7 +347,16 @@ export function PolarMap({
                   onError={() => setFailed((f) => new Set(f).add(t.href))}
                 />
               ))}
+          </g>
+        </svg>
+        <svg viewBox="0 0 700 700" className="absolute inset-0 h-full w-full" role="img" aria-label={summary}>
+          <defs>
+            <clipPath id={clipId}>
+              <circle cx={CX} cy={CY} r={R_EDGE} />
+            </clipPath>
+          </defs>
 
+          <g clipPath={`url(#${clipId})`}>
             {/* M1 — sunlight over the whole disc, then the unlit region laid
                 on top of it. Translucent, so the relief reads through. */}
             <circle cx={CX} cy={CY} r={R_EDGE} fill="var(--color-sun-fill)" fillOpacity="0.14" />

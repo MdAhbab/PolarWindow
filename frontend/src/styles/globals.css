@@ -721,6 +721,17 @@
     }
   }
 
+  /* The map's relief, kept as a layer of its own so the drawing over it can
+     change every frame without the tiles being painted again. */
+  .pw-relief {
+    will-change: transform;
+  }
+  @media print {
+    .pw-relief {
+      will-change: auto;
+    }
+  }
+
   /* The page's padding, the same on every screen. */
   .pw-page {
     padding-inline: var(--spacing-gutter);
