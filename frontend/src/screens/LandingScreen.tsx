@@ -206,6 +206,8 @@ export default function LandingScreen() {
         // words readable; beside the text it is shown in full.
         className={`pointer-events-none fixed inset-0 h-full w-full opacity-40 lg:opacity-100 ${webgl ? '' : 'hidden'}`}
       />
+      {/* In the dark, the night sky is shaded behind the words so they read over the Milky Way. */}
+      {webgl && <div aria-hidden="true" className="pw-sky-shade pointer-events-none fixed inset-0" />}
       <a
         href="#landing-main"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-pill focus:bg-raised focus:px-5 focus:py-3"
@@ -315,8 +317,11 @@ export default function LandingScreen() {
         <BrandLogo className="h-10 sm:h-12" />
         <p className="max-w-3xl text-caption leading-caption text-ink-3">
           Not an official product of NASA or any space agency. The Moon is NASA’s LRO camera mosaic, with the LOLA
-          relief map at the south pole; Earth is NASA’s Blue Marble; the stars are drawn. Sizes and distances are not
-          to scale.
+          relief map at the south pole; Earth is NASA’s Blue Marble. Milky Way:{' '}
+          <a href="https://www.eso.org/public/images/eso0932a/" target="_blank" rel="noreferrer">
+            ESO/S. Brunier
+          </a>{' '}
+          (CC BY 4.0). Sizes and distances are not to scale.
         </p>
       </footer>
     </div>

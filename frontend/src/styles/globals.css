@@ -483,6 +483,24 @@
     }
   }
 
+  /* The front page's night sky, shaded behind the text column from lg (below,
+     the whole picture is dimmed instead). Dark theme only: the light theme
+     has no sky. */
+  .pw-sky-shade {
+    display: none;
+  }
+  @media (min-width: 64rem) {
+    :root:not([data-theme='light']) .pw-sky-shade {
+      display: block;
+      background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--color-canvas) 88%, transparent) 0%,
+        color-mix(in srgb, var(--color-canvas) 62%, transparent) 34%,
+        transparent 56%
+      );
+    }
+  }
+
   /* ---- Type roles --------------------------------------------------------- */
   /* Display: page titles and the answers. Wide, tight, balanced. */
   .pw-display {

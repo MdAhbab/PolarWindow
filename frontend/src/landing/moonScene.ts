@@ -224,8 +224,14 @@ export function createMoonScene(
 
   // Dark: the night sky behind the Moon. Light: Earth in front of it, low in
   // the picture, which the scroll then leaves behind on the way to the pole.
-  const sky = dark ? createSky() : null
-  if (sky) scene.add(sky.group)
+  const sky = dark ? createSky(60, redraw) : null
+  // The sky is drawn through its own, wider lens first, then the Moon over it:
+  // a wide-angle sky shows more of the galaxy, at about the photograph's own
+  // sharpness, where the Moon's narrow lens would blow it up.
+  const skyScene = new Scene()
+  const skyCam = new PerspectiveCamera(72, 1, 0.1, 200)
+  if (sky) skyScene.add(sky.group)
+  renderer.autoClear = false
   const nearMat = new MeshStandardMaterial({ color: 0x6f8fb0, roughness: 0.85, metalness: 0 })
   const nearEarth = new Mesh(new SphereGeometry(0.95, 96, 48), nearMat)
   // Africa and Europe toward the viewer (longitude 20°E), tipped a little north.
@@ -247,6 +253,8 @@ export function createMoonScene(
     renderer.setSize(w, h, false)
     camera.aspect = w / h
     camera.updateProjectionMatrix()
+    skyCam.aspect = w / h
+    skyCam.updateProjectionMatrix()
   }
   resize()
   window.addEventListener('resize', resize)
@@ -284,6 +292,14 @@ export function createMoonScene(
     sunSoft.position.set(Math.sin(state.sunAz - 0.38) * 10, 0.3, Math.cos(state.sunAz - 0.38) * 10)
     earthMat.opacity = state.earth
     earth.visible = state.earth > 0.01
+    renderer.clear()
+    if (sky) {
+      // Same direction and the same shift on screen, so what is behind the Moon stays behind it.
+      skyCam.quaternion.copy(camera.quaternion)
+      skyCam.setViewOffset(w, h, dx, 0, w, h)
+      renderer.render(skyScene, skyCam)
+      renderer.clearDepth()
+    }
     renderer.render(scene, camera)
   }
 
