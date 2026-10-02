@@ -4,8 +4,11 @@ Landing site planning for the Moon's south pole. NASA Space Apps 2026, challenge
 "CLPS Lunar Mission Browser".
 
 **Two halves.** `backend/` is FastAPI + Postgres + Redis over SPICE and the LOLA
-polar DEM. `frontend/` is Vite + React 19 + TypeScript + Tailwind v4 and its
-design is finished — do not redesign it.
+polar DEM. `frontend/` is Vite + React 19 + TypeScript + Tailwind v4. Its look
+(the tokens, the parts, the scenes and what each page is built from) is set
+out in `docs/design-visual-refresh.md`, whose *Built* section says what is
+there; a change to the look starts from that document, and the invariants
+below hold whatever the look.
 
 ```
 make install       # both halves
@@ -123,14 +126,23 @@ data layer; services import no FastAPI; `spiceypy` is reachable only through
 5. **Every chart has a table twin** rendered from the same arc array
    (`ArcTable`). The screen-reader path and the export path must not diverge
    from the picture.
-6. **Radius 0 on data surfaces**, 2px on controls, pill only on a view switch
-   (the Missions map's *South pole · Whole Moon*). Amber and glow mean sunlight
-   and nothing else: primary buttons are ink, never amber. Cyan means Earth
-   contact and magenta means over the battery limit, also nothing else. Mission
-   pins, statuses and providers are drawn in ink and told apart by shape and
-   text, and a failed landing is not magenta.
+6. **Corners and colour carry no meaning by accident.** Everything that draws
+   data keeps square corners: bars, arcs, hatches, tables, pins, rings, the
+   map, a row in a list. The boxes around the data are rounded, from one set
+   of tokens (`globals.css`): 12 px on fields and small controls, 16 px on a
+   card (its tray 21 px, parallel), 24 px on sheets, pills on buttons, chips,
+   segmented controls and the shell; a box inside another takes the outer
+   radius less the space between them. Amber and glow mean sunlight and
+   nothing else: primary buttons are ink, never amber, with one written
+   exception, the front page's way in, on a page that shows no data. Cyan
+   means Earth contact and magenta means over the battery limit, also nothing
+   else. Mission pins, statuses and providers are drawn in ink and told apart
+   by shape and text, and a failed landing is not magenta.
 7. **Real elements.** `<button>`, `<a href>`, `<input>` + `<label>`. Never
-   `role`/`onClick` on a div. Minimum target 48×48.
+   `role`/`onClick` on a div. Minimum target 48×48. A list to choose one
+   thing from is `components/Select` (a button and the page's own list, named
+   by a `<label for>`, with the native select's keys), never a native
+   `<select>`: the operating system draws that one, outside the theme.
 8. **Every animation has a named static fallback** and branches in code, not
    only in CSS — `useReducedMotion()` combines the OS setting with the in-app
    toggle.

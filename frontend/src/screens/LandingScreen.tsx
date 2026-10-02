@@ -376,7 +376,8 @@ export default function LandingScreen() {
           <a href="https://www.eso.org/public/images/eso0932a/" target="_blank" rel="noreferrer">
             ESO/S. Brunier
           </a>{' '}
-          (CC BY 4.0). Sizes and distances are not to scale.
+          (CC BY 4.0). These are pictures: sizes and distances are not to scale, and the Sun is placed to light them,
+          not where it stands on any date.
         </p>
       </footer>
     </div>

@@ -616,9 +616,15 @@ taken as recommended.
 | 4. Step pages | done | `79762a2` |
 | 5. Landing sites | done | `d35d87a` |
 | 6. Front page | done | `5b70b44` |
-| 7. Scroll | done | see git log |
-| 8. Three dimensions | next | |
-| 9. Polish and performance | to do | |
+| 7. Scroll | done | `cbe2035` |
+| 8. Three dimensions | done | `e60a894` |
+| 9. Polish and performance | done | the commit that added the *Built* section |
+
+Between and after the slices, at the owner's request: the logo (`07c182a`,
+`7ad721b`); the real Moon, Earth and night sky on the front page (`e503803`,
+`4b18998`); the light theme's Earthrise (`8ac22a9`, `cb43791`); the page's
+own lists in place of native selects (`7f91391`); one set of corners
+(`fd21a69`); the map's relief on its own layer (`03fe817`).
 
 *What the slices so far added, for whoever picks up the next one.*
 
@@ -715,6 +721,68 @@ taken as recommended.
   scroll scrub belongs to its scene (slice 8). The e2e helper `arrived()`
   waits for the arrivals before a test measures a position.
 
+- **The front page's picture** (after slice 7; `frontend/src/landing/`).
+  The Moon is real: NASA's LRO wide-angle camera mosaic on the globe
+  (`space.ts`, `moonSurface`), with the LOLA relief inside 80°S tinted to
+  the photograph's tone. Dark theme: ESO's Milky Way panorama (S. Brunier,
+  CC BY 4.0, credited in the footer) on a sphere behind the Moon, drawn
+  through its own 72° lens first and the Moon over it. Light theme, with
+  motion: the page opens on the ground at Connecting Ridge with Earth
+  (NASA's Blue Marble under NASA's cloud layer) over the horizon and the
+  same sky behind it, and the first scroll flies out to the whole Moon, the
+  sky clearing to the page. The ground is the LOLA heights around the site
+  as `backend/app/data/render_earthrise.py` samples them (a fan in front of
+  the viewer, the Moon's curvature in it, the terrain's own shadows), with
+  craters, rocks and grain smaller than the 80 m heights generated in
+  `earthrise.ts` and lit by the same Sun. That Sun is ten degrees up, placed
+  for the picture and higher than it ever stands there; the script's notes
+  say so, and the footer says the Sun is placed to light the pictures.
+  `SceneState.ground` (1 on the ground, 0 at the whole Moon) and `.space`
+  (1 black sky, 0 the page) are what the scroll
+  drives; the page's styles follow `--pw-space` and `--pw-hero`. The stars
+  are fixed to Earth, so the two cross the screen together. Under reduced
+  motion, or without WebGL, the light page opens on the Moon as before.
+- **Lists to choose from** (`components/Select.tsx`). No native `<select>`
+  is left: the operating system draws those, outside the theme. `Select` is
+  a button (`role="combobox"`, named by a `<label for>`) and the page's own
+  list, put in the browser's top layer (`popover`) so a sheet or a scrolling
+  panel never cuts it, placed under the button or over it when the room
+  below is short. Keys as the native one: arrows, Home, End, Page Up and
+  Down, typing a name, Enter, Space, Tab, Esc (which closes the list and
+  leaves a sheet open). Looks: `field` (the forms), `pill` (beside the
+  pills), `bare` (the site's name as the page title). The forms' `Select`
+  in `lifecycle/Forms.tsx` is this part; its `onChange` gives the value.
+- **Corners** (`globals.css`, the radius tokens). 12 px on fields and small
+  controls, 16 px on a card's core (the tray's own curve is 21 px and runs
+  parallel), 24 px on sheets and floating boxes of more than one line,
+  pills elsewhere; a box inside another takes the outer radius less the
+  space between. The chosen segment of a pill group is a clear 4 px border
+  with the fill kept inside it (`bg-clip-padding`): an inset shadow over a
+  light fill left a light fringe round the curve. A row in a list is square
+  (`rounded-none` on a row that is a `<button>`, since every button takes
+  the control radius by default).
+- **The real Moon in the dashboard** (slice 8). Missions: the whole-Moon
+  view is the LRO mosaic as two orthographic discs
+  (`backend/app/data/render_moon_discs.py`, the projection the pins use),
+  under a faint graticule and the pins. Map: the relief is drawn a little
+  crisper, as its own picture under the map's drawing (`.pw-relief`), so the
+  Sun's sweep does not repaint the tiles.
+- **Scenes** (slice 8; `frontend/src/scenes/`). `SceneFrame` holds a scene
+  over the page's flat drawing: it is made only with WebGL, when the
+  browser is idle and the frame is within a screen of the viewport; it
+  draws on demand, never in a loop; under reduced motion it draws its
+  resting frame; `onFail` lets a card with no flat drawing of its own take
+  itself away. three.js is one chunk (`vite.config.ts`, `manualChunks`),
+  shared with the front page. `targetGlobe.ts` (a mission's home): the Moon
+  turned to the landing spot, with the pin and the 80°S circle.
+  `skylineDome.ts` with `DomeCard` (Site, Skyline): the site's skyline as a
+  wall round the viewer, the Sun's path and Earth's loop behind it, heights
+  drawn six times taller (`DOME_EXAGGERATION`, said in the caption from
+  `words.ts`), drag to look. `tripPath.ts` with `PathCard` (Trip): the
+  flown path from the step's own orbit file, at true distance, amber in
+  sunlight and grey in shadow, the burns as dots, nothing drawn across a
+  gap, the lander moved along it by the scroll.
+
 *How each slice was checked.* `npm run check` and `npm test`; then the
 offline build (`npm run build:snapshot && npx vite preview`) driven by
 Playwright over 19 routes at 1440 and 375 px in both themes, with the same
@@ -728,3 +796,95 @@ against a local API and compute worker, with the feeds fetched once
 data: all 60 pass after slice 5. Without fresh feeds, three of them
 (launch weather, return's sea state, space weather now) fail on the
 data's age, not on anything drawn.
+
+---
+
+## Built
+
+All nine slices are on branch `visual-refresh`. The look this document set
+out is what the dashboard and the front page now have, and the product's
+rules held throughout: amber means sunlight, cyan means Earth, magenta means
+over the battery limit; no score and no verdict; every status a glyph and
+words; square corners on everything that draws data. *Progress*, above, is
+the part-by-part record. This section says where the build differs from the
+plan, what was measured, and what was left out.
+
+**Where it differs from the plan.**
+
+- *Corners* (D1). The plan proposed a 12 px core in a 16 px tray. Built:
+  16 px core, the tray's curve 21 px, fields 12 px, sheets 24 px. With pill
+  controls inside them, cards at 12 px read as boxes of another family.
+- *Selects.* Not in the plan. Every native select was replaced by the page's
+  own list (`components/Select.tsx`), because the native one is drawn by
+  the operating system and ignores the theme.
+- *The front page.* The plan kept the scene and softened its light. Built
+  instead: the real Moon (LRO), the Milky Way (ESO) behind it in the dark
+  theme, and in the light theme an Earthrise over the real terrain at
+  Connecting Ridge that flies out to the whole Moon. The Earthrise's Sun is
+  ten degrees up, which it never is there; that is a choice for the
+  picture, written in `render_earthrise.py`, and the footer says the Sun
+  is placed to light the pictures, not where it stands on any date.
+- *The target globe.* It is lit for the picture, not by the Sun of the
+  chosen dates, and it does not tilt with the scroll; its caption says the
+  Surface step has the Sun for the dates.
+- *The path to the Moon.* It draws the flown path, sunlight and shadow, the
+  burns and the gaps. It does not mark the Moon's shadow or the point where
+  the Moon's pull wins, and the day-by-day chart's cursor does not follow
+  the scroll. It needs the live service: the offline copy does not hold the
+  orbit file, so there the card is absent and the strip above it stands.
+- *The landing zones* (Return). Not built; the plan allowed the cut.
+- *Scroll* (D8). Arrivals are one-shot reveals from one
+  IntersectionObserver. CSS scroll-driven animations were not used: the
+  journey's line and the charts draw on a timer as they arrive, which reads
+  the same and runs in every browser. The path card listens to the scroll
+  (one passive listener, one measurement a frame, only while the card is
+  on the page), which the plan had ruled out for pages; the front page
+  uses GSAP ScrollTrigger, as before. `content-visibility` was tried and
+  removed, since its paint containment cut the cards' trays.
+- *Fonts* (D4). Archivo on its width axis carries the display voice;
+  Instrument Serif was not added.
+
+**Measured.**
+
+- *Size.* The dashboard's main bundle is 186 kB gzipped. three.js is its
+  own chunk, 132 kB gzipped (the budget was 160 kB), fetched only by a page
+  with a scene, when idle and near the viewport. The front page's own code
+  is 51 kB gzipped; its pictures are 0.6 MB (Moon), 1.8 MB (Milky Way, dark
+  theme only), 0.5 MB (Earth and clouds) and 0.25 MB (the terrain, light
+  theme only).
+- *Frame times.* Headless Chromium at 390 × 844, two device pixels to one,
+  the processor slowed four times, five seconds each. With no WebGL: 16.7 ms
+  a frame, median and 95th percentile, on Missions, a mission's home and
+  Surface while scrolling, and on Site and Map with the dates playing. With
+  the scenes drawn in software (SwiftShader, far slower than a phone's
+  graphics chip): the same medians; the 95th percentile on Site, scrolling
+  with the dates playing, is 33 ms. The Map with the dates playing was 33 ms
+  at the median before its relief was given its own layer, and is 16.7 ms
+  after. None of this was measured on a real phone; that remains to do.
+- *Accessibility.* The e2e suite's axe rules (WCAG 2.1 A and AA, serious
+  and critical), sideways overflow and console errors over 19 routes at
+  1440 and 375 px in both themes: 76 of 76 clean. The same rules with each
+  list open, both themes: no findings. That sweep ran before the last three
+  changes (the map's relief on its own layer, the solid heading on the
+  Missions list, one sentence in the front page's footer); the e2e suite,
+  which checks the same rules on the pages it visits, ran after the first
+  two.
+- *Tests.* 290 unit tests pass. The e2e suite, against a local API and
+  compute worker with the feeds fetched once: 60 of 60 pass.
+
+**Not done.**
+
+- Frame times on a real phone (above).
+- The landing-zones scene.
+- A higher-zoom relief on dense screens: the map draws 1,024 source pixels
+  across a picture that can be 1,400 device pixels wide. The pyramid has
+  the next zoom; it is about 4 MB of tiles, so it was left out.
+- Thirteen of the 58 recorded screens in `frontend/e2e/__screens__/` still
+  show the old look: the phone pictures of Contact (six), Return (four),
+  the launch weather forecasts and the two of Settings. The other 45,
+  every desktop picture among them, were retaken with `npm run screens`.
+  Retake the rest with the same command once the service's answers are
+  warm (a step still being worked out makes the script wait and give up).
+- The offline copy (`frontend/public/snapshot/`) was not recorded again.
+  Its answers are the service's and did not change with the look; it does
+  not hold the Trip's orbit file, so the path card is absent offline.
