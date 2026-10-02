@@ -13,10 +13,11 @@ from app.workers.handlers import launch as job
 
 @pytest.mark.parametrize("bad", [None, "coast", "flight", "sweep", "outside"])
 def test_both_pad_limits_are_required_and_failed_windows_have_a_reason(
-    monkeypatch: pytest.MonkeyPatch, bad: str | None,
+    monkeypatch: pytest.MonkeyPatch,
+    bad: str | None,
 ) -> None:
     monkeypatch.setattr(propagate, "environment", lambda *_: None)
-    monkeypatch.setattr(ascent, "pad_j2000", lambda _: lambda t: np.array([1., 0., 0.]))
+    monkeypatch.setattr(ascent, "pad_j2000", lambda _: lambda t: np.array([1.0, 0.0, 0.0]))
     monkeypatch.setattr(job, "_epoch", lambda t: t)
     called = []
 
@@ -35,14 +36,22 @@ def test_both_pad_limits_are_required_and_failed_windows_have_a_reason(
             if bad == "outside":
                 t -= 300
         return SimpleNamespace(
-            converged=True, t_launch=t, coast_s=coast,
-            t_tli=t + coast, t_peri=t + coast + flight,
+            converged=True,
+            t_launch=t,
+            coast_s=coast,
+            t_tli=t + coast,
+            t_peri=t + coast + flight,
         )
 
     monkeypatch.setattr(transfer, "launch_at", design)
     asc = cast(ascent.Ascent, SimpleNamespace(coasts_s=[2300, 2400], c_rad=0, r_park_m=6600000))
-    opportunity: dict[str, Any] = {"t_launch_et": 100000., "arrive_et": 500000., "t0": 100000.,
-                   "inc": 90., "northward": True}
+    opportunity: dict[str, Any] = {
+        "t_launch_et": 100000.0,
+        "arrive_et": 500000.0,
+        "t0": 100000.0,
+        "inc": 90.0,
+        "northward": True,
+    }
     job._window_ends({"pad_id": "pad"}, asc, [opportunity], (35, 120))
     assert called == [35, 120]
     if bad is None:

@@ -42,6 +42,7 @@ import math
 from pathlib import Path
 
 import numpy as np
+import numpy.typing as npt
 
 from app.config import get_settings
 from app.core.projections import R_MOON_M, geographic_to_polar, polar_to_geographic
@@ -65,13 +66,15 @@ OUT = (
     Path(__file__).resolve().parents[3] / "frontend" / "src" / "assets" / "space" / "earthrise.bin"
 )
 
+Floats = npt.NDArray[np.float64]
 
-def _unit(lat_deg: float, lon_deg: float) -> np.ndarray:
+
+def _unit(lat_deg: float, lon_deg: float) -> Floats:
     la, lo = math.radians(lat_deg), math.radians(lon_deg)
     return np.array([math.cos(la) * math.cos(lo), math.cos(la) * math.sin(lo), math.sin(la)])
 
 
-def earth_direction_in_grid(x0: float, y0: float) -> tuple[np.ndarray, float]:
+def earth_direction_in_grid(x0: float, y0: float) -> tuple[Floats, float]:
     """The grid direction from the site toward Earth, and Earth's elevation there (deg)."""
     s = _unit(SITE_LAT, SITE_LON)
     e = _unit(0.0, 0.0)
@@ -113,9 +116,7 @@ def pyramid(dem: DemTile, levels: int = 5) -> list[DemTile]:
     return out
 
 
-def sample(
-    levels: list[DemTile], x: np.ndarray, y: np.ndarray, spacing_m: np.ndarray
-) -> np.ndarray:
+def sample(levels: list[DemTile], x: Floats, y: Floats, spacing_m: Floats) -> Floats:
     """Heights at (x, y), each from the level whose post spacing matches its sample spacing."""
     pick = np.clip(
         np.floor(np.log2(np.maximum(spacing_m, 1.0) / levels[0].scale_m)), 0, len(levels) - 1
@@ -167,10 +168,13 @@ def render(out: Path = OUT) -> None:
     for _ in range(2):
         p = np.pad(light, 1, mode="edge")
         light = (
-            sum(
-                p[1 + di : p.shape[0] - 1 + di, 1 + dj : p.shape[1] - 1 + dj]
-                for di in (-1, 0, 1)
-                for dj in (-1, 0, 1)
+            np.sum(
+                [
+                    p[1 + di : p.shape[0] - 1 + di, 1 + dj : p.shape[1] - 1 + dj]
+                    for di in (-1, 0, 1)
+                    for dj in (-1, 0, 1)
+                ],
+                axis=0,
             )
             / 9.0
         )

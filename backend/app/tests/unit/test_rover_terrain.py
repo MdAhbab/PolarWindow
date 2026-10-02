@@ -16,9 +16,13 @@ def _tile(path: Path, step: float, half: float) -> None:
     n = int(2 * half / step) + 1
     path.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(
-        path, heights=np.zeros((n, n), dtype=np.float32),
-        origin_x_m=frame.x0_m - half, origin_y_m=frame.y0_m + half,
-        scale_m=step, product="test", vertical_error_m=2.0,
+        path,
+        heights=np.zeros((n, n), dtype=np.float32),
+        origin_x_m=frame.x0_m - half,
+        origin_y_m=frame.y0_m + half,
+        scale_m=step,
+        product="test",
+        vertical_error_m=2.0,
     )
 
 
@@ -30,7 +34,8 @@ def test_native_five_metre_product_matches_its_pds_label() -> None:
 
 
 def test_finer_terrain_is_used_only_when_the_full_neighbourhood_fits(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     settings = Settings(data_dir=tmp_path)
     monkeypatch.setattr(rt, "get_settings", lambda: settings)
@@ -64,7 +69,10 @@ def test_terrain_content_changes_have_a_new_job_version(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize("step,error", [(3.0, 4.43), (4.0, 4.12)])
 def test_stereo_crop_preserves_native_posts_pixel_centres_and_nodata(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, step: float, error: float,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    step: float,
+    error: float,
 ) -> None:
     import rasterio
     from affine import Affine
@@ -74,13 +82,20 @@ def test_stereo_crop_preserves_native_posts_pixel_centres_and_nodata(
 
     monkeypatch.setattr(rt, "WINDOW_RADIUS_M", 12.0)
     frame = local_frame(120.0, -89.0)
-    heights = np.arange(31*31, dtype=np.float32).reshape(31, 31)
+    heights = np.arange(31 * 31, dtype=np.float32).reshape(31, 31)
     heights[12, 12] = -9999
     source, dest = tmp_path / "source.tif", tmp_path / "crop.npz"
     with rasterio.open(
-        source, "w", driver="GTiff", height=31, width=31, count=1,
-        dtype="float32", nodata=-9999, crs=MOON_SOUTH_POLAR,
-        transform=Affine(step, 0, frame.x0_m-15.5*step, 0, -step, frame.y0_m+15.5*step),
+        source,
+        "w",
+        driver="GTiff",
+        height=31,
+        width=31,
+        count=1,
+        dtype="float32",
+        nodata=-9999,
+        crs=MOON_SOUTH_POLAR,
+        transform=Affine(step, 0, frame.x0_m - 15.5 * step, 0, -step, frame.y0_m + 15.5 * step),
     ) as tif:
         tif.write(heights, 1)
     assert rt.crop_stereo(source, dest, -89, 120, post_m=step, error_m=error)

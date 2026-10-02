@@ -432,8 +432,10 @@ def main() -> None:
         asyncio.run(fetch(a.stride, a.first, a.last, a.hours, a.parallel, a.workers, a.seed))
     cache = read_cache()
     if not cache:
-        raise SystemExit("No raw GEFS reforecast cache found; existing validation reports kept. "
-                         "Run without --score-only to fetch the archive first.")
+        raise SystemExit(
+            "No raw GEFS reforecast cache found; existing validation reports kept. "
+            "Run without --score-only to fetch the archive first."
+        )
     for region in STATIONS:
         obs = asyncio.run(observations(region))
         p = score(region, cache, obs)

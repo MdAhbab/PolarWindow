@@ -1,4 +1,5 @@
 """Physical controls for the validation-only GDAL C API binding."""
+
 import numpy as np
 import pytest
 import rasterio

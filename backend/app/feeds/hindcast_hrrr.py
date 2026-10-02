@@ -377,8 +377,10 @@ def main() -> None:
         asyncio.run(fetch(a.stride, a.first, a.last, a.hours, a.parallel, a.workers))
     cache = read_cache()
     if not cache:
-        raise SystemExit("No raw HRRR cache found; existing validation reports kept. "
-                         "Run without --score-only to fetch the archive first.")
+        raise SystemExit(
+            "No raw HRRR cache found; existing validation reports kept. "
+            "Run without --score-only to fetch the archive first."
+        )
     for region in STATIONS:
         obs = asyncio.run(observations(region, (a.first, a.last)))
         record = asyncio.run(observations(region, CLIM_YEARS))

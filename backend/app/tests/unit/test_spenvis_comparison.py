@@ -1,6 +1,8 @@
 """Independent IM-2 reference, plus guards against comparing mismatched runs."""
+
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
+from typing import Literal
 
 import numpy as np
 import pytest
@@ -12,16 +14,17 @@ FIXTURE = Path(__file__).parents[1] / "fixtures" / "radiation" / "im2-spenvis.cs
 
 
 def test_saa_rotation_has_the_published_direction_epoch_and_no_radius_change() -> None:
-    xyz = np.array([[belts.RE_KM, 0., 123.]])
+    xyz = np.array([[belts.RE_KM, 0.0, 123.0]])
     t = datetime(1980, 1, 1, tzinfo=UTC)
     p = belts.saa_corrected_geo("p", "max", [t], xyz)
     e = belts.saa_corrected_geo("e", "max", [t], xyz)
-    assert np.degrees(np.arctan2(p[0, 1], p[0, 0])) == pytest.approx(3.)
-    assert np.degrees(np.arctan2(e[0, 1], e[0, 0])) == pytest.approx(6.)
+    assert np.degrees(np.arctan2(p[0, 1], p[0, 0])) == pytest.approx(3.0)
+    assert np.degrees(np.arctan2(e[0, 1], e[0, 0])) == pytest.approx(6.0)
     assert np.linalg.norm(p) == pytest.approx(np.linalg.norm(xyz))
-    assert np.array_equal(xyz, [[belts.RE_KM, 0., 123.]])
-    assert np.allclose(p, belts.saa_corrected_geo("p", "max", [t.astimezone(
-        timezone(timedelta(hours=6)))], xyz))
+    assert np.array_equal(xyz, [[belts.RE_KM, 0.0, 123.0]])
+    assert np.allclose(
+        p, belts.saa_corrected_geo("p", "max", [t.astimezone(timezone(timedelta(hours=6)))], xyz)
+    )
     with pytest.raises(ValueError):
         belts.saa_corrected_geo("p", "max", [t.replace(tzinfo=None)], xyz)
 
@@ -32,11 +35,12 @@ def test_im2_corrected_fluences_agree_with_independent_spenvis_run() -> None:
     times = [datetime.fromisoformat(t) for t in rows["utc"]]
     xyz = np.c_[rows["x_km"], rows["y_km"], rows["z_km"]]
     seconds = np.array([(t - times[0]).total_seconds() for t in times])
-    for particle, energy, column in [("p", 10., "p_gt10"), ("e", 1., "e_gt1")]:
+    cases: list[tuple[Literal["e", "p"], float, str]] = [("p", 10.0, "p_gt10"), ("e", 1.0, "e_gt1")]
+    for particle, energy, column in cases:
         flux = belts.integral_flux(particle, "max", [energy], times, xyz)[0]
         predicted = belts.fluence(seconds, flux)
         reference = belts.fluence(seconds, rows[column])
-        assert abs(predicted / reference - 1.) <= .05
+        assert abs(predicted / reference - 1.0) <= 0.05
 
 
 def test_raw_spectrum_rejects_differential_units(tmp_path) -> None:

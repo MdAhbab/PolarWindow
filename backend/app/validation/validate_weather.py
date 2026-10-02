@@ -5,6 +5,7 @@ Examples: python -m app.validation.validate_weather hrrr --hours 1
 The normal data/hindcast benchmark reports are preserved. Raw forecast caches
 and observation CSVs remain under data/hindcast and are reused across runs.
 """
+
 from __future__ import annotations
 
 import sys

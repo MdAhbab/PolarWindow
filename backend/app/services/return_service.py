@@ -206,14 +206,17 @@ async def _droneship_sea(session: AsyncSession, m: MissionRecord) -> dict[str, A
             )
         )
 
-    return _with_marine({
-        "zone": zone,
-        "wave_height_m": one("wave_height_m", "m"),
-        "wind_m_s": one("wind_m_s", "m/s"),
-        "note": f" Sea shown at {where}, for the next opportunity ({when}).",
-        "times": [worked_out, latest.snapshot.fetched_at],
-        "sources": [latest.source_ref("GFS-Wave (NOAA)")],
-    }, marine)
+    return _with_marine(
+        {
+            "zone": zone,
+            "wave_height_m": one("wave_height_m", "m"),
+            "wind_m_s": one("wind_m_s", "m/s"),
+            "note": f" Sea shown at {where}, for the next opportunity ({when}).",
+            "times": [worked_out, latest.snapshot.fetched_at],
+            "sources": [latest.source_ref("GFS-Wave (NOAA)")],
+        },
+        marine,
+    )
 
 
 def _with_marine(sea: dict[str, Any], marine: dict[str, Any] | None) -> dict[str, Any]:
@@ -225,16 +228,24 @@ def _with_marine(sea: dict[str, Any], marine: dict[str, Any] | None) -> dict[str
         f"at a grid cell {marine['distance_km']:.1f} km from the zone. "
         "One model estimate; its forecast issuance time is not provided."
     )
-    sea["wave_height_m"] = lifecycle.q(Quantity(
-        value=float(marine["wave_height_m"]), unit="m", provenance="published",
-        no_margin_reason=note, source=marine["source_url"],
-    ))
+    sea["wave_height_m"] = lifecycle.q(
+        Quantity(
+            value=float(marine["wave_height_m"]),
+            unit="m",
+            provenance="published",
+            no_margin_reason=note,
+            source=marine["source_url"],
+        )
+    )
     sea["note"] += f" Wave height from {note}"
     sea["times"].append(marine["imported_at"])
-    sea["sources"].append(lifecycle.source_ref(
-        "Copernicus Marine (imported wave subset)", marine["source_url"],
-        fetched_at=marine["imported_at"],
-    ))
+    sea["sources"].append(
+        lifecycle.source_ref(
+            "Copernicus Marine (imported wave subset)",
+            marine["source_url"],
+            fetched_at=marine["imported_at"],
+        )
+    )
     return sea
 
 

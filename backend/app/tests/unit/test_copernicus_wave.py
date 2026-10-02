@@ -1,6 +1,8 @@
 """CF decoding and strict place/time/missing-data limits on imported waves."""
+
 import json
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
@@ -12,7 +14,7 @@ from app.feeds.parsers.copernicus import import_subset
 netcdf = pytest.importorskip("netCDF4", reason="optional marine extra not installed")
 
 
-def make_subset(path, units="m"):
+def make_subset(path: Path, units: str = "m") -> None:
     with netcdf.Dataset(path, "w") as ds:
         for name, size in [("time", 2), ("latitude", 2), ("longitude", 2)]:
             ds.createDimension(name, size)
@@ -26,13 +28,13 @@ def make_subset(path, units="m"):
             else:
                 var.units = "degrees_east"
                 var[:] = [280, 280.083333]
-        wave = ds.createVariable("VHM0", "i2", ("time", "latitude", "longitude"),
-                                 fill_value=-32767)
+        wave = ds.createVariable("VHM0", "i2", ("time", "latitude", "longitude"), fill_value=-32767)
         wave.units = units
-        wave.scale_factor = .01
-        wave[:] = np.ma.array([[[1.25, 2.], [2.5, 3.]], [[1.5, 2.], [2.5, 3.]]],
-                             mask=[[[False, True], [False, False]],
-                                   [[False, True], [False, False]]])
+        wave.scale_factor = 0.01
+        wave[:] = np.ma.array(  # type: ignore[no-untyped-call]
+            [[[1.25, 2.0], [2.5, 3.0]], [[1.5, 2.0], [2.5, 3.0]]],
+            mask=[[[False, True], [False, False]], [[False, True], [False, False]]],
+        )
 
 
 def test_decode_packed_metres_preserves_mask_and_normalizes_coordinates(tmp_path, monkeypatch):

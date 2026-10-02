@@ -135,7 +135,7 @@ warn_return_any = false
 # surface stays small and named.
 module = [
     "spiceypy.*", "numba.*", "pymsis.*", "scipy.*", "pyproj.*", "google.*", "zstandard.*", "asyncpg.*",
-    "eccodes.*", "cdflib.*", "spacepy.*", "h5py.*", "radbelt.*", "rasterio.*",
+    "eccodes.*", "cdflib.*", "spacepy.*", "h5py.*", "radbelt.*", "rasterio.*", "netCDF4.*",
 ]
 ignore_missing_imports = true
 

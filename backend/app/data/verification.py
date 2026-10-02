@@ -50,8 +50,11 @@ def reach_h(region: str) -> int:
 
 
 def checked(
-    region: str, rule_id: str, lead_h: float | None = None,
-    *, threshold_m_s: float | None = None,
+    region: str,
+    rule_id: str,
+    lead_h: float | None = None,
+    *,
+    threshold_m_s: float | None = None,
 ) -> bool:
     """Whether shares for this rule are checked against observations, at ``lead_h`` if given."""
     d = load(region)
@@ -65,9 +68,12 @@ def checked(
         return False
     if lead_h is None:
         return True
-    return math.isfinite(lead_h) and lead_h >= 0 and any(
-        abs(float(k) - lead_h) <= 3.0 and x.get("cases", 0) > 0
-        for k, x in d["leads"].items()
+    return (
+        math.isfinite(lead_h)
+        and lead_h >= 0
+        and any(
+            abs(float(k) - lead_h) <= 3.0 and x.get("cases", 0) > 0 for k, x in d["leads"].items()
+        )
     )
 
 
@@ -157,8 +163,12 @@ def summary(region: str, rule_id: str) -> str | None:
         + "; ".join(parts)
         + f". {SCALE_WORDS} It {verdict} the gate for saying a rule is checked against "
         f"observations: {_gate_words(d['gate'])}."
-        + (f" It covers only leads near {', '.join(sorted(leads, key=int))} h ahead "
-           "(within 3 h of a scored lead)." if d.get("passes") else "")
+        + (
+            f" It covers only leads near {', '.join(sorted(leads, key=int))} h ahead "
+            "(within 3 h of a scored lead)."
+            if d.get("passes")
+            else ""
+        )
     )
 
 
@@ -236,8 +246,10 @@ def hrrr_words(region: str, lead_h: float, threshold_m_s: float | None = None) -
         and math.isclose(threshold_m_s, tested_threshold, rel_tol=0, abs_tol=0.001)
     )
     if not comparable:
-        return text + "The entered limit differs from the limit tested, so its over-or-under " \
+        return (
+            text + "The entered limit differs from the limit tested, so its over-or-under "
             "call has not been checked. Only the 10 m wind speed was checked."
+        )
     if c.get("cases") and "events" in c:
         if c["events"] == 0:
             text += (
@@ -250,5 +262,7 @@ def hrrr_words(region: str, lead_h: float, threshold_m_s: float | None = None) -
                 f"{c['events']} times in {c['cases']} runs, HRRR called {c['hits']} of them, and "
                 f"{c['false_alarms']} of its {c['called_over']} calls of over were wrong."
             )
-    return text.strip() + " Wind at the rule's height was not observed; carrying the model's " \
+    return (
+        text.strip() + " Wind at the rule's height was not observed; carrying the model's "
         "wind to that height is an assumption."
+    )

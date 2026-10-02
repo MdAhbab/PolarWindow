@@ -406,16 +406,21 @@ def test_hrrr_check_is_read_at_the_nearest_lead_and_put_in_words(
 
 
 def test_an_entered_limit_does_not_borrow_the_published_limits_check(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from app.data import verification as ver
 
     check = _hrrr_check()
     check["threshold_m_s"] = 10.52
-    _on_disk(tmp_path, monkeypatch, **{
-        "hrrr_wind_vandenberg.json": check,
-        "gefs_reforecast_wind_vandenberg.json": _wind_check(True, threshold_m_s=10.52),
-    })
+    _on_disk(
+        tmp_path,
+        monkeypatch,
+        **{
+            "hrrr_wind_vandenberg.json": check,
+            "gefs_reforecast_wind_vandenberg.json": _wind_check(True, threshold_m_s=10.52),
+        },
+    )
     ver.hrrr_load.cache_clear()
     try:
         words = ver.hrrr_words("vandenberg", 6.0, 8.0) or ""

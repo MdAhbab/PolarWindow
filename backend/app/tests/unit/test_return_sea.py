@@ -40,12 +40,22 @@ def test_sea_at_the_nearest_lattice_point_and_step() -> None:
 
 def test_imported_marine_wave_retains_independent_noaa_wind_and_source():
     when = datetime(2026, 10, 1, tzinfo=UTC)
-    sea = {"wind_m_s": {"value": 7., "source": "NOAA"}, "wave_height_m": {"value": 3.},
-           "note": "NOAA sea", "times": [when], "sources": [{"name": "NOAA"}]}
-    marine = {"valid": when, "distance_km": 2., "wave_height_m": 1.5,
-              "imported_at": when, "source_url": "https://example.test/waves"}
+    sea = {
+        "wind_m_s": {"value": 7.0, "source": "NOAA"},
+        "wave_height_m": {"value": 3.0},
+        "note": "NOAA sea",
+        "times": [when],
+        "sources": [{"name": "NOAA"}],
+    }
+    marine = {
+        "valid": when,
+        "distance_km": 2.0,
+        "wave_height_m": 1.5,
+        "imported_at": when,
+        "source_url": "https://example.test/waves",
+    }
     result = rs._with_marine(sea, marine)
     assert result["wave_height_m"]["value"] == 1.5
-    assert result["wind_m_s"] == {"value": 7., "source": "NOAA"}
+    assert result["wind_m_s"] == {"value": 7.0, "source": "NOAA"}
     assert len(result["sources"]) == 2
     assert "issuance time is not provided" in result["wave_height_m"]["no_margin_reason"]

@@ -155,8 +155,10 @@ async def run(ctx: JobContext) -> HandlerResult:
         sources=[
             lifecycle.source_ref(
                 f"Lunar terrain map ({tile.product})",
-                rover_terrain.STEREO_SOURCE if tile.product == rover_terrain.STEREO_PRODUCT
-                else rover_terrain.NOBILE03_SOURCE if tile.product == rover_terrain.NOBILE03_PRODUCT
+                rover_terrain.STEREO_SOURCE
+                if tile.product == rover_terrain.STEREO_PRODUCT
+                else rover_terrain.NOBILE03_SOURCE
+                if tile.product == rover_terrain.NOBILE03_PRODUCT
                 else "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/",
             )
         ],

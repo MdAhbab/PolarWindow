@@ -21,6 +21,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
+import numpy.typing as npt
 from PIL import Image
 
 SPACE = Path(__file__).resolve().parents[3] / "frontend" / "src" / "assets" / "space"
@@ -28,7 +29,7 @@ MOSAIC = SPACE / "moon-lro-wac-2048.jpg"
 SIZE = 640
 
 
-def disc(mosaic: np.ndarray, lon0_deg: float, size: int = SIZE) -> Image.Image:
+def disc(mosaic: npt.NDArray[np.float64], lon0_deg: float, size: int = SIZE) -> Image.Image:
     """The hemisphere centred on (0 deg N, ``lon0_deg`` E), north up, east to the right."""
     h, w = mosaic.shape[:2]
     # Pixel centres across the disc, -1 to 1; y up.

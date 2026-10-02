@@ -81,8 +81,8 @@ def is_present(d: Dataset) -> bool | None:
         return fine.exists() and any(fine.glob("*.npz"))
     if d.method == "lola_rover":
         return any(
-            folder.exists() and any(p for p in folder.glob("*.npz")
-                                    if not p.name.endswith(".pending.npz"))
+            folder.exists()
+            and any(p for p in folder.glob("*.npz") if not p.name.endswith(".pending.npz"))
             for folder in (s.dem_dir / "rover_5m", s.dem_dir / "rover_3m", s.dem_dir / "rover_4m")
         )
     if d.method == "seed":
@@ -283,8 +283,10 @@ def _sync_lola_rover(d: Dataset) -> Outcome:
 
     present, fetched = asyncio.run(sync_windows())
     return Outcome(
-        d.id, "fetched" if fetched else "present",
-        f"{present} windows present, {fetched} new", changed_api_data=bool(fetched),
+        d.id,
+        "fetched" if fetched else "present",
+        f"{present} windows present, {fetched} new",
+        changed_api_data=bool(fetched),
     )
 
 

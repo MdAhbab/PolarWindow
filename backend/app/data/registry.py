@@ -50,8 +50,15 @@ TIERS: Final[tuple[Tier, ...]] = ("core", "lifecycle", "validation", "bulk")
 #: ``sync`` never runs it, it only says whether it is here, and ``polar-data
 #: import`` brings it from a shared copy.
 Method = Literal[
-    "kernel", "file", "lola_regional", "lola_fine", "lola_rover", "seed", "cmr",
-    "s3_prefix", "built"
+    "kernel",
+    "file",
+    "lola_regional",
+    "lola_fine",
+    "lola_rover",
+    "seed",
+    "cmr",
+    "s3_prefix",
+    "built",
 ]
 
 DATA_NASA: Final[str] = "https://data.nasa.gov/dataset"
