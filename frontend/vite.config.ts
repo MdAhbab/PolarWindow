@@ -6,6 +6,10 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   worker: { format: 'es' },
+  // The offline copy is recorded by driving this dev server (`npm run snapshot`),
+  // which rewrites public/snapshot as it goes. Watching that folder would reload
+  // the page under the recording every time an answer is saved.
+  server: { watch: { ignored: ['**/public/snapshot/**'] } },
   // three.js is one chunk, shared by the front page's Moon and the
   // dashboard's scenes, and fetched only by them: a dashboard page loads it
   // when one of its scenes comes near the screen, never with the page.

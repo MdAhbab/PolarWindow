@@ -781,7 +781,10 @@ own lists in place of native selects (`7f91391`); one set of corners
   `words.ts`), drag to look. `tripPath.ts` with `PathCard` (Trip): the
   flown path from the step's own orbit file, at true distance, amber in
   sunlight and grey in shadow, the burns as dots, nothing drawn across a
-  gap, the lander moved along it by the scroll.
+  gap, the lander moved along it by the scroll. `landingZones.ts` with
+  `ZoneCard` (Return): Earth turned to where the booster comes down and
+  where a capsule splashes down, on NASA's Blue Marble, when a zone has a
+  published position.
 
 *How each slice was checked.* `npm run check` and `npm test`; then the
 offline build (`npm run build:snapshot && npx vite preview`) driven by
@@ -832,7 +835,13 @@ plan, what was measured, and what was left out.
   the Moon's pull wins, and the day-by-day chart's cursor does not follow
   the scroll. It needs the live service: the offline copy does not hold the
   orbit file, so there the card is absent and the strip above it stands.
-- *The landing zones* (Return). Not built; the plan allowed the cut.
+- *The landing zones* (Return). Built last: Earth (the Blue Marble) turned
+  to the booster's zone and the capsule's, each a mark with its name and a
+  ring of the zone's published size. It has no colour band for the sea
+  state: the sea is said in the tiles and the bars against the team's
+  limits, and a colour on the globe would have been a fourth meaning for
+  colour. A droneship's position is not published, so such a mission has
+  no card.
 - *Scroll* (D8). Arrivals are one-shot reveals from one
   IntersectionObserver. CSS scroll-driven animations were not used: the
   journey's line and the charts draw on a timer as they arrive, which reads
@@ -863,28 +872,29 @@ plan, what was measured, and what was left out.
   after. None of this was measured on a real phone; that remains to do.
 - *Accessibility.* The e2e suite's axe rules (WCAG 2.1 A and AA, serious
   and critical), sideways overflow and console errors over 19 routes at
-  1440 and 375 px in both themes: 76 of 76 clean. The same rules with each
-  list open, both themes: no findings. That sweep ran before the last three
-  changes (the map's relief on its own layer, the solid heading on the
-  Missions list, one sentence in the front page's footer); the e2e suite,
-  which checks the same rules on the pages it visits, ran after the first
-  two.
+  1440 and 375 px in both themes, run on the offline build after the last
+  change: 76 of 76 clean. The same rules with each list open, both themes:
+  no findings.
 - *Tests.* 290 unit tests pass. The e2e suite, against a local API and
   compute worker with the feeds fetched once: 60 of 60 pass.
+- *Screens and the offline copy.* All 58 pictures in
+  `frontend/e2e/__screens__/` were retaken in the new look
+  (`npm run screens`). The offline copy was recorded again: 425 answers,
+  and every one of the 148 mission and landing-site views opens in the
+  offline build with no answer missing. It was recorded into a folder
+  outside `public/` (`SNAPSHOT_OUT`) and then copied in, because the dev
+  server reloaded the page whenever a saved answer under `public/snapshot`
+  changed, which broke the recording part-way and had left the last copy
+  with answers for dates the page was only passing through. The dev server
+  no longer watches that folder (`vite.config.ts`), so `npm run snapshot`
+  can write there directly again; restart the dev server afterwards to
+  have it serve answers added since it started.
 
 **Not done.**
 
 - Frame times on a real phone (above).
-- The landing-zones scene.
 - A higher-zoom relief on dense screens: the map draws 1,024 source pixels
   across a picture that can be 1,400 device pixels wide. The pyramid has
   the next zoom; it is about 4 MB of tiles, so it was left out.
-- Thirteen of the 58 recorded screens in `frontend/e2e/__screens__/` still
-  show the old look: the phone pictures of Contact (six), Return (four),
-  the launch weather forecasts and the two of Settings. The other 45,
-  every desktop picture among them, were retaken with `npm run screens`.
-  Retake the rest with the same command once the service's answers are
-  warm (a step still being worked out makes the script wait and give up).
-- The offline copy (`frontend/public/snapshot/`) was not recorded again.
-  Its answers are the service's and did not change with the look; it does
-  not hold the Trip's orbit file, so the path card is absent offline.
+- The path to the Moon in the offline copy: the copy does not hold the
+  Trip's orbit file, so the card is absent there.
