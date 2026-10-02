@@ -1,0 +1,799 @@
+<title>Polar Window Refresh</title>
+<meta name="description" content="Direction preview for the POLAR WINDOW visual refresh: a mission's home, a site page and a comparison, drawn in the proposed system with the app's own numbers.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one column of demonstrations, each a real screen fragment drawn in the
+   proposed system. Dark first (the app's primary theme); light mirrors every token. */
+:root {
+  color-scheme: dark;
+  --canvas: #06080a;
+  --panel: #0e1216;
+  --raised: #141a1f;
+  --inset: #1a2127;
+  --tray: rgba(255, 255, 255, 0.035);
+  --glass: rgba(14, 18, 22, 0.72);
+  --line: rgba(255, 255, 255, 0.07);
+  --line-strong: rgba(255, 255, 255, 0.15);
+  --hi: rgba(255, 255, 255, 0.07);
+  --ink: #e9eef3;
+  --ink-2: #9ea9b5;
+  --ink-3: #7f8b98;
+  --sun: #f2a33c;
+  --sun-fill: #f2a33c;
+  --sun-soft: #ffce86;
+  --sun-deep: #3a2708;
+  --on-sun: #0a0c0e;
+  --earth: #4fc6e0;
+  --earth-fill: #4fc6e0;
+  --earth-deep: #0b2e38;
+  --alert: #ff5e93;
+  --alert-deep: #3d0a20;
+  --alert-wash: #2a0a17;
+  --dark-fill: #14181d;
+  --hatch: #5f6a75;
+  --uncertain: #8a95a1;
+  --focus: #a6e4f1;
+  --shadow-raised: 0 10px 30px -10px rgba(0, 0, 0, 0.55), 0 1px 0 rgba(0, 0, 0, 0.4);
+  --shadow-lift: 0 22px 44px -14px rgba(0, 0, 0, 0.65);
+  --glow-sun: 0 0 56px -8px rgba(242, 163, 60, 0.32);
+  --horizon: rgba(242, 163, 60, 0.07);
+  --r-card: 16px;
+  --r-core: 12px;
+  --r-ctl: 10px;
+  --pill: 999px;
+  --ease-settle: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-move: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-quick: 160ms;
+  --dur-base: 320ms;
+  --dur-slow: 640ms;
+  --dur-arrive: 820ms;
+  --font: 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --canvas: #f3f1ec; --panel: #ffffff; --raised: #ffffff; --inset: #ebe9e3;
+    --tray: rgba(20, 23, 26, 0.045); --glass: rgba(255, 255, 255, 0.76);
+    --line: rgba(20, 23, 26, 0.08); --line-strong: rgba(20, 23, 26, 0.17); --hi: rgba(255, 255, 255, 0.9);
+    --ink: #14171a; --ink-2: #3f474f; --ink-3: #5e6670;
+    --sun: #8a5605; --sun-fill: #b4761f; --sun-soft: #e8c489; --sun-deep: #f3e3c9; --on-sun: #14171a;
+    --earth: #0f5f74; --earth-fill: #1b8aa6; --earth-deep: #d7edf3;
+    --alert: #b3134f; --alert-deep: #f7dbe5; --alert-wash: #fbeaf0;
+    --dark-fill: #dcdad3; --hatch: #6b7178; --uncertain: #5e6670; --focus: #0f5f74;
+    --shadow-raised: 0 10px 30px -10px rgba(20, 23, 26, 0.14), 0 1px 0 rgba(20, 23, 26, 0.05);
+    --shadow-lift: 0 22px 44px -14px rgba(20, 23, 26, 0.2);
+    --glow-sun: 0 0 56px -8px rgba(180, 118, 31, 0.22); --horizon: rgba(180, 118, 31, 0.08);
+  }
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --canvas: #f3f1ec; --panel: #ffffff; --raised: #ffffff; --inset: #ebe9e3;
+  --tray: rgba(20, 23, 26, 0.045); --glass: rgba(255, 255, 255, 0.76);
+  --line: rgba(20, 23, 26, 0.08); --line-strong: rgba(20, 23, 26, 0.17); --hi: rgba(255, 255, 255, 0.9);
+  --ink: #14171a; --ink-2: #3f474f; --ink-3: #5e6670;
+  --sun: #8a5605; --sun-fill: #b4761f; --sun-soft: #e8c489; --sun-deep: #f3e3c9; --on-sun: #14171a;
+  --earth: #0f5f74; --earth-fill: #1b8aa6; --earth-deep: #d7edf3;
+  --alert: #b3134f; --alert-deep: #f7dbe5; --alert-wash: #fbeaf0;
+  --dark-fill: #dcdad3; --hatch: #6b7178; --uncertain: #5e6670; --focus: #0f5f74;
+  --shadow-raised: 0 10px 30px -10px rgba(20, 23, 26, 0.14), 0 1px 0 rgba(20, 23, 26, 0.05);
+  --shadow-lift: 0 22px 44px -14px rgba(20, 23, 26, 0.2);
+  --glow-sun: 0 0 56px -8px rgba(180, 118, 31, 0.22); --horizon: rgba(180, 118, 31, 0.08);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { height: 100%; overflow-x: clip; }
+body {
+  margin: 0; min-height: 100%;
+  background: var(--canvas); color: var(--ink);
+  font-family: var(--font); font-size: 15px; line-height: 1.5;
+  font-variant-numeric: tabular-nums lining-nums;
+  -webkit-font-smoothing: antialiased;
+  padding-inline: 16px; padding-block: 0 120px; overflow-x: clip;
+}
+@media (min-width: 1024px) { body { padding-inline: 32px; } }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+a { color: inherit; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+h1, h2, h3, p, ol, ul, dl, dd, figure { margin: 0; }
+ol, ul { padding: 0; list-style: none; }
+svg { display: block; }
+
+/* Grain, fixed, never on a scrolling box. */
+.grain { position: fixed; inset: 0; z-index: 60; pointer-events: none; opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay; }
+/* The low Sun on the horizon: one faint light at the foot of the first screen. */
+.horizon { position: absolute; left: 50%; top: 0; width: 160vw; max-width: 1800px; height: 70vh; translate: -50% 0;
+  pointer-events: none; z-index: 0;
+  background: radial-gradient(60% 55% at 50% 100%, var(--horizon), transparent 70%); }
+
+.wrap { position: relative; z-index: 1; max-width: 1280px; margin-inline: auto; }
+
+/* ---- type roles --------------------------------------------------------- */
+.display { font-weight: 600; font-stretch: 118%; letter-spacing: -0.03em; line-height: 1.02; text-wrap: balance; }
+.display-xl { font-size: clamp(38px, 6vw, 72px); }
+.display-lg { font-size: clamp(32px, 4.2vw, 48px); }
+.display-md { font-size: clamp(26px, 3vw, 36px); }
+.heading { font-weight: 600; letter-spacing: -0.015em; font-size: 22px; line-height: 1.25; }
+.title { font-weight: 600; font-size: 17px; line-height: 1.3; }
+.lede { font-size: 17px; line-height: 1.6; color: var(--ink-2); text-wrap: pretty; }
+.body { font-size: 15px; line-height: 1.55; color: var(--ink-2); }
+.small { font-size: 13px; line-height: 1.45; color: var(--ink-2); }
+.caption { font-size: 12px; line-height: 1.4; color: var(--ink-3); }
+.eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3); }
+.mono { font-family: var(--mono); font-size: 12px; letter-spacing: 0; }
+.figure { font-weight: 600; font-stretch: 112%; letter-spacing: -0.035em; line-height: 0.95; }
+.ink-2 { color: var(--ink-2); }
+.ink-3 { color: var(--ink-3); }
+.sun { color: var(--sun); } .earth { color: var(--earth); } .alert { color: var(--alert); }
+
+/* ---- the double bezel ---------------------------------------------------- */
+.card { background: var(--tray); border: 1px solid var(--line); border-radius: var(--r-card); padding: 4px;
+  box-shadow: var(--shadow-raised); min-width: 0; }
+.card > .core { background: var(--panel); border-radius: var(--r-core); box-shadow: inset 0 1px 0 var(--hi);
+  padding: 20px 22px; height: 100%; min-width: 0; }
+.card.link { transition: transform var(--dur-base) var(--ease-settle), box-shadow var(--dur-base) var(--ease-settle), border-color var(--dur-base); }
+.card.link:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); border-color: var(--line-strong); }
+.card.quiet { box-shadow: none; }
+.card.sunlit { box-shadow: var(--shadow-raised), var(--glow-sun); }
+
+/* ---- controls ------------------------------------------------------------ */
+.btn { display: inline-flex; align-items: center; gap: 10px; height: 48px; padding: 0 20px; border-radius: var(--pill);
+  font-weight: 600; font-size: 15px; white-space: nowrap; text-decoration: none;
+  transition: background-color var(--dur-quick), border-color var(--dur-quick), color var(--dur-quick), transform var(--dur-quick) var(--ease-settle); }
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--ink); color: var(--canvas); padding-right: 8px; }
+.btn-primary .orb { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(255,255,255,0.14); transition: transform var(--dur-base) var(--ease-settle); }
+:root[data-theme="light"] .btn-primary .orb { background: rgba(0,0,0,0.18); }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .btn-primary .orb { background: rgba(0,0,0,0.18); } }
+.btn-primary:hover .orb { transform: translate(2px, -1px) scale(1.06); }
+.btn-secondary { border: 1px solid var(--line-strong); color: var(--ink); background: var(--tray); }
+.btn-secondary:hover { background: var(--inset); border-color: var(--ink-3); }
+.btn-ghost { color: var(--ink-2); padding-inline: 14px; }
+.btn-ghost:hover { color: var(--ink); background: var(--inset); }
+.btn-sm { height: 40px; font-size: 14px; padding-inline: 16px; }
+.icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid var(--line-strong); color: var(--ink); transition: background-color var(--dur-quick); }
+.icon-btn:hover { background: var(--inset); }
+.chip { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: var(--pill);
+  border: 1px solid var(--line-strong); color: var(--ink-2); font-weight: 600; font-size: 14px; }
+.chip[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); background: var(--inset); }
+.seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: var(--pill); border: 1px solid var(--line-strong); background: var(--tray); }
+.seg button { height: 38px; padding: 0 16px; border-radius: var(--pill); font-weight: 600; font-size: 14px; color: var(--ink-2); transition: color var(--dur-quick), background-color var(--dur-quick); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--canvas); }
+.seg button:not([aria-pressed="true"]):hover { color: var(--ink); }
+.tag { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: var(--pill);
+  border: 1px solid var(--line-strong); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2); }
+
+/* ---- shell: the island -------------------------------------------------- */
+.island { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); z-index: 40; width: max-content; max-width: 100%;
+  margin: 12px auto 0; display: flex; align-items: center; gap: 6px; padding: 6px 8px 6px 14px; border-radius: var(--pill);
+  background: var(--glass); border: 1px solid var(--line); box-shadow: var(--shadow-raised), inset 0 1px 0 var(--hi);
+  backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(18px) saturate(1.2); }
+.brand { display: inline-flex; align-items: center; gap: 10px; padding-right: 10px; text-decoration: none; }
+.wordmark { font-size: 13px; font-weight: 700; letter-spacing: 0.2em; }
+.wordmark span { font-weight: 400; color: var(--sun); }
+.island nav { display: none; gap: 2px; }
+.island nav a { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: var(--pill); text-decoration: none;
+  font-weight: 500; font-size: 14px; color: var(--ink-2); transition: background-color var(--dur-quick), color var(--dur-quick); }
+.island nav a:hover { color: var(--ink); background: var(--inset); }
+.island nav a[aria-current="page"] { color: var(--ink); font-weight: 600; background: var(--inset); }
+.island nav a[aria-current="page"]::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--ink); }
+.island .tools { display: inline-flex; gap: 6px; margin-left: 6px; }
+.island .tools .btn-sm { border: 1px solid var(--line-strong); height: 40px; }
+@media (min-width: 900px) { .island nav { display: inline-flex; } }
+.saved { display: flex; justify-content: center; margin-top: 10px; }
+.saved .tag { height: 28px; gap: 8px; text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 12px; color: var(--ink-3); }
+.saved .tag b { font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2); }
+.dock { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); translate: -50% 0; z-index: 40;
+  display: inline-flex; gap: 2px; padding: 4px; border-radius: var(--pill); background: var(--glass); border: 1px solid var(--line);
+  box-shadow: var(--shadow-lift); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+.dock a { display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 18px; border-radius: var(--pill); text-decoration: none; font-size: 14px; font-weight: 500; color: var(--ink-2); }
+.dock a[aria-current="page"] { background: var(--ink); color: var(--canvas); font-weight: 600; }
+@media (min-width: 900px) { .dock { display: none; } }
+
+/* ---- sections ------------------------------------------------------------ */
+.intro { position: relative; padding-block: 72px 48px; display: grid; gap: 22px; max-width: 820px; }
+@media (min-width: 1024px) { .intro { padding-block: 110px 72px; } }
+.intro .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.demo { padding-block: 56px; border-top: 1px solid var(--line); display: grid; gap: 28px; }
+@media (min-width: 1024px) { .demo { padding-block: 88px; gap: 36px; } }
+.demo-head { display: grid; gap: 8px; max-width: 720px; }
+.demo-head .body { max-width: 62ch; }
+.screen { display: grid; gap: 24px; }
+
+/* page header inside a screen */
+.crumbs { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; color: var(--ink-3); }
+.crumbs a { color: var(--ink-2); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
+.page-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 32px; }
+.page-head .name { display: grid; gap: 6px; min-width: 0; }
+.page-head .name .display span { font-weight: 400; font-stretch: 100%; color: var(--ink-2); }
+.outcome { display: inline-flex; align-items: center; gap: 8px; }
+.outcome .glyph { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--ink); background: linear-gradient(90deg, var(--ink) 50%, transparent 50%); }
+
+/* journey */
+.journey { position: relative; display: grid; gap: 18px; padding-block: 8px; }
+.journey::before { content: ''; position: absolute; background: var(--line-strong); }
+.journey::after { content: ''; position: absolute; background: var(--ink); transform-origin: left top; transform: scaleX(var(--p, 1)); }
+@media (max-width: 767px) {
+  .journey { padding-left: 44px; }
+  .journey::before, .journey::after { left: 13px; top: 14px; bottom: 14px; width: 2px; }
+  .journey::after { transform: scaleY(var(--p, 1)); }
+}
+@media (min-width: 768px) {
+  .journey { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; }
+  .journey::before, .journey::after { left: calc(100% / 12); right: calc(100% / 12); top: 14px; height: 2px; }
+}
+.journey li { position: relative; display: grid; gap: 10px; min-width: 0; }
+.journey a { display: grid; gap: 8px; text-decoration: none; color: inherit; border-radius: var(--r-ctl); }
+.journey .node { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%;
+  background: var(--ink); color: var(--canvas); font-family: var(--mono); font-size: 12px; font-weight: 500; box-shadow: 0 0 0 4px var(--canvas); }
+@media (max-width: 767px) { .journey .node { position: absolute; left: -44px; top: 0; } }
+.journey .ahead .node { background: var(--canvas); color: var(--ink-2); border: 2px solid var(--line-strong); }
+.journey .step-name { font-weight: 600; font-size: 16px; }
+.journey .step-sum { font-size: 13px; line-height: 1.45; color: var(--ink-2); }
+.journey .state { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-3); }
+.journey .state i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.journey .ahead .state i { background: transparent; border: 1.5px solid currentColor; }
+.journey .here { position: absolute; top: -34px; left: 50%; translate: -50% 0; white-space: nowrap; }
+@media (max-width: 767px) { .journey .here { position: static; translate: none; justify-self: start; } }
+
+/* bento */
+.bento { display: grid; gap: 14px; grid-template-columns: 1fr; }
+@media (min-width: 1024px) { .bento { grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-rows: minmax(0, auto); } .c7 { grid-column: span 7; grid-row: span 2; } .c5 { grid-column: span 5; } .c12 { grid-column: 1 / -1; } }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; font-size: 14px; }
+.kv dt { color: var(--ink-3); } .kv dd { color: var(--ink); }
+.rule { height: 1px; background: var(--line); margin-block: 16px; }
+.stack { display: grid; gap: 10px; }
+.between { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+/* mini map */
+.minimap { width: 100%; aspect-ratio: 16 / 10; border-radius: 10px; overflow: hidden; background: var(--inset); }
+
+/* date bar */
+.datebar { display: grid; gap: 12px; align-items: center; grid-template-columns: 1fr; }
+@media (min-width: 900px) { .datebar { grid-template-columns: auto 1fr auto; gap: 18px; } }
+.play { width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--line-strong); display: inline-flex; align-items: center; justify-content: center; }
+.play:hover { background: var(--inset); }
+.track { position: relative; height: 4px; border-radius: 4px; background: var(--line-strong); }
+.track .thumb { position: absolute; top: 50%; left: var(--x); translate: -50% -50%; width: 3px; height: 22px; background: var(--ink); border-radius: 2px; box-shadow: 0 0 0 4px var(--panel); }
+.track .fill { position: absolute; inset: 0 auto 0 0; width: var(--x); background: var(--ink-3); border-radius: 4px; }
+
+/* answer hero */
+.answer { display: grid; gap: 14px; max-width: 1000px; }
+.answer .listen { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+/* tiles */
+.tiles { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 1024px) { .tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; } }
+.tile .core { display: grid; gap: 14px; align-content: start; padding: 18px 18px 16px; }
+@media (min-width: 1024px) { .tile .core { padding: 22px 22px 20px; } }
+.tile .label { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 500; color: var(--ink-2); line-height: 1.35; }
+.tile .label svg { flex: none; opacity: 0.7; }
+.tile .num { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 8px; }
+.tile .num .figure { font-size: clamp(34px, 4.5vw, 56px); }
+.tile .num .unit { font-size: 17px; color: var(--ink-2); }
+.tile .num .pm { font-size: 15px; color: var(--ink-2); }
+.bar { height: 4px; border-radius: 0; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; transform-origin: left; transform: scaleX(var(--f)); }
+.bar.sun i { background: var(--sun-fill); } .bar.earth i { background: var(--earth-fill); } .bar.alert i { background: var(--alert); } .bar.neutral i { background: var(--ink-3); }
+.tile.alert-tile { border-color: color-mix(in srgb, var(--alert) 55%, transparent); }
+.tile.alert-tile .label { color: var(--alert); }
+.tile .foot { font-size: 12px; line-height: 1.45; color: var(--ink-3); }
+.tile .foot.alert { color: var(--alert); }
+
+/* arcs chart */
+.chart .core { display: grid; gap: 18px; }
+.lanes { display: grid; gap: 16px; }
+.lane { display: grid; gap: 6px; }
+.lane .lbl { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
+.lane .arcs { position: relative; display: flex; height: 26px; }
+.arc { height: 100%; }
+.arc.up-sun { background: var(--sun-fill); } .arc.up-earth { background: var(--earth-fill); }
+.hatch-blocked { background-image: repeating-linear-gradient(45deg, var(--dark-fill) 0 3px, var(--hatch) 3px 5px); }
+.hatch-alert { background-image: repeating-linear-gradient(45deg, var(--alert-deep) 0 3px, var(--alert) 3px 5px); }
+.arc.worst { outline: 2px solid var(--alert); outline-offset: -2px; }
+.now { position: absolute; top: -8px; bottom: -8px; left: var(--x); width: 2px; background: var(--ink); pointer-events: none; }
+.now::after { content: 'now'; position: absolute; top: -18px; left: 6px; font-family: var(--mono); font-size: 11px; color: var(--ink-2); }
+.axis { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--ink-3); border-top: 1px solid var(--line); padding-top: 6px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 12px; color: var(--ink-2); }
+.legend li { display: inline-flex; align-items: center; gap: 8px; }
+.sw { width: 18px; height: 10px; }
+
+/* rows */
+.rows .core { padding: 4px; }
+.rows .group-h { padding: 14px 18px 6px; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; text-align: left;
+  min-height: 52px; padding: 10px 18px; border-radius: 9px; transition: background-color var(--dur-quick); }
+.row:hover { background: var(--inset); }
+.row + .row { position: relative; }
+.row + .row::before { content: ''; position: absolute; left: 18px; right: 18px; top: 0; height: 1px; background: var(--line); }
+.row .t { font-weight: 600; font-size: 15px; }
+.row .m { font-size: 13px; color: var(--ink-3); margin-left: 10px; font-weight: 400; }
+.row svg { color: var(--ink-3); flex: none; }
+
+/* compare */
+.cmp { display: grid; gap: 14px; grid-template-columns: 1fr; }
+@media (min-width: 900px) { .cmp { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.cmp .core { display: grid; gap: 16px; }
+.cmp .rank { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.cmp .rank .tie { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); border: 1px dashed var(--line-strong); border-radius: var(--pill); padding: 4px 9px; white-space: nowrap; }
+.cmp .hero { display: flex; align-items: baseline; gap: 8px; }
+.cmp .hero .figure { font-size: clamp(40px, 5vw, 60px); }
+.cmp .minis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.cmp .minis div { display: grid; gap: 2px; }
+.cmp .minis .v { font-weight: 600; font-size: 18px; font-stretch: 108%; letter-spacing: -0.02em; }
+.cmp .minis .k { font-size: 11px; color: var(--ink-3); }
+.cmp .lane .arcs { height: 14px; }
+.cmp .lane { gap: 4px; }
+.verdictless { font-size: 17px; line-height: 1.55; max-width: 72ch; }
+
+/* system strip */
+.sys { display: grid; gap: 14px; grid-template-columns: 1fr; }
+@media (min-width: 900px) { .sys { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.sys .core { display: grid; gap: 16px; align-content: start; }
+.swatches { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.swatches div { aspect-ratio: 1; border-radius: 10px; border: 1px solid var(--line); display: grid; align-content: end; padding: 8px; font-size: 11px; color: var(--ink-3); }
+.type-sample { display: grid; gap: 14px; }
+.type-sample > div { display: grid; gap: 4px; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+table.motion { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.motion td { padding: 8px 0; border-top: 1px solid var(--line); vertical-align: top; }
+table.motion td:first-child { color: var(--ink-3); width: 38%; }
+table.motion td:last-child { font-family: var(--mono); font-size: 12px; }
+
+footer { border-top: 1px solid var(--line); padding-block: 24px; display: grid; gap: 6px; }
+
+/* ---- motion ---------------------------------------------------------------
+   Containers rise into place; the words inside them move with the box and never
+   fade. Bars and the journey line grow from their origin. Everything is transform
+   only, and none of it runs when the reader asked for less motion. */
+[data-reveal] { transform: translateY(18px); transition: transform var(--dur-arrive) var(--ease-settle); transition-delay: calc(var(--i, 0) * 60ms); }
+[data-reveal].in { transform: none; }
+.in .bar i { animation: grow var(--dur-slow) var(--ease-settle) both; animation-delay: calc(var(--i, 0) * 60ms + 120ms); }
+.journey.in::after { animation: grow 1200ms var(--ease-settle) both 200ms; }
+@media (max-width: 767px) { .journey.in::after { animation-name: grow-y; } }
+.in .arc { animation: grow var(--dur-slow) var(--ease-settle) both 160ms; transform-origin: left; }
+@keyframes grow { from { transform: scaleX(0); } }
+@keyframes grow-y { from { transform: scaleY(0); } }
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] { transform: none; transition: none; }
+  .in .bar i, .journey.in::after, .in .arc, .card.link, .btn, .btn-primary .orb { animation: none !important; transition: none !important; }
+  .card.link:hover { transform: none; }
+}
+</style>
+
+<div class="grain" aria-hidden="true"></div>
+
+<header class="island" aria-label="Site">
+  <a class="brand" href="#top" aria-label="POLAR WINDOW, home">
+    <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.75" y="2.75" width="18.5" height="18.5" rx="4" fill="var(--inset)"/><rect x="2.75" y="15" width="18.5" height="6.25" fill="var(--line-strong)"/><path d="M8 15 a4 4 0 0 1 8 0 z" fill="var(--sun-fill)"/><path d="M2.75 15 H21.25" stroke="var(--ink-3)" stroke-width="1.1"/><rect x="2.75" y="2.75" width="18.5" height="18.5" rx="4" fill="none" stroke="var(--ink)" stroke-width="1.5"/></svg>
+    <span class="wordmark">POLAR<span>&nbsp;WINDOW</span></span>
+  </a>
+  <nav aria-label="Views">
+    <a href="#hub" aria-current="page">Missions</a>
+    <a href="#site">Landing sites</a>
+  </nav>
+  <div class="tools">
+    <button class="btn btn-sm btn-ghost" type="button" aria-pressed="false" title="Show the guide: a short tour of every feature">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg>
+      Guide
+    </button>
+    <button class="icon-btn" type="button" id="theme" aria-label="Switch theme" title="Switch between the dark and light theme">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17M12 3.5a8.5 8.5 0 0 1 0 17" fill="currentColor"/></svg>
+    </button>
+    <button class="icon-btn" type="button" aria-label="Settings" aria-haspopup="dialog">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="2" fill="var(--panel)"/><circle cx="15" cy="12" r="2" fill="var(--panel)"/><circle cx="8" cy="17" r="2" fill="var(--panel)"/></svg>
+    </button>
+  </div>
+</header>
+<div class="saved"><span class="tag"><b>Saved copy</b> answers from 30 September 2026</span></div>
+
+<main class="wrap" id="top">
+  <div class="horizon" aria-hidden="true"></div>
+
+  <section class="intro">
+    <p class="eyebrow">Direction preview · visual refresh</p>
+    <h1 class="display display-xl">The same answers, with somewhere for the eye to land.</h1>
+    <p class="lede">Three screens from the dashboard, redrawn in the proposed system: surfaces that read as light rather than lines, one hero per page, type with real scale, and a mission that looks like a journey. Every number below is the app’s own, from its saved copy of 30 September 2026. Nothing is invented and nothing semantic moves: amber is still sunlight, cyan is still Earth, magenta is still over the battery limit, and every status keeps its glyph and its words.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="#hub">See a mission’s home <span class="orb"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+      <a class="btn btn-secondary" href="#site">A site page</a>
+      <a class="btn btn-ghost" href="#system">The system</a>
+    </div>
+    <p class="caption">Use the half-disc in the island above to flip the theme. The island itself is the proposed shell: one floating control strip instead of a full-width bar, a sub-bar and a banner.</p>
+  </section>
+
+  <!-- ============================================================ HUB -->
+  <section class="demo" id="hub">
+    <div class="demo-head">
+      <p class="eyebrow">Screen 1 · a mission’s home</p>
+      <h2 class="display display-md">A mission is a journey, so draw it as one.</h2>
+      <p class="body">The six steps sit on a line, in order, with where the mission got to. The record is the biggest card because it is what a project manager opens the page for. Same words, same six links, same state glyphs.</p>
+    </div>
+
+    <div class="screen">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="#hub">Missions</a><span aria-hidden="true">/</span><span>IM-2</span></nav>
+      <div class="page-head">
+        <div class="name">
+          <h3 class="display display-lg">IM-2 <span>· Athena</span></h3>
+          <p class="body">Intuitive Machines · Nova-C · NASA task order PRIME-1</p>
+        </div>
+        <div class="outcome"><span class="glyph" aria-hidden="true"></span><span class="title">Partly successful</span><span class="small">· landed 6 Mar 2025</span></div>
+      </div>
+
+      <ol class="journey" style="--p: 1" data-reveal aria-label="Six steps, from getting ready to coming home">
+        <li><a href="#hub"><span class="node">1</span><span class="step-name">Ready</span><span class="step-sum">All 13 items flew; nothing was entered after.</span><span class="state"><i></i>Available</span></a></li>
+        <li><a href="#hub"><span class="node">2</span><span class="step-name">Launch</span><span class="step-sum">27 Feb 2025, 00:16 UTC on Falcon 9 from Launch Complex 39A.</span><span class="state"><i></i>Available</span></a></li>
+        <li><a href="#hub"><span class="node">3</span><span class="step-name">Trip</span><span class="step-sum">7.7 days from launch to the Moon.</span><span class="state"><i></i>Available</span></a></li>
+        <li><a href="#hub"><span class="node">4</span><span class="step-name">Surface</span><span class="step-sum">12.75 hours at Mons Mouton, the Sun up and Earth in view throughout.</span><span class="state"><i></i>Available</span></a></li>
+        <li><a href="#hub"><span class="node">5</span><span class="step-name">Contact</span><span class="step-sum">A ground station could hear it for all 12.8 h.</span><span class="state"><i></i>Available</span></a></li>
+        <li><a href="#hub"><span class="node">6</span><span class="step-name">Return</span><span class="step-sum">Where the booster comes down; nothing returns from the Moon.</span><span class="state"><i></i>Available</span></a></li>
+      </ol>
+
+      <div class="bento">
+        <article class="card c7" data-reveal style="--i:1">
+          <div class="core">
+            <p class="eyebrow">The mission’s record</p>
+            <div class="rule" style="margin-block: 12px 14px"></div>
+            <h4 class="heading">Touched down at Mons Mouton at about 11:30 a.m. CST on 6 March 2025, roughly 400 m from the intended site, and came to rest on its side in a 20 m crater.</h4>
+            <p class="body" style="margin-top: 10px">Because the lander was on its side, its solar panels could not face the Sun as planned and the mission ended the next morning. <a href="#hub">Show more</a></p>
+            <div class="rule"></div>
+            <dl class="kv">
+              <dt>Launch</dt><dd>27 Feb 2025</dd>
+              <dt>Landing</dt><dd>6 Mar 2025, 17:30 UTC</dd>
+              <dt>End of mission</dt><dd>7 Mar 2025, 06:15 UTC</dd>
+              <dt>Not published</dt><dd class="ink-3">planned time on the surface</dd>
+            </dl>
+          </div>
+        </article>
+
+        <article class="card c5 link" data-reveal style="--i:2">
+          <div class="core stack">
+            <div class="between"><p class="eyebrow">Target</p><span class="caption">Athena rest position, Mons Mouton</span></div>
+            <svg class="minimap" viewBox="0 0 320 200" role="img" aria-label="Where it landed: a drawing of the south pole seen from above, with the landing spot marked near Mons Mouton">
+              <defs>
+                <radialGradient id="terrain" cx="50%" cy="55%" r="60%"><stop offset="0" stop-color="#4a535c"/><stop offset="0.6" stop-color="#363e46"/><stop offset="1" stop-color="#23292f"/></radialGradient>
+                <clipPath id="disc"><circle cx="160" cy="112" r="92"/></clipPath>
+              </defs>
+              <circle cx="160" cy="112" r="92" fill="url(#terrain)"/>
+              <g clip-path="url(#disc)" fill="none" stroke="rgba(0,0,0,0.35)" stroke-width="1.2">
+                <circle cx="118" cy="96" r="16"/><circle cx="196" cy="140" r="22"/><circle cx="172" cy="78" r="9"/><circle cx="150" cy="150" r="7"/><circle cx="214" cy="92" r="12"/><circle cx="96" cy="144" r="10"/>
+                <path d="M68 150 L252 48" stroke="var(--sun-fill)" stroke-width="1.6"/>
+                <rect x="60" y="20" width="200" height="180" fill="rgba(0,0,0,0.42)" transform="rotate(-29 160 112) translate(-120 0)"/>
+              </g>
+              <g stroke="var(--line-strong)" stroke-width="1" fill="none"><circle cx="160" cy="112" r="92"/><circle cx="160" cy="112" r="46" stroke-dasharray="2 4"/></g>
+              <g transform="translate(176 94)"><rect x="-6" y="-6" width="12" height="12" transform="rotate(45)" fill="var(--panel)" stroke="var(--ink)" stroke-width="1.6"/></g>
+              <text x="188" y="92" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink)">Athena</text>
+              <text x="160" y="16" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9" fill="var(--ink-3)">0°</text>
+              <text x="258" y="116" font-family="IBM Plex Mono, monospace" font-size="9" fill="var(--ink-3)">90°E</text>
+            </svg>
+            <p class="caption">Drawing of the pole, not the terrain map; the real page draws the LOLA relief. Amber line: where the Sun is setting now.</p>
+          </div>
+        </article>
+
+        <article class="card c5 link" data-reveal style="--i:3">
+          <div class="core stack">
+            <div class="between"><p class="eyebrow">What it carries</p><span class="caption">3 payloads</span></div>
+            <ul class="stack" style="gap: 8px">
+              <li class="between"><span class="title">Volatiles</span><span class="small">PRIME-1 drill and spectrometer</span></li>
+              <li class="between"><span class="title">Technology demonstration</span><span class="small">Micro-Nova hopper, 4G/LTE</span></li>
+              <li class="between"><span class="title">Laser retroreflector</span><span class="small">NASA</span></li>
+            </ul>
+            <p class="caption">Sources: 7, last read 27 September 2026.</p>
+          </div>
+        </article>
+      </div>
+
+      <div class="card quiet" data-reveal style="--i:4">
+        <div class="core stack" style="gap: 14px">
+          <div class="between"><p class="eyebrow">The same strip for a planned mission</p><span class="caption">IM-3 · Intuitive Machines · landing in 2026, known to the year</span></div>
+          <ol class="journey" style="--p: 0.2" aria-label="IM-3, six steps">
+            <li><a href="#hub"><span class="node">1</span><span class="step-name">Ready</span><span class="step-sum">9 of 14 items entered; 5 open.</span><span class="state"><i></i>Needs input</span></a></li>
+            <li class="ahead"><a href="#hub"><span class="tag here">Next</span><span class="node">2</span><span class="step-name">Launch</span><span class="step-sum">Opportunities for 2026, from the Cape.</span><span class="state"><i></i>Available</span></a></li>
+            <li class="ahead"><a href="#hub"><span class="node">3</span><span class="step-name">Trip</span><span class="step-sum">If it flies as planned.</span><span class="state"><i></i>Available</span></a></li>
+            <li class="ahead"><a href="#hub"><span class="node">4</span><span class="step-name">Surface</span><span class="step-sum">Reiner Gamma, one lunar day.</span><span class="state"><i></i>Available</span></a></li>
+            <li class="ahead"><a href="#hub"><span class="node">5</span><span class="step-name">Contact</span><span class="step-sum">Ground stations and a relay to compare.</span><span class="state"><i></i>Available</span></a></li>
+            <li class="ahead"><a href="#hub"><span class="node">6</span><span class="step-name">Return</span><span class="step-sum">Booster landing zone, sea state to come.</span><span class="state"><i></i>No data yet</span></a></li>
+          </ol>
+          <p class="caption">Solid nodes are behind the mission; outlined ones are ahead. The Ready summary above is illustrative of the pattern; the saved copy holds no entered items for IM-3.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================== SITE -->
+  <section class="demo" id="site">
+    <div class="demo-head">
+      <p class="eyebrow">Screen 2 · a site, and the shape every step page shares</p>
+      <h2 class="display display-md">The answer is the biggest thing on the page.</h2>
+      <p class="body">Question as an eyebrow, one sentence at display size, then the four numbers in a strip with their bars, then the one chart, then the rows. The date bar becomes a control, not a strip of text. The over-limit number is the only thing allowed to shout, and it shouts in three ways: the colour, the triangle and the words.</p>
+    </div>
+
+    <div class="screen">
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="#site">Landing sites</a><span aria-hidden="true">/</span><span>Site</span></nav>
+      <div class="page-head">
+        <div class="name">
+          <h3 class="display display-lg">Connecting Ridge</h3>
+          <p class="mono ink-3">89.4380°S 222.7170°E · height 1,957.5 m</p>
+        </div>
+        <div class="seg" role="group" aria-label="Landing site pages">
+          <button type="button" aria-pressed="false">Map</button>
+          <button type="button" aria-pressed="true">Site</button>
+          <button type="button" aria-pressed="false">Compare</button>
+          <button type="button" aria-pressed="false">Plan</button>
+        </div>
+      </div>
+
+      <div class="card quiet" data-reveal>
+        <div class="core datebar" style="padding: 12px 16px">
+          <button class="play" type="button" aria-label="Play the dates, 14 seconds for one lunar day">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4 L19 12 L7 20 Z"/></svg>
+          </button>
+          <div class="stack" style="gap: 10px; min-width: 0">
+            <div class="between"><span class="small" style="font-weight:600; color: var(--ink)">Dates: one lunar day, 709 hours</span><span class="mono ink-2">14 Mar 2027 → 12 Apr 2027</span></div>
+            <div class="track" style="--x: 40.7%"><span class="fill"></span><span class="thumb"></span></div>
+          </div>
+          <div class="stack" style="gap: 0; text-align: right">
+            <span class="figure" style="font-size: 26px">Day 12 <span class="ink-3" style="font-weight:400; font-stretch:100%">of 30</span></span>
+            <span class="mono ink-3">26 March, 09:40 UTC</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="answer" data-reveal style="--i:1">
+        <p class="eyebrow">What does this spot get over these dates?</p>
+        <p class="display display-md">In sunlight 81% of the time and in contact with Earth 61%. The longest night is 122 h, which is 2 h past the 120 h battery limit.</p>
+        <div class="listen">
+          <button class="btn btn-secondary btn-sm" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 L6 9 H3 V15 H6 L11 19 Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>Listen</button>
+          <button class="btn btn-ghost btn-sm" type="button">Read it</button>
+          <span class="caption">Worked out 2 days ago · terrain heights can be off by up to ±4 m</span>
+        </div>
+      </div>
+
+      <div class="tiles">
+        <article class="card tile sunlit" data-reveal style="--i:1">
+          <div class="core">
+            <div class="label"><span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="display:inline; vertical-align:-2px; margin-right:6px; opacity:1"><circle cx="12" cy="14" r="4"/><path d="M2 18H22M12 6V3M6 9 4.5 7M18 9l1.5-2"/></svg>Time in sunlight</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg></div>
+            <div class="num"><span class="figure sun">574</span><span class="unit">h</span></div>
+            <div class="bar sun"><i style="--f: 0.81"></i></div>
+            <p class="foot">81% of the time</p>
+          </div>
+        </article>
+        <article class="card tile" data-reveal style="--i:2">
+          <div class="core">
+            <div class="label"><span>Time in contact with Earth</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg></div>
+            <div class="num"><span class="figure earth">430</span><span class="unit">h</span></div>
+            <div class="bar earth"><i style="--f: 0.61"></i></div>
+            <p class="foot">61% of the time</p>
+          </div>
+        </article>
+        <article class="card tile alert-tile" data-reveal style="--i:3">
+          <div class="core">
+            <div class="label"><span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:inline; vertical-align:-2px; margin-right:6px; opacity:1"><path d="M12 3 L22 20 H2 Z"/><path d="M12 10v4M12 17h.01"/></svg>Longest night</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg></div>
+            <div class="num"><span class="figure alert">122</span><span class="pm">±17.1</span><span class="unit">h</span></div>
+            <div class="bar alert"><i style="--f: 1"></i></div>
+            <p class="foot alert">2 h over the 120 h battery limit</p>
+          </div>
+        </article>
+        <article class="card tile" data-reveal style="--i:4">
+          <div class="core">
+            <div class="label"><span>Longest time without contact</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg></div>
+            <div class="num"><span class="figure">278</span><span class="pm">±5.3</span><span class="unit">h</span></div>
+            <div class="bar neutral"><i style="--f: 0.39"></i></div>
+            <p class="foot">the lander must work alone this long</p>
+          </div>
+        </article>
+      </div>
+
+      <section class="card chart" data-reveal style="--i:2" aria-labelledby="chart-h">
+        <div class="core">
+          <div class="between">
+            <h4 id="chart-h" class="title">Sunlight and contact with Earth over these dates</h4>
+            <button class="btn btn-ghost btn-sm" type="button" title="Or press T"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10H21M9 5V19M15 5V19"/></svg>Read the chart as a table</button>
+          </div>
+          <div class="lanes">
+            <div class="lane">
+              <span class="lbl sun">Sunlight</span>
+              <div class="arcs" role="img" aria-label="Sunlight over 709 hours: up for most of the dates, with a 122 hour night from day 3 to day 8">
+                <span class="arc up-sun" style="width: 1.5%"></span><span class="arc hatch-blocked" style="width: 0.8%"></span><span class="arc up-sun" style="width: 8%"></span><span class="arc hatch-alert worst" style="width: 17.2%"></span><span class="arc up-sun" style="width: 72.5%"></span>
+                <span class="now" style="--x: 40.7%" aria-hidden="true"></span>
+              </div>
+            </div>
+            <div class="lane">
+              <span class="lbl earth">Contact with Earth</span>
+              <div class="arcs" role="img" aria-label="Contact with Earth over 709 hours: in view until day 7, then 278 hours without contact until day 18, then in view">
+                <span class="arc up-earth" style="width: 22.6%"></span><span class="arc hatch-blocked" style="width: 39.2%"></span><span class="arc up-earth" style="width: 38.2%"></span>
+              </div>
+            </div>
+            <div class="lane">
+              <span class="lbl alert">Dark and out of contact at once</span>
+              <div class="arcs" style="height: 10px" role="img" aria-label="38 hours dark and out of contact, from day 6">
+                <span class="arc" style="width: 22.6%"></span><span class="arc hatch-alert" style="width: 5.4%"></span><span class="arc" style="width: 72%"></span>
+              </div>
+            </div>
+          </div>
+          <div class="axis"><span>14 Mar</span><span>21 Mar</span><span>28 Mar</span><span>5 Apr</span><span>12 Apr</span></div>
+          <ul class="legend">
+            <li><span class="sw" style="background: var(--sun-fill)"></span>Sun up</li>
+            <li><span class="sw" style="background: var(--earth-fill)"></span>Earth up</li>
+            <li><span class="sw hatch-blocked"></span>Blocked by the skyline</li>
+            <li><span class="sw hatch-alert"></span>Longest night, past the limit</li>
+            <li><span class="sw" style="width: 2px; background: var(--ink)"></span>Now</li>
+          </ul>
+        </div>
+      </section>
+
+      <div class="card rows quiet" data-reveal style="--i:3">
+        <div class="core">
+          <p class="eyebrow group-h">Details</p>
+          <button class="row" type="button" aria-expanded="false"><span><span class="t">What blocks the Sun and Earth here?</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+          <button class="row" type="button" aria-expanded="false"><span><span class="t">Change the dates</span><span class="m">29.5 days from 14 Mar 2027</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+          <button class="row" type="button" aria-expanded="false"><span><span class="t">What is it like at this site?</span><span class="m">the saddle between Shackleton and de Gerlache</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+          <p class="eyebrow group-h" style="padding-top: 18px">About these numbers</p>
+          <button class="row" type="button" aria-expanded="false"><span><span class="t">How sure is this?</span><span class="m">margins, sources, table</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+        </div>
+      </div>
+
+      <div class="between" data-reveal style="--i:4">
+        <div class="controls">
+          <a class="btn btn-primary" href="#site">Plan for time without contact <span class="orb"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+          <a class="btn btn-secondary" href="#site">See the skyline</a>
+          <a class="btn btn-ghost" href="#site">Printable report</a>
+        </div>
+        <p class="caption">Estimates from a terrain map and calculated Sun and Earth positions, not lander readings.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================== COMPARE -->
+  <section class="demo" id="compare">
+    <div class="demo-head">
+      <p class="eyebrow">Screen 3 · compare</p>
+      <h2 class="display display-md">Rank by one number, and let that number lead.</h2>
+      <p class="body">The measure chosen for ranking becomes each card’s hero; the other three step back. Columns still slide when the ranking changes, and nothing is ever added into a score.</p>
+    </div>
+    <div class="screen">
+      <div class="between">
+        <div class="seg" role="group" aria-label="Rank by">
+          <button type="button" aria-pressed="false">Time in sunlight</button>
+          <button type="button" aria-pressed="false">Contact with Earth</button>
+          <button type="button" aria-pressed="true">Longest night</button>
+          <button type="button" aria-pressed="false">Without contact</button>
+        </div>
+        <span class="caption">14 Mar 2027 → 12 Apr 2027 · one lunar day</span>
+      </div>
+      <div class="cmp">
+        <article class="card link" data-reveal style="--i:1">
+          <div class="core">
+            <div class="rank"><span class="title"><span class="mono ink-3" style="margin-right:8px">B</span>Connecting Ridge</span><span class="tie" title="Within the margin of the next site">Too close to call</span></div>
+            <div class="hero"><span class="figure alert">122</span><span class="unit ink-2">±17.1 h</span></div>
+            <p class="small alert" style="font-weight:600">2 h past the 120 h battery limit</p>
+            <div class="minis"><div><span class="v sun">574 h</span><span class="k">sunlight</span></div><div><span class="v earth">430 h</span><span class="k">contact</span></div><div><span class="v">278 h</span><span class="k">without contact</span></div></div>
+            <div class="lanes" style="gap: 8px">
+              <div class="lane"><div class="arcs"><span class="arc up-sun" style="width:10.3%"></span><span class="arc hatch-alert" style="width:17.2%"></span><span class="arc up-sun" style="width:72.5%"></span></div></div>
+              <div class="lane"><div class="arcs"><span class="arc up-earth" style="width:22.6%"></span><span class="arc hatch-blocked" style="width:39.2%"></span><span class="arc up-earth" style="width:38.2%"></span></div></div>
+            </div>
+            <p class="caption">The saddle between Shackleton and de Gerlache. High, and unusually open.</p>
+          </div>
+        </article>
+        <article class="card link" data-reveal style="--i:2">
+          <div class="core">
+            <div class="rank"><span class="title"><span class="mono ink-3" style="margin-right:8px">G</span>Malapert massif</span><span class="tie" title="Within the margin of the next site">Too close to call</span></div>
+            <div class="hero"><span class="figure alert">≥288</span><span class="unit ink-2">h</span></div>
+            <p class="small alert" style="font-weight:600">At least 168 h past the 120 h battery limit</p>
+            <div class="minis"><div><span class="v sun">394 h</span><span class="k">sunlight</span></div><div><span class="v earth">571 h</span><span class="k">contact</span></div><div><span class="v">138 h</span><span class="k">without contact</span></div></div>
+            <div class="lanes" style="gap: 8px">
+              <div class="lane"><div class="arcs"><span class="arc hatch-blocked" style="width:4%"></span><span class="arc up-sun" style="width:56%"></span><span class="arc hatch-alert" style="width:40%"></span></div></div>
+              <div class="lane"><div class="arcs"><span class="arc up-earth" style="width:31%"></span><span class="arc hatch-blocked" style="width:19.5%"></span><span class="arc up-earth" style="width:49.5%"></span></div></div>
+            </div>
+            <p class="caption">Superb view of Earth, and far enough from the pole to have a real night.</p>
+          </div>
+        </article>
+        <article class="card link" data-reveal style="--i:3">
+          <div class="core">
+            <div class="rank"><span class="title"><span class="mono ink-3" style="margin-right:8px">I</span>Faustini rim</span><span class="tie" title="Within the margin of the next site">Too close to call</span></div>
+            <div class="hero"><span class="figure alert">606</span><span class="unit ink-2">h</span></div>
+            <p class="small alert" style="font-weight:600">486 h past the 120 h battery limit</p>
+            <div class="minis"><div><span class="v sun">103 h</span><span class="k">sunlight</span></div><div><span class="v earth">279 h</span><span class="k">contact</span></div><div><span class="v">430 h</span><span class="k">without contact</span></div></div>
+            <div class="lanes" style="gap: 8px">
+              <div class="lane"><div class="arcs"><span class="arc up-sun" style="width:12%"></span><span class="arc hatch-alert" style="width:85.5%"></span><span class="arc up-sun" style="width:2.5%"></span></div></div>
+              <div class="lane"><div class="arcs"><span class="arc up-earth" style="width:12%"></span><span class="arc hatch-blocked" style="width:60.6%"></span><span class="arc up-earth" style="width:27.4%"></span></div></div>
+            </div>
+            <p class="caption">Rim of a large cold trap, one of the most-studied ice targets.</p>
+          </div>
+        </article>
+      </div>
+      <p class="verdictless" data-reveal style="--i:4">No clear leader on longest night. <span class="alert">Connecting Ridge, Malapert massif and Faustini rim run past the 120 h battery limit</span> on these dates; other months can change that.</p>
+    </div>
+  </section>
+
+  <!-- ========================================================= SYSTEM -->
+  <section class="demo" id="system">
+    <div class="demo-head">
+      <p class="eyebrow">The system behind the three screens</p>
+      <h2 class="display display-md">Fewer lines, more light, one typeface at two widths.</h2>
+      <p class="body">Hairlines become translucent so they read as edges catching light instead of paint. Every card is a tray with a lit core. Archivo stays, but as one variable file whose width axis gives the display sizes and the key figures their own voice. IBM Plex Mono keeps every stamp and coordinate.</p>
+    </div>
+    <div class="sys">
+      <article class="card" data-reveal style="--i:1">
+        <div class="core">
+          <p class="eyebrow">Type, by role</p>
+          <div class="type-sample">
+            <div><span class="display" style="font-size: 40px">Plan a landing where the Sun barely rises</span><span class="caption">Display · Archivo wdth 118, 600, −0.03 em · page titles, answers, landing page</span></div>
+            <div><span class="figure" style="font-size: 44px">574 <span class="ink-2" style="font-size:18px; font-weight:400; font-stretch:100%">h ±2.1</span></span><span class="caption">Figure · Archivo wdth 112, 600, tabular · key numbers</span></div>
+            <div><span class="heading">What blocks the Sun and Earth here?</span><span class="caption">Heading · Archivo 600, 22 px</span></div>
+            <div><span class="body" style="color: var(--ink)">Light that low is easy to block. A ridge kilometres away can put a lander in shadow for days.</span><span class="caption">Body · Archivo 400, 15/24</span></div>
+            <div><span class="eyebrow">Six steps, from getting ready to coming home</span><span class="caption">Eyebrow · 11 px, 0.16 em, caps · section labels, questions</span></div>
+            <div><span class="mono" style="font-size: 13px; color: var(--ink)">14 Mar 2027 → 12 Apr 2027 · 89.4380°S 222.7170°E</span><span class="caption">Data · IBM Plex Mono 400 · stamps, coordinates, axes</span></div>
+          </div>
+        </div>
+      </article>
+      <article class="card" data-reveal style="--i:2">
+        <div class="core">
+          <p class="eyebrow">Surfaces and controls</p>
+          <div class="swatches">
+            <div style="background: var(--canvas)">canvas</div>
+            <div style="background: var(--panel)">panel</div>
+            <div style="background: var(--raised)">raised</div>
+            <div style="background: var(--inset)">inset</div>
+          </div>
+          <p class="caption">A card is a tray (the canvas tint, a hairline, 4 px padding, 16 px radius) holding a core (the panel, 12 px radius, a 1 px highlight along its top). Charts, bars, tables and pins inside it keep their square corners: those are the data.</p>
+          <div class="controls">
+            <button class="btn btn-primary" type="button">Open the dashboard <span class="orb"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
+            <button class="btn btn-secondary" type="button">Compare with nearby sites</button>
+            <button class="btn btn-ghost" type="button">Clear filters</button>
+          </div>
+          <div class="controls">
+            <button class="chip" type="button" aria-pressed="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l6 6L20 6"/></svg>Volatiles</button>
+            <button class="chip" type="button" aria-pressed="false">Rover and mobility</button>
+            <div class="seg" role="group" aria-label="Map"><button type="button" aria-pressed="true">South pole</button><button type="button" aria-pressed="false">Whole Moon</button></div>
+          </div>
+          <table class="motion" aria-label="Motion">
+            <tr><td>Things arriving</td><td>cubic-bezier(.16, 1, .3, 1) · 320–820 ms, staggered 60 ms</td></tr>
+            <tr><td>Things moving across</td><td>cubic-bezier(.2, .8, .2, 1) · sheets, the step mark, compare columns</td></tr>
+            <tr><td>Hover and press</td><td>160 ms · lift 2 px, bezel brightens, arrow orb travels; press scales to .98</td></tr>
+            <tr><td>Rule</td><td>transform and opacity only · words move, never fade · blur only on the island and the dock · all of it off under reduced motion</td></tr>
+          </table>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <footer>
+    <p class="caption">Estimates from a terrain map and calculated Sun and Earth positions, not lander readings. “≥” means the dates cut the value short; “±” is how far the timing could be off.</p>
+    <p class="caption">Not an official product of NASA or any space agency. Direction preview, 2 October 2026; see docs/design-visual-refresh.md for the plan.</p>
+  </footer>
+</main>
+
+<nav class="dock" aria-label="Views">
+  <a href="#hub" aria-current="page"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.5 7-11a7 7 0 1 0-14 0c0 4.5 7 11 7 11Z"/><circle cx="12" cy="10" r="2.4"/></svg>Missions</a>
+  <a href="#site"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 21 8 12 13 3 8Z"/><path d="M3 13l9 5 9-5"/></svg>Landing sites</a>
+</nav>
+
+<script>
+(() => {
+  const root = document.documentElement;
+  const key = 'pw-preview-theme';
+  try { const t = localStorage.getItem(key); if (t === 'light' || t === 'dark') root.dataset.theme = t; } catch (e) {}
+  const btn = document.getElementById('theme');
+  const dark = () => root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  btn.addEventListener('click', () => {
+    const next = dark() ? 'light' : 'dark';
+    root.dataset.theme = next;
+    try { localStorage.setItem(key, next); } catch (e) {}
+  });
+
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const els = document.querySelectorAll('[data-reveal]');
+  if (reduced || !('IntersectionObserver' in window)) { els.forEach((el) => el.classList.add('in')); return; }
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+  }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+  els.forEach((el) => io.observe(el));
+})();
+</script>
