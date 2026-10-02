@@ -123,7 +123,7 @@ function Disc({
             onClick={onPole}
             aria-label={`Show the south-polar inset (${title.toLowerCase()})`}
             title="Show the south-polar inset"
-            className="absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-control bg-transparent"
+            className="absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-pill bg-transparent"
             style={{ left: '50%', top: `${((C + R - 8) / VIEW) * 100}%` }}
           />
         )}

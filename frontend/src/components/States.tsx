@@ -21,11 +21,14 @@ export function EmptyState({
   secondary?: { label: string; onClick: () => void }
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 px-6 py-14 text-center">
-      <span className="flex size-14 items-center justify-center border border-line bg-inset text-ink-3" aria-hidden="true">
+    <div className="flex flex-col items-center justify-center gap-3.5 px-6 py-16 text-center">
+      <span
+        className="flex size-16 items-center justify-center rounded-pill bg-inset text-ink-2 shadow-[inset_0_1px_0_var(--color-hi),0_0_0_1px_var(--color-edge),0_0_0_5px_var(--color-tray),0_0_0_6px_var(--color-line)]"
+        aria-hidden="true"
+      >
         <Icon name="filter" size={26} strokeWidth={1.6} />
       </span>
-      <div className="text-subhead font-semibold text-ink">{title}</div>
+      <div className="pt-2 text-title-lg font-semibold tracking-title text-ink sm:text-subhead">{title}</div>
       <div className="max-w-[460px] text-body leading-6 text-ink-2">{detail}</div>
       <div className="flex flex-wrap justify-center gap-3">
         {primary && (
@@ -98,7 +101,7 @@ export function ErrorPanel({
   action?: { label: string; onClick: () => void }
 }) {
   return (
-    <Panel className="flex flex-col gap-4 border-l-2 border-l-alert p-5 sm:p-6">
+    <Panel alert className="flex flex-col gap-4 p-5 sm:p-6">
       <div className="flex items-start gap-3">
         <Icon name="alert" size={22} strokeWidth={2} className="mt-0.5 shrink-0 text-alert" />
         <div className="flex flex-col gap-1.5">
@@ -222,7 +225,7 @@ export function ProgressTrack({
   const reduced = useReducedMotion()
   return (
     <div
-      className="relative h-2 overflow-hidden bg-dark-fill"
+      className="relative h-1.5 overflow-hidden rounded-pill bg-line"
       role="progressbar"
       aria-label={label}
       aria-valuemin={0}
@@ -339,8 +342,8 @@ export function useOnline(): boolean {
 export function NotFound({ what = 'page' }: { what?: string }) {
   return (
     <div className="pw-page mx-auto flex w-full max-w-2xl flex-col gap-5 py-16">
-      <p className="font-mono text-caption text-ink-3">404</p>
-      <h1 className="text-heading-lg leading-9 font-semibold tracking-heading text-ink">There is no {what} at this address</h1>
+      <p className="pw-eyebrow">Not found · 404</p>
+      <h1 className="pw-display text-[32px] leading-[36px] text-ink sm:text-[44px] sm:leading-[48px]">There is no {what} at this address</h1>
       <p className="text-body leading-6 text-ink-2">
         The link may be old, or the address mistyped. Nothing else is affected: every mission and every landing site is
         where it was.
@@ -348,13 +351,16 @@ export function NotFound({ what = 'page' }: { what?: string }) {
       <div className="flex flex-wrap gap-3">
         <Link
           to="/missions"
-          className="inline-flex h-12 items-center gap-2 rounded-control bg-ink px-4 text-control font-semibold text-canvas hover:bg-ink-2"
+          className="pw-press group inline-flex h-12 items-center gap-2 rounded-pill bg-ink pr-2 pl-5 text-control font-semibold text-canvas no-underline hover:bg-ink-2"
         >
           Go to the missions
+          <span className="pw-orb ml-1" aria-hidden="true">
+            <Icon name="arrow" size={15} strokeWidth={2} />
+          </span>
         </Link>
         <Link
           to="/map"
-          className="inline-flex h-12 items-center gap-2 rounded-control border border-line-strong px-4 text-control font-semibold text-ink hover:bg-inset"
+          className="pw-press inline-flex h-12 items-center gap-2 rounded-pill border border-line-strong bg-tray px-5 text-control font-semibold text-ink no-underline hover:border-ink-3 hover:bg-inset"
         >
           Go to the landing sites
         </Link>

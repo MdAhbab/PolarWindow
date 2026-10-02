@@ -307,7 +307,7 @@ export function MissionsScreen() {
               />
             </Panel>
           ) : (
-            <Panel className={`relative flex flex-col xl:max-h-[640px] xl:overflow-y-auto ${list.isPlaceholderData ? 'opacity-70' : ''}`}>
+            <Panel flush className={`relative flex flex-col xl:max-h-[640px] xl:overflow-y-auto ${list.isPlaceholderData ? 'opacity-70' : ''}`}>
               {LIST_GROUPS.map((g) => {
                 const ms = shown.filter((m) => g.statuses.includes(m.status))
                 if (!ms.length) return null
@@ -345,7 +345,7 @@ export function MissionsScreen() {
           <div
             ref={insetRef}
             tabIndex={-1}
-            className="flex flex-col border border-line bg-panel outline-none focus-visible:outline-2"
+            className="pw-card pw-card-flush flex flex-col outline-none focus-visible:outline-2"
           >
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line px-4 py-2">
               <h2 id="missions-map-h" className="text-control font-semibold text-ink">

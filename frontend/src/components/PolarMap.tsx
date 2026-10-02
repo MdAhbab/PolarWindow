@@ -537,7 +537,7 @@ export function PolarMap({
                   aria-label={`${g.length} candidate sites near the pole: ${names}${
                     selected ? `. Includes the selected site, ${selected.site.code}` : ''
                   }. Show the pole close-up`}
-                  className="absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-control bg-transparent"
+                  className="absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-pill bg-transparent"
                   style={{ left: pct(c.x), top: pct(c.y) }}
                 />,
               ]
@@ -549,7 +549,7 @@ export function PolarMap({
                 onClick={() => onSelect(s.id)}
                 aria-pressed={s.id === selectedSiteId}
                 aria-label={`${s.code}, ${s.name}`}
-                className="absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-control bg-transparent"
+                className="absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-pill bg-transparent"
                 style={{ left: pct(at.x), top: pct(at.y) }}
               />
             ))
@@ -573,7 +573,7 @@ export function PolarMap({
                 onBlur={() => onMissionHover?.(null)}
                 aria-pressed={g.length === 1 ? g[0].pin.pressed : undefined}
                 aria-label={label}
-                className="absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-control bg-transparent"
+                className="absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-pill bg-transparent"
                 style={{ left: pct(c.x), top: pct(c.y) }}
               />
             )

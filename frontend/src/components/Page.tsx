@@ -69,15 +69,16 @@ export function PageHeader({
   children?: ReactNode
 }) {
   return (
-    <header className="flex flex-col gap-2">
+    <header className="flex flex-col gap-3">
       {crumbs && crumbs.length > 0 && <Breadcrumbs items={crumbs} />}
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-        <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="text-heading leading-8 font-semibold tracking-heading text-ink sm:text-heading-lg sm:leading-9">
+        <div className="flex min-w-0 flex-col gap-2">
+          {/* Display scale: the one thing on the page that is bigger than the answer. */}
+          <h1 className="pw-display text-[32px] leading-[34px] text-ink sm:text-[44px] sm:leading-[46px] lg:text-[52px] lg:leading-[54px]">
             {title}
-            {titleExtra && <span className="font-normal text-ink-2"> {titleExtra}</span>}
+            {titleExtra && <span className="font-normal tracking-heading text-ink-2 [font-stretch:100%]"> {titleExtra}</span>}
           </h1>
-          {lede && <p className="max-w-3xl text-body leading-6 text-ink-2">{lede}</p>}
+          {lede && <p className="max-w-3xl text-lede leading-7 text-ink-2">{lede}</p>}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>

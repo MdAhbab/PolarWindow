@@ -254,7 +254,7 @@ function ChangeButton({ onClick, name }: { onClick: () => void; name: string }) 
       onClick={onClick}
       aria-haspopup="dialog"
       aria-label={`Change ${name}`}
-      className="inline-flex h-12 items-center gap-2 rounded-control px-3 text-small font-semibold text-ink-2 hover:bg-inset hover:text-ink"
+      className="pw-press inline-flex h-12 items-center gap-2 rounded-pill px-4 text-small font-semibold text-ink-2 hover:bg-inset hover:text-ink"
     >
       <Icon name="pencil" size={15} />
       Change

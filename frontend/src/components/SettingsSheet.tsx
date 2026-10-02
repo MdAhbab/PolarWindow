@@ -195,7 +195,7 @@ function ProjectTab({ open, live, onSignedOut }: { open: boolean; live: boolean;
   return (
     <>
       {session && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border border-line bg-panel p-4">
+        <div className="pw-card pw-card-quiet flex flex-wrap items-center justify-between gap-3 p-4">
           <p className="text-small leading-5 text-ink-2">
             Signed in as <span className="font-semibold text-ink">{session.user?.name ?? session.roleName}</span>
             {session.user?.team ? `, ${session.user.team}` : ''}
@@ -402,7 +402,7 @@ function ModelOrder({
               disabled={busy || i === 0}
               onClick={() => move(i, -1)}
               aria-label={`Move ${m.model} up`}
-              className="inline-flex size-12 shrink-0 items-center justify-center rounded-control text-ink-2 hover:bg-inset hover:text-ink disabled:text-line-strong"
+              className="pw-press inline-flex size-12 shrink-0 items-center justify-center rounded-pill text-ink-2 hover:bg-inset hover:text-ink disabled:text-line-strong"
             >
               ↑
             </button>
@@ -411,7 +411,7 @@ function ModelOrder({
               disabled={busy || i === models.length - 1}
               onClick={() => move(i, 1)}
               aria-label={`Move ${m.model} down`}
-              className="inline-flex size-12 shrink-0 items-center justify-center rounded-control text-ink-2 hover:bg-inset hover:text-ink disabled:text-line-strong"
+              className="pw-press inline-flex size-12 shrink-0 items-center justify-center rounded-pill text-ink-2 hover:bg-inset hover:text-ink disabled:text-line-strong"
             >
               ↓
             </button>

@@ -167,12 +167,12 @@ function LaunchAnswer({ cal, meta, missionId }: { cal: LaunchCalendarDTO; meta: 
                 ...(flown
                   ? []
                   : [
-                      { swatch: <span className="h-4 w-8 rounded-control border border-line-strong bg-panel" />, label: 'An opportunity: choose one to see its numbers' },
-                      { swatch: <span className="h-4 w-8 rounded-control bg-ink" />, label: 'Chosen' },
+                      { swatch: <span className="h-4 w-8 rounded-pill border border-line-strong bg-panel" />, label: 'An opportunity: choose one to see its numbers' },
+                      { swatch: <span className="h-4 w-8 rounded-pill bg-ink" />, label: 'Chosen' },
                     ]),
                 { swatch: <span className="hatch-uncertain h-3 w-5" />, label: 'How far the time could be off' },
                 ...(cal.opportunities.some((x) => periodWords(x))
-                  ? [{ swatch: <span className="h-1 w-8 rounded-control bg-ink-3" />, label: 'The launch period, from its opening to its close' }]
+                  ? [{ swatch: <span className="h-1 w-8 bg-ink-3" />, label: 'The launch period, from its opening to its close' }]
                   : []),
               ]}
             />

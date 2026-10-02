@@ -152,13 +152,13 @@ export function Sheet({
         // A click on the backdrop lands on the dialog element itself.
         if (e.target === ref.current) animateClose()
       }}
-      className={`fixed inset-y-0 right-0 left-auto m-0 h-full max-h-none w-full max-w-none overflow-hidden border-0 border-l border-line-strong bg-raised p-0 text-ink shadow-overlay backdrop:bg-canvas/80 ${
+      className={`pw-on-raised fixed inset-y-0 right-0 left-auto m-0 h-full max-h-none w-full max-w-none overflow-hidden border-0 border-l border-line-strong bg-raised p-0 text-ink shadow-overlay backdrop:bg-canvas/70 backdrop:backdrop-blur-[3px] md:rounded-l-sheet ${
         size === 'xl' ? 'md:w-[720px]' : wide ? 'md:w-[480px]' : 'md:w-[400px]'
       }`}
     >
       <div className="flex h-full flex-col">
-        <div className="flex shrink-0 items-center gap-3 border-b border-line px-5 py-2">
-          <h2 id={titleId} className="grow text-title font-semibold">
+        <div className="flex shrink-0 items-center gap-3 border-b border-line px-5 py-3 md:px-6">
+          <h2 id={titleId} className="grow text-title-lg font-semibold tracking-title">
             {title}
           </h2>
           <button
@@ -166,7 +166,7 @@ export function Sheet({
             type="button"
             onClick={animateClose}
             aria-label={`Close: ${title}`}
-            className="inline-flex size-12 items-center justify-center rounded-control border border-line-strong text-ink hover:bg-inset"
+            className="pw-press inline-flex size-12 items-center justify-center rounded-pill border border-line-strong bg-tray text-ink hover:border-ink-3 hover:bg-inset"
           >
             <Icon name="close" size={18} strokeWidth={1.8} />
           </button>

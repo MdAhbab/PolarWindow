@@ -34,7 +34,7 @@ export function RunLogDrawer() {
         ) : runs.error ? (
           <ProblemPanel error={runs.error} fallbackTitle="Cannot load the run log" onRetry={() => void runs.refetch()} />
         ) : !runs.data?.items.length ? (
-          <div className="flex flex-col gap-2 border border-line bg-panel p-5">
+          <div className="pw-card pw-card-quiet flex flex-col gap-2 p-5">
             <div className="text-title font-semibold text-ink">No AI runs yet.</div>
             <p className="text-body leading-6 text-ink-2">Ask a question to see how the answer is built.</p>
           </div>
@@ -83,7 +83,7 @@ function RunTable({ runs, focusId }: { runs: AgentRunDTO[]; focusId: string | nu
     })
 
   return (
-    <div className="relative overflow-x-auto border border-line">
+    <div className="pw-card pw-card-quiet relative overflow-x-auto">
       <table className="w-full min-w-[360px] border-collapse text-left">
         <caption className="sr-only">
           Agent runs, newest first: agent, model and time; status; latency, tokens in and out, and

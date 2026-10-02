@@ -240,7 +240,7 @@ function NumbersUsed({ items }: { items: ProvenanceItemDTO[] }) {
   return (
     <div className="flex flex-col gap-2">
       <SectionLabel as="h3">Numbers used</SectionLabel>
-      <ScrollRegion label="Numbers used, scrolls sideways" className="border border-line">
+      <ScrollRegion label="Numbers used, scrolls sideways" className="pw-card pw-card-quiet">
         <table className="w-full min-w-[520px] border-collapse text-left">
           <caption className="sr-only">
             Every number in the answer, the sentence it appears in, and the tool call and field it was

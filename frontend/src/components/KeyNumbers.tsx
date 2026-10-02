@@ -122,23 +122,28 @@ export function KeyNumberTile({
     size === 'lg'
       ? // The four stay together as a 2×2 on a phone, where a three-digit
         // value and its unit must fit half the width (WCAG 1.4.10).
-        'text-figure leading-figure sm:text-figure-md sm:leading-figure-md'
+        'text-[34px] leading-[36px] sm:text-figure-md sm:leading-figure-md lg:text-figure-tile lg:leading-[52px]'
       : size === 'md'
-        ? 'text-figure leading-figure sm:text-figure-md sm:leading-figure-md'
+        ? 'text-[34px] leading-[36px] sm:text-figure-md sm:leading-figure-md'
         : 'text-figure leading-figure'
 
   const explains = Boolean(means || source)
-  const border =
+  // A card (globals.css .pw-card). Over the limit, the core's edge is magenta
+  // beside the triangle and the words; uncertain, a dashed line inside it;
+  // sunlight may glow, since the glow means sunlight.
+  const kind =
     tone === 'alert'
-      ? 'border-alert'
+      ? 'pw-card-alert'
       : state === 'uncertain'
-        ? 'border-dashed border-uncertain'
-        : 'border-line'
+        ? 'outline-1 outline-dashed outline-uncertain -outline-offset-1'
+        : tone === 'sun' && state === 'ready'
+          ? 'pw-card-sunlit'
+          : ''
 
   return (
     <div
-      className={`border bg-panel p-4 sm:px-5 ${border} ${
-        inRow ? 'row-span-6 grid grid-rows-subgrid content-start gap-y-2' : 'flex flex-col gap-2'
+      className={`pw-card p-4 sm:p-5 ${kind} ${
+        inRow ? 'row-span-5 grid grid-rows-subgrid content-start gap-y-2.5' : 'flex flex-col gap-2.5'
       }`}
     >
       {/* Sentence case, so a long label wraps as words; the row keeps the
@@ -180,18 +185,18 @@ export function KeyNumberTile({
           <span className="w-full text-small font-medium text-ink-2">{above}</span>
         )}
         {state === 'blank' ? (
-          <span className={`font-semibold tracking-figure text-line-strong ${numberClass}`}>—</span>
+          <span className={`pw-figure text-line-strong ${numberClass}`}>—</span>
         ) : state === 'computing' ? (
           <span className={`inline-flex items-center ${numberClass}`}>
             <Skeleton className="h-[0.8em] w-24" />
             <span className="sr-only">Loading</span>
           </span>
         ) : display !== undefined ? (
-          <span key={display} className={`font-semibold tracking-figure tnum ${numberClass} ${TONE_TEXT[tone]} ${settle}`}>
+          <span key={display} className={`pw-figure ${numberClass} ${TONE_TEXT[tone]} ${settle}`}>
             {display}
           </span>
         ) : (
-          <span key={value} className={`font-semibold tracking-figure tnum ${numberClass} ${TONE_TEXT[tone]} ${settle}`}>
+          <span key={value} className={`pw-figure ${numberClass} ${TONE_TEXT[tone]} ${settle}`}>
             {bound(open)}
             {Math.round(value)}
           </span>
@@ -209,7 +214,7 @@ export function KeyNumberTile({
       </div>
 
       {bar ? (
-        <div className="relative flex h-1 overflow-hidden bg-dark-fill">
+        <div className="relative flex h-1 overflow-hidden bg-line">
           {state === 'ready' || state === 'uncertain' ? (
             range ? (
               <>
@@ -320,7 +325,7 @@ export function KeyNumberRow({
   }
 
   return (
-    <div className={`grid gap-3 ${grid}`}>
+    <div className={`grid gap-4 lg:gap-5 ${grid}`}>
       <KeyNumberTile
         label={t.sun.label}
         means={t.sun.means}

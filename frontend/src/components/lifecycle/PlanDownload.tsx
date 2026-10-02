@@ -5,7 +5,7 @@ import { Disclosure } from '../ui'
 import { Field, TextInput } from './Forms'
 
 const LINK =
-  'inline-flex h-12 items-center rounded-control border border-line-strong px-4 text-body font-semibold text-ink no-underline hover:bg-inset'
+  'pw-press inline-flex h-12 items-center rounded-pill border border-line-strong bg-tray px-5 text-body font-semibold text-ink no-underline hover:border-ink-3 hover:bg-inset'
 
 /** A data rate as people write numbers ("2,000,000"), in bits per second; null when it is not a number above zero. */
 export function parseRate(text: string): number | null {

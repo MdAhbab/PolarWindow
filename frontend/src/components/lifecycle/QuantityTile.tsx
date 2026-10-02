@@ -181,7 +181,7 @@ export function NumberRow({ children }: { children: ReactNode }) {
   })
   // Keys by place: a flattened fragment's own keys can repeat another's.
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5">
       {tiles.map((t, i) => (isValidElement(t) ? cloneElement(t, { key: i }) : t))}
     </div>
   )

@@ -160,7 +160,7 @@ function TripDownloads({ trip, missionId }: { trip: TripDTO; missionId: string }
         {TRIP_EXPORTS.map(([f, label]) => (
           <li key={f}>
             <a
-              className="inline-flex h-12 items-center rounded-control border border-line-strong px-4 text-body font-semibold text-ink no-underline hover:bg-inset"
+              className="pw-press inline-flex h-12 items-center rounded-pill border border-line-strong bg-tray px-5 text-body font-semibold text-ink no-underline hover:border-ink-3 hover:bg-inset"
               href={`${API_BASE}/missions/${encodeURIComponent(missionId)}/trip/export?format=${f}`}
               download
             >
