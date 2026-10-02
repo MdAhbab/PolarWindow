@@ -60,8 +60,8 @@ function ToastItem({ t }: { t: Toast }) {
   }, [t.id, t.action, dismiss])
   return (
     <li
-      className={`pointer-events-auto flex w-full items-start gap-3 border bg-raised py-2 pr-2 pl-4 shadow-overlay sm:w-[380px] ${
-        t.tone === 'problem' ? 'border-alert' : 'border-line-strong'
+      className={`pw-card pw-card-raised pointer-events-auto flex w-full items-start gap-3 py-2 pr-2 pl-4 [--pw-elev:var(--shadow-overlay)] sm:w-[380px] ${
+        t.tone === 'problem' ? 'pw-card-alert' : ''
       } ${arrive}`}
     >
       <Icon
@@ -78,7 +78,7 @@ function ToastItem({ t }: { t: Toast }) {
             t.action?.run()
             dismiss(t.id)
           }}
-          className="h-12 shrink-0 rounded-control px-3 text-body font-semibold text-ink underline underline-offset-[3px] hover:bg-inset"
+          className="pw-press h-12 shrink-0 rounded-pill px-4 text-body font-semibold text-ink underline underline-offset-[3px] hover:bg-inset"
         >
           {t.action.label}
         </button>
@@ -87,7 +87,7 @@ function ToastItem({ t }: { t: Toast }) {
         type="button"
         onClick={() => dismiss(t.id)}
         aria-label="Dismiss"
-        className="inline-flex size-12 shrink-0 items-center justify-center rounded-control text-ink-3 hover:bg-inset hover:text-ink"
+        className="pw-press inline-flex size-12 shrink-0 items-center justify-center rounded-pill text-ink-3 hover:bg-inset hover:text-ink"
       >
         <Icon name="close" size={16} strokeWidth={1.8} />
       </button>
@@ -111,7 +111,7 @@ export function Toaster() {
       className={
         host
           ? 'pointer-events-none absolute inset-x-0 bottom-0 z-50 flex justify-center p-4'
-          : 'pointer-events-none fixed inset-x-0 bottom-[calc(5rem+var(--pw-guide-h,0px))] z-50 flex justify-center px-4 sm:justify-end sm:px-6 lg:bottom-[calc(1.5rem+var(--pw-guide-h,0px))]'
+          : 'pointer-events-none fixed inset-x-0 bottom-[calc(5.75rem+env(safe-area-inset-bottom)+var(--pw-guide-h,0px))] z-50 flex justify-center px-4 sm:justify-end sm:px-6 lg:bottom-[calc(1.5rem+var(--pw-guide-h,0px))]'
       }
     >
       <ol className={`flex w-full flex-col items-end gap-2 ${host ? '' : 'sm:w-auto'}`}>

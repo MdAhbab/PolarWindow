@@ -7,18 +7,28 @@
    ------------------------------------------------------------------ */
 
 @theme {
-  --font-sans: 'Archivo', 'Helvetica Neue', Helvetica, sans-serif;
+  /* One variable file: weight 100–900 and width 62–125%. The width axis gives
+     display type and the key figures their own voice (see .pw-display, .pw-figure). */
+  --font-sans: 'Archivo Variable', 'Archivo', 'Helvetica Neue', Helvetica, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* ground */
-  --color-canvas: #0a0c0e;
-  --color-panel: #12161a;
-  --color-raised: #171b20;
-  --color-inset: #1e242a;
+  /* ground. A card is a tray (opaque, a step above the canvas) holding a lit
+     core (the panel); see .pw-card. */
+  --color-canvas: #07090b;
+  --color-tray: #0d1013;
+  --color-panel: #11161b;
+  --color-raised: #161c22;
+  --color-inset: #1b2228;
 
-  /* lines */
-  --color-line: #232a31;
-  --color-line-strong: #333c45;
+  /* lines: translucent, so an edge reads as light caught on it, on any ground.
+     line-strong is a control's border, at the old opaque value's contrast. */
+  --color-line: rgba(214, 226, 238, 0.085);
+  --color-line-strong: rgba(214, 226, 238, 0.2);
+  --color-field: rgba(214, 226, 238, 0.42); /* a field's border: 3:1 against every ground, since the border is all that marks a field */
+  --color-edge: rgba(214, 226, 238, 0.065); /* a core's own edge, inside its tray */
+  --color-hi: rgba(255, 255, 255, 0.06); /* the light along a core's top edge */
+  --color-glass: rgba(13, 16, 19, 0.86); /* the island and the dock: opaque enough for 4.5:1 over a white page */
+  --color-atmosphere: rgba(200, 215, 230, 0.05); /* the faint light at the top of a page: no hue, so it means nothing */
 
   /* ink */
   --color-ink: #e6ebf0; /* 16.3:1 */
@@ -80,6 +90,7 @@
   --text-display: 40px;
   --text-figure-md: 44px; /* key numbers, medium */
   --text-figure-lg: 64px; /* key numbers, large */
+  --text-figure-tile: 52px; /* a key-number tile from 1024 px */
 
   --leading-caption-tight: 17px;
   --leading-caption: 18px;
@@ -103,12 +114,16 @@
   --tracking-wordmark: 0.2em;
 
   /* Elevation, three steps: resting on the page, lifted (hover on a card that
-     is a link), and floating over it (sheets, toasts, menus). */
+     is a link), and floating over it (sheets, toasts, menus). Long and soft:
+     light from far away, never a hard drop. */
   --shadow-rest: 0 1px 0 rgba(0, 0, 0, 0.35);
-  --shadow-lift: 0 6px 18px rgba(0, 0, 0, 0.4);
-  --shadow-raised: 0 8px 24px rgba(0, 0, 0, 0.45); /* a raised panel, a sheet, the captions */
-  --shadow-overlay: 0 18px 48px rgba(0, 0, 0, 0.55);
+  --shadow-raised: 0 12px 32px -14px rgba(0, 0, 0, 0.62), 0 2px 6px -2px rgba(0, 0, 0, 0.38); /* a card at rest */
+  --shadow-lift: 0 26px 52px -18px rgba(0, 0, 0, 0.72), 0 6px 14px -6px rgba(0, 0, 0, 0.45);
+  --shadow-overlay: 0 32px 80px -20px rgba(0, 0, 0, 0.78), 0 8px 20px -8px rgba(0, 0, 0, 0.5);
   --shadow-page: 0 8px 24px rgba(0, 0, 0, 0.35); /* the printable report page */
+  /* Sunlight only (invariant 6): the Sun tile and the Sun's own marks. */
+  --shadow-glow-sun: 0 0 64px -12px rgba(242, 163, 60, 0.38);
+  --color-glow-sun: rgba(242, 163, 60, 0.45); /* the Sun ring's own light */
   --shadow-tab: inset 0 -2px 0 var(--color-ink); /* the current view in the navigation: ink, amber means sunlight */
 
   /* Space, by role. Everything else is the 4 px scale. */
@@ -116,12 +131,21 @@
   --spacing-stack: 24px; /* between blocks inside a page */
   --spacing-block: 40px; /* between a page's major parts */
 
+  /* Radius (decisions D1, D2): 0 on everything that draws data (bars, arcs,
+     hatches, tables, pins, rings, the map, a row in a list); 12 px on fields
+     and small controls; 16 px on a card's core (its tray adds 5 px around it,
+     so the tray's own curve is 21 px and runs parallel); 24 px on sheets and
+     on a floating box of more than one line; pills on buttons, chips,
+     segmented controls and the shell. A box inside another takes the outer
+     radius less the space between them, never more. */
   --radius-*: initial;
   --radius-none: 0px;
-  --radius-control: 2px;
+  --radius-control: 12px;
+  --radius-card: 16px;
+  --radius-sheet: 24px;
   --radius-pill: 999px;
 
-  /* Motion: two curves and four durations. Every use also has a reduced
+  /* Motion: two curves and six durations. Every use also has a reduced
      branch (decided in code) and the blanket rule at the end of this file. */
   --ease-settle: cubic-bezier(0.16, 1, 0.3, 1); /* things arriving: M2, M4, M5, reveals */
   --ease-move: cubic-bezier(0.2, 0.8, 0.2, 1); /* things moving across: M3, sheets, view changes */
@@ -129,10 +153,12 @@
 }
 
 :root {
-  --pw-dur-quick: 140ms; /* hover, press, chevrons */
-  --pw-dur-base: 220ms; /* reveals, disclosure, toasts, view changes */
-  --pw-dur-slow: 380ms; /* charts, skeleton to content */
+  --pw-dur-quick: 160ms; /* hover, press, chevrons */
+  --pw-dur-base: 240ms; /* disclosure, toasts, view changes */
+  --pw-dur-lift: 320ms; /* a card lifting under the pointer */
+  --pw-dur-slow: 560ms; /* charts drawing, skeleton to content */
   --pw-dur-sheet: 420ms; /* a sheet sliding in; out is half that */
+  --pw-dur-arrive: 820ms; /* a card rising into place as it scrolls in */
 }
 
 /* Light theme — for print, projection and bright rooms.
@@ -141,20 +167,26 @@
    non-text graphical object needs. These pass. */
 :root[data-theme='light'],
 [data-theme='light'] {
-  --color-canvas: #f2f1ed;
+  --color-canvas: #f3f1ec;
+  --color-tray: #e7e5df;
   --color-panel: #ffffff;
   --color-raised: #ffffff;
-  --color-inset: #e9e8e3;
+  --color-inset: #ebe9e4;
 
-  --color-line: #dad9d3;
-  --color-line-strong: #b9b8b1;
+  --color-line: rgba(20, 23, 26, 0.1);
+  --color-line-strong: rgba(20, 23, 26, 0.27);
+  --color-field: rgba(20, 23, 26, 0.5);
+  --color-edge: rgba(20, 23, 26, 0.07);
+  --color-hi: rgba(255, 255, 255, 0.9);
+  --color-glass: rgba(255, 255, 255, 0.76);
+  --color-atmosphere: rgba(255, 255, 255, 0.7);
 
   --color-ink: #14171a; /* 15.9:1 */
   --color-ink-2: #3c434b; /* 8.9:1  */
   --color-ink-3: #5e6670; /* 5.2:1, 4.74:1 on inset: passes, unchanged */
 
   --color-sun: #8a5605; /* 5.4:1 as text */
-  --color-sun-fill: #b4761f; /* 3.4:1 as a mark */
+  --color-sun-fill: #b4761f; /* 3.4:1 as a mark on the canvas, 3.06:1 on dark-fill */
   --color-sun-soft: #e8c489;
   --color-sun-deep: #f3e3c9;
   --color-on-sun: #14171a; /* 4.7:1 on the fill */
@@ -165,8 +197,8 @@
   --color-earth-deep: #d7edf3;
   --color-on-earth: #ffffff;
 
-  --color-dark-fill: #dcdad3;
-  --color-hatch: #6b7178; /* 3.53:1 against dark-fill (U6) */
+  --color-dark-fill: #e9e7e2; /* the Sun's and Earth's bars stand 3.06:1 and 3.25:1 on it */
+  --color-hatch: #6b7178; /* 3.99:1 against dark-fill (U6) */
 
   --color-alert: #b3134f; /* 6.0:1 */
   --color-alert-deep: #f7dbe5;
@@ -182,9 +214,61 @@
   --color-focus: #0f5f74;
 
   --shadow-rest: 0 1px 0 rgba(20, 23, 26, 0.06);
-  --shadow-lift: 0 6px 18px rgba(20, 23, 26, 0.1);
-  --shadow-raised: 0 8px 24px rgba(20, 23, 26, 0.12);
-  --shadow-overlay: 0 18px 48px rgba(20, 23, 26, 0.18);
+  --shadow-raised: 0 12px 32px -14px rgba(20, 23, 26, 0.18), 0 2px 6px -2px rgba(20, 23, 26, 0.06);
+  --shadow-lift: 0 26px 52px -18px rgba(20, 23, 26, 0.24), 0 6px 14px -6px rgba(20, 23, 26, 0.08);
+  --shadow-overlay: 0 32px 80px -20px rgba(20, 23, 26, 0.3), 0 8px 20px -8px rgba(20, 23, 26, 0.1);
+  --shadow-glow-sun: 0 0 64px -12px rgba(180, 118, 31, 0.3);
+  --color-glow-sun: rgba(180, 118, 31, 0.32);
+}
+
+/* A dark band inside a light page: the light theme's Earthrise hero. The dark
+   theme's own values again, for that band only (generated from @theme above;
+   keep the two in step). */
+:root[data-theme='light'] [data-theme='dark'] {
+  --color-canvas: #07090b;
+  --color-tray: #0d1013;
+  --color-panel: #11161b;
+  --color-raised: #161c22;
+  --color-inset: #1b2228;
+  --color-line: rgba(214, 226, 238, 0.085);
+  --color-line-strong: rgba(214, 226, 238, 0.2);
+  --color-field: rgba(214, 226, 238, 0.42);
+  --color-edge: rgba(214, 226, 238, 0.065);
+  --color-hi: rgba(255, 255, 255, 0.06);
+  --color-glass: rgba(13, 16, 19, 0.86);
+  --color-atmosphere: rgba(200, 215, 230, 0.05);
+  --color-ink: #e6ebf0;
+  --color-ink-2: #9aa5b1;
+  --color-ink-3: #8d99a5;
+  --color-sun: #f2a33c;
+  --color-sun-fill: #f2a33c;
+  --color-sun-soft: #ffce86;
+  --color-sun-deep: #3a2708;
+  --color-on-sun: #0a0c0e;
+  --color-earth: #4fc6e0;
+  --color-earth-fill: #4fc6e0;
+  --color-earth-soft: #a6e4f1;
+  --color-earth-deep: #0b2e38;
+  --color-on-earth: #0a0c0e;
+  --color-dark-fill: #14181d;
+  --color-hatch: #5f6a75;
+  --color-alert: #ff5e93;
+  --color-alert-deep: #3d0a20;
+  --color-alert-wash: #2a0a17;
+  --color-terrain-high: #8a949e;
+  --color-terrain-mid: #49535c;
+  --color-terrain-low: #262d34;
+  --color-psr: #0e1114;
+  --color-uncertain: #8a95a1;
+  --color-focus: #a6e4f1;
+  --shadow-rest: 0 1px 0 rgba(0, 0, 0, 0.35);
+  --shadow-raised: 0 12px 32px -14px rgba(0, 0, 0, 0.62), 0 2px 6px -2px rgba(0, 0, 0, 0.38);
+  --shadow-lift: 0 26px 52px -18px rgba(0, 0, 0, 0.72), 0 6px 14px -6px rgba(0, 0, 0, 0.45);
+  --shadow-overlay: 0 32px 80px -20px rgba(0, 0, 0, 0.78), 0 8px 20px -8px rgba(0, 0, 0, 0.5);
+  --shadow-glow-sun: 0 0 64px -12px rgba(242, 163, 60, 0.38);
+  --color-glow-sun: rgba(242, 163, 60, 0.45);
+  color-scheme: dark;
+  color: var(--color-ink);
 }
 
 @layer base {
@@ -201,9 +285,24 @@
     height: 100%;
   }
 
+  /* The island floats over the top of the page and, below lg, the dock over
+     its foot: anything scrolled into view lands clear of both. */
+  html {
+    scroll-padding-top: calc(6rem + var(--pw-dock-h, 0px));
+    scroll-padding-bottom: calc(var(--pw-guide-h, 0px) + 1rem);
+  }
+  @media (max-width: 63.99rem) {
+    html {
+      scroll-padding-bottom: calc(var(--pw-guide-h, 0px) + 6rem);
+    }
+  }
+
   body {
     margin: 0;
-    background: var(--color-canvas);
+    /* The canvas, lit faintly from the top of the page. Scrolls away with it. */
+    background:
+      radial-gradient(110% 520px at 50% -160px, var(--color-atmosphere), transparent 72%) no-repeat,
+      var(--color-canvas);
     color: var(--color-ink);
     font-family: var(--font-sans);
     /* Numbers animate. Without tabular figures a counting number breathes
@@ -224,7 +323,7 @@
   [data-guide-active] {
     outline: 2px dashed var(--color-ink-2);
     outline-offset: 6px;
-    scroll-margin-bottom: calc(var(--pw-guide-h, 0px) + 5rem);
+    scroll-margin-bottom: calc(var(--pw-guide-h, 0px) + 6rem);
   }
 
   button,
@@ -234,9 +333,27 @@
     color: inherit;
   }
 
-  /* Radius 0 on every data surface; 2px on controls; pill on the faces only. */
+  /* Radius 0 on every data surface; 12 px on a control unless it is a pill. */
   button {
     border-radius: var(--radius-control);
+  }
+
+  /* Grain: a fixed layer at 3%, never on a scrolling box, never on paper. */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    opacity: 0.07;
+    /* Overlay keeps the canvas's own black: lighter grains lift, darker ones sink. */
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  @media print {
+    body::after {
+      display: none;
+    }
   }
 
   /* A link in running text is underlined, so it never depends on colour
@@ -255,9 +372,367 @@
 }
 
 @layer components {
-  /* Rows in a group share their borders: one list, not a stack of boxes. */
-  .pw-rows > * + * {
-    margin-top: -1px;
+  /* ---- The card: a tray holding a lit core -----------------------------
+     One element. The core is the element itself (the panel, 16 px radius, a
+     line of light along its top, a faint edge); the tray is drawn around it
+     in box-shadow (4 px of the tray colour and a hairline), so a card is a
+     part, not an outline, and nothing about the layout changes. Siblings need
+     at least 12 px between them for their trays. Data inside a card keeps
+     square corners. */
+  .pw-card {
+    --pw-edge: var(--color-edge);
+    --pw-rim: var(--color-line);
+    --pw-elev: var(--shadow-raised);
+    background-color: var(--pw-core, var(--color-panel));
+    border-radius: var(--radius-card);
+    box-shadow:
+      inset 0 1px 0 var(--color-hi),
+      0 0 0 1px var(--pw-edge),
+      0 0 0 4px var(--color-tray),
+      0 0 0 5px var(--pw-rim),
+      var(--pw-elev);
+  }
+  /* On a raised surface (a sheet): the tray is the surface itself and the core
+     a step lighter, so a card still reads as standing on it, not sunk in it. */
+  .pw-on-raised {
+    --color-tray: var(--color-raised);
+    --pw-core: var(--color-inset);
+  }
+  .pw-on-raised .pw-card {
+    --pw-elev: 0 0 #0000;
+  }
+  /* In a group, or under a chart: no shadow of its own. */
+  .pw-card-quiet {
+    --pw-elev: 0 0 #0000;
+  }
+  /* Over the page: the raised ground, the lifted shadow. */
+  .pw-card-raised {
+    --pw-elev: var(--shadow-lift);
+    background-color: var(--color-raised);
+  }
+  /* Content that runs to the edges (a list, a table) is clipped to the core. */
+  .pw-card-flush {
+    overflow: hidden;
+  }
+  /* Over the battery limit: the core's edge in magenta, with the triangle and the words beside it. */
+  .pw-card-alert {
+    --pw-edge: color-mix(in srgb, var(--color-alert) 62%, transparent);
+  }
+  /* The Sun's own ring: the one data mark allowed a glow, since the glow means sunlight. Static. */
+  .pw-sun-glow {
+    filter: drop-shadow(0 0 9px var(--color-glow-sun));
+  }
+  @media print {
+    .pw-sun-glow {
+      filter: none;
+    }
+  }
+  /* Sunlight only. */
+  .pw-card-sunlit {
+    --pw-elev: var(--shadow-raised), var(--shadow-glow-sun);
+  }
+  /* A card that is a link: it lifts toward the pointer and its rim brightens. */
+  .pw-card-link {
+    transition:
+      transform var(--pw-dur-lift) var(--ease-settle),
+      box-shadow var(--pw-dur-lift) var(--ease-settle);
+  }
+  .pw-card-link:hover {
+    --pw-elev: var(--shadow-lift);
+    --pw-rim: var(--color-line-strong);
+    transform: translateY(-2px);
+  }
+  .pw-card-link:active {
+    transform: translateY(0) scale(0.995);
+  }
+  .pw-card-link:focus-visible {
+    outline-offset: 7px;
+  }
+
+  /* ---- Rows in a group: one list in one card, with inset dividers --------- */
+  .pw-row {
+    position: relative;
+  }
+  .pw-rows {
+    border-radius: var(--radius-card);
+  }
+  /* A row is a card on its own, and a line in a list inside a group. */
+  .pw-rows > .pw-row {
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+  }
+  .pw-rows > .pw-row + .pw-row::before,
+  .pw-rows > * + .pw-row::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 16px;
+    right: 16px;
+    height: 1px;
+    background: var(--color-line);
+  }
+  @media (min-width: 40rem) {
+    .pw-rows > .pw-row + .pw-row::before,
+    .pw-rows > * + .pw-row::before {
+      left: 20px;
+      right: 20px;
+    }
+  }
+  /* Focus on a row sits inside it, since the card clips its edges. */
+  .pw-row > summary:focus-visible {
+    outline-offset: -3px;
+    border-radius: calc(var(--radius-card) - 2px);
+  }
+
+  /* ---- The logo: the version for the ground under it ---------------------
+     Light lines on a dark page, ink on a light one, by the nearest
+     data-theme, so the report's light paper inside a dark page gets ink. */
+  .pw-logo-on-light {
+    display: none;
+  }
+  [data-theme='light'] .pw-logo-on-light {
+    display: block;
+  }
+  [data-theme='light'] .pw-logo-on-dark {
+    display: none;
+  }
+
+  /* ---- The shell: the island and the dock, glass over the page ----------- */
+  .pw-island {
+    background: var(--color-glass);
+    border: 1px solid var(--color-line);
+    box-shadow:
+      inset 0 1px 0 var(--color-hi),
+      var(--shadow-raised);
+    backdrop-filter: blur(18px) saturate(1.3);
+    -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  }
+
+  /* The answer docked under the island once it has scrolled away (Section.tsx).
+     It slides down from behind the island and back up; never a fade. */
+  .pw-dock {
+    position: fixed;
+    top: 80px;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    padding-inline: 12px;
+    pointer-events: none;
+    visibility: hidden;
+    transform: translateY(-120%);
+    transition:
+      transform var(--pw-dur-base) var(--ease-settle),
+      visibility 0s linear var(--pw-dur-base);
+  }
+  .pw-dock.is-docked {
+    visibility: visible;
+    transform: none;
+    transition:
+      transform var(--pw-dur-lift) var(--ease-settle),
+      visibility 0s;
+  }
+  @media print {
+    .pw-dock {
+      display: none;
+    }
+  }
+
+  /* The front page's picture (LandingScreen). `--pw-space` is 1 while the
+     light theme's first picture has its black sky and 0 once the page is the
+     page; the dark theme never sets it.
+     Below lg the Moon sits behind the words, so it is dimmed; from lg it is
+     beside them. On the light page the Moon is paler still, as it is by day,
+     so dark ink reads beside it and over it. */
+  .pw-landing-canvas {
+    opacity: 0.4;
+  }
+  :root[data-theme='light'] .pw-landing-canvas {
+    opacity: calc(0.3 + 0.7 * var(--pw-space, 0));
+  }
+  @media (min-width: 64rem) {
+    .pw-landing-canvas {
+      opacity: 1;
+    }
+    :root[data-theme='light'] .pw-landing-canvas {
+      opacity: calc(0.7 + 0.3 * var(--pw-space, 0));
+    }
+  }
+  .pw-landing-space {
+    background: #000;
+    opacity: var(--pw-space, 0);
+  }
+  /* The light theme's first picture, shaded behind its words. `--pw-hero` runs
+     from 1 to 0 as those words scroll out (LandingScreen). */
+  .pw-ground-shade {
+    opacity: var(--pw-hero, 1);
+    background: linear-gradient(90deg, rgb(0 0 0 / 0.72) 0%, rgb(0 0 0 / 0.3) 46%, transparent 78%);
+  }
+  /* The picture shaded behind the text column from lg, in the page's own
+     ground: dark over the night sky, paper over the daytime Moon. Not while
+     the light theme's first picture is up; that has its own shade. */
+  .pw-sky-shade {
+    display: none;
+  }
+  @media (min-width: 64rem) {
+    .pw-sky-shade {
+      display: block;
+      opacity: calc(1 - var(--pw-space, 0));
+      background: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--color-canvas) 88%, transparent) 0%,
+        color-mix(in srgb, var(--color-canvas) 62%, transparent) 34%,
+        transparent 56%
+      );
+    }
+  }
+
+  /* ---- Type roles --------------------------------------------------------- */
+  /* Display: page titles and the answers. Wide, tight, balanced. */
+  .pw-display {
+    font-weight: 600;
+    font-stretch: 116%;
+    letter-spacing: -0.028em;
+    text-wrap: balance;
+  }
+  /* A figure: key numbers. Wide, tighter, tabular. */
+  .pw-figure {
+    font-weight: 600;
+    font-stretch: 112%;
+    letter-spacing: -0.035em;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  /* The answer on a step page: the biggest text there, in the display voice
+     but a step lighter and less wide, since it is a sentence, not a name. */
+  .pw-answer {
+    font-size: 22px;
+    line-height: 1.22;
+    font-weight: 560;
+    font-stretch: 108%;
+    letter-spacing: -0.02em;
+    text-wrap: pretty;
+  }
+  @media (min-width: 40rem) {
+    .pw-answer {
+      font-size: 28px;
+      line-height: 1.15;
+    }
+  }
+  @media (min-width: 64rem) {
+    .pw-answer {
+      font-size: 36px;
+      line-height: 1.12;
+      letter-spacing: -0.024em;
+    }
+  }
+  /* An eyebrow: section groups and the question a page answers. */
+  .pw-eyebrow {
+    font-size: var(--text-tag);
+    line-height: 16px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink-3);
+  }
+
+  /* ---- Controls ---------------------------------------------------------- */
+  /* Press: every pill control gives a little under the finger. */
+  .pw-press {
+    transition:
+      background-color var(--pw-dur-quick),
+      border-color var(--pw-dur-quick),
+      color var(--pw-dur-quick),
+      box-shadow var(--pw-dur-quick),
+      transform var(--pw-dur-quick) var(--ease-settle);
+  }
+  .pw-press:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+  /* The arrow in its own circle, at the end of a primary pill: it travels a
+     little toward where the button goes. */
+  .pw-orb {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-pill);
+    transition: transform var(--pw-dur-lift) var(--ease-settle);
+  }
+  .group:hover .pw-orb,
+  .group:focus-visible .pw-orb {
+    transform: translate(2px, -1px) scale(1.06);
+  }
+  .pw-orb {
+    background: color-mix(in srgb, currentColor 13%, transparent);
+  }
+
+  /* ---- A list to choose from (Select) -------------------------------------
+     The page draws its own, so it is the same on every operating system and
+     follows the theme. It sits in the browser's top layer, placed by the
+     component against its button. Its corners are a card's; the options
+     inside sit 6 px in, so they take 6 px less and the two curves run parallel. */
+  .pw-menu {
+    position: fixed;
+    inset: auto;
+    z-index: 70;
+    margin: 0;
+    padding: 6px;
+    width: max-content;
+    max-width: calc(100vw - 16px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 1px solid var(--color-line-strong);
+    border-radius: var(--radius-card);
+    background: var(--color-raised);
+    color: var(--color-ink);
+    box-shadow: var(--shadow-overlay);
+    animation: pw-menu-in var(--pw-dur-quick) var(--ease-settle) both;
+  }
+  .pw-menu-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 44px;
+    padding: 8px 12px;
+    border-radius: calc(var(--radius-card) - 6px);
+    font-size: var(--text-body);
+    line-height: 20px;
+    color: var(--color-ink-2);
+    cursor: pointer;
+  }
+  .pw-menu-option[data-active] {
+    background: var(--color-inset);
+    color: var(--color-ink);
+  }
+  .pw-menu-option[aria-selected='true'] {
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+  .pw-menu-group {
+    padding: 10px 12px 4px;
+    font-size: var(--text-tag);
+    line-height: 16px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ink-3);
+  }
+  @media (pointer: coarse) {
+    .pw-menu-option {
+      min-height: 48px;
+    }
+  }
+
+  /* The map's relief, kept as a layer of its own so the drawing over it can
+     change every frame without the tiles being painted again. */
+  .pw-relief {
+    will-change: transform;
+  }
+  @media print {
+    .pw-relief {
+      will-change: auto;
+    }
   }
 
   /* The page's padding, the same on every screen. */
@@ -348,6 +823,77 @@ dialog.pw-sheet-out::backdrop {
   animation: pw-arrive var(--pw-dur-slow) var(--ease-settle) 120ms both;
 }
 
+/* A card arriving as it comes into view (hooks/useArrivals.ts): waiting 18 px
+   low while off screen, then rising on the settle curve, 60 ms after the one
+   before it; the bar in a key-number tile grows 120 ms after its card. */
+.pw-pre {
+  transform: translateY(18px);
+}
+.pw-rise {
+  animation: pw-rise var(--pw-dur-arrive) var(--ease-settle) var(--pw-delay, 0ms) backwards;
+}
+.pw-rise .pw-bar-grow {
+  animation: pw-bar-grow var(--pw-dur-slow) var(--ease-settle) calc(var(--pw-delay, 0ms) + 120ms) backwards;
+}
+/* Charts in an arriving card draw in after it: a strip of bars from nothing,
+   a chart with words in it from a little short, so the words never squash. */
+.pw-rise .pw-draw-bar {
+  animation: pw-bar-grow var(--pw-dur-slow) var(--ease-settle) calc(var(--pw-delay, 0ms) + 160ms) backwards;
+}
+.pw-rise .pw-draw {
+  transform-origin: left center;
+  animation: pw-grow-x var(--pw-dur-slow) var(--ease-settle) calc(var(--pw-delay, 0ms) + 120ms) backwards;
+}
+/* The pins on the pole map drop into place one after another as the map arrives. */
+.pw-rise .pw-pin {
+  animation: pw-pin-drop 520ms var(--ease-settle) calc(var(--pw-delay, 0ms) + 240ms + var(--pw-pin-i, 0) * 35ms) backwards;
+}
+@keyframes pw-pin-drop {
+  from {
+    transform: translateY(-14px);
+  }
+}
+@keyframes pw-rise {
+  from {
+    transform: translateY(18px);
+  }
+}
+@keyframes pw-bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* The journey drawing itself as a page opens: the line behind the mission
+   grows from the first step to where it got to, a segment at a time. */
+.pw-journey-draw [data-journey-segment='behind'] {
+  animation: var(--pw-seg, pw-seg-y) 420ms var(--ease-move) calc(200ms + var(--pw-i, 0) * 150ms) backwards;
+}
+.pw-journey-draw [data-orient='row'] {
+  --pw-seg: pw-seg-x;
+  transform-origin: left center;
+}
+.pw-journey-draw [data-orient='column'],
+.pw-journey-draw [data-orient='both'] {
+  transform-origin: center top;
+}
+@media (min-width: 64rem) {
+  .pw-journey-draw [data-orient='both'] {
+    --pw-seg: pw-seg-x;
+    transform-origin: left center;
+  }
+}
+@keyframes pw-seg-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes pw-seg-y {
+  from {
+    transform: scaleY(0);
+  }
+}
+
 /* A disclosure's body as it opens. Closing is instant: it removes, never hides. */
 details[open] > .pw-disclosure-body {
   animation: pw-drop var(--pw-dur-base) var(--ease-settle);
@@ -405,6 +951,12 @@ details[open] > .pw-disclosure-body {
   }
   to {
     transform: translateX(100%);
+  }
+}
+@keyframes pw-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
   }
 }
 @keyframes pw-fade-in {

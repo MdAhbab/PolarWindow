@@ -21,6 +21,7 @@ import { TripLegendItems, TripStrip, TripTable, tripSpan, tripStretches } from '
 import { UncertaintyNote } from '../../components/States'
 import { Disclosure } from '../../components/ui'
 import { RadiationRow } from '../../components/lifecycle/Radiation'
+import { PathCard } from '../../scenes/PathCard'
 
 const TERMS = ['tripSunlight', 'tripHeard', 'tripShadow', 'tripUnheard']
 const HOUR = 3_600_000
@@ -109,6 +110,7 @@ function TripAnswer({ trip, meta, missionId }: { trip: TripDTO; meta: LifecycleM
         legend={<Legend items={TripLegendItems(trip)} />}
         table={<TripTable trip={trip} stretches={stretches} />}
       />
+      <PathCard trip={trip} missionId={missionId} />
       <Rows about={<><HowSure meta={meta} /><SourcesRow meta={meta} /></>}>
         <RadiationRow r={trip.radiation} note={trip.radiation_note} />
         <Disclosure title="Burns" meta={trip.burns.length ? `${trip.burns.length}` : 'none listed'}>
@@ -160,7 +162,7 @@ function TripDownloads({ trip, missionId }: { trip: TripDTO; missionId: string }
         {TRIP_EXPORTS.map(([f, label]) => (
           <li key={f}>
             <a
-              className="inline-flex h-12 items-center rounded-control border border-line-strong px-4 text-body font-semibold text-ink no-underline hover:bg-inset"
+              className="pw-press inline-flex h-12 items-center rounded-pill border border-line-strong bg-tray px-5 text-body font-semibold text-ink no-underline hover:border-ink-3 hover:bg-inset"
               href={`${API_BASE}/missions/${encodeURIComponent(missionId)}/trip/export?format=${f}`}
               download
             >

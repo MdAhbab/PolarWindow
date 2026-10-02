@@ -124,7 +124,7 @@ export function LaunchCalendar({
                       {open !== null && close !== null && (
                         <span
                           aria-hidden="true"
-                          className="absolute bottom-0 h-1 rounded-control bg-ink-3"
+                          className="absolute bottom-0 h-1 bg-ink-3"
                           style={{ left: `${Math.max(0, open) * 100}%`, width: `${Math.max(0.3, (Math.min(1, close) - Math.max(0, open)) * 100)}%` }}
                         />
                       )}
@@ -140,7 +140,7 @@ export function LaunchCalendar({
                         aria-pressed={on}
                         aria-label={`${opportunityName(o)}${o.kind === 'window' ? `, a launch period${periodWords(o) ? ` from ${periodWords(o)}` : ''}` : ''}`}
                         onClick={() => onSelect(o.id)}
-                        className={`absolute top-1 h-12 rounded-control border px-2.5 font-mono text-small font-semibold whitespace-nowrap ${
+                        className={`pw-press absolute top-1 h-12 rounded-pill border px-3 font-mono text-small font-semibold whitespace-nowrap ${
                           on ? 'border-ink bg-ink text-canvas' : 'border-line-strong bg-panel text-ink hover:bg-inset'
                         }`}
                         style={{ left: `${f * 100}%`, transform: anchor }}

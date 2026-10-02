@@ -5,7 +5,9 @@ import { useShallow } from 'zustand/react/shallow'
 import { useMission } from '../lib/store'
 import { useKeyboardMap } from '../hooks/useKeyboard'
 import { useReducedMotion } from '../hooks/useMotion'
-import { Icon, Mark, Wordmark } from './Icon'
+import { useArrivals } from '../hooks/useArrivals'
+import { Icon } from './Icon'
+import { BrandName } from './Brand'
 import { useProvenance } from '../lib/useProvenance'
 import { IconButton, SampleDataBadge, SvgDefs } from './ui'
 import { ConnectionBanner, ErrorBoundary, useOnline } from './States'
@@ -106,6 +108,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const setGuideOpen = useGuide((g) => g.setOpen)
   useKeyboardMap({ reducedMotion: useReducedMotion() })
   useRouteFocus()
+  useArrivals('pw-main')
   const inSites = SITE_PATHS.some((p) => pathname.startsWith(p))
   // Once opened, Settings stays mounted, so it can slide out when closed.
   const settingsLoaded = useRef(false)
@@ -114,60 +117,76 @@ export function AppShell({ children }: { children: ReactNode }) {
   const saved = provenance === 'snapshot'
 
   return (
-    <div className="flex min-h-full flex-col bg-canvas text-ink">
+    <div className="flex min-h-full flex-col text-ink">
       <SvgDefs />
       <a
         href="#pw-main"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-raised focus:px-4 focus:py-3"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-pill focus:bg-raised focus:px-5 focus:py-3"
       >
         Skip to the content
       </a>
 
-      <header className="pw-page flex shrink-0 items-center gap-x-8 border-b border-line bg-canvas py-1.5">
-        <NavLink to="/missions" onClick={go('/missions')} className="flex h-12 shrink-0 items-center gap-2.5 no-underline" aria-label="POLAR WINDOW, CLPS missions">
-          <Mark />
-          <Wordmark />
-        </NavLink>
-
-        <nav aria-label="Views" className="hidden h-12 items-stretch gap-1 lg:flex">
-          {VIEWS.map((n) => (
-            <NavLink
-              key={n.to}
-              to={n.to}
-              onClick={go(n.to)}
-              aria-current={n.match(pathname) ? 'page' : undefined}
-              className={`inline-flex shrink-0 items-center px-3 text-control whitespace-nowrap no-underline transition-colors duration-[var(--pw-dur-quick)] ${
-                n.match(pathname) ? 'font-semibold text-ink shadow-tab' : 'font-medium text-ink-2 hover:text-ink'
-              }`}
-            >
-              {n.label}
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="ml-auto flex items-center gap-2">
-          <button
-            type="button"
-            aria-pressed={guideOpen}
-            aria-label="Guide"
-            onClick={() => setGuideOpen(!guideOpen)}
-            title={guideOpen ? 'Hide the guide' : 'Show the guide: a short tour of every feature'}
-            className="inline-flex h-12 min-w-12 items-center justify-center gap-2 rounded-control border border-line-strong px-3 text-body font-semibold text-ink transition-colors duration-[var(--pw-dur-quick)] hover:bg-inset aria-pressed:bg-inset"
+      {/* The island: one floating strip for the mark, the two views and the
+          two tools, instead of a full-width bar (decision D3). It stays in
+          reach as the page scrolls under it; the space around it lets clicks
+          through to the page. */}
+      <header className="pointer-events-none sticky top-0 z-40 px-3 pt-3 sm:px-4">
+        <div className="pw-island pointer-events-auto mx-auto flex w-fit max-w-full items-center gap-1 rounded-pill py-1.5 pr-1.5 pl-3 sm:pl-4">
+          <NavLink
+            to="/missions"
+            onClick={go('/missions')}
+            className="flex h-12 shrink-0 items-center gap-2.5 rounded-pill pr-2 no-underline sm:pr-3"
+            aria-label="POLAR WINDOW, CLPS missions"
           >
-            <Icon name="info" size={18} aria-hidden="true" />
-            <span className="hidden sm:inline">Guide</span>
-          </button>
-          <IconButton
-            name="settings"
-            label="Settings"
-            guide="settings"
-            haspopup="dialog"
-            expanded={settingsOpen}
-            onClick={(e) => {
-              e.currentTarget.focus()
-              setSettingsOpen(true)
-            }}
-          />
+            <BrandName />
+          </NavLink>
+
+          <nav aria-label="Views" className="hidden h-12 items-stretch gap-1 lg:flex">
+            {VIEWS.map((n) => {
+              const on = n.match(pathname)
+              return (
+                <NavLink
+                  key={n.to}
+                  to={n.to}
+                  onClick={go(n.to)}
+                  aria-current={on ? 'page' : undefined}
+                  className={`pw-press inline-flex shrink-0 items-center gap-2 rounded-pill px-4 text-body whitespace-nowrap no-underline ${
+                    on ? 'bg-inset font-semibold text-ink' : 'font-medium text-ink-2 hover:bg-inset hover:text-ink'
+                  }`}
+                >
+                  {on && <span aria-hidden="true" className="size-1.5 rounded-pill bg-ink" />}
+                  {n.label}
+                </NavLink>
+              )
+            })}
+          </nav>
+
+          <span aria-hidden="true" className="mx-1 hidden h-6 w-px bg-line-strong lg:block" />
+
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              aria-pressed={guideOpen}
+              aria-label="Guide"
+              onClick={() => setGuideOpen(!guideOpen)}
+              title={guideOpen ? 'Hide the guide' : 'Show the guide: a short tour of every feature'}
+              className="pw-press inline-flex h-12 min-w-12 items-center justify-center gap-2 rounded-pill px-3 text-body font-semibold text-ink-2 hover:bg-inset hover:text-ink aria-pressed:bg-inset aria-pressed:text-ink sm:px-4"
+            >
+              <Icon name="info" size={18} aria-hidden="true" />
+              <span className="hidden sm:inline">Guide</span>
+            </button>
+            <IconButton
+              name="settings"
+              label="Settings"
+              guide="settings"
+              haspopup="dialog"
+              expanded={settingsOpen}
+              onClick={(e) => {
+                e.currentTarget.focus()
+                setSettingsOpen(true)
+              }}
+            />
+          </div>
         </div>
       </header>
 
@@ -188,30 +207,40 @@ export function AppShell({ children }: { children: ReactNode }) {
       />
 
       {inSites && (
-        <nav aria-label="Landing site pages" className="pw-page flex border-b border-line">
-          {SITE_PAGES.map((n) => (
-            <NavLink
-              key={n.to}
-              to={n.to}
-              onClick={go(n.to)}
-              className={({ isActive }) =>
-                `inline-flex h-12 min-w-0 grow basis-0 items-center justify-center px-3 text-body whitespace-nowrap no-underline transition-colors duration-[var(--pw-dur-quick)] sm:grow-0 sm:basis-auto ${
-                  isActive ? 'font-semibold text-ink shadow-tab' : 'font-medium text-ink-2 hover:text-ink'
-                }`
-              }
-            >
-              {n.label}
-            </NavLink>
-          ))}
-        </nav>
+        // The four landing-site pages, as one pill under the island. It holds
+        // still while the page under it changes.
+        <div className="pw-page pt-5 sm:pt-6">
+          <nav
+            aria-label="Landing site pages"
+            className="flex w-full max-w-full overflow-x-auto rounded-pill border border-line-strong bg-tray sm:w-fit"
+          >
+            {SITE_PAGES.map((n) => (
+              <NavLink
+                key={n.to}
+                to={n.to}
+                onClick={go(n.to)}
+                className={({ isActive }) =>
+                  // The chosen page is a pill set 4 px inside its target: a clear border with the fill kept inside it.
+                  `pw-press inline-flex h-[46px] min-w-0 grow basis-0 items-center justify-center rounded-pill border-4 border-transparent bg-clip-padding px-3 text-body whitespace-nowrap no-underline sm:grow-0 sm:basis-auto sm:px-4 ${
+                    isActive
+                      ? 'bg-ink font-semibold text-canvas'
+                      : 'font-medium text-ink-2 hover:text-ink'
+                  }`
+                }
+              >
+                {n.label}
+              </NavLink>
+            ))}
+          </nav>
+        </div>
       )}
 
-      {/* Below lg the fixed tab bar, and at every width the guide bar when it
+      {/* Below lg the floating dock, and at every width the guide card when it
           is open, must never cover the last line. */}
       <main
         id="pw-main"
         tabIndex={-1}
-        className="flex grow flex-col pb-[calc(4rem+var(--pw-guide-h,0px))] outline-none lg:pb-[var(--pw-guide-h,0px)]"
+        className="flex grow flex-col pb-[calc(6rem+env(safe-area-inset-bottom)+var(--pw-guide-h,0px))] outline-none lg:pb-[var(--pw-guide-h,0px)]"
       >
         {/* The part that cross-fades when the page changes. On a mission's
             step only the step itself does (MissionHub names it), so the
@@ -220,15 +249,17 @@ export function AppShell({ children }: { children: ReactNode }) {
           <ErrorBoundary resetKey={pathname}>{children}</ErrorBoundary>
         </div>
         {/* U13: one line per screen instead of "≈" before every value. */}
-        <p className="pw-page mt-auto border-t border-line py-3 text-caption leading-caption text-ink-3">{ESTIMATES}</p>
+        <p className="pw-page mt-auto pt-10 pb-6 text-caption leading-caption text-ink-3">
+          <span className="block border-t border-line pt-5">{ESTIMATES}</span>
+        </p>
       </main>
 
-      {/* On a phone the two views sit at the bottom, in reach of a thumb and
-          clear of the home indicator. The open one is marked in ink, with a
-          bar and bold words: amber means sunlight. */}
+      {/* On a phone the two views float at the bottom, in reach of a thumb and
+          clear of the home indicator. The open one is filled in ink, with bold
+          words: amber means sunlight. */}
       <nav
         aria-label="Views"
-        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-canvas pb-[env(safe-area-inset-bottom)] lg:hidden"
+        className="pw-island fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex w-[min(22rem,calc(100%-1.5rem))] -translate-x-1/2 gap-1 rounded-pill p-1.5 lg:hidden"
       >
         {VIEWS.map((n) => {
           const on = n.match(pathname)
@@ -238,13 +269,12 @@ export function AppShell({ children }: { children: ReactNode }) {
               to={n.to}
               onClick={go(n.to)}
               aria-current={on ? 'page' : undefined}
-              className={`relative flex h-16 min-w-0 grow basis-0 flex-col items-center justify-center gap-1 no-underline ${
-                on ? 'text-ink' : 'text-ink-3'
+              className={`pw-press flex h-12 min-w-0 grow basis-0 items-center justify-center gap-2 rounded-pill px-3 text-body no-underline ${
+                on ? 'bg-ink font-semibold text-canvas' : 'font-medium text-ink-2 hover:text-ink'
               }`}
             >
-              {on && <span aria-hidden="true" className="absolute inset-x-6 top-0 h-[3px] bg-ink" />}
-              <Icon name={n.icon} size={22} strokeWidth={on ? 2 : 1.7} />
-              <span className={`text-caption ${on ? 'font-semibold' : 'font-medium'}`}>{n.label}</span>
+              <Icon name={n.icon} size={19} strokeWidth={on ? 2 : 1.7} />
+              <span className="truncate">{n.label}</span>
             </NavLink>
           )
         })}

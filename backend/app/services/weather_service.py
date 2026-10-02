@@ -181,8 +181,11 @@ def _gefs_row(
             continue
         forecast_lead = float(hit[0]) if hit[0].isdigit() else None
         tested_limit = lim * vf.neutral_ratio(float(rule.height_m), 10.0, wr.OPEN_FLAT_Z0_M)
-        checked = forecast_lead is not None and (rule.comparison or "gt") == "gt" and \
-            verification.checked(region, rule.id, forecast_lead, threshold_m_s=tested_limit)
+        checked = (
+            forecast_lead is not None
+            and (rule.comparison or "gt") == "gt"
+            and verification.checked(region, rule.id, forecast_lead, threshold_m_s=tested_limit)
+        )
         return {
             "system": "GEFS",
             "share": lifecycle.share(share(k, n, checked=checked)),
@@ -235,10 +238,13 @@ def _hrrr(
             "over": wr.breaks(value, float(limit["value"]), rule.comparison or "gt"),
             "note": (
                 verification.hrrr_words(
-                    region, lead_h,
+                    region,
+                    lead_h,
                     wr.to_m_s(float(limit["value"]), unit)
                     * vf.neutral_ratio(float(rule.height_m), 10.0, wr.OPEN_FLAT_Z0_M),
-                ) if lead_h is not None else None
+                )
+                if lead_h is not None
+                else None
             )
             or "HRRR's 10 m wind has not been checked against observations yet.",
         }
@@ -496,9 +502,7 @@ async def launch_weather(
         observed = None
         disagree: list[str] = []
         if r.rule_class in ("model", "proxy"):
-            per_system.append(
-                _gefs_row(gefs, pad_id, when, r, limit, region)
-            )
+            per_system.append(_gefs_row(gefs, pad_id, when, r, limit, region))
             per_system += [
                 {"system": s, "share": None, "missing_reason": NOT_RECORDED[s]} for s in SYSTEMS[1:]
             ]
@@ -590,7 +594,8 @@ async def launch_weather(
                 "The wind rule's GEFS shares have been checked against observations."
                 if any(
                     (system.get("share") or {}).get("checked")
-                    for row in rows for system in row["per_system"]
+                    for row in rows
+                    for system in row["per_system"]
                 )
                 else "The wind rule's GEFS checks cover only the scored forecast leads and "
                 "tested limit; this answer has no share covered by those checks."

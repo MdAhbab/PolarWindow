@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { RidgeArt } from '../landing/Illustrations'
 import { Link } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { useSiteMetricsMap } from '../lib/useMetricsMap'
@@ -9,7 +10,9 @@ import { useMissions } from '../lib/api/queries'
 import { PolarMap, type MissionPin } from '../components/PolarMap'
 import { DateSlider } from '../components/DateSlider'
 import { EmptyState, LoadingPanel, ProblemPanel } from '../components/States'
-import { Button, Chip, Disclosure, Panel, SearchField, SectionLabel } from '../components/ui'
+import { Button, Chip, Disclosure, Eyebrow, Panel, PillArrow, SearchField, pillClass } from '../components/ui'
+import { PageHeader } from '../components/Page'
+import { Icon } from '../components/Icon'
 import { bound, coords, percent } from '../lib/format'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
 import { coordinateKindWords } from '../lib/missions'
@@ -112,18 +115,15 @@ export function MapScreen() {
   const filtersOn = (minSun > 0 ? 1 : 0) + (Number.isFinite(maxDark) ? 1 : 0) + (nearPsr ? 1 : 0) + (showMissions ? 1 : 0)
 
   return (
-    <div className="flex grow flex-col">
-      <div className="flex flex-wrap items-center gap-x-10 gap-y-3 border-b border-line pw-page py-4">
-        <div className="flex min-w-0 flex-col gap-0.5 lg:max-w-sm">
-          <h1 className="text-title-lg font-semibold tracking-title text-ink">Candidate landing sites</h1>
-          <p className="text-small leading-5 text-ink-2">Spots near the south pole, measured for sunlight and contact with Earth. Choose one on the map or in the list.</p>
-        </div>
-        <div className="basis-full lg:basis-0 lg:grow">
-          <DateSlider />
-        </div>
-      </div>
+    <div className="pw-page flex grow flex-col gap-6 pt-6 pb-8 lg:gap-8 lg:pt-8">
+      <PageHeader
+        compact
+        title="Candidate landing sites"
+        lede="Spots near the south pole, measured for sunlight and contact with Earth. Choose one on the map or in the list."
+      />
+      <DateSlider />
 
-      <div className="flex grow flex-col gap-4 pw-page py-5 lg:flex-row lg:items-start lg:gap-6 lg:py-6">
+      <div className="flex grow flex-col gap-6 lg:flex-row lg:items-start">
         {/* On a phone the map comes first and the chosen site's numbers right
             under it, so a tap on a pin shows its answer without scrolling. */}
         <aside className="order-3 flex w-full shrink-0 flex-col gap-3 lg:order-none lg:w-[280px]" aria-label="Search and filters">
@@ -163,15 +163,16 @@ export function MapScreen() {
             </div>
           </Disclosure>
 
-          <Panel className="relative flex flex-col lg:max-h-[560px] lg:overflow-y-auto">
+          <Panel quiet flush className="relative flex flex-col lg:max-h-[600px] lg:overflow-y-auto">
             <div className="sticky top-0 z-10 flex items-baseline justify-between border-b border-line bg-panel px-4 py-3">
-              <SectionLabel>Sites</SectionLabel>
+              <Eyebrow as="h2">Sites</Eyebrow>
               <span className="text-caption text-ink-2" aria-live="polite">
                 {matches.length} of {candidates.length}
               </span>
             </div>
             {matches.length === 0 ? (
               <EmptyState
+                art={<RidgeArt />}
                 title="No site clears every filter"
                 detail={
                   <>
@@ -203,7 +204,7 @@ export function MapScreen() {
                     type="button"
                     onClick={() => setSite(s.id)}
                     aria-current={active ? 'true' : undefined}
-                    className={`flex flex-col gap-0.5 border-b border-line px-4 py-2.5 text-left last:border-b-0 ${
+                    className={`flex flex-col gap-0.5 rounded-none border-b border-line px-4 py-2.5 text-left last:border-b-0 ${
                       active ? 'bg-inset shadow-[inset_3px_0_0_var(--color-ink)]' : 'hover:bg-inset'
                     }`}
                   >
@@ -234,13 +235,14 @@ export function MapScreen() {
           </Panel>
         </aside>
 
-        <section data-guide="map" className="order-1 flex min-w-0 grow flex-col border border-line bg-panel lg:order-none">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line px-4 py-3">
-            <h2 className="text-control font-semibold text-ink">The south pole from above</h2>
-            <span className="text-caption text-ink-3">80°S to the pole · choose a site</span>
+        {/* The page's hero: the pole on the real relief, the Sun's shadow line sweeping across it. */}
+        <Panel as="section" guide="map" flush className="order-1 flex min-w-0 grow flex-col lg:order-none">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 pt-4 sm:px-5">
+            <Eyebrow as="h2">The south pole from above</Eyebrow>
+            <span className="text-caption text-ink-3">choose a site on the map</span>
           </div>
 
-          <div className="flex items-start justify-center p-3">
+          <div className="flex items-start justify-center p-2 sm:p-3">
             <PolarMap
               sun={sun}
               selectedSiteId={siteId}
@@ -255,12 +257,16 @@ export function MapScreen() {
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-line px-4 py-3">
-            <LegendSwatch className="bg-terrain-mid">Terrain (LOLA, 80 m)</LegendSwatch>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 pb-4 sm:px-5">
+            <LegendSwatch className="bg-terrain-mid">The ground: NASA’s LRO photograph over the LOLA terrain</LegendSwatch>
             <LegendSwatch className="bg-psr">In shadow now, if the ground were flat</LegendSwatch>
             <LegendSwatch className="hatch-uncertain">Shadow-line margin</LegendSwatch>
           </div>
-        </section>
+          <p className="px-4 pb-4 text-caption leading-caption text-ink-3 sm:px-5">
+            The photograph’s own shadows are from the days it was taken. Sunlight for your dates is the amber line and
+            the shaded side.
+          </p>
+        </Panel>
 
         <aside className="order-2 flex w-full shrink-0 flex-col gap-4 lg:order-none lg:w-[300px]">
           {error && !focused ? (
@@ -269,15 +275,16 @@ export function MapScreen() {
             <LoadingPanel done={done} total={total} />
           ) : (
             <Panel elevated className="flex flex-col">
-              <div className="flex flex-col gap-0.5 border-b border-line p-4">
-                <div className="text-title font-semibold">
-                  <span className="mr-2 font-mono text-body text-ink-3">{site.code}</span>
+              <div className="flex flex-col gap-1 p-5 pb-4">
+                <Eyebrow>Chosen site</Eyebrow>
+                <div className="text-heading leading-7 font-semibold tracking-heading">
+                  <span className="mr-2 font-mono text-body font-normal text-ink-3">{site.code}</span>
                   {site.name}
                 </div>
-                <div className="font-mono text-tag text-ink-3">{coords(site.latDeg, site.lonDeg)}</div>
+                <div className="font-mono text-caption text-ink-3">{coords(site.latDeg, site.lonDeg)}</div>
               </div>
               <SiteNumbers metrics={focused} />
-              <div className="flex flex-col gap-2.5 border-t border-line p-4">
+              <div className="flex flex-col gap-3 p-5 pt-4">
                 <p className="text-small leading-5 text-ink-2">{site.note}</p>
                 {missionsHere.length > 0 && (
                   <p className="text-small leading-5 text-ink-2">
@@ -290,11 +297,9 @@ export function MapScreen() {
                     ))}
                   </p>
                 )}
-                <Link
-                  to="/site"
-                  className="inline-flex h-12 items-center justify-center rounded-control bg-ink text-control font-semibold text-canvas no-underline hover:bg-ink-2"
-                >
+                <Link to="/site" className={pillClass('primary', true)}>
                   Open the site page
+                  <PillArrow />
                 </Link>
                 <Button
                   onClick={() => useMission.getState().toggleCompare(site.id)}
@@ -313,40 +318,50 @@ export function MapScreen() {
 }
 
 /**
- * The four numbers as label and value rows: the rail is too narrow for the
- * tiles, whose long labels wrapped onto four lines there.
+ * The four numbers as small figures, two by two: the rail is too narrow for
+ * the tiles, whose long labels wrapped onto four lines there.
  */
 function SiteNumbers({ metrics: m }: { metrics: SiteMetrics | undefined }) {
-  if (!m) return <p className="p-4 text-small text-ink-3">Working out the numbers…</p>
+  if (!m) return <p className="px-5 py-4 text-small text-ink-3">Working out the numbers…</p>
   const over = m.sun.longestDownH > SURVIVAL_LIMIT_H
-  const rows: { label: string; value: string; extra?: string; tone: string }[] = [
-    { label: 'Time in sunlight', value: `${Math.round(m.sun.upHours)} h`, extra: percent(m.sun.fractionUp), tone: 'text-sun' },
+  const rows: { label: string; value: string; unit?: string; extra?: string; tone: string; alert?: boolean }[] = [
+    { label: 'Time in sunlight', value: `${Math.round(m.sun.upHours)}`, unit: 'h', extra: percent(m.sun.fractionUp), tone: 'text-sun' },
     {
       label: 'Time in contact with Earth',
-      value: `${Math.round(m.earth.upHours)} h`,
+      value: `${Math.round(m.earth.upHours)}`,
+      unit: 'h',
       extra: percent(m.earth.fractionUp),
       tone: 'text-earth',
     },
     {
       label: 'Longest night',
-      value: m.sun.longestDownArc ? `${bound(m.sun.longestDownOpen)}${Math.round(m.sun.longestDownH)} h` : 'none',
+      value: m.sun.longestDownArc ? `${bound(m.sun.longestDownOpen)}${Math.round(m.sun.longestDownH)}` : 'none',
+      unit: m.sun.longestDownArc ? 'h' : undefined,
       extra: over ? `over the ${SURVIVAL_LIMIT_H} h battery limit` : undefined,
       tone: over ? 'text-alert' : 'text-ink',
+      alert: over,
     },
     {
       label: 'Longest time without contact',
-      value: m.earth.longestDownArc ? `${bound(m.earth.longestDownOpen)}${Math.round(m.earth.longestDownH)} h` : 'none',
+      value: m.earth.longestDownArc ? `${bound(m.earth.longestDownOpen)}${Math.round(m.earth.longestDownH)}` : 'none',
+      unit: m.earth.longestDownArc ? 'h' : undefined,
       tone: 'text-ink',
     },
   ]
   return (
-    <dl className="flex flex-col px-4 py-2">
+    <dl className="mx-5 grid grid-cols-2 gap-x-4 gap-y-4 border-y border-line py-4">
       {rows.map((r) => (
-        <div key={r.label} className="flex items-baseline justify-between gap-3 border-b border-line py-2 last:border-b-0">
-          <dt className="text-small text-ink-2">{r.label}</dt>
-          <dd className="flex flex-col items-end text-right">
-            <span className={`text-title font-semibold tnum ${r.tone}`}>{r.value}</span>
-            {r.extra && <span className="text-caption text-ink-3">{r.extra}</span>}
+        <div key={r.label} className="flex min-w-0 flex-col gap-1">
+          <dt className={`flex min-h-8 items-start gap-1.5 text-caption leading-4 ${r.alert ? 'text-alert' : 'text-ink-2'}`}>
+            {r.alert && <Icon name="alert" size={12} strokeWidth={2.4} className="mt-0.5 shrink-0" />}
+            {r.label}
+          </dt>
+          <dd className="flex flex-col">
+            <span className={`pw-figure text-[26px] leading-7 ${r.tone}`}>
+              {r.value}
+              {r.unit && <span className="ml-1 text-body font-normal tracking-normal text-ink-2 [font-stretch:100%]">{r.unit}</span>}
+            </span>
+            {r.extra && <span className={`text-caption leading-4 ${r.alert ? 'text-alert' : 'text-ink-3'}`}>{r.extra}</span>}
           </dd>
         </div>
       ))}
@@ -392,7 +407,7 @@ function Slider({
   return (
     <div className="flex flex-col gap-2">
       <label htmlFor={id} className="text-small font-medium text-ink">
-        {label} <span className="font-mono text-sun">{display}</span>
+        {label} <span className={`font-mono ${tone === 'bg-sun-fill' ? 'text-sun' : 'text-ink'}`}>{display}</span>
       </label>
       <div className="relative flex h-12 items-center">
         <div className="absolute inset-x-0 h-[3px] bg-inset" />

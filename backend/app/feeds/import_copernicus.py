@@ -1,6 +1,7 @@
 """Import a downloaded Copernicus NetCDF: python -m app.feeds.import_copernicus file.nc.
 Install the optional marine extra with uv sync --extra marine. No credentials are read.
 """
+
 from __future__ import annotations
 
 import argparse

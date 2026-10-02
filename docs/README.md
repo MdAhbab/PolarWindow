@@ -17,3 +17,4 @@ Index of project documentation, its scope, and intended audience.
 | [test-plan.md](test-plan.md) | Test suites, test commands, pytest markers, and failure mode threat model. | Test engineers, developers |
 | [adr/README.md](adr/README.md) | Index of Architecture Decision Records (ADR-0001 to ADR-0018). | Engineers, architects |
 | [design-lifecycle.md](design-lifecycle.md) | Lifecycle view layout, interaction patterns, and frontend state specifications. | Frontend developers, UI designers |
+| [design-visual-refresh.md](design-visual-refresh.md) | Visual refresh: audit of the current look, the direction, tokens, components, screens, motion, owner decisions and build slices; preview in `design/visual-refresh-preview.html`. | Frontend developers, UI designers, the owner |

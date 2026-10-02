@@ -5,6 +5,7 @@ import { useSnapshotActive } from '../lib/api/snapshot'
 import type { Site } from '../lib/types'
 import type { SubPoint } from '../lib/subSolar'
 import { Segmented } from './ui'
+import polePhoto from '../assets/space/moon-south-pole-wac-2048.jpg'
 
 /**
  * One mission-target pin (§10.2). Missions that share a coordinate (three aim
@@ -264,6 +265,8 @@ export function PolarMap({
   const saved = useSnapshotActive()
   const tiles = useMemo(() => tilesFor(p), [p, saved])
   const [failed, setFailed] = useState<ReadonlySet<string>>(() => new Set())
+  // The photograph under the relief; without it (it did not load) the relief is the picture.
+  const [photo, setPhoto] = useState(true)
   const { dark, term } = useMemo(() => (sun ? shadowPaths(sun, p) : { dark: null, term: null }), [sun, p])
 
   const shown = siteList ?? getCandidates()
@@ -291,13 +294,13 @@ export function PolarMap({
   const canZoom = (g: typeof sites) => poleView && view === 'region' && g.every((m) => 90 + m.site.latDeg < poleColat)
 
   const hiddenSites = shown.length - sites.length
-  const summary = `South pole map, ${VIEWS[view].name}, over the LOLA terrain map. ${sites.length} candidate site${
+  const summary = `South pole map, ${VIEWS[view].name}, over NASA’s photograph of the pole and the LOLA terrain map. ${sites.length} candidate site${
     sites.length === 1 ? '' : 's'
   }${pins.length ? ` and ${pins.length} mission target${pins.length === 1 ? '' : 's'}` : ''} shown${
     hiddenSites > 0 ? `; ${hiddenSites} more lie outside this close-up` : ''
   }. ${
     sun
-      ? 'The shaded region is where the Sun is below a flat horizon at this moment; the shadows of ridges and craters are not included.'
+      ? 'The shaded region is where the Sun is below a flat horizon at this moment; the shadows of ridges and craters are not included, and the shadows in the photograph are from the days it was taken.'
       : 'The Sun position is still loading, so no shadow is drawn.'
   }`
 
@@ -317,6 +320,63 @@ export function PolarMap({
       {/* Square by construction, so the buttons below -- positioned in per
           cent of the 700 x 700 view box -- sit exactly on their pins. */}
       <div className="relative aspect-square w-full">
+        {/* The ground is a picture of its own under the drawing: the Sun's
+            sweep redraws the drawing every frame, and the photograph and the
+            tiles are then not painted again with it. */}
+        <svg viewBox="0 0 700 700" className="pw-relief absolute inset-0 h-full w-full" aria-hidden="true">
+          <defs>
+            <clipPath id={`${clipId}-relief`}>
+              <circle cx={CX} cy={CY} r={R_EDGE} />
+            </clipPath>
+          </defs>
+          <circle cx={CX} cy={CY} r={R_EDGE} fill="var(--color-terrain-low)" />
+          <g clipPath={`url(#${clipId}-relief)`}>
+            {/* The real ground: NASA's LRO camera mosaic of the pole, cut to
+                the square the tiles cover and in their projection
+                (fetch_pole_mosaic.py), so a pin sits on the place it names. */}
+            {photo && (
+              <image
+                href={polePhoto}
+                x={CX - TILE_HALF_EXTENT_M * p.s}
+                y={CY - TILE_HALF_EXTENT_M * p.s}
+                width={2 * TILE_HALF_EXTENT_M * p.s}
+                height={2 * TILE_HALF_EXTENT_M * p.s}
+                preserveAspectRatio="none"
+                onError={() => setPhoto(false)}
+              />
+            )}
+            {/* The LOLA relief, in the same projection. Over the photograph
+                it shows only where it is the lighter of the two: a
+                photograph of the pole is black wherever the Sun was not, and
+                the relief fills those shadows with the shape of the ground.
+                Without the photograph it is the picture, a little crisper
+                than the tiles' own soft grey. A tile that fails to load
+                leaves what is under it, never a broken-image mark. */}
+            <g
+              style={
+                photo
+                  ? { mixBlendMode: 'lighten', filter: 'contrast(1.28) brightness(0.74)' }
+                  : { filter: 'contrast(1.28) brightness(1.04)' }
+              }
+            >
+              {tiles
+                .filter((t) => !failed.has(t.href))
+                .map((t) => (
+                  <image
+                    key={t.key}
+                    href={t.href}
+                    x={t.x}
+                    y={t.y}
+                    // Half a unit of overlap hides the hairline seam between tiles.
+                    width={t.size + 0.5}
+                    height={t.size + 0.5}
+                    preserveAspectRatio="none"
+                    onError={() => setFailed((f) => new Set(f).add(t.href))}
+                  />
+                ))}
+            </g>
+          </g>
+        </svg>
         <svg viewBox="0 0 700 700" className="absolute inset-0 h-full w-full" role="img" aria-label={summary}>
           <defs>
             <clipPath id={clipId}>
@@ -324,28 +384,7 @@ export function PolarMap({
             </clipPath>
           </defs>
 
-          <circle cx={CX} cy={CY} r={R_EDGE} fill="var(--color-terrain-low)" />
-
           <g clipPath={`url(#${clipId})`}>
-            {/* Relief: the pre-rendered LOLA hillshade pyramid, in the same
-                projection as the pins. A tile that fails to load leaves the
-                plain ground colour, never a broken-image mark. */}
-            {tiles
-              .filter((t) => !failed.has(t.href))
-              .map((t) => (
-                <image
-                  key={t.key}
-                  href={t.href}
-                  x={t.x}
-                  y={t.y}
-                  // Half a unit of overlap hides the hairline seam between tiles.
-                  width={t.size + 0.5}
-                  height={t.size + 0.5}
-                  preserveAspectRatio="none"
-                  onError={() => setFailed((f) => new Set(f).add(t.href))}
-                />
-              ))}
-
             {/* M1 — sunlight over the whole disc, then the unlit region laid
                 on top of it. Translucent, so the relief reads through. */}
             <circle cx={CX} cy={CY} r={R_EDGE} fill="var(--color-sun-fill)" fillOpacity="0.14" />
@@ -402,20 +441,23 @@ export function PolarMap({
               />
             ))}
 
-          {siteGroups.map((g) => {
+          {siteGroups.map((g, gi) => {
             if (g.length === 1) {
               const { site: s, at } = g[0]
               const selected = s.id === selectedSiteId
               return (
                 <g key={s.id} transform={`translate(${at.x} ${at.y})`} aria-hidden="true">
                   {selected && <circle r="20" fill="none" stroke="var(--color-sun)" strokeWidth="2" strokeOpacity="0.55" />}
-                  <path
-                    d="M0 12 s10-9.5 10-16a10 10 0 1 0-20 0c0 6.5 10 16 10 16Z"
-                    fill={selected ? 'var(--color-sun-fill)' : 'var(--color-ink)'}
-                    stroke="var(--color-canvas)"
-                    strokeWidth="1.5"
-                  />
-                  <circle cy="-4" r="3.4" fill="var(--color-canvas)" />
+                  {/* The pin drops onto the map as its card arrives (globals.css .pw-pin); its code stays still. */}
+                  <g className="pw-pin" style={{ ['--pw-pin-i' as string]: gi }}>
+                    <path
+                      d="M0 12 s10-9.5 10-16a10 10 0 1 0-20 0c0 6.5 10 16 10 16Z"
+                      fill={selected ? 'var(--color-sun-fill)' : 'var(--color-ink)'}
+                      stroke="var(--color-canvas)"
+                      strokeWidth="1.5"
+                    />
+                    <circle cy="-4" r="3.4" fill="var(--color-canvas)" />
+                  </g>
                   <text
                     y="32"
                     textAnchor="middle"
@@ -537,7 +579,7 @@ export function PolarMap({
                   aria-label={`${g.length} candidate sites near the pole: ${names}${
                     selected ? `. Includes the selected site, ${selected.site.code}` : ''
                   }. Show the pole close-up`}
-                  className="absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-control bg-transparent"
+                  className="absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-pill bg-transparent"
                   style={{ left: pct(c.x), top: pct(c.y) }}
                 />,
               ]
@@ -549,7 +591,7 @@ export function PolarMap({
                 onClick={() => onSelect(s.id)}
                 aria-pressed={s.id === selectedSiteId}
                 aria-label={`${s.code}, ${s.name}`}
-                className="absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-control bg-transparent"
+                className="absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-pill bg-transparent"
                 style={{ left: pct(at.x), top: pct(at.y) }}
               />
             ))
@@ -573,7 +615,7 @@ export function PolarMap({
                 onBlur={() => onMissionHover?.(null)}
                 aria-pressed={g.length === 1 ? g[0].pin.pressed : undefined}
                 aria-label={label}
-                className="absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-control bg-transparent"
+                className="absolute size-12 -translate-x-1/2 -translate-y-1/2 rounded-pill bg-transparent"
                 style={{ left: pct(c.x), top: pct(c.y) }}
               />
             )

@@ -55,8 +55,7 @@ MODEL = {("e", "min"): 1, ("e", "max"): 2, ("p", "min"): 3, ("p", "max"): 4}
 #: https://space-env.esa.int/Manuals/UNILIB/v3.02/reference/um510.html
 #: https://orfeo.belnet.be/bitstream/handle/internal/6828/A_385.pdf
 SAA_DRIFT_DEG_YR = 0.3
-MAP_EPOCH = {("e", "min"): 1960, ("e", "max"): 1960,
-             ("p", "min"): 1960, ("p", "max"): 1970}
+MAP_EPOCH = {("e", "min"): 1960, ("e", "max"): 1960, ("p", "min"): 1960, ("p", "max"): 1970}
 #: IRBEM keeps state in Fortran common blocks: one call at a time.
 _LOCK = threading.Lock()
 

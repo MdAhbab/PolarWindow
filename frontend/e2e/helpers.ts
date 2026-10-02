@@ -68,6 +68,17 @@ export async function expectNoSeriousAxe(page: Page, where: string) {
   expect(bad, `axe on ${where}:\n${report}`).toEqual([])
 }
 
+/**
+ * The page has finished arriving: every one-off animation (a card rising, a
+ * bar growing) has ended. Endless ones, such as a skeleton's pulse, are not
+ * waited for.
+ */
+export async function arrived(page: Page) {
+  await page.waitForFunction(() =>
+    document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity),
+  )
+}
+
 /** Client-side navigation, as a link click would do it, without leaving the app. */
 export async function goClient(page: Page, path: string) {
   await page.evaluate((p) => {

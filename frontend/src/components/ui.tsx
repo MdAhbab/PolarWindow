@@ -6,9 +6,36 @@ import { Icon } from './Icon'
    reaches it and a screen reader has something to announce. Minimum target
    48x48 whatever the visible mark is. */
 
+/* Pills (decision D2). Every one gives a little under the finger (.pw-press). */
 const BASE =
-  'inline-flex items-center justify-center gap-2 rounded-control font-semibold ' +
-  'transition-[background-color,border-color,color] duration-[var(--pw-dur-quick)] disabled:cursor-not-allowed select-none'
+  'pw-press group inline-flex items-center justify-center gap-2 rounded-pill font-semibold disabled:cursor-not-allowed select-none'
+
+const VARIANTS = {
+  primary:
+    // Ink, not amber: amber means sunlight in every chart, so a button in it
+    // read as part of the data.
+    'bg-ink text-canvas hover:bg-ink-2 active:brightness-90 disabled:bg-inset disabled:text-ink-3',
+  secondary:
+    'border border-line-strong bg-tray text-ink hover:bg-inset hover:border-ink-3 disabled:border-line disabled:text-ink-3',
+  ghost: 'text-ink-2 hover:bg-inset hover:text-ink disabled:text-line-strong',
+}
+
+/**
+ * A link drawn as a pill button, for a router `Link` that takes the person to
+ * another page. The primary one carries the arrow (`PillArrow`).
+ */
+export function pillClass(variant: 'primary' | 'secondary' | 'ghost' = 'secondary', arrow = false): string {
+  return `${BASE} h-12 text-control no-underline ${arrow ? 'pl-5 pr-2' : 'px-5'} ${VARIANTS[variant]}`
+}
+
+/** The arrow in its own circle, at the end of a primary pill. */
+export function PillArrow() {
+  return (
+    <span className="pw-orb ml-1" aria-hidden="true">
+      <Icon name="arrow" size={15} strokeWidth={2} />
+    </span>
+  )
+}
 
 export function Button({
   children,
@@ -23,8 +50,11 @@ export function Button({
   controls,
   describedBy,
   buttonRef,
+  arrow = false,
 }: {
   children: ReactNode
+  /** A trailing arrow in its own circle: for the one button that takes the person onward. */
+  arrow?: boolean
   variant?: 'primary' | 'secondary' | 'ghost'
   size?: 'md' | 'sm'
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void
@@ -37,16 +67,9 @@ export function Button({
   describedBy?: string
   buttonRef?: React.Ref<HTMLButtonElement>
 }) {
-  const variants = {
-    primary:
-      // Ink, not amber: amber means sunlight in every chart, so a button in it
-      // read as part of the data.
-      'bg-ink text-canvas hover:bg-ink-2 active:brightness-90 disabled:bg-inset disabled:text-ink-3',
-    secondary:
-      'border border-line-strong text-ink hover:bg-inset hover:border-ink-3 active:bg-panel disabled:border-line disabled:text-ink-3',
-    ghost: 'text-ink-2 hover:bg-inset hover:text-ink active:bg-line disabled:text-line-strong',
-  }
-  const sizes = { md: 'h-12 px-4 text-control', sm: 'h-12 px-3 text-body' }
+  const sizes = arrow
+    ? { md: 'h-12 pl-5 pr-2 text-control', sm: 'h-12 pl-4 pr-2 text-body' }
+    : { md: 'h-12 px-5 text-control', sm: 'h-12 px-4 text-body' }
   return (
     <button
       ref={buttonRef}
@@ -57,9 +80,10 @@ export function Button({
       aria-expanded={expanded}
       aria-controls={controls}
       aria-describedby={describedBy}
-      className={`${BASE} ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`${BASE} ${VARIANTS[variant]} ${sizes[size]} ${className}`}
     >
       {children}
+      {arrow && <PillArrow />}
     </button>
   )
 }
@@ -94,7 +118,7 @@ export function IconButton({
       aria-haspopup={haspopup}
       data-guide={guide}
       onClick={onClick}
-      className={`inline-flex size-12 items-center justify-center rounded-control border border-line-strong text-ink hover:bg-inset ${className}`}
+      className={`pw-press inline-flex size-12 items-center justify-center rounded-pill border border-line-strong bg-tray text-ink hover:border-ink-3 hover:bg-inset aria-pressed:bg-inset ${className}`}
     >
       <Icon name={name} />
     </button>
@@ -124,8 +148,8 @@ export function Chip({
       type="button"
       aria-pressed={!!selected}
       onClick={onClick}
-      className={`inline-flex h-12 shrink-0 items-center gap-2 rounded-control border px-4 text-body font-semibold whitespace-nowrap transition-colors ${
-        selected ? on : 'border-line-strong text-ink-2 hover:bg-inset'
+      className={`pw-press inline-flex h-12 shrink-0 items-center gap-2 rounded-pill border px-4 text-body font-semibold whitespace-nowrap ${
+        selected ? on : 'border-line-strong bg-tray text-ink-2 hover:bg-inset hover:text-ink'
       }`}
     >
       {selected && <Icon name="check" size={16} strokeWidth={2.6} />}
@@ -134,29 +158,44 @@ export function Chip({
   )
 }
 
+/**
+ * A card: a tray holding a lit core (`.pw-card` in globals.css). One element,
+ * so callers lay it out exactly as before. `elevated` floats it over the page;
+ * `quiet` drops its shadow (a group, a list); `flush` clips content that runs
+ * to its edges (a list, a table) to the rounded core; `alert` is for a card
+ * about something over the battery limit, always with the triangle and words.
+ */
 export function Panel({
   children,
   className = '',
   elevated = false,
+  quiet = false,
+  flush = false,
+  alert = false,
   as: As = 'div',
   guide,
 }: {
   children: ReactNode
   className?: string
   elevated?: boolean
+  quiet?: boolean
+  flush?: boolean
+  alert?: boolean
   as?: 'div' | 'section' | 'aside'
   /** Where the guide bar can point (`data-guide`). */
   guide?: string
 }) {
+  const kind = [
+    'pw-card',
+    elevated ? 'pw-card-raised' : '',
+    quiet ? 'pw-card-quiet' : '',
+    flush ? 'pw-card-flush' : '',
+    alert ? 'pw-card-alert' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
   return (
-    <As
-      data-guide={guide}
-      className={
-        elevated
-          ? `border border-line-strong bg-raised shadow-raised ${className}`
-          : `border border-line bg-panel ${className}`
-      }
-    >
+    <As data-guide={guide} className={`${kind} ${className}`}>
       {children}
     </As>
   )
@@ -191,22 +230,19 @@ export function Disclosure({
     <details
       open={defaultOpen}
       data-guide={guide}
-      className={`pw-row group border border-line bg-panel ${className}`}
+      className={`pw-row pw-card pw-card-quiet pw-card-flush group ${className}`}
       onToggle={(e) => {
         if ((e.currentTarget as HTMLDetailsElement).open) onOpen?.()
       }}
     >
-      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-2.5 text-control font-medium text-ink transition-colors duration-[var(--pw-dur-quick)] hover:bg-inset sm:px-5 [&::-webkit-details-marker]:hidden">
+      <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-control font-semibold text-ink transition-colors duration-[var(--pw-dur-quick)] hover:bg-inset sm:px-5 [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
           <span>{title}</span>
           {meta && <span className="text-small font-normal text-ink-3">{meta}</span>}
         </span>
-        <Icon
-          name="chevron"
-          size={16}
-          strokeWidth={2}
-          className="shrink-0 text-ink-3 transition-transform duration-[var(--pw-dur-base)] ease-[var(--ease-settle)] group-open:rotate-180"
-        />
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-pill bg-inset text-ink-2 transition-[transform,background-color] duration-[var(--pw-dur-base)] ease-[var(--ease-settle)] group-open:rotate-180 group-hover:bg-line-strong" aria-hidden="true">
+          <Icon name="chevron" size={15} strokeWidth={2} />
+        </span>
       </summary>
       <div className="pw-disclosure-body flex flex-col gap-4 px-4 pt-1 pb-5 sm:px-5">{children}</div>
     </details>
@@ -221,13 +257,13 @@ export function Disclosure({
 export function RowGroup({ title, children, className = '' }: { title?: string; children: ReactNode; className?: string }) {
   const id = useId()
   return (
-    <section aria-labelledby={title ? id : undefined} className={`flex min-w-0 flex-col gap-2 ${className}`}>
+    <section aria-labelledby={title ? id : undefined} className={`flex min-w-0 flex-col gap-3 ${className}`}>
       {title && (
-        <h3 id={id} className="text-small font-semibold text-ink-2">
+        <h3 id={id} className="pw-eyebrow px-1">
           {title}
         </h3>
       )}
-      <div className="pw-rows flex flex-col">{children}</div>
+      <div className="pw-rows pw-card pw-card-quiet pw-card-flush flex flex-col">{children}</div>
     </section>
   )
 }
@@ -250,7 +286,29 @@ export function SectionLabel({
   id?: string
 }) {
   return (
-    <As id={id} className={`text-small font-semibold tracking-title text-ink-2 ${className}`}>
+    <As id={id} className={`text-control font-semibold tracking-title text-ink ${className}`}>
+      {children}
+    </As>
+  )
+}
+
+/**
+ * The small capitals above a group or a page's answer: what the block below
+ * is about. A heading when it names a section (`as`), a paragraph otherwise.
+ */
+export function Eyebrow({
+  children,
+  className = '',
+  as: As = 'p',
+  id,
+}: {
+  children: ReactNode
+  className?: string
+  as?: 'p' | 'h2' | 'h3' | 'div' | 'span'
+  id?: string
+}) {
+  return (
+    <As id={id} className={`pw-eyebrow ${className}`}>
       {children}
     </As>
   )
@@ -328,7 +386,7 @@ export function SampleDataBadge({ provenance = 'measured', note }: { provenance?
     <span
       role="status"
       aria-label={`Data source: ${copy.label}. ${title}`}
-      className="inline-flex h-7 items-center gap-2 border border-uncertain px-2.5 text-tag font-semibold tracking-caps text-ink-2 uppercase"
+      className="inline-flex h-7 shrink-0 items-center gap-2 rounded-pill border border-uncertain px-3 text-tag font-semibold tracking-caps text-ink-2 uppercase"
       title={title}
     >
       <Icon name="uncertain" size={12} strokeWidth={2.4} aria-hidden="true" />
@@ -349,7 +407,7 @@ export function SearchField({
   id?: string
 }) {
   return (
-    <div className="flex h-12 items-center gap-2.5 rounded-control border border-line-strong bg-panel px-3.5 focus-within:border-focus">
+    <div className="flex h-12 items-center gap-2.5 rounded-pill border border-field bg-tray px-4 transition-colors duration-[var(--pw-dur-quick)] focus-within:border-focus hover:border-ink-3">
       <Icon name="search" size={18} strokeWidth={1.8} className="shrink-0 text-ink-3" />
       <label htmlFor={id} className="sr-only">
         Search landing sites
@@ -371,49 +429,40 @@ export function Segmented<T extends string>({
   value,
   onChange,
   label,
-  pill = false,
 }: {
   options: { value: T; label: string }[]
   value: T
   onChange: (v: T) => void
   label: string
+  /** Kept for callers; every segmented control is a pill now (decision D2). */
   pill?: boolean
 }) {
-  if (pill) {
-    return (
-      <div role="group" aria-label={label} className="inline-flex w-fit max-w-full gap-1 overflow-x-auto rounded-pill border border-line-strong bg-inset p-1">
-        {options.map((o) => (
+  return (
+    // Scrolls sideways rather than clipping a segment at 320 px (WCAG 1.4.10).
+    // Each segment is a full 48 px target; the chosen one is drawn as a pill
+    // inset inside it (a clear 4 px border, the fill kept inside it), so the
+    // target never shrinks to the drawing.
+    <div
+      role="group"
+      aria-label={label}
+      className="inline-flex w-fit max-w-full overflow-x-auto rounded-pill border border-line-strong bg-tray"
+    >
+      {options.map((o) => {
+        const on = value === o.value
+        return (
           <button
             key={o.value}
             type="button"
-            aria-pressed={value === o.value}
+            aria-pressed={on}
             onClick={() => onChange(o.value)}
-            className={`h-11 shrink-0 rounded-pill px-4 text-small font-semibold whitespace-nowrap transition-colors ${
-              value === o.value ? 'bg-ink text-canvas' : 'text-ink-2 hover:text-ink'
+            className={`pw-press h-[46px] shrink-0 rounded-pill border-4 border-transparent bg-clip-padding px-3 text-small font-semibold whitespace-nowrap first:pl-4 last:pr-4 ${
+              on ? 'bg-ink text-canvas' : 'text-ink-2 hover:text-ink'
             }`}
           >
             {o.label}
           </button>
-        ))}
-      </div>
-    )
-  }
-  return (
-    // Scrolls sideways rather than clipping a segment at 320 px (WCAG 1.4.10).
-    <div role="group" aria-label={label} className="inline-flex w-fit max-w-full overflow-x-auto rounded-control border border-line-strong">
-      {options.map((o, i) => (
-        <button
-          key={o.value}
-          type="button"
-          aria-pressed={value === o.value}
-          onClick={() => onChange(o.value)}
-          className={`h-12 shrink-0 px-4 text-small font-semibold whitespace-nowrap transition-colors ${
-            i > 0 ? 'border-l border-line-strong' : ''
-          } ${value === o.value ? 'bg-ink text-canvas' : 'text-ink-2 hover:bg-inset hover:text-ink'}`}
-        >
-          {o.label}
-        </button>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -518,11 +567,13 @@ export function Tabs<T extends string>({
             aria-controls={`${baseId}-panel`}
             tabIndex={on ? 0 : -1}
             onClick={() => onChange(t.id)}
-            className={`relative flex h-12 shrink-0 items-center px-4 text-body whitespace-nowrap transition-colors duration-[var(--pw-dur-quick)] md:px-5 ${
-              on ? 'font-semibold text-ink' : 'font-medium text-ink-2 hover:bg-inset hover:text-ink'
+            // A pill, the chosen one in ink: the same language as the page's other switches.
+            // The change of tab is at once, not a fade: for a moment mid-fade the name
+            // would sit on a ground it cannot be read against.
+            className={`flex h-12 shrink-0 items-center rounded-pill border-4 border-transparent bg-clip-padding px-4 text-body whitespace-nowrap ${
+              on ? 'bg-ink font-semibold text-canvas' : 'font-medium text-ink-2 hover:bg-inset hover:text-ink'
             }`}
           >
-            {on && <span aria-hidden="true" className="absolute inset-x-3 bottom-0 h-[3px] bg-ink md:inset-x-auto md:inset-y-2 md:left-0 md:h-auto md:w-[3px]" />}
             {t.label}
           </button>
         )

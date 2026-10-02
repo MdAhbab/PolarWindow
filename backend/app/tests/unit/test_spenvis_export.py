@@ -43,7 +43,7 @@ def test_invalid_upload_samples_are_rejected(problem: str) -> None:
 
 
 def test_passages_do_not_integrate_over_missing_trajectory_time() -> None:
-    times = np.array([0., 60., 120., 600., 660.])
+    times = np.array([0.0, 60.0, 120.0, 600.0, 660.0])
     passages = radiation._segments(times)
     duration = sum(float(times[s[-1]] - times[s[0]]) for s in passages)
     assert duration == 180.0

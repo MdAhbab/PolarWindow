@@ -41,7 +41,7 @@ function allDay(): SiteMetrics {
   return { ...m, windowHours: 12.75, sun: noGap(m.sun), earth: noGap(m.earth) }
 }
 
-const tile = (label: RegExp) => screen.getByText(label).closest('div.border') as HTMLElement
+const tile = (label: RegExp) => screen.getByText(label).closest('div.pw-tile') as HTMLElement
 
 describe('KeyNumberRow', () => {
   it('shows the computing state, never zeros, before the numbers arrive', () => {

@@ -89,7 +89,7 @@ export function WindowPicker({
           <label htmlFor={`${id}-start`} className="text-small font-medium text-ink">
             Start (UTC)
           </label>
-          <div className="flex h-12 items-center rounded-control border border-line-strong bg-panel px-3.5 focus-within:border-focus">
+          <div className="flex h-12 items-center rounded-control border border-field bg-panel px-3.5 focus-within:border-focus">
             <input
               id={`${id}-start`}
               type="date"

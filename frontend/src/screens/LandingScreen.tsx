@@ -2,7 +2,8 @@ import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as Reac
 import { useLocation, useNavigate } from 'react-router-dom'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { Icon, Mark, Wordmark } from '../components/Icon'
+import { Icon } from '../components/Icon'
+import { BrandLogo, BrandName } from '../components/Brand'
 import { SunPathArt, RidgeArt, EarthArt, IceArt } from '../landing/Illustrations'
 import { createMoonScene, type MoonScene, type SceneState } from '../landing/moonScene'
 import { readPrefs } from '../lib/prefs'
@@ -26,7 +27,8 @@ gsap.registerPlugin(ScrollTrigger)
  * mission list's and the site list's own, and are left out if they don't load.
  */
 
-const START: SceneState = { tilt: -0.3, spin: 0.6, distance: 4.4, sunAz: 0.9, earth: 0, shift: 0.5 }
+// The first picture: a waxing gibbous Moon, lit from the right of the viewer, the craters sharp along its terminator.
+const START: SceneState = { tilt: -0.3, spin: 0.6, distance: 4.4, sunAz: 0.15, earth: 0, shift: 0.5 }
 
 const IDEAS = [
   {
@@ -101,6 +103,14 @@ export default function LandingScreen() {
     document.title = 'POLAR WINDOW · plan landings at the Moon’s south pole'
   }, [])
 
+  // Light theme, with motion: the page opens standing on the Moon at
+  // Connecting Ridge with Earth rising, and the first scroll flies out to the
+  // whole Moon, the black sky clearing to the page as it arrives.
+  const earthrise = useState(() => readPrefs().theme === 'light')[0] && !reduced
+  const onGround = earthrise && webgl
+  const flightRef = useRef<HTMLDivElement>(null)
+  const heroRef = useRef<HTMLDivElement>(null)
+
   // The Moon, and what scrolling and the pointer do to it.
   useEffect(() => {
     const canvas = canvasRef.current
@@ -110,7 +120,14 @@ export default function LandingScreen() {
     try {
       const tile = (z: number, x: number, y: number) =>
         DATA_MODE === 'snapshot' ? snapshotTileUrl('hillshade', z, x, y) : `${API_BASE}/tiles/hillshade/${z}/${x}/${y}.png`
-      scene = createMoonScene(canvas, tile, reduced ? { ...START, tilt: -1.3, distance: 3.8, sunAz: 1.4 } : START)
+      // Dark: the Moon in the night sky. Light: the Earthrise first, then the Moon on the page.
+      const theme = readPrefs().theme === 'light' ? 'light' : 'dark'
+      const first = reduced
+        ? { ...START, tilt: -1.3, distance: 3.8, sunAz: 1.4 }
+        : earthrise
+          ? { ...START, ground: 1, space: 1 }
+          : START
+      scene = createMoonScene(canvas, tile, first, { theme, ground: earthrise })
     } catch {
       setWebgl(false)
       return
@@ -149,6 +166,29 @@ export default function LandingScreen() {
       tl.to(s, { tilt: -0.6, distance: 4.4, sunAz: 8.6, shift: 0.5 })
       tl.to(s, { tilt: -0.4, distance: 4.8, sunAz: 9.6 })
 
+      // Light: off the ground and out to the whole Moon over the hero and a
+      // stretch of open sky after it, the sky clearing to the page at the end.
+      const flight = flightRef.current
+      if (earthrise && flight) {
+        const ft = gsap.timeline({
+          defaults: { ease: 'none' },
+          // Over before the next heading comes into view: it is dark ink, for the light page.
+          scrollTrigger: { trigger: flight, start: 'top top', end: 'bottom 85%', scrub: 0.8 },
+          // The page's styles follow the sky: how pale the Moon is, and the shade behind the words (globals.css).
+          onUpdate: () => root.style.setProperty('--pw-space', String(s.space ?? 0)),
+        })
+        ft.to(s, { ground: 0, duration: 0.8, ease: 'power1.inOut' })
+        ft.to(s, { space: 0, duration: 0.25 }, 0.75)
+        // The shade behind the first words goes as they scroll out.
+        ScrollTrigger.create({
+          trigger: heroRef.current,
+          start: 'top top',
+          end: 'bottom 35%',
+          scrub: true,
+          onUpdate: (st) => root.style.setProperty('--pw-hero', String(1 - st.progress)),
+        })
+      }
+
       ScrollTrigger.create({
         trigger: root,
         start: 'top top',
@@ -157,13 +197,16 @@ export default function LandingScreen() {
         onEnterBack: () => scene.setAutoSpin(true),
       })
 
+      // The dashboard's arrival: a rise on the settle curve (expo.out is
+      // cubic-bezier(0.16, 1, 0.3, 1)), never a fade, so the words are
+      // readable from the first frame; cards in a group follow 60 ms apart.
       gsap.utils.toArray<HTMLElement>('[data-reveal]').forEach((el) => {
         gsap.from(el, {
-          y: 28,
-          opacity: 0,
-          duration: 0.7,
-          ease: 'power2.out',
-          scrollTrigger: { trigger: el, start: 'top 85%' },
+          y: 18,
+          duration: 0.82,
+          ease: 'expo.out',
+          delay: Number(el.dataset.revealI ?? 0) * 0.06,
+          scrollTrigger: { trigger: el, start: 'top 88%' },
         })
       })
     }, root)
@@ -182,7 +225,7 @@ export default function LandingScreen() {
       scene.dispose()
       sceneRef.current = null
     }
-  }, [reduced])
+  }, [reduced, earthrise])
 
   // Arriving at /#why (the old story's address) scrolls to the four ideas.
   const { hash } = useLocation()
@@ -191,50 +234,70 @@ export default function LandingScreen() {
   }, [hash, reduced])
 
   return (
-    <div ref={rootRef} className="relative min-h-full bg-canvas text-ink">
+    <div
+      ref={rootRef}
+      className="relative min-h-full bg-canvas text-ink"
+      // 1 while the light theme's first picture has its black sky, 0 once the page is the page (set by the scroll).
+      style={{ ['--pw-space' as string]: onGround ? 1 : 0 }}
+    >
+      {/* The black of space under the first picture, there before the picture has loaded. */}
+      {onGround && <div aria-hidden="true" className="pw-landing-space pointer-events-none fixed inset-0" />}
       <canvas
         ref={canvasRef}
         aria-hidden="true"
         // Below lg the Moon sits behind the text, so it is dimmed to keep the
-        // words readable; beside the text it is shown in full.
-        className={`pointer-events-none fixed inset-0 h-full w-full opacity-40 lg:opacity-100 ${webgl ? '' : 'hidden'}`}
+        // words readable; beside the text it is shown in full (globals.css).
+        className={`pw-landing-canvas pointer-events-none fixed inset-0 h-full w-full ${webgl ? '' : 'hidden'}`}
       />
+      {/* The picture is shaded behind the words, so they read over the Milky Way or the Moon. */}
+      {webgl && <div aria-hidden="true" className="pw-sky-shade pointer-events-none fixed inset-0" />}
+      {/* The first picture's own shade. It stays with the window and thins as the words scroll away,
+          so it never shows an edge crossing the picture. */}
+      {onGround && <div aria-hidden="true" className="pw-ground-shade pointer-events-none fixed inset-0" />}
       <a
         href="#landing-main"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-raised focus:px-4 focus:py-3"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-pill focus:bg-raised focus:px-5 focus:py-3"
       >
         Skip to the content
       </a>
 
-      <header className="relative z-10 flex items-center justify-between gap-4 px-4 py-3 lg:px-8">
-        <span className="flex h-12 items-center gap-2.5">
-          <Mark />
-          <Wordmark />
-        </span>
-        {/* Below 640 px the hero's own button is just below; the header keeps the logo alone. */}
-        <span className="hidden sm:inline-flex">
-          <EnterButton compact />
-        </span>
+      {/* The dashboard's island, so the front page and the dashboard read as one product. */}
+      <header className="pointer-events-none sticky top-0 z-20 px-3 pt-3 sm:px-4">
+        <div className="pw-island pointer-events-auto mx-auto flex w-fit max-w-full items-center gap-3 rounded-pill py-1.5 pr-1.5 pl-4 sm:gap-6">
+          <span className="flex h-12 items-center">
+            <BrandName />
+          </span>
+          {/* Below 640 px the hero's own button is just below; the island keeps the logo alone. */}
+          <span className="hidden sm:inline-flex">
+            <EnterButton compact />
+          </span>
+        </div>
       </header>
 
       <main id="landing-main" tabIndex={-1} className="relative z-10 outline-none">
-        <Section className="min-h-[88vh] justify-center">
-          <div className="flex max-w-xl flex-col gap-6">
-            <p className="text-small font-semibold tracking-caps-lg text-ink-3 uppercase">
-              NASA CLPS missions · the Moon’s south pole
-            </p>
-            <h1 className="text-display-sm leading-10 font-semibold tracking-display text-balance sm:text-display sm:leading-display lg:text-figure-lg lg:leading-figure-lg lg:tracking-figure">
+        {/* In the light theme the first screen is dark: Earth over the Moon's
+            horizon, under the island and behind the words. */}
+        <div ref={flightRef}>
+        <div ref={heroRef} data-theme={onGround ? 'dark' : undefined}>
+        <Section className={`justify-center ${onGround ? 'min-h-[100vh]' : 'min-h-[86vh]'}`}>
+          <div className="flex max-w-2xl flex-col gap-7">
+            <p className="pw-eyebrow">NASA CLPS missions · the Moon’s south pole</p>
+            <h1 className="pw-display text-[40px] leading-[1.02] sm:text-[60px] lg:text-[72px]">
               Plan a landing where the Sun barely rises
             </h1>
-            <p className="text-large leading-8 text-ink-2 text-pretty">
+            <p className="max-w-xl text-large leading-8 text-ink-2 text-pretty">
               For every NASA CLPS mission and a set of candidate landing sites near the Moon’s south pole: when a lander
               gets sunlight for power, and when it can talk to Earth.
             </p>
             <Counts />
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center gap-3">
               <EnterButton />
-              <a href="#why" className="inline-flex h-12 items-center text-control font-semibold">
-                How it works ↓
+              <a
+                href="#why"
+                className="pw-press inline-flex h-12 items-center gap-2 rounded-pill border border-line-strong bg-tray px-5 text-control font-semibold text-ink no-underline hover:border-ink-3 hover:bg-inset"
+              >
+                How it works
+                <span aria-hidden="true">↓</span>
               </a>
             </div>
             <p className="text-caption leading-caption text-ink-3">
@@ -242,20 +305,24 @@ export default function LandingScreen() {
             </p>
           </div>
         </Section>
+        </div>
+        {/* Open sky for the flight out to the Moon: nothing to read over it. */}
+        {onGround && <div aria-hidden="true" className="h-[120vh]" />}
+        </div>
 
-        <div id="why" className="scroll-mt-4">
+        <div id="why" className="scroll-mt-20">
           <Section>
-            <h2 data-reveal className="max-w-xl text-heading-lg leading-9 font-semibold tracking-heading">
+            <h2 data-reveal className="pw-display max-w-xl text-[32px] leading-[1.06] sm:text-[44px]">
               Why the south pole is hard
             </h2>
           </Section>
           {IDEAS.map((idea, i) => (
             <Section key={idea.id} className="min-h-[65vh] justify-center">
-              <article data-reveal className="flex max-w-lg flex-col gap-4 border border-line bg-canvas/85 p-6 backdrop-blur-sm">
-                <p className="text-caption font-semibold tracking-caps-lg text-ink-3 uppercase">
+              <article data-reveal className="pw-card flex max-w-lg flex-col gap-4 p-6 sm:p-8">
+                <p className="pw-eyebrow">
                   {i + 1} of {IDEAS.length}
                 </p>
-                <h3 className="text-heading leading-8 font-semibold tracking-heading">{idea.title}</h3>
+                <h3 className="pw-display text-[26px] leading-[1.12] sm:text-[30px]">{idea.title}</h3>
                 <p className="text-lede leading-7 text-ink-2 text-pretty">{idea.body}</p>
                 <figure className="flex flex-col gap-2 border-t border-line pt-4">
                   <idea.Art />
@@ -267,19 +334,21 @@ export default function LandingScreen() {
         </div>
 
         <Section>
-          <div data-reveal className="flex max-w-3xl flex-col gap-6">
-            <h2 className="text-heading-lg leading-9 font-semibold tracking-heading">What you can do</h2>
-            <ul className="grid gap-4 sm:grid-cols-2">
-              {FEATURES.map((f) => (
-                <FeatureCard key={f.title} {...f} reduced={reduced} />
+          <div className="flex max-w-3xl flex-col gap-8">
+            <h2 data-reveal className="pw-display text-[32px] leading-[1.06] sm:text-[44px]">
+              What you can do
+            </h2>
+            <ul className="grid gap-5 sm:grid-cols-2">
+              {FEATURES.map((f, i) => (
+                <FeatureCard key={f.title} {...f} index={i} reduced={reduced} />
               ))}
             </ul>
           </div>
         </Section>
 
         <Section>
-          <div data-reveal className="flex max-w-xl flex-col gap-4 border border-line bg-canvas/85 p-6 backdrop-blur-sm">
-            <h2 className="text-heading leading-8 font-semibold tracking-heading">Measured, with the margins shown</h2>
+          <div data-reveal className="pw-card flex max-w-xl flex-col gap-4 p-6 sm:p-8">
+            <h2 className="pw-display text-[26px] leading-[1.12] sm:text-[30px]">Measured, with the margins shown</h2>
             <p className="text-lede leading-7 text-ink-2 text-pretty">
               The numbers come from NASA’s laser-altimeter map of the pole (LOLA) and the computed positions of the Sun
               and Earth (SPICE). Each one shows how far it could be off. The AI helpers can only use these numbers, and
@@ -289,8 +358,8 @@ export default function LandingScreen() {
         </Section>
 
         <Section className="min-h-[70vh] justify-center">
-          <div data-reveal className="flex max-w-xl flex-col gap-5">
-            <h2 className="text-heading-lg leading-9 font-semibold tracking-heading">Open the dashboard</h2>
+          <div data-reveal className="flex max-w-xl flex-col gap-7">
+            <h2 className="pw-display text-[36px] leading-[1.04] sm:text-[56px]">Open the dashboard</h2>
             <div>
               <EnterButton />
             </div>
@@ -298,10 +367,17 @@ export default function LandingScreen() {
         </Section>
       </main>
 
-      <footer className="relative z-10 border-t border-line px-4 py-6 lg:px-8">
+      {/* On the page's own ground, so its small print never sits over the Moon. */}
+      <footer className="relative z-10 flex flex-col gap-6 border-t border-line bg-canvas px-4 py-10 lg:px-8">
+        <BrandLogo className="h-10 sm:h-12" />
         <p className="max-w-3xl text-caption leading-caption text-ink-3">
-          Not an official product of NASA or any space agency. The globe is drawn for illustration; the south-polar
-          terrain is the real LOLA relief map. Sun and Earth are not to scale.
+          Not an official product of NASA or any space agency. The Moon is NASA’s LRO camera mosaic, with the LOLA
+          relief map at the south pole; Earth is NASA’s Blue Marble. Milky Way:{' '}
+          <a href="https://www.eso.org/public/images/eso0932a/" target="_blank" rel="noreferrer">
+            ESO/S. Brunier
+          </a>{' '}
+          (CC BY 4.0). These are pictures: sizes and distances are not to scale, and the Sun is placed to light them,
+          not where it stands on any date.
         </p>
       </footer>
     </div>
@@ -309,7 +385,7 @@ export default function LandingScreen() {
 }
 
 function Section({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <section className={`flex flex-col px-4 py-12 lg:px-8 lg:py-16 ${className}`}>{children}</section>
+  return <section className={`flex flex-col px-4 py-24 lg:px-8 lg:py-36 ${className}`}>{children}</section>
 }
 
 /** The two counts, from the API's own lists; nothing when they don't load. */
@@ -320,14 +396,14 @@ function Counts() {
   const c = sites.data?.items.filter((i) => i.site.kind === 'candidate').length
   if (m === undefined || !c) return null
   return (
-    <dl className="flex flex-wrap gap-8">
+    <dl className="flex flex-wrap gap-10">
       <div className="flex flex-col-reverse">
         <dt className="text-small text-ink-3">CLPS missions</dt>
-        <dd className="text-figure leading-figure font-semibold tracking-figure tabular-nums">{m}</dd>
+        <dd className="pw-figure text-[34px] leading-[38px]">{m}</dd>
       </div>
       <div className="flex flex-col-reverse">
         <dt className="text-small text-ink-3">candidate landing sites</dt>
-        <dd className="text-figure leading-figure font-semibold tracking-figure tabular-nums">{c}</dd>
+        <dd className="pw-figure text-[34px] leading-[38px]">{c}</dd>
       </div>
     </dl>
   )
@@ -337,11 +413,13 @@ function FeatureCard({
   icon,
   title,
   body,
+  index,
   reduced,
 }: {
   icon: Parameters<typeof Icon>[0]['name']
   title: string
   body: string
+  index: number
   reduced: boolean
 }) {
   const ref = useRef<HTMLLIElement>(null)
@@ -361,10 +439,14 @@ function FeatureCard({
       ref={ref}
       onPointerMove={onMove}
       onPointerLeave={onLeave}
-      className="flex flex-col gap-3 border border-line bg-canvas/85 p-5 backdrop-blur-sm"
+      data-reveal
+      data-reveal-i={index}
+      className="pw-card flex flex-col gap-3 p-6"
     >
-      <Icon name={icon} size={24} className="text-ink-2" />
-      <h3 className="text-title-lg font-semibold">{title}</h3>
+      <span className="flex size-11 items-center justify-center rounded-pill bg-inset text-ink-2" aria-hidden="true">
+        <Icon name={icon} size={22} />
+      </span>
+      <h3 className="pt-1 text-title-lg font-semibold tracking-title">{title}</h3>
       <p className="text-body leading-6 text-ink-2">{body}</p>
     </li>
   )
@@ -404,12 +486,16 @@ function EnterButton({ compact = false }: { compact?: boolean }) {
         type="button"
         onClick={() => void go()}
         disabled={busy}
-        className={`inline-flex h-12 items-center justify-center gap-2 rounded-control bg-sun-fill font-semibold whitespace-nowrap text-on-sun hover:bg-sun-soft disabled:bg-inset disabled:text-ink-3 ${
-          compact ? 'px-4 text-body' : 'px-6 text-control'
+        className={`pw-press group inline-flex h-12 items-center justify-center gap-2 rounded-pill bg-sun-fill font-semibold whitespace-nowrap text-on-sun hover:bg-sun-soft disabled:bg-inset disabled:text-ink-3 ${
+          compact ? 'pr-1.5 pl-4 text-body' : 'pr-2 pl-6 text-control'
         }`}
       >
         {busy ? 'Signing in…' : signedIn ? 'Go to the dashboard' : compact ? 'Open dashboard' : 'Open the dashboard'}
-        {!busy && <span aria-hidden="true">→</span>}
+        {!busy && (
+          <span className={`pw-orb ml-1 ${compact ? 'size-9' : ''}`} aria-hidden="true">
+            <Icon name="arrow" size={15} strokeWidth={2} />
+          </span>
+        )}
       </button>
       {error && (
         <span role="alert" className="text-small text-ink">

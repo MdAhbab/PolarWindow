@@ -234,6 +234,18 @@ async function main() {
     }
   }
 
+  // Each flown trip's orbit file, as the service gives it: the path to the Moon on Trip is drawn from it.
+  // It is not an answer the page asks for through the recorder (it is a file, not JSON), so it is read here.
+  mkdirSync(join(OUT, 'trip'), { recursive: true })
+  let orbits = 0
+  for (const m of missions.items) {
+    const res = await fetch(`${API}/missions/${encodeURIComponent(m.id)}/trip/export?format=csv`)
+    if (!res.ok) continue // a designed trip, or none: nothing to export
+    writeFileSync(join(OUT, 'trip', `${m.id}.csv`), await res.text())
+    orbits++
+  }
+  console.log(`Saved ${orbits} orbit files`)
+
   // The demo's dates: every month for IM-2 and for the Mons Mouton missions.
   for (const id of ['im-2', 'blue-moon-mk1-viper']) {
     await visit(page, `/missions/${id}/surface`)

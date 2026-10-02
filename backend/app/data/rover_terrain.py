@@ -47,9 +47,9 @@ def _covers(path: Path, stamp: int, lat: float, lon: float, radius: float) -> bo
         height, width = heights.shape
         col = math.floor((frame.x0_m - x) / step)
         row = math.floor((y - frame.y0_m) / step)
-        if not (0 <= col < width-1 and 0 <= row < height-1):
+        if not (0 <= col < width - 1 and 0 <= row < height - 1):
             return False
-        if not np.isfinite(heights[row:row+2, col:col+2]).all():
+        if not np.isfinite(heights[row : row + 2, col : col + 2]).all():
             return False  # no antenna can be placed where the lander's own ground is unknown
     return (
         x <= frame.x0_m - extent
@@ -61,8 +61,12 @@ def _covers(path: Path, stamp: int, lat: float, lon: float, radius: float) -> bo
 
 def terrain_path(site_id: str, lat: float, lon: float, radius: float) -> Path:
     s = get_settings()
-    for path in (s.rover_stereo_path(site_id), s.rover_stereo4_path(site_id),
-                 s.rover_dem_path(site_id), s.fine_dem_path(site_id)):
+    for path in (
+        s.rover_stereo_path(site_id),
+        s.rover_stereo4_path(site_id),
+        s.rover_dem_path(site_id),
+        s.fine_dem_path(site_id),
+    ):
         if path.exists() and _covers(path, path.stat().st_mtime_ns, lat, lon, radius):
             return path
     return s.regional_dem_path
@@ -100,9 +104,15 @@ async def ensure_rover_dem(site_id: str, lat: float, lon: float) -> bool:
 
 
 def crop_stereo(
-    source: str | Path, path: Path, lat: float, lon: float, *,
-    product: str = STEREO_PRODUCT, error_m: float = STEREO_ERROR_M,
-    post_m: float = 3.0, clip_to_footprint: bool = False,
+    source: str | Path,
+    path: Path,
+    lat: float,
+    lon: float,
+    *,
+    product: str = STEREO_PRODUCT,
+    error_m: float = STEREO_ERROR_M,
+    post_m: float = 3.0,
+    clip_to_footprint: bool = False,
 ) -> bool:
     """Read native posts only, preserve shadow/nodata gaps, and use pixel centres."""
     import rasterio
@@ -113,10 +123,14 @@ def crop_stereo(
 
     frame = local_frame(lon, lat)
     extent = WINDOW_RADIUS_M * frame.scale_factor
-    with rasterio.Env(
-        GDAL_HTTP_TIMEOUT="60", GDAL_HTTP_MAX_RETRY="2",
-        GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
-    ), rasterio.open(source) as src:
+    with (
+        rasterio.Env(
+            GDAL_HTTP_TIMEOUT="60",
+            GDAL_HTTP_MAX_RETRY="2",
+            GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
+        ),
+        rasterio.open(source) as src,
+    ):
         if src.crs is None or not src.crs.is_projected:
             raise ValueError("Stereo terrain must use the Moon's south polar stereographic grid")
         # Equivalent lunar CRSs may have different datum names or encode scale
@@ -125,8 +139,10 @@ def crop_stereo(
         tx, ty = Transformer.from_crs(src.crs, MOON_SOUTH_POLAR, always_xy=True).transform(
             points, points
         )
-        if not (np.allclose(tx, points, rtol=0, atol=1e-5)
-                and np.allclose(ty, points, rtol=0, atol=1e-5)):
+        if not (
+            np.allclose(tx, points, rtol=0, atol=1e-5)
+            and np.allclose(ty, points, rtol=0, atol=1e-5)
+        ):
             raise ValueError("Stereo terrain projection differs from the lunar terrain grid")
         a = src.transform
         if a.b != 0 or a.d != 0 or a.a != post_m or a.e != -post_m:
@@ -136,20 +152,25 @@ def crop_stereo(
             return False
         n = math.ceil(extent / a.a) + 2
         c0, r0 = math.floor(col) - n, math.floor(row) - n
-        c1, r1 = c0 + 2*n + 1, r0 + 2*n + 1
+        c1, r1 = c0 + 2 * n + 1, r0 + 2 * n + 1
         if clip_to_footprint:
             c0, r0, c1, r1 = max(0, c0), max(0, r0), min(src.width, c1), min(src.height, r1)
         elif c0 < 0 or r0 < 0 or c1 > src.width or r1 > src.height:
             return False
-        window = Window(c0, r0, c1-c0, r1-r0)
+        window = Window(c0, r0, c1 - c0, r1 - r0)
         heights = src.read(1, window=window, masked=True).astype(np.float32).filled(np.nan)
         heights[~np.isfinite(heights) | (heights < -1e20)] = np.nan
         origin_x, origin_y = a.c + (c0 + 0.5) * a.a, a.f + (r0 + 0.5) * a.e
     path.parent.mkdir(parents=True, exist_ok=True)
     staged = path.with_suffix(".pending.npz")
     np.savez_compressed(
-        staged, heights=heights, origin_x_m=origin_x, origin_y_m=origin_y,
-        scale_m=post_m, product=product, vertical_error_m=error_m,
+        staged,
+        heights=heights,
+        origin_x_m=origin_x,
+        origin_y_m=origin_y,
+        scale_m=post_m,
+        product=product,
+        vertical_error_m=error_m,
     )
     staged.replace(path)
     return True
@@ -178,8 +199,15 @@ async def ensure_nobile03_dem(site_id: str, lat: float, lon: float) -> bool:
     if s.offline:
         return False
     return await asyncio.to_thread(
-        crop_stereo, NOBILE03_URL, path, lat, lon, product=NOBILE03_PRODUCT,
-        error_m=NOBILE03_ERROR_M, post_m=4.0, clip_to_footprint=True,
+        crop_stereo,
+        NOBILE03_URL,
+        path,
+        lat,
+        lon,
+        product=NOBILE03_PRODUCT,
+        error_m=NOBILE03_ERROR_M,
+        post_m=4.0,
+        clip_to_footprint=True,
     )
 
 

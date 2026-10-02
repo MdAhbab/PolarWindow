@@ -94,8 +94,11 @@ def _why(solar: str, t: np.ndarray, times: list, geo: np.ndarray) -> dict[str, f
     ok = np.isfinite(lm)
     flux = np.zeros(lm.size)
     flux[ok] = np.asarray(radbelt.aep8(e, lm[ok], bb0[ok], "p", solar), dtype=float)
-    out = {"GSFC 12/66 with published SAA drift compensation":
-           sum(belts.fluence(t[s], flux[s]) for s in radiation._segments(t))}
+    out = {
+        "GSFC 12/66 with published SAA drift compensation": sum(
+            belts.fluence(t[s], flux[s]) for s in radiation._segments(t)
+        )
+    }
     for name, field, year, b0_min in (
         ("GSFC 12/66, drift compensation disabled", 3, None, False),
         ("IGRF of 1970", 0, 1970, False),

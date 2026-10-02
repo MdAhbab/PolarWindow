@@ -4,8 +4,11 @@ Landing site planning for the Moon's south pole. NASA Space Apps 2026, challenge
 "CLPS Lunar Mission Browser".
 
 **Two halves.** `backend/` is FastAPI + Postgres + Redis over SPICE and the LOLA
-polar DEM. `frontend/` is Vite + React 19 + TypeScript + Tailwind v4 and its
-design is finished — do not redesign it.
+polar DEM. `frontend/` is Vite + React 19 + TypeScript + Tailwind v4. Its look
+(the tokens, the parts, the scenes and what each page is built from) is set
+out in `docs/design-visual-refresh.md`, whose *Built* section says what is
+there; a change to the look starts from that document, and the invariants
+below hold whatever the look.
 
 ```
 make install       # both halves
@@ -123,14 +126,23 @@ data layer; services import no FastAPI; `spiceypy` is reachable only through
 5. **Every chart has a table twin** rendered from the same arc array
    (`ArcTable`). The screen-reader path and the export path must not diverge
    from the picture.
-6. **Radius 0 on data surfaces**, 2px on controls, pill only on a view switch
-   (the Missions map's *South pole · Whole Moon*). Amber and glow mean sunlight
-   and nothing else: primary buttons are ink, never amber. Cyan means Earth
-   contact and magenta means over the battery limit, also nothing else. Mission
-   pins, statuses and providers are drawn in ink and told apart by shape and
-   text, and a failed landing is not magenta.
+6. **Corners and colour carry no meaning by accident.** Everything that draws
+   data keeps square corners: bars, arcs, hatches, tables, pins, rings, the
+   map, a row in a list. The boxes around the data are rounded, from one set
+   of tokens (`globals.css`): 12 px on fields and small controls, 16 px on a
+   card (its tray 21 px, parallel), 24 px on sheets, pills on buttons, chips,
+   segmented controls and the shell; a box inside another takes the outer
+   radius less the space between them. Amber and glow mean sunlight and
+   nothing else: primary buttons are ink, never amber, with one written
+   exception, the front page's way in, on a page that shows no data. Cyan
+   means Earth contact and magenta means over the battery limit, also nothing
+   else. Mission pins, statuses and providers are drawn in ink and told apart
+   by shape and text, and a failed landing is not magenta.
 7. **Real elements.** `<button>`, `<a href>`, `<input>` + `<label>`. Never
-   `role`/`onClick` on a div. Minimum target 48×48.
+   `role`/`onClick` on a div. Minimum target 48×48. A list to choose one
+   thing from is `components/Select` (a button and the page's own list, named
+   by a `<label for>`, with the native select's keys), never a native
+   `<select>`: the operating system draws that one, outside the theme.
 8. **Every animation has a named static fallback** and branches in code, not
    only in CSS — `useReducedMotion()` combines the OS setting with the in-app
    toggle.
@@ -298,21 +310,24 @@ checked by hand.
 | `earth` on `panel` | 4.5:1 | 9.08 | 7.22 |
 | `alert` on `alert-wash` | 4.5:1 | 6.30 | 5.81 |
 | `on-sun` on `sun-fill` | 4.5:1 | 9.40 | 4.76 |
-| `hatch` on `dark-fill` | 3:1 | 3.23 | 3.53 |
+| `hatch` on `dark-fill` | 3:1 | 3.23 | 3.99 |
 | `focus` on `canvas` | 3:1 | 13.98 | 6.39 |
-| `sun-fill` on `dark-fill` | 3:1 | 8.56 | **2.70** |
-| `earth-fill` on `dark-fill` | 3:1 | 8.90 | **2.87** |
-| `line-strong` on `panel` | 3:1 | **1.62** | **1.99** |
+| `sun-fill` on `dark-fill` | 3:1 | 8.56 | 3.06 |
+| `earth-fill` on `dark-fill` | 3:1 | 8.90 | 3.25 |
+| `field` on `panel` (a field's border) | 3:1 | 3.40 | 3.42 |
+| `field` on `tray` | 3:1 | 3.39 | 3.23 |
 
-**Still open.** The four bold values are token changes: the fix is a value in
-`globals.css`.
+Nothing in the table is under its line. Two were until the visual refresh's
+last pass, and how they were fixed matters to whoever changes a token next:
 
-- Light theme, month strip: the sunlight and Earth bars sit on `dark-fill` at
-  2.70:1 and 2.87:1, under the 3:1 a graphic needs. Each month's values are in
-  its accessible name.
-- Field borders: `line-strong` on `panel` is 1.62:1 (dark) and 1.99:1 (light).
-  Buttons are named by their text, but the date, search, question and
-  site-picker fields rely on the border.
+- Light theme, the Sun's and Earth's bars on a chart's track (the month
+  strip, the contact chart): `dark-fill` was #dcdad3, which left the bars at
+  2.70:1 and 2.87:1. It is #e9e7e2. The fills themselves were not darkened:
+  `on-sun` text on `sun-fill` would have fallen under 4.5:1.
+- Field borders: a text box, a date box, the search box and a list's box in
+  a form are marked by their border alone, and `line-strong` is 1.6–1.8:1.
+  They take `field` instead, a token of its own, so the hairlines elsewhere
+  stay light. Buttons and pills keep `line-strong`: their text names them.
 
 ---
 

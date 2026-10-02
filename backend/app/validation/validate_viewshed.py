@@ -70,6 +70,7 @@ def main() -> int:
     print("|---|---:|---:|---:|---:|---:|---|")
     worst = 1.0
     for name, sid, lat, lon in SITES:
+
         def zero(x: np.ndarray, y: np.ndarray) -> np.ndarray:
             return np.zeros(np.shape(x))
 

@@ -15,7 +15,7 @@ import { Button, SectionLabel } from '../ui'
  */
 
 const INPUT =
-  'h-12 w-full min-w-0 rounded-control border border-line-strong bg-panel px-3.5 text-body text-ink outline-none placeholder:text-ink-3 focus:border-focus'
+  'h-12 w-full min-w-0 rounded-control border border-field bg-panel px-3.5 text-body text-ink outline-none placeholder:text-ink-3 focus:border-focus'
 
 export function Field({
   label,
@@ -59,20 +59,8 @@ export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
   return <textarea rows={3} {...props} className={`${INPUT} h-auto min-h-24 py-2.5 leading-5`} />
 }
 
-export function Select({
-  options,
-  ...props
-}: React.SelectHTMLAttributes<HTMLSelectElement> & { options: { value: string; label: string }[] }) {
-  return (
-    <select {...props} className={INPUT}>
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
-  )
-}
+/** One of a list: the page's own list, in a field's box (components/Select). */
+export { Select } from '../Select'
 
 /**
  * ADR-17: every change carries a person's name. The demo session has only

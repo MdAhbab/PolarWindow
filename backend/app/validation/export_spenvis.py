@@ -36,9 +36,12 @@ def trajectory_text(title: str, times: list[datetime], geo_km: np.ndarray) -> st
     if "\n" in title or "\r" in title:
         raise ValueError("title must be a single line")
     lines = [
-        f"Title: {title}", "Planet: Earth", "Coordinates: GEO",
+        f"Title: {title}",
+        "Planet: Earth",
+        "Coordinates: GEO",
         "Columns: DYEA, DMON, DDAY, DHOU, DMIN, DSEC, X, Y, Z",
-        "Format: CSV", "$$BEGIN",
+        "Format: CSV",
+        "$$BEGIN",
     ]
     for t, row in zip(utc, xyz, strict=True):
         sec = t.second + t.microsecond / 1e6
@@ -76,29 +79,43 @@ def export_mission(mission: str, output: Path) -> dict[str, object]:
         baseline = output / f"{stem}-engine.csv"
         with baseline.open("w", newline="", encoding="utf-8") as file:
             writer = csv.writer(file)
-            writer.writerow([
-                "utc", "seconds", "electron_gt1mev_cm-2_s-1", "proton_gt10mev_cm-2_s-1",
-            ])
+            writer.writerow(
+                [
+                    "utc",
+                    "seconds",
+                    "electron_gt1mev_cm-2_s-1",
+                    "proton_gt10mev_cm-2_s-1",
+                ]
+            )
             for i in ids:
-                writer.writerow([
-                    times[i].isoformat(), seconds[i], flux["electron"][i], flux["proton"][i],
-                ])
+                writer.writerow(
+                    [
+                        times[i].isoformat(),
+                        seconds[i],
+                        flux["electron"][i],
+                        flux["proton"][i],
+                    ]
+                )
         duration = float(seconds[ids[-1]] - seconds[ids[0]])
-        passages.append({
-            "trajectory_file": f"{stem}.csv",
-            "engine_file": baseline.name,
-            "sha256": hashlib.sha256(content).hexdigest(),
-            "samples": int(ids.size),
-            "start_utc": selected_times[0].isoformat(),
-            "end_utc": selected_times[-1].isoformat(),
-            "mission_length_seconds": duration,
-            "mission_length_days": duration / radiation.DAY_S,
-            "engine_fluence_cm-2": {
-                name: belts.fluence(seconds[ids], values[ids]) for name, values in flux.items()
-            },
-        })
+        passages.append(
+            {
+                "trajectory_file": f"{stem}.csv",
+                "engine_file": baseline.name,
+                "sha256": hashlib.sha256(content).hexdigest(),
+                "samples": int(ids.size),
+                "start_utc": selected_times[0].isoformat(),
+                "end_utc": selected_times[-1].isoformat(),
+                "mission_length_seconds": duration,
+                "mission_length_days": duration / radiation.DAY_S,
+                "engine_fluence_cm-2": {
+                    name: belts.fluence(seconds[ids], values[ids]) for name, values in flux.items()
+                },
+            }
+        )
     return {
-        "mission": mission, "status": "prepared_not_run", "solar": phase.solar,
+        "mission": mission,
+        "status": "prepared_not_run",
+        "solar": phase.solar,
         "trajectory_source": path.name,
         "trajectory_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
         "segments": passages,
@@ -116,14 +133,22 @@ def main() -> None:
     spice.load(settings.kernel_dir)
     missions = [export_mission(m, output) for m in args.mission or sorted(ascent.RECONSTRUCTED)]
     manifest = {
-        "status": "prepared_not_run", "generated_at": datetime.now(UTC).isoformat(),
+        "status": "prepared_not_run",
+        "generated_at": datetime.now(UTC).isoformat(),
         "upload_format_source": "https://www.spenvis.oma.be/help/models/sapre_upl.html",
-        "coordinates": "GEO", "position_unit": "km", "date_scale": "UTC",
-        "models": ["AE8", "AP8"], "electron_threshold_mev": radiation.E_MEV,
+        "coordinates": "GEO",
+        "position_unit": "km",
+        "date_scale": "UTC",
+        "models": ["AE8", "AP8"],
+        "electron_threshold_mev": radiation.E_MEV,
         "engine": ENGINES["rad"],
-        "saa_correction": {"eastward_deg_per_year": belts.SAA_DRIFT_DEG_YR,
-                           "electron_epoch": 1960, "ap8_max_epoch": 1970},
-        "proton_threshold_mev": radiation.P_MEV, "comparison_tolerance_fraction": 0.05,
+        "saa_correction": {
+            "eastward_deg_per_year": belts.SAA_DRIFT_DEG_YR,
+            "electron_epoch": 1960,
+            "ap8_max_epoch": 1970,
+        },
+        "proton_threshold_mev": radiation.P_MEV,
+        "comparison_tolerance_fraction": 0.05,
         "requirements": [
             "Trajectory upload requires Advanced-user access in SPENVIS.",
             "Upload each passage separately; never integrate across trajectory gaps.",

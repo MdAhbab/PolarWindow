@@ -143,7 +143,7 @@ export function Speaker({ summary, what, resetKey }: { summary: Summary | null; 
           aria-pressed={speaking}
           aria-describedby={transcriptId}
           aria-keyshortcuts="Alt+S"
-          className="inline-flex h-11 min-w-11 items-center gap-2 rounded-control border border-line-strong px-4 text-control font-medium text-ink hover:bg-inset"
+          className="pw-press inline-flex h-12 min-w-12 items-center gap-2 rounded-pill border border-line-strong bg-tray px-5 text-control font-semibold text-ink hover:border-ink-3 hover:bg-inset aria-pressed:bg-inset"
         >
           <Icon name="speaker" size={18} strokeWidth={2} />
           {/* Both words share one grid cell, so the button keeps the wider
@@ -162,7 +162,7 @@ export function Speaker({ summary, what, resetKey }: { summary: Summary | null; 
           onClick={() => setShowText((v) => !v)}
           aria-expanded={showText}
           aria-controls={transcriptId}
-          className="h-11 px-2 text-control text-ink-2 underline-offset-4 hover:underline"
+          className="pw-press h-12 rounded-pill px-4 text-control font-medium text-ink-2 hover:bg-inset hover:text-ink"
         >
           {showText ? 'Hide text' : 'Read it'}
         </button>
@@ -180,7 +180,7 @@ export function Speaker({ summary, what, resetKey }: { summary: Summary | null; 
         <div
           role="region"
           aria-label="Summary playing"
-          className="fixed inset-x-4 bottom-[calc(5rem+var(--pw-guide-h,0px)+env(safe-area-inset-bottom))] z-50 mx-auto flex max-w-2xl items-center gap-4 border border-line-strong bg-raised p-4 shadow-raised lg:bottom-[calc(1rem+var(--pw-guide-h,0px))]"
+          className="pw-card pw-card-raised fixed inset-x-4 bottom-[calc(5.5rem+var(--pw-guide-h,0px)+env(safe-area-inset-bottom))] z-50 mx-auto flex max-w-2xl items-center gap-4 p-4 pl-5 [--pw-elev:var(--shadow-overlay)] lg:bottom-[calc(1.5rem+var(--pw-guide-h,0px))]"
         >
           <p aria-hidden="true" className="grow text-title leading-7 text-ink">
             {summary.sentences[Math.max(current, 0)]}
@@ -188,7 +188,7 @@ export function Speaker({ summary, what, resetKey }: { summary: Summary | null; 
           <button
             type="button"
             onClick={stop}
-            className="h-11 shrink-0 rounded-control border border-line-strong px-4 text-control font-medium text-ink hover:bg-inset"
+            className="pw-press h-12 shrink-0 rounded-pill border border-line-strong bg-tray px-5 text-control font-semibold text-ink hover:border-ink-3 hover:bg-inset"
           >
             Stop
           </button>

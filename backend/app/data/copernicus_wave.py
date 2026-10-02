@@ -1,4 +1,5 @@
 """Read normalized, imported Copernicus waves; no network or NetCDF dependencies."""
+
 from __future__ import annotations
 
 import json
@@ -14,6 +15,7 @@ from app.config import get_settings
 
 DATASET = "cmems_mod_glo_wav_anfc_0.083deg_PT3H-i"
 SOURCE = "https://data.marine.copernicus.eu/product/GLOBAL_ANALYSISFORECAST_WAV_001_027"
+
 
 def utc(value: str) -> datetime:
     date = datetime.fromisoformat(value.replace("Z", "+00:00"))
@@ -42,8 +44,10 @@ def wave_at(zone: tuple[float, float], when: datetime) -> dict[str, Any] | None:
     lon = (np.asarray(data["longitude"]) + 180) % 360 - 180
     if not min(lat) <= zone[0] <= max(lat) or not min(lon) <= zone[1] <= max(lon):
         return None
-    index, gap = min(enumerate(abs((utc(t) - when).total_seconds()) for t in data["times"]),
-                     key=lambda pair: pair[1])
+    index, gap = min(
+        enumerate(abs((utc(t) - when).total_seconds()) for t in data["times"]),
+        key=lambda pair: pair[1],
+    )
     if gap > 1.5 * 3600:
         return None
     i, j = int(np.argmin(abs(lat - zone[0]))), int(np.argmin(abs(lon - zone[1])))
@@ -52,11 +56,16 @@ def wave_at(zone: tuple[float, float], when: datetime) -> dict[str, Any] | None:
         return None
     a, b = math.radians(zone[0]), math.radians(float(lat[i]))
     delta = math.radians(float(lon[j]) - zone[1])
-    h = math.sin((b - a) / 2)**2 + math.cos(a) * math.cos(b) * math.sin(delta / 2)**2
-    distance = 2 * 6371.0 * math.asin(math.sqrt(min(1., h)))
+    h = math.sin((b - a) / 2) ** 2 + math.cos(a) * math.cos(b) * math.sin(delta / 2) ** 2
+    distance = 2 * 6371.0 * math.asin(math.sqrt(min(1.0, h)))
     if distance > 20:
         return None
-    return {"wave_height_m": value, "valid": utc(data["times"][index]),
-            "imported_at": utc(data["imported_at"]), "distance_km": distance,
-            "source_url": data["source_url"], "source_sha256": data["source_sha256"],
-            "note": data["note"]}
+    return {
+        "wave_height_m": value,
+        "valid": utc(data["times"][index]),
+        "imported_at": utc(data["imported_at"]),
+        "distance_km": distance,
+        "source_url": data["source_url"],
+        "source_sha256": data["source_sha256"],
+        "note": data["note"],
+    }

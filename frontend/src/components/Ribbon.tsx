@@ -42,7 +42,7 @@ export function Ribbon({
 
   return (
     <div
-      className="relative flex border border-line"
+      className="pw-draw-bar relative flex origin-left border border-line"
       style={{ height }}
       role="img"
       aria-label={ariaLabel ?? describeRibbon(arcs, tone)}

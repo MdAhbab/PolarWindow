@@ -1,4 +1,9 @@
-# POLAR WINDOW
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="frontend/src/assets/brand/logo-on-dark.png">
+    <img src="frontend/src/assets/brand/logo-on-light.png" alt="POLAR WINDOW" height="64">
+  </picture>
+</h1>
 
 Sunlight and Earth contact planning for NASA Commercial Lunar Payload Services (CLPS) missions and candidate landing sites at the Moon's south pole. Built for the NASA Space Apps Challenge (*CLPS Lunar Mission Browser*).
 

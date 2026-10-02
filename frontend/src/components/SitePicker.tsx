@@ -1,12 +1,12 @@
 import { useId } from 'react'
 import { useMission } from '../lib/store'
 import { getSites, siteById } from '../lib/sites'
-import { Icon } from './Icon'
+import { Select } from './Select'
 
 /**
  * The page's title is the picker: the site's name, large, with a chevron. One
  * name on screen instead of a heading and a box repeating it. The heading is
- * kept for screen readers, and the select carries its own label.
+ * kept for screen readers, and the list carries its own label.
  */
 export function SiteTitle({ prefix = '' }: { prefix?: string }) {
   const id = useId()
@@ -23,39 +23,27 @@ export function SiteTitle({ prefix = '' }: { prefix?: string }) {
         {name}
       </h1>
       {prefix && (
-        <span aria-hidden="true" className="shrink-0 text-heading font-semibold tracking-title text-ink-2">
+        <span aria-hidden="true" className="pw-display shrink-0 text-[26px] text-ink-2 sm:text-[30px]">
           {prefix}
         </span>
       )}
       <label htmlFor={id} className="sr-only">
         Site
       </label>
-      <span className="relative inline-flex min-w-0 max-w-full items-center">
-        <select
-          id={id}
-          value={siteId}
-          onChange={(e) => setSite(e.target.value)}
-          className="h-11 max-w-full min-w-0 cursor-pointer appearance-none truncate rounded-control bg-transparent pr-8 text-heading font-semibold tracking-title text-ink [field-sizing:content] hover:bg-inset focus-visible:bg-inset"
-        >
-          <optgroup label="Candidate sites">
-            {candidates.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </optgroup>
-          {targets.length > 0 && (
-            <optgroup label="Mission landing spots">
-              {targets.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </optgroup>
-          )}
-        </select>
-        <Icon name="chevron" size={18} strokeWidth={2.2} className="pointer-events-none absolute right-2 text-ink-3" />
-      </span>
+      {/* The name at display size is the button; the list opens under it. */}
+      <Select
+        id={id}
+        look="bare"
+        value={siteId}
+        onChange={setSite}
+        options={[
+          ...candidates.map((s) => ({ value: s.id, label: s.name, group: 'Candidate sites' })),
+          ...targets.map((s) => ({ value: s.id, label: s.name, group: 'Mission landing spots' })),
+        ]}
+        chevron={20}
+        className="-ml-2 h-12 gap-3 rounded-control pr-3 pl-2 hover:bg-inset aria-expanded:bg-inset"
+        labelClassName="pw-display text-[26px] leading-[30px] text-ink sm:text-[30px] sm:leading-[34px]"
+      />
     </div>
   )
 }

@@ -152,7 +152,7 @@ export function ProgrammeTimeline({
         role="region"
         aria-label="Timeline, scrolls sideways"
         tabIndex={0}
-        className="relative overflow-x-auto border border-line bg-panel"
+        className="pw-card pw-card-quiet relative overflow-x-auto"
       >
         <svg
           width={W}

@@ -79,7 +79,7 @@ export function ReadyItemSheet({ item, onClose }: { item: ReadyItemDTO | null; o
           <Select
             {...p}
             value={state}
-            onChange={(e) => setState(e.target.value as ReadyState)}
+            onChange={(v) => setState(v as ReadyState)}
             options={movesFrom(item).map((s) => ({ value: s, label: READY_WORDS[s] }))}
           />
         )}
@@ -151,7 +151,7 @@ export function AddItemSheet({ open, onClose, missionId }: { open: boolean; onCl
           <Select
             {...p}
             value={kind}
-            onChange={(e) => setKind(e.target.value as ItemKind)}
+            onChange={(v) => setKind(v as ItemKind)}
             options={(Object.keys(KIND_WORDS) as ItemKind[]).map((k) => ({ value: k, label: KIND_WORDS[k] }))}
           />
         )}
@@ -270,8 +270,8 @@ export function RiskSheet({
                   <Select
                     {...p}
                     value={r ? String(r.l) : ''}
-                    onChange={(e) =>
-                      setRatings({ ...ratings, [c]: e.target.value ? { l: Number(e.target.value), c: r?.c ?? 1 } : null })
+                    onChange={(v) =>
+                      setRatings({ ...ratings, [c]: v ? { l: Number(v), c: r?.c ?? 1 } : null })
                     }
                     options={levels(scale?.likelihood)}
                   />
@@ -282,8 +282,8 @@ export function RiskSheet({
                   <Select
                     {...p}
                     value={r ? String(r.c) : ''}
-                    onChange={(e) =>
-                      setRatings({ ...ratings, [c]: e.target.value ? { c: Number(e.target.value), l: r?.l ?? 1 } : null })
+                    onChange={(v) =>
+                      setRatings({ ...ratings, [c]: v ? { c: Number(v), l: r?.l ?? 1 } : null })
                     }
                     options={levels(cons)}
                   />
@@ -298,7 +298,7 @@ export function RiskSheet({
           <Select
             {...p}
             value={f.trend}
-            onChange={(e) => setF({ ...f, trend: e.target.value as RiskDTO['trend'] })}
+            onChange={(v) => setF({ ...f, trend: v as RiskDTO['trend'] })}
             options={(Object.keys(TREND_WORDS) as RiskDTO['trend'][]).map((t) => ({ value: t, label: TREND_WORDS[t].words }))}
           />
         )}
@@ -375,7 +375,7 @@ export function PartSheet({
           <Select
             {...p}
             value={f.status}
-            onChange={(e) => setF({ ...f, status: e.target.value as PartStatus })}
+            onChange={(v) => setF({ ...f, status: v as PartStatus })}
             options={(Object.keys(PART_WORDS) as PartStatus[]).map((s) => ({ value: s, label: PART_WORDS[s].words }))}
           />
         )}
@@ -385,7 +385,7 @@ export function PartSheet({
           <Select
             {...p}
             value={f.parent_item_id ?? ''}
-            onChange={(e) => setF({ ...f, parent_item_id: e.target.value || null })}
+            onChange={(v) => setF({ ...f, parent_item_id: v || null })}
             options={[{ value: '', label: 'Not attached' }, ...items.map((i) => ({ value: i.id, label: i.name }))]}
           />
         )}

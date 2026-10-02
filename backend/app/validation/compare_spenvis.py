@@ -4,6 +4,7 @@ No credentials or browser access are used. Raw files are preserved locally.
 Example: python -m app.validation.compare_spenvis --mission im-2
   --protons ../data/spenvis_spp.txt --electrons ../data/spenvis_spe.txt
 """
+
 from __future__ import annotations
 
 import argparse
@@ -78,14 +79,16 @@ def compare(spectrum: Spectrum, model: str, passage: dict, engine: Path, energy:
     if len(rows) != len(spectrum.values) or len(rows) != passage["samples"]:
         raise ValueError("sample counts differ; do not align by guessed row numbers")
     start = lifecycle.parse_time(rows[0]["utc"])
-    recorded = [int(float(spectrum.metadata[k][1])) for k in
-                ("ORB_YEA", "ORB_MON", "ORB_DAY", "ORB_HOU", "ORB_MIN")]
+    recorded = [
+        int(float(spectrum.metadata[k][1]))
+        for k in ("ORB_YEA", "ORB_MON", "ORB_DAY", "ORB_HOU", "ORB_MIN")
+    ]
     if recorded != [start.year, start.month, start.day, start.hour, start.minute]:
         raise ValueError("spectrum start date differs")
-    if abs(float(spectrum.metadata["ORB_SEC"][1]) - start.second - start.microsecond / 1e6) > .1:
+    if abs(float(spectrum.metadata["ORB_SEC"][1]) - start.second - start.microsecond / 1e6) > 0.1:
         raise ValueError("spectrum start second differs")
     times = np.array([(lifecycle.parse_time(r["utc"]) - start).total_seconds() for r in rows])
-    if np.any(np.diff(times) <= 0) or abs(times[-1] - duration) > .1:
+    if np.any(np.diff(times) <= 0) or abs(times[-1] - duration) > 0.1:
         raise ValueError("invalid passage times")
     flux = spectrum.values[:, 2 + spectrum.energies.index(energy)]
     reference = belts.fluence(times, flux)
@@ -96,9 +99,13 @@ def compare(spectrum: Spectrum, model: str, passage: dict, engine: Path, energy:
         raise ValueError("positive reference fluence required for a relative comparison")
     difference = predicted / reference - 1
     return {
-        "particle": particle, "energy_mev": energy, "samples": len(rows),
-        "spenvis_fluence_cm-2": reference, "engine_fluence_cm-2": predicted,
-        "relative_difference_fraction": difference, "passes_5_percent": abs(difference) <= .05,
+        "particle": particle,
+        "energy_mev": energy,
+        "samples": len(rows),
+        "spenvis_fluence_cm-2": reference,
+        "engine_fluence_cm-2": predicted,
+        "relative_difference_fraction": difference,
+        "passes_5_percent": abs(difference) <= 0.05,
     }
 
 
@@ -119,19 +126,30 @@ def main() -> None:
     output = root / "results" / args.mission
     output.mkdir(parents=True, exist_ok=True)
     hashes = {}
-    for path, model, energy in [(args.protons, "AP-8", 10.), (args.electrons, "AE-8", 1.)]:
+    for path, model, energy in [(args.protons, "AP-8", 10.0), (args.electrons, "AE-8", 1.0)]:
         spectrum = read_spectrum(path)
-        results.append(compare(spectrum, f"{model} {mission['solar'].upper()}", passage,
-                               root / passage["engine_file"], energy))
+        results.append(
+            compare(
+                spectrum,
+                f"{model} {mission['solar'].upper()}",
+                passage,
+                root / passage["engine_file"],
+                energy,
+            )
+        )
         if path.resolve() != (output / path.name).resolve():
             shutil.copyfile(path, output / path.name)
         hashes[path.name] = hashlib.sha256(path.read_bytes()).hexdigest()
     report = {
-        "status": "passed_for_this_passage" if all(r["passes_5_percent"] for r in results)
+        "status": "passed_for_this_passage"
+        if all(r["passes_5_percent"] for r in results)
         else "failed_for_this_passage",
-        "mission": args.mission, "passage": args.passage, "raw_sha256": hashes,
+        "mission": args.mission,
+        "passage": args.passage,
+        "raw_sha256": hashes,
         "engine": manifest.get("engine", "not recorded"),
-        "trajectory_sha256": passage["sha256"], "comparison": results,
+        "trajectory_sha256": passage["sha256"],
+        "comparison": results,
         "method": "trapezoid integration over exported sample times; denominator SPENVIS",
         "limitations": "Checks this passage only. Equal sample count, name, start and duration "
         "are required; sample order follows the downloaded trajectory. Rounded raw outputs.",

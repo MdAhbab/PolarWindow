@@ -1,4 +1,5 @@
 """Decode a user-downloaded Copernicus regional wave NetCDF subset."""
+
 from __future__ import annotations
 
 import hashlib
@@ -35,15 +36,21 @@ def import_subset(path: Path) -> dict[str, Any]:
         calendar = getattr(ds.variables["time"], "calendar", "standard")
         if calendar not in ("standard", "gregorian", "proleptic_gregorian"):
             raise ValueError("expected Gregorian UTC times")
-        times = num2date(ds.variables["time"][:], ds.variables["time"].units,
-                         calendar=calendar, only_use_cftime_datetimes=False,
-                         only_use_python_datetimes=True)
+        times = num2date(
+            ds.variables["time"][:],
+            ds.variables["time"].units,
+            calendar=calendar,
+            only_use_cftime_datetimes=False,
+            only_use_python_datetimes=True,
+        )
         if isinstance(times, datetime):
             raise ValueError("time must be an array")
         lat = np.asarray(ds.variables["latitude"][:], dtype=float)
         lon = np.asarray(ds.variables["longitude"][:], dtype=float)
-        if (getattr(ds.variables["latitude"], "units", "") != "degrees_north"
-                or getattr(ds.variables["longitude"], "units", "") != "degrees_east"):
+        if (
+            getattr(ds.variables["latitude"], "units", "") != "degrees_north"
+            or getattr(ds.variables["longitude"], "units", "") != "degrees_east"
+        ):
             raise ValueError("expected latitude/longitude coordinates in degrees")
         for name, coords in [("latitude", lat), ("longitude", lon)]:
             if coords.ndim != 1 or not np.isfinite(coords).all() or coords.size < 2:
@@ -62,13 +69,21 @@ def import_subset(path: Path) -> dict[str, Any]:
         heights[(heights < 0) | (heights > 30)] = np.nan
         if not np.isfinite(heights).any():
             raise ValueError("subset has no valid ocean wave values")
-        values = [[[float(v) if np.isfinite(v) else None for v in row] for row in frame]
-                  for frame in heights]
+        values = [
+            [[float(v) if np.isfinite(v) else None for v in row] for row in frame]
+            for frame in heights
+        ]
         attrs = {key: str(ds.getncattr(key)) for key in ds.ncattrs()}
     return {
-        "dataset": DATASET, "source_url": SOURCE, "imported_at": datetime.now(UTC).isoformat(),
-        "source_sha256": hashlib.sha256(path.read_bytes()).hexdigest(), "attributes": attrs,
-        "times": dates, "latitude": lat.tolist(), "longitude": lon.tolist(), "VHM0": values,
+        "dataset": DATASET,
+        "source_url": SOURCE,
+        "imported_at": datetime.now(UTC).isoformat(),
+        "source_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        "attributes": attrs,
+        "times": dates,
+        "latitude": lat.tolist(),
+        "longitude": lon.tolist(),
+        "VHM0": values,
         "note": "User-downloaded Copernicus subset; forecast issuance time not inferred "
         "from subset creation time. Wave height only; no wind observation or forecast.",
     }

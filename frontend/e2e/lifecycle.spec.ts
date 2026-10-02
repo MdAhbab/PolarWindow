@@ -91,7 +91,7 @@ test('each number says its margin, or why it has none (contract fixtures)', asyn
   await serveLifecycleFixtures(context)
   await page.goto('/missions/im-2/contact')
   // A relay is a range, "if it flies as planned".
-  const relay = page.locator('div.border.bg-panel', { hasText: 'Through a relay' }).first()
+  const relay = page.locator('div.pw-tile', { hasText: 'Through a relay' }).first()
   await expect(relay).toContainText('60–95')
   await expect(relay).toContainText('if it flies as planned')
   await expect(relay).toContainText('60 to 95 hours')
@@ -99,7 +99,7 @@ test('each number says its margin, or why it has none (contract fixtures)', asyn
   await expect(page.locator('main')).toContainText('Line of sight only')
 
   await page.goto('/missions/im-2/trip')
-  const shadow = page.locator('div.border.bg-panel', { hasText: 'Longest time in shadow' }).first()
+  const shadow = page.locator('div.pw-tile', { hasText: 'Longest time in shadow' }).first()
   await expect(shadow).toContainText('±0.02')
   // Where it comes from opens from the label (invariant 10).
   await shadow.getByRole('button', { name: /Longest time in shadow/ }).click()
@@ -205,8 +205,13 @@ test('team weather limits (contract fixtures): the form starts from the limits a
   // The entered one starts as entered, in a unit its rule takes, with its note.
   const tops = sheet.getByRole('group', { name: /cumulus/i })
   await expect(tops.getByLabel('Limit')).toHaveValue('10000')
-  await expect(tops.getByLabel('Unit')).toHaveValue('ft')
-  await expect(tops.getByLabel('Unit').locator('option')).toHaveText(['ft', 'm'])
+  await expect(tops.getByLabel('Unit')).toHaveText('ft')
+  await tops.getByLabel('Unit').click()
+  await expect(sheet.getByRole('option')).toHaveText(['ft', 'm'])
+  // Esc closes the list and leaves the sheet open.
+  await page.keyboard.press('Escape')
+  await expect(sheet.getByRole('option')).toHaveCount(0)
+  await expect(sheet).toBeVisible()
   await expect(tops.getByLabel('Note (optional)')).toHaveValue('As given by the range weather officer for this campaign.')
   await expect(tops).toContainText('Entered by Nadia Karim')
   // A rule with no published unit asks for one.
@@ -390,7 +395,7 @@ test('contact through a relay (contract fixtures): a range with its launch statu
   const answer = page.locator('[data-guide="section-answer"]')
   await expect(answer).toContainText('Through Lunar Pathfinder (not launched) it could reach Earth for 60–95 h, if it flies as planned; that adds 1.5–4 h to direct contact.')
   await expect(answer).toContainText('The longest time without contact is 1.0 ±0.1 h directly, or 0.4–1 h with the relay, if it flies as planned.')
-  const tile = (label: string) => page.locator('div.border.bg-panel', { hasText: label }).first()
+  const tile = (label: string) => page.locator('div.pw-tile', { hasText: label }).first()
   const openRow = async (title: string) => {
     await openRowOf(page, title)
     return page.locator('details').filter({ has: page.locator('summary', { hasText: title }) }).first()
@@ -746,7 +751,7 @@ test('a readiness change asks for a name, needs evidence, and shows its history 
   await page.getByRole('button', { name: 'Change MAPP rover' }).first().click()
   const sheet = page.getByRole('dialog', { name: 'Change: MAPP rover' })
   await expect(sheet).toContainText('Every change is recorded with your name.')
-  await expect(sheet.getByLabel('New state')).toHaveValue('test_passed')
+  await expect(sheet.getByLabel('New state')).toHaveText('Test passed')
   await sheet.getByRole('button', { name: 'Save' }).click()
   await expect(sheet).toContainText('Enter your name')
   await sheet.getByLabel('Your name').fill('Nadia Karim')

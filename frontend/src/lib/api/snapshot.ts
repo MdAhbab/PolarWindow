@@ -157,6 +157,11 @@ async function missionListFallback(
   return { ...all, items, total: items.length }
 }
 
+/** A flown trip's orbit file as the service gave it, beside the saved answers (only flown trips have one). */
+export function snapshotTripFileUrl(missionId: string): string {
+  return `${ROOT}trip/${encodeURIComponent(missionId)}.csv`
+}
+
 /** A saved hillshade tile, beside the saved answers. */
 export function snapshotTileUrl(layer: string, z: number, x: number, y: number): string {
   return `${ROOT}tiles/${layer}/${z}/${x}/${y}.png`

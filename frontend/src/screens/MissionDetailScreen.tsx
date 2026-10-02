@@ -16,11 +16,11 @@ import {
   publishedWords,
   publisherFor,
 } from '../lib/missions'
-import { coords, dateTimeWords, isoDateWords, msFromModelH, percent, spanWords, windowLine } from '../lib/format'
-import type { SiteMetrics } from '../lib/types'
+import { coords, dateTimeWords, isoDateWords, msFromModelH, windowLine } from '../lib/format'
+import { surfaceSentence } from '../lib/siteSentence'
 import { ArcTable } from '../components/ArcTable'
 import { Sources } from '../components/Sources'
-import { ChartPanel, Rows, SectionLayout, StatePanel } from '../components/lifecycle/Section'
+import { ANSWER_TEXT, ChartPanel, Rows, SectionLayout, StatePanel, UNDER_QUESTION } from '../components/lifecycle/Section'
 import { SECTIONS } from '../components/lifecycle/JourneyBar'
 import { useMotionClass } from '../hooks/useMotion'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
@@ -32,6 +32,10 @@ import { ExplainPanel } from '../components/Agents'
 import { SummarySpeaker } from '../components/SummarySpeaker'
 import { ProblemPanel, Skeleton, UncertaintyNote } from '../components/States'
 import { Button, Disclosure, Panel, RowGroup, SectionLabel, Unconfirmed } from '../components/ui'
+import { PolarMap, POLAR_MAP_EDGE_LAT, type MissionPin } from '../components/PolarMap'
+import { MoonDiscs } from '../components/MoonDiscs'
+import { SceneFrame } from '../scenes/SceneFrame'
+import { hillshadeTile } from '../scenes/tiles'
 
 /**
  * A mission's record (§10.3), fully sourced: how it went, its dates, and its
@@ -43,70 +47,130 @@ export function MissionRecord({ mission: m }: { mission: MissionDetail }) {
     const l = latestAccessed(m.sources)
     return l ? isoDateWords(l) : null
   })()
-  const u = <Unconfirmed asOf={asOf} />
 
   return (
-    <div className="flex min-w-0 flex-col gap-4">
-      <Panel className="flex flex-col gap-3 p-5">
-        <div className="text-title-lg font-semibold text-ink">
-          <span aria-hidden="true">{STATUS_GLYPH[m.status]} </span>
-          {STATUS_LABEL[m.status]}
+    <div className="grid min-w-0 items-start gap-6 xl:grid-cols-12 xl:gap-8">
+      <div className="flex min-w-0 flex-col gap-6 xl:col-span-7">
+        {/* The biggest card: how it went is what the page is opened for. */}
+      <Panel className="flex min-w-0 flex-col gap-5 p-5 sm:p-7">
+        <div className="flex flex-col gap-3">
+          <h2 className="pw-eyebrow">The mission’s record</h2>
+          <div className="flex items-center gap-3 text-heading leading-8 font-semibold tracking-heading text-ink sm:text-heading-lg sm:leading-9">
+            <span aria-hidden="true" className="text-ink-2">
+              {STATUS_GLYPH[m.status]}
+            </span>
+            {STATUS_LABEL[m.status]}
+          </div>
         </div>
         {m.outcomeNote && <OutcomeNote note={m.outcomeNote} />}
         <MissionDates mission={m} />
       </Panel>
 
-      <RowGroup title="About this mission">
-        <Disclosure title="Target" meta={m.target?.name ?? m.targetName ?? 'not published'}>
-          {m.target ? (
-            <dl className="grid grid-cols-1 gap-x-4 text-body sm:grid-cols-[max-content_1fr] sm:gap-y-2">
-              <Row term="Coordinates">
-                <span className="font-mono text-small">{coords(m.target.latDeg, m.target.lonDeg)}</span>
-              </Row>
-              <Row term="Kind">{coordinateKindWords(m.target.coordinateKind, m.targetName)}</Row>
-              <Row term="Landing area">{m.ellipseRing ? 'published; drawn on the Map' : u}</Row>
-              <Row term="Source">
-                <SourceLink url={m.target.sourceUrl} sources={m.sources} what="the coordinates" />
-              </Row>
-            </dl>
-          ) : (
-            <p className="text-body text-ink-2">
-              No coordinates are published{m.targetName ? ` for “${m.targetName}”` : ''}. {u}
-            </p>
-          )}
-        </Disclosure>
+        <RowGroup title="About this mission">
+          <Payloads mission={m} asOf={asOf} />
 
-        <Payloads mission={m} asOf={asOf} />
+          <Disclosure title="Sources" meta={`${m.sources.length}${asOf ? `, last read ${asOf}` : ''}`}>
+            <ul className="flex flex-col gap-3">
+              {m.sources.map((s) => (
+                <li key={s.url} className="flex flex-col gap-0.5 text-body leading-5">
+                  <a href={s.url} target="_blank" rel="noreferrer">
+                    {s.title}
+                  </a>
+                  <span className="text-caption text-ink-3">
+                    {s.publisher} · accessed {isoDateWords(s.accessed)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {m.notes.length > 0 && (
+              <>
+                <SectionLabel as="h3" className="mt-2">
+                  Notes on the sources
+                </SectionLabel>
+                <ul className="flex list-disc flex-col gap-1.5 pl-5 text-small leading-5 text-ink-2">
+                  {m.notes.map((n, i) => (
+                    <li key={i}>{n}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+            <p className="font-mono text-caption text-ink-3">Record version {m.dataVersion}</p>
+          </Disclosure>
+        </RowGroup>
+      </div>
 
-        <Disclosure title="Sources" meta={`${m.sources.length}${asOf ? `, last read ${asOf}` : ''}`}>
-          <ul className="flex flex-col gap-3">
-            {m.sources.map((s) => (
-              <li key={s.url} className="flex flex-col gap-0.5 text-body leading-5">
-                <a href={s.url} target="_blank" rel="noreferrer">
-                  {s.title}
-                </a>
-                <span className="text-caption text-ink-3">
-                  {s.publisher} · accessed {isoDateWords(s.accessed)}
-                </span>
-              </li>
-            ))}
-          </ul>
-          {m.notes.length > 0 && (
-            <>
-              <SectionLabel as="h3" className="mt-2">
-                Notes on the sources
-              </SectionLabel>
-              <ul className="flex list-disc flex-col gap-1.5 pl-5 text-small leading-5 text-ink-2">
-                {m.notes.map((n, i) => (
-                  <li key={i}>{n}</li>
-                ))}
-              </ul>
-            </>
-          )}
-          <p className="font-mono text-caption text-ink-3">Record version {m.dataVersion}</p>
-        </Disclosure>
-      </RowGroup>
+      <div className="min-w-0 xl:col-span-5">
+        <TargetCard mission={m} asOf={asOf} />
+      </div>
     </div>
+  )
+}
+
+/**
+ * Where it lands, as a picture and as facts: the pole from above with the
+ * mission's mark when the target is within 80°S, the two faces of the Moon
+ * otherwise, then the coordinates, what kind of point they are, and their
+ * source. The picture has its own description; the facts are the record.
+ */
+function TargetCard({ mission: m, asOf }: { mission: MissionDetail; asOf: string | null }) {
+  const t = m.target
+  const u = <Unconfirmed asOf={asOf} />
+  const polar = t !== null && t.latDeg <= POLAR_MAP_EDGE_LAT
+  const theme = useStore((s) => s.theme)
+  const globe = useMemo(() => ({ latDeg: t?.latDeg ?? 0, lonDeg: t?.lonDeg ?? 0, tileUrl: hillshadeTile }), [t?.latDeg, t?.lonDeg])
+  const pin: MissionPin[] = t
+    ? [
+        {
+          key: m.id,
+          latDeg: t.latDeg,
+          lonDeg: t.lonDeg,
+          dashed: t.coordinateKind !== 'actual_landing',
+          label: `${m.name}: ${t.name}, ${coordinateKindWords(t.coordinateKind, m.targetName)}`,
+          highlighted: true,
+        },
+      ]
+    : []
+  return (
+    <Panel as="section" className="flex min-w-0 flex-col gap-4 p-5 sm:p-6">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h3 className="pw-eyebrow">Target</h3>
+        <span className="text-small text-ink-2">{t?.name ?? m.targetName ?? 'not published'}</span>
+      </div>
+      {t && (
+        // The Moon turned to the spot, over the flat drawing it falls back to.
+        <SceneFrame
+          sceneKey={`${m.id}|${theme}`}
+          make={(canvas, props, opts) => import('../scenes/targetGlobe').then((s) => s.createTargetGlobe(canvas, props, opts))}
+          props={globe}
+          caption="The Moon turned to the landing spot: NASA’s LRO camera mosaic, and inside the circle at 80°S the LOLA relief. The light is for the picture; the Surface step has the Sun for these dates."
+          fallback={
+            polar ? (
+              <div className="mx-auto w-full max-w-[420px]">
+                <PolarMap sun={null} selectedSiteId={m.siteId ?? ''} size={420} missionPins={pin} siteMarks="dots" />
+              </div>
+            ) : (
+              <MoonDiscs missions={[m]} highlight={new Set([m.id])} earthNeverRisesOnFarSide={false} />
+            )
+          }
+        />
+      )}
+      {t ? (
+        <dl className="grid grid-cols-1 gap-x-4 border-t border-line pt-4 text-body sm:grid-cols-[max-content_1fr] sm:gap-y-2">
+          <Row term="Coordinates">
+            <span className="font-mono text-small">{coords(t.latDeg, t.lonDeg)}</span>
+          </Row>
+          <Row term="Kind">{coordinateKindWords(t.coordinateKind, m.targetName)}</Row>
+          <Row term="Landing area">{m.ellipseRing ? 'published; drawn on the Map' : u}</Row>
+          <Row term="Source">
+            <SourceLink url={t.sourceUrl} sources={m.sources} what="the coordinates" />
+          </Row>
+        </dl>
+      ) : (
+        <p className="text-body text-ink-2">
+          No coordinates are published{m.targetName ? ` for “${m.targetName}”` : ''}. {u}
+        </p>
+      )}
+    </Panel>
   )
 }
 
@@ -141,27 +205,13 @@ export function SurfaceSection({ mission: m }: { mission: MissionDetail }) {
 
 const SURFACE_QUESTION = SECTIONS.find((s) => s.id === 'landing')!.question
 
-/** The answer on Surface: the share of time in sunlight and in contact, and the longest night, in one sentence. */
-export function surfaceSentence(metrics: SiteMetrics): string {
-  const span = spanWords(metrics.windowHours)
-  const sunAll = !metrics.sun.longestDownArc && metrics.sun.fractionUp > 0.999
-  const earthAll = !metrics.earth.longestDownArc && metrics.earth.fractionUp > 0.999
-  if (sunAll && earthAll) return `Over these ${span} the Sun stays up and Earth stays in view the whole time.`
-  const sun = sunAll ? 'the Sun stays up' : `the Sun is up ${percent(metrics.sun.fractionUp)} of the time`
-  const earth = earthAll ? 'Earth stays in view' : `Earth is in view ${percent(metrics.earth.fractionUp)} of the time`
-  const night = metrics.sun.longestDownArc
-    ? `; the longest night is ${metrics.sun.longestDownOpen ? 'at least ' : ''}${Math.round(metrics.sun.longestDownH)} hours`
-    : ''
-  return `Over these ${span} ${sun} and ${earth}${night}.`
-}
-
 /** How it went: three lines, and the rest on request. */
 function OutcomeNote({ note }: { note: string }) {
   const [more, setMore] = useState(false)
   const long = note.length > 200
   return (
-    <div className="flex flex-col items-start gap-1">
-      <p className={`text-body leading-6 text-ink-2 ${long && !more ? 'line-clamp-3' : ''}`}>{note}</p>
+    <div className="flex flex-col items-start gap-1.5">
+      <p className={`max-w-[62ch] text-lede leading-7 text-ink-2 ${long && !more ? 'line-clamp-4' : ''}`}>{note}</p>
       {long && (
         <button
           type="button"
@@ -385,8 +435,8 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
   return (
     <>
       {metrics ? (
-        <div className={`-mt-4 flex flex-col gap-2 ${arrive}`}>
-          <p data-guide="section-answer" className="max-w-4xl text-title-lg leading-7 font-medium text-ink sm:text-subhead sm:leading-8">
+        <div className={`${UNDER_QUESTION} flex flex-col gap-3 ${arrive}`}>
+          <p data-guide="section-answer" className={ANSWER_TEXT}>
             {surfaceSentence(metrics)}
           </p>
           <SurfaceWindowLine mission={m} site={site.name} />
@@ -395,9 +445,10 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
           </div>
         </div>
       ) : view.error ? null : (
-        <div className="-mt-4 flex flex-col gap-2" aria-hidden="true">
-          <Skeleton className="h-7 w-full max-w-3xl" />
-          <Skeleton className="mt-1 h-4 w-64" />
+        <div className={`${UNDER_QUESTION} flex flex-col gap-2.5`} aria-hidden="true">
+          <Skeleton className="h-8 w-full max-w-4xl lg:h-10" />
+          <Skeleton className="h-8 w-1/2 max-w-xl lg:h-10" />
+          <Skeleton className="mt-1.5 h-4 w-64" />
         </div>
       )}
 
@@ -486,8 +537,8 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
         <ExplainPanel siteId={siteId} start={w.start} end={w.end} />
       </Rows>
 
-      <div className="flex flex-col gap-2">
-        <h3 className="text-small font-semibold text-ink-2">Go further with this spot</h3>
+      <div className="flex flex-col gap-3">
+        <h3 className="pw-eyebrow">Go further with this spot</h3>
         <div className="flex flex-wrap gap-3">
           <Button
             onClick={() => {
@@ -507,6 +558,7 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
             Compare with nearby sites
           </Button>
           <Button
+            variant="ghost"
             onClick={() => {
               seed()
               navigate('/report')

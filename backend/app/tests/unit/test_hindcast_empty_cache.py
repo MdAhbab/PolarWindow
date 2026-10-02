@@ -1,4 +1,5 @@
 """A missing raw archive must not erase an existing scientific benchmark."""
+
 import sys
 
 import pytest
