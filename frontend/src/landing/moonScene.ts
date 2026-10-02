@@ -1,3 +1,4 @@
+import { createSky, earthSurface, moonSurface, SURFACE_TURN } from './space'
 import {
   AmbientLight,
   CanvasTexture,
@@ -17,11 +18,11 @@ import {
 /**
  * The front page's Moon.
  *
- * The globe itself is drawn for illustration: a grey sphere with made-up
- * shading, because no global map ships with this project. The cap from 80°S
- * to the pole is real: the LOLA hillshade tiles the Map draws, placed in the
- * same south polar stereographic projection (longitude 0 at grid +y, east
- * clockwise). The page says which is which.
+ * The surface is real: NASA's LRO wide-angle camera mosaic over the whole
+ * globe (space.ts), and from 80°S to the pole the LOLA hillshade tiles the
+ * Map draws, placed in the same south polar stereographic projection
+ * (longitude 0 at grid +y, east clockwise). In the dark theme the night sky
+ * is behind it; in the light theme Earth stands in front of it at first.
  *
  * The Sun is a light that circles the Moon in its equator plane, which is
  * what it does as seen from the pole: along the horizon, never overhead.
@@ -51,6 +52,8 @@ export interface SceneState {
   earth: number
   /** Where the Moon sits across the screen, as a fraction of its half-width: 0 centre, 1 right edge. */
   shift: number
+  /** Light theme only: how far into the picture Earth stands, in front of the Moon, 0 to 1. */
+  near?: number
 }
 
 export interface MoonScene {
@@ -63,7 +66,7 @@ export interface MoonScene {
   dispose: () => void
 }
 
-function token(name: string, fallback: string): Color {
+export function token(name: string, fallback: string): Color {
   const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
   try {
     return new Color(v || fallback)
@@ -72,68 +75,11 @@ function token(name: string, fallback: string): Color {
   }
 }
 
-/** A small seeded generator, so the drawn globe looks the same on every visit. */
-function rng(seed: number) {
-  let s = seed >>> 0
-  return () => {
-    s = (s * 1664525 + 1013904223) >>> 0
-    return s / 2 ** 32
-  }
-}
-
-/** The illustrative globe: soft dark patches and craters on grey, equirectangular. */
-function drawnGlobe(): CanvasTexture {
-  const w = 2048
-  const h = 1024
-  const c = document.createElement('canvas')
-  c.width = w
-  c.height = h
-  const g = c.getContext('2d')!
-  g.fillStyle = '#8e8e8e'
-  g.fillRect(0, 0, w, h)
-  const r = rng(7)
-  const blob = (x: number, y: number, rad: number, rgba: string) => {
-    const grd = g.createRadialGradient(x, y, 0, x, y, rad)
-    grd.addColorStop(0, rgba)
-    grd.addColorStop(1, rgba.replace(/[\d.]+\)$/, '0)'))
-    g.fillStyle = grd
-    g.fillRect(x - rad, y - rad, rad * 2, rad * 2)
-  }
-  // Broad darker plains, mostly away from the poles.
-  for (let i = 0; i < 40; i++) {
-    blob(r() * w, h * (0.25 + r() * 0.5), 60 + r() * 180, `rgba(70,70,70,${0.25 + r() * 0.3})`)
-  }
-  // Mottling at every scale.
-  for (let i = 0; i < 2600; i++) {
-    const light = r() > 0.5
-    blob(r() * w, r() * h, 3 + r() ** 2 * 40, light ? `rgba(200,200,200,${r() * 0.06})` : `rgba(40,40,40,${r() * 0.08})`)
-  }
-  // Craters: mostly small, a faint floor and a thin bright rim.
-  for (let i = 0; i < 900; i++) {
-    const x = r() * w
-    const y = r() * h
-    const rad = 1 + r() ** 5 * 26
-    g.beginPath()
-    g.arc(x, y, rad, 0, Math.PI * 2)
-    g.fillStyle = `rgba(50,50,50,${0.06 + r() * 0.1})`
-    g.fill()
-    g.beginPath()
-    g.arc(x - rad * 0.12, y - rad * 0.12, rad, Math.PI * 0.9, Math.PI * 1.9)
-    g.lineWidth = Math.max(0.5, rad * 0.12)
-    g.strokeStyle = `rgba(230,230,230,${0.05 + r() * 0.1})`
-    g.stroke()
-  }
-  const t = new CanvasTexture(c)
-  t.colorSpace = SRGBColorSpace
-  t.anisotropy = 4
-  return t
-}
-
 /**
  * The real south polar cap: the 16 hillshade tiles at zoom 2 stitched into one
  * 1,024-pixel square, with its edge faded so it meets the drawn globe softly.
  */
-async function poleRelief(tileUrl: (z: number, x: number, y: number) => string): Promise<CanvasTexture | null> {
+export async function poleRelief(tileUrl: (z: number, x: number, y: number) => string): Promise<CanvasTexture | null> {
   const n = 4
   const px = 256
   const c = document.createElement('canvas')
@@ -176,7 +122,7 @@ async function poleRelief(tileUrl: (z: number, x: number, y: number) => string):
  * A cap from the south pole to 80°S whose texture coordinates are the south
  * polar stereographic grid, so each tile pixel lands where it belongs.
  */
-function capGeometry(radius: number): SphereGeometry {
+export function capGeometry(radius: number): SphereGeometry {
   const theta = CAP_COLAT_DEG * DEG
   const geo = new SphereGeometry(radius, 256, 48, 0, Math.PI * 2, Math.PI - theta, theta)
   const pos = geo.attributes.position
@@ -200,6 +146,7 @@ export function createMoonScene(
   canvas: HTMLCanvasElement,
   tileUrl: (z: number, x: number, y: number) => string,
   initial: SceneState,
+  { theme = 'dark' }: { theme?: 'dark' | 'light' } = {},
 ): MoonScene {
   const renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
@@ -211,12 +158,16 @@ export function createMoonScene(
   const moon = new Group()
   scene.add(moon)
 
-  const globeTex = drawnGlobe()
-  const globe = new Mesh(
-    new SphereGeometry(1, 128, 64),
-    new MeshStandardMaterial({ map: globeTex, roughness: 1, metalness: 0 }),
-  )
+  // The real Moon: NASA's LRO wide-angle camera mosaic, grey until it has loaded.
+  const globeMat = new MeshStandardMaterial({ color: 0x8e8e8e, roughness: 1, metalness: 0 })
+  const globe = new Mesh(new SphereGeometry(1, 128, 64), globeMat)
+  globe.rotation.y = SURFACE_TURN
   moon.add(globe)
+  let disposed = false
+  const redraw = () => {
+    if (!disposed && !raf) render()
+  }
+  moonSurface(globeMat, redraw)
 
   // The relief glows faintly on its own, so the real terrain stays readable on
   // the night side too; the Sun adds its light on the day side.
@@ -230,20 +181,20 @@ export function createMoonScene(
   })
   const cap = new Mesh(capGeometry(1.0015), capMaterial)
   moon.add(cap)
-  let disposed = false
   void poleRelief(tileUrl).then((t) => {
     if (!t || disposed) return
     capMaterial.map = t
     capMaterial.emissiveMap = t
     capMaterial.opacity = 1
     capMaterial.needsUpdate = true
+    redraw()
   })
 
   // The Sun: a light carried with the Moon, circling in its equator plane.
   // Warm white: white tinted a quarter of the way to the Sun's amber, the same
   // in either theme (the light theme's ink is dark and would dim it).
   const sunColor = new Color(1, 1, 1).lerp(token('--color-sun-fill', '#f2a33c'), 0.25)
-  const sun = new DirectionalLight(sunColor, 3.9)
+  const sun = new DirectionalLight(sunColor, 6.2)
   moon.add(sun)
   moon.add(sun.target)
   // Grazing light: a second, weaker Sun a little behind the first, so the
@@ -252,10 +203,13 @@ export function createMoonScene(
   const sunSoft = new DirectionalLight(sunColor, 0.9)
   moon.add(sunSoft)
   moon.add(sunSoft.target)
-  scene.add(new AmbientLight(token('--color-ink-3', '#8d99a5'), 0.2))
+  // In the dark the night side is nearly black, as it is; on a light page it
+  // is lifted to the grey of a Moon in a daytime sky, so it is never a hole.
+  const dark = theme === 'dark'
+  scene.add(new AmbientLight(dark ? 0x9aa5b1 : 0xb8bec6, dark ? 0.12 : 0.55))
   // Earthshine: sunlight off Earth, a faint cool light on the night side from
-  // where Earth stands, so the dark half is never a hole.
-  const earthshine = new DirectionalLight(new Color(0.62, 0.7, 0.8), 0.32)
+  // where Earth stands.
+  const earthshine = new DirectionalLight(new Color(0.62, 0.7, 0.8), dark ? 0.32 : 0.45)
   earthshine.position.set(Math.sin(-35 * DEG) * 10, -0.8, Math.cos(-35 * DEG) * 10)
   moon.add(earthshine)
   moon.add(earthshine.target)
@@ -266,6 +220,19 @@ export function createMoonScene(
   const earth = new Mesh(new SphereGeometry(0.075, 32, 16), earthMat)
   earth.position.set(Math.sin(-35 * DEG) * 1.14, -0.08, Math.cos(-35 * DEG) * 1.14)
   moon.add(earth)
+  earthSurface(earthMat, redraw)
+
+  // Dark: the night sky behind the Moon. Light: Earth in front of it, low in
+  // the picture, which the scroll then leaves behind on the way to the pole.
+  const sky = dark ? createSky() : null
+  if (sky) scene.add(sky.group)
+  const nearMat = new MeshStandardMaterial({ color: 0x6f8fb0, roughness: 0.85, metalness: 0 })
+  const nearEarth = new Mesh(new SphereGeometry(0.95, 96, 48), nearMat)
+  // Africa and Europe toward the viewer (longitude 20°E), tipped a little north.
+  nearEarth.rotation.set(0.22, SURFACE_TURN - 20 * DEG, 0)
+  nearEarth.visible = !dark
+  scene.add(nearEarth)
+  if (!dark) earthSurface(nearMat, redraw)
 
   const state: SceneState = { ...initial }
   const pointer = { x: 0, y: 0, sx: 0, sy: 0 }
@@ -306,6 +273,14 @@ export function createMoonScene(
     camera.lookAt(0, 0, 0)
 
     sun.position.set(Math.sin(state.sunAz) * 10, 0.3, Math.cos(state.sunAz) * 10)
+    // The sky turns a little with the Moon, for depth; it is far away.
+    if (sky) sky.group.rotation.set(state.tilt * 0.15, (state.spin + spinExtra) * 0.12 + state.sunAz * 0.015, 0)
+    if (!dark) {
+      // In front of the Moon and below it; it sinks out of the picture as `near` falls.
+      const n = state.near ?? 0
+      nearEarth.visible = n > 0.01
+      nearEarth.position.set(0.5, -1.12 - (1 - n) * 2.6, 1.75)
+    }
     sunSoft.position.set(Math.sin(state.sunAz - 0.38) * 10, 0.3, Math.cos(state.sunAz - 0.38) * 10)
     earthMat.opacity = state.earth
     earth.visible = state.earth > 0.01
@@ -344,11 +319,13 @@ export function createMoonScene(
       globe.geometry.dispose()
       cap.geometry.dispose()
       earth.geometry.dispose()
-      ;(globe.material as MeshStandardMaterial).dispose()
+      nearEarth.geometry.dispose()
+      globeMat.dispose()
       capMaterial.map?.dispose()
       capMaterial.dispose()
       earthMat.dispose()
-      globeTex.dispose()
+      nearMat.dispose()
+      sky?.dispose()
       renderer.dispose()
     },
   }

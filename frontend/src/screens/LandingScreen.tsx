@@ -27,7 +27,8 @@ gsap.registerPlugin(ScrollTrigger)
  * mission list's and the site list's own, and are left out if they don't load.
  */
 
-const START: SceneState = { tilt: -0.3, spin: 0.6, distance: 4.4, sunAz: 0.9, earth: 0, shift: 0.5 }
+// The first picture: a waxing gibbous Moon, lit from the right of the viewer, the craters sharp along its terminator.
+const START: SceneState = { tilt: -0.3, spin: 0.6, distance: 4.4, sunAz: 0.15, earth: 0, shift: 0.5, near: 1 }
 
 const IDEAS = [
   {
@@ -111,7 +112,9 @@ export default function LandingScreen() {
     try {
       const tile = (z: number, x: number, y: number) =>
         DATA_MODE === 'snapshot' ? snapshotTileUrl('hillshade', z, x, y) : `${API_BASE}/tiles/hillshade/${z}/${x}/${y}.png`
-      scene = createMoonScene(canvas, tile, reduced ? { ...START, tilt: -1.3, distance: 3.8, sunAz: 1.4 } : START)
+      // Dark: the Moon in the night sky. Light: Earth in front of the Moon.
+      const theme = readPrefs().theme === 'light' ? 'light' : 'dark'
+      scene = createMoonScene(canvas, tile, reduced ? { ...START, tilt: -1.3, distance: 3.8, sunAz: 1.4 } : START, { theme })
     } catch {
       setWebgl(false)
       return
@@ -138,8 +141,8 @@ export default function LandingScreen() {
         defaults: { ease: 'none' },
         scrollTrigger: { trigger: root, start: 'top top', end: 'bottom bottom', scrub: 0.8 },
       })
-      // Hero -> the Sun never climbs: turn to the south pole.
-      tl.to(s, { tilt: -1.25, spin: 0, distance: 3.6, sunAz: 2.6, shift: 0.45 })
+      // Hero -> the Sun never climbs: leave Earth behind and turn to the south pole.
+      tl.to(s, { tilt: -1.25, spin: 0, distance: 3.6, sunAz: 2.6, shift: 0.45, near: 0 })
       // -> a hill switches off the Sun: the pole head-on, the Sun circling it.
       tl.to(s, { tilt: -1.52, distance: 2.5, sunAz: 4.8 })
       // -> Earth is low: step back and let Earth rise over the horizon.
@@ -311,8 +314,9 @@ export default function LandingScreen() {
       <footer className="relative z-10 flex flex-col gap-6 border-t border-line px-4 py-10 lg:px-8">
         <BrandLogo className="h-10 sm:h-12" />
         <p className="max-w-3xl text-caption leading-caption text-ink-3">
-          Not an official product of NASA or any space agency. The globe is drawn for illustration; the south-polar
-          terrain is the real LOLA relief map. Sun and Earth are not to scale.
+          Not an official product of NASA or any space agency. The Moon is NASA’s LRO camera mosaic, with the LOLA
+          relief map at the south pole; Earth is NASA’s Blue Marble; the stars are drawn. Sizes and distances are not
+          to scale.
         </p>
       </footer>
     </div>
