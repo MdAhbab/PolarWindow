@@ -242,10 +242,23 @@ export function createMoonScene(
   // The Sun: a light carried with the Moon, circling in its equator plane.
   // Warm white: white tinted a quarter of the way to the Sun's amber, the same
   // in either theme (the light theme's ink is dark and would dim it).
-  const sun = new DirectionalLight(new Color(1, 1, 1).lerp(token('--color-sun-fill', '#f2a33c'), 0.25), 4.5)
+  const sunColor = new Color(1, 1, 1).lerp(token('--color-sun-fill', '#f2a33c'), 0.25)
+  const sun = new DirectionalLight(sunColor, 3.9)
   moon.add(sun)
   moon.add(sun.target)
-  scene.add(new AmbientLight(token('--color-ink-3', '#8d99a5'), 0.3))
+  // Grazing light: a second, weaker Sun a little behind the first, so the
+  // line between day and night is a soft band, as it is on the Moon from
+  // afar, rather than a cut.
+  const sunSoft = new DirectionalLight(sunColor, 0.9)
+  moon.add(sunSoft)
+  moon.add(sunSoft.target)
+  scene.add(new AmbientLight(token('--color-ink-3', '#8d99a5'), 0.2))
+  // Earthshine: sunlight off Earth, a faint cool light on the night side from
+  // where Earth stands, so the dark half is never a hole.
+  const earthshine = new DirectionalLight(new Color(0.62, 0.7, 0.8), 0.32)
+  earthshine.position.set(Math.sin(-35 * DEG) * 10, -0.8, Math.cos(-35 * DEG) * 10)
+  moon.add(earthshine)
+  moon.add(earthshine.target)
 
   // Earth, in the Moon's equator plane (so on the pole's horizon), drawn close
   // beside the limb so it is in the picture. Not to scale.
@@ -293,6 +306,7 @@ export function createMoonScene(
     camera.lookAt(0, 0, 0)
 
     sun.position.set(Math.sin(state.sunAz) * 10, 0.3, Math.cos(state.sunAz) * 10)
+    sunSoft.position.set(Math.sin(state.sunAz - 0.38) * 10, 0.3, Math.cos(state.sunAz - 0.38) * 10)
     earthMat.opacity = state.earth
     earth.visible = state.earth > 0.01
     renderer.render(scene, camera)

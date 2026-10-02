@@ -614,9 +614,9 @@ taken as recommended.
 | 2. Shell | done | `944b00a` |
 | 3. The journey and a mission's home (and the Missions page) | done | `1a221f9` |
 | 4. Step pages | done | `79762a2` |
-| 5. Landing sites | done | see git log |
-| 6. Front page | next | |
-| 7. Scroll | to do | |
+| 5. Landing sites | done | `d35d87a` |
+| 6. Front page | done | see git log |
+| 7. Scroll | next | |
 | 8. Three dimensions | to do | |
 | 9. Polish and performance | to do | |
 
@@ -677,7 +677,17 @@ taken as recommended.
   a list) on the right. Skyline: the chart card is the hero, the blocker
   card beside it. Report: the screen frame is the page's, the paper is
   unchanged.
-- **Not yet restyled**: the front page (slice 6).
+- **Front page** (slice 6): the dashboard's island as its header, with the
+  way in always in reach; display type on the width axis for the headline
+  and section titles; the four ideas, the feature cards and the method
+  note as cards; the amber way in as a pill with the arrow (the one
+  written exception, D5) and How it works as a secondary pill; sections
+  96 px apart on a phone and 144 px from lg. Reveals rise 18 px on the
+  settle curve over 820 ms and no longer fade, the feature cards 60 ms
+  apart. The Moon has a softer line between day and night (a second,
+  weaker Sun a little behind the first) and a faint cool earthshine on
+  its night side. Instrument Serif (D4) was not added: the display voice
+  carried the headline without it.
 
 *How each slice was checked.* `npm run check` and `npm test`; then the
 offline build (`npm run build:snapshot && npx vite preview`) driven by
