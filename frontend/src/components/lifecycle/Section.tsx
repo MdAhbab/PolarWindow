@@ -9,7 +9,7 @@ import { ageWords, hostWords } from '../../lib/lifecycle/quantity'
 import { Icon, type IconName } from '../Icon'
 import { ProblemPanel, ProgressTrack, Skeleton, UncertaintyNote } from '../States'
 import { useMotionClass } from '../../hooks/useMotion'
-import { Button, Disclosure, Panel, RowGroup, SectionLabel } from '../ui'
+import { Button, Disclosure, Panel, RowGroup } from '../ui'
 import { NumberRow } from './QuantityTile'
 import { KeyNumberTile } from '../KeyNumbers'
 import { termLabel } from '../../lib/format'
@@ -27,12 +27,28 @@ import { termLabel } from '../../lib/format'
 export function SectionLayout({ question, children }: { question: string; children: ReactNode }) {
   const id = useId()
   return (
-    <section aria-labelledby={id} className="flex w-full min-w-0 flex-col gap-6">
-      <h2 id={id} className="text-body font-semibold text-ink-3">
+    <section aria-labelledby={id} className="flex w-full min-w-0 flex-col gap-7 lg:gap-8">
+      {/* The question as an eyebrow: the answer under it is the page's hero. */}
+      <h2 id={id} className="pw-eyebrow">
         {question}
       </h2>
       {children}
     </section>
+  )
+}
+
+/** The block right under the question (the answer, or what stands in for it) sits close to it, not a block away. */
+export const UNDER_QUESTION = '-mt-4 lg:-mt-5'
+
+/** The answer sentence: the biggest text on a step page (`.pw-answer`). */
+export const ANSWER_TEXT = 'pw-answer max-w-[60rem] text-ink'
+
+/** When an answer was worked out, beside it: a caption with its full time on hover. */
+export function AnswerAge({ at }: { at: number }) {
+  return (
+    <p className="text-caption text-ink-3">
+      <span title={dateTimeWords(at)}>Worked out {ageWords(at)}</span>
+    </p>
   )
 }
 
@@ -45,17 +61,13 @@ export function Answer({ children, meta, extra }: { children: ReactNode; meta?: 
   const at = meta ? Date.parse(meta.computed_at) : NaN
   const arrive = useMotionClass('pw-arrive')
   return (
-    <div className={`-mt-4 flex flex-col gap-2 ${arrive}`}>
+    <div className={`${UNDER_QUESTION} flex flex-col gap-3 ${arrive}`}>
       {/* The answer, and at most a line more that qualifies it: one block for the guide and the tests. */}
-      <div data-guide="section-answer" className="flex max-w-4xl flex-col gap-1.5">
-        <p className="text-title-lg leading-7 font-medium text-ink sm:text-subhead sm:leading-8">{children}</p>
-        {extra && <p className="text-body leading-6 text-ink-2">{extra}</p>}
+      <div data-guide="section-answer" className="flex flex-col gap-3">
+        <p className={ANSWER_TEXT}>{children}</p>
+        {extra && <p className="max-w-3xl text-lede leading-7 text-ink-2">{extra}</p>}
       </div>
-      {meta && !Number.isNaN(at) && (
-        <p className="text-caption text-ink-3">
-          <span title={dateTimeWords(at)}>Worked out {ageWords(at)}</span>
-        </p>
-      )}
+      {meta && !Number.isNaN(at) && <AnswerAge at={at} />}
       {meta?.stale && (
         <UncertaintyNote title="Some of the data behind this is out of date">
           A number past its limit is replaced by the reason there is no number. The age of each live number is shown
@@ -129,10 +141,10 @@ export function SectionStates<T>({
       {view.status === 'working' ? (
         <WorkingPanel job={view.job} />
       ) : (
-        <div className="-mt-4 flex flex-col gap-2" aria-hidden="true">
-          <Skeleton className="h-7 w-full max-w-3xl" />
-          <Skeleton className="h-7 w-1/2 max-w-md" />
-          <Skeleton className="mt-1 h-4 w-28" />
+        <div className={`${UNDER_QUESTION} flex flex-col gap-2.5`} aria-hidden="true">
+          <Skeleton className="h-8 w-full max-w-4xl lg:h-10" />
+          <Skeleton className="h-8 w-2/3 max-w-2xl lg:h-10" />
+          <Skeleton className="mt-1.5 h-4 w-32" />
         </div>
       )}
       <span className="sr-only" role="status">
@@ -152,7 +164,7 @@ export function SectionStates<T>({
 export function WorkingPanel({ job }: { job: JobRefDTO }) {
   const pct = job.progress === null ? null : Math.round(job.progress * 100)
   return (
-    <Panel className="-mt-4 flex flex-col gap-3 p-5">
+    <Panel className={`${UNDER_QUESTION} flex flex-col gap-3 p-5`}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <div className="flex items-center gap-2 text-control font-semibold text-ink">
           <Icon name="quarter" size={18} />
@@ -193,15 +205,15 @@ export function StatePanel({
   action?: ReactNode
 }) {
   return (
-    <Panel className="-mt-4 flex flex-col gap-3 p-5">
+    <Panel className={`${UNDER_QUESTION} flex flex-col gap-3 p-5`}>
       <div className="flex items-center gap-2 text-title font-semibold text-ink">
         <Icon name={icon} size={18} />
         {title}
       </div>
       <div className="max-w-3xl text-body leading-6 text-ink-2">{detail}</div>
       {stillWorks && (
-        <div className="flex flex-col gap-1 border-l-2 border-line-strong pl-3">
-          <SectionLabel as="h3">What still works</SectionLabel>
+        <div className="flex flex-col gap-1.5 border-l-2 border-line-strong pl-3">
+          <h3 className="pw-eyebrow">What still works</h3>
           <p className="text-small leading-5 text-ink-2">{stillWorks}</p>
         </div>
       )}
@@ -233,12 +245,12 @@ export function ChartPanel({
   const reveal = useMotionClass('pw-chart-reveal')
   const drop = useMotionClass('pw-arrive')
   return (
-    <Panel as="section" guide={guide} className="flex min-w-0 flex-col gap-4 p-4 sm:p-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <SectionLabel as="h3" id={`${id}-h`}>
+    <Panel as="section" guide={guide} className="flex min-w-0 flex-col gap-5 p-4 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <h3 id={`${id}-h`} className="text-title leading-6 font-semibold tracking-title text-ink">
           {title}
-        </SectionLabel>
-        <Button size="sm" onClick={toggle} expanded={showTable} controls={`${id}-table`} title="Or press T">
+        </h3>
+        <Button size="sm" variant="ghost" className="-ml-4 sm:-mr-3 sm:ml-0" onClick={toggle} expanded={showTable} controls={`${id}-table`} title="Or press T">
           <Icon name="table" size={16} strokeWidth={1.7} />
           {showTable ? 'Hide the table' : 'Read the chart as a table'}
         </Button>
@@ -360,7 +372,7 @@ export function SourcesRow({ meta, children }: { meta: LifecycleMetaDTO; childre
  */
 export function Rows({ children, about }: { children?: ReactNode; about?: ReactNode }) {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-7 lg:gap-8">
       {children && <RowGroup title="Details">{children}</RowGroup>}
       {about && <RowGroup title="About these numbers">{about}</RowGroup>}
     </div>

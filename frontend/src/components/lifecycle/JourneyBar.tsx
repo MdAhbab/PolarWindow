@@ -199,7 +199,7 @@ export function JourneyBar({
                 to={sectionPath(missionId, s.id)}
                 onClick={go(sectionPath(missionId, s.id))}
                 aria-current={active ? 'page' : undefined}
-                className={`group relative flex w-full min-w-0 items-start gap-2.5 rounded-control no-underline md:flex-col md:gap-2 ${
+                className={`group relative flex min-h-12 w-full min-w-0 items-start gap-2.5 rounded-control no-underline md:flex-col md:gap-2 ${
                   active ? 'text-ink' : 'text-ink-2 hover:text-ink'
                 }`}
               >

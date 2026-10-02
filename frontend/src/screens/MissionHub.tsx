@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef } from 'react'
+import { lazy, Suspense, useEffect, useId, useRef } from 'react'
 import { useTransitionClick } from '../lib/viewTransition'
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { PageHeader } from '../components/Page'
@@ -111,6 +111,7 @@ export function MissionHub() {
             : [{ label: 'Missions', to: '/missions' }, { label: m.name }]
         }
         title={m.name}
+        compact={Boolean(step)}
         titleExtra={m.vehicleName ? `· ${m.vehicleName}` : undefined}
         lede={
           [m.provider, m.lander, m.taskOrder ? `NASA task order ${m.taskOrder}` : null].filter(Boolean).join(' · ') ||
@@ -164,40 +165,49 @@ export function MissionHub() {
   )
 }
 
-/** The end of a step: the way on to the next one, and back to the mission. */
+/**
+ * The end of a step: the way on to the next one, as the page's one primary
+ * pill, with the next step's question beside it; and back to the mission.
+ */
 function StepFooter({ base, next, missionId }: { base: string; missionId: string; next: (typeof SECTIONS)[number] | null }) {
   const go = useTransitionClick()
+  const questionId = useId()
   return (
-    <nav aria-label="Next step" className="flex flex-col gap-3 border-t border-line pt-6 sm:flex-row sm:items-stretch sm:justify-between">
+    <nav
+      aria-label="Next step"
+      className="flex flex-col-reverse gap-6 border-t border-line pt-8 sm:flex-row sm:items-center sm:justify-between"
+    >
       <Link
         to={base}
         onClick={go(base)}
-        className="inline-flex h-12 items-center gap-2 self-start rounded-control px-1 text-body font-semibold text-ink-2 no-underline hover:text-ink sm:self-center"
+        className="pw-press -ml-2 inline-flex h-12 items-center gap-2 self-start rounded-pill px-3 text-body font-semibold text-ink-2 no-underline hover:bg-inset hover:text-ink sm:self-center"
       >
         <Icon name="back" size={16} strokeWidth={2} />
         All six steps
       </Link>
       {next && (
-        <Link
-          to={sectionPath(missionId, next.id)}
-          state={{ from: 'next-step' }}
-          onClick={go(sectionPath(missionId, next.id), { state: { from: 'next-step' } })}
-          className="group flex min-w-0 items-center justify-between gap-4 border border-line bg-panel px-5 py-3 no-underline transition-[border-color,box-shadow] duration-[var(--pw-dur-base)] hover:border-line-strong hover:shadow-lift sm:min-w-[340px]"
-        >
-          <span className="flex min-w-0 flex-col">
-            <span className="text-caption text-ink-3">Next step</span>
-            <span className="text-control font-semibold text-ink">
-              {SECTIONS.indexOf(next) + 1} · {next.name}
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row-reverse sm:items-center sm:gap-6">
+          <Link
+            to={sectionPath(missionId, next.id)}
+            state={{ from: 'next-step' }}
+            onClick={go(sectionPath(missionId, next.id), { state: { from: 'next-step' } })}
+            aria-describedby={questionId}
+            className="pw-press group inline-flex h-16 shrink-0 items-center gap-5 self-start rounded-pill bg-ink pr-2 pl-6 text-canvas no-underline hover:bg-ink-2"
+          >
+            <span className="flex flex-col items-start">
+              <span className="text-caption leading-4 font-medium opacity-75">Next step</span>
+              <span className="text-title leading-6 font-semibold">
+                <span className="font-mono text-body font-normal">{SECTIONS.indexOf(next) + 1}</span> · {next.name}
+              </span>
             </span>
-            <span className="truncate text-small text-ink-3">{next.question}</span>
-          </span>
-          <Icon
-            name="arrow"
-            size={18}
-            strokeWidth={1.8}
-            className="shrink-0 text-ink-3 transition-transform duration-[var(--pw-dur-base)] group-hover:translate-x-1 group-hover:text-ink"
-          />
-        </Link>
+            <span className="pw-orb size-12" aria-hidden="true">
+              <Icon name="arrow" size={18} strokeWidth={2} />
+            </span>
+          </Link>
+          <p id={questionId} className="max-w-sm text-small leading-5 text-balance text-ink-3 sm:text-right">
+            {next.question}
+          </p>
+        </div>
       )}
     </nav>
   )

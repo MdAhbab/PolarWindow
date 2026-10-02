@@ -20,7 +20,7 @@ import { coords, dateTimeWords, isoDateWords, msFromModelH, percent, spanWords, 
 import type { SiteMetrics } from '../lib/types'
 import { ArcTable } from '../components/ArcTable'
 import { Sources } from '../components/Sources'
-import { ChartPanel, Rows, SectionLayout, StatePanel } from '../components/lifecycle/Section'
+import { ANSWER_TEXT, ChartPanel, Rows, SectionLayout, StatePanel, UNDER_QUESTION } from '../components/lifecycle/Section'
 import { SECTIONS } from '../components/lifecycle/JourneyBar'
 import { useMotionClass } from '../hooks/useMotion'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
@@ -435,8 +435,8 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
   return (
     <>
       {metrics ? (
-        <div className={`-mt-4 flex flex-col gap-2 ${arrive}`}>
-          <p data-guide="section-answer" className="max-w-4xl text-title-lg leading-7 font-medium text-ink sm:text-subhead sm:leading-8">
+        <div className={`${UNDER_QUESTION} flex flex-col gap-3 ${arrive}`}>
+          <p data-guide="section-answer" className={ANSWER_TEXT}>
             {surfaceSentence(metrics)}
           </p>
           <SurfaceWindowLine mission={m} site={site.name} />
@@ -445,9 +445,10 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
           </div>
         </div>
       ) : view.error ? null : (
-        <div className="-mt-4 flex flex-col gap-2" aria-hidden="true">
-          <Skeleton className="h-7 w-full max-w-3xl" />
-          <Skeleton className="mt-1 h-4 w-64" />
+        <div className={`${UNDER_QUESTION} flex flex-col gap-2.5`} aria-hidden="true">
+          <Skeleton className="h-8 w-full max-w-4xl lg:h-10" />
+          <Skeleton className="h-8 w-1/2 max-w-xl lg:h-10" />
+          <Skeleton className="mt-1.5 h-4 w-64" />
         </div>
       )}
 
@@ -536,8 +537,8 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
         <ExplainPanel siteId={siteId} start={w.start} end={w.end} />
       </Rows>
 
-      <div className="flex flex-col gap-2">
-        <h3 className="text-small font-semibold text-ink-2">Go further with this spot</h3>
+      <div className="flex flex-col gap-3">
+        <h3 className="pw-eyebrow">Go further with this spot</h3>
         <div className="flex flex-wrap gap-3">
           <Button
             onClick={() => {
@@ -557,6 +558,7 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
             Compare with nearby sites
           </Button>
           <Button
+            variant="ghost"
             onClick={() => {
               seed()
               navigate('/report')

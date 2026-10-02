@@ -445,6 +445,29 @@
     letter-spacing: -0.035em;
     font-variant-numeric: tabular-nums lining-nums;
   }
+  /* The answer on a step page: the biggest text there, in the display voice
+     but a step lighter and less wide, since it is a sentence, not a name. */
+  .pw-answer {
+    font-size: 22px;
+    line-height: 1.22;
+    font-weight: 560;
+    font-stretch: 108%;
+    letter-spacing: -0.02em;
+    text-wrap: pretty;
+  }
+  @media (min-width: 40rem) {
+    .pw-answer {
+      font-size: 28px;
+      line-height: 1.15;
+    }
+  }
+  @media (min-width: 64rem) {
+    .pw-answer {
+      font-size: 36px;
+      line-height: 1.12;
+      letter-spacing: -0.024em;
+    }
+  }
   /* An eyebrow: section groups and the question a page answers. */
   .pw-eyebrow {
     font-size: var(--text-tag);
