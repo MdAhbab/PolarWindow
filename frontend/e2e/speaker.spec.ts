@@ -1,5 +1,5 @@
 import { expect, test, type BrowserContext } from '@playwright/test'
-import { goClient, returningVisitor } from './helpers'
+import { arrived, goClient, returningVisitor } from './helpers'
 
 /**
  * The Listen control (U16). Speech itself is stubbed: headless browsers have
@@ -40,8 +40,9 @@ for (const where of [
     // Never auto-plays.
     expect(await page.evaluate(() => (window as unknown as { __spoken: string[] }).__spoken.length)).toBe(0)
 
-    // Something the reader is looking at, near the control.
+    // Something the reader is looking at, near the control, once the page has arrived.
     const anchor = page.getByRole('slider').first()
+    await arrived(page)
     const before = await anchor.boundingBox()
     await listen.click()
     await expect(page.getByRole('button', { name: 'Stop the summary' })).toHaveAttribute('aria-pressed', 'true')

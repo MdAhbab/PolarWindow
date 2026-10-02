@@ -75,7 +75,7 @@ export function BlackoutScreen() {
         <Panel as="section" className="flex min-w-0 flex-col gap-3 p-4 sm:p-5 lg:col-span-8">
           <h2 className="text-title leading-6 font-semibold tracking-title text-ink">These dates, hour by hour</h2>
           <ScrollRegion label="Hour-by-hour timeline, scrolls sideways" className="pb-1">
-            <BlackoutTimeline metrics={metrics} cursorH={cursorH} className="min-w-[860px]" />
+            <BlackoutTimeline metrics={metrics} cursorH={cursorH} className="pw-draw min-w-[860px]" />
           </ScrollRegion>
         </Panel>
 

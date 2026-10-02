@@ -1,4 +1,5 @@
-import { useId, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { createPortal } from 'react-dom'
 import type { JobRefDTO, LifecycleMetaDTO, SectionDTO, SectionStatusDTO } from '../../lib/api/lifecycle'
 import { ApiError } from '../../lib/api/client'
 import { STATE_WORDS } from './JourneyBar'
@@ -26,14 +27,83 @@ import { termLabel } from '../../lib/format'
  */
 export function SectionLayout({ question, children }: { question: string; children: ReactNode }) {
   const id = useId()
+  const ref = useRef<HTMLElement>(null)
   return (
-    <section aria-labelledby={id} className="flex w-full min-w-0 flex-col gap-7 lg:gap-8">
+    <section ref={ref} aria-labelledby={id} className="flex w-full min-w-0 flex-col gap-7 lg:gap-8">
       {/* The question as an eyebrow: the answer under it is the page's hero. */}
       <h2 id={id} className="pw-eyebrow">
         {question}
       </h2>
       {children}
+      <AnswerDock question={question} within={ref} />
     </section>
+  )
+}
+
+/**
+ * The answer never leaves (design-visual-refresh.md, *Scroll*): once the
+ * answer has scrolled up under the island, the question and the answer dock
+ * under it in a strip, so a reader deep in the rows still sees what the page
+ * answers. A copy for the eye only: it is hidden from assistive technology,
+ * which has the answer where it is, and it takes no pointer. One
+ * IntersectionObserver on the answer, no scroll listener; the page's scroll
+ * padding grows by the strip's height while it shows, so nothing scrolled
+ * into view lands under it.
+ */
+function AnswerDock({ question, within }: { question: string; within: RefObject<HTMLElement | null> }) {
+  const [answer, setAnswer] = useState<string | null>(null)
+  const [docked, setDocked] = useState(false)
+
+  useEffect(() => {
+    const host = within.current
+    if (!host || typeof IntersectionObserver === 'undefined') return
+    let io: IntersectionObserver | null = null
+    let target: Element | null = null
+    let queued = 0
+    const attach = () => {
+      queued = 0
+      const el = host.querySelector('[data-guide="section-answer"]')
+      // The sentence itself: the first paragraph of the answer block, or the block when it is one.
+      setAnswer(el ? ((el.matches('p') ? el : el.querySelector('p'))?.textContent ?? null) : null)
+      if (el === target) return
+      io?.disconnect()
+      target = el
+      if (!el) return setDocked(false)
+      io = new IntersectionObserver(([e]) => setDocked(!e.isIntersecting && e.boundingClientRect.top < 0), {
+        rootMargin: '-84px 0px 0px 0px',
+      })
+      io.observe(el)
+    }
+    attach()
+    const mo = new MutationObserver(() => {
+      if (!queued) queued = requestAnimationFrame(attach)
+    })
+    mo.observe(host, { childList: true, subtree: true, characterData: true })
+    return () => {
+      mo.disconnect()
+      io?.disconnect()
+      cancelAnimationFrame(queued)
+    }
+  }, [within])
+
+  useEffect(() => {
+    const root = document.documentElement
+    if (docked) root.style.setProperty('--pw-dock-h', '76px')
+    else root.style.removeProperty('--pw-dock-h')
+    return () => {
+      root.style.removeProperty('--pw-dock-h')
+    }
+  }, [docked])
+
+  if (!answer) return null
+  return createPortal(
+    <div aria-hidden="true" className={`pw-dock ${docked ? 'is-docked' : ''}`}>
+      <div className="pw-island mx-auto flex max-w-3xl flex-col gap-0.5 rounded-[20px] px-5 py-2.5">
+        <span className="pw-eyebrow truncate">{question}</span>
+        <span className="line-clamp-2 text-body leading-5 font-semibold text-ink sm:line-clamp-1 sm:text-control">{answer}</span>
+      </div>
+    </div>,
+    document.body,
   )
 }
 

@@ -615,9 +615,9 @@ taken as recommended.
 | 3. The journey and a mission's home (and the Missions page) | done | `1a221f9` |
 | 4. Step pages | done | `79762a2` |
 | 5. Landing sites | done | `d35d87a` |
-| 6. Front page | done | see git log |
-| 7. Scroll | next | |
-| 8. Three dimensions | to do | |
+| 6. Front page | done | `5b70b44` |
+| 7. Scroll | done | see git log |
+| 8. Three dimensions | next | |
 | 9. Polish and performance | to do | |
 
 *What the slices so far added, for whoever picks up the next one.*
@@ -688,6 +688,32 @@ taken as recommended.
   weaker Sun a little behind the first) and a faint cool earthshine on
   its night side. Instrument Serif (D4) was not added: the display voice
   carried the headline without it.
+- **Logo** (`components/Brand.tsx`, after slice 6): the owner's two logos,
+  cropped into `frontend/src/assets/brand/` as the mark, the words and the
+  full logo, light lines for a dark ground and ink for a light one. The
+  version follows the nearest `data-theme` (`.pw-logo-on-dark`,
+  `.pw-logo-on-light`), so the report's paper takes the ink one. Headers
+  set the mark and the words side by side (`BrandName`), since the full
+  logo's words are unreadable at header size; the full logo (`BrandLogo`)
+  closes the front page and stands on the loading screen. Tab icons and
+  the touch icon are in `frontend/public/`; the README opens with the logo.
+- **Scroll and arrival** (slice 7): `hooks/useArrivals.ts`, run once by
+  `AppShell`, is one IntersectionObserver (and a MutationObserver for new
+  content) over the page: every card not inside another card rises 18 px
+  as it comes into view (`.pw-pre`, `.pw-rise`), 60 ms after the one
+  before it; a key-number tile's bar (`.pw-bar-grow`), a strip of bars
+  (`.pw-draw-bar`, the Ribbon) and a chart with words in it (`.pw-draw`)
+  follow 120–160 ms after their card; the pole map's pins drop in
+  (`.pw-pin`). The journey's line draws itself as a mission's page opens
+  (`.pw-journey-draw`, a segment every 150 ms), timed rather than scrubbed,
+  since it sits in the first screen and a scrub would already be complete.
+  On a step page the answer docks under the island once it has scrolled
+  away (`AnswerDock` in Section.tsx, a copy hidden from assistive
+  technology), and the page's scroll padding grows by its height. Not used:
+  `content-visibility`, whose paint containment clipped the cards' trays,
+  and a cascade inside the Missions list, which is one card. The Trip's
+  scroll scrub belongs to its scene (slice 8). The e2e helper `arrived()`
+  waits for the arrivals before a test measures a position.
 
 *How each slice was checked.* `npm run check` and `npm test`; then the
 offline build (`npm run build:snapshot && npx vite preview`) driven by

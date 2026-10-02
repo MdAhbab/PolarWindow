@@ -233,7 +233,7 @@
   /* The island floats over the top of the page and, below lg, the dock over
      its foot: anything scrolled into view lands clear of both. */
   html {
-    scroll-padding-top: 6rem;
+    scroll-padding-top: calc(6rem + var(--pw-dock-h, 0px));
     scroll-padding-bottom: calc(var(--pw-guide-h, 0px) + 1rem);
   }
   @media (max-width: 63.99rem) {
@@ -454,6 +454,35 @@
     -webkit-backdrop-filter: blur(18px) saturate(1.3);
   }
 
+  /* The answer docked under the island once it has scrolled away (Section.tsx).
+     It slides down from behind the island and back up; never a fade. */
+  .pw-dock {
+    position: fixed;
+    top: 80px;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    padding-inline: 12px;
+    pointer-events: none;
+    visibility: hidden;
+    transform: translateY(-120%);
+    transition:
+      transform var(--pw-dur-base) var(--ease-settle),
+      visibility 0s linear var(--pw-dur-base);
+  }
+  .pw-dock.is-docked {
+    visibility: visible;
+    transform: none;
+    transition:
+      transform var(--pw-dur-lift) var(--ease-settle),
+      visibility 0s;
+  }
+  @media print {
+    .pw-dock {
+      display: none;
+    }
+  }
+
   /* ---- Type roles --------------------------------------------------------- */
   /* Display: page titles and the answers. Wide, tight, balanced. */
   .pw-display {
@@ -620,6 +649,77 @@ dialog.pw-sheet-out::backdrop {
 }
 .pw-arrive-3 {
   animation: pw-arrive var(--pw-dur-slow) var(--ease-settle) 120ms both;
+}
+
+/* A card arriving as it comes into view (hooks/useArrivals.ts): waiting 18 px
+   low while off screen, then rising on the settle curve, 60 ms after the one
+   before it; the bar in a key-number tile grows 120 ms after its card. */
+.pw-pre {
+  transform: translateY(18px);
+}
+.pw-rise {
+  animation: pw-rise var(--pw-dur-arrive) var(--ease-settle) var(--pw-delay, 0ms) backwards;
+}
+.pw-rise .pw-bar-grow {
+  animation: pw-bar-grow var(--pw-dur-slow) var(--ease-settle) calc(var(--pw-delay, 0ms) + 120ms) backwards;
+}
+/* Charts in an arriving card draw in after it: a strip of bars from nothing,
+   a chart with words in it from a little short, so the words never squash. */
+.pw-rise .pw-draw-bar {
+  animation: pw-bar-grow var(--pw-dur-slow) var(--ease-settle) calc(var(--pw-delay, 0ms) + 160ms) backwards;
+}
+.pw-rise .pw-draw {
+  transform-origin: left center;
+  animation: pw-grow-x var(--pw-dur-slow) var(--ease-settle) calc(var(--pw-delay, 0ms) + 120ms) backwards;
+}
+/* The pins on the pole map drop into place one after another as the map arrives. */
+.pw-rise .pw-pin {
+  animation: pw-pin-drop 520ms var(--ease-settle) calc(var(--pw-delay, 0ms) + 240ms + var(--pw-pin-i, 0) * 35ms) backwards;
+}
+@keyframes pw-pin-drop {
+  from {
+    transform: translateY(-14px);
+  }
+}
+@keyframes pw-rise {
+  from {
+    transform: translateY(18px);
+  }
+}
+@keyframes pw-bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* The journey drawing itself as a page opens: the line behind the mission
+   grows from the first step to where it got to, a segment at a time. */
+.pw-journey-draw [data-journey-segment='behind'] {
+  animation: var(--pw-seg, pw-seg-y) 420ms var(--ease-move) calc(200ms + var(--pw-i, 0) * 150ms) backwards;
+}
+.pw-journey-draw [data-orient='row'] {
+  --pw-seg: pw-seg-x;
+  transform-origin: left center;
+}
+.pw-journey-draw [data-orient='column'],
+.pw-journey-draw [data-orient='both'] {
+  transform-origin: center top;
+}
+@media (min-width: 64rem) {
+  .pw-journey-draw [data-orient='both'] {
+    --pw-seg: pw-seg-x;
+    transform-origin: left center;
+  }
+}
+@keyframes pw-seg-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes pw-seg-y {
+  from {
+    transform: scaleY(0);
+  }
 }
 
 /* A disclosure's body as it opens. Closing is instant: it removes, never hides. */

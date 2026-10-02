@@ -5,6 +5,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useMission } from '../lib/store'
 import { useKeyboardMap } from '../hooks/useKeyboard'
 import { useReducedMotion } from '../hooks/useMotion'
+import { useArrivals } from '../hooks/useArrivals'
 import { Icon } from './Icon'
 import { BrandName } from './Brand'
 import { useProvenance } from '../lib/useProvenance'
@@ -107,6 +108,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const setGuideOpen = useGuide((g) => g.setOpen)
   useKeyboardMap({ reducedMotion: useReducedMotion() })
   useRouteFocus()
+  useArrivals('pw-main')
   const inSites = SITE_PATHS.some((p) => pathname.startsWith(p))
   // Once opened, Settings stays mounted, so it can slide out when closed.
   const settingsLoaded = useRef(false)

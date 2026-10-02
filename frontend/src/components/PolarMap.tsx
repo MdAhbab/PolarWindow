@@ -402,20 +402,23 @@ export function PolarMap({
               />
             ))}
 
-          {siteGroups.map((g) => {
+          {siteGroups.map((g, gi) => {
             if (g.length === 1) {
               const { site: s, at } = g[0]
               const selected = s.id === selectedSiteId
               return (
                 <g key={s.id} transform={`translate(${at.x} ${at.y})`} aria-hidden="true">
                   {selected && <circle r="20" fill="none" stroke="var(--color-sun)" strokeWidth="2" strokeOpacity="0.55" />}
-                  <path
-                    d="M0 12 s10-9.5 10-16a10 10 0 1 0-20 0c0 6.5 10 16 10 16Z"
-                    fill={selected ? 'var(--color-sun-fill)' : 'var(--color-ink)'}
-                    stroke="var(--color-canvas)"
-                    strokeWidth="1.5"
-                  />
-                  <circle cy="-4" r="3.4" fill="var(--color-canvas)" />
+                  {/* The pin drops onto the map as its card arrives (globals.css .pw-pin); its code stays still. */}
+                  <g className="pw-pin" style={{ ['--pw-pin-i' as string]: gi }}>
+                    <path
+                      d="M0 12 s10-9.5 10-16a10 10 0 1 0-20 0c0 6.5 10 16 10 16Z"
+                      fill={selected ? 'var(--color-sun-fill)' : 'var(--color-ink)'}
+                      stroke="var(--color-canvas)"
+                      strokeWidth="1.5"
+                    />
+                    <circle cy="-4" r="3.4" fill="var(--color-canvas)" />
+                  </g>
                   <text
                     y="32"
                     textAnchor="middle"

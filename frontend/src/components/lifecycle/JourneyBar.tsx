@@ -1,3 +1,4 @@
+import { useMotionClass } from '../../hooks/useMotion'
 import { Link } from 'react-router-dom'
 import { useTransitionClick } from '../../lib/viewTransition'
 import type { SectionId, SectionState, SectionStatusDTO } from '../../lib/api/lifecycle'
@@ -131,6 +132,7 @@ function Segment({ behind, orient, index }: { behind: boolean; orient: 'row' | '
     <span
       aria-hidden="true"
       data-journey-segment={behind ? 'behind' : 'ahead'}
+      data-orient={orient}
       style={{ ['--pw-i' as string]: index }}
       className={`pointer-events-none absolute ${geometry} ${behind ? 'bg-ink' : 'bg-line-strong'}`}
     />
@@ -181,8 +183,9 @@ export function JourneyBar({
   const go = useTransitionClick()
   const progress = missionProgress(status)
   const reached = progress?.reached ?? -1
+  const draw = useMotionClass('pw-journey-draw')
   return (
-    <nav aria-label="Mission sections" data-guide="journey" className="flex flex-col gap-2">
+    <nav aria-label="Mission sections" data-guide="journey" className={`flex flex-col gap-2 ${draw}`}>
       <ol className={`grid grid-cols-3 gap-x-3 gap-y-4 md:grid-cols-6 md:gap-x-4 ${progress?.now ? 'md:pt-6' : ''}`}>
         {SECTIONS.map((s, i) => {
           const st = byId.get(s.id)
@@ -247,8 +250,9 @@ export function StepCards({
   const go = useTransitionClick()
   const progress = missionProgress(status)
   const reached = progress?.reached ?? -1
+  const draw = useMotionClass('pw-journey-draw')
   return (
-    <nav aria-label="Mission sections" data-guide="journey" className="flex flex-col gap-4">
+    <nav aria-label="Mission sections" data-guide="journey" className={`flex flex-col gap-4 ${draw}`}>
       {progress && (
         <p className="flex items-center gap-2 text-small text-ink-2">
           <span aria-hidden="true" className="text-ink">

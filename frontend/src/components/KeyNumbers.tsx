@@ -227,7 +227,7 @@ export function KeyNumberTile({
             ) : (
               // Scaled, not resized: it moves on the compositor and shifts nothing.
               <div
-                className={`absolute inset-0 origin-left ${TONE_BAR[tone]} transition-transform duration-[var(--pw-dur-slow)] ease-[var(--ease-settle)]`}
+                className={`pw-bar-grow absolute inset-0 origin-left ${TONE_BAR[tone]} transition-transform duration-[var(--pw-dur-slow)] ease-[var(--ease-settle)]`}
                 style={{ transform: `scaleX(${clampPct(fraction ?? 0) / 100})` }}
               />
             )
