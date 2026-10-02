@@ -600,3 +600,59 @@ of which move; only the recorded screens change.
 - **Scroll-driven CSS is not everywhere yet.** Firefox ignores it, so every
   scrubbed effect also has a one-shot reveal and a complete resting state;
   nothing a reader needs depends on the scrub.
+
+---
+
+## Progress
+
+Built on branch `visual-refresh`, one commit per slice, decisions D1–D8
+taken as recommended.
+
+| Slice | State | Commit |
+|---|---|---|
+| 1. Tokens and parts | done | `3f29c87` |
+| 2. Shell | done | `944b00a` |
+| 3. The journey and a mission's home (and the Missions page) | done | `1a221f9` |
+| 4. Step pages | next | |
+| 5. Landing sites | to do | |
+| 6. Front page | to do | |
+| 7. Scroll | to do | |
+| 8. Three dimensions | to do | |
+| 9. Polish and performance | to do | |
+
+*What the first three slices added, for whoever picks up slice 4.*
+
+- **Classes** (`frontend/src/styles/globals.css`): `pw-card` is the tray
+  and lit core in one element, with `-quiet`, `-raised`, `-flush`,
+  `-alert`, `-sunlit` and `-link`; its tray is drawn in box-shadow, so
+  siblings need at least 12 px between them. `pw-on-raised` gives cards
+  inside a sheet their own context. `pw-rows` and `pw-row` make a group of
+  disclosures one list in one card. `pw-display`, `pw-figure` and
+  `pw-eyebrow` are the type roles; `pw-press` and `pw-orb` the pill
+  controls' press and arrow; `pw-island` the shell's glass. Key-number
+  tiles also carry `pw-tile`, which the unit and e2e tests select on.
+- **Parts** (`frontend/src/components/ui.tsx`): `Panel` takes `quiet`,
+  `flush`, `alert`; `Button` takes `arrow`; `Eyebrow` is new; every
+  `Segmented` is a pill with the chosen segment drawn inset in a full
+  48 px target.
+- **Shell** (`AppShell.tsx`): the island, the note pill, the landing-site
+  pages as a pill, the phone dock (still the fixed "Views" navigation with
+  two links), the guide as a card above the dock (`--pw-guide-h` includes
+  its 16 px gap).
+- **Journey** (`components/lifecycle/JourneyBar.tsx`): `missionProgress()`
+  maps a published status to how far the mission has got and its words;
+  `JourneyBar` (a step page) and `StepCards` (the home) draw the line from
+  per-step segments, each marked `data-journey-segment` and `--pw-i` for
+  slice 7's scrubbed draw.
+- **Not yet restyled**: the step pages' answer, footer and next-step card
+  (slice 4); the landing-site page headers, date bar, map, compare cards,
+  plan aside, skyline and report frame (slice 5); the front page (slice 6).
+
+*How each slice was checked.* `npm run check` and `npm test`; then the
+offline build (`npm run build:snapshot && npx vite preview`) driven by
+Playwright over 19 routes at 1440 and 375 px in both themes, with the same
+axe rules as `e2e/helpers.ts`, horizontal overflow and console errors, and
+the phone-dock geometry from `e2e/screens.spec.ts`. Every slice so far
+holds the baseline: no axe findings, no overflow, no console errors. The
+e2e suite itself needs the live API on :8000 and was not run; its four
+tile selectors were updated to `div.pw-tile`.
