@@ -21,6 +21,7 @@ import { TripLegendItems, TripStrip, TripTable, tripSpan, tripStretches } from '
 import { UncertaintyNote } from '../../components/States'
 import { Disclosure } from '../../components/ui'
 import { RadiationRow } from '../../components/lifecycle/Radiation'
+import { PathCard } from '../../scenes/PathCard'
 
 const TERMS = ['tripSunlight', 'tripHeard', 'tripShadow', 'tripUnheard']
 const HOUR = 3_600_000
@@ -109,6 +110,7 @@ function TripAnswer({ trip, meta, missionId }: { trip: TripDTO; meta: LifecycleM
         legend={<Legend items={TripLegendItems(trip)} />}
         table={<TripTable trip={trip} stretches={stretches} />}
       />
+      <PathCard trip={trip} missionId={missionId} />
       <Rows about={<><HowSure meta={meta} /><SourcesRow meta={meta} /></>}>
         <RadiationRow r={trip.radiation} note={trip.radiation_note} />
         <Disclosure title="Burns" meta={trip.burns.length ? `${trip.burns.length}` : 'none listed'}>

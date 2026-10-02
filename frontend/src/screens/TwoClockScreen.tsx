@@ -14,6 +14,7 @@ import { ProblemPanel, Skeleton, UncertaintyNote } from '../components/States'
 import { Button, Disclosure, Panel, PillArrow, pillClass } from '../components/ui'
 import { ANSWER_TEXT, Rows, UNDER_QUESTION } from '../components/lifecycle/Section'
 import { surfaceSentence } from '../lib/siteSentence'
+import { DomeCard } from '../scenes/DomeCard'
 import { useMotionClass } from '../hooks/useMotion'
 import { Icon } from '../components/Icon'
 import { WindowPicker } from '../components/WindowPicker'
@@ -103,6 +104,7 @@ export function TwoClockScreen() {
             <div />
           )}
 
+          <div className="flex min-w-0 flex-col gap-7 lg:gap-8">
           <Rows
             about={
               <Disclosure title="How sure is this?" meta="margins, sources, table">
@@ -118,6 +120,8 @@ export function TwoClockScreen() {
             </Disclosure>
             <ExplainPanel siteId={siteId} start={w.start} end={w.end} />
           </Rows>
+          {metrics && !view.error && <DomeCard metrics={metrics} cursorH={cursorH} />}
+          </div>
         </div>
 
         <nav aria-label="More about this site" className="flex flex-wrap items-center gap-3">

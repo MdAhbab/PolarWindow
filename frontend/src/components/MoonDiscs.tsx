@@ -1,11 +1,15 @@
+import { useId } from 'react'
 import type { Mission } from '../lib/api/adapters'
+import nearSide from '../assets/space/moon-near-side-640.jpg'
+import farSide from '../assets/space/moon-far-side-640.jpg'
 
 /**
  * The Moon view (§10.2): two orthographic discs centred on 0°E and 180°E.
  *
- * The discs are schematic and the positions are exact: a 30° graticule in
- * `line`, the limb in `line-strong`, the disc in `panel`, and each target a
- * diamond at its published coordinate. The discs are `role="img"` with a
+ * The picture is the real Moon: NASA's LRO wide-angle camera mosaic, drawn in
+ * the same orthographic view the pins use (`render_moon_discs.py`), so a pin
+ * sits on the place it names. Over it, a faint 30° graticule and each target
+ * as a diamond at its published coordinate. The discs are `role="img"` with a
  * sentence naming what is on each; the mission list is the interaction, so
  * nothing here duplicates it as a hidden control.
  */
@@ -33,7 +37,8 @@ function Graticule() {
   const parallels = [-60, -30, 0, 30, 60]
   const meridians = [30, 60]
   return (
-    <g fill="none" stroke="var(--color-line)" strokeWidth="1">
+    // White at low strength: it reads over the grey of the Moon in either theme.
+    <g fill="none" stroke="#fff" strokeOpacity="0.16" strokeWidth="0.75">
       {parallels.map((lat) => {
         const y = C - R * Math.sin(lat * DEG)
         const half = R * Math.cos(lat * DEG)
@@ -49,6 +54,7 @@ function Graticule() {
 
 function Disc({
   title,
+  image,
   lon0,
   missions,
   highlight,
@@ -56,12 +62,15 @@ function Disc({
   onPole,
 }: {
   title: string
+  /** The hemisphere's picture: square, the disc touching each edge. */
+  image: string
   lon0: number
   missions: Mission[]
   highlight: Set<string>
   caption?: string | null
   onPole?: () => void
 }) {
+  const clip = useId()
   const placed: Placed[] = missions.flatMap((m) => {
     if (!m.target) return []
     const p = orthographic(m.target.latDeg, m.target.lonDeg, lon0)
@@ -72,15 +81,22 @@ function Disc({
     names.length
       ? `${names.length} mission target${names.length === 1 ? '' : 's'} shown: ${names.join(', ')}.`
       : 'No mission target in this view.'
-  } Schematic globe; positions from published coordinates.`
+  } The Moon as NASA’s LRO camera saw it; positions from published coordinates.`
 
   return (
     <figure className="flex min-w-0 flex-col items-center gap-2">
-      <div className="relative w-full max-w-[260px]">
+      <div className="relative w-full max-w-[320px]">
         <svg viewBox={`0 0 ${VIEW} ${VIEW}`} className="block w-full" role="img" aria-label={summary}>
-          <circle cx={C} cy={C} r={R} fill="var(--color-panel)" />
+          <defs>
+            <clipPath id={clip}>
+              <circle cx={C} cy={C} r={R} />
+            </clipPath>
+          </defs>
+          {/* Grey under the picture until it has loaded. */}
+          <circle cx={C} cy={C} r={R} fill="#3a3a3a" />
+          <image href={image} x={C - R} y={C - R} width={2 * R} height={2 * R} clipPath={`url(#${clip})`} preserveAspectRatio="none" />
           <Graticule />
-          <circle cx={C} cy={C} r={R} fill="none" stroke="var(--color-line-strong)" strokeWidth="1.5" />
+          <circle cx={C} cy={C} r={R} fill="none" stroke="var(--color-line-strong)" strokeWidth="1" />
           {placed.map(({ mission: m, x, y }) => {
             const on = highlight.has(m.id)
             const dashed = m.target?.coordinateKind !== 'actual_landing'
@@ -92,8 +108,19 @@ function Disc({
                   width="7"
                   height="7"
                   transform="rotate(45)"
-                  fill={on ? 'var(--color-ink)' : 'var(--color-panel)'}
-                  stroke="var(--color-ink)"
+                  fill="none"
+                  stroke="#0b0d10"
+                  strokeOpacity="0.75"
+                  strokeWidth="3.4"
+                />
+                <rect
+                  x="-3.5"
+                  y="-3.5"
+                  width="7"
+                  height="7"
+                  transform="rotate(45)"
+                  fill={on ? '#fff' : '#0b0d10'}
+                  stroke="#fff"
                   strokeWidth="1.4"
                   strokeDasharray={dashed ? '2 1.6' : undefined}
                 />
@@ -105,9 +132,10 @@ function Disc({
                     fontFamily="var(--font-sans)"
                     fontSize="10"
                     fontWeight="600"
-                    fill="var(--color-ink)"
+                    fill="#fff"
                     paintOrder="stroke"
-                    stroke="var(--color-panel)"
+                    stroke="#0b0d10"
+                    strokeOpacity="0.85"
                     strokeWidth="3"
                   >
                     {m.name}
@@ -154,9 +182,10 @@ export function MoonDiscs({
   return (
     <div className="flex flex-col gap-2">
       <div className="grid grid-cols-2 gap-3">
-        <Disc title="Near side (faces Earth)" lon0={0} missions={missions} highlight={highlight} onPole={onPole} />
+        <Disc title="Near side (faces Earth)" image={nearSide} lon0={0} missions={missions} highlight={highlight} onPole={onPole} />
         <Disc
           title="Far side"
+          image={farSide}
           lon0={180}
           missions={missions}
           highlight={highlight}
@@ -164,7 +193,9 @@ export function MoonDiscs({
           onPole={onPole}
         />
       </div>
-      <p className="text-center text-caption text-ink-3">Schematic globe; positions from published coordinates.</p>
+      <p className="text-center text-caption text-ink-3">
+        The Moon as NASA’s LRO camera saw it; positions from published coordinates.
+      </p>
     </div>
   )
 }

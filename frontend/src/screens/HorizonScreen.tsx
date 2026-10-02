@@ -1,4 +1,5 @@
 import { PageHeader } from '../components/Page'
+import { DomeCard } from '../scenes/DomeCard'
 import { useShallow } from 'zustand/react/shallow'
 import { useMission } from '../lib/store'
 import { useFocusedMetrics, useFocusedView } from '../lib/mission'
@@ -67,7 +68,8 @@ export function HorizonScreen() {
               No terrain data outside 80°S, so this skyline is a flat horizon, not terrain. Real hills could block more.
             </UncertaintyNote>
           )}
-          {/* The page's hero: the skyline all around the site, with the Sun's path over it. */}
+          {/* The page's hero: standing at the site, then the same skyline flat, by compass direction. */}
+          <DomeCard metrics={metrics} cursorH={cursorH} heading="h2" />
           <Panel as="section" className="flex min-w-0 flex-col gap-3 p-4 sm:p-5">
             <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
               <h2 className="text-title leading-6 font-semibold tracking-title text-ink">All around the site, by compass direction</h2>

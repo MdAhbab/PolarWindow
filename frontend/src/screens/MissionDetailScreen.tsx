@@ -34,6 +34,8 @@ import { ProblemPanel, Skeleton, UncertaintyNote } from '../components/States'
 import { Button, Disclosure, Panel, RowGroup, SectionLabel, Unconfirmed } from '../components/ui'
 import { PolarMap, POLAR_MAP_EDGE_LAT, type MissionPin } from '../components/PolarMap'
 import { MoonDiscs } from '../components/MoonDiscs'
+import { SceneFrame } from '../scenes/SceneFrame'
+import { hillshadeTile } from '../scenes/tiles'
 
 /**
  * A mission's record (§10.3), fully sourced: how it went, its dates, and its
@@ -114,6 +116,8 @@ function TargetCard({ mission: m, asOf }: { mission: MissionDetail; asOf: string
   const t = m.target
   const u = <Unconfirmed asOf={asOf} />
   const polar = t !== null && t.latDeg <= POLAR_MAP_EDGE_LAT
+  const theme = useStore((s) => s.theme)
+  const globe = useMemo(() => ({ latDeg: t?.latDeg ?? 0, lonDeg: t?.lonDeg ?? 0, tileUrl: hillshadeTile }), [t?.latDeg, t?.lonDeg])
   const pin: MissionPin[] = t
     ? [
         {
@@ -132,14 +136,24 @@ function TargetCard({ mission: m, asOf }: { mission: MissionDetail; asOf: string
         <h3 className="pw-eyebrow">Target</h3>
         <span className="text-small text-ink-2">{t?.name ?? m.targetName ?? 'not published'}</span>
       </div>
-      {t &&
-        (polar ? (
-          <div className="mx-auto w-full max-w-[420px]">
-            <PolarMap sun={null} selectedSiteId={m.siteId ?? ''} size={420} missionPins={pin} siteMarks="dots" />
-          </div>
-        ) : (
-          <MoonDiscs missions={[m]} highlight={new Set([m.id])} earthNeverRisesOnFarSide={false} />
-        ))}
+      {t && (
+        // The Moon turned to the spot, over the flat drawing it falls back to.
+        <SceneFrame
+          sceneKey={`${m.id}|${theme}`}
+          make={(canvas, props, opts) => import('../scenes/targetGlobe').then((s) => s.createTargetGlobe(canvas, props, opts))}
+          props={globe}
+          caption="The Moon turned to the landing spot: NASA’s LRO camera mosaic, and inside the circle at 80°S the LOLA relief. The light is for the picture; the Surface step has the Sun for these dates."
+          fallback={
+            polar ? (
+              <div className="mx-auto w-full max-w-[420px]">
+                <PolarMap sun={null} selectedSiteId={m.siteId ?? ''} size={420} missionPins={pin} siteMarks="dots" />
+              </div>
+            ) : (
+              <MoonDiscs missions={[m]} highlight={new Set([m.id])} earthNeverRisesOnFarSide={false} />
+            )
+          }
+        />
+      )}
       {t ? (
         <dl className="grid grid-cols-1 gap-x-4 border-t border-line pt-4 text-body sm:grid-cols-[max-content_1fr] sm:gap-y-2">
           <Row term="Coordinates">
