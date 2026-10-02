@@ -98,7 +98,7 @@ function AnswerDock({ question, within }: { question: string; within: RefObject<
   if (!answer) return null
   return createPortal(
     <div aria-hidden="true" className={`pw-dock ${docked ? 'is-docked' : ''}`}>
-      <div className="pw-island mx-auto flex max-w-3xl flex-col gap-0.5 rounded-[20px] px-5 py-2.5">
+      <div className="pw-island mx-auto flex max-w-3xl flex-col gap-0.5 rounded-sheet px-5 py-2.5">
         <span className="pw-eyebrow truncate">{question}</span>
         <span className="line-clamp-2 text-body leading-5 font-semibold text-ink sm:line-clamp-1 sm:text-control">{answer}</span>
       </div>

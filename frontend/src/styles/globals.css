@@ -131,14 +131,17 @@
   --spacing-block: 40px; /* between a page's major parts */
 
   /* Radius (decisions D1, D2): 0 on everything that draws data (bars, arcs,
-     hatches, tables, pins, rings, the map); 10 px on fields and small
-     controls; 12 px on a card's core (its tray adds 5 px around it); 20 px on
-     sheets; pills on buttons, chips, segmented controls and the shell. */
+     hatches, tables, pins, rings, the map, a row in a list); 12 px on fields
+     and small controls; 16 px on a card's core (its tray adds 5 px around it,
+     so the tray's own curve is 21 px and runs parallel); 24 px on sheets and
+     on a floating box of more than one line; pills on buttons, chips,
+     segmented controls and the shell. A box inside another takes the outer
+     radius less the space between them, never more. */
   --radius-*: initial;
   --radius-none: 0px;
-  --radius-control: 10px;
-  --radius-card: 12px;
-  --radius-sheet: 20px;
+  --radius-control: 12px;
+  --radius-card: 16px;
+  --radius-sheet: 24px;
   --radius-pill: 999px;
 
   /* Motion: two curves and six durations. Every use also has a reduced
@@ -327,7 +330,7 @@
     color: inherit;
   }
 
-  /* Radius 0 on every data surface; 10 px on a control unless it is a pill. */
+  /* Radius 0 on every data surface; 12 px on a control unless it is a pill. */
   button {
     border-radius: var(--radius-control);
   }
@@ -367,7 +370,7 @@
 
 @layer components {
   /* ---- The card: a tray holding a lit core -----------------------------
-     One element. The core is the element itself (the panel, 12 px radius, a
+     One element. The core is the element itself (the panel, 16 px radius, a
      line of light along its top, a faint edge); the tray is drawn around it
      in box-shadow (4 px of the tray colour and a hairline), so a card is a
      part, not an outline, and nothing about the layout changes. Siblings need
@@ -664,8 +667,8 @@
   /* ---- A list to choose from (Select) -------------------------------------
      The page draws its own, so it is the same on every operating system and
      follows the theme. It sits in the browser's top layer, placed by the
-     component against its button. Its corners are the options' 10 px plus the
-     6 px around them, so the two curves run parallel. */
+     component against its button. Its corners are a card's; the options
+     inside sit 6 px in, so they take 6 px less and the two curves run parallel. */
   .pw-menu {
     position: fixed;
     inset: auto;
@@ -677,7 +680,7 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     border: 1px solid var(--color-line-strong);
-    border-radius: calc(var(--radius-control) + 6px);
+    border-radius: var(--radius-card);
     background: var(--color-raised);
     color: var(--color-ink);
     box-shadow: var(--shadow-overlay);
@@ -689,7 +692,7 @@
     gap: 12px;
     min-height: 44px;
     padding: 8px 12px;
-    border-radius: var(--radius-control);
+    border-radius: calc(var(--radius-card) - 6px);
     font-size: var(--text-body);
     line-height: 20px;
     color: var(--color-ink-2);

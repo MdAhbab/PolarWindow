@@ -118,7 +118,7 @@ function RunTable({ runs, focusId }: { runs: AgentRunDTO[]; focusId: string | nu
                       aria-expanded={isOpen}
                       aria-controls={`run-${r.id}`}
                       onClick={() => toggle(r.id)}
-                      className="-mx-2 flex min-h-11 items-start gap-2 px-2 py-1 text-left text-small font-semibold text-ink hover:bg-inset"
+                      className="-mx-2 flex min-h-11 items-start gap-2 rounded-control px-2 py-1 text-left text-small font-semibold text-ink hover:bg-inset"
                     >
                       <span aria-hidden="true" className={`text-ink-3 ${isOpen ? 'rotate-90' : ''}`}>
                         ›

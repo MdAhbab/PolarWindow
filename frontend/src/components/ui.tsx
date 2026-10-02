@@ -440,7 +440,8 @@ export function Segmented<T extends string>({
   return (
     // Scrolls sideways rather than clipping a segment at 320 px (WCAG 1.4.10).
     // Each segment is a full 48 px target; the chosen one is drawn as a pill
-    // inset inside it, so the target never shrinks to the drawing.
+    // inset inside it (a clear 4 px border, the fill kept inside it), so the
+    // target never shrinks to the drawing.
     <div
       role="group"
       aria-label={label}
@@ -454,10 +455,8 @@ export function Segmented<T extends string>({
             type="button"
             aria-pressed={on}
             onClick={() => onChange(o.value)}
-            className={`pw-press h-[46px] shrink-0 rounded-pill px-4 text-small font-semibold whitespace-nowrap first:pl-5 last:pr-5 ${
-              on
-                ? 'bg-ink text-canvas shadow-[inset_0_0_0_4px_var(--color-tray)]'
-                : 'text-ink-2 hover:text-ink'
+            className={`pw-press h-[46px] shrink-0 rounded-pill border-4 border-transparent bg-clip-padding px-3 text-small font-semibold whitespace-nowrap first:pl-4 last:pr-4 ${
+              on ? 'bg-ink text-canvas' : 'text-ink-2 hover:text-ink'
             }`}
           >
             {o.label}

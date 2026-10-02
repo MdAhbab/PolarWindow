@@ -303,7 +303,7 @@ export function ConnectionBanner({
   return (
     // One quiet note under the island, in the page's flow: it scrolls away.
     <div className="pw-page flex justify-center pt-3">
-    <div className="flex w-fit max-w-full flex-wrap items-center justify-center gap-x-3 gap-y-1.5 rounded-[22px] border border-line bg-tray py-1.5 pr-4 pl-1.5 text-center text-caption leading-caption text-ink-2 sm:text-left sm:text-small sm:leading-5">
+    <div className="flex w-fit max-w-full flex-wrap items-center justify-center gap-x-3 gap-y-1.5 rounded-sheet border border-line bg-tray py-1.5 pr-4 pl-1.5 text-center text-caption leading-caption text-ink-2 sm:text-left sm:text-small sm:leading-5">
       {offline && (
         <span className="flex items-center gap-2 pl-2.5">
           <Icon name="offline" size={16} strokeWidth={1.8} className="shrink-0 text-ink" />

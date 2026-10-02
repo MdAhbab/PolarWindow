@@ -220,9 +220,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                 to={n.to}
                 onClick={go(n.to)}
                 className={({ isActive }) =>
-                  `pw-press inline-flex h-[46px] min-w-0 grow basis-0 items-center justify-center rounded-pill px-4 text-body whitespace-nowrap no-underline sm:grow-0 sm:basis-auto sm:px-5 ${
+                  // The chosen page is a pill set 4 px inside its target: a clear border with the fill kept inside it.
+                  `pw-press inline-flex h-[46px] min-w-0 grow basis-0 items-center justify-center rounded-pill border-4 border-transparent bg-clip-padding px-3 text-body whitespace-nowrap no-underline sm:grow-0 sm:basis-auto sm:px-4 ${
                     isActive
-                      ? 'bg-ink font-semibold text-canvas shadow-[inset_0_0_0_4px_var(--color-tray)]'
+                      ? 'bg-ink font-semibold text-canvas'
                       : 'font-medium text-ink-2 hover:text-ink'
                   }`
                 }

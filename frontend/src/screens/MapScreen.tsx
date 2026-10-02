@@ -202,7 +202,7 @@ export function MapScreen() {
                     type="button"
                     onClick={() => setSite(s.id)}
                     aria-current={active ? 'true' : undefined}
-                    className={`flex flex-col gap-0.5 border-b border-line px-4 py-2.5 text-left last:border-b-0 ${
+                    className={`flex flex-col gap-0.5 rounded-none border-b border-line px-4 py-2.5 text-left last:border-b-0 ${
                       active ? 'bg-inset shadow-[inset_3px_0_0_var(--color-ink)]' : 'hover:bg-inset'
                     }`}
                   >
