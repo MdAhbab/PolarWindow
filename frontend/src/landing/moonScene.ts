@@ -1,5 +1,5 @@
 import { createSky, earthSurface, loadTexture, moonSurface, SURFACE_TURN } from './space'
-import { atmosphere, cloudsUrl, loadGround, regolith } from './earthrise'
+import { atmosphere, cloudsUrl, loadGround, type Ground } from './earthrise'
 import {
   AmbientLight,
   CanvasTexture,
@@ -7,6 +7,7 @@ import {
   DirectionalLight,
   Group,
   type Material,
+  Matrix4,
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
@@ -165,6 +166,8 @@ const onMoon = (latDeg: number, lonDeg: number) =>
     Math.sin(latDeg * DEG),
     Math.cos(latDeg * DEG) * Math.cos(lonDeg * DEG),
   )
+/** The sky's own lens, degrees top to bottom. */
+const SKY_FOV = 72
 const smooth = (a: number, b: number, x: number) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)))
   return t * t * (3 - 2 * t)
@@ -201,11 +204,13 @@ export function createMoonScene(
   // The relief glows faintly on its own, so the real terrain stays readable on
   // the night side too; the Sun adds its light on the day side.
   const capMaterial = new MeshStandardMaterial({
+    // The relief map is a neutral grey; the photograph around it is warmer and a little lighter.
+    color: new Color(1.2, 1.15, 1.08),
     roughness: 1,
     metalness: 0,
     transparent: true,
     opacity: 0,
-    emissive: new Color(1, 1, 1),
+    emissive: new Color(1, 0.96, 0.9),
     emissiveIntensity: 0.28,
   })
   const cap = new Mesh(capGeometry(1.0015), capMaterial)
@@ -260,10 +265,10 @@ export function createMoonScene(
   const toEarth = new Vector3(0, 0, 1)
   const fwd = toEarth.clone().sub(S.clone().multiplyScalar(toEarth.dot(S))).normalize()
   const right = fwd.clone().cross(S).normalize()
-  let groundMesh: Mesh | null = null
-  let groundMat: MeshBasicMaterial | null = null
-  let grain: CanvasTexture | null = null
+  let ground: Ground | null = null
   let eyeR = 1
+  /** The eye's height over the ground, in Moon radii: two metres. */
+  const EYE_UP = 0.002 / R_KM
   let sunAzGround = 0
   let sunElGround = 1.4
   const bigEarthMat = new MeshStandardMaterial({ color: 0x2a4d7a, roughness: 0.9, metalness: 0 })
@@ -281,7 +286,8 @@ export function createMoonScene(
     clouds.rotation.copy(bigEarth.rotation)
     air.position.copy(bigEarth.position)
     moon.add(bigEarth, clouds, air)
-    earthSurface(bigEarthMat, redraw)
+    // Earth from the Moon is far brighter than the Moon's own ground; a gain keeps it from looking dim beside it.
+    earthSurface(bigEarthMat, redraw, 1.7)
     void loadTexture(cloudsUrl).then((t) => {
       cloudMat.alphaMap = t
       cloudMat.opacity = 0.95
@@ -289,7 +295,8 @@ export function createMoonScene(
       redraw()
     })
     void loadGround().then((g) => {
-      if (disposed) return g.geometry.dispose()
+      if (disposed) return g.dispose()
+      ground = g
       // The ground's own frame (eye at the origin, Earth along -z, up +y), in km, onto the globe.
       const surfaceKm = R_KM + 1.9575 + 0.002 // Connecting Ridge stands 1,957 m above the datum; the eye 2 m over it
       eyeR = surfaceKm / R_KM
@@ -299,11 +306,8 @@ export function createMoonScene(
       basis.matrix.makeBasis(right, S, fwd.clone().negate())
       basis.matrix.scale(new Vector3(1 / R_KM, 1 / R_KM, 1 / R_KM))
       basis.matrix.setPosition(S.clone().multiplyScalar(eyeR))
-      grain = regolith()
-      // Shaded already (earthrise.ts); the scene's lights would shade it twice.
-      groundMat = new MeshBasicMaterial({ color: 0xc9c6c0, vertexColors: true, map: grain, transparent: true })
-      groundMesh = new Mesh(g.geometry, groundMat)
-      basis.add(groundMesh)
+      // Shaded by its own material (earthrise.ts), for the Sun its shadows were worked out for.
+      basis.add(g.mesh)
       moon.add(basis)
       sunAzGround = g.sunRelAzDeg
       sunElGround = g.sunElDeg
@@ -318,13 +322,18 @@ export function createMoonScene(
   }
 
   // The night sky. Dark theme: always, behind the Moon. Light theme: while on
-  // the ground and on the way out, then it gives way to the page.
-  const sky = dark || withGround ? createSky(60, redraw) : null
+  // the ground and on the way out, then it gives way to the page. On the
+  // ground the galaxy's core stands up and to the left of Earth.
+  const sky = dark || withGround ? createSky(60, redraw, withGround ? [0.2, 0.3] : [-0.2, 0.16]) : null
+  // The sky as it stands over the site, in the Moon's own axes: straight ahead
+  // of it is the horizon under Earth. Earth and the stars keep their places
+  // against each other, whatever the camera does.
+  const skyAtSite = new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(right, S, fwd.clone().negate()))
   // The sky is drawn through its own, wider lens first, then the Moon over it:
   // a wide-angle sky shows more of the galaxy, at about the photograph's own
   // sharpness, where the Moon's narrow lens would blow it up.
   const skyScene = new Scene()
-  const skyCam = new PerspectiveCamera(72, 1, 0.1, 200)
+  const skyCam = new PerspectiveCamera(SKY_FOV, 1, 0.1, 200)
   if (sky) skyScene.add(sky.group)
   renderer.autoClear = false
 
@@ -377,8 +386,11 @@ export function createMoonScene(
       const q = moon.getWorldQuaternion(new Quaternion())
       const up = S.clone().applyQuaternion(q)
       const eye = up.clone().multiplyScalar(eyeR)
-      // On the ground: look toward Earth, a little left so Earth stands right of the words.
-      const yaw = portrait ? 0 : -6 * DEG
+      // On the ground: look toward Earth, a little left of it, so Earth stands
+      // right of the words, 62% of the way across a wide screen and in the
+      // middle of a tall one.
+      const across = 0.5 + 0.12 * smooth(1, 1.3, camera.aspect)
+      const yaw = -Math.atan((2 * across - 1) * Math.tan(5.5 * DEG) * camera.aspect)
       const look = fwd
         .clone()
         .multiplyScalar(Math.cos(yaw))
@@ -396,7 +408,8 @@ export function createMoonScene(
       camera.lookAt(groundTarget.lerp(new Vector3(0, 0, 0), smooth(0.04, 0.55, u)))
       const fov = 11 + (35 - 11) * smooth(0, 0.75, u)
       camera.fov = portrait ? fov * (1.9 - 0.9 * smooth(0, 0.75, u)) : fov
-      camera.near = Math.max(5e-7, (r - 1) * 0.2)
+      // As near as a fifth of the height over the ground, so the soil at the viewer's feet is never cut away.
+      camera.near = Math.max(5e-7, (r - eyeR + EYE_UP) * 0.2)
       camera.updateProjectionMatrix()
     } else {
       if (withGround && camera.fov !== 35) {
@@ -410,13 +423,13 @@ export function createMoonScene(
     }
     globe.scale.setScalar(1 - (8 / R_KM) * g)
     cap.scale.setScalar(1 - (8 / R_KM) * g)
-    if (groundMat && groundMesh) {
-      // The ground hands over to the globe's own relief as the viewer climbs.
-      groundMat.opacity = smooth(0.86, 0.98, g)
-      groundMesh.visible = groundMat.opacity > 0.01
-    }
+    // The ground hands over to the globe's own relief as the viewer climbs.
+    ground?.setOpacity(smooth(0.86, 0.98, g))
     bigEarth.visible = clouds.visible = air.visible = withGround
-    ambient.intensity = dark ? 0.12 : 0.06 + 0.49 * smooth(0.4, 1, u)
+    // By day the Moon is pale: on the light page its night side is lifted well
+    // clear of black. In the black sky of the flight it keeps its contrast.
+    const space = withGround ? (state.space ?? 0) : dark ? 1 : 0
+    ambient.intensity = dark ? 0.12 : 0.1 * space + 2.6 * (1 - space)
 
     // The Sun: on the ground, where the ground's shadows were worked out for
     // (low, just above the horizon); out at the Moon, where the scroll puts it.
@@ -433,15 +446,24 @@ export function createMoonScene(
     } else {
       sun.position.set(Math.sin(state.sunAz) * 10, 0.3, Math.cos(state.sunAz) * 10)
     }
-    // The sky turns a little with the Moon, for depth; it is far away. On the
-    // ground it is turned so the Milky Way climbs the sky behind Earth.
-    if (sky) {
+    if (sky && withGround) {
+      // Earth and the stars are both too far for the camera's own movement to
+      // shift one against the other, so the sky is fixed to Earth: whatever
+      // the camera does, the stars around Earth move across the screen with
+      // it. The sky is drawn through a wider lens than the ground (below), so
+      // it is turned by as much more as that lens is wider, which keeps the
+      // star behind Earth behind Earth.
+      const qMoon = moon.getWorldQuaternion(new Quaternion())
+      const earthWorld = bigEarth.getWorldPosition(new Vector3())
+      const seen = earthWorld.clone().sub(camera.position).normalize().applyQuaternion(camera.quaternion.clone().invert())
+      const wider = Math.tan((SKY_FOV / 2) * DEG) / Math.tan((camera.fov / 2) * DEG)
+      const drawn = new Vector3(seen.x * wider, seen.y * wider, seen.z).normalize().applyQuaternion(camera.quaternion)
+      const turn = new Quaternion().setFromUnitVectors(earthWorld.normalize(), drawn)
+      sky.group.quaternion.copy(turn).multiply(qMoon).multiply(skyAtSite)
+      sky.setOpacity(state.space ?? 0)
+    } else if (sky) {
+      // The sky turns a little with the Moon, for depth; it is far away.
       sky.group.rotation.set(state.tilt * 0.15, (state.spin + spinExtra) * 0.12 + state.sunAz * 0.015, 0)
-      if (g > 0) {
-        const behindEarth = new Quaternion().setFromUnitVectors(new Vector3(0, 0, -1), camera.getWorldDirection(new Vector3()))
-        sky.group.quaternion.slerp(behindEarth, smooth(0.2, 0.9, g))
-      }
-      sky.setOpacity(withGround ? (state.space ?? 0) : 1)
     }
     sunSoft.position.set(Math.sin(state.sunAz - 0.38) * 10, 0.3, Math.cos(state.sunAz - 0.38) * 10)
     earthMat.opacity = state.earth
@@ -504,9 +526,7 @@ export function createMoonScene(
       cloudMat.dispose()
       air.geometry.dispose()
       ;(air.material as Material).dispose()
-      groundMesh?.geometry.dispose()
-      groundMat?.dispose()
-      grain?.dispose()
+      ground?.dispose()
       sky?.dispose()
       renderer.dispose()
     },

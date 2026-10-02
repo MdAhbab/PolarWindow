@@ -532,15 +532,46 @@
     }
   }
 
-  /* The front page's night sky, shaded behind the text column from lg (below,
-     the whole picture is dimmed instead). Dark theme only: the light theme
-     has no sky. */
+  /* The front page's picture (LandingScreen). `--pw-space` is 1 while the
+     light theme's first picture has its black sky and 0 once the page is the
+     page; the dark theme never sets it.
+     Below lg the Moon sits behind the words, so it is dimmed; from lg it is
+     beside them. On the light page the Moon is paler still, as it is by day,
+     so dark ink reads beside it and over it. */
+  .pw-landing-canvas {
+    opacity: 0.4;
+  }
+  :root[data-theme='light'] .pw-landing-canvas {
+    opacity: calc(0.3 + 0.7 * var(--pw-space, 0));
+  }
+  @media (min-width: 64rem) {
+    .pw-landing-canvas {
+      opacity: 1;
+    }
+    :root[data-theme='light'] .pw-landing-canvas {
+      opacity: calc(0.7 + 0.3 * var(--pw-space, 0));
+    }
+  }
+  .pw-landing-space {
+    background: #000;
+    opacity: var(--pw-space, 0);
+  }
+  /* The light theme's first picture, shaded behind its words. `--pw-hero` runs
+     from 1 to 0 as those words scroll out (LandingScreen). */
+  .pw-ground-shade {
+    opacity: var(--pw-hero, 1);
+    background: linear-gradient(90deg, rgb(0 0 0 / 0.72) 0%, rgb(0 0 0 / 0.3) 46%, transparent 78%);
+  }
+  /* The picture shaded behind the text column from lg, in the page's own
+     ground: dark over the night sky, paper over the daytime Moon. Not while
+     the light theme's first picture is up; that has its own shade. */
   .pw-sky-shade {
     display: none;
   }
   @media (min-width: 64rem) {
-    :root:not([data-theme='light']) .pw-sky-shade {
+    .pw-sky-shade {
       display: block;
+      opacity: calc(1 - var(--pw-space, 0));
       background: linear-gradient(
         90deg,
         color-mix(in srgb, var(--color-canvas) 88%, transparent) 0%,

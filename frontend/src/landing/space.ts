@@ -80,11 +80,11 @@ export function moonSurface(material: MeshStandardMaterial, onReady: () => void)
   })
 }
 
-/** Earth's real surface, the same way. */
-export function earthSurface(material: MeshStandardMaterial | MeshBasicMaterial, onReady: () => void) {
+/** Earth's real surface, the same way; `gain` brightens it. */
+export function earthSurface(material: MeshStandardMaterial | MeshBasicMaterial, onReady: () => void, gain = 1) {
   void load(earthMapUrl).then((t) => {
     material.map = t
-    material.color.setRGB(1, 1, 1)
+    material.color.setRGB(gain, gain, gain)
     material.needsUpdate = true
     onReady()
   })
@@ -110,6 +110,8 @@ function rng(seed: number) {
 export function createSky(
   radius = 60,
   onReady?: () => void,
+  /** Where the galaxy's core stands from straight ahead, radians: up, and to the left. */
+  aimAt: [number, number] = [-0.2, 0.16],
 ): { group: Group; setOpacity: (o: number) => void; dispose: () => void } {
   const group = new Group()
   const disposables: { dispose: () => void }[] = []
@@ -121,9 +123,9 @@ export function createSky(
   // galactic centre (the map's centre, now on -x) to -z and tip the band up to the right.
   pano.scale.x = -1
   pano.rotation.set(0, -Math.PI / 2, BAND, 'ZYX')
-  // Then the core a little down and left of centre, so it glows just past the Moon's limb.
+  // Then the core off centre: by default a little down and left, so it glows just past the Moon's limb.
   const aim = new Group()
-  aim.rotation.set(-0.2, 0.16, 0)
+  aim.rotation.set(aimAt[0], aimAt[1], 0)
   aim.add(pano)
   group.add(aim)
   disposables.push(panoGeo, panoMat)

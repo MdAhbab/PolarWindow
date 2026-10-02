@@ -6,23 +6,30 @@ Connecting Ridge (candidate site B, high and unusually open, in contact with
 Earth about 60% of the time), sampled in a fan in front of a viewer standing
 2 m above the ground and looking toward Earth, with the Moon's curvature taken
 off each sample so the horizon falls where it falls. Each sample is read from
-the heights averaged to its own spacing, so far terrain does not alias. Each sample also carries whether a low Sun reaches it, worked
-out by marching toward the Sun over the same heights, so the shadows are the
-terrain's own.
+the heights averaged to its own spacing, so far terrain does not alias. Each
+sample also carries whether a low Sun reaches it, worked out by marching
+toward the Sun over the same heights, so the shadows are the terrain's own.
 
 Earth is drawn at the elevation it stands at from the site on average (its
 direction is the sub-Earth point, 0 deg N 0 deg E; libration moves it by a few
-degrees, which the page does not claim to show). The Sun's direction is chosen
-for the picture: low from the right and a little ahead, so the ground falling
-away toward Earth is lit and Earth is half lit, as in the Apollo photographs.
+degrees, which the page does not claim to show). The Sun is placed for the
+picture: from the right and a little ahead, so the ground falling away toward
+Earth is lit and Earth is half lit, as in the Apollo photographs; and ten
+degrees up, which is higher than it ever stands at this site (it stays within
+about two degrees of the horizon there). At its true height nearly everything
+in view is in shadow, and the picture would be of the dark; at ten degrees a
+crater shows its bowl, lit on one wall and shaded on the other.
 
 Output (little-endian), read by ``frontend/src/landing/earthrise.ts``:
 
 * header, 8 x float32: azimuth columns, range rows, nearest and farthest range
   (km), half the fan's width (deg), Earth's elevation (deg), the Sun's azimuth
   from the view's centre (deg, + to the right, - to the left) and elevation (deg);
-* heights, rows x columns int16, half metres above the viewer's eye (negative
-  below), the curvature already taken off;
+* heights, rows x columns int16, above the viewer's eye (negative below), the
+  curvature already taken off, in steps that grow with the range ``r``:
+  ``0.005 m + r * 1.25e-4`` (half a centimetre at the viewer's feet, where a
+  coarser step would terrace the gentle ground and the low Sun would shade
+  every terrace; 20 m at 160 km, well under a pixel);
 * light, rows x columns uint8, 0 in the terrain's shadow to 255 in sunlight.
 
 Run: ``uv run python -m app.data.render_earthrise`` (writes the frontend asset).
@@ -49,9 +56,14 @@ R0_KM = 0.015
 R1_KM = 160.0
 HALF_DEG = 45.0
 SUN_REL_AZ_DEG = 75.0
-SUN_EL_DEG = 1.9
+SUN_EL_DEG = 10.0
+#: The height step: ``STEP_M + range_m * STEP_PER_M`` (see the module docstring).
+STEP_M = 0.005
+STEP_PER_M = 1.25e-4
 
-OUT = Path(__file__).resolve().parents[3] / "frontend" / "src" / "assets" / "space" / "earthrise.bin"
+OUT = (
+    Path(__file__).resolve().parents[3] / "frontend" / "src" / "assets" / "space" / "earthrise.bin"
+)
 
 
 def _unit(lat_deg: float, lon_deg: float) -> np.ndarray:
@@ -81,7 +93,12 @@ def pyramid(dem: DemTile, levels: int = 5) -> list[DemTile]:
     for _ in range(levels - 1):
         t = out[-1]
         h, w = t.heights.shape
-        z = t.heights[: h - h % 2, : w - w % 2].reshape(h // 2, 2, w // 2, 2).mean(axis=(1, 3)).astype(np.float32)
+        z = (
+            t.heights[: h - h % 2, : w - w % 2]
+            .reshape(h // 2, 2, w // 2, 2)
+            .mean(axis=(1, 3))
+            .astype(np.float32)
+        )
         # The averaged post sits at the centre of the four it replaces.
         out.append(
             DemTile(
@@ -96,9 +113,13 @@ def pyramid(dem: DemTile, levels: int = 5) -> list[DemTile]:
     return out
 
 
-def sample(levels: list[DemTile], x: np.ndarray, y: np.ndarray, spacing_m: np.ndarray) -> np.ndarray:
+def sample(
+    levels: list[DemTile], x: np.ndarray, y: np.ndarray, spacing_m: np.ndarray
+) -> np.ndarray:
     """Heights at (x, y), each from the level whose post spacing matches its sample spacing."""
-    pick = np.clip(np.floor(np.log2(np.maximum(spacing_m, 1.0) / levels[0].scale_m)), 0, len(levels) - 1).astype(int)
+    pick = np.clip(
+        np.floor(np.log2(np.maximum(spacing_m, 1.0) / levels[0].scale_m)), 0, len(levels) - 1
+    ).astype(int)
     out = np.full(x.shape, np.nan)
     for i, t in enumerate(levels):
         m = pick == i
@@ -145,20 +166,35 @@ def render(out: Path = OUT) -> None:
     # an edge tens of metres soft: two passes of a 3 x 3 mean give it that.
     for _ in range(2):
         p = np.pad(light, 1, mode="edge")
-        light = sum(p[1 + di : p.shape[0] - 1 + di, 1 + dj : p.shape[1] - 1 + dj] for di in (-1, 0, 1) for dj in (-1, 0, 1)) / 9.0
+        light = (
+            sum(
+                p[1 + di : p.shape[0] - 1 + di, 1 + dj : p.shape[1] - 1 + dj]
+                for di in (-1, 0, 1)
+                for dj in (-1, 0, 1)
+            )
+            / 9.0
+        )
     skyline = float(np.degrees(np.arctan2(z[1:, N_AZ // 2], rr[1:, N_AZ // 2])).max())
 
     out.parent.mkdir(parents=True, exist_ok=True)
-    header = np.array([N_AZ, N_R, R0_KM, R1_KM, HALF_DEG, earth_el, SUN_REL_AZ_DEG, SUN_EL_DEG], dtype="<f4")
-    heights = np.clip(np.round(z * 2.0), -32768, 32767).astype("<i2")
+    header = np.array(
+        [N_AZ, N_R, R0_KM, R1_KM, HALF_DEG, earth_el, SUN_REL_AZ_DEG, SUN_EL_DEG], dtype="<f4"
+    )
+    counts = np.round(z / (STEP_M + rr * STEP_PER_M))
+    if np.abs(counts).max() > 32767:
+        raise SystemExit("a height does not fit its 16 bits; widen the step")
+    heights = counts.astype("<i2")
     with out.open("wb") as f:
         f.write(header.tobytes())
         f.write(heights.tobytes())
         f.write(np.round(light * 255).astype(np.uint8).tobytes())
-    lat_e, lon_e = polar_to_geographic(np.array([x0 + 160_000 * fwd[0]]), np.array([y0 + 160_000 * fwd[1]]))
+    lat_e, lon_e = polar_to_geographic(
+        np.array([x0 + 160_000 * fwd[0]]), np.array([y0 + 160_000 * fwd[1]])
+    )
     print(
-        f"wrote {out} ({out.stat().st_size // 1024} KB): site height {h_site:.0f} m, Earth at {earth_el:.2f} deg, "
-        f"fan to {float(lat_e[0]):.2f} deg, {float(lon_e[0]):.2f} deg; skyline toward Earth at {skyline:.2f} deg; "
+        f"wrote {out} ({out.stat().st_size // 1024} KB): site height {h_site:.0f} m, "
+        f"Earth at {earth_el:.2f} deg, fan to {float(lat_e[0]):.2f} deg, "
+        f"{float(lon_e[0]):.2f} deg; skyline toward Earth at {skyline:.2f} deg; "
         f"lit {float((light > 0.5).mean()) * 100:.0f}%"
     )
 

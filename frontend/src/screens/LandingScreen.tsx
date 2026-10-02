@@ -109,6 +109,7 @@ export default function LandingScreen() {
   const earthrise = useState(() => readPrefs().theme === 'light')[0] && !reduced
   const onGround = earthrise && webgl
   const flightRef = useRef<HTMLDivElement>(null)
+  const heroRef = useRef<HTMLDivElement>(null)
 
   // The Moon, and what scrolling and the pointer do to it.
   useEffect(() => {
@@ -171,12 +172,21 @@ export default function LandingScreen() {
       if (earthrise && flight) {
         const ft = gsap.timeline({
           defaults: { ease: 'none' },
-          scrollTrigger: { trigger: flight, start: 'top top', end: 'bottom 40%', scrub: 0.8 },
+          // Over before the next heading comes into view: it is dark ink, for the light page.
+          scrollTrigger: { trigger: flight, start: 'top top', end: 'bottom 85%', scrub: 0.8 },
+          // The page's styles follow the sky: how pale the Moon is, and the shade behind the words (globals.css).
+          onUpdate: () => root.style.setProperty('--pw-space', String(s.space ?? 0)),
         })
         ft.to(s, { ground: 0, duration: 0.8, ease: 'power1.inOut' })
         ft.to(s, { space: 0, duration: 0.25 }, 0.75)
-        // Below lg the Moon then sits behind the words, so it dims as it did before.
-        if (window.innerWidth < 1024) ft.to(canvas, { opacity: 0.4, duration: 0.25 }, 0.75)
+        // The shade behind the first words goes as they scroll out.
+        ScrollTrigger.create({
+          trigger: heroRef.current,
+          start: 'top top',
+          end: 'bottom 35%',
+          scrub: true,
+          onUpdate: (st) => root.style.setProperty('--pw-hero', String(1 - st.progress)),
+        })
       }
 
       ScrollTrigger.create({
@@ -224,16 +234,26 @@ export default function LandingScreen() {
   }, [hash, reduced])
 
   return (
-    <div ref={rootRef} className="relative min-h-full bg-canvas text-ink">
+    <div
+      ref={rootRef}
+      className="relative min-h-full bg-canvas text-ink"
+      // 1 while the light theme's first picture has its black sky, 0 once the page is the page (set by the scroll).
+      style={{ ['--pw-space' as string]: onGround ? 1 : 0 }}
+    >
+      {/* The black of space under the first picture, there before the picture has loaded. */}
+      {onGround && <div aria-hidden="true" className="pw-landing-space pointer-events-none fixed inset-0" />}
       <canvas
         ref={canvasRef}
         aria-hidden="true"
         // Below lg the Moon sits behind the text, so it is dimmed to keep the
-        // words readable; beside the text it is shown in full.
-        className={`pointer-events-none fixed inset-0 h-full w-full ${onGround ? '' : 'opacity-40 lg:opacity-100'} ${webgl ? '' : 'hidden'}`}
+        // words readable; beside the text it is shown in full (globals.css).
+        className={`pw-landing-canvas pointer-events-none fixed inset-0 h-full w-full ${webgl ? '' : 'hidden'}`}
       />
-      {/* In the dark, the night sky is shaded behind the words so they read over the Milky Way. */}
+      {/* The picture is shaded behind the words, so they read over the Milky Way or the Moon. */}
       {webgl && <div aria-hidden="true" className="pw-sky-shade pointer-events-none fixed inset-0" />}
+      {/* The first picture's own shade. It stays with the window and thins as the words scroll away,
+          so it never shows an edge crossing the picture. */}
+      {onGround && <div aria-hidden="true" className="pw-ground-shade pointer-events-none fixed inset-0" />}
       <a
         href="#landing-main"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-pill focus:bg-raised focus:px-5 focus:py-3"
@@ -255,17 +275,10 @@ export default function LandingScreen() {
       </header>
 
       <main id="landing-main" tabIndex={-1} className="relative z-10 outline-none">
-        {/* In the light theme the first screen is a dark band: Earth over the
-            Moon's horizon, under the island and behind the words, fading into
-            the page at its foot. */}
+        {/* In the light theme the first screen is dark: Earth over the Moon's
+            horizon, under the island and behind the words. */}
         <div ref={flightRef}>
-        <div className="relative" data-theme={onGround ? 'dark' : undefined}>
-          {onGround && (
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-x-0 -top-[84px] bottom-0 -z-10 bg-gradient-to-r from-black/75 via-black/30 to-transparent"
-            />
-          )}
+        <div ref={heroRef} data-theme={onGround ? 'dark' : undefined}>
         <Section className={`justify-center ${onGround ? 'min-h-[100vh]' : 'min-h-[86vh]'}`}>
           <div className="flex max-w-2xl flex-col gap-7">
             <p className="pw-eyebrow">NASA CLPS missions · the Moon’s south pole</p>
@@ -354,7 +367,8 @@ export default function LandingScreen() {
         </Section>
       </main>
 
-      <footer className="relative z-10 flex flex-col gap-6 border-t border-line px-4 py-10 lg:px-8">
+      {/* On the page's own ground, so its small print never sits over the Moon. */}
+      <footer className="relative z-10 flex flex-col gap-6 border-t border-line bg-canvas px-4 py-10 lg:px-8">
         <BrandLogo className="h-10 sm:h-12" />
         <p className="max-w-3xl text-caption leading-caption text-ink-3">
           Not an official product of NASA or any space agency. The Moon is NASA’s LRO camera mosaic, with the LOLA
