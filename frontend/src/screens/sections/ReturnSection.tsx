@@ -13,6 +13,7 @@ import { Field, FormSheet, HistoryList, TextInput } from '../../components/lifec
 import { Button, Disclosure } from '../../components/ui'
 import { Icon } from '../../components/Icon'
 import { useCanWrite } from './ReadySection'
+import { ZoneCard } from '../../scenes/ZoneCard'
 
 const TERMS = ['boosterWaves', 'boosterWind', 'capsuleWaves', 'capsuleWind']
 
@@ -189,6 +190,7 @@ function ReturnAnswer({ ret, meta, missionId, status }: { ret: ReturnDTO; meta: 
           table={<LimitTable rows={rows} />}
         />
       )}
+      <ZoneCard ret={ret} missionId={missionId} />
       <Rows about={<><HowSure meta={meta} /><SourcesRow meta={meta} /></>}>
         {b && (
           <Disclosure title="Booster landing zone" meta={b.zone && b.landing !== 'unknown' ? zoneWords(b.zone) : NO_ZONE[b.landing]}>
