@@ -24,6 +24,7 @@
      line-strong is a control's border, at the old opaque value's contrast. */
   --color-line: rgba(214, 226, 238, 0.085);
   --color-line-strong: rgba(214, 226, 238, 0.2);
+  --color-field: rgba(214, 226, 238, 0.42); /* a field's border: 3:1 against every ground, since the border is all that marks a field */
   --color-edge: rgba(214, 226, 238, 0.065); /* a core's own edge, inside its tray */
   --color-hi: rgba(255, 255, 255, 0.06); /* the light along a core's top edge */
   --color-glass: rgba(13, 16, 19, 0.86); /* the island and the dock: opaque enough for 4.5:1 over a white page */
@@ -174,6 +175,7 @@
 
   --color-line: rgba(20, 23, 26, 0.1);
   --color-line-strong: rgba(20, 23, 26, 0.27);
+  --color-field: rgba(20, 23, 26, 0.5);
   --color-edge: rgba(20, 23, 26, 0.07);
   --color-hi: rgba(255, 255, 255, 0.9);
   --color-glass: rgba(255, 255, 255, 0.76);
@@ -184,7 +186,7 @@
   --color-ink-3: #5e6670; /* 5.2:1, 4.74:1 on inset: passes, unchanged */
 
   --color-sun: #8a5605; /* 5.4:1 as text */
-  --color-sun-fill: #b4761f; /* 3.4:1 as a mark */
+  --color-sun-fill: #b4761f; /* 3.4:1 as a mark on the canvas, 3.06:1 on dark-fill */
   --color-sun-soft: #e8c489;
   --color-sun-deep: #f3e3c9;
   --color-on-sun: #14171a; /* 4.7:1 on the fill */
@@ -195,8 +197,8 @@
   --color-earth-deep: #d7edf3;
   --color-on-earth: #ffffff;
 
-  --color-dark-fill: #dcdad3;
-  --color-hatch: #6b7178; /* 3.53:1 against dark-fill (U6) */
+  --color-dark-fill: #e9e7e2; /* the Sun's and Earth's bars stand 3.06:1 and 3.25:1 on it */
+  --color-hatch: #6b7178; /* 3.99:1 against dark-fill (U6) */
 
   --color-alert: #b3134f; /* 6.0:1 */
   --color-alert-deep: #f7dbe5;
@@ -230,6 +232,7 @@
   --color-inset: #1b2228;
   --color-line: rgba(214, 226, 238, 0.085);
   --color-line-strong: rgba(214, 226, 238, 0.2);
+  --color-field: rgba(214, 226, 238, 0.42);
   --color-edge: rgba(214, 226, 238, 0.065);
   --color-hi: rgba(255, 255, 255, 0.06);
   --color-glass: rgba(13, 16, 19, 0.86);

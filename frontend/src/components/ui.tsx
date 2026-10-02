@@ -407,7 +407,7 @@ export function SearchField({
   id?: string
 }) {
   return (
-    <div className="flex h-12 items-center gap-2.5 rounded-pill border border-line-strong bg-tray px-4 transition-colors duration-[var(--pw-dur-quick)] focus-within:border-focus hover:border-ink-3">
+    <div className="flex h-12 items-center gap-2.5 rounded-pill border border-field bg-tray px-4 transition-colors duration-[var(--pw-dur-quick)] focus-within:border-focus hover:border-ink-3">
       <Icon name="search" size={18} strokeWidth={1.8} className="shrink-0 text-ink-3" />
       <label htmlFor={id} className="sr-only">
         Search landing sites

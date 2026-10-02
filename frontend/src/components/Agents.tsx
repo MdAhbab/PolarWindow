@@ -424,7 +424,7 @@ function PromptField({
             onSubmit()
           }
         }}
-        className="min-h-12 w-full resize-y rounded-control border border-line-strong bg-panel px-3.5 py-3 text-body outline-none placeholder:text-ink-3 focus:border-focus"
+        className="min-h-12 w-full resize-y rounded-control border border-field bg-panel px-3.5 py-3 text-body outline-none placeholder:text-ink-3 focus:border-focus"
       />
     </div>
   )

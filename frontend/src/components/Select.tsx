@@ -29,7 +29,7 @@ const TOP_LAYER = typeof HTMLElement !== 'undefined' && 'showPopover' in HTMLEle
 const LOOKS = {
   /** A form field (the project manager's forms). */
   field:
-    'h-12 w-full rounded-control border border-line-strong bg-panel pr-3 pl-3.5 text-body text-ink hover:border-ink-3 aria-expanded:border-focus aria-invalid:border-alert',
+    'h-12 w-full rounded-control border border-field bg-panel pr-3 pl-3.5 text-body text-ink hover:border-ink-3 aria-expanded:border-focus aria-invalid:border-alert',
   /** A control on a page, beside the pills. */
   pill: 'h-12 rounded-pill border border-line-strong bg-tray pr-4 pl-5 text-control text-ink hover:border-ink-3 aria-expanded:border-ink-3',
   /** No box of its own: the caller draws it. */

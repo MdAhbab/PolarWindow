@@ -310,21 +310,24 @@ checked by hand.
 | `earth` on `panel` | 4.5:1 | 9.08 | 7.22 |
 | `alert` on `alert-wash` | 4.5:1 | 6.30 | 5.81 |
 | `on-sun` on `sun-fill` | 4.5:1 | 9.40 | 4.76 |
-| `hatch` on `dark-fill` | 3:1 | 3.23 | 3.53 |
+| `hatch` on `dark-fill` | 3:1 | 3.23 | 3.99 |
 | `focus` on `canvas` | 3:1 | 13.98 | 6.39 |
-| `sun-fill` on `dark-fill` | 3:1 | 8.56 | **2.70** |
-| `earth-fill` on `dark-fill` | 3:1 | 8.90 | **2.87** |
-| `line-strong` on `panel` | 3:1 | **1.62** | **1.99** |
+| `sun-fill` on `dark-fill` | 3:1 | 8.56 | 3.06 |
+| `earth-fill` on `dark-fill` | 3:1 | 8.90 | 3.25 |
+| `field` on `panel` (a field's border) | 3:1 | 3.40 | 3.42 |
+| `field` on `tray` | 3:1 | 3.39 | 3.23 |
 
-**Still open.** The four bold values are token changes: the fix is a value in
-`globals.css`.
+Nothing in the table is under its line. Two were until the visual refresh's
+last pass, and how they were fixed matters to whoever changes a token next:
 
-- Light theme, month strip: the sunlight and Earth bars sit on `dark-fill` at
-  2.70:1 and 2.87:1, under the 3:1 a graphic needs. Each month's values are in
-  its accessible name.
-- Field borders: `line-strong` on `panel` is 1.62:1 (dark) and 1.99:1 (light).
-  Buttons are named by their text, but the date, search, question and
-  site-picker fields rely on the border.
+- Light theme, the Sun's and Earth's bars on a chart's track (the month
+  strip, the contact chart): `dark-fill` was #dcdad3, which left the bars at
+  2.70:1 and 2.87:1. It is #e9e7e2. The fills themselves were not darkened:
+  `on-sun` text on `sun-fill` would have fallen under 4.5:1.
+- Field borders: a text box, a date box, the search box and a list's box in
+  a form are marked by their border alone, and `line-strong` is 1.6–1.8:1.
+  They take `field` instead, a token of its own, so the hairlines elsewhere
+  stay light. Buttons and pills keep `line-strong`: their text names them.
 
 ---
 

@@ -15,7 +15,7 @@ import { Button, SectionLabel } from '../ui'
  */
 
 const INPUT =
-  'h-12 w-full min-w-0 rounded-control border border-line-strong bg-panel px-3.5 text-body text-ink outline-none placeholder:text-ink-3 focus:border-focus'
+  'h-12 w-full min-w-0 rounded-control border border-field bg-panel px-3.5 text-body text-ink outline-none placeholder:text-ink-3 focus:border-focus'
 
 export function Field({
   label,
