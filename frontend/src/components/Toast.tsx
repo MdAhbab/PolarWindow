@@ -111,7 +111,7 @@ export function Toaster() {
       className={
         host
           ? 'pointer-events-none absolute inset-x-0 bottom-0 z-50 flex justify-center p-4'
-          : 'pointer-events-none fixed inset-x-0 bottom-[calc(5rem+var(--pw-guide-h,0px))] z-50 flex justify-center px-4 sm:justify-end sm:px-6 lg:bottom-[calc(1.5rem+var(--pw-guide-h,0px))]'
+          : 'pointer-events-none fixed inset-x-0 bottom-[calc(5.75rem+env(safe-area-inset-bottom)+var(--pw-guide-h,0px))] z-50 flex justify-center px-4 sm:justify-end sm:px-6 lg:bottom-[calc(1.5rem+var(--pw-guide-h,0px))]'
       }
     >
       <ol className={`flex w-full flex-col items-end gap-2 ${host ? '' : 'sm:w-auto'}`}>

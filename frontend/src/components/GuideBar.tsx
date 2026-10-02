@@ -34,7 +34,8 @@ export function GuideBar() {
       root.style.removeProperty('--pw-guide-h')
       return
     }
-    const set = () => root.style.setProperty('--pw-guide-h', `${el.offsetHeight}px`)
+    // The card floats 16 px clear of what is under it; the page leaves room for both.
+    const set = () => root.style.setProperty('--pw-guide-h', `${el.offsetHeight + 16}px`)
     set()
     const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(set)
     ro?.observe(el)
@@ -91,9 +92,9 @@ export function GuideBar() {
       onKeyDown={(e) => {
         if (e.key === 'Escape') setOpen(false)
       }}
-      className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 border-t border-line-strong bg-raised shadow-page lg:bottom-0"
+      className="pw-card pw-card-raised fixed inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-40 mx-auto max-w-5xl [--pw-elev:var(--shadow-overlay)] sm:inset-x-4 lg:bottom-4"
     >
-      <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-3 lg:flex-row lg:items-center lg:gap-6 lg:px-6">
+      <div className="flex flex-col gap-2 px-4 py-3 lg:flex-row lg:items-center lg:gap-6 lg:py-3.5 lg:pr-3 lg:pl-6">
         <div className="flex min-w-0 grow flex-col gap-1.5">
           <div className="flex items-center gap-3">
             <span className="shrink-0 text-caption font-semibold text-ink-3">
@@ -101,7 +102,7 @@ export function GuideBar() {
             </span>
             <span className="flex grow gap-1" aria-hidden="true">
               {GUIDE_STEPS.map((s, k) => (
-                <span key={s.id} className={`h-1 grow ${k <= step ? 'bg-ink-2' : 'bg-line-strong'}`} />
+                <span key={s.id} className={`h-1 grow rounded-pill transition-colors duration-[var(--pw-dur-base)] ${k <= step ? 'bg-ink-2' : 'bg-line-strong'}`} />
               ))}
             </span>
           </div>
@@ -139,7 +140,7 @@ export function GuideBar() {
             onClick={() => setOpen(false)}
             aria-label="Close the guide"
             title="Close the guide. Reopen it from Guide at the top of the page."
-            className="inline-flex size-12 items-center justify-center rounded-control text-ink-2 hover:bg-inset hover:text-ink"
+            className="pw-press inline-flex size-12 items-center justify-center rounded-pill text-ink-2 hover:bg-inset hover:text-ink"
           >
             <Icon name="close" />
           </button>

@@ -26,7 +26,7 @@
   --color-line-strong: rgba(214, 226, 238, 0.2);
   --color-edge: rgba(214, 226, 238, 0.065); /* a core's own edge, inside its tray */
   --color-hi: rgba(255, 255, 255, 0.06); /* the light along a core's top edge */
-  --color-glass: rgba(13, 16, 19, 0.74); /* the island and the dock, over the page */
+  --color-glass: rgba(13, 16, 19, 0.86); /* the island and the dock: opaque enough for 4.5:1 over a white page */
   --color-atmosphere: rgba(200, 215, 230, 0.05); /* the faint light at the top of a page: no hue, so it means nothing */
 
   /* ink */
@@ -228,6 +228,18 @@
     height: 100%;
   }
 
+  /* The island floats over the top of the page and, below lg, the dock over
+     its foot: anything scrolled into view lands clear of both. */
+  html {
+    scroll-padding-top: 6rem;
+    scroll-padding-bottom: calc(var(--pw-guide-h, 0px) + 1rem);
+  }
+  @media (max-width: 63.99rem) {
+    html {
+      scroll-padding-bottom: calc(var(--pw-guide-h, 0px) + 6rem);
+    }
+  }
+
   body {
     margin: 0;
     /* The canvas, lit faintly from the top of the page. Scrolls away with it. */
@@ -254,7 +266,7 @@
   [data-guide-active] {
     outline: 2px dashed var(--color-ink-2);
     outline-offset: 6px;
-    scroll-margin-bottom: calc(var(--pw-guide-h, 0px) + 5rem);
+    scroll-margin-bottom: calc(var(--pw-guide-h, 0px) + 6rem);
   }
 
   button,
@@ -405,6 +417,17 @@
   .pw-row > summary:focus-visible {
     outline-offset: -3px;
     border-radius: calc(var(--radius-card) - 2px);
+  }
+
+  /* ---- The shell: the island and the dock, glass over the page ----------- */
+  .pw-island {
+    background: var(--color-glass);
+    border: 1px solid var(--color-line);
+    box-shadow:
+      inset 0 1px 0 var(--color-hi),
+      var(--shadow-raised);
+    backdrop-filter: blur(18px) saturate(1.3);
+    -webkit-backdrop-filter: blur(18px) saturate(1.3);
   }
 
   /* ---- Type roles --------------------------------------------------------- */
