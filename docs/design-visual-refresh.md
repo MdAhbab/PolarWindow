@@ -764,9 +764,16 @@ own lists in place of native selects (`7f91391`); one set of corners
 - **The real Moon in the dashboard** (slice 8). Missions: the whole-Moon
   view is the LRO mosaic as two orthographic discs
   (`backend/app/data/render_moon_discs.py`, the projection the pins use),
-  under a faint graticule and the pins. Map: the relief is drawn a little
-  crisper, as its own picture under the map's drawing (`.pw-relief`), so the
-  Sun's sweep does not repaint the tiles.
+  under a faint graticule and the pins. The pole map (Map, the Missions
+  pole view, a mission's target without WebGL): NASA's LRO camera mosaic of
+  the south pole (`backend/app/data/fetch_pole_mosaic.py` cuts it to the
+  square the tiles cover, in their projection) with the LOLA relief laid
+  into its shadows (`mix-blend-mode: lighten`: the relief shows where it
+  is the lighter of the two), as its own picture under the map's drawing
+  (`.pw-relief`), so the Sun's sweep does not repaint it. The map says the
+  photograph's shadows are from the days it was taken. The same picture is
+  the cap from 80°S to the pole on the front page's Moon and the target
+  globe (`poleRelief` in `moonScene.ts`).
 - **Scenes** (slice 8; `frontend/src/scenes/`). `SceneFrame` holds a scene
   over the page's flat drawing: it is made only with WebGL, when the
   browser is idle and the frame is within a screen of the viewport; it
@@ -785,6 +792,15 @@ own lists in place of native selects (`7f91391`); one set of corners
   `ZoneCard` (Return): Earth turned to where the booster comes down and
   where a capsule splashes down, on NASA's Blue Marble, when a zone has a
   published position.
+- **States, tabs, fields** (after slice 9). An empty list and the
+  not-found page carry `EmptyHorizonArt` (States.tsx): the pole's own
+  picture with the thing looked for left out. `Tabs` (Settings) are pills
+  and change at once, with no fade: mid-fade the name sat on a ground it
+  could not be read against, which axe caught. A field's border is the
+  token `field` (3.2:1 or better on every ground), not `line-strong`; in
+  the light theme `dark-fill`, the track under a chart's bars, is lighter,
+  so the Sun's and Earth's bars reach 3:1 on it (the table in
+  `conventions.md` has the values).
 
 *How each slice was checked.* `npm run check` and `npm test`; then the
 offline build (`npm run build:snapshot && npx vite preview`) driven by
@@ -833,8 +849,18 @@ plan, what was measured, and what was left out.
 - *The path to the Moon.* It draws the flown path, sunlight and shadow, the
   burns and the gaps. It does not mark the Moon's shadow or the point where
   the Moon's pull wins, and the day-by-day chart's cursor does not follow
-  the scroll. It needs the live service: the offline copy does not hold the
-  orbit file, so there the card is absent and the strip above it stands.
+  the scroll. The offline copy keeps each flown trip's orbit file beside
+  its answers (`public/snapshot/trip/`, written by `npm run snapshot`), so
+  the card is there offline too.
+- *The Map.* The plan kept the pole on the relief alone. Built: NASA's
+  photograph of the pole under the pins, with the relief in its shadows.
+  A photograph's shadows belong to the days it was taken, so the map says
+  so, and the amber line and the shaded side remain the Sun for the chosen
+  dates.
+- *States.* The plan gave empty states the front page's four drawings.
+  Those carry words about the Sun and Earth that do not belong beside "no
+  missions match"; one wordless drawing was made instead. Error panels keep
+  their glyph and their words and have no drawing.
 - *The landing zones* (Return). Built last: Earth (the Blue Marble) turned
   to the booster's zone and the capsule's, each a mark with its name and a
   ring of the zone's published size. It has no colour band for the sea
@@ -876,10 +902,12 @@ plan, what was measured, and what was left out.
   change: 76 of 76 clean. The same rules with each list open, both themes:
   no findings.
 - *Tests.* 290 unit tests pass. The e2e suite, against a local API and
-  compute worker with the feeds fetched once: 60 of 60 pass.
+  compute worker with the feeds fetched once: 60 of 60 pass. The backend's
+  own suite passes (854 tests), and `make lint` is clean.
 - *Screens and the offline copy.* All 58 pictures in
   `frontend/e2e/__screens__/` were retaken in the new look
-  (`npm run screens`). The offline copy was recorded again: 425 answers,
+  (`npm run screens`). The offline copy was recorded again: 425 answers
+  and four orbit files,
   and every one of the 148 mission and landing-site views opens in the
   offline build with no answer missing. It was recorded into a folder
   outside `public/` (`SNAPSHOT_OUT`) and then copied in, because the dev
@@ -896,5 +924,3 @@ plan, what was measured, and what was left out.
 - A higher-zoom relief on dense screens: the map draws 1,024 source pixels
   across a picture that can be 1,400 device pixels wide. The pyramid has
   the next zoom; it is about 4 MB of tiles, so it was left out.
-- The path to the Moon in the offline copy: the copy does not hold the
-  Trip's orbit file, so the card is absent there.

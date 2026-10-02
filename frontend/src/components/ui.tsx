@@ -568,7 +568,9 @@ export function Tabs<T extends string>({
             tabIndex={on ? 0 : -1}
             onClick={() => onChange(t.id)}
             // A pill, the chosen one in ink: the same language as the page's other switches.
-            className={`pw-press flex h-12 shrink-0 items-center rounded-pill border-4 border-transparent bg-clip-padding px-4 text-body whitespace-nowrap transition-colors duration-[var(--pw-dur-quick)] ${
+            // The change of tab is at once, not a fade: for a moment mid-fade the name
+            // would sit on a ground it cannot be read against.
+            className={`flex h-12 shrink-0 items-center rounded-pill border-4 border-transparent bg-clip-padding px-4 text-body whitespace-nowrap ${
               on ? 'bg-ink font-semibold text-canvas' : 'font-medium text-ink-2 hover:bg-inset hover:text-ink'
             }`}
           >
