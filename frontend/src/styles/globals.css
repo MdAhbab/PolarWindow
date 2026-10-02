@@ -661,6 +661,63 @@
     background: color-mix(in srgb, currentColor 13%, transparent);
   }
 
+  /* ---- A list to choose from (Select) -------------------------------------
+     The page draws its own, so it is the same on every operating system and
+     follows the theme. It sits in the browser's top layer, placed by the
+     component against its button. Its corners are the options' 10 px plus the
+     6 px around them, so the two curves run parallel. */
+  .pw-menu {
+    position: fixed;
+    inset: auto;
+    z-index: 70;
+    margin: 0;
+    padding: 6px;
+    width: max-content;
+    max-width: calc(100vw - 16px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 1px solid var(--color-line-strong);
+    border-radius: calc(var(--radius-control) + 6px);
+    background: var(--color-raised);
+    color: var(--color-ink);
+    box-shadow: var(--shadow-overlay);
+    animation: pw-menu-in var(--pw-dur-quick) var(--ease-settle) both;
+  }
+  .pw-menu-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 44px;
+    padding: 8px 12px;
+    border-radius: var(--radius-control);
+    font-size: var(--text-body);
+    line-height: 20px;
+    color: var(--color-ink-2);
+    cursor: pointer;
+  }
+  .pw-menu-option[data-active] {
+    background: var(--color-inset);
+    color: var(--color-ink);
+  }
+  .pw-menu-option[aria-selected='true'] {
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+  .pw-menu-group {
+    padding: 10px 12px 4px;
+    font-size: var(--text-tag);
+    line-height: 16px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ink-3);
+  }
+  @media (pointer: coarse) {
+    .pw-menu-option {
+      min-height: 48px;
+    }
+  }
+
   /* The page's padding, the same on every screen. */
   .pw-page {
     padding-inline: var(--spacing-gutter);
@@ -877,6 +934,12 @@ details[open] > .pw-disclosure-body {
   }
   to {
     transform: translateX(100%);
+  }
+}
+@keyframes pw-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
   }
 }
 @keyframes pw-fade-in {

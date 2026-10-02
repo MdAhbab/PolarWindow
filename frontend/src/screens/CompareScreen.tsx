@@ -17,6 +17,7 @@ import { buildComparisonSummary } from '../lib/summaryScript'
 import { Eyebrow, Panel, Segmented } from '../components/ui'
 import { PageHeader } from '../components/Page'
 import { Icon } from '../components/Icon'
+import { Select } from '../components/Select'
 import { useReducedMotion } from '../hooks/useMotion'
 import { metricValue, SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
 import { bound, hoursWithUnit, termLabel } from '../lib/format'
@@ -266,18 +267,14 @@ export function CompareScreen() {
           <label htmlFor="pw-rank" className="pw-eyebrow xl:hidden">
             Rank by
           </label>
-          <select
+          <Select
             id="pw-rank"
+            look="pill"
             value={rankBy}
-            onChange={(e) => setRankBy(e.target.value as MetricKey)}
-            className="h-12 rounded-pill border border-line-strong bg-tray px-4 text-control text-ink hover:border-ink-3 xl:hidden"
-          >
-            {RANKS.map((r) => (
-              <option key={r.value} value={r.value}>
-                {r.label}
-              </option>
-            ))}
-          </select>
+            onChange={setRankBy}
+            options={RANKS}
+            className="xl:hidden"
+          />
           <div className="hidden flex-col gap-2 xl:flex">
             <Eyebrow as="div">Rank by</Eyebrow>
             <Segmented options={RANKS} value={rankBy} onChange={setRankBy} label="Rank by" />
@@ -556,20 +553,16 @@ function AddSite({ compareIds }: { compareIds: string[] }) {
       <label htmlFor={id} className="pw-eyebrow">
         {full ? 'Eight sites is the most' : 'Add a site'}
       </label>
-      <select
+      <Select
         id={id}
+        look="pill"
         value=""
+        placeholder={rest.length === 0 ? 'No more sites' : 'Choose a site…'}
         disabled={full || rest.length === 0}
-        onChange={(e) => e.target.value && toggle(e.target.value)}
-        className="h-12 w-full max-w-full rounded-pill border border-line-strong bg-tray px-4 text-control text-ink hover:border-ink-3 disabled:text-ink-3"
-      >
-        <option value="">Choose a site…</option>
-        {rest.map((s) => (
-          <option key={s.id} value={s.id}>
-            {s.name}
-          </option>
-        ))}
-      </select>
+        onChange={toggle}
+        options={rest.map((s) => ({ value: s.id, label: s.name }))}
+        className="w-full sm:min-w-56"
+      />
     </div>
   )
 }

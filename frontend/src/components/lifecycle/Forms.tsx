@@ -59,20 +59,8 @@ export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
   return <textarea rows={3} {...props} className={`${INPUT} h-auto min-h-24 py-2.5 leading-5`} />
 }
 
-export function Select({
-  options,
-  ...props
-}: React.SelectHTMLAttributes<HTMLSelectElement> & { options: { value: string; label: string }[] }) {
-  return (
-    <select {...props} className={INPUT}>
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
-  )
-}
+/** One of a list: the page's own list, in a field's box (components/Select). */
+export { Select } from '../Select'
 
 /**
  * ADR-17: every change carries a person's name. The demo session has only

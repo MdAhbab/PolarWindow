@@ -205,8 +205,13 @@ test('team weather limits (contract fixtures): the form starts from the limits a
   // The entered one starts as entered, in a unit its rule takes, with its note.
   const tops = sheet.getByRole('group', { name: /cumulus/i })
   await expect(tops.getByLabel('Limit')).toHaveValue('10000')
-  await expect(tops.getByLabel('Unit')).toHaveValue('ft')
-  await expect(tops.getByLabel('Unit').locator('option')).toHaveText(['ft', 'm'])
+  await expect(tops.getByLabel('Unit')).toHaveText('ft')
+  await tops.getByLabel('Unit').click()
+  await expect(sheet.getByRole('option')).toHaveText(['ft', 'm'])
+  // Esc closes the list and leaves the sheet open.
+  await page.keyboard.press('Escape')
+  await expect(sheet.getByRole('option')).toHaveCount(0)
+  await expect(sheet).toBeVisible()
   await expect(tops.getByLabel('Note (optional)')).toHaveValue('As given by the range weather officer for this campaign.')
   await expect(tops).toContainText('Entered by Nadia Karim')
   // A rule with no published unit asks for one.
@@ -746,7 +751,7 @@ test('a readiness change asks for a name, needs evidence, and shows its history 
   await page.getByRole('button', { name: 'Change MAPP rover' }).first().click()
   const sheet = page.getByRole('dialog', { name: 'Change: MAPP rover' })
   await expect(sheet).toContainText('Every change is recorded with your name.')
-  await expect(sheet.getByLabel('New state')).toHaveValue('test_passed')
+  await expect(sheet.getByLabel('New state')).toHaveText('Test passed')
   await sheet.getByRole('button', { name: 'Save' }).click()
   await expect(sheet).toContainText('Enter your name')
   await sheet.getByLabel('Your name').fill('Nadia Karim')

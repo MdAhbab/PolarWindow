@@ -428,7 +428,7 @@ function BookingsRow({ contact, missionId }: { contact: ContactDTO; missionId: s
         }}
       >
         <Field label="Ground station">
-          {(p) => <Select {...p} value={station} onChange={(e) => setStation(e.target.value)} options={stations.map((s) => ({ value: s.id, label: s.name }))} />}
+          {(p) => <Select {...p} value={station} onChange={(v) => setStation(v)} options={stations.map((s) => ({ value: s.id, label: s.name }))} />}
         </Field>
         <Field label="Start (UTC)" error={err}>
           {(p) => <TextInput {...p} type="datetime-local" value={startAt} onChange={(e) => setStartAt(e.target.value)} />}
@@ -462,7 +462,7 @@ function RoverRow({ mission: m }: { mission: MissionDetail }) {
     <Disclosure title="Rover and lander line of sight" meta={m.rovers.map((r) => r.name).join(', ')} onOpen={() => setOpen(true)}>
       {m.rovers.length > 1 && (
         <Field label="Rover">
-          {(p) => <Select {...p} value={rover.id} onChange={(e) => setRoverId(e.target.value)} options={m.rovers.map((r) => ({ value: r.id, label: r.name }))} />}
+          {(p) => <Select {...p} value={rover.id} onChange={(v) => setRoverId(v)} options={m.rovers.map((r) => ({ value: r.id, label: r.name }))} />}
         </Field>
       )}
       {view.status === 'pending' ? (

@@ -27,6 +27,7 @@ import { AskPanel } from '../components/Agents'
 import { EmptyState, LoadingPanel, ProblemPanel } from '../components/States'
 import { Button, Chip, Disclosure, Panel, Segmented, Unconfirmed } from '../components/ui'
 import { Icon } from '../components/Icon'
+import { Select } from '../components/Select'
 
 /**
  * S9 — every CLPS delivery at a glance (§10.2), and the new home.
@@ -243,24 +244,14 @@ export function MissionsScreen() {
               <label htmlFor={`${filterId}-provider`} className="sr-only">
                 Provider
               </label>
-              <select
+              <Select
                 id={`${filterId}-provider`}
+                look="pill"
                 value={provider}
-                onChange={(e) => {
-                  const v = e.target.value
-                  update((p) => (v ? p.set('provider', v) : p.delete('provider')), v ? { kind: 'provider' } : null)
-                }}
-                className={`h-12 max-w-full rounded-pill border bg-tray pr-9 pl-5 text-small font-semibold transition-colors duration-[var(--pw-dur-quick)] hover:border-ink-3 ${
-                  provider ? 'border-ink text-ink' : 'border-line-strong text-ink-2'
-                }`}
-              >
-                <option value="">Any provider</option>
-                {providers.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => update((p) => (v ? p.set('provider', v) : p.delete('provider')), v ? { kind: 'provider' } : null)}
+                options={[{ value: '', label: 'Any provider' }, ...providers.map((p) => ({ value: p, label: p }))]}
+                className={`text-small font-semibold ${provider ? 'border-ink text-ink' : 'text-ink-2'}`}
+              />
             </>
           )}
           {/* The empty list has its own "Clear filters"; one is enough. */}

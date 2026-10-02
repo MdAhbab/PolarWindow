@@ -691,7 +691,7 @@ function LimitsRow({ rules, vehicleId }: { rules: RuleRowDTO[]; vehicleId: strin
                   <Field label="Unit" hint={units.length ? undefined : 'None is published for this rule.'} error={errors[`${r.id}-unit`]}>
                     {(p) =>
                       units.length ? (
-                        <Select {...p} value={d.unit} options={units.map((u) => ({ value: u, label: u }))} onChange={(e) => edit(r.id, { unit: e.target.value })} />
+                        <Select {...p} value={d.unit} options={units.map((u) => ({ value: u, label: u }))} onChange={(v) => edit(r.id, { unit: v })} />
                       ) : (
                         <TextInput {...p} className="w-28" value={d.unit} onChange={(e) => edit(r.id, { unit: e.target.value })} />
                       )
