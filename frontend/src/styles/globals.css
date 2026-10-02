@@ -216,6 +216,55 @@
   --color-glow-sun: rgba(180, 118, 31, 0.32);
 }
 
+/* A dark band inside a light page: the light theme's Earthrise hero. The dark
+   theme's own values again, for that band only (generated from @theme above;
+   keep the two in step). */
+:root[data-theme='light'] [data-theme='dark'] {
+  --color-canvas: #07090b;
+  --color-tray: #0d1013;
+  --color-panel: #11161b;
+  --color-raised: #161c22;
+  --color-inset: #1b2228;
+  --color-line: rgba(214, 226, 238, 0.085);
+  --color-line-strong: rgba(214, 226, 238, 0.2);
+  --color-edge: rgba(214, 226, 238, 0.065);
+  --color-hi: rgba(255, 255, 255, 0.06);
+  --color-glass: rgba(13, 16, 19, 0.86);
+  --color-atmosphere: rgba(200, 215, 230, 0.05);
+  --color-ink: #e6ebf0;
+  --color-ink-2: #9aa5b1;
+  --color-ink-3: #8d99a5;
+  --color-sun: #f2a33c;
+  --color-sun-fill: #f2a33c;
+  --color-sun-soft: #ffce86;
+  --color-sun-deep: #3a2708;
+  --color-on-sun: #0a0c0e;
+  --color-earth: #4fc6e0;
+  --color-earth-fill: #4fc6e0;
+  --color-earth-soft: #a6e4f1;
+  --color-earth-deep: #0b2e38;
+  --color-on-earth: #0a0c0e;
+  --color-dark-fill: #14181d;
+  --color-hatch: #5f6a75;
+  --color-alert: #ff5e93;
+  --color-alert-deep: #3d0a20;
+  --color-alert-wash: #2a0a17;
+  --color-terrain-high: #8a949e;
+  --color-terrain-mid: #49535c;
+  --color-terrain-low: #262d34;
+  --color-psr: #0e1114;
+  --color-uncertain: #8a95a1;
+  --color-focus: #a6e4f1;
+  --shadow-rest: 0 1px 0 rgba(0, 0, 0, 0.35);
+  --shadow-raised: 0 12px 32px -14px rgba(0, 0, 0, 0.62), 0 2px 6px -2px rgba(0, 0, 0, 0.38);
+  --shadow-lift: 0 26px 52px -18px rgba(0, 0, 0, 0.72), 0 6px 14px -6px rgba(0, 0, 0, 0.45);
+  --shadow-overlay: 0 32px 80px -20px rgba(0, 0, 0, 0.78), 0 8px 20px -8px rgba(0, 0, 0, 0.5);
+  --shadow-glow-sun: 0 0 64px -12px rgba(242, 163, 60, 0.38);
+  --color-glow-sun: rgba(242, 163, 60, 0.45);
+  color-scheme: dark;
+  color: var(--color-ink);
+}
+
 @layer base {
   :root {
     color-scheme: dark;

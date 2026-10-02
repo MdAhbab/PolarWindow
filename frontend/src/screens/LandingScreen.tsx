@@ -28,7 +28,7 @@ gsap.registerPlugin(ScrollTrigger)
  */
 
 // The first picture: a waxing gibbous Moon, lit from the right of the viewer, the craters sharp along its terminator.
-const START: SceneState = { tilt: -0.3, spin: 0.6, distance: 4.4, sunAz: 0.15, earth: 0, shift: 0.5, near: 1 }
+const START: SceneState = { tilt: -0.3, spin: 0.6, distance: 4.4, sunAz: 0.15, earth: 0, shift: 0.5 }
 
 const IDEAS = [
   {
@@ -103,6 +103,13 @@ export default function LandingScreen() {
     document.title = 'POLAR WINDOW · plan landings at the Moon’s south pole'
   }, [])
 
+  // Light theme, with motion: the page opens standing on the Moon at
+  // Connecting Ridge with Earth rising, and the first scroll flies out to the
+  // whole Moon, the black sky clearing to the page as it arrives.
+  const earthrise = useState(() => readPrefs().theme === 'light')[0] && !reduced
+  const onGround = earthrise && webgl
+  const flightRef = useRef<HTMLDivElement>(null)
+
   // The Moon, and what scrolling and the pointer do to it.
   useEffect(() => {
     const canvas = canvasRef.current
@@ -112,9 +119,14 @@ export default function LandingScreen() {
     try {
       const tile = (z: number, x: number, y: number) =>
         DATA_MODE === 'snapshot' ? snapshotTileUrl('hillshade', z, x, y) : `${API_BASE}/tiles/hillshade/${z}/${x}/${y}.png`
-      // Dark: the Moon in the night sky. Light: Earth in front of the Moon.
+      // Dark: the Moon in the night sky. Light: the Earthrise first, then the Moon on the page.
       const theme = readPrefs().theme === 'light' ? 'light' : 'dark'
-      scene = createMoonScene(canvas, tile, reduced ? { ...START, tilt: -1.3, distance: 3.8, sunAz: 1.4 } : START, { theme })
+      const first = reduced
+        ? { ...START, tilt: -1.3, distance: 3.8, sunAz: 1.4 }
+        : earthrise
+          ? { ...START, ground: 1, space: 1 }
+          : START
+      scene = createMoonScene(canvas, tile, first, { theme, ground: earthrise })
     } catch {
       setWebgl(false)
       return
@@ -141,8 +153,8 @@ export default function LandingScreen() {
         defaults: { ease: 'none' },
         scrollTrigger: { trigger: root, start: 'top top', end: 'bottom bottom', scrub: 0.8 },
       })
-      // Hero -> the Sun never climbs: leave Earth behind and turn to the south pole.
-      tl.to(s, { tilt: -1.25, spin: 0, distance: 3.6, sunAz: 2.6, shift: 0.45, near: 0 })
+      // Hero -> the Sun never climbs: turn to the south pole.
+      tl.to(s, { tilt: -1.25, spin: 0, distance: 3.6, sunAz: 2.6, shift: 0.45 })
       // -> a hill switches off the Sun: the pole head-on, the Sun circling it.
       tl.to(s, { tilt: -1.52, distance: 2.5, sunAz: 4.8 })
       // -> Earth is low: step back and let Earth rise over the horizon.
@@ -152,6 +164,20 @@ export default function LandingScreen() {
       // -> what you can do, and the way in: back out.
       tl.to(s, { tilt: -0.6, distance: 4.4, sunAz: 8.6, shift: 0.5 })
       tl.to(s, { tilt: -0.4, distance: 4.8, sunAz: 9.6 })
+
+      // Light: off the ground and out to the whole Moon over the hero and a
+      // stretch of open sky after it, the sky clearing to the page at the end.
+      const flight = flightRef.current
+      if (earthrise && flight) {
+        const ft = gsap.timeline({
+          defaults: { ease: 'none' },
+          scrollTrigger: { trigger: flight, start: 'top top', end: 'bottom 40%', scrub: 0.8 },
+        })
+        ft.to(s, { ground: 0, duration: 0.8, ease: 'power1.inOut' })
+        ft.to(s, { space: 0, duration: 0.25 }, 0.75)
+        // Below lg the Moon then sits behind the words, so it dims as it did before.
+        if (window.innerWidth < 1024) ft.to(canvas, { opacity: 0.4, duration: 0.25 }, 0.75)
+      }
 
       ScrollTrigger.create({
         trigger: root,
@@ -189,7 +215,7 @@ export default function LandingScreen() {
       scene.dispose()
       sceneRef.current = null
     }
-  }, [reduced])
+  }, [reduced, earthrise])
 
   // Arriving at /#why (the old story's address) scrolls to the four ideas.
   const { hash } = useLocation()
@@ -204,7 +230,7 @@ export default function LandingScreen() {
         aria-hidden="true"
         // Below lg the Moon sits behind the text, so it is dimmed to keep the
         // words readable; beside the text it is shown in full.
-        className={`pointer-events-none fixed inset-0 h-full w-full opacity-40 lg:opacity-100 ${webgl ? '' : 'hidden'}`}
+        className={`pointer-events-none fixed inset-0 h-full w-full ${onGround ? '' : 'opacity-40 lg:opacity-100'} ${webgl ? '' : 'hidden'}`}
       />
       {/* In the dark, the night sky is shaded behind the words so they read over the Milky Way. */}
       {webgl && <div aria-hidden="true" className="pw-sky-shade pointer-events-none fixed inset-0" />}
@@ -229,7 +255,18 @@ export default function LandingScreen() {
       </header>
 
       <main id="landing-main" tabIndex={-1} className="relative z-10 outline-none">
-        <Section className="min-h-[86vh] justify-center">
+        {/* In the light theme the first screen is a dark band: Earth over the
+            Moon's horizon, under the island and behind the words, fading into
+            the page at its foot. */}
+        <div ref={flightRef}>
+        <div className="relative" data-theme={onGround ? 'dark' : undefined}>
+          {onGround && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 -top-[84px] bottom-0 -z-10 bg-gradient-to-r from-black/75 via-black/30 to-transparent"
+            />
+          )}
+        <Section className={`justify-center ${onGround ? 'min-h-[100vh]' : 'min-h-[86vh]'}`}>
           <div className="flex max-w-2xl flex-col gap-7">
             <p className="pw-eyebrow">NASA CLPS missions · the Moon’s south pole</p>
             <h1 className="pw-display text-[40px] leading-[1.02] sm:text-[60px] lg:text-[72px]">
@@ -255,6 +292,10 @@ export default function LandingScreen() {
             </p>
           </div>
         </Section>
+        </div>
+        {/* Open sky for the flight out to the Moon: nothing to read over it. */}
+        {onGround && <div aria-hidden="true" className="h-[120vh]" />}
+        </div>
 
         <div id="why" className="scroll-mt-20">
           <Section>

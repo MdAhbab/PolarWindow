@@ -40,6 +40,10 @@ const BAND = 62 * (Math.PI / 180)
 
 const loader = new TextureLoader()
 const cache = new Map<string, Promise<Texture>>()
+/** A texture, loaded once and shared: it is not disposed with a scene. */
+export function loadTexture(url: string): Promise<Texture> {
+  return load(url)
+}
 function load(url: string): Promise<Texture> {
   let p = cache.get(url)
   if (!p) {
@@ -103,12 +107,15 @@ function rng(seed: number) {
  * hundred crisp stars in front of it, so the sky stays sharp on any screen.
  * Call `dispose` with the scene.
  */
-export function createSky(radius = 60, onReady?: () => void): { group: Group; dispose: () => void } {
+export function createSky(
+  radius = 60,
+  onReady?: () => void,
+): { group: Group; setOpacity: (o: number) => void; dispose: () => void } {
   const group = new Group()
   const disposables: { dispose: () => void }[] = []
 
   const panoGeo = new SphereGeometry(radius * 1.05, 96, 48)
-  const panoMat = new MeshBasicMaterial({ color: 0x000000, side: BackSide, depthWrite: false })
+  const panoMat = new MeshBasicMaterial({ color: 0x000000, side: BackSide, depthWrite: false, transparent: true })
   const pano = new Mesh(panoGeo, panoMat)
   // Seen from inside, a sphere's map reads mirrored: un-mirror it, then turn the
   // galactic centre (the map's centre, now on -x) to -z and tip the band up to the right.
@@ -150,5 +157,13 @@ export function createSky(radius = 60, onReady?: () => void): { group: Group; di
   const mat = new PointsMaterial({ size: 1.8, sizeAttenuation: false, vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false })
   disposables.push(geo, mat)
   group.add(new Points(geo, mat))
-  return { group, dispose: () => disposables.forEach((d) => d.dispose()) }
+  return {
+    group,
+    setOpacity: (o: number) => {
+      panoMat.opacity = o
+      mat.opacity = 0.85 * o
+      group.visible = o > 0.001
+    },
+    dispose: () => disposables.forEach((d) => d.dispose()),
+  }
 }
