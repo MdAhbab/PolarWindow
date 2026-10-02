@@ -309,7 +309,7 @@ export default function LandingScreen() {
       </main>
 
       <footer className="relative z-10 flex flex-col gap-6 border-t border-line px-4 py-10 lg:px-8">
-        <BrandLogo className="h-12 sm:h-14" />
+        <BrandLogo className="h-10 sm:h-12" />
         <p className="max-w-3xl text-caption leading-caption text-ink-3">
           Not an official product of NASA or any space agency. The globe is drawn for illustration; the south-polar
           terrain is the real LOLA relief map. Sun and Earth are not to scale.

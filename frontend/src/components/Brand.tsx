@@ -18,8 +18,8 @@ import logoOnLight from '../assets/brand/logo-on-light.png'
 function Pair({ dark, light, alt, className }: { dark: string; light: string; alt: string; className: string }) {
   return (
     <>
-      <img src={dark} alt={alt} className={`pw-logo-on-dark w-auto ${className}`} draggable={false} />
-      <img src={light} alt={alt} className={`pw-logo-on-light w-auto ${className}`} draggable={false} />
+      <img src={dark} alt={alt} className={`pw-logo-on-dark w-auto shrink-0 ${className}`} draggable={false} />
+      <img src={light} alt={alt} className={`pw-logo-on-light w-auto shrink-0 ${className}`} draggable={false} />
     </>
   )
 }
@@ -30,7 +30,7 @@ export function BrandMark({ className = 'h-8', alt = 'POLAR WINDOW' }: { classNa
 }
 
 /** The mark and the words, for a header. The words are named once, by the mark's text alternative. */
-export function BrandName({ mark = 'h-8', words = 'h-[9px] sm:h-[11px]' }: { mark?: string; words?: string }) {
+export function BrandName({ mark = 'h-7', words = 'h-[8px] sm:h-[9px]' }: { mark?: string; words?: string }) {
   return (
     <span className="flex items-center gap-2.5 sm:gap-3">
       <BrandMark className={mark} />
@@ -41,5 +41,10 @@ export function BrandName({ mark = 'h-8', words = 'h-[9px] sm:h-[11px]' }: { mar
 
 /** The full logo, where it can be large enough for its words to be read. */
 export function BrandLogo({ className = 'h-14' }: { className?: string }) {
-  return <Pair dark={logoOnDark} light={logoOnLight} alt="POLAR WINDOW" className={className} />
+  // Its own box, so a column it sits in cannot stretch it to its width.
+  return (
+    <span className="inline-flex max-w-full shrink-0">
+      <Pair dark={logoOnDark} light={logoOnLight} alt="POLAR WINDOW" className={`max-w-full object-contain ${className}`} />
+    </span>
+  )
 }

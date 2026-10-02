@@ -180,7 +180,7 @@ function Dashboard() {
 function FrontPageLoading() {
   return (
     <div className="flex min-h-full flex-col items-center justify-center gap-5 bg-canvas text-ink" aria-busy="true">
-      <BrandLogo className="h-14 sm:h-16" />
+      <BrandLogo className="h-12 sm:h-14" />
       <p role="status" className="text-small text-ink-3">
         Opening POLAR WINDOW…
       </p>
