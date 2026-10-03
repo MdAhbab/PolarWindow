@@ -426,16 +426,35 @@ function FeatureCard({
   reduced: boolean
 }) {
   const ref = useRef<HTMLLIElement>(null)
+  const toX = useRef<((v: number) => void) | null>(null)
+  const toY = useRef<((v: number) => void) | null>(null)
+
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el || reduced) return
+    gsap.set(el, { transformPerspective: 700 })
+    toX.current = gsap.quickTo(el, 'rotateX', { duration: 0.3, ease: 'power2.out' })
+    toY.current = gsap.quickTo(el, 'rotateY', { duration: 0.3, ease: 'power2.out' })
+    return () => {
+      gsap.killTweensOf(el)
+      toX.current = null
+      toY.current = null
+    }
+  }, [reduced])
+
   // A slight lean toward the pointer, as a hint that the cards are live.
   const onMove = (e: ReactPointerEvent<HTMLLIElement>) => {
-    if (reduced || !ref.current) return
+    if (reduced || !ref.current || !toX.current || !toY.current) return
     const r = ref.current.getBoundingClientRect()
     const x = (e.clientX - r.left) / r.width - 0.5
     const y = (e.clientY - r.top) / r.height - 0.5
-    gsap.to(ref.current, { rotateY: x * 6, rotateX: -y * 6, duration: 0.3, ease: 'power2.out', transformPerspective: 700 })
+    toY.current(x * 6)
+    toX.current(-y * 6)
   }
   const onLeave = () => {
-    if (!reduced && ref.current) gsap.to(ref.current, { rotateX: 0, rotateY: 0, duration: 0.4, ease: 'power2.out' })
+    if (reduced || !toX.current || !toY.current) return
+    toX.current(0)
+    toY.current(0)
   }
   return (
     <li
