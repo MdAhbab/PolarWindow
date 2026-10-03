@@ -44,6 +44,22 @@ reported and **no cause is asserted**.
   comes from the DEM's vertical error (`meta.uncertainty`), and a published
   timeline to the day cannot confirm a figure in minutes.
 
+## Touchdown instants and surface geometry against NAIF descent reconstructions
+
+Measured with `make validate-landing` (`backend/app/validation/validate_landing.py`, pinned by `test_clps_landing.py`).
+
+The NAIF CLPS SPICE archive reconstructs each lander's descent trajectory to touchdown (`*_edl_rec_*`) and its final landing site position (`*_ls_*`). At touchdown:
+
+1. **Touchdown instant**: the end of NAIF's reconstructed EDL segment matches the landing instant in `missions.json` to within 1 second.
+2. **Landing site coordinates**: the `_ls_` position agrees with the LROC-derived coordinates in `missions.json` within 100 m horizontally (IM-1 was published to 2 decimal places in LROC 1360: −80.13°, 1.44°, 79 m from reconstruction; IM-2 and Blue Ghost 1 match within 0.3 m and 10.4 m).
+3. **Sun and Earth elevations**: topocentric elevations computed through the app's pipeline match direct CSPICE constant-position observer (`spkcpo` with light time and stellar aberration) to within 0.00003° (well inside the 0.01° tolerance).
+
+| Mission | Touchdown (UTC) | Target (lat, lon) | LS kernel (lat, lon) | Δpos (m) | Sun (°) | ΔSun (°) | Earth (°) | ΔEarth (°) |
+|---|---|---|---|---|---|---|---|---|
+| **IM-1 Odysseus** | 2024-02-22 23:23:44Z | −80.1300°, 1.4400° | −80.1276°, 1.4459° | 79.2 | 10.48 | 0.00000 | 15.43 | 0.00001 |
+| **IM-2 Athena** | 2025-03-06 17:28:43Z | −84.7906°, 29.1957° | −84.7906°, 29.1957° | 0.3 | 2.46 | 0.00000 | 11.19 | 0.00003 |
+| **Blue Ghost Mission 1** | 2025-03-02 08:34:54Z | 18.5623°, 61.8103° | 18.5621°, 61.8100° | 10.4 | 3.43 | 0.00000 | 25.73 | 0.00001 |
+
 # The trip propagator against flown trajectories (plan C1)
 
 Measured on commit `d01b407` with `make validate-trip`
