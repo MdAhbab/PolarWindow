@@ -31,7 +31,9 @@ export function hasWebGL(): boolean {
   if (webgl !== null) return webgl
   try {
     const c = document.createElement('canvas')
-    webgl = Boolean(c.getContext('webgl2') ?? c.getContext('webgl'))
+    const ctx = c.getContext('webgl2') ?? c.getContext('webgl')
+    webgl = Boolean(ctx)
+    ctx?.getExtension('WEBGL_lose_context')?.loseContext()
   } catch {
     webgl = false
   }
@@ -66,7 +68,6 @@ export function SceneFrame<P>({
   onFail?: () => void
 }) {
   const frame = useRef<HTMLDivElement>(null)
-  const canvas = useRef<HTMLCanvasElement>(null)
   const handle = useRef<SceneHandle<P> | null>(null)
   const latest = useRef(props)
   latest.current = props
@@ -77,8 +78,14 @@ export function SceneFrame<P>({
 
   useEffect(() => {
     const el = frame.current
-    const cv = canvas.current
-    if (!el || !cv || !hasWebGL()) return
+    if (!el || !hasWebGL()) return
+
+    const cv = document.createElement('canvas')
+    cv.setAttribute('aria-hidden', 'true')
+    cv.className =
+      'absolute inset-0 h-full w-full touch-pan-y pointer-events-none opacity-0 transition-opacity duration-[var(--pw-dur-slow)]'
+    el.appendChild(cv)
+
     let gone = false
     let started = false
     const begin = () => {
@@ -90,6 +97,8 @@ export function SceneFrame<P>({
           .then((h) => {
             if (gone) return h.dispose()
             handle.current = h
+            cv.classList.remove('pointer-events-none', 'opacity-0')
+            cv.classList.add('opacity-100')
             setLive(true)
           })
           .catch(() => {
@@ -108,6 +117,7 @@ export function SceneFrame<P>({
       ro.disconnect()
       handle.current?.dispose()
       handle.current = null
+      cv.remove()
       setLive(false)
     }
     // A new scene only for a new key or a change of motion preference; new
@@ -124,13 +134,6 @@ export function SceneFrame<P>({
         <div className={live ? 'invisible' : ''} aria-hidden={live ? true : undefined}>
           {fallback}
         </div>
-        <canvas
-          ref={canvas}
-          aria-hidden="true"
-          className={`absolute inset-0 h-full w-full touch-pan-y transition-opacity duration-[var(--pw-dur-slow)] ${
-            live ? 'opacity-100' : 'pointer-events-none opacity-0'
-          }`}
-        />
       </div>
       {live && caption && <p className="text-caption leading-caption text-ink-3">{caption}</p>}
     </div>

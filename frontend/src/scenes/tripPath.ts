@@ -272,6 +272,7 @@ export const createTripPath: SceneFactory<PathProps> = async (canvas, props, { r
       cancelAnimationFrame(raf)
       disposables.forEach((d) => d.dispose())
       renderer.dispose()
+      renderer.forceContextLoss()
     },
   }
 }

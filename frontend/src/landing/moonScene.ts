@@ -549,6 +549,7 @@ export function createMoonScene(
       ground?.dispose()
       sky?.dispose()
       renderer.dispose()
+      renderer.forceContextLoss()
     },
   }
 }

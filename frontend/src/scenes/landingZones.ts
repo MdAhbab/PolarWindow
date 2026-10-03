@@ -230,6 +230,7 @@ export const createLandingZones: SceneFactory<ZonesProps> = async (canvas, props
       ;(air.material as Material).dispose()
       disposables.forEach((d) => d.dispose())
       renderer.dispose()
+      renderer.forceContextLoss()
     },
   }
 }
