@@ -27,6 +27,8 @@ for a large folder. Every file is checked against the SHA-256 the export listed.
 from __future__ import annotations
 
 import argparse
+import contextlib
+import json
 import os
 import shutil
 import signal
@@ -49,6 +51,7 @@ LOCAL_DIR = ROOT_DIR / ".local"
 PGDATA_DIR = LOCAL_DIR / "pgdata"
 PGLOG_FILE = LOCAL_DIR / "pg.log"
 REDIS_DIR = LOCAL_DIR / "redis"
+RUN_PIDS_FILE = LOCAL_DIR / "run.pids"
 
 
 def configure_local_storage() -> None:
@@ -242,26 +245,196 @@ def stop_pids(pids: set[int], desc: str) -> None:
             pass
 
 
+def load_run_pids() -> dict[str, dict[str, any]]:
+    """Read the PID file recording processes started by this checkout."""
+    if not RUN_PIDS_FILE.is_file():
+        return {}
+    try:
+        data = json.loads(RUN_PIDS_FILE.read_text(encoding="utf-8"))
+        if isinstance(data, dict):
+            return data
+    except Exception:
+        pass
+    return {}
+
+
+def save_run_pids(pids: dict[str, dict[str, any]]) -> None:
+    """Persist or remove the PID file for processes started by this checkout."""
+    LOCAL_DIR.mkdir(parents=True, exist_ok=True)
+    if not pids:
+        if RUN_PIDS_FILE.exists():
+            with contextlib.suppress(OSError):
+                RUN_PIDS_FILE.unlink()
+        return
+    try:
+        temp_file = LOCAL_DIR / f"run.pids.{os.getpid()}.tmp"
+        temp_file.write_text(json.dumps(pids, indent=2), encoding="utf-8")
+        temp_file.replace(RUN_PIDS_FILE)
+    except Exception:
+        pass
+
+
+def get_process_cmdline(pid: int) -> str:
+    """Return the command line of a process, or an empty string if it cannot be read."""
+    if os.name == "nt":
+        try:
+            res = subprocess.run(
+                [
+                    "powershell",
+                    "-NoProfile",
+                    "-Command",
+                    f"(Get-CimInstance Win32_Process -Filter 'ProcessId = {pid}').CommandLine",
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=3,
+            )
+            if res.returncode == 0:
+                return res.stdout.strip()
+        except Exception:
+            pass
+        return ""
+    try:
+        res = subprocess.run(
+            ["ps", "-o", "command=", "-p", str(pid)],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=3,
+        )
+        if res.returncode == 0:
+            return res.stdout.strip()
+    except Exception:
+        pass
+    return ""
+
+
+def get_process_cwd(pid: int) -> Path | None:
+    """Return the current working directory of a process, if accessible."""
+    if os.name == "nt":
+        return None
+    if sys.platform == "darwin":
+        try:
+            res = subprocess.run(
+                ["lsof", "-a", "-p", str(pid), "-d", "cwd", "-Fn"],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=3,
+            )
+            if res.returncode == 0:
+                for line in res.stdout.splitlines():
+                    if line.startswith("n/") and not line.startswith("n/dev/"):
+                        return Path(line[1:])
+        except Exception:
+            return None
+    elif sys.platform.startswith("linux"):
+        try:
+            return Path(os.readlink(f"/proc/{pid}/cwd"))
+        except Exception:
+            return None
+    return None
+
+
+def is_pid_in_project(pid: int) -> bool:
+    """True if the process's working directory or command line is scoped to this checkout."""
+    if os.name == "nt":
+        cmd = get_process_cmdline(pid)
+        root_str = str(ROOT_DIR).lower()
+        return root_str in cmd.lower() or str(BE_DIR).lower() in cmd.lower() or str(FE_DIR).lower() in cmd.lower()
+    cwd = get_process_cwd(pid)
+    if cwd is not None:
+        try:
+            cwd.resolve().relative_to(ROOT_DIR.resolve())
+            return True
+        except ValueError:
+            return False
+    # If cwd cannot be resolved via lsof/proc, check if command line references this checkout
+    cmd = get_process_cmdline(pid)
+    return str(ROOT_DIR) in cmd or str(BE_DIR) in cmd or str(FE_DIR) in cmd
+
+
+def cmdline_matches(expected_cmd: str, actual_cmd: str) -> bool:
+    """True if actual_cmd still contains the key identifiers of expected_cmd."""
+    if not actual_cmd or not expected_cmd:
+        return False
+    if expected_cmd in actual_cmd:
+        return True
+    key_markers = (
+        "uvicorn",
+        "app.main:app",
+        "app.workers.compute",
+        "app.workers.feeds",
+        "vite",
+        "polar-data",
+        "5173",
+        "8000",
+    )
+    expected_markers = [m for m in key_markers if m in expected_cmd]
+    if expected_markers:
+        return any(m in actual_cmd for m in expected_markers)
+    tokens = [t for t in expected_cmd.split() if len(t) > 3 and not t.startswith("-")]
+    return any(t in actual_cmd for t in tokens)
+
+
 def stop_previous_instances(be_port: int = 8000, fe_port: int = 5173) -> None:
-    """Find and stop any running backend and frontend processes."""
+    """Find and stop any running backend and frontend processes started by this checkout."""
     log("CLEANUP", YELLOW, "Checking for previous instances...")
 
-    # Port listeners
-    port_pids: set[int] = set()
-    port_pids.update(get_pids_on_port(be_port))
-    port_pids.update(get_pids_on_port(fe_port))
+    # 1. Check .local/run.pids first
+    recorded = load_run_pids()
+    if recorded:
+        recorded_pids_to_stop: set[int] = set()
+        for _name, info in list(recorded.items()):
+            if not isinstance(info, dict):
+                continue
+            pid = info.get("pid")
+            if not isinstance(pid, int):
+                continue
+            try:
+                os.kill(pid, 0)
+            except (ProcessLookupError, PermissionError):
+                continue
+            expected_cmd = str(info.get("cmd", ""))
+            current_cmd = get_process_cmdline(pid)
+            if not current_cmd or not cmdline_matches(expected_cmd, current_cmd):
+                continue
+            recorded_pids_to_stop.add(pid)
+        if recorded_pids_to_stop:
+            stop_pids(recorded_pids_to_stop, "recorded")
+        save_run_pids({})
 
-    # Pattern matches
-    pattern_pids: set[int] = set()
-    pattern_pids.update(get_matching_pids("uvicorn app.main:app"))
-    pattern_pids.update(get_matching_pids("app.workers.compute"))
-    pattern_pids.update(get_matching_pids("app.workers.feeds"))
-    pattern_pids.update(get_matching_pids("vite"))
+    # 2. Fallback scoped to this checkout (no pid file or older runs)
+    port_listeners: dict[int, list[int]] = {
+        be_port: get_pids_on_port(be_port),
+        fe_port: get_pids_on_port(fe_port),
+    }
 
-    all_pids = port_pids | pattern_pids
-    if all_pids:
-        stop_pids(all_pids, "frontend/backend")
-    else:
+    fallback_pids: set[int] = set()
+
+    for port, pids in port_listeners.items():
+        for pid in pids:
+            if is_pid_in_project(pid):
+                fallback_pids.add(pid)
+            else:
+                port_flag = "--backend-port" if port == be_port else "--frontend-port"
+                cmd = get_process_cmdline(pid)
+                log(
+                    "CLEANUP",
+                    RED,
+                    f"Port {port} is used by another program (pid {pid}: {cmd}). Stop it or pass {port_flag}.",
+                )
+                sys.exit(1)
+
+    for pat in ("uvicorn app.main:app", "app.workers.compute", "app.workers.feeds", "vite"):
+        for pid in get_matching_pids(pat):
+            if is_pid_in_project(pid):
+                fallback_pids.add(pid)
+
+    if fallback_pids:
+        stop_pids(fallback_pids, "frontend/backend")
+    elif not recorded:
         log("CLEANUP", GREEN, "No previous instances found.")
 
     # Ensure ports are actually free
@@ -557,6 +730,14 @@ class Stack:
             errors="replace",
         )
         self.procs[name] = proc
+        pgid = None
+        if os.name != "nt":
+            with contextlib.suppress(Exception):
+                pgid = os.getpgid(proc.pid)
+        pids = load_run_pids()
+        pids[name] = {"pid": proc.pid, "pgid": pgid, "cmd": " ".join(cmd)}
+        save_run_pids(pids)
+
         threading.Thread(
             target=stream_process_output,
             args=(proc, name.upper(), color, self.stop_event),
@@ -592,6 +773,12 @@ class Stack:
         self._spawn("frontend", cmd, FE_DIR, GREEN)
 
     def _stop(self, proc: subprocess.Popen) -> None:
+        pids = load_run_pids()
+        for k, v in list(pids.items()):
+            if isinstance(v, dict) and v.get("pid") == proc.pid:
+                pids.pop(k, None)
+        save_run_pids(pids)
+
         if proc.poll() is not None:
             return
         if os.name == "nt":
