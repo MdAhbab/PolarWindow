@@ -18,7 +18,9 @@ failure modes are handled once:
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
+import re
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -59,6 +61,37 @@ def verified(target: Target) -> bool:
     if not p.exists() or p.stat().st_size < target.min_bytes:
         return False
     return target.sha256 is None or sha256_of(p) == target.sha256
+
+
+def _meta_path(part: Path) -> Path:
+    return part.with_name(part.name + ".meta")
+
+
+def _unlink_part(part: Path) -> None:
+    part.unlink(missing_ok=True)
+    _meta_path(part).unlink(missing_ok=True)
+
+
+def _load_validator(part: Path) -> str | None:
+    meta = _meta_path(part)
+    if not meta.exists():
+        return None
+    try:
+        data = json.loads(meta.read_text())
+        if isinstance(data, dict):
+            val = data.get("validator")
+            return str(val) if val else None
+    except Exception:
+        return None
+    return None
+
+
+def _save_validator(part: Path, validator: str | None) -> None:
+    meta = _meta_path(part)
+    if validator:
+        meta.write_text(json.dumps({"validator": validator}))
+    else:
+        meta.unlink(missing_ok=True)
 
 
 def fetch(
@@ -107,14 +140,15 @@ def fetch(
             size = part.stat().st_size
             if size < target.min_bytes:
                 errors.append(f"{url}: got {size:,} bytes, expected at least {target.min_bytes:,}")
-                part.unlink(missing_ok=True)
+                _unlink_part(part)
                 continue
             if target.sha256 is not None:
                 got = sha256_of(part)
                 if got != target.sha256:
                     errors.append(f"{url}: sha256 {got} != pinned {target.sha256}")
-                    part.unlink(missing_ok=True)
+                    _unlink_part(part)
                     continue
+            _meta_path(part).unlink(missing_ok=True)
             part.replace(target.dest)
             return target.dest
     finally:
@@ -134,12 +168,36 @@ def _stream(
     req_headers = dict(headers)
     if have:
         req_headers["Range"] = f"bytes={have}-"
+        val = _load_validator(part)
+        if val:
+            req_headers["If-Range"] = val
     with http.stream("GET", url, headers=req_headers) as resp:
-        if resp.status_code == 416:  # already complete
-            return
+        if resp.status_code == 416:
+            head_resp = http.head(url, headers=headers)
+            head_resp.raise_for_status()
+            remote_len_hdr = head_resp.headers.get("content-length")
+            remote_len = int(remote_len_hdr) if remote_len_hdr is not None else -1
+            if have > 0 and remote_len == have:
+                return
+            _unlink_part(part)
+            raise httpx.RequestError(
+                f"HTTP 416: held {have} bytes, but remote Content-Length is {remote_len}; "
+                "restarting"
+            )
         resp.raise_for_status()
         if have and resp.status_code != 206:
-            have = 0  # server ignored Range: start over
+            have = 0  # server ignored Range or validator changed: start over
+        if not have:
+            validator = resp.headers.get("etag") or resp.headers.get("last-modified")
+            _save_validator(part, validator)
+        elif resp.status_code == 206:
+            cr = resp.headers.get("content-range", "")
+            m = re.match(r"^bytes\s+(\d+)-", cr, re.IGNORECASE)
+            if not m or int(m.group(1)) != have:
+                _unlink_part(part)
+                raise httpx.RequestError(
+                    f"Content-Range {cr!r} start does not match bytes held ({have}); restarting"
+                )
         total = have + int(resp.headers.get("content-length", 0) or 0)
         mode = "ab" if have else "wb"
         written = have
