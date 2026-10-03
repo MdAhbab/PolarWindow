@@ -23,6 +23,16 @@ machine only, no password) on the port in `PW_DATABASE_URL`. When the NASA
 servers are slow, copy the data from a machine that has it (`--export-data` and
 `--data-from`, in the README's quick start).
 
+Processes started by `run.py` are tracked in `.local/run.pids` (JSON) to avoid
+affecting other checkouts or unrelated software on the host. If a required port
+(8000 or 5173) is occupied by a foreign process, the runner refuses to terminate
+it, logs an informative error with the foreign process command line, and exits with
+code 1. On shutdown, all child processes receive termination signals concurrently;
+compute workers get up to `POLAR_STOP_GRACE_S` (default 15 s) to return claimed jobs
+cleanly before SIGKILL. Exit codes: `0` (clean), `1` (child crash), `130` (Ctrl+C),
+and `143` (SIGTERM). Project-local database and Redis instances remain running for fast
+restarts; stop them explicitly with `python3 run.py --stop-services`.
+
 `make seed` is a **hard prerequisite**, not an optimisation. Until it runs the
 API starts, answers `/healthz`, and returns 409 with a readable message for
 every geometry request. It runs the steps below, and each is separately

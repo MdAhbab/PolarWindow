@@ -21,6 +21,8 @@ python3 run.py
 
 `python3 run.py` checks and installs dependencies, starts PostgreSQL (creating `.local/pgdata` if no local database exists) and Redis, runs migrations, launches the API server (:8000), compute and feeds background workers, and serves the Vite frontend (:5173). It then downloads required datasets automatically, resuming any interrupted downloads.
 
+Process lifecycle is tracked in `.local/run.pids` so the runner stops only what this checkout started. If a port (8000 or 5173) is held by an unrelated program, the runner refuses to kill it, prints an informative error (e.g. `Port 5173 is used by another program... Stop it or pass --frontend-port`), and exits with code 1. Shutdown is graded and parallel: child processes receive termination signals simultaneously, with up to 15 s grace for compute workers to release their active jobs. Exit codes reflect how the run ended: `0` for normal shutdown, `130` for Ctrl+C (SIGINT), `143` for SIGTERM, and `1` if a child process crashed. Supporting services (PostgreSQL on port 5433, Redis on port 6380) remain running across restarts; run `python3 run.py --stop-services` to stop the project's own instances.
+
 On native Windows, use `python run.py`. The runner supports Windows process
 management and keeps temporary files, Python installations and dependency caches
 in `.local/` beside the repository. PostgreSQL binaries may be placed in
@@ -33,6 +35,12 @@ Optional local [Copernicus Marine wave subsets](docs/copernicus-marine.md) can
 provide Return wave height within their downloaded place/time coverage. The
 [SPENVIS comparison guide](docs/spenvis-manual-validation.md) records the
 radiation check on all seven passages: five pass, two miss on protons.
+
+To stop project-local background database and cache services:
+
+```bash
+python3 run.py --stop-services
+```
 
 To avoid slow downloads from remote archive servers, export downloaded data from an existing machine:
 

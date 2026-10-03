@@ -628,6 +628,11 @@ def ensure_redis(env: dict[str, str]) -> None:
         while time.time() < deadline:
             if is_port_open(port):
                 log("SERVICES", GREEN, "Redis started (cache only, project-local logs).")
+                pids = load_run_pids()
+                pids["redis"] = {"port": port, "managed": True}
+                save_run_pids(pids)
+                with contextlib.suppress(Exception):
+                    (LOCAL_DIR / "redis.managed").write_text(str(port), encoding="utf-8")
                 return
             time.sleep(0.2)
         log("SERVICES", RED, f"Redis did not start; check {REDIS_DIR / 'redis.log'}.")
@@ -640,6 +645,57 @@ def ensure_redis(env: dict[str, str]) -> None:
         log("SERVICES", RED, f"Failed to start Redis: {res.stderr or res.stdout}")
     else:
         log("SERVICES", GREEN, "Redis started.")
+        pids = load_run_pids()
+        pids["redis"] = {"port": port, "managed": True}
+        save_run_pids(pids)
+        with contextlib.suppress(Exception):
+            (LOCAL_DIR / "redis.managed").write_text(str(port), encoding="utf-8")
+
+
+def stop_services(env: dict[str, str]) -> None:
+    """Stop the project's own local PostgreSQL and Redis if this project started them."""
+    pg_pid_file = PGDATA_DIR / "postmaster.pid"
+    if pg_pid_file.is_file():
+        log("SERVICES", YELLOW, f"Stopping project PostgreSQL in {PGDATA_DIR}...")
+        pg_ctl = shutil.which("pg_ctl")
+        if pg_ctl:
+            res = subprocess.run([pg_ctl, "-D", str(PGDATA_DIR), "stop", "-m", "fast"], check=False)
+            if res.returncode == 0:
+                log("SERVICES", GREEN, "PostgreSQL stopped.")
+            else:
+                log("SERVICES", RED, "Failed to stop PostgreSQL cleanly.")
+        else:
+            log("SERVICES", RED, "pg_ctl not found; cannot stop PostgreSQL.")
+    else:
+        log("SERVICES", YELLOW, "Project PostgreSQL is not running.")
+
+    pids = load_run_pids()
+    redis_managed_file = LOCAL_DIR / "redis.managed"
+    redis_info = pids.get("redis")
+    redis_port = None
+    if isinstance(redis_info, dict) and redis_info.get("managed"):
+        redis_port = redis_info.get("port")
+    elif redis_managed_file.is_file():
+        with contextlib.suppress(Exception):
+            redis_port = int(redis_managed_file.read_text(encoding="utf-8").strip())
+
+    if redis_port:
+        log("SERVICES", YELLOW, f"Stopping project Redis on port {redis_port}...")
+        redis_cli = shutil.which("redis-cli")
+        if redis_cli:
+            res = subprocess.run([redis_cli, "-p", str(redis_port), "shutdown", "nosave"], check=False)
+            if res.returncode == 0:
+                log("SERVICES", GREEN, "Redis stopped.")
+            else:
+                log("SERVICES", RED, "Failed to stop Redis cleanly.")
+        else:
+            log("SERVICES", RED, "redis-cli not found; cannot stop Redis.")
+        with contextlib.suppress(Exception):
+            redis_managed_file.unlink()
+        pids.pop("redis", None)
+        save_run_pids(pids)
+    else:
+        log("SERVICES", YELLOW, "Project-started Redis is not recorded as running.")
 
 
 def check_tools() -> None:
@@ -919,6 +975,15 @@ class Stack:
 
         save_run_pids({})
         log("SYSTEM", GREEN, "All servers stopped. Goodbye!")
+        env = read_env()
+        db = Database.from_env(env)
+        redis_url = urllib.parse.urlsplit(env.get("PW_REDIS_URL") or DEFAULT_REDIS_URL)
+        redis_port = redis_url.port or 6380
+        log(
+            "SERVICES",
+            CYAN,
+            f"PostgreSQL (port {db.port}) and Redis (port {redis_port}) are still running; python3 run.py --stop-services stops this project's own.",
+        )
         sys.exit(exit_code)
 
     def monitor(self) -> None:
@@ -1095,11 +1160,21 @@ def main() -> None:
         help="Which datasets to sync (repeatable; default core, lifecycle, validation). "
         "'bulk' needs PW_EARTHDATA_TOKEN.",
     )
+    parser.add_argument(
+        "--stop-services",
+        action="store_true",
+        help="Stop this project's local PostgreSQL (.local/pgdata) and Redis instances, then exit.",
+    )
     args = parser.parse_args()
 
     print(f"{BOLD}{CYAN}=== POLAR WINDOW RUNNER ==={RESET}\n")
     configure_local_storage()
     check_tools()
+
+    if args.stop_services:
+        env = read_env()
+        stop_services(env)
+        sys.exit(0)
 
     if args.export_data:
         out = Path(args.export_data).expanduser().resolve()
