@@ -171,6 +171,9 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/polar_window"
     redis_url: str = "redis://localhost:6379/0"
     redis_enabled: bool = True
+    #: Socket connect and read timeout for Redis. A stalled Redis costs at most
+    #: this long, never hanging the request indefinitely.
+    redis_timeout_s: float = 1.0
 
     # --- compute -----------------------------------------------------------
     #: Default timeline sampling step. 900 s over a 708 h window is 2,835

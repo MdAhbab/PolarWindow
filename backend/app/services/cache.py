@@ -63,7 +63,12 @@ async def get_client() -> Any:
         try:
             import redis.asyncio as aioredis
 
-            _client = aioredis.from_url(s.redis_url, socket_connect_timeout=1.0)
+            _client = aioredis.from_url(
+                s.redis_url,
+                socket_connect_timeout=s.redis_timeout_s,
+                socket_timeout=s.redis_timeout_s,
+                health_check_interval=30,
+            )
             await _client.ping()
         except Exception as exc:
             log.warning("Redis unavailable (%s); running without cache.", exc)
