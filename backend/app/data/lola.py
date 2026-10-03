@@ -142,6 +142,17 @@ LDEM_80S_80M: Final[LolaProduct] = LolaProduct(
     vertical_error_m=4.0,
 )
 
+#: 60 m/px, 60S-90S. 1.93 GB -- never downloaded whole; windowed by range request.
+#: Used for targets between 60S and 80S (e.g. APEX-1 in Schrödinger).
+LDEM_60S_60M: Final[LolaProduct] = LolaProduct(
+    name="LOLA_LDEM_60S_60M",
+    filename="ldem_60s_60m.img",
+    size_px=31040,
+    scale_m=60.0,
+    projection_offset_px=15519.5,
+    vertical_error_m=4.0,
+)
+
 
 class DemUnavailable(RuntimeError):
     """The DEM subset this site needs is not on disk.
