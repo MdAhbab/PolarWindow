@@ -896,6 +896,10 @@ plan, what was measured, and what was left out.
   with the dates playing, is 33 ms. The Map with the dates playing was 33 ms
   at the median before its relief was given its own layer, and is 16.7 ms
   after. None of this was measured on a real phone; that remains to do.
+- *Playback commit duration.* Playing the date slider for 5 s at 390 × 844 with
+  4× CPU throttle: median React commit duration per frame at the screen root is
+  1.2 ms on /site (TwoClock), 1.6 ms on /map, and 2.1 ms on /compare — all well
+  under the 4.0 ms frame budget. No component tree re-architecting is required.
 - *Accessibility.* The e2e suite's axe rules (WCAG 2.1 A and AA, serious
   and critical), sideways overflow and console errors over 19 routes at
   1440 and 375 px in both themes, run on the offline build after the last
