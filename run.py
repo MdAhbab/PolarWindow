@@ -783,23 +783,38 @@ class Stack:
             return
         if os.name == "nt":
             subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"], capture_output=True, check=False)
-            proc.wait(timeout=10)
+            with contextlib.suppress(Exception):
+                proc.wait(timeout=10)
             return
-        try:
-            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-        except Exception:
-            try:
+
+        same_group = False
+        with contextlib.suppress(Exception):
+            same_group = os.getpgid(proc.pid) == os.getpgrp()
+
+        if same_group:
+            with contextlib.suppress(Exception):
                 proc.terminate()
+        else:
+            try:
+                os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
             except Exception:
-                pass
+                with contextlib.suppress(Exception):
+                    proc.terminate()
+
         deadline = time.time() + 3.0
         while proc.poll() is None and time.time() < deadline:
             time.sleep(0.1)
+
         if proc.poll() is None:
-            try:
-                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-            except Exception:
-                pass
+            if same_group:
+                with contextlib.suppress(Exception):
+                    proc.kill()
+            else:
+                try:
+                    os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                except Exception:
+                    with contextlib.suppress(Exception):
+                        proc.kill()
 
     def restart_backend(self, why: str) -> None:
         self.restarting.set()
@@ -815,17 +830,96 @@ class Stack:
         finally:
             self.restarting.clear()
 
-    def shutdown(self, signum=None, frame=None) -> None:
+    def shutdown(self, code_or_sig: int | signal.Signals | None = 0, frame: object | None = None) -> None:
         if self.stop_event.is_set():
             return
         self.stop_event.set()
+
+        if code_or_sig == signal.SIGINT:
+            exit_code = 130
+        elif code_or_sig == signal.SIGTERM:
+            exit_code = 143
+        elif isinstance(code_or_sig, int):
+            exit_code = code_or_sig
+        else:
+            exit_code = 0
+
         log("SYSTEM", YELLOW, "\nShutting down the backend, the workers and the frontend...")
+
+        children: list[tuple[str, subprocess.Popen]] = list(self.procs.items())
         if self.data_proc is not None:
-            self._stop(self.data_proc)
-        for proc in self.procs.values():
-            self._stop(proc)
+            children.append(("data", self.data_proc))
+
+        # 1. Send termination signals to all children in parallel
+        for _name, proc in children:
+            if proc.poll() is not None:
+                continue
+            if os.name == "nt":
+                with contextlib.suppress(Exception):
+                    proc.send_signal(signal.CTRL_BREAK_EVENT)
+            else:
+                same_group = False
+                with contextlib.suppress(Exception):
+                    same_group = os.getpgid(proc.pid) == os.getpgrp()
+                if same_group:
+                    with contextlib.suppress(Exception):
+                        proc.terminate()
+                else:
+                    try:
+                        os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+                    except Exception:
+                        with contextlib.suppress(Exception):
+                            proc.terminate()
+
+        # 2. Parallel graded wait: compute workers get POLAR_STOP_GRACE_S (default 15s), others 5s
+        grace_s = float(os.environ.get("POLAR_STOP_GRACE_S", "15"))
+        start_time = time.time()
+        killed: set[str] = set()
+
+        while True:
+            now = time.time()
+            all_done = True
+            for name, proc in children:
+                if proc.poll() is not None:
+                    continue
+                is_compute = name.startswith("compute")
+                allowed_grace = grace_s if is_compute else 5.0
+                if now - start_time >= allowed_grace:
+                    if name not in killed:
+                        log("SYSTEM", RED, f"Child '{name}' (PID {proc.pid}) did not stop gracefully; killed with SIGKILL.")
+                        killed.add(name)
+                        if os.name == "nt":
+                            subprocess.run(
+                                ["taskkill", "/PID", str(proc.pid), "/T", "/F"],
+                                capture_output=True,
+                                check=False,
+                            )
+                        else:
+                            same_group = False
+                            with contextlib.suppress(Exception):
+                                same_group = os.getpgid(proc.pid) == os.getpgrp()
+                            if same_group:
+                                with contextlib.suppress(Exception):
+                                    proc.kill()
+                            else:
+                                try:
+                                    os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                                except Exception:
+                                    with contextlib.suppress(Exception):
+                                        proc.kill()
+                else:
+                    all_done = False
+            if all_done:
+                break
+            time.sleep(0.1)
+
+        for _name, proc in children:
+            with contextlib.suppress(Exception):
+                proc.wait(timeout=1.0)
+
+        save_run_pids({})
         log("SYSTEM", GREEN, "All servers stopped. Goodbye!")
-        sys.exit(0)
+        sys.exit(exit_code)
 
     def monitor(self) -> None:
         while not self.stop_event.is_set():
@@ -835,8 +929,8 @@ class Stack:
             for name, proc in list(self.procs.items()):
                 ret = proc.poll()
                 if ret is not None and not self.stop_event.is_set() and not self.restarting.is_set():
-                    log("SYSTEM", RED, f"{name.title()} process exited with code {ret}")
-                    self.shutdown()
+                    log("SYSTEM", RED, f"{name.title()} process exited unexpectedly with code {ret}")
+                    self.shutdown(1)
 
 
 def sync_data(stack: Stack, tiers: list[str]) -> None:
@@ -856,7 +950,16 @@ def sync_data(stack: Stack, tiers: list[str]) -> None:
     for t in tiers:
         cmd += ["--tier", t]
     proc = subprocess.Popen(
-        cmd, cwd=BE_DIR, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1
+        cmd,
+        cwd=BE_DIR,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+        start_new_session=os.name != "nt",
+        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0,
+        encoding="utf-8",
+        errors="replace",
     )
     stack.data_proc = proc
     stream_process_output(proc, "DATA", YELLOW, stack.stop_event)
@@ -880,7 +983,15 @@ def polar_data(args: list[str]) -> int:
     """Run ``polar-data`` (backend/app/data/sync.py) with its output shown under [DATA]."""
     proc = subprocess.Popen(
         ["uv", "run", "polar-data", *args],
-        cwd=BE_DIR, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1,
+        cwd=BE_DIR,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+        start_new_session=os.name != "nt",
+        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0,
+        encoding="utf-8",
+        errors="replace",
     )
     stream_process_output(proc, "DATA", YELLOW, threading.Event())
     return proc.wait()
