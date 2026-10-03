@@ -112,7 +112,7 @@ export function ProgrammeTimeline({
       const rowEnds: number[] = []
       const placed: Placed[] = ms.map((m) => {
         const d = missionDate(m)!.date
-        const tick = d.precision === 'day' || d.precision === 'minute'
+        const tick = d.precision === 'second' || d.precision === 'day' || d.precision === 'minute'
         const x0 = xf(d.startMs)
         const x1 = tick ? x0 + 2 : Math.max(x0 + 2, xf(d.endMs))
         const labelW = (m.name.length + 2) * 6.8

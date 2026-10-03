@@ -67,7 +67,7 @@ InstrumentType = Literal[
     "technology_demo",
     "other",
 ]
-Precision = Literal["minute", "day", "month", "quarter", "year"]
+Precision = Literal["second", "minute", "day", "month", "quarter", "year"]
 Region = Literal["south_polar", "nearside", "farside", "polar_other"]
 CoordinateKind = Literal["actual_landing", "planned_target", "feature_centre"]
 
@@ -290,7 +290,7 @@ class MissionIn(_Strict):
             raise ValueError("'rovers' has entries but no entry in field_sources")
         urls = {s.url for s in self.sources}
         for f, url in self.field_sources.items():
-            if f not in (*NULLABLE_FIELDS_V2, "rovers"):
+            if f not in (*NULLABLE_FIELDS_V2, "rovers", "landing"):
                 raise ValueError(f"field_sources names '{f}', which is not a v2 field")
             if url not in urls:
                 raise ValueError(f"field_sources['{f}'] is not one of the mission's sources")

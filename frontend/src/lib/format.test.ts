@@ -61,6 +61,7 @@ describe('window and date words', () => {
   it('says how precisely a date is known', () => {
     expect(precisionWords('year')).toBe('to the year')
     expect(precisionWords('minute')).toBe('to the minute')
+    expect(precisionWords('second')).toBe('to the second')
   })
 
   it('writes dates and times in words, leaving midnight off', () => {

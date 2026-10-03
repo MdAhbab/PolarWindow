@@ -372,7 +372,12 @@ function Payloads({ mission: m, asOf }: { mission: MissionDetail; asOf: string |
 export function initialWindow(m: MissionDetail): { startH: number; hours: number } | null {
   const sw = m.surfaceWindow
   if (sw.startIso && sw.endIso) return windowFromInstants(Date.parse(sw.startIso), Date.parse(sw.endIso))
-  if (m.landing && m.landing.precision !== 'day' && m.landing.precision !== 'minute') {
+  if (
+    m.landing &&
+    m.landing.precision !== 'day' &&
+    m.landing.precision !== 'minute' &&
+    m.landing.precision !== 'second'
+  ) {
     return windowFromInstants(m.landing.startMs, m.landing.startMs + 30 * 86_400_000)
   }
   return null
@@ -396,7 +401,10 @@ function SurfaceWindowLine({ mission: m, site }: { mission: MissionDetail; site:
       break
     case 'none':
       line =
-        m.landing && m.landing.precision !== 'day' && m.landing.precision !== 'minute'
+        m.landing &&
+        m.landing.precision !== 'day' &&
+        m.landing.precision !== 'minute' &&
+        m.landing.precision !== 'second'
           ? `Landing known only to the ${m.landing.precision}; choose a date below`
           : `${sw.note} Choose a date below.`
   }

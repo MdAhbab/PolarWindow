@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { adaptMission } from './api/adapters'
+import { adaptMission, adaptPublishedDate } from './api/adapters'
 import type { MissionListDTO } from './api/client'
 import listFixture from './api/__fixtures__/missions.list.json'
 import {
@@ -86,6 +86,19 @@ describe('window sampling step', () => {
 })
 
 describe('published dates on screen', () => {
+  it('writes a date known to the second with hours, minutes, and seconds', () => {
+    const d = adaptPublishedDate({
+      date: '2024-02-22T23:23:44Z',
+      precision: 'second',
+      as_published: 'February 22, 2024 (press release); 23:23:44 UTC derived from NAIF EDL reconstruction',
+    })!
+    expect(publishedWords(d)).toBe('22 Feb 2024, 23:23:44 UTC')
+    expect(publishedWords(d, true)).toBe('22 February 2024, 23:23:44 UTC')
+    expect(publishedTitle(d)).toBe(
+      'As published: February 22, 2024 (press release); 23:23:44 UTC derived from NAIF EDL reconstruction',
+    )
+  })
+
   it('writes a date known to the minute in words, and keeps the phrase for the tooltip only', () => {
     const d = mission('im-2').landing!
     expect(publishedWords(d)).toBe('6 Mar 2025, 17:30 UTC')

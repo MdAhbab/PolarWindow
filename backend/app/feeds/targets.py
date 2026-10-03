@@ -62,7 +62,11 @@ def flown_surface_days() -> list[tuple[str, datetime, datetime]]:
         land, eom = m.get("landing"), m.get("end_of_mission")
         if m.get("status") not in ("completed", "partial_success") or not land or not eom:
             continue
-        if land.get("precision") in ("minute", "day") and eom.get("precision") in ("minute", "day"):
+        if land.get("precision") in ("second", "minute", "day") and eom.get("precision") in (
+            "second",
+            "minute",
+            "day",
+        ):
             out.append((m["id"], _date(land, end=False), _date(eom, end=True)))
     return out
 

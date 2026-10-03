@@ -167,8 +167,10 @@ export function windowLine(startMs: number, hours: number): string {
 }
 
 /** A published date's precision, in words that say how much is known. */
-export function precisionWords(p: 'minute' | 'day' | 'month' | 'quarter' | 'year'): string {
+export function precisionWords(p: 'second' | 'minute' | 'day' | 'month' | 'quarter' | 'year'): string {
   switch (p) {
+    case 'second':
+      return 'to the second'
     case 'minute':
       return 'to the minute'
     case 'day':

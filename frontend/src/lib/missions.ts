@@ -103,6 +103,11 @@ const hhmm = (ms: number) => {
   return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} UTC`
 }
 
+const hhmmss = (ms: number) => {
+  const d = new Date(ms)
+  return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}:${String(d.getUTCSeconds()).padStart(2, '0')} UTC`
+}
+
 /**
  * A published date as the screen shows it.
  *
@@ -114,6 +119,7 @@ const hhmm = (ms: number) => {
  */
 export function publishedWords(d: PublishedDate, long = false): string {
   const day = long ? dateWords : shortDate
+  if (d.precision === 'second') return `${day(d.startMs)}, ${hhmmss(d.startMs)}`
   if (d.precision === 'minute') return `${day(d.startMs)}, ${hhmm(d.startMs)}`
   if (d.precision === 'day') return day(d.startMs)
   return `${cleanPhrase(d.asPublished)} (known to the ${d.precision})`
@@ -121,7 +127,7 @@ export function publishedWords(d: PublishedDate, long = false): string {
 
 /** The tooltip for a date written in words: the phrase as the source published it. */
 export function publishedTitle(d: PublishedDate): string | undefined {
-  return d.precision === 'minute' || d.precision === 'day' ? `As published: ${cleanPhrase(d.asPublished)}` : undefined
+  return d.precision === 'second' || d.precision === 'minute' || d.precision === 'day' ? `As published: ${cleanPhrase(d.asPublished)}` : undefined
 }
 
 /**
