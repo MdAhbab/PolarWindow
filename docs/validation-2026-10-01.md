@@ -50,14 +50,23 @@ is saved in [the checked JSON](validation-evidence/2026-10-01-launch.json).
 ## Radiation and marine data
 
 The actual downloaded IM-2 SPENVIS AP-8 MAX / AE-8 MAX spectra meet the 5%
-comparison gate with rad-5: proton +2.56%, electron +1.09%. Only that passage
-has been independently run. Four Blue Ghost and two Peregrine passages are
-prepared but unrun: follow [the manual validation instructions](spenvis-manual-validation.md).
-The six physical trajectory uploads, their manifest and instructions are also
-packaged locally in `data/validation/spenvis/remaining-passages.zip` (128,243 bytes).
-The browser's saved origin block still prevents automating those authenticated
-SPENVIS steps. This is an execution limitation, not a claim that those
-passages pass. Local model-to-model checks are not substitutes for them.
+comparison gate with rad-5: proton +2.56%, electron +1.09%.
+
+Update, 3 October 2026: the four Blue Ghost and two Peregrine passages have
+now been run by hand in SPENVIS and compared. Electrons pass on all six (+0.40%
+to +1.27%). Protons pass on four (+1.97% to +4.50%) and **fail on two**: Blue
+Ghost passage 2 at +5.75% and Peregrine passage 1 at +5.40%. So five of the
+seven passages meet the gate and two do not.
+
+The proton excess is the same on every passage and has one cause. IRBEM works
+out the shell value L with the dipole moment of the map's own field, where
+McIlwain's definition and SPENVIS use a fixed 31,165.3 nT. That puts the
+engine's L about 0.4% low, which on the proton belt's outer slope reads about
+5% more flux. Recomputing L with the fixed moment brings all six proton
+differences inside ±1.5%. That is a diagnosis: rad-5 has not been changed, and
+the two failures stand until the engine is. The table and the working are in
+[the radiation validation](validation.md); the steps are in
+[the manual validation instructions](spenvis-manual-validation.md).
 
 The downloaded Copernicus VHM0 NetCDF has been decoded and integrated. It
 covers 28–35°N, 80–70°W, 1–2 October 2026 UTC; the checked source and probes

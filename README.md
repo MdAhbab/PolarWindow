@@ -31,8 +31,8 @@ set `PW_REDIS_ENABLED=false`. See [the Windows setup notes](docs/windows-setup.m
 
 Optional local [Copernicus Marine wave subsets](docs/copernicus-marine.md) can
 provide Return wave height within their downloaded place/time coverage. The
-[SPENVIS comparison guide](docs/spenvis-manual-validation.md) records the passed
-IM-2 radiation check and the remaining unrun passages.
+[SPENVIS comparison guide](docs/spenvis-manual-validation.md) records the
+radiation check on all seven passages: five pass, two miss on protons.
 
 To avoid slow downloads from remote archive servers, export downloaded data from an existing machine:
 

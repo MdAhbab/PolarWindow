@@ -1,12 +1,14 @@
 # Manual SPENVIS comparison
 
-The account is signed in and the `POLARWIND` project's IM-2 passage was run on
-1 October 2026. Its downloaded proton and electron spectra pass the 5% comparison
-gate with engine `rad-5`: protons +2.56%, electrons +1.09%. This checks one passage
-against another implementation of the maps, not against particle measurements.
-The other passages still need their own SPENVIS runs. These steps use
-the prepared files in `data/validation/spenvis/`; the generated files are local and ignored
-by Git. Regenerate them from `backend/` with `python -m app.validation.export_spenvis`.
+All seven prepared passages have been run in SPENVIS and compared with engine
+`rad-5`: IM-2 on 1 October 2026, the four Blue Ghost and two Peregrine passages
+on 3 October 2026. Five pass the 5% comparison gate. Two miss it on protons:
+Blue Ghost passage 2 (+5.75%) and Peregrine passage 1 (+5.40%). The results are
+in [Results](#results) below. This checks each passage against another
+implementation of the maps, not against particle measurements.
+These steps use the prepared files in `data/validation/spenvis/`; the generated
+files are local and ignored by Git. Regenerate them from `backend/` with
+`python -m app.validation.export_spenvis`.
 
 ## First run: IM-2
 
@@ -62,25 +64,86 @@ this integration and are retained as a separate record. Results and input hashes
 are saved in `data/validation/spenvis/results/im-2/comparison-summary.json`.
 The committed regression fixture preserves the actual downloaded threshold fluxes.
 
-## Remaining passages
+## The form, as it is in SPENVIS 4.6.14
+
+These are the pages as they were on 3 October 2026.
+
+1. **Model packages → Coordinate generators → Spacecraft trajectories.** Set
+   *Trajectory generation* to **upload trajectory file** and leave *Mission end*
+   on total mission duration. Leave the satellite orientation as it is: the
+   flux compared here is summed over all directions.
+2. *Mission duration* takes days or years only. Enter days, **rounded up to
+   four decimals** from the table below. A value equal to the passage, or
+   longer by less than about a second, is refused with "Mission duration is
+   shorter than the combined mission segments". The spectrum file records this
+   number as `MIS_DUR` and the trajectory's own length as `ORB_DUR`; the
+   comparison reads `ORB_DUR`, so the extra seconds do not enter it.
+3. **Next >>**, choose the passage's `.csv`, then **Run**. *Combined Run* is for
+   chaining models whose settings are already saved; it is not needed.
+4. **UP → Radiation sources and effects → Trapped proton and electron fluxes.**
+   Set both *Model version* boxes to **solar maximum**; the proton one starts on
+   solar minimum. Leave local time variation off, confidence at 50% and both
+   thresholds at 1.00. This page offers no magnetic-field choice. **Run**.
+5. Save **Trapped proton spectra along the orbit** as `spenvis_spp.txt` and
+   **Trapped electron spectra along the orbit** as `spenvis_spe.txt` (save the
+   text link, not the icon beside it).
+
+Each upload replaces the project's trajectory, so finish one passage before
+starting the next. Every passage's downloads have the same two names: keep
+each pair in its own folder, `results/<mission>/passage-NN/`. The comparison
+refuses a spectrum whose header names another passage.
+
+## Passages
 
 Each passage must be run independently. Do not integrate across missing
 trajectory intervals. All prepared passages use solar-maximum maps.
 
-| Trajectory file | Samples | Duration (seconds) | Duration (days) |
-| --- | ---: | ---: | ---: |
-| `blue-ghost-m1-passage-01.csv` | 429 | 25680 | 0.2972222222222222 |
-| `blue-ghost-m1-passage-02.csv` | 974 | 58380 | 0.6756944444444445 |
-| `blue-ghost-m1-passage-03.csv` | 958 | 57420 | 0.6645833333333333 |
-| `blue-ghost-m1-passage-04.csv` | 950 | 56940 | 0.6590277777777778 |
-| `im-2-passage-01.csv` | 437 | 26160 | 0.3027777777777778 |
-| `peregrine-m1-passage-01.csv` | 437 | 26160 | 0.3027777777777778 |
-| `peregrine-m1-passage-02.csv` | 430 | 25740 | 0.2979166666666667 |
+| Trajectory file | Samples | Duration (seconds) | Duration (days) | Entered in the form |
+| --- | ---: | ---: | ---: | ---: |
+| `blue-ghost-m1-passage-01.csv` | 429 | 25680 | 0.2972222222222222 | 0.2973 |
+| `blue-ghost-m1-passage-02.csv` | 974 | 58380 | 0.6756944444444445 | 0.6758 |
+| `blue-ghost-m1-passage-03.csv` | 958 | 57420 | 0.6645833333333333 | 0.6647 |
+| `blue-ghost-m1-passage-04.csv` | 950 | 56940 | 0.6590277777777778 | 0.6592 |
+| `im-2-passage-01.csv` | 437 | 26160 | 0.3027777777777778 | not recorded |
+| `peregrine-m1-passage-01.csv` | 437 | 26160 | 0.3027777777777778 | 0.3029 |
+| `peregrine-m1-passage-02.csv` | 430 | 25740 | 0.2979166666666667 | 0.2980 |
 
 Use `manifest.json` as the authoritative list of dates, durations, source
 hashes and reference fluences.
 IM-1's available reconstruction has no belt coverage and cannot supply this
-validation run. Prepared inputs do not constitute a passed validation.
+validation run.
+
+Run the comparison once per passage, from `backend/`:
+
+```sh
+uv run python -m app.validation.compare_spenvis --mission blue-ghost-m1 --passage 2 \
+  --protons ../data/validation/spenvis/results/blue-ghost-m1/passage-02/spenvis_spp.txt \
+  --electrons ../data/validation/spenvis/results/blue-ghost-m1/passage-02/spenvis_spe.txt
+```
+
+It writes `results/<mission>/comparison-summary.json`, which the next passage of
+the same mission overwrites. Copy it into the passage's folder to keep it.
+
+## Results
+
+Engine `rad-5` against SPENVIS 4.6.14.3582, AP-8 MAX and AE-8 MAX, integrated
+over each passage's own sample times. The denominator is SPENVIS.
+
+| Passage | Protons >10 MeV | Electrons >1 MeV | 5% gate |
+| --- | ---: | ---: | --- |
+| IM-2, passage 1 | +2.56% | +1.09% | pass |
+| Blue Ghost 1, passage 1 | +1.97% | +0.87% | pass |
+| Blue Ghost 1, passage 2 | +5.75% | +1.27% | **fail (protons)** |
+| Blue Ghost 1, passage 3 | +4.43% | +1.04% | pass |
+| Blue Ghost 1, passage 4 | +4.50% | +1.01% | pass |
+| Peregrine, passage 1 | +5.40% | +0.40% | **fail (protons)** |
+| Peregrine, passage 2 | +4.24% | +0.72% | pass |
+
+The two failures are failures of the gate as written. The protons are high on
+every passage for one reason: IRBEM computes the shell value L with the dipole
+moment of the map's own field, and SPENVIS uses McIlwain's fixed 31,165.3 nT.
+[The radiation validation](validation.md) has the fluences and the working.
+The engine has not been changed, so the two failures stand.
 
 References already used to prepare the exporter:
 [SPENVIS upload format](https://www.spenvis.oma.be/help/models/sapre_upl.html)

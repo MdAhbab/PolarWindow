@@ -628,10 +628,45 @@ The rounded report totals are 1.0804e6 and 1.1552e10 respectively; they differ
 slightly from this integration. The gate uses the downloaded samples, not the
 rounded report. Inputs and hashes are kept with the local comparison summary;
 the regression fixture preserves actual threshold fluxes. See
-[the repeatable commands and remaining passages](spenvis-manual-validation.md).
+[the repeatable commands](spenvis-manual-validation.md).
 This checks one passage against another implementation of the maps. It is not
-a measurement validation, and does not validate unrun Blue Ghost or Peregrine
-passages, other thresholds or solar-minimum maps.
+a measurement validation, and does not validate other thresholds or
+solar-minimum maps.
+
+On 3 October 2026 the other six passages were run the same way (SPENVIS
+4.6.14.3582, AP-8 MAX and AE-8 MAX, the form's own field settings). Each raw
+spectrum matches its passage's name, start, duration and sample count.
+
+| Passage | Samples | p >10 MeV SPENVIS | Engine `rad-5` | diff | e >1 MeV SPENVIS | Engine `rad-5` | diff | 5% gate |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Blue Ghost 1, passage 1 | 429 | 3.294e5 | 3.359e5 | +1.97% | 1.410e9 | 1.422e9 | +0.87% | pass |
+| Blue Ghost 1, passage 2 | 974 | 2.114e8 | 2.235e8 | +5.75% | 1.320e10 | 1.337e10 | +1.27% | **fail (protons)** |
+| Blue Ghost 1, passage 3 | 958 | 2.797e8 | 2.921e8 | +4.43% | 2.941e9 | 2.972e9 | +1.04% | pass |
+| Blue Ghost 1, passage 4 | 950 | 2.782e8 | 2.907e8 | +4.50% | 3.976e9 | 4.016e9 | +1.01% | pass |
+| Peregrine, passage 1 | 437 | 4.114e7 | 4.337e7 | +5.40% | 1.206e10 | 1.211e10 | +0.40% | **fail (protons)** |
+| Peregrine, passage 2 | 430 | 2.272e8 | 2.368e8 | +4.24% | 1.098e10 | 1.106e10 | +0.72% | pass |
+
+Electrons pass on every passage. Protons are 2% to 6% high on every passage,
+IM-2 included, and two passages miss the gate. They are recorded as failures of
+the gate as written; the gate has not been widened.
+
+The difference comes from the magnetic shell value L, not from the maps.
+Reading the engine's maps at the B and L that SPENVIS lists for each sample
+gives SPENVIS's fluence within 0.7% on all six passages, for both particles.
+The local field strength agrees to about 0.1%, but the engine's L for protons
+is lower by 0.003 to 0.008. IRBEM turns the field-line integral I into L with
+the dipole moment of the map's own field: 30,875.1 nT for GSFC 12/66 at 1970
+and 31,033.5 nT for Jensen and Cain 1960 (solved from IRBEM's own I, B and L;
+the same to 0.1 nT over 95 samples). McIlwain's definition, which the maps
+were built on and SPENVIS follows, uses the fixed 31,165.3 nT. On the outer
+slope of the proton belt, where these passages collect most of their protons,
+a shell 0.4% lower reads about 5% more flux.
+
+As a check of that explanation, L was recomputed from IRBEM's I and B with the
+fixed moment (Hilton's 1971 formula). It then lies within 0.003 of SPENVIS's L
+for protons, and the six proton differences become −1.5%, +1.2%, +1.1%, +1.0%,
++1.1% and +1.0%; electrons stay between +0.2% and +1.0%. This is a diagnosis
+only. Engine `rad-5` is unchanged and still gives the numbers in the table.
 
 The initial IM-2 mismatch exposed missing SAA longitudinal drift compensation.
 Engine `rad-5` rotates the evaluation point eastward by the published 0.3°/year
