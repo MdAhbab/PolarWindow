@@ -154,6 +154,37 @@ async def test_a_dead_workers_job_is_claimed_again_after_its_lease() -> None:
         assert await JobRepository(s).heartbeat(job["job_id"], "live-worker", 60, progress=0.3)
 
 
+async def test_a_stopped_worker_hands_its_job_back_without_spending_attempt() -> None:
+    job = await _enqueue()
+    started = asyncio.Event()
+
+    async def slow_handler(ctx: JobContext) -> HandlerResult:
+        started.set()
+        await asyncio.sleep(30)
+        return HandlerResult(result={"ok": True})
+
+    worker = Worker(owner="stopping-worker", handlers={"toy": slow_handler})
+    worker_task = asyncio.create_task(worker.run_once())
+
+    await asyncio.wait_for(started.wait(), timeout=2.0)
+    async with session_scope() as s:
+        ref = await job_service.get_job(s, job["job_id"])
+        assert ref["status"] == "running"
+
+    worker.stop()
+    with pytest.raises(asyncio.CancelledError):
+        await asyncio.wait_for(worker_task, timeout=2.0)
+
+    async with session_scope() as s:
+        rec = await JobRepository(s).get(job["job_id"])
+        ref = await job_service.get_job(s, job["job_id"])
+        assert rec is not None
+        assert rec.status == "queued"
+        assert rec.attempts == 0
+        assert rec.lease_owner is None
+        assert "Interrupted when its worker stopped" in ref["message"]
+
+
 async def test_a_job_out_of_attempts_with_a_dead_lease_is_failed() -> None:
     job = await _enqueue()
     async with session_scope() as s:

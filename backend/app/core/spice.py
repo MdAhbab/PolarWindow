@@ -622,3 +622,16 @@ def describe() -> dict[str, Any]:
         "kernels_loaded": _state.count,
         "r_moon_m": R_MOON_M,
     }
+
+
+def busy() -> bool:
+    """True when the SPICE thread is currently executing a call or has one queued."""
+    if _executor is None:
+        return False
+    if not _executor._work_queue.empty():
+        return True
+    if _executor._threads:
+        idle = getattr(_executor, "_idle_semaphore", None)
+        if idle is not None and idle._value == 0:
+            return True
+    return False

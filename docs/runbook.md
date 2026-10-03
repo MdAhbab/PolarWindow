@@ -336,7 +336,7 @@ Postgres:
 
 After a code change restart the API **and** the compute workers: a worker keeps the
 code it started with, and a stored answer is reused until its inputs or engine
-versions change (ADR-13).
+versions change (ADR-13). Stopping a worker hands its job back without spending an attempt.
 
 **Keys** (all optional, in `.env`, never committed or printed):
 

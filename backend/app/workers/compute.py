@@ -133,10 +133,13 @@ class Worker:
         self.handlers = HANDLERS if handlers is None else handlers
         self._wake = asyncio.Event()
         self._stop = asyncio.Event()
+        self._task: asyncio.Task[HandlerResult] | None = None
 
     def stop(self) -> None:
         self._stop.set()
         self._wake.set()
+        if self._task is not None and not self._task.done():
+            self._task.cancel()
 
     async def run_once(self) -> JobRecord | None:
         """Claim and run one job. Returns the job it ran, or None if there was none."""
@@ -159,10 +162,17 @@ class Worker:
             if fn is None:
                 raise UnknownJobKind(f"no handler for job kind {job.kind!r}")
             task = asyncio.create_task(fn(ctx))
+            self._task = task
             beat = asyncio.create_task(self._heartbeat(ctx, task))
             result = await task
         except asyncio.CancelledError:
             if self._stop.is_set():
+
+                async def _do_release() -> None:
+                    async with session_scope() as s:
+                        await JobRepository(s).release(job.id, self.owner)
+
+                await asyncio.shield(_do_release())
                 raise
             log.warning("job %s lost its lease and was cancelled", job.id)
             return
@@ -178,6 +188,7 @@ class Worker:
             log.info("job %s is now %s", job.id, status)
             return
         finally:
+            self._task = None
             if beat is not None:
                 beat.cancel()
                 with contextlib.suppress(asyncio.CancelledError):
@@ -290,6 +301,13 @@ def main() -> None:
         from app.db.session import dispose_engine
 
         await dispose_engine()
+
+        # Python joins pool threads at exit, but a CSPICE call cannot be interrupted.
+        # If the SPICE executor is still busy, exit immediately: the job is already
+        # back in the queue.
+        if spice.busy():
+            logging.shutdown()
+            os._exit(0)
 
     asyncio.run(run())
 
