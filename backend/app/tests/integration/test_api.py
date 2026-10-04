@@ -488,13 +488,15 @@ async def test_mission_detail_is_sourced_and_honest(client) -> None:
     assert d["site"]["coordinate_rule"] == "published"
 
 
-async def test_a_target_outside_the_polar_model_says_so(client) -> None:
+async def test_a_target_outside_80s_has_terrain_when_covered(client) -> None:
     if not await _missions_seeded(client):
         pytest.skip("missions are not seeded")
     d = (await client.get(f"{API}/missions/blue-ghost-m1")).json()
-    assert d["terrain_modelled"] is False
+    assert d["terrain_modelled"] is True
+    site = (await client.get(f"{API}/sites/{d['site_id']}")).json()
+    assert "SLDEM" in site["horizon"]["dem_product"]
     m = (await client.get(f"{API}/sites/{d['site_id']}/metrics")).json()
-    assert m["meta"]["uncertainty"]["terrain_modelled"] is False
+    assert m["meta"]["uncertainty"]["terrain_modelled"] is True
 
 
 async def test_unknown_mission_is_a_problem_detail(client) -> None:
