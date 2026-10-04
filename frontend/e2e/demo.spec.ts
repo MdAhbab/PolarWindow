@@ -87,12 +87,12 @@ test('demo path: volatiles → IM-2 → shift the date → compare → ask → r
   await expectNoSeriousAxe(page, '/missions?type=volatiles')
 
   // Beat 3: IM-2, named from the data.
-  await page.getByRole('link', { name: /^IM-2, Intuitive Machines, landed 6 March 2025/ }).click()
+  await page.getByRole('link', { name: /^IM-2, Intuitive Machines, landed 6 March 2025, 17:28:43 UTC, Partly successful, carries volatiles/ }).click()
   await expect(page).toHaveURL(/\/missions\/im-2$/)
   await expect(page.getByRole('heading', { level: 1 })).toContainText('IM-2')
   const main = page.locator('main')
   // The mission's home: its record and the six steps, each one tap away.
-  await expect(main).toContainText('6 Mar 2025')
+  await expect(main).toContainText('6 Mar 2025, 17:28:43 UTC')
   await expect(page.getByRole('navigation', { name: 'Mission sections' }).getByRole('link')).toHaveCount(6)
   await expectNoSeriousAxe(page, '/missions/im-2')
   await page.getByRole('link', { name: /^4\s*Surface/ }).click()
@@ -182,6 +182,8 @@ test('beats 4 and 7: VIPER month strip and the far side', async ({ page, context
 
   await page.goto('/missions/apex-1/surface')
   const main = page.locator('main')
+  // Its target is south of 60°S: LOLA's 60 m model covers it, so the flat-ground note is gone.
+  await expect(main).not.toContainText('No terrain model covers this site')
   await expect(main).toContainText('For the centre of Schrödinger')
   // Earth contact is zero on the far side: a measurement, shown as 0.
   const earth = main.locator('div.pw-tile', { hasText: 'Time in contact with Earth' }).first()

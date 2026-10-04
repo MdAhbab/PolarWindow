@@ -24,7 +24,7 @@ test('API unreachable: saved answers, the Saved copy badge, and a degraded agent
   await expectNoSeriousAxe(page, '/missions, offline')
 
   await page.getByRole('link', { name: /^IM-2,/ }).click()
-  await expect(page.locator('main')).toContainText('6 Mar 2025')
+  await expect(page.locator('main')).toContainText('6 Mar 2025, 17:28:43 UTC')
   await page.getByRole('link', { name: /^4\s*Surface/ }).click()
   await expect(page.locator('main')).toContainText('100% of the time')
 

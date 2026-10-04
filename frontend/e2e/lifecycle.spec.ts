@@ -1263,10 +1263,10 @@ test('radiation and space weather (live API): Blue Ghost’s screening with its 
   await expect(rad).toContainText('Screening only:')
   await expect(rad).toContainText('Confirm in SPENVIS, OLTARIS or CREME-MC')
   await expect(rad).toContainText(/Electrons above 1 MeV, whole trip≥[\d.]+ × 10¹⁰ ×\/÷2 per cm²/)
-  // No elevation data at its site: the open sky is a flat horizon, assumed, and it says so.
+  // Its site has a terrain model (SLDEM2015): the open sky is measured from its skyline, not assumed flat.
   const dd = (label: string) => rad.locator('dl').first().locator('dt', { hasText: label }).locator('xpath=following-sibling::dd[1]')
-  await expect(dd('Cosmic-ray dose at the landing spot')).toHaveText(/^[\d.]+ ±[\d.]+ mGy a day \(100% of the sky open, assumed\)$/)
-  await expect(rad).toContainText('The elevation model does not cover this landing site, so its horizon is taken as flat (open sky 1)')
+  await expect(dd('Cosmic-ray dose at the landing spot')).toHaveText(/^[\d.]+ ±[\d.]+ mGy a day \(\d+% of the sky open\)$/)
+  await expect(rad).not.toContainText('The elevation model does not cover this landing site')
   // The one solar particle event during the trip, in the singular, with its record.
   await expect(rad).toContainText("One solar particle event crossed NOAA's threshold (10 pfu above 10 MeV at GOES) during the trip, from NASA DONKI; its fluence is not worked out.")
   await expect(rad).toContainText('25 February 2025, 00:20 UTC')
@@ -1277,7 +1277,8 @@ test('radiation and space weather (live API): Blue Ghost’s screening with its 
   await rad.locator('summary', { hasText: 'How each was worked out' }).click()
   await expect(rad).toContainText('AE8/AP8')
   await expect(rad).toContainText('CRaTER')
-  await expect(rad).toContainText('A flat horizon, assumed: the elevation model does not cover this site.')
+  await expect(rad).toContainText("From the site's skyline, the cosmic rays taken as arriving evenly from every direction; 1 is a flat horizon.")
+  await expect(rad).not.toContainText('A flat horizon, assumed')
 
   // IM-1: NASA's reconstruction starts past the belts, so they are not counted, and it says why once (never "≥0" or "0 ×/÷2").
   await page.goto('/missions/im-1/trip')
@@ -1511,7 +1512,8 @@ test('relays, orbiters and rovers (live API): IM-3’s planned relay as a range,
   await expect(yaoki).toContainText('The ground, shaded from the terrain map')
   await expect(yaoki.getByRole('row', { name: /^90° \(east\)/ })).toBeVisible()
   await yaoki.locator('summary', { hasText: 'Antennas, radio and terrain' }).click()
-  await expect(yaoki).toContainText(/LOLA_LDEM_80S_20M: a height every 20 m, each good to ±2 m/)
+  // The terrain it used, by name, spacing and height error: the finest map on disk that covers the neighbourhood.
+  await expect(yaoki).toContainText(/(LROC_NAC_DTM_NOBILE0[34]|LOLA_LDEM_\w+): a height every [\d.]+ m, each good to ±[\d.]+ m/)
   await expectNoSeriousAxe(page, 'IM-2 contact with orbiters and Yaoki open (dark)')
   await page.evaluate(() => localStorage.setItem('pw-prefs', JSON.stringify({ theme: 'light', motion: 'full', shortcuts: true })))
   await page.setViewportSize({ width: 375, height: 812 })
