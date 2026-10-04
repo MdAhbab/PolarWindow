@@ -257,3 +257,19 @@ async def test_a_full_queue_answers_503_with_a_wait(queue_of_one, anon_client) -
     assert r.headers["retry-after"] == "60"
     d = r.json()["detail"]
     assert d["type"].endswith("/queue-full") and d["ui"]["retryable"] is True
+
+
+async def test_latest_for_job_uses_index() -> None:
+    async with session_scope() as s:
+        await s.execute(text("SET enable_seqscan = off"))
+        res = await s.execute(
+            text(
+                "EXPLAIN SELECT * FROM jobs "
+                "WHERE kind = 'launch' AND params_hash = 'test' AND closure = 'test' "
+                "ORDER BY id DESC LIMIT 1"
+            )
+        )
+        plan = " ".join(r[0] for r in res.fetchall())
+        assert "ix_jobs_latest" in plan
+
+
