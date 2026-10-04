@@ -134,7 +134,8 @@ export class ApiUnreachable extends ApiError {
 
 function serviceHost(): string {
   try {
-    return new URL(API_BASE).host
+    // The address may be a path on this page's own server (a deployment behind one address).
+    return new URL(API_BASE, window.location.href).host
   } catch {
     return API_BASE
   }
