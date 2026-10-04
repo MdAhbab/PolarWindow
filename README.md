@@ -89,9 +89,9 @@ See *On a server* below.
 ## Test it
 
 ```bash
-make test-fast     # 675 unit, property and golden tests, no services, about 20 s
+make test-fast     # 680 unit, property and golden tests, no services, about 20 s
 make lint          # ruff, mypy --strict, 10 layering contracts
-make test          # 898 backend tests against real kernels, terrain and a test database, about 7 min
+make test          # every backend test (900+) against real kernels, terrain and a test database, about 7 min
 cd frontend && npm run check && npm test     # TypeScript, 292 unit and component tests
 cd frontend && npm run e2e                   # 61 browser tests with accessibility checks; needs the app running
 ```
