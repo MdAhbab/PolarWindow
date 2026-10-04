@@ -75,7 +75,7 @@ differ by more than 1e-5 m/s² the spacecraft was firing an engine or
 thrusters; a *quiet stretch* is a run below that, less 30 minutes at each
 end. From the start of a quiet stretch the reconstructed state is propagated
 and compared with the reconstruction 24 h and 72 h later. Nothing is fitted.
-The force model is the default one (DE440 Sun and Moon, Earth J2–J6, GRAIL
+The force model is the default one (DE440 Sun and Moon, Earth EGM2008 to degree and order 8, GRAIL
 GRGM1200A to degree 50 in cruise and 100 in lunar orbit, no sunlight
 pressure); the last column repeats the run with sunlight pressure for an
 assumed Cr·A/m of 0.01 m²/kg, since no lander publishes its area or mass
@@ -83,26 +83,29 @@ at that point in the flight.
 
 | Reference | Start (UTC) | Where | After | Position error | With assumed sunlight pressure |
 |---|---|---|---|---|---|
+| Blue Ghost 1 | 2025-01-15 07:32 | cruise | 24 h | 0.06 km | 0.15 km |
 | Blue Ghost 1 | 2025-01-16 07:32 | cruise | 24 h | 0.11 km | 0.07 km |
 | Blue Ghost 1 | 2025-01-17 07:32 | cruise | 24 h | 0.11 km | 0.07 km |
-| Blue Ghost 1 | 2025-01-15 07:32 | cruise | 24 h | 0.37 km | 0.51 km |
-| Blue Ghost 1 | 2025-01-15 07:32 | cruise | 72 h | 1.46 km | 3.21 km |
+| Blue Ghost 1 | 2025-01-15 07:32 | cruise | 72 h | 0.85 km | 1.19 km |
 | Blue Ghost 1 | 2025-02-03 13:12 | cruise | 72 h | 1.08 km | 0.62 km |
+| Blue Ghost 1 | 2025-02-13 07:02 | lunar orbit | 9.5 h (longest stretch) | 0.01 km | 0.02 km |
+| IM-1 | 2024-02-19 20:26 | cruise | 8.5 h (longest stretch) | 0.64 km | 0.64 km |
+| IM-1 | 2024-02-21 02:01 | lunar orbit | 2.8 h (longest stretch) | 0.03 km | 0.02 km |
+| IM-2 | 2025-02-27 01:51 | cruise | 24 h | **4.40 km** | 4.22 km |
+| IM-2 | 2025-03-01 18:01 | cruise | 23.3 h (longest stretch) | 0.65 km | 0.61 km |
 | IM-2 | 2025-03-03 13:01 | lunar orbit, ~100 km | 24 h | 0.51 km | 0.50 km |
 | IM-2 | 2025-03-04 13:01 | lunar orbit, ~100 km | 24 h | 0.27 km | 0.28 km |
-| LRO | 2025-03-20 00:01 | lunar orbit, 80–100 km | 24 h | 0.05 km | 0.05 km |
 | LRO | 2025-03-21 01:41 | lunar orbit, 80–100 km | 24 h | 0.03 km | 0.03 km |
-| IM-1 | 2024-02-19 20:26 | cruise | 8.5 h (longest stretch) | 0.64 km | 0.64 km |
-| IM-2 | 2025-02-27 01:51 | cruise | 24 h | **4.40 km** | 4.43 km |
+| LRO | 2025-03-22 01:41 | lunar orbit, 80–100 km | 24 h | 0.07 km | 0.08 km |
 
 Raising the Moon's field from degree 100 to 200 changes the lunar-orbit rows
 by at most 8 m. A 24 h forward-and-back run from Blue Ghost's reconstructed
-state returns to within **5.8 mm**.
+state returns to within **0.1 mm**.
 
 **Against the plan's tolerances.** Reconstructions: <=1 km after 24 h is met
 for Blue Ghost 1 and for IM-2 in lunar orbit, **not for IM-2's cruise
-(4.40 km)**; <=5 km after 72 h is met (1.08 and 1.46 km). LRO: <=1 km after
-24 h is met (0.03-0.05 km). Round trip <=1 m is met.
+(4.40 km)**; <=5 km after 72 h is met (0.85 and 1.08 km). LRO: <=1 km after
+24 h is met (0.03-0.07 km). Round trip <=1 m is met.
 
 **Why IM-2's cruise misses (4.40 km vs 1 km plan).** EGM2008 tesseral terms up to
 degree and order 8 resolve the first ~1.5 h out of parking orbit (accounting for
@@ -164,7 +167,7 @@ this environment. As planned, we do not retry or block on GMAT. In its place,
 benchmarks: two-body motion against Kepler's equation over five orbits (under 1 mm),
 J2 nodal drift against textbook rates (within 2 %), forward-and-back in a 100 km
 lunar orbit with spherical harmonics and SRP (0.2-0.9 mm), and round-trip propagation
-about Earth and Moon (under 1 m; Blue Ghost 24 h round trip returns to 5.8 mm).
+about Earth and Moon (under 1 m; Blue Ghost 24 h round trip returns to within 0.1 mm).
 
 # Launch instants and direct transfers against the flown launches (plan D1, C2, D2)
 
@@ -350,12 +353,12 @@ instants:
 
 | Flown | Time | Replayed: minutes off | radius off |
 |---|---|---|---|
-| apogee | 2025-01-19T14:00:21Z | +0.1 | +0.001 % |
-| perigee | 2025-01-23T19:30:45Z | +0.2 | +0.011 % |
-| apogee | 2025-01-27T22:01:37Z | +0.9 | +0.007 % |
-| perigee | 2025-02-01T00:10:21Z | +1.5 | +0.016 % |
-| apogee | 2025-02-05T02:42:52Z | +2.2 | +0.008 % |
-| perigee | 2025-02-09T05:08:42Z | +2.9 | +0.027 % |
+| apogee | 2025-01-19T14:00:21Z | -0.1 | -0.000 % |
+| perigee | 2025-01-23T19:30:45Z | -0.1 | +0.007 % |
+| apogee | 2025-01-27T22:01:37Z | +0.4 | +0.005 % |
+| perigee | 2025-02-01T00:10:21Z | +0.9 | +0.013 % |
+| apogee | 2025-02-05T02:42:52Z | +1.3 | +0.005 % |
+| perigee | 2025-02-09T05:08:42Z | +1.8 | +0.022 % |
 
 **Designed loops** (plan: the flown loop count, and a launch period that holds
 the flown date). Given the pad, the other Falcon 9 flights' climb, Falcon 9's
@@ -370,20 +373,20 @@ its cheapest design over one loop fewer, the two-body count and one more.
 
 | Day | Loops | Liftoff (min) | Raise | Period | Leave | Total (m/s) |
 |---|---|---|---|---|---|---|
-| −5 | 3 | +478 | 108.8 | +30.3 | −1.5 | 140.6 |
-| −4 | 3 | +479 | 122.1 | +26.3 | 3.4 | 151.9 |
-| −3 | 3 | +489 | 116.1 | +16.8 | 17.6 | 150.5 |
-| −2 | 3 | +490 | 92.6 | +12.2 | 16.6 | 121.4 |
-| −1 | 3 | −151 | 83.0 | +12.1 | 15.8 | 110.9 |
-| **0** | **3** | **−139** | **20.8** | **−4.7** | **24.8** | **50.3** |
-| +1 | 3 | −159 | 47.1 | −12.3 | 36.2 | 95.6 |
-| +2 | 3 | +457 | 76.6 | −11.3 | 36.0 | 124.0 |
-| +3 | 2 | −167 | 80.0 | +42.0 | −15.1 | 137.2 |
+| −5 | 3 | +478 | 108.8 | +30.3 | −1.4 | 140.5 |
+| −4 | 3 | +479 | 122.1 | +26.3 | 3.5 | 151.8 |
+| −3 | 3 | +490 | 116.0 | +16.7 | 17.6 | 150.3 |
+| −2 | 3 | +490 | 92.6 | +12.2 | 16.5 | 121.4 |
+| −1 | 3 | −151 | 82.9 | +12.1 | 15.8 | 110.8 |
+| **0** | **3** | **−139** | **20.8** | **−4.6** | **24.7** | **50.1** |
+| +1 | 3 | −159 | 47.1 | −12.2 | 36.2 | 95.5 |
+| +2 | 3 | +457 | 76.6 | −11.4 | 36.1 | 124.1 |
+| +3 | 2 | −167 | 80.0 | +42.1 | −15.1 | 137.2 |
 | +4 | 2 | −171 | 89.5 | +37.8 | −11.2 | 138.5 |
-| +5 | 1 | +448 | 94.0 | — | 27.6 | 121.6 |
+| +5 | 1 | +448 | 94.0 | — | 27.5 | 121.5 |
 
 The flown day needs three loops, as flown, and is the cheapest day of the
-eleven by 45 m/s: its burns add up to 50.3 m/s against the 49.4 m/s found in
+eleven by 45 m/s: its burns add up to 50.1 m/s against the 49.4 m/s found in
 the reconstruction (22.5, 3.3 and 23.6 m/s). With no propellant budget
 published, every day whose design works belongs to a period, so the
 three-loop period (−5 to +2 days) holds the flown date. The cost curve is the
@@ -393,7 +396,7 @@ day it did most of the raising (20.8 m/s against 85 m/s in two-body terms).
 Due east, the liftoff lands 139 min before the real one (the real climb was
 inclined 34.5°, which a due-east climb from Florida does not give). Climbing
 at the azimuth it flew (110.2°), the flown day's design needs 3 loops and
-lands 0.6 min after the real liftoff (plan: 5 min), 55.3 m/s in all (flown 49.4).
+lands 0.6 min after the real liftoff (plan: 5 min), 56.2 m/s in all (flown 49.4).
 
 **Correction budget** (plan: linear and Monte Carlo within 10% at the 95th and
 99th percentiles; a seeded run repeats bit for bit). The flight as planned is

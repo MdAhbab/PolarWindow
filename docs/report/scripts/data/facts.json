@@ -1,0 +1,141 @@
+{
+  "engine_version": "hz-2/vis-2",
+  "kernels_loaded_ktotal": 10,
+  "reference_window_requested": [
+    "2027-03-14T00:00:00+00:00",
+    "2027-04-12T12:43:12+00:00"
+  ],
+  "step_s": 900,
+  "candidate_sites": 15,
+  "window_computed": [
+    "2027-03-14T00:00:00Z",
+    "2027-04-12T12:45:00Z"
+  ],
+  "window_hours": 708.75,
+  "focus": {
+    "id": "connecting-ridge",
+    "lat_deg": -89.43804,
+    "lon_deg": 222.71699,
+    "elev_m": 1957.5,
+    "anchor": [
+      -89.45,
+      222.0
+    ],
+    "offset_from_anchor_km": 0.42,
+    "dem_product_stored": "LOLA_LDEM_80S_20M + LDEM_80S_80M",
+    "dem_vertical_error_stored_m": 4.0,
+    "mask_max_el_deg": -0.0617,
+    "mask_max_el_bearing_deg": 175.0,
+    "mask_mean_el_deg": -2.3681,
+    "mask_min_el_deg": -4.44,
+    "mask_range_median_m": 29269.3,
+    "mask_range_min_m": 460.0,
+    "mask_range_max_m": 49595.8,
+    "mask_tol_min_deg": 0.00462,
+    "mask_tol_max_deg": 0.24911,
+    "mask_tol_mean_deg": 0.10511,
+    "coverage": 1.0,
+    "bearings_set_by_80m_tier": 746,
+    "bearings_total": 1440,
+    "rebuilt_vs_stored_max_abs_el_diff_deg": 0.0,
+    "rebuilt_product": "LOLA_LDEM_80S_20M + LDEM_80S_80M",
+    "rebuilt_vertical_error_m": 4.0,
+    "spherical_dip_deg_at_elev": -2.7185,
+    "sun_el_min_deg": -1.607,
+    "sun_el_max_deg": -0.7031,
+    "sun_samples": 2836,
+    "sun_state_counts": {
+      "dark": 421,
+      "penumbral": 272,
+      "lit": 2143
+    },
+    "sun_angular_radius_deg": {
+      "min": 0.266,
+      "mean": 0.267,
+      "max": 0.2683
+    },
+    "sun_margin_positive_fraction": 0.8106,
+    "earth_el_min_deg": -7.4013,
+    "earth_el_max_deg": 5.9526,
+    "earth_samples": 2836,
+    "earth_state_counts": {
+      "dark": 999,
+      "penumbral": 230,
+      "lit": 1607
+    },
+    "earth_angular_radius_deg": {
+      "min": 0.9025,
+      "mean": 0.9534,
+      "max": 0.9963
+    },
+    "earth_margin_positive_fraction": 0.6075,
+    "profile_highest_skyline": {
+      "bearing_deg": 175.0,
+      "skyline_el_deg": -0.0617,
+      "set_at_range_m": 460.0
+    },
+    "profile_lowest_skyline": {
+      "bearing_deg": 345.25,
+      "skyline_el_deg": -4.44,
+      "set_at_range_m": 460.0
+    }
+  },
+  "ray_samples_per_bearing": 555,
+  "curvature_drop_m": {
+    "at_20km": 115.11,
+    "at_50km": 719.47
+  },
+  "noise_floor": {
+    "floor_2m_at_40m_deg": 2.8624,
+    "resolved_threshold_deg": 0.25,
+    "resolved_range_2m_m": 458.4,
+    "resolved_range_4m_m": 916.7
+  },
+  "crater_anchor_height_80m_m": {
+    "shackleton": -2767.3,
+    "haworth": -3315.9,
+    "shoemaker": -3931.7
+  },
+  "sites_longest_dark_open": [
+    "de-gerlache-rim",
+    "de-gerlache-kocher-massif",
+    "malapert-massif",
+    "nobile-rim-2",
+    "cabeus-rim"
+  ],
+  "sites_longest_blackout_open": [],
+  "sites_any_grazing": [
+    "faustini-rim"
+  ],
+  "penumbral_sample_fraction_all_sites": {
+    "min": 0.0056,
+    "median": 0.0844,
+    "max": 0.171
+  },
+  "ranking_longest_dark_example": {
+    "de-gerlache-rim": {
+      "rank": null,
+      "rank_range": [
+        1,
+        3
+      ],
+      "censored": true
+    },
+    "connecting-ridge": {
+      "rank": null,
+      "rank_range": [
+        1,
+        2
+      ],
+      "censored": false
+    },
+    "malapert-massif": {
+      "rank": null,
+      "rank_range": [
+        2,
+        3
+      ],
+      "censored": true
+    }
+  }
+}

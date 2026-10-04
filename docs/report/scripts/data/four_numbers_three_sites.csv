@@ -1,0 +1,13 @@
+site_id,metric,value_h,tolerance_h,kind
+connecting-ridge,sunlit,574.3994,17.0922,measured
+connecting-ridge,earth_contact,430.2842,5.262,measured
+connecting-ridge,longest_dark,121.5688,17.091,measured
+connecting-ridge,longest_blackout,278.4658,5.262,measured
+malapert-massif,sunlit,394.1625,7.2507,measured
+malapert-massif,earth_contact,570.608,7.6278,measured
+malapert-massif,longest_dark,287.7571,7.2339,lower_bound
+malapert-massif,longest_blackout,138.142,7.6278,measured
+faustini-rim,sunlit,103.0724,24.0002,measured
+faustini-rim,earth_contact,278.5667,33.9411,measured
+faustini-rim,longest_dark,605.6776,,grazing
+faustini-rim,longest_blackout,430.1833,,grazing

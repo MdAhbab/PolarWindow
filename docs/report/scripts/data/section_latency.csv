@@ -1,0 +1,9 @@
+section,missions,n,median_ms,p95_ms
+sections,im-1+im-2+blue-ghost-m1+griffin-1,80,1.5,4.4
+ready,im-1+im-2+blue-ghost-m1+griffin-1,80,1.7,2.5
+launch,im-1+im-2+blue-ghost-m1+griffin-1,80,4.5,9.7
+launch/weather,im-1+im-2+blue-ghost-m1+griffin-1,80,8.1,14.1
+trip,im-1+im-2+blue-ghost-m1+griffin-1,80,9.8,10.8
+contact,im-1+im-2+blue-ghost-m1+griffin-1,80,3.9,4.3
+return,im-1+im-2+blue-ghost-m1+griffin-1,80,2.6,5.5
+# head,43a1815,,,

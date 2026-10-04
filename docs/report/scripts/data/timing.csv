@@ -1,0 +1,18 @@
+stage,path,n,median_ms,p95_ms,min_ms,max_ms,note
+"regional DEM load (80 m, whole product)",precompute,3,396.46,415.11,393.95,415.11,
+"fine DEM window load (20 m, one site)",precompute,45,22.557,25.341,20.1,26.465,15 sites x 3
+"horizon mask ray-march (1,440 bearings)",precompute,75,46.747,49.99,45.327,665.033,15 sites x 5
+window validation and quantisation,request,50,0.001,0.002,0.001,0.005,
+"ephemeris: two bodies, hourly knots + spline",request,50,6.655,6.816,6.47,7.476,
+"ephemeris: two bodies, spkpos at every epoch",request (not used),50,25.418,26.923,25.009,34.323,comparison only
+"Sun track: look angles, mask lookup, arcs, bisection",request,50,2.069,2.35,2.011,2.512,
+"Earth track: look angles, mask lookup, arcs, bisection",request,50,0.787,1.196,0.73,1.321,
+"four numbers, compound events, autonomy",request,50,0.009,0.015,0.008,0.049,
+/metrics payload shaping,request,50,0.066,0.113,0.061,0.316,
+cache encode (orjson + zstd),request,50,0.007,0.007,0.007,0.011,
+cache decode (zstd + orjson),request,50,0.005,0.006,0.005,0.038,
+"HTTP GET /metrics, fresh window",http cold,30,11.234,13.831,10.305,24.04,misses only (30 of 30); body 1708 B
+"HTTP GET /metrics, repeated window",http warm,30,0.814,0.976,0.747,1.034,meta.cache ['hit']
+"HTTP GET /timeline, fresh window",http cold,30,15.254,17.682,14.625,17.935,misses only (30 of 30); body 209036 B
+"HTTP GET /timeline, repeated window",http warm,30,4.014,4.288,3.785,4.353,meta.cache ['hit']
+"HTTP GET /horizon (stored mask, 360 bins)",http,30,0.973,1.239,0.847,1.599,
