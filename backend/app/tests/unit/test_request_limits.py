@@ -204,4 +204,3 @@ def test_not_found_returns_problem_detail_with_ui() -> None:
     assert body["detail"]["type"].endswith("/not-found")
     assert body["detail"]["title"] == "Not found"
     assert "still_works" in body["detail"]["ui"]
-

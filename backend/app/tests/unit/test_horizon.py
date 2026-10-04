@@ -456,4 +456,3 @@ def test_bilinear_sample_at_last_row_column_and_nodata() -> None:
     # Outside the tile must return NaN
     h_out = tile.sample_grid(np.array([25.0]), np.array([-20.0]))
     assert np.isnan(h_out[0])
-

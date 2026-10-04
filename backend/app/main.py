@@ -268,11 +268,12 @@ def create_app() -> FastAPI:
     @app.exception_handler(StarletteHTTPException)
     async def http_exception(request: Request, exc: StarletteHTTPException) -> JSONResponse:
         """Wrap plain HTTP exceptions in RFC 7807 problem details with ui.still_works."""
-        if isinstance(exc.detail, dict) and "ui" in exc.detail:
+        detail: Any = exc.detail
+        if isinstance(detail, dict) and "ui" in detail:
             return JSONResponse(
                 status_code=exc.status_code,
                 headers=exc.headers,
-                content={"detail": exc.detail},
+                content={"detail": detail},
             )
         slug = "not-found" if exc.status_code == 404 else "http-error"
         title = "Not found" if exc.status_code == 404 else "Request error"
