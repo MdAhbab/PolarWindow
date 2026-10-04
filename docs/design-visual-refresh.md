@@ -10,16 +10,9 @@ the look, the direction, the system that carries it, what changes screen by
 screen, the motion, the decisions the owner has to make, and the slices to
 build it in.
 
-**Preview.** `docs/design/visual-refresh-preview.html` draws three screens in
-the proposed system with the app's own numbers from the saved copy of 30
-September 2026 (a mission's home, a site page, a comparison) and the type,
-surface and control system behind them. The mission's target card holds a
-live Moon drawn with three.js (loaded from a CDN in the preview; bundled in
-the app), turned to its south pole and lit from the horizon; the journey line
-and the horizon light are scrubbed by the scroll where the browser supports
-it. Open it in a browser; the half-disc in the floating header flips the
-theme. It is a direction, not a component library: the real parts are listed
-under *Components* below.
+**Preview.** The plan was drawn against a standalone preview page (three screens in the
+proposed system, with the app's own numbers). It was removed once the look was built:
+the app itself is now the reference, and *Built*, below, says where it differs from the plan.
 
 **One line in `conventions.md` has to change.** It says the frontend's design
 "is finished — do not redesign it". This plan is a redesign of the look, not of

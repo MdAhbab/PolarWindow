@@ -211,8 +211,29 @@ that folder with `npm run snapshot` against a running API.
 This is a single-node demo, not a production service. `docker compose up` runs
 the whole backend: Postgres, Redis, a `migrate` step (the database migrations),
 a `data` step (it fetches what `data/` lacks and builds the skylines), the API on
-:8000, the compute worker and the feeds worker. The frontend is not a service:
-`make frontend` serves it on :5173 against this API.
+:8000, the compute worker and the feeds worker. Without the `web` profile the
+frontend is not a service: `make frontend` serves it on :5173 against this API.
+
+**On an Ubuntu server, one command.** `python3 run_onVM.py` does everything in
+this section and adds the dashboard: `docker compose --profile web` builds
+`frontend/Dockerfile` (the pages, built with the API's address as the path
+`/api/v1`) and serves it with nginx (`frontend/nginx.conf`), which passes `/api/`
+and `/healthz` to the API, so one address serves both and no CORS origin has to
+be set. The script installs Docker when it is missing, stops this project's
+earlier containers and any container on a port it needs, removes stopped
+containers, dangling images and the build cache, builds both images from nothing
+(`--keep-cache` reuses the cache), runs the `data` step in the foreground so the
+downloads are visible, starts the stack and waits for `/healthz`. It sets three
+things the plain `docker compose up` does not: `PW_BIND_ADDR=127.0.0.1` (the
+database, the cache and the API are published to the machine only; just the
+dashboard's port is open), `PW_FORWARDED_ALLOW_IPS=*` (nginx sets
+`X-Forwarded-For` to the visitor's address itself, so the API's limits count per
+visitor and cannot be dodged with a forged header) and a random `PW_JWT_SECRET`
+in `.env` when there is none. `--status`, `--stop`, `--port`, `--data-from`,
+`--with-validation`, `--fresh-db` and `--dry-run` are described by
+`python3 run_onVM.py --help`. It serves plain HTTP: HTTPS needs a TLS proxy or a
+load balancer in front. After it finishes, `python3 run_onVM.py --status` shows
+the containers and what `/healthz` says.
 
 **Before the first start**
 
