@@ -79,7 +79,7 @@ export function TwoClockScreen() {
         )}
         {!terrainModelled && (
           <UncertaintyNote className="-mt-2">
-            No terrain data outside 80°S, so the Sun and Earth are worked out as if the ground were flat. Real hills
+            No terrain model covers this site, so the Sun and Earth are worked out as if the ground were flat. Real hills
             could block more.
           </UncertaintyNote>
         )}

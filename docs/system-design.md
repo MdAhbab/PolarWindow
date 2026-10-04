@@ -606,15 +606,19 @@ point". The precedence rules and the research log are in
 
 ### 10.4 Coordinates and terrain coverage
 
-The LOLA polar products cover **80°S–90°S**. That boundary decides what a
-mission's numbers can claim.
+The regional LOLA polar product covers **80°S–90°S**. For mission targets outside that
+boundary, targeted elevation models provide real topography (ADR-19):
+- **80°S to 60°S:** LOLA `LDEM_60S_60M` (60 m polar stereographic window).
+- **60°S to 60°N:** SLDEM2015 (59 m simple cylindrical windows, Barker et al. 2016).
 
 | Target | Horizon mask | `terrain_modelled` | What the UI says |
 |---|---|---|---|
-| lat ≤ −80° and a fine window fetches | Real ray-cast (20 m + 80 m), as for candidates | `true` | Normal states |
+| lat ≤ −80° and fine window fetches | Real ray-cast (20 m + 80 m), as for candidates | `true` | Normal states |
 | lat ≤ −80°, fine window missing | 80 m regional only, `coverage < 1` | `true` | Partial-coverage uncertainty (existing) |
-| lat > −80° (nearside, far side, mid-latitude) | **Curvature-only** mask: 0° on every bearing, `tol = 0`, `dem_product = "none (smooth sphere)"` | `false` | Uncertain state: "Terrain is not modelled outside 80°S; Sun and Earth are computed against a smooth Moon." |
-| Feature centre only | As the rows above, by latitude | as above | Plus: "Numbers are for the centre of {feature}; the landing point is not published." |
+| −80° < lat ≤ −60° (e.g. Schrödinger / APEX-1) | Real ray-cast (LOLA 60S 60 m, ADR-19) | `true` | Normal states (`dem_product = "LOLA_LDEM_60S_60M"`) |
+| −60° < lat < 60° (e.g. Mare Crisium, Sinus Viscositatis, Reiner Gamma) | Real ray-cast (SLDEM2015 59 m, ADR-19) | `true` | Normal states (`dem_product = "SLDEM2015 (LOLA + SELENE TC), 59 m"`) |
+| Any site without elevation model coverage | **Curvature-only** mask: 0° on every bearing, `tol = 0`, `dem_product = "none (smooth sphere)"` | `false` | Uncertain state: "No terrain model covers this site; Sun and Earth are computed against a flat horizon." |
+| Feature centre only | As the rows above, by location | as above | Plus: "Numbers are for the centre of {feature}; the landing point is not published." |
 | No published target | No site | — | "Target not published", no numbers |
 
 A smooth-Moon horizon is not a fabricated number. The Sun and Earth vectors are

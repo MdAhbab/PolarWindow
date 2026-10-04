@@ -65,7 +65,7 @@ export function HorizonScreen() {
         <div className="flex min-w-0 flex-col gap-4">
           {!terrainModelled && (
             <UncertaintyNote>
-              No terrain data outside 80°S, so this skyline is a flat horizon, not terrain. Real hills could block more.
+              No terrain model covers this site, so this skyline is a flat horizon, not terrain. Real hills could block more.
             </UncertaintyNote>
           )}
           {/* The page's hero: standing at the site, then the same skyline flat, by compass direction. */}

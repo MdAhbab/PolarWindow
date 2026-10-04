@@ -469,7 +469,7 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
           )}
           {!terrainModelled && (
             <UncertaintyNote>
-              No terrain data outside 80°S, so this is worked out as if the ground were flat. Real hills could block more.
+              No terrain model covers this site, so this is worked out as if the ground were flat. Real hills could block more.
             </UncertaintyNote>
           )}
           {terrainModelled && meta?.uncertainty.partialCoverage && (
