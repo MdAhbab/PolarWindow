@@ -419,3 +419,41 @@ def test_ray_starting_in_dem_hole_uses_first_finite_sample() -> None:
             h = hole_and_edge_sampler(x, y)
             first_finite_idx = int(np.where(np.isfinite(h))[0][0])
             assert m_jit.range_m[i] == dists[first_finite_idx]
+
+
+def test_bilinear_sample_at_last_row_column_and_nodata() -> None:
+    from app.data.lola import DemTile
+
+    heights = np.array(
+        [
+            [10.0, 20.0, np.nan],
+            [40.0, 50.0, 60.0],
+            [70.0, 80.0, 90.0],
+        ],
+        dtype=np.float32,
+    )
+    tile = DemTile(
+        heights=heights,
+        origin_x_m=0.0,
+        origin_y_m=0.0,
+        scale_m=10.0,
+        product="test",
+        vertical_error_m=1.0,
+    )
+
+    # First corner
+    h00 = tile.sample_grid(np.array([0.0]), np.array([0.0]))
+    assert np.isclose(h00[0], 10.0)
+
+    # Last column and last row corner (col = 2, row = 2)
+    h_end = tile.sample_grid(np.array([20.0]), np.array([-20.0]))
+    assert np.isclose(h_end[0], 90.0)
+
+    # Any quad touching the NaN at (row 0, col 2) must return NaN
+    h_nan_corner = tile.sample_grid(np.array([15.0]), np.array([-5.0]))
+    assert np.isnan(h_nan_corner[0])
+
+    # Outside the tile must return NaN
+    h_out = tile.sample_grid(np.array([25.0]), np.array([-20.0]))
+    assert np.isnan(h_out[0])
+

@@ -237,24 +237,23 @@ class SldemTile:
         col = dlon / self.dlon_deg
 
         h, w = self.heights.shape
-        c0 = np.floor(col).astype(np.int64)
-        r0 = np.floor(row).astype(np.int64)
-        fc = col - c0
-        fr = row - r0
+        inside = (col >= 0.0) & (col <= w - 1.0) & (row >= 0.0) & (row <= h - 1.0)
+        c0 = np.clip(np.floor(col).astype(np.int64), 0, w - 2)
+        r0 = np.clip(np.floor(row).astype(np.int64), 0, h - 2)
+        fc = np.clip(col - c0, 0.0, 1.0)
+        fr = np.clip(row - r0, 0.0, 1.0)
 
-        inside = (c0 >= 0) & (c0 < w - 1) & (r0 >= 0) & (r0 < h - 1)
-        c0c = np.clip(c0, 0, w - 2)
-        r0c = np.clip(r0, 0, h - 2)
+        z00 = self.heights[r0, c0].astype(np.float64)
+        z01 = self.heights[r0, c0 + 1].astype(np.float64)
+        z10 = self.heights[r0 + 1, c0].astype(np.float64)
+        z11 = self.heights[r0 + 1, c0 + 1].astype(np.float64)
 
-        z00 = self.heights[r0c, c0c].astype(np.float64)
-        z01 = self.heights[r0c, c0c + 1].astype(np.float64)
-        z10 = self.heights[r0c + 1, c0c].astype(np.float64)
-        z11 = self.heights[r0c + 1, c0c + 1].astype(np.float64)
+        valid_corners = np.isfinite(z00) & np.isfinite(z01) & np.isfinite(z10) & np.isfinite(z11)
 
         top = z00 + (z01 - z00) * fc
         bot = z10 + (z11 - z10) * fc
         z = top + (bot - top) * fr
-        return np.where(inside, z, np.nan)
+        return np.where(inside & valid_corners, z, np.nan)
 
 
 def make_sldem_samplers(
