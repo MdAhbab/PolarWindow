@@ -34,7 +34,9 @@ export function BrandName({ mark = 'h-7', words = 'h-[8px] sm:h-[9px]' }: { mark
   return (
     <span className="flex items-center gap-2.5 sm:gap-3">
       <BrandMark className={mark} />
-      <Pair dark={wordsOnDark} light={wordsOnLight} alt="" className={words} />
+      <span className="hidden min-[360px]:inline-flex shrink-0">
+        <Pair dark={wordsOnDark} light={wordsOnLight} alt="" className={words} />
+      </span>
     </span>
   )
 }
