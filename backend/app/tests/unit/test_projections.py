@@ -66,7 +66,9 @@ def test_apex1_schrodinger_local_frame_scale_and_round_trip() -> None:
     lat1, lon1 = math.radians(lat), math.radians(lon)
     d = 1_000.0 / 1_737_400.0
     lat2 = math.asin(math.sin(lat1) * math.cos(d))
-    lon2 = lon1 + math.atan2(math.sin(d) * math.cos(lat1), math.cos(d) - math.sin(lat1) * math.sin(lat2))
+    lon2 = lon1 + math.atan2(
+        math.sin(d) * math.cos(lat1), math.cos(d) - math.sin(lat1) * math.sin(lat2)
+    )
     ex_e, ey_e = geographic_to_polar(np.array([math.degrees(lon2)]), np.array([math.degrees(lat2)]))
     assert math.hypot(float(gx_e[0] - ex_e[0]), float(gy_e[0] - ey_e[0])) < 0.05  # metres
 

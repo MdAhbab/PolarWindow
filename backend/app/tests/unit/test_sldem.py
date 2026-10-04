@@ -13,7 +13,6 @@ from app.data.sldem import (
     SLDEM_PRODUCT_NAME,
     SldemTile,
     destination_spherical,
-    find_sldem_tile,
     is_terrain_covered,
     make_sldem_samplers,
 )

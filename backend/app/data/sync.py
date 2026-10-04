@@ -77,6 +77,8 @@ def is_present(d: Dataset) -> bool | None:
     if d.method == "lola_regional":
         return s.regional_dem_path.exists()
     if d.method == "lola_fine":
+        if d.dest.endswith(".npz"):
+            return _path(d).exists()
         fine = s.dem_dir / "fine"
         return fine.exists() and any(fine.glob("*.npz"))
     if d.method == "lola_rover":

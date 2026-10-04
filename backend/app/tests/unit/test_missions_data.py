@@ -103,7 +103,7 @@ def test_feature_centres_share_one_site(data: im.MissionFile) -> None:
 def test_terrain_only_inside_the_polar_model(data: im.MissionFile) -> None:
     rows = {r["id"]: r for r in im.plan_sites(data.missions, lambda lat, lon: (1000.0, 2.0))}
     for r in rows.values():
-        assert r["terrain_modelled"] == (r["lat_deg"] <= im.POLAR_DEM_EDGE_LAT_DEG)
+        assert r["terrain_modelled"] == im.is_terrain_covered(r["lat_deg"], r["lon_deg"])
         if not r["terrain_modelled"]:
             assert r["elev_m"] is None and r["slope_deg"] is None
 

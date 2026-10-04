@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -109,3 +109,10 @@ class WindowMetricsRepository:
             )
             for r in rows
         }
+
+    async def delete(self, site_id: str, engine_version: str | None = None) -> int:
+        stmt = delete(SiteWindowMetrics).where(SiteWindowMetrics.site_id == site_id)
+        if engine_version is not None:
+            stmt = stmt.where(SiteWindowMetrics.engine_version == engine_version)
+        res = await self._s.execute(stmt)
+        return getattr(res, "rowcount", 0) or 0

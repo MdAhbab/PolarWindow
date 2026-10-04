@@ -12,8 +12,10 @@ import {
   keys,
   normaliseMissionFilters,
   resetMissionVersions,
+  resetSiteDemProducts,
   setEngineVersion,
   setMissionVersions,
+  setSiteDemProduct,
 } from './queries'
 import { quantiseWindow } from './adapters'
 
@@ -24,6 +26,7 @@ const W = { ...quantiseWindow(START, START + SPAN, 900), stepS: 900 }
 afterEach(() => {
   setEngineVersion('unknown')
   resetMissionVersions()
+  resetSiteDemProducts()
 })
 
 describe('query keys', () => {
@@ -132,5 +135,38 @@ describe('mission and calendar keys (contract v2)', () => {
 
   it('leave the run log un-keyed on the engine: a run is a record, not geometry', () => {
     expect(keys.agentRuns()).toEqual(['agentRuns'])
+  })
+})
+
+describe('site dem_product in query keys', () => {
+  it('folds dem_product into horizon, windows, metrics, timeline, and compare keys', () => {
+    const siteId = 'mission-blue-ghost-m1'
+    const beforeHorizon = keys.horizon(siteId)
+    const beforeWindows = keys.windows(siteId, W)
+    const beforeMetrics = keys.metrics(siteId, W)
+    const beforeTimeline = keys.timeline(siteId, W)
+    const beforeCompare = keys.compare([siteId, 'connecting-ridge'], W, 'sun')
+
+    expect(beforeHorizon).toContain(null)
+    expect(beforeWindows).toContain(null)
+    expect(beforeMetrics).toContain(null)
+    expect(beforeTimeline).toContain(null)
+
+    setSiteDemProduct(siteId, 'SLDEM2015 (LOLA + SELENE TC), 59 m')
+
+    const afterHorizon = keys.horizon(siteId)
+    const afterWindows = keys.windows(siteId, W)
+    const afterMetrics = keys.metrics(siteId, W)
+    const afterTimeline = keys.timeline(siteId, W)
+    const afterCompare = keys.compare([siteId, 'connecting-ridge'], W, 'sun')
+
+    expect(afterHorizon).toContain('SLDEM2015 (LOLA + SELENE TC), 59 m')
+    expect(afterWindows).toContain('SLDEM2015 (LOLA + SELENE TC), 59 m')
+    expect(afterMetrics).toContain('SLDEM2015 (LOLA + SELENE TC), 59 m')
+    expect(afterTimeline).toContain('SLDEM2015 (LOLA + SELENE TC), 59 m')
+    expect(JSON.stringify(afterCompare)).not.toEqual(JSON.stringify(beforeCompare))
+
+    resetSiteDemProducts()
+    expect(keys.horizon(siteId)).toEqual(beforeHorizon)
   })
 })

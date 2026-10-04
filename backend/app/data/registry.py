@@ -193,6 +193,69 @@ _SPECIFIC: Final[tuple[Dataset, ...]] = (
         catalogue=f"{DATA_NASA}/lro-moon-laser-altimeter-4-gdr-v1-0",
     ),
     Dataset(
+        id="lola:ldem_60s_60m_schrodinger",
+        title="LOLA south polar elevation model, 60 m (LDEM_60S_60M), "
+        "window for APEX-1 (Schrödinger)",
+        provider="NASA LRO LOLA / PDS Geosciences",
+        tier="core",
+        method="lola_fine",
+        urls=(f"{_LOLA_PDS}/ldem_60s_60m.img",),
+        dest="dem/fine/feature-schrodinger.npz",
+        size_bytes=4_697_376,
+        used_for="The skyline at Schrödinger for APEX-1. A 55 km window is read by "
+        "HTTP range requests; the 1.93 GB file is never downloaded whole.",
+        licence="US government work (public domain)",
+        catalogue=f"{DATA_NASA}/lro-moon-laser-altimeter-4-gdr-v1-0",
+    ),
+    Dataset(
+        id="sldem2015:mission_blue_ghost_m1",
+        title="SLDEM2015 elevation model (59 m), window for Blue Ghost 1 (Mare Crisium)",
+        provider="NASA LRO LOLA / SELENE TC / PDS Geosciences",
+        tier="core",
+        method="lola_fine",
+        urls=(
+            "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/sldem2015/tiles/float_img/sldem2015_512_00n_30n_045_090_float.img",
+        ),
+        dest="dem/fine/mission-blue-ghost-m1.npz",
+        size_bytes=11_075_386,
+        used_for="The skyline at Mare Crisium for Blue Ghost 1. A 55 km window is read "
+        "by HTTP range requests from SLDEM2015.",
+        licence="US government work (public domain)",
+        catalogue=f"{DATA_NASA}/lro-moon-laser-altimeter-4-gdr-v1-0",
+    ),
+    Dataset(
+        id="sldem2015:feature_sinus_viscositatis",
+        title="SLDEM2015 elevation model (59 m), window for Peregrine M1 (Sinus Viscositatis)",
+        provider="NASA LRO LOLA / SELENE TC / PDS Geosciences",
+        tier="core",
+        method="lola_fine",
+        urls=(
+            "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/sldem2015/tiles/float_img/sldem2015_512_30n_60n_315_360_float.img",
+        ),
+        dest="dem/fine/feature-sinus-viscositatis.npz",
+        size_bytes=13_705_901,
+        used_for="The skyline at Sinus Viscositatis for Peregrine M1. A 55 km window is read "
+        "by HTTP range requests from SLDEM2015.",
+        licence="US government work (public domain)",
+        catalogue=f"{DATA_NASA}/lro-moon-laser-altimeter-4-gdr-v1-0",
+    ),
+    Dataset(
+        id="sldem2015:feature_reiner_gamma",
+        title="SLDEM2015 elevation model (59 m), window for IM-3 (Reiner Gamma)",
+        provider="NASA LRO LOLA / SELENE TC / PDS Geosciences",
+        tier="core",
+        method="lola_fine",
+        urls=(
+            "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/sldem2015/tiles/float_img/sldem2015_512_00n_30n_270_315_float.img",
+        ),
+        dest="dem/fine/feature-reiner-gamma.npz",
+        size_bytes=11_163_162,
+        used_for="The skyline at Reiner Gamma for IM-3. A 55 km window is read "
+        "by HTTP range requests from SLDEM2015.",
+        licence="US government work (public domain)",
+        catalogue=f"{DATA_NASA}/lro-moon-laser-altimeter-4-gdr-v1-0",
+    ),
+    Dataset(
         id="seed:site-masks",
         title="Skylines and reference numbers for every site (built locally)",
         provider="Built from the LOLA and SPICE data above",

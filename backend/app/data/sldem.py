@@ -393,12 +393,7 @@ async def fetch_sldem_window_async(
     sample1 = int(math.ceil(sample_right)) + 1
 
     # Check tile boundaries
-    if (
-        line0 < 0
-        or line1 > tile_info.lines
-        or sample0 < 0
-        or sample1 > tile_info.samples
-    ):
+    if line0 < 0 or line1 > tile_info.lines or sample0 < 0 or sample1 > tile_info.samples:
         raise DemUnavailable(
             f"Requested window crosses tile bounds of {tile_info.name}: "
             f"lines {line0}-{line1} (max {tile_info.lines}), "
@@ -416,7 +411,9 @@ async def fetch_sldem_window_async(
         line1 - line0,
     )
 
-    dn_km = await _fetch_sldem_rows_async(tile_info, line0, line1, sample0, sample1, timeout=timeout)
+    dn_km = await _fetch_sldem_rows_async(
+        tile_info, line0, line1, sample0, sample1, timeout=timeout
+    )
     # Convert km to metres above 1737.4 km sphere
     heights_m = dn_km.astype(np.float32) * 1000.0
 

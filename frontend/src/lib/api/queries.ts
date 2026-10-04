@@ -73,6 +73,23 @@ export const setMissionVersions = (items: { id: string; dataVersion: string }[])
 }
 export const resetMissionVersions = () => missionVersions.clear()
 
+/**
+ * Each site's `dem_product`, folded into the site's query keys so a site
+ * that transitioned from smooth sphere to real terrain invalidates the
+ * client query cache.
+ */
+const siteDemProducts = new Map<string, string>()
+export const setSiteDemProduct = (siteId: string, demProduct: string | null | undefined) => {
+  if (demProduct) siteDemProducts.set(siteId, demProduct)
+  else siteDemProducts.delete(siteId)
+}
+export const setSiteDemProducts = (items: { id: string; demProduct?: string | null }[]) => {
+  for (const s of items) {
+    if (s.demProduct) siteDemProducts.set(s.id, s.demProduct)
+  }
+}
+export const resetSiteDemProducts = () => siteDemProducts.clear()
+
 const FIVE_MIN = 5 * 60 * 1000
 
 export interface WindowParams {
@@ -102,15 +119,18 @@ export const keys = {
     ['calendar', engineVersion, siteId, span?.start, span?.end, bucket] as const,
   agentRuns: () => ['agentRuns'] as const,
   site: (siteId: string | undefined) => ['site', engineVersion, siteId] as const,
-  horizon: (siteId: string | undefined) => ['horizon', engineVersion, siteId] as const,
+  horizon: (siteId: string | undefined) =>
+    ['horizon', engineVersion, siteId, (siteId && siteDemProducts.get(siteId)) || null] as const,
   windows: (siteId: string | undefined, w: WindowParams) =>
-    ['windows', engineVersion, siteId, ...windowKey(w)] as const,
+    ['windows', engineVersion, siteId, (siteId && siteDemProducts.get(siteId)) || null, ...windowKey(w)] as const,
   metrics: (siteId: string | undefined, w: WindowParams) =>
-    ['metrics', engineVersion, siteId, ...windowKey(w)] as const,
+    ['metrics', engineVersion, siteId, (siteId && siteDemProducts.get(siteId)) || null, ...windowKey(w)] as const,
   timeline: (siteId: string | undefined, w: WindowParams) =>
-    ['timeline', engineVersion, siteId, ...windowKey(w)] as const,
-  compare: (siteIds: string[], w: WindowParams, rankBy: string) =>
-    ['compare', engineVersion, [...siteIds].sort(), ...windowKey(w), rankBy] as const,
+    ['timeline', engineVersion, siteId, (siteId && siteDemProducts.get(siteId)) || null, ...windowKey(w)] as const,
+  compare: (siteIds: string[], w: WindowParams, rankBy: string) => {
+    const demProducts = [...siteIds].sort().map((id) => `${id}:${siteDemProducts.get(id) || ''}`)
+    return ['compare', engineVersion, [...siteIds].sort(), demProducts, ...windowKey(w), rankBy] as const
+  },
   health: () => ['health'] as const,
   settings: () => ['settings'] as const,
   /**

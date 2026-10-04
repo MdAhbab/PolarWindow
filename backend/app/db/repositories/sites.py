@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 import numpy as np
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -212,6 +212,13 @@ class MaskRepository:
     async def existing_site_ids(self, engine_version: str) -> set[str]:
         stmt = select(HorizonMaskRow.site_id).where(HorizonMaskRow.engine_version == engine_version)
         return set((await self._s.execute(stmt)).scalars().all())
+
+    async def delete(self, site_id: str, engine_version: str | None = None) -> int:
+        stmt = delete(HorizonMaskRow).where(HorizonMaskRow.site_id == site_id)
+        if engine_version is not None:
+            stmt = stmt.where(HorizonMaskRow.engine_version == engine_version)
+        res = await self._s.execute(stmt)
+        return getattr(res, "rowcount", 0) or 0
 
 
 def _mask_record(row: HorizonMaskRow) -> MaskRecord:
