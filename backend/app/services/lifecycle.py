@@ -16,6 +16,7 @@ from app.core.quantity import Provenance, Quantity, Share
 
 #: Half the span a published date of each precision covers, seconds.
 HALF_SPAN_S: dict[str, float] = {
+    "second": 0.5,
     "minute": 30.0,
     "day": 43_200.0,
     "month": 15.22 * 86_400.0,
@@ -65,7 +66,7 @@ def published_date(date: dict[str, Any], source: str) -> dict[str, Any]:
     """
     start = parse_time(date["date"])
     half = HALF_SPAN_S.get(date["precision"], HALF_SPAN_S["year"])
-    mid = start if date["precision"] == "minute" else start + timedelta(seconds=half)
+    mid = start if date["precision"] in ("second", "minute") else start + timedelta(seconds=half)
     return q(
         Quantity(
             value=mid.timestamp(),

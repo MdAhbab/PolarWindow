@@ -13,6 +13,7 @@ import pytest
 
 from app.core.horizon import (
     R_MOON_M,
+    FloatArray,
     HorizonMask,
     build_mask,
     curvature_drop_m,
@@ -390,3 +391,68 @@ def test_numba_and_python_agree(surface) -> None:
     np.testing.assert_array_equal(jit.range_m, ref.range_m)
     np.testing.assert_array_equal(jit.tol_deg, ref.tol_deg)
     assert jit.coverage == ref.coverage
+
+
+def test_ray_starting_in_dem_hole_uses_first_finite_sample() -> None:
+    def hole_and_edge_sampler(x: FloatArray, y: FloatArray) -> FloatArray:
+        r = np.hypot(x, y)
+        h = np.zeros_like(r)
+        h[(r > 30) & (r < 50) & (x > 0)] = np.nan  # hole where the first posts land
+        h[(r > 400) & (x > 0)] = np.nan  # DEM edge 400 m east
+        return h
+
+    m_jit = build_mask(hole_and_edge_sampler, use_jit=True)
+    m_ref = build_mask(hole_and_edge_sampler, use_jit=False)
+
+    assert np.all(np.isfinite(m_jit.el_deg))
+    assert np.all(np.isfinite(m_ref.el_deg))
+    np.testing.assert_array_equal(m_jit.el_deg, m_ref.el_deg)
+    np.testing.assert_array_equal(m_jit.range_m, m_ref.range_m)
+
+    dists = ray_distances(20000.0, 5.0, min_range_m=40.0)
+    az = np.arange(len(m_jit.el_deg)) * 0.25
+    sin_a = np.sin(np.radians(az))
+    for i in range(len(az)):
+        if sin_a[i] > 0:
+            x = sin_a[i] * dists
+            y = np.cos(np.radians(az[i])) * dists
+            h = hole_and_edge_sampler(x, y)
+            first_finite_idx = int(np.where(np.isfinite(h))[0][0])
+            assert m_jit.range_m[i] == dists[first_finite_idx]
+
+
+def test_bilinear_sample_at_last_row_column_and_nodata() -> None:
+    from app.data.lola import DemTile
+
+    heights = np.array(
+        [
+            [10.0, 20.0, np.nan],
+            [40.0, 50.0, 60.0],
+            [70.0, 80.0, 90.0],
+        ],
+        dtype=np.float32,
+    )
+    tile = DemTile(
+        heights=heights,
+        origin_x_m=0.0,
+        origin_y_m=0.0,
+        scale_m=10.0,
+        product="test",
+        vertical_error_m=1.0,
+    )
+
+    # First corner
+    h00 = tile.sample_grid(np.array([0.0]), np.array([0.0]))
+    assert np.isclose(h00[0], 10.0)
+
+    # Last column and last row corner (col = 2, row = 2)
+    h_end = tile.sample_grid(np.array([20.0]), np.array([-20.0]))
+    assert np.isclose(h_end[0], 90.0)
+
+    # Any quad touching the NaN at (row 0, col 2) must return NaN
+    h_nan_corner = tile.sample_grid(np.array([15.0]), np.array([-5.0]))
+    assert np.isnan(h_nan_corner[0])
+
+    # Outside the tile must return NaN
+    h_out = tile.sample_grid(np.array([25.0]), np.array([-20.0]))
+    assert np.isnan(h_out[0])

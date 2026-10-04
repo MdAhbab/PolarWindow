@@ -342,16 +342,16 @@ def skyline_reference(
             rng[i] = max_range_m
             sgm[i] = default_sigma_m
         elif k < 0:
-            # Nothing cleared its noise floor: the first sample stands, as the
-            # array argmax this replaced returned for an all -inf row.
-            h = heights[i, 0]
-            el[i] = (
-                math.atan2(h - h0 - drop[0], distances[0]) * to_deg
-                if math.isfinite(h)
-                else -math.inf
-            )
-            rng[i] = distances[0]
-            sgm[i] = sigma[i, 0]
+            # Nothing cleared its noise floor: take the first finite sample.
+            # A ray that starts in a DEM hole or outside the DEM must not take
+            # a NaN at index 0 as minus infinity when real samples follow.
+            j0 = 0
+            while j0 < n_d and not math.isfinite(heights[i, j0]):
+                j0 += 1
+            h = heights[i, j0]
+            el[i] = math.atan2(h - h0 - drop[j0], distances[j0]) * to_deg
+            rng[i] = distances[j0]
+            sgm[i] = sigma[i, j0]
         else:
             el[i] = best
             rng[i] = distances[k]

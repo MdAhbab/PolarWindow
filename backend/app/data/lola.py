@@ -142,6 +142,17 @@ LDEM_80S_80M: Final[LolaProduct] = LolaProduct(
     vertical_error_m=4.0,
 )
 
+#: 60 m/px, 60S-90S. 1.93 GB -- never downloaded whole; windowed by range request.
+#: Used for targets between 60S and 80S (e.g. APEX-1 in Schrödinger).
+LDEM_60S_60M: Final[LolaProduct] = LolaProduct(
+    name="LOLA_LDEM_60S_60M",
+    filename="ldem_60s_60m.img",
+    size_px=31040,
+    scale_m=60.0,
+    projection_offset_px=15519.5,
+    vertical_error_m=4.0,
+)
+
 
 class DemUnavailable(RuntimeError):
     """The DEM subset this site needs is not on disk.
@@ -442,24 +453,23 @@ class DemTile:
         row = (self.origin_y_m - np.asarray(y_m, dtype=np.float64)) / self.scale_m
 
         h, w = self.heights.shape
-        c0 = np.floor(col).astype(np.int64)
-        r0 = np.floor(row).astype(np.int64)
-        fc = col - c0
-        fr = row - r0
+        inside = (col >= 0.0) & (col <= w - 1.0) & (row >= 0.0) & (row <= h - 1.0)
+        c0 = np.clip(np.floor(col).astype(np.int64), 0, w - 2)
+        r0 = np.clip(np.floor(row).astype(np.int64), 0, h - 2)
+        fc = np.clip(col - c0, 0.0, 1.0)
+        fr = np.clip(row - r0, 0.0, 1.0)
 
-        inside = (c0 >= 0) & (c0 < w - 1) & (r0 >= 0) & (r0 < h - 1)
-        c0c = np.clip(c0, 0, w - 2)
-        r0c = np.clip(r0, 0, h - 2)
+        z00 = self.heights[r0, c0].astype(np.float64)
+        z01 = self.heights[r0, c0 + 1].astype(np.float64)
+        z10 = self.heights[r0 + 1, c0].astype(np.float64)
+        z11 = self.heights[r0 + 1, c0 + 1].astype(np.float64)
 
-        z00 = self.heights[r0c, c0c].astype(np.float64)
-        z01 = self.heights[r0c, c0c + 1].astype(np.float64)
-        z10 = self.heights[r0c + 1, c0c].astype(np.float64)
-        z11 = self.heights[r0c + 1, c0c + 1].astype(np.float64)
+        valid_corners = np.isfinite(z00) & np.isfinite(z01) & np.isfinite(z10) & np.isfinite(z11)
 
         top = z00 + (z01 - z00) * fc
         bot = z10 + (z11 - z10) * fc
         z = top + (bot - top) * fr
-        return np.where(inside, z, np.nan)
+        return np.where(inside & valid_corners, z, np.nan)
 
 
 def make_samplers(

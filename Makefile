@@ -120,6 +120,9 @@ validate-viewshed-gdal: ## Independent GDAL reference on matched lunar raster pi
 validate-capsule: ## Capsule entry against OSIRIS-REx's landing (writes data/capsule/orex_check.json)
 	cd $(BE) && $(UV) run python -m app.validation.validate_capsule 2>/dev/null
 
+validate-landing: ## Touchdown instants, positions and surface geometry against NAIF CLPS EDL/LS kernels
+	cd $(BE) && $(UV) run python -m app.validation.validate_landing
+
 ##@ Test and lint
 test-db: ## Rebuild polar_window_test from the migrations and the seeded rows
 	cd $(BE) && $(UV) run python -m app.tests.fixtures.make_test_db

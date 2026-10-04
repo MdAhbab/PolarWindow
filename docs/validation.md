@@ -6,7 +6,7 @@ dates (NASA). That makes them the only external check this product can run
 against reality rather than against itself.
 
 **Method.** The published coordinate is used as-is, the site's horizon mask is
-built the usual way (or a smooth-sphere skyline outside 80°S), and the Sun and
+built the usual way (from the terrain model that covers it, ADR-19), and the Sun and
 Earth arcs are computed at a 300 s step over the mission's surface window.
 Nothing is tuned to these events. The numbers below come from
 `GET /sites/{site}/windows` on this build.
@@ -19,7 +19,7 @@ reported and **no cause is asserted**.
 
 | Mission | Site used | Our result | Published | Agreement |
 |---|---|---|---|---|
-| **Blue Ghost Mission 1** (TO19D) | 18.5623°N, 61.8103°E ([LROC](https://lroc.im-ldi.com/images/1407)); outside the polar DEM, smooth-sphere skyline on a flat mare floor | Local sunset **2025-03-16 20:10 UTC**. Sun up continuously from landing until then; Earth up throughout. | "Blue Ghost continued operations for five hours after lunar sunset on March 16" ([NASA Media Advisory M25-033](https://www.nasa.gov/news-release/nasa-firefly-invite-media-to-discuss-end-of-blue-ghost-moon-mission/)); "concluded its mission March 16" ([NASA release 25-026](https://www.nasa.gov/news-release/nasa-science-continues-after-fireflys-first-moon-mission-concludes/)) | **Same date.** Pinned by `tests/golden/test_hindcast.py`. |
+| **Blue Ghost Mission 1** (TO19D) | 18.5623°N, 61.8103°E ([LROC](https://lroc.im-ldi.com/images/1407)); real terrain from SLDEM2015 (59 m), the skyline 0.65° up to the west | Local sunset **2025-03-16 18:50 UTC ± 32 min**. Sun up continuously from landing until then; Earth up throughout. (On flat ground, as this was computed before the site had terrain, it was 20:10 UTC.) | "Blue Ghost continued operations for five hours after lunar sunset on March 16" ([NASA Media Advisory M25-033](https://www.nasa.gov/news-release/nasa-firefly-invite-media-to-discuss-end-of-blue-ghost-moon-mission/)); "concluded its mission March 16" ([NASA release 25-026](https://www.nasa.gov/news-release/nasa-science-continues-after-fireflys-first-moon-mission-concludes/)) | **Same date.** Pinned by `tests/golden/test_hindcast.py`. |
 | **IM-1 Odysseus** (TO2-IM) | 80.13°S, 1.44°E ([LROC](https://lroc.im-ldi.com/images/1360)); real 20 m terrain, 83 % DEM coverage (the site is 4 km from the DEM's edge) | Sun up from landing until **2024-03-02 14:01 UTC ± 28 min**; Earth up throughout. | Instruments "ceased science and technology operations seven days after landing", i.e. about 29 February 2024 ([NASA, 1 Mar 2024](https://www.nasa.gov/missions/artemis/clps/nasa-collects-first-surface-science-in-decades-via-commercial-moon-mission/)) | Operations ended about two days **before** the site's computed sunset. The geometry does not explain the end date. We make no claim about the cause. |
 | **IM-2 Athena** (PRIME-1) | 84.7906°S, 29.1957°E, where Athena came to rest ([LROC](https://lroc.im-ldi.com/images/1408)); real terrain | Over the 12 h 45 min from touchdown to end of mission: **Sun and Earth both up the whole time**. The next sunset at that spot is 2025-03-19 19:17 UTC. | Touched down about 400 m from the target, came to rest on its side in a 20 m crater, and ended the mission early ([NASA release 25-025](https://www.nasa.gov/news-release/nasa-receives-some-data-before-intuitive-machines-ends-lunar-mission/)) | The geometry offered light and a line of sight to Earth throughout. NASA reports the lander on its side and the PRIME-1 instruments unable to meet their goals because of it. We make no claim about why the mission ended. |
 
@@ -43,6 +43,22 @@ reported and **no cause is asserted**.
 - One agreement to the day is not a timing accuracy. The ± on each crossing
   comes from the DEM's vertical error (`meta.uncertainty`), and a published
   timeline to the day cannot confirm a figure in minutes.
+
+## Touchdown instants and surface geometry against NAIF descent reconstructions
+
+Measured with `make validate-landing` (`backend/app/validation/validate_landing.py`, pinned by `test_clps_landing.py`).
+
+The NAIF CLPS SPICE archive reconstructs each lander's descent trajectory to touchdown (`*_edl_rec_*`) and its final landing site position (`*_ls_*`). At touchdown:
+
+1. **Touchdown instant**: the end of NAIF's reconstructed EDL segment matches the landing instant in `missions.json` to within 1 second.
+2. **Landing site coordinates**: the `_ls_` position agrees with the LROC-derived coordinates in `missions.json` within 100 m horizontally (IM-1 was published to 2 decimal places in LROC 1360: −80.13°, 1.44°, 79 m from reconstruction; IM-2 and Blue Ghost 1 match within 0.3 m and 10.4 m).
+3. **Sun and Earth elevations**: topocentric elevations computed through the app's pipeline match direct CSPICE constant-position observer (`spkcpo` with light time and stellar aberration) to within 0.00003° (well inside the 0.01° tolerance).
+
+| Mission | Touchdown (UTC) | Target (lat, lon) | LS kernel (lat, lon) | Δpos (m) | Sun (°) | ΔSun (°) | Earth (°) | ΔEarth (°) |
+|---|---|---|---|---|---|---|---|---|
+| **IM-1 Odysseus** | 2024-02-22 23:23:44Z | −80.1300°, 1.4400° | −80.1276°, 1.4459° | 79.2 | 10.48 | 0.00000 | 15.43 | 0.00001 |
+| **IM-2 Athena** | 2025-03-06 17:28:43Z | −84.7906°, 29.1957° | −84.7906°, 29.1957° | 0.3 | 2.46 | 0.00000 | 11.19 | 0.00003 |
+| **Blue Ghost Mission 1** | 2025-03-02 08:34:54Z | 18.5623°, 61.8103° | 18.5621°, 61.8100° | 10.4 | 3.43 | 0.00000 | 25.73 | 0.00001 |
 
 # The trip propagator against flown trajectories (plan C1)
 
@@ -628,10 +644,45 @@ The rounded report totals are 1.0804e6 and 1.1552e10 respectively; they differ
 slightly from this integration. The gate uses the downloaded samples, not the
 rounded report. Inputs and hashes are kept with the local comparison summary;
 the regression fixture preserves actual threshold fluxes. See
-[the repeatable commands and remaining passages](spenvis-manual-validation.md).
+[the repeatable commands](spenvis-manual-validation.md).
 This checks one passage against another implementation of the maps. It is not
-a measurement validation, and does not validate unrun Blue Ghost or Peregrine
-passages, other thresholds or solar-minimum maps.
+a measurement validation, and does not validate other thresholds or
+solar-minimum maps.
+
+On 3 October 2026 the other six passages were run the same way (SPENVIS
+4.6.14.3582, AP-8 MAX and AE-8 MAX, the form's own field settings). Each raw
+spectrum matches its passage's name, start, duration and sample count.
+
+| Passage | Samples | p >10 MeV SPENVIS | Engine `rad-5` | diff | e >1 MeV SPENVIS | Engine `rad-5` | diff | 5% gate |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Blue Ghost 1, passage 1 | 429 | 3.294e5 | 3.359e5 | +1.97% | 1.410e9 | 1.422e9 | +0.87% | pass |
+| Blue Ghost 1, passage 2 | 974 | 2.114e8 | 2.235e8 | +5.75% | 1.320e10 | 1.337e10 | +1.27% | **fail (protons)** |
+| Blue Ghost 1, passage 3 | 958 | 2.797e8 | 2.921e8 | +4.43% | 2.941e9 | 2.972e9 | +1.04% | pass |
+| Blue Ghost 1, passage 4 | 950 | 2.782e8 | 2.907e8 | +4.50% | 3.976e9 | 4.016e9 | +1.01% | pass |
+| Peregrine, passage 1 | 437 | 4.114e7 | 4.337e7 | +5.40% | 1.206e10 | 1.211e10 | +0.40% | **fail (protons)** |
+| Peregrine, passage 2 | 430 | 2.272e8 | 2.368e8 | +4.24% | 1.098e10 | 1.106e10 | +0.72% | pass |
+
+Electrons pass on every passage. Protons are 2% to 6% high on every passage,
+IM-2 included, and two passages miss the gate. They are recorded as failures of
+the gate as written; the gate has not been widened.
+
+The difference comes from the magnetic shell value L, not from the maps.
+Reading the engine's maps at the B and L that SPENVIS lists for each sample
+gives SPENVIS's fluence within 0.7% on all six passages, for both particles.
+The local field strength agrees to about 0.1%, but the engine's L for protons
+is lower by 0.003 to 0.008. IRBEM turns the field-line integral I into L with
+the dipole moment of the map's own field: 30,875.1 nT for GSFC 12/66 at 1970
+and 31,033.5 nT for Jensen and Cain 1960 (solved from IRBEM's own I, B and L;
+the same to 0.1 nT over 95 samples). McIlwain's definition, which the maps
+were built on and SPENVIS follows, uses the fixed 31,165.3 nT. On the outer
+slope of the proton belt, where these passages collect most of their protons,
+a shell 0.4% lower reads about 5% more flux.
+
+As a check of that explanation, L was recomputed from IRBEM's I and B with the
+fixed moment (Hilton's 1971 formula). It then lies within 0.003 of SPENVIS's L
+for protons, and the six proton differences become −1.5%, +1.2%, +1.1%, +1.0%,
++1.1% and +1.0%; electrons stay between +0.2% and +1.0%. This is a diagnosis
+only. Engine `rad-5` is unchanged and still gives the numbers in the table.
 
 The initial IM-2 mismatch exposed missing SAA longitudinal drift compensation.
 Engine `rad-5` rotates the evaluation point eastward by the published 0.3°/year

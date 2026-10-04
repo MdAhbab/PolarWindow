@@ -280,7 +280,7 @@ export function KeyNumberRow({
   columns?: 2 | 4
   /**
    * Every tile in its uncertain variant, numbers still shown: terrain is not
-   * modelled at this site (outside 80°S), so the skyline is a smooth sphere.
+   * modelled at this site, so the skyline is a smooth sphere.
    */
   uncertain?: boolean
 }) {

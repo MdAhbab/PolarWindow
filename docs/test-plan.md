@@ -140,6 +140,12 @@ Also pinned:
   become a blocker. The march starts beyond the resolvable scale (two posts out).
 - Missing terrain lowers `coverage` instead of being clamped into a plateau. A
   site outside the DEM is an error, not a guess.
+- A ray starting in a hole or nodata post advances to the first finite sample,
+  never evaluating to minus infinity.
+- **SLDEM2015 coverage and samplers** (`test_sldem.py`): label geometry parsing,
+  window bounding geometry, local ENU to selenographic coordinate mapping, bilinear
+  sampling with boundary-pixel clamping and nodata corner propagation, and synthetic
+  cone terrain verifying elevation and azimuth accuracy.
 - Downsampling takes the maximum of each group, never the mean, and a step that
   does not divide 360 is refused.
 - A mask is reproducible, and the compiled and plain-Python kernels agree
@@ -235,9 +241,10 @@ when present (`requires_kernels`).
 - **Surface windows** (`test_surface_window.py`). Published, planned and assumed
   windows follow their rules, a year is not a window, and a lost mission has no
   surface time.
-- **Terrain flag.** The smooth mask is flat and flagged (`test_calendar.py`), and
-  a target outside the polar model is served with `terrain_modelled: false` and a
-  note in `meta.uncertainty` (`integration/test_api.py`).
+- **Terrain flag and coverage.** The smooth mask is flat and flagged (`test_calendar.py`),
+  targets covered by fine LOLA 60S or SLDEM2015 windows report `terrain_modelled: true`
+  with cited product provenance, and targets outside coverage report `terrain_modelled: false`
+  (`integration/test_api.py`, `test_missions_data.py`).
 
 ### 3.6 Uncertainty, engines, registry, data sharing
 
@@ -311,9 +318,11 @@ and a terrain subset, which are not committed. So there are two layers:
 
 The other golden tests pin the reconstruction checks of §7.1 and §8
 (`test_propagate_vs_clps.py`, `test_eclipse_vs_spice.py`,
-`test_launch_vs_clps.py`, `test_loops_vs_clps.py`, `test_capsule_vs_orex.py`),
-the Blue Ghost 1 sunset (`test_hindcast.py`: it falls on the reported date) and
-the resolved candidate sites (`test_sites_golden.py`).
+`test_launch_vs_clps.py`, `test_loops_vs_clps.py`, `test_capsule_vs_orex.py`,
+`test_clps_landing.py`: touchdown instant to the second, position and Sun/Earth
+elevations against NAIF EDL/LS reconstructions), the Blue Ghost 1 sunset
+(`test_hindcast.py`: it falls on the reported date) and the resolved candidate
+sites (`test_sites_golden.py`).
 
 ---
 
@@ -559,6 +568,8 @@ Coverage leaves them out.
 | `make validate-capsule` | `validate_capsule` (with `capsule_air` and `capsule_air_data`) | About 20 s. Writes `data/capsule/orex_check.json` |
 | `make validate-orbiters` | `validate_orbiters` | Needs the network (JPL Horizons, about 30 requests). Writes `data/contact/orbiters_check.json` |
 | `make validate-viewshed` | `validate_viewshed` | Rover line of sight against a brute-force line test |
+| `make validate-viewshed-gdal` | `validate_viewshed_gdal` | Independent GDAL viewshed reference on matched lunar raster pixels (99% agreement gate) |
+| `make validate-landing` | `validate_landing` | Touchdown instants, positions and surface geometry against NAIF CLPS EDL/LS kernels |
 | `make hindcast-weather`, `hindcast-reforecast`, `hindcast-hrrr` | The wind verification in `app/feeds` | Long and cached; see the runbook |
 | `make catalogues` | Validates the cited catalogues | |
 
@@ -580,9 +591,12 @@ and needs no network.
   the first test asserts that they are the same numbers the backend pins in
   `golden/data/connecting-ridge.metrics.json`, so a physics change that skips
   the frontend fails here rather than in a demo.
-- **Cache keys** (`queries.test.ts`, ADR-2): every key carries the engine version
-  and the *quantised* window, a drag inside one step collapses onto one key, and
-  the same sites in either order are one query.
+- **Cache keys** (`queries.test.ts`, ADR-2, ADR-19): every key carries the engine
+  version and the *quantised* window, each site's `dem_product` is folded into
+  site query keys (`horizon`, `windows`, `metrics`, `timeline`, `compare`) so
+  transitioning a site to real terrain invalidates cached smooth-sphere numbers,
+  a drag inside one step collapses onto one key, and the same sites in either order
+  are one query.
 - **Exports** (`export.test.ts`): the CSV and the SPICE interval lists are built
   from the same adapted arcs the charts draw. RFC 4180 quoting, matched
   `BEGIN_WINDOW` and `END_WINDOW` blocks, increasing UTC pairs, `# open` on the
@@ -621,14 +635,16 @@ there is one. The tests marked *live* always use the API.
 | `lifecycle.spec.ts` | The six mission sections, the writes (a readiness change asks for a name, needs evidence and shows its history), the weather rules, relays, rover line of sight and the capsule model, each in both themes and at 375 px |
 | `degraded.spec.ts` | The API down: the offline copy and its *Saved copy* badge |
 | `speaker.spec.ts` | Listen on each page, and the transcript where speech synthesis is missing |
+| `webgl-contexts.spec.ts` | Navigates across 3D scenes repeatedly, asserting active WebGL contexts never exceed 1 and each unmounted canvas context is cleanly lost via `loseContext()` |
 
 **Accessibility.** `expectNoSeriousAxe` runs axe with the tags `wcag2a`,
 `wcag2aa`, `wcag21a` and `wcag21aa`, and any serious or critical finding fails the
 test. It runs on every route in both themes, at 375 px, with every closed row
 open, inside the dialogs and on the offline copy. At 375 px the tests also assert
-`scrollWidth ≤ 375`, so nothing runs off the side of the page. Axe catches
-perhaps 30 % of the problems, so it is a floor. The rules it protects are in
-`docs/conventions.md`, *Accessibility*.
+`scrollWidth ≤ 375`, so nothing runs off the side of the page. At 320 px (narrow
+mobile / iPhone SE), the header island hides the wordmark to keep all navigation
+controls visible without overflow. Axe catches perhaps 30 % of the problems, so it
+is a floor. The rules it protects are in `docs/conventions.md`, *Accessibility*.
 
 **No visual regression suite.** Screenshot diffing a canvas-heavy, animated UI
 produces flakes, not signal. `npm run screens` retakes the screenshots for the

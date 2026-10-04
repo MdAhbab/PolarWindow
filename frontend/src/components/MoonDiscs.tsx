@@ -37,8 +37,8 @@ function Graticule() {
   const parallels = [-60, -30, 0, 30, 60]
   const meridians = [30, 60]
   return (
-    // White at low strength: it reads over the grey of the Moon in either theme.
-    <g fill="none" stroke="#fff" strokeOpacity="0.16" strokeWidth="0.75">
+    // Ink at low strength: it reads over the grey of the Moon in either theme.
+    <g fill="none" stroke="var(--color-ink)" strokeOpacity="0.16" strokeWidth="0.75">
       {parallels.map((lat) => {
         const y = C - R * Math.sin(lat * DEG)
         const half = R * Math.cos(lat * DEG)
@@ -93,7 +93,7 @@ function Disc({
             </clipPath>
           </defs>
           {/* Grey under the picture until it has loaded. */}
-          <circle cx={C} cy={C} r={R} fill="#3a3a3a" />
+          <circle cx={C} cy={C} r={R} fill="var(--color-terrain-mid)" />
           <image href={image} x={C - R} y={C - R} width={2 * R} height={2 * R} clipPath={`url(#${clip})`} preserveAspectRatio="none" />
           <Graticule />
           <circle cx={C} cy={C} r={R} fill="none" stroke="var(--color-line-strong)" strokeWidth="1" />
@@ -109,7 +109,7 @@ function Disc({
                   height="7"
                   transform="rotate(45)"
                   fill="none"
-                  stroke="#0b0d10"
+                  stroke="var(--color-canvas)"
                   strokeOpacity="0.75"
                   strokeWidth="3.4"
                 />
@@ -119,8 +119,8 @@ function Disc({
                   width="7"
                   height="7"
                   transform="rotate(45)"
-                  fill={on ? '#fff' : '#0b0d10'}
-                  stroke="#fff"
+                  fill={on ? 'var(--color-ink)' : 'var(--color-canvas)'}
+                  stroke="var(--color-ink)"
                   strokeWidth="1.4"
                   strokeDasharray={dashed ? '2 1.6' : undefined}
                 />
@@ -132,9 +132,9 @@ function Disc({
                     fontFamily="var(--font-sans)"
                     fontSize="10"
                     fontWeight="600"
-                    fill="#fff"
+                    fill="var(--color-ink)"
                     paintOrder="stroke"
-                    stroke="#0b0d10"
+                    stroke="var(--color-canvas)"
                     strokeOpacity="0.85"
                     strokeWidth="3"
                   >

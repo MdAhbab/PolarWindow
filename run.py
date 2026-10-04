@@ -27,6 +27,8 @@ for a large folder. Every file is checked against the SHA-256 the export listed.
 from __future__ import annotations
 
 import argparse
+import contextlib
+import json
 import os
 import shutil
 import signal
@@ -49,6 +51,7 @@ LOCAL_DIR = ROOT_DIR / ".local"
 PGDATA_DIR = LOCAL_DIR / "pgdata"
 PGLOG_FILE = LOCAL_DIR / "pg.log"
 REDIS_DIR = LOCAL_DIR / "redis"
+RUN_PIDS_FILE = LOCAL_DIR / "run.pids"
 
 
 def configure_local_storage() -> None:
@@ -242,26 +245,196 @@ def stop_pids(pids: set[int], desc: str) -> None:
             pass
 
 
+def load_run_pids() -> dict[str, dict[str, any]]:
+    """Read the PID file recording processes started by this checkout."""
+    if not RUN_PIDS_FILE.is_file():
+        return {}
+    try:
+        data = json.loads(RUN_PIDS_FILE.read_text(encoding="utf-8"))
+        if isinstance(data, dict):
+            return data
+    except Exception:
+        pass
+    return {}
+
+
+def save_run_pids(pids: dict[str, dict[str, any]]) -> None:
+    """Persist or remove the PID file for processes started by this checkout."""
+    LOCAL_DIR.mkdir(parents=True, exist_ok=True)
+    if not pids:
+        if RUN_PIDS_FILE.exists():
+            with contextlib.suppress(OSError):
+                RUN_PIDS_FILE.unlink()
+        return
+    try:
+        temp_file = LOCAL_DIR / f"run.pids.{os.getpid()}.tmp"
+        temp_file.write_text(json.dumps(pids, indent=2), encoding="utf-8")
+        temp_file.replace(RUN_PIDS_FILE)
+    except Exception:
+        pass
+
+
+def get_process_cmdline(pid: int) -> str:
+    """Return the command line of a process, or an empty string if it cannot be read."""
+    if os.name == "nt":
+        try:
+            res = subprocess.run(
+                [
+                    "powershell",
+                    "-NoProfile",
+                    "-Command",
+                    f"(Get-CimInstance Win32_Process -Filter 'ProcessId = {pid}').CommandLine",
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=3,
+            )
+            if res.returncode == 0:
+                return res.stdout.strip()
+        except Exception:
+            pass
+        return ""
+    try:
+        res = subprocess.run(
+            ["ps", "-o", "command=", "-p", str(pid)],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=3,
+        )
+        if res.returncode == 0:
+            return res.stdout.strip()
+    except Exception:
+        pass
+    return ""
+
+
+def get_process_cwd(pid: int) -> Path | None:
+    """Return the current working directory of a process, if accessible."""
+    if os.name == "nt":
+        return None
+    if sys.platform == "darwin":
+        try:
+            res = subprocess.run(
+                ["lsof", "-a", "-p", str(pid), "-d", "cwd", "-Fn"],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=3,
+            )
+            if res.returncode == 0:
+                for line in res.stdout.splitlines():
+                    if line.startswith("n/") and not line.startswith("n/dev/"):
+                        return Path(line[1:])
+        except Exception:
+            return None
+    elif sys.platform.startswith("linux"):
+        try:
+            return Path(os.readlink(f"/proc/{pid}/cwd"))
+        except Exception:
+            return None
+    return None
+
+
+def is_pid_in_project(pid: int) -> bool:
+    """True if the process's working directory or command line is scoped to this checkout."""
+    if os.name == "nt":
+        cmd = get_process_cmdline(pid)
+        root_str = str(ROOT_DIR).lower()
+        return root_str in cmd.lower() or str(BE_DIR).lower() in cmd.lower() or str(FE_DIR).lower() in cmd.lower()
+    cwd = get_process_cwd(pid)
+    if cwd is not None:
+        try:
+            cwd.resolve().relative_to(ROOT_DIR.resolve())
+            return True
+        except ValueError:
+            return False
+    # If cwd cannot be resolved via lsof/proc, check if command line references this checkout
+    cmd = get_process_cmdline(pid)
+    return str(ROOT_DIR) in cmd or str(BE_DIR) in cmd or str(FE_DIR) in cmd
+
+
+def cmdline_matches(expected_cmd: str, actual_cmd: str) -> bool:
+    """True if actual_cmd still contains the key identifiers of expected_cmd."""
+    if not actual_cmd or not expected_cmd:
+        return False
+    if expected_cmd in actual_cmd:
+        return True
+    key_markers = (
+        "uvicorn",
+        "app.main:app",
+        "app.workers.compute",
+        "app.workers.feeds",
+        "vite",
+        "polar-data",
+        "5173",
+        "8000",
+    )
+    expected_markers = [m for m in key_markers if m in expected_cmd]
+    if expected_markers:
+        return any(m in actual_cmd for m in expected_markers)
+    tokens = [t for t in expected_cmd.split() if len(t) > 3 and not t.startswith("-")]
+    return any(t in actual_cmd for t in tokens)
+
+
 def stop_previous_instances(be_port: int = 8000, fe_port: int = 5173) -> None:
-    """Find and stop any running backend and frontend processes."""
+    """Find and stop any running backend and frontend processes started by this checkout."""
     log("CLEANUP", YELLOW, "Checking for previous instances...")
 
-    # Port listeners
-    port_pids: set[int] = set()
-    port_pids.update(get_pids_on_port(be_port))
-    port_pids.update(get_pids_on_port(fe_port))
+    # 1. Check .local/run.pids first
+    recorded = load_run_pids()
+    if recorded:
+        recorded_pids_to_stop: set[int] = set()
+        for _name, info in list(recorded.items()):
+            if not isinstance(info, dict):
+                continue
+            pid = info.get("pid")
+            if not isinstance(pid, int):
+                continue
+            try:
+                os.kill(pid, 0)
+            except (ProcessLookupError, PermissionError):
+                continue
+            expected_cmd = str(info.get("cmd", ""))
+            current_cmd = get_process_cmdline(pid)
+            if not current_cmd or not cmdline_matches(expected_cmd, current_cmd):
+                continue
+            recorded_pids_to_stop.add(pid)
+        if recorded_pids_to_stop:
+            stop_pids(recorded_pids_to_stop, "recorded")
+        save_run_pids({})
 
-    # Pattern matches
-    pattern_pids: set[int] = set()
-    pattern_pids.update(get_matching_pids("uvicorn app.main:app"))
-    pattern_pids.update(get_matching_pids("app.workers.compute"))
-    pattern_pids.update(get_matching_pids("app.workers.feeds"))
-    pattern_pids.update(get_matching_pids("vite"))
+    # 2. Fallback scoped to this checkout (no pid file or older runs)
+    port_listeners: dict[int, list[int]] = {
+        be_port: get_pids_on_port(be_port),
+        fe_port: get_pids_on_port(fe_port),
+    }
 
-    all_pids = port_pids | pattern_pids
-    if all_pids:
-        stop_pids(all_pids, "frontend/backend")
-    else:
+    fallback_pids: set[int] = set()
+
+    for port, pids in port_listeners.items():
+        for pid in pids:
+            if is_pid_in_project(pid):
+                fallback_pids.add(pid)
+            else:
+                port_flag = "--backend-port" if port == be_port else "--frontend-port"
+                cmd = get_process_cmdline(pid)
+                log(
+                    "CLEANUP",
+                    RED,
+                    f"Port {port} is used by another program (pid {pid}: {cmd}). Stop it or pass {port_flag}.",
+                )
+                sys.exit(1)
+
+    for pat in ("uvicorn app.main:app", "app.workers.compute", "app.workers.feeds", "vite"):
+        for pid in get_matching_pids(pat):
+            if is_pid_in_project(pid):
+                fallback_pids.add(pid)
+
+    if fallback_pids:
+        stop_pids(fallback_pids, "frontend/backend")
+    elif not recorded:
         log("CLEANUP", GREEN, "No previous instances found.")
 
     # Ensure ports are actually free
@@ -455,6 +628,11 @@ def ensure_redis(env: dict[str, str]) -> None:
         while time.time() < deadline:
             if is_port_open(port):
                 log("SERVICES", GREEN, "Redis started (cache only, project-local logs).")
+                pids = load_run_pids()
+                pids["redis"] = {"port": port, "managed": True}
+                save_run_pids(pids)
+                with contextlib.suppress(Exception):
+                    (LOCAL_DIR / "redis.managed").write_text(str(port), encoding="utf-8")
                 return
             time.sleep(0.2)
         log("SERVICES", RED, f"Redis did not start; check {REDIS_DIR / 'redis.log'}.")
@@ -467,6 +645,57 @@ def ensure_redis(env: dict[str, str]) -> None:
         log("SERVICES", RED, f"Failed to start Redis: {res.stderr or res.stdout}")
     else:
         log("SERVICES", GREEN, "Redis started.")
+        pids = load_run_pids()
+        pids["redis"] = {"port": port, "managed": True}
+        save_run_pids(pids)
+        with contextlib.suppress(Exception):
+            (LOCAL_DIR / "redis.managed").write_text(str(port), encoding="utf-8")
+
+
+def stop_services(env: dict[str, str]) -> None:
+    """Stop the project's own local PostgreSQL and Redis if this project started them."""
+    pg_pid_file = PGDATA_DIR / "postmaster.pid"
+    if pg_pid_file.is_file():
+        log("SERVICES", YELLOW, f"Stopping project PostgreSQL in {PGDATA_DIR}...")
+        pg_ctl = shutil.which("pg_ctl")
+        if pg_ctl:
+            res = subprocess.run([pg_ctl, "-D", str(PGDATA_DIR), "stop", "-m", "fast"], check=False)
+            if res.returncode == 0:
+                log("SERVICES", GREEN, "PostgreSQL stopped.")
+            else:
+                log("SERVICES", RED, "Failed to stop PostgreSQL cleanly.")
+        else:
+            log("SERVICES", RED, "pg_ctl not found; cannot stop PostgreSQL.")
+    else:
+        log("SERVICES", YELLOW, "Project PostgreSQL is not running.")
+
+    pids = load_run_pids()
+    redis_managed_file = LOCAL_DIR / "redis.managed"
+    redis_info = pids.get("redis")
+    redis_port = None
+    if isinstance(redis_info, dict) and redis_info.get("managed"):
+        redis_port = redis_info.get("port")
+    elif redis_managed_file.is_file():
+        with contextlib.suppress(Exception):
+            redis_port = int(redis_managed_file.read_text(encoding="utf-8").strip())
+
+    if redis_port:
+        log("SERVICES", YELLOW, f"Stopping project Redis on port {redis_port}...")
+        redis_cli = shutil.which("redis-cli")
+        if redis_cli:
+            res = subprocess.run([redis_cli, "-p", str(redis_port), "shutdown", "nosave"], check=False)
+            if res.returncode == 0:
+                log("SERVICES", GREEN, "Redis stopped.")
+            else:
+                log("SERVICES", RED, "Failed to stop Redis cleanly.")
+        else:
+            log("SERVICES", RED, "redis-cli not found; cannot stop Redis.")
+        with contextlib.suppress(Exception):
+            redis_managed_file.unlink()
+        pids.pop("redis", None)
+        save_run_pids(pids)
+    else:
+        log("SERVICES", YELLOW, "Project-started Redis is not recorded as running.")
 
 
 def check_tools() -> None:
@@ -557,6 +786,14 @@ class Stack:
             errors="replace",
         )
         self.procs[name] = proc
+        pgid = None
+        if os.name != "nt":
+            with contextlib.suppress(Exception):
+                pgid = os.getpgid(proc.pid)
+        pids = load_run_pids()
+        pids[name] = {"pid": proc.pid, "pgid": pgid, "cmd": " ".join(cmd)}
+        save_run_pids(pids)
+
         threading.Thread(
             target=stream_process_output,
             args=(proc, name.upper(), color, self.stop_event),
@@ -592,27 +829,48 @@ class Stack:
         self._spawn("frontend", cmd, FE_DIR, GREEN)
 
     def _stop(self, proc: subprocess.Popen) -> None:
+        pids = load_run_pids()
+        for k, v in list(pids.items()):
+            if isinstance(v, dict) and v.get("pid") == proc.pid:
+                pids.pop(k, None)
+        save_run_pids(pids)
+
         if proc.poll() is not None:
             return
         if os.name == "nt":
             subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"], capture_output=True, check=False)
-            proc.wait(timeout=10)
+            with contextlib.suppress(Exception):
+                proc.wait(timeout=10)
             return
-        try:
-            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-        except Exception:
-            try:
+
+        same_group = False
+        with contextlib.suppress(Exception):
+            same_group = os.getpgid(proc.pid) == os.getpgrp()
+
+        if same_group:
+            with contextlib.suppress(Exception):
                 proc.terminate()
+        else:
+            try:
+                os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
             except Exception:
-                pass
+                with contextlib.suppress(Exception):
+                    proc.terminate()
+
         deadline = time.time() + 3.0
         while proc.poll() is None and time.time() < deadline:
             time.sleep(0.1)
+
         if proc.poll() is None:
-            try:
-                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-            except Exception:
-                pass
+            if same_group:
+                with contextlib.suppress(Exception):
+                    proc.kill()
+            else:
+                try:
+                    os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                except Exception:
+                    with contextlib.suppress(Exception):
+                        proc.kill()
 
     def restart_backend(self, why: str) -> None:
         self.restarting.set()
@@ -628,17 +886,105 @@ class Stack:
         finally:
             self.restarting.clear()
 
-    def shutdown(self, signum=None, frame=None) -> None:
+    def shutdown(self, code_or_sig: int | signal.Signals | None = 0, frame: object | None = None) -> None:
         if self.stop_event.is_set():
             return
         self.stop_event.set()
+
+        if code_or_sig == signal.SIGINT:
+            exit_code = 130
+        elif code_or_sig == signal.SIGTERM:
+            exit_code = 143
+        elif isinstance(code_or_sig, int):
+            exit_code = code_or_sig
+        else:
+            exit_code = 0
+
         log("SYSTEM", YELLOW, "\nShutting down the backend, the workers and the frontend...")
+
+        children: list[tuple[str, subprocess.Popen]] = list(self.procs.items())
         if self.data_proc is not None:
-            self._stop(self.data_proc)
-        for proc in self.procs.values():
-            self._stop(proc)
+            children.append(("data", self.data_proc))
+
+        # 1. Send termination signals to all children in parallel
+        for _name, proc in children:
+            if proc.poll() is not None:
+                continue
+            if os.name == "nt":
+                with contextlib.suppress(Exception):
+                    proc.send_signal(signal.CTRL_BREAK_EVENT)
+            else:
+                same_group = False
+                with contextlib.suppress(Exception):
+                    same_group = os.getpgid(proc.pid) == os.getpgrp()
+                if same_group:
+                    with contextlib.suppress(Exception):
+                        proc.terminate()
+                else:
+                    try:
+                        os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+                    except Exception:
+                        with contextlib.suppress(Exception):
+                            proc.terminate()
+
+        # 2. Parallel graded wait: compute workers get POLAR_STOP_GRACE_S (default 15s), others 5s
+        grace_s = float(os.environ.get("POLAR_STOP_GRACE_S", "15"))
+        start_time = time.time()
+        killed: set[str] = set()
+
+        while True:
+            now = time.time()
+            all_done = True
+            for name, proc in children:
+                if proc.poll() is not None:
+                    continue
+                is_compute = name.startswith("compute")
+                allowed_grace = grace_s if is_compute else 5.0
+                if now - start_time >= allowed_grace:
+                    if name not in killed:
+                        log("SYSTEM", RED, f"Child '{name}' (PID {proc.pid}) did not stop gracefully; killed with SIGKILL.")
+                        killed.add(name)
+                        if os.name == "nt":
+                            subprocess.run(
+                                ["taskkill", "/PID", str(proc.pid), "/T", "/F"],
+                                capture_output=True,
+                                check=False,
+                            )
+                        else:
+                            same_group = False
+                            with contextlib.suppress(Exception):
+                                same_group = os.getpgid(proc.pid) == os.getpgrp()
+                            if same_group:
+                                with contextlib.suppress(Exception):
+                                    proc.kill()
+                            else:
+                                try:
+                                    os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                                except Exception:
+                                    with contextlib.suppress(Exception):
+                                        proc.kill()
+                else:
+                    all_done = False
+            if all_done:
+                break
+            time.sleep(0.1)
+
+        for _name, proc in children:
+            with contextlib.suppress(Exception):
+                proc.wait(timeout=1.0)
+
+        save_run_pids({})
         log("SYSTEM", GREEN, "All servers stopped. Goodbye!")
-        sys.exit(0)
+        env = read_env()
+        db = Database.from_env(env)
+        redis_url = urllib.parse.urlsplit(env.get("PW_REDIS_URL") or DEFAULT_REDIS_URL)
+        redis_port = redis_url.port or 6380
+        log(
+            "SERVICES",
+            CYAN,
+            f"PostgreSQL (port {db.port}) and Redis (port {redis_port}) are still running; python3 run.py --stop-services stops this project's own.",
+        )
+        sys.exit(exit_code)
 
     def monitor(self) -> None:
         while not self.stop_event.is_set():
@@ -648,8 +994,8 @@ class Stack:
             for name, proc in list(self.procs.items()):
                 ret = proc.poll()
                 if ret is not None and not self.stop_event.is_set() and not self.restarting.is_set():
-                    log("SYSTEM", RED, f"{name.title()} process exited with code {ret}")
-                    self.shutdown()
+                    log("SYSTEM", RED, f"{name.title()} process exited unexpectedly with code {ret}")
+                    self.shutdown(1)
 
 
 def sync_data(stack: Stack, tiers: list[str]) -> None:
@@ -669,7 +1015,16 @@ def sync_data(stack: Stack, tiers: list[str]) -> None:
     for t in tiers:
         cmd += ["--tier", t]
     proc = subprocess.Popen(
-        cmd, cwd=BE_DIR, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1
+        cmd,
+        cwd=BE_DIR,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+        start_new_session=os.name != "nt",
+        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0,
+        encoding="utf-8",
+        errors="replace",
     )
     stack.data_proc = proc
     stream_process_output(proc, "DATA", YELLOW, stack.stop_event)
@@ -693,7 +1048,15 @@ def polar_data(args: list[str]) -> int:
     """Run ``polar-data`` (backend/app/data/sync.py) with its output shown under [DATA]."""
     proc = subprocess.Popen(
         ["uv", "run", "polar-data", *args],
-        cwd=BE_DIR, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1,
+        cwd=BE_DIR,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+        start_new_session=os.name != "nt",
+        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0,
+        encoding="utf-8",
+        errors="replace",
     )
     stream_process_output(proc, "DATA", YELLOW, threading.Event())
     return proc.wait()
@@ -797,11 +1160,21 @@ def main() -> None:
         help="Which datasets to sync (repeatable; default core, lifecycle, validation). "
         "'bulk' needs PW_EARTHDATA_TOKEN.",
     )
+    parser.add_argument(
+        "--stop-services",
+        action="store_true",
+        help="Stop this project's local PostgreSQL (.local/pgdata) and Redis instances, then exit.",
+    )
     args = parser.parse_args()
 
     print(f"{BOLD}{CYAN}=== POLAR WINDOW RUNNER ==={RESET}\n")
     configure_local_storage()
     check_tools()
+
+    if args.stop_services:
+        env = read_env()
+        stop_services(env)
+        sys.exit(0)
 
     if args.export_data:
         out = Path(args.export_data).expanduser().resolve()

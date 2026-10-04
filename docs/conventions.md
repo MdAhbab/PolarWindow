@@ -358,6 +358,27 @@ Each of these reached running code. Do not reintroduce them.
 - **`asyncio.run()` inside an async worker raises.** The DEM fetcher has a sync
   and an async entry point for this reason.
 - **Prefetched agent facts must enter the grounding pool**, not just the prompt.
+- **A ray that starts in a hole takes its first real sample, not minus infinity.**
+  A ray starting in a DEM hole or outside the DEM bounds previously evaluated a
+  NaN at index 0 to `-inf` when real terrain followed, corrupting the skyline.
+  The search advances to the first finite sample.
+- **Each 3D scene needs its own canvas and explicit context loss on unmount.**
+  Sharing a canvas or letting Three.js contexts linger across route changes
+  exhausts the browser's WebGL context limit (typically 8–16). Each scene must
+  own its canvas, dispose materials and geometries, and call `loseContext()` on
+  cleanup (`SceneFrame.tsx`).
+- **Narrow 320 px viewports cannot fit both the wordmark and navigation buttons.**
+  On 320 px screens (iPhone SE), the header island overflows if the wordmark is
+  displayed alongside the tab bar; hiding the text wordmark on narrow viewports
+  keeps all navigation buttons visible and clickable without horizontal spill.
+- **SLDEM2015 bilinear interpolation must clamp to the last valid pixel and propagate nodata corners.**
+  Sampling rasters at boundary coordinates can index out of bounds or drop valid
+  corners if coordinate math assumes open upper bounds; clamping to the grid boundary
+  and propagating nodata corners preserves edge elevation fidelity.
+- **Production refuses to start without a configured JWT secret.**
+  Running with `PW_ENV=prod` without `PW_JWT_SECRET` must fail fast at startup
+  validation rather than silently generating an ephemeral in-memory random secret
+  that invalidates authentication tokens across worker restarts.
 
 ## Still a placeholder
 

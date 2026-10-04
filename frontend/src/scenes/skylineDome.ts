@@ -277,6 +277,7 @@ export const createSkylineDome: SceneFactory<DomeProps> = async (canvas, props, 
       canvas.style.cursor = ''
       disposables.forEach((d) => d.dispose())
       renderer.dispose()
+      renderer.forceContextLoss()
     },
   }
 }

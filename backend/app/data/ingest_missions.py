@@ -36,6 +36,8 @@ from typing import Any, Literal
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
+from app.data.sldem import is_terrain_covered as is_terrain_covered
+
 log = logging.getLogger("ingest_missions")
 
 #: The polar elevation model's northern edge. Targets at or south of it get
@@ -67,7 +69,7 @@ InstrumentType = Literal[
     "technology_demo",
     "other",
 ]
-Precision = Literal["minute", "day", "month", "quarter", "year"]
+Precision = Literal["second", "minute", "day", "month", "quarter", "year"]
 Region = Literal["south_polar", "nearside", "farside", "polar_other"]
 CoordinateKind = Literal["actual_landing", "planned_target", "feature_centre"]
 
@@ -290,7 +292,7 @@ class MissionIn(_Strict):
             raise ValueError("'rovers' has entries but no entry in field_sources")
         urls = {s.url for s in self.sources}
         for f, url in self.field_sources.items():
-            if f not in (*NULLABLE_FIELDS_V2, "rovers"):
+            if f not in (*NULLABLE_FIELDS_V2, "rovers", "landing"):
                 raise ValueError(f"field_sources names '{f}', which is not a v2 field")
             if url not in urls:
                 raise ValueError(f"field_sources['{f}'] is not one of the mission's sources")
@@ -457,8 +459,8 @@ def plan_sites(missions: list[MissionIn], terrain: TerrainSampler) -> list[dict[
         if sid in rows:
             continue
         t = m.target
-        polar = t.lat_deg <= POLAR_DEM_EDGE_LAT_DEG
-        sampled = terrain(t.lat_deg, t.lon_deg) if polar else None
+        covered = is_terrain_covered(t.lat_deg, t.lon_deg)
+        sampled = terrain(t.lat_deg, t.lon_deg) if covered else None
         feature = t.coordinate_kind == "feature_centre"
         where = feature_name(t) if feature else t.name
         if feature:
@@ -481,7 +483,7 @@ def plan_sites(missions: list[MissionIn], terrain: TerrainSampler) -> list[dict[
             )
             rule = f"The coordinate {kind}, as published; used as given, not searched."
         terrain_note = (
-            "Height and slope sampled from the 80 m LOLA model at the nearest post."
+            "Height and slope sampled from the elevation model at the nearest post."
             if sampled is not None
             else "No elevation model covers this site: height, slope and terrain are not modelled."
         )
@@ -506,7 +508,7 @@ def plan_sites(missions: list[MissionIn], terrain: TerrainSampler) -> list[dict[
             "source_note": f"{rule} {terrain_note}",
             "kind": "mission_target",
             "coordinate_rule": "published",
-            "terrain_modelled": polar,
+            "terrain_modelled": covered,
         }
     for sid, names in served_by.items():
         rows[sid]["note"] = "CLPS target of " + ", ".join(dict.fromkeys(names)) + "."
@@ -581,22 +583,59 @@ def payload_rows(m: MissionIn) -> list[dict[str, Any]]:
 
 
 def dem_terrain_sampler(tile: Any) -> TerrainSampler:
-    """Height and slope at the nearest post of a loaded polar DEM tile."""
+    """Height and slope at the nearest post of an elevation model."""
+    from app.config import get_settings
     from app.core.projections import geographic_to_polar
     from app.data.ingest_sites import _slope_deg
+    from app.data.sldem import SldemTile
+
+    s = get_settings()
 
     def sample(lat: float, lon: float) -> tuple[float, float] | None:
-        x, y = geographic_to_polar(np.array([lon]), np.array([lat]))
-        c = int(round((float(x[0]) - tile.origin_x_m) / tile.scale_m))
-        r = int(round((tile.origin_y_m - float(y[0])) / tile.scale_m))
-        h, w = tile.heights.shape
-        if not (2 <= r < h - 2 and 2 <= c < w - 2):
-            return None
-        patch = tile.heights[r - 2 : r + 3, c - 2 : c + 3]
-        if not np.isfinite(patch).all():
-            return None
-        slope = _slope_deg(patch, tile.scale_m)
-        return float(patch[2, 2]), float(slope[2, 2])
+        if hasattr(tile, "origin_x_m") and hasattr(tile, "scale_m"):
+            x, y = geographic_to_polar(np.array([lon]), np.array([lat]))
+            c = int(round((float(x[0]) - tile.origin_x_m) / tile.scale_m))
+            r = int(round((tile.origin_y_m - float(y[0])) / tile.scale_m))
+            h, w = tile.heights.shape
+            if 2 <= r < h - 2 and 2 <= c < w - 2:
+                patch = tile.heights[r - 2 : r + 3, c - 2 : c + 3]
+                if np.isfinite(patch).all():
+                    slope = _slope_deg(patch, tile.scale_m)
+                    return float(patch[2, 2]), float(slope[2, 2])
+
+        fine_dir = s.dem_dir / "fine"
+        if fine_dir.exists():
+            for fpath in fine_dir.glob("*.npz"):
+                try:
+                    with np.load(fpath, allow_pickle=False) as z:
+                        if "origin_lat_deg" in z:
+                            t = SldemTile.load(fpath)
+                            row = int(round((lat - t.origin_lat_deg) / t.dlat_deg))
+                            dlon = (lon - t.origin_lon_deg + 180.0) % 360.0 - 180.0
+                            col = int(round(dlon / t.dlon_deg))
+                            th, tw = t.heights.shape
+                            if 2 <= row < th - 2 and 2 <= col < tw - 2:
+                                patch = t.heights[row - 2 : row + 3, col - 2 : col + 3]
+                                if np.isfinite(patch).all():
+                                    slope = _slope_deg(patch, t.scale_m)
+                                    return float(patch[2, 2]), float(slope[2, 2])
+                        elif "origin_x_m" in z:
+                            from app.data.lola import DemTile
+
+                            dt = DemTile.load(fpath)
+                            x, y = geographic_to_polar(np.array([lon]), np.array([lat]))
+                            dc = int(round((float(x[0]) - dt.origin_x_m) / dt.scale_m))
+                            dr = int(round((dt.origin_y_m - float(y[0])) / dt.scale_m))
+                            dth, dtw = dt.heights.shape
+                            if 2 <= dr < dth - 2 and 2 <= dc < dtw - 2:
+                                patch = dt.heights[dr - 2 : dr + 3, dc - 2 : dc + 3]
+                                if np.isfinite(patch).all():
+                                    slope = _slope_deg(patch, dt.scale_m)
+                                    return float(patch[2, 2]), float(slope[2, 2])
+                except (OSError, ValueError, KeyError) as exc:
+                    log.debug("could not sample DEM %s: %s", fpath, exc)
+                    continue
+        return None
 
     return sample
 

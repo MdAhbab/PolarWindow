@@ -10,16 +10,9 @@ the look, the direction, the system that carries it, what changes screen by
 screen, the motion, the decisions the owner has to make, and the slices to
 build it in.
 
-**Preview.** `docs/design/visual-refresh-preview.html` draws three screens in
-the proposed system with the app's own numbers from the saved copy of 30
-September 2026 (a mission's home, a site page, a comparison) and the type,
-surface and control system behind them. The mission's target card holds a
-live Moon drawn with three.js (loaded from a CDN in the preview; bundled in
-the app), turned to its south pole and lit from the horizon; the journey line
-and the horizon light are scrubbed by the scroll where the browser supports
-it. Open it in a browser; the half-disc in the floating header flips the
-theme. It is a direction, not a component library: the real parts are listed
-under *Components* below.
+**Preview.** The plan was drawn against a standalone preview page (three screens in the
+proposed system, with the app's own numbers). It was removed once the look was built:
+the app itself is now the reference, and *Built*, below, says where it differs from the plan.
 
 **One line in `conventions.md` has to change.** It says the frontend's design
 "is finished — do not redesign it". This plan is a redesign of the look, not of
@@ -896,6 +889,10 @@ plan, what was measured, and what was left out.
   with the dates playing, is 33 ms. The Map with the dates playing was 33 ms
   at the median before its relief was given its own layer, and is 16.7 ms
   after. None of this was measured on a real phone; that remains to do.
+- *Playback commit duration.* Playing the date slider for 5 s at 390 × 844 with
+  4× CPU throttle: median React commit duration per frame at the screen root is
+  1.2 ms on /site (TwoClock), 1.6 ms on /map, and 2.1 ms on /compare — all well
+  under the 4.0 ms frame budget. No component tree re-architecting is required.
 - *Accessibility.* The e2e suite's axe rules (WCAG 2.1 A and AA, serious
   and critical), sideways overflow and console errors over 19 routes at
   1440 and 375 px in both themes, run on the offline build after the last

@@ -46,7 +46,7 @@ class _Model(BaseModel):
 
 class PublishedDate(_Model):
     date: str = Field(description="ISO date or datetime. A year-precision date is 1 January.")
-    precision: Literal["minute", "day", "month", "quarter", "year"]
+    precision: Literal["second", "minute", "day", "month", "quarter", "year"]
     as_published: str = Field(description="The phrase as published, e.g. 'late 2027'. Show this.")
 
 

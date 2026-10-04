@@ -432,6 +432,8 @@ export function precisionSpanEnd(startMs: number, precision: DatePrecision): num
   const y = d.getUTCFullYear()
   const m = d.getUTCMonth()
   switch (precision) {
+    case 'second':
+      return startMs + 1_000
     case 'minute':
       return startMs + 60_000
     case 'day':

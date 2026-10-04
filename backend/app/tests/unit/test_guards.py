@@ -90,6 +90,56 @@ def test_ordinals_years_and_small_counts_are_exempt() -> None:
     assert guards.check(out, [METRICS]).ok
 
 
+@pytest.mark.parametrize(
+    ("sentence", "expected_values"),
+    [
+        ("The longest night lasts 9 Earth days.", [9.0]),
+        ("Expect 2 weeks without contact.", [2.0]),
+        ("Dose is 5 mSv over the trip.", [5.0]),
+        ("Winds up to 8 knots at the pad.", [8.0]),
+        ("A 6 dB link margin.", [6.0]),
+        ("Expect 4 mph gusts.", [4.0]),
+        ("Earth contact lasts 3 to 7 hours.", [3.0, 7.0]),
+        ("a factor of 2", [2.0]),
+    ],
+)
+def test_small_numbers_with_units_or_multipliers_are_not_exempt(
+    sentence: str, expected_values: list[float]
+) -> None:
+    claims = guards.extract_claims({"summary": sentence})
+    assert [c.value for c in claims] == expected_values
+    for c in claims:
+        assert not guards._is_exempt(c), f"{c.value} in '{sentence}' should not be exempt"
+
+
+@pytest.mark.parametrize(
+    "sentence",
+    [
+        "three documents",
+        "the first site",
+        "2 of 5 sites",
+        "1 to 3 sites",
+        "one ridge",
+        "Step 2 of 4",
+    ],
+)
+def test_counts_stay_exempt(sentence: str) -> None:
+    claims = guards.extract_claims({"summary": sentence})
+    for c in claims:
+        assert guards._is_exempt(c), f"{c.value} in '{sentence}' should be exempt"
+
+
+def test_end_to_end_check_unit_grounding() -> None:
+    out = {"status": "ok", "paragraph": "The longest night lasts 9 Earth days."}
+    v_fail = guards.check(out, [])
+    assert not v_fail.ok
+    assert any(x.value == 9.0 for x in v_fail.violations)
+
+    tool_grounding = [tool(1, "get_metrics", {"longest_dark_s": 777600.0})]
+    v_pass = guards.check(out, tool_grounding)
+    assert v_pass.ok, [x.detail for x in v_pass.violations]
+
+
 def test_number_hidden_in_a_structured_field_is_also_checked() -> None:
     """A hallucinated value in a field is as damaging as one in a sentence, and
     less likely to be noticed."""

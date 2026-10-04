@@ -131,11 +131,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           reach as the page scrolls under it; the space around it lets clicks
           through to the page. */}
       <header className="pointer-events-none sticky top-0 z-40 px-3 pt-3 sm:px-4">
-        <div className="pw-island pointer-events-auto mx-auto flex w-fit max-w-full items-center gap-1 rounded-pill py-1.5 pr-1.5 pl-3 sm:pl-4">
+        <div className="pw-island pointer-events-auto mx-auto flex w-fit max-w-full items-center gap-1 rounded-pill py-1.5 pr-1.5 pl-1.5 min-[360px]:pl-3 sm:pl-4">
           <NavLink
             to="/missions"
             onClick={go('/missions')}
-            className="flex h-12 shrink-0 items-center gap-2.5 rounded-pill pr-2 no-underline sm:pr-3"
+            className="flex h-12 min-w-12 shrink-0 items-center justify-center min-[360px]:justify-start gap-2.5 rounded-pill pr-0 min-[360px]:pr-2 sm:pr-3 no-underline"
             aria-label="POLAR WINDOW, CLPS missions"
           >
             <BrandName />

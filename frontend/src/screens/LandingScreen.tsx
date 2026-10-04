@@ -91,7 +91,7 @@ function useReducedMotionPref(): boolean {
 export default function LandingScreen() {
   const reduced = useReducedMotionPref()
   const rootRef = useRef<HTMLDivElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const canvasWrapRef = useRef<HTMLDivElement>(null)
   const sceneRef = useRef<MoonScene | null>(null)
   const [webgl, setWebgl] = useState(true)
 
@@ -113,9 +113,15 @@ export default function LandingScreen() {
 
   // The Moon, and what scrolling and the pointer do to it.
   useEffect(() => {
-    const canvas = canvasRef.current
+    const wrap = canvasWrapRef.current
     const root = rootRef.current
-    if (!canvas || !root) return
+    if (!wrap || !root) return
+
+    const canvas = document.createElement('canvas')
+    canvas.setAttribute('aria-hidden', 'true')
+    canvas.className = 'pw-landing-canvas pointer-events-none fixed inset-0 h-full w-full'
+    wrap.appendChild(canvas)
+
     let scene: MoonScene
     try {
       const tile = (z: number, x: number, y: number) =>
@@ -129,6 +135,7 @@ export default function LandingScreen() {
           : START
       scene = createMoonScene(canvas, tile, first, { theme, ground: earthrise })
     } catch {
+      canvas.remove()
       setWebgl(false)
       return
     }
@@ -143,6 +150,7 @@ export default function LandingScreen() {
         window.removeEventListener('resize', redraw)
         scene.dispose()
         sceneRef.current = null
+        canvas.remove()
       }
     }
 
@@ -224,6 +232,7 @@ export default function LandingScreen() {
       ctx.revert()
       scene.dispose()
       sceneRef.current = null
+      canvas.remove()
     }
   }, [reduced, earthrise])
 
@@ -242,13 +251,7 @@ export default function LandingScreen() {
     >
       {/* The black of space under the first picture, there before the picture has loaded. */}
       {onGround && <div aria-hidden="true" className="pw-landing-space pointer-events-none fixed inset-0" />}
-      <canvas
-        ref={canvasRef}
-        aria-hidden="true"
-        // Below lg the Moon sits behind the text, so it is dimmed to keep the
-        // words readable; beside the text it is shown in full (globals.css).
-        className={`pw-landing-canvas pointer-events-none fixed inset-0 h-full w-full ${webgl ? '' : 'hidden'}`}
-      />
+      <div ref={canvasWrapRef} aria-hidden="true" className={webgl ? '' : 'hidden'} />
       {/* The picture is shaded behind the words, so they read over the Milky Way or the Moon. */}
       {webgl && <div aria-hidden="true" className="pw-sky-shade pointer-events-none fixed inset-0" />}
       {/* The first picture's own shade. It stays with the window and thins as the words scroll away,
@@ -423,16 +426,35 @@ function FeatureCard({
   reduced: boolean
 }) {
   const ref = useRef<HTMLLIElement>(null)
+  const toX = useRef<((v: number) => void) | null>(null)
+  const toY = useRef<((v: number) => void) | null>(null)
+
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el || reduced) return
+    gsap.set(el, { transformPerspective: 700 })
+    toX.current = gsap.quickTo(el, 'rotateX', { duration: 0.3, ease: 'power2.out' })
+    toY.current = gsap.quickTo(el, 'rotateY', { duration: 0.3, ease: 'power2.out' })
+    return () => {
+      gsap.killTweensOf(el)
+      toX.current = null
+      toY.current = null
+    }
+  }, [reduced])
+
   // A slight lean toward the pointer, as a hint that the cards are live.
   const onMove = (e: ReactPointerEvent<HTMLLIElement>) => {
-    if (reduced || !ref.current) return
+    if (reduced || !ref.current || !toX.current || !toY.current) return
     const r = ref.current.getBoundingClientRect()
     const x = (e.clientX - r.left) / r.width - 0.5
     const y = (e.clientY - r.top) / r.height - 0.5
-    gsap.to(ref.current, { rotateY: x * 6, rotateX: -y * 6, duration: 0.3, ease: 'power2.out', transformPerspective: 700 })
+    toY.current(x * 6)
+    toX.current(-y * 6)
   }
   const onLeave = () => {
-    if (!reduced && ref.current) gsap.to(ref.current, { rotateX: 0, rotateY: 0, duration: 0.4, ease: 'power2.out' })
+    if (reduced || !toX.current || !toY.current) return
+    toX.current(0)
+    toY.current(0)
   }
   return (
     <li

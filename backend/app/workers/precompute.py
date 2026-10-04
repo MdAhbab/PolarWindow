@@ -27,6 +27,7 @@ from app.core import spice
 from app.core.horizon import SMOOTH_SPHERE_PRODUCT, HorizonMask, build_mask, smooth_mask
 from app.data.ingest_lola import ensure_fine_dem, ensure_regional_dem
 from app.data.lola import DemTile, make_samplers
+from app.data.sldem import SldemTile, make_sldem_samplers
 from app.db.repositories.metrics import WindowMetricsRecord, WindowMetricsRepository
 from app.db.repositories.sites import MaskRepository, SiteRecord, SiteRepository
 from app.db.session import dispose_engine, session_scope
@@ -49,7 +50,7 @@ log = logging.getLogger("precompute")
 
 
 def build_site_mask(
-    lat_deg: float, lon_deg: float, fine: DemTile | None, coarse: DemTile
+    lat_deg: float, lon_deg: float, fine: DemTile | SldemTile | None, coarse: DemTile
 ) -> tuple[HorizonMask, str, float, float]:
     """Ray-march one site and summarise which terrain products set its skyline.
 
@@ -59,6 +60,18 @@ def build_site_mask(
     is true for every bearing -- rather than the near-field tier's by default.
     """
     s = get_settings()
+    if isinstance(fine, SldemTile):
+        sampler, sigma = make_sldem_samplers(lat_deg, lon_deg, fine)
+        mask = build_mask(
+            sampler,
+            azimuth_step_deg=s.azimuth_step_deg,
+            max_range_m=s.max_range_m,
+            dem_post_spacing_m=fine.scale_m,
+            dem_vertical_error_m=fine.vertical_error_m,
+            sample_sigma=sigma,
+        )
+        return mask, fine.product, fine.scale_m, fine.vertical_error_m
+
     sampler, sigma = make_samplers(lat_deg, lon_deg, fine, coarse)
     source = fine if fine is not None else coarse
     mask = build_mask(
@@ -269,24 +282,24 @@ async def _one_site(
             mask = rec.mask
             log.info("         mask: reused (%d bearings)", mask.azimuth_count)
 
-    if mask is None and not site.terrain_modelled:
-        # A CLPS target outside the polar DEM (ADR-6): a smooth-sphere skyline,
-        # flagged everywhere it is used. There is no terrain to fetch.
-        mask = smooth_mask(azimuth_step_deg=s.azimuth_step_deg, max_range_m=s.max_range_m)
-        async with session_scope() as session:
-            await MaskRepository(session).upsert(
-                site.id,
-                ENGINE_VERSION,
-                mask,
-                dem_product=SMOOTH_SPHERE_PRODUCT,
-                dem_resolution_m=0.0,
-                dem_vertical_error_m=0.0,
-            )
-        log.info("         mask: smooth sphere (terrain not modelled outside 80 deg S)")
-
     if mask is None:
         fine = await ensure_fine_dem(site.id, site.lat_deg, site.lon_deg)
-        mask, product, res_m, err_m = build_site_mask(site.lat_deg, site.lon_deg, fine, coarse)
+        if fine is None and not site.terrain_modelled:
+            # No elevation model covers this site: a smooth-sphere skyline,
+            # flagged everywhere it is used.
+            mask = smooth_mask(azimuth_step_deg=s.azimuth_step_deg, max_range_m=s.max_range_m)
+            async with session_scope() as session:
+                await MaskRepository(session).upsert(
+                    site.id,
+                    ENGINE_VERSION,
+                    mask,
+                    dem_product=SMOOTH_SPHERE_PRODUCT,
+                    dem_resolution_m=0.0,
+                    dem_vertical_error_m=0.0,
+                )
+            log.info("         mask: smooth sphere (no terrain model covers this site)")
+        else:
+            mask, product, res_m, err_m = build_site_mask(site.lat_deg, site.lon_deg, fine, coarse)
         log.info(
             "         mask: max %+.3f deg @ %.2f deg, mean %+.3f, coverage %.0f%%, %.0f ms",
             mask.max_el_deg,

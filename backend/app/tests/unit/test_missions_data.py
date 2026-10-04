@@ -54,7 +54,7 @@ def test_dates_are_ordered(data: im.MissionFile) -> None:
         pts = [
             d
             for d in (m.launch, m.landing, m.end_of_mission)
-            if d and d.precision in ("minute", "day")
+            if d and d.precision in ("second", "minute", "day")
         ]
         times = [im.parse_date(d.date) for d in pts]
         assert times == sorted(times), m.id
@@ -103,7 +103,7 @@ def test_feature_centres_share_one_site(data: im.MissionFile) -> None:
 def test_terrain_only_inside_the_polar_model(data: im.MissionFile) -> None:
     rows = {r["id"]: r for r in im.plan_sites(data.missions, lambda lat, lon: (1000.0, 2.0))}
     for r in rows.values():
-        assert r["terrain_modelled"] == (r["lat_deg"] <= im.POLAR_DEM_EDGE_LAT_DEG)
+        assert r["terrain_modelled"] == im.is_terrain_covered(r["lat_deg"], r["lon_deg"])
         if not r["terrain_modelled"]:
             assert r["elev_m"] is None and r["slope_deg"] is None
 
@@ -181,3 +181,12 @@ def test_the_cancelled_apex_mission_has_its_sources(data: im.MissionFile) -> Non
     assert apex.status == "cancelled"
     urls = {s.url for s in apex.sources}
     assert any("ispace-inc.com" in u for u in urls) and any("spacenews.com" in u for u in urls)
+
+
+def test_landing_second_precision_and_field_source(data: im.MissionFile) -> None:
+    for mid in ("im-1", "im-2", "blue-ghost-m1"):
+        m = next(x for x in data.missions if x.id == mid)
+        assert m.landing is not None
+        assert m.landing.precision == "second"
+        assert "landing" in m.field_sources
+        assert m.field_sources["landing"].startswith("https://naif.jpl.nasa.gov/")

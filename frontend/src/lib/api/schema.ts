@@ -3372,7 +3372,7 @@ export interface components {
              * Precision
              * @enum {string}
              */
-            precision: "minute" | "day" | "month" | "quarter" | "year";
+            precision: "second" | "minute" | "day" | "month" | "quarter" | "year";
             /**
              * As Published
              * @description The phrase as published, e.g. 'late 2027'. Show this.

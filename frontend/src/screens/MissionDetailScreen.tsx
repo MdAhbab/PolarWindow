@@ -94,7 +94,9 @@ export function MissionRecord({ mission: m }: { mission: MissionDetail }) {
                 </ul>
               </>
             )}
-            <p className="font-mono text-caption text-ink-3">Record version {m.dataVersion}</p>
+            <p className="text-caption text-ink-3">
+              Record version <span className="font-mono">{m.dataVersion}</span>
+            </p>
           </Disclosure>
         </RowGroup>
       </div>
@@ -372,7 +374,12 @@ function Payloads({ mission: m, asOf }: { mission: MissionDetail; asOf: string |
 export function initialWindow(m: MissionDetail): { startH: number; hours: number } | null {
   const sw = m.surfaceWindow
   if (sw.startIso && sw.endIso) return windowFromInstants(Date.parse(sw.startIso), Date.parse(sw.endIso))
-  if (m.landing && m.landing.precision !== 'day' && m.landing.precision !== 'minute') {
+  if (
+    m.landing &&
+    m.landing.precision !== 'day' &&
+    m.landing.precision !== 'minute' &&
+    m.landing.precision !== 'second'
+  ) {
     return windowFromInstants(m.landing.startMs, m.landing.startMs + 30 * 86_400_000)
   }
   return null
@@ -396,7 +403,10 @@ function SurfaceWindowLine({ mission: m, site }: { mission: MissionDetail; site:
       break
     case 'none':
       line =
-        m.landing && m.landing.precision !== 'day' && m.landing.precision !== 'minute'
+        m.landing &&
+        m.landing.precision !== 'day' &&
+        m.landing.precision !== 'minute' &&
+        m.landing.precision !== 'second'
           ? `Landing known only to the ${m.landing.precision}; choose a date below`
           : `${sw.note} Choose a date below.`
   }
@@ -461,7 +471,7 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
           )}
           {!terrainModelled && (
             <UncertaintyNote>
-              No terrain data outside 80°S, so this is worked out as if the ground were flat. Real hills could block more.
+              No terrain model covers this site, so this is worked out as if the ground were flat. Real hills could block more.
             </UncertaintyNote>
           )}
           {terrainModelled && meta?.uncertainty.partialCoverage && (

@@ -20,8 +20,9 @@ retains a nominal instant with its reason in the opportunity note. See
 Radiation engine `rad-5` recomputes cached belt results with the published
 0.3°/year SAA longitudinal drift compensation. The native Windows loader from
 `rad-4` is retained. Response shapes and the factor-of-two map uncertainty stay
-the same. The IM-2 SPENVIS passage passes the 5% implementation comparison;
-other passages have not been run in SPENVIS.
+the same. Of the seven passages run in SPENVIS, five pass the 5% implementation
+comparison and two miss it on protons (+5.75% and +5.40%); see
+[the radiation validation](validation.md) for the cause.
 
 Return can use a [locally imported Copernicus wave subset](copernicus-marine.md)
 for its existing `wave_height_m` quantity. It retains NOAA wind and source

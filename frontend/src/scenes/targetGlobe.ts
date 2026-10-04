@@ -177,6 +177,7 @@ export const createTargetGlobe: SceneFactory<GlobeProps> = async (canvas, props,
       beadGeo.dispose()
       beadMat.dispose()
       renderer.dispose()
+      renderer.forceContextLoss()
     },
   }
 }

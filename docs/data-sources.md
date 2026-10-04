@@ -10,15 +10,18 @@ added to it later.
 |---|---|---|---|
 | Polar DEM, 20 m | `LDEM_80S_20M` | LOLA team, PDS Geosciences Node | Fine horizon windows (20 km around each polar site) |
 | Polar DEM, 80 m | `LDEM_80S_80M` | LOLA team, PDS Geosciences Node | Regional horizon, 20–50 km |
+| Polar DEM, 60 m | `LDEM_60S_60M` | LOLA team, PDS Geosciences Node | Schrödinger basin horizon window for APEX-1 (ADR-19) |
+| Global DEM, 59 m | `SLDEM2015` | Barker et al. 2016, *Icarus* 273, 346–355 (LOLA + SELENE TC) | Horizon windows between 60°S and 60°N: Blue Ghost 1, Peregrine M1, IM-3 (ADR-19; vertical error 3–4 m) |
 | Planetary ephemeris | `de440.bsp` | NAIF / JPL | Sun and Earth vectors |
 | Lunar orientation | `moon_pa_de440_200625.bpc`, `moon_de440_250416.tf`, `pck00011.tpc` | NAIF / JPL | `MOON_ME` frame |
 | Leap seconds | `naif0012.tls` | NAIF | UTC ↔ TDB |
 | Feature names and centres | Gazetteer of Planetary Nomenclature | IAU / USGS Astrogeology | Mission targets with no published landing point |
 | Candidate-site anchors | Lunar South Pole Atlas | LPI | The 15 candidate sites' anchors (`data/sites.json`) |
 
-The polar DEM covers **80°S–90°S only**. Outside it, Sun and Earth are still
-computed with SPICE, but against a smooth-Moon horizon, and every response says
-`terrain_modelled: false` (ADR-6).
+The regional polar DEM covers **80°S–90°S**. For mission targets outside that boundary,
+LOLA 60S (60°S–80°S) and SLDEM2015 (60°S–60°N) provide real terrain windows (ADR-19).
+Where no terrain model covers a target, Sun and Earth are computed against a smooth-Moon
+horizon, and responses carry `terrain_modelled: false` (ADR-6).
 
 ## CLPS missions (`data/missions.json`)
 

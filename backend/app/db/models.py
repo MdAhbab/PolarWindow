@@ -582,6 +582,7 @@ class Job(Base):
             postgresql_where=text("status IN ('queued', 'running')"),
         ),
         Index("ix_jobs_claim", "status", "priority", "run_after"),
+        Index("ix_jobs_latest", "kind", "params_hash", "closure", text("id DESC")),
     )
 
 

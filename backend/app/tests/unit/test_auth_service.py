@@ -65,3 +65,14 @@ def test_one_click_sign_in_can_be_turned_off(monkeypatch: pytest.MonkeyPatch) ->
     get_settings.cache_clear()
     with pytest.raises(auth_service.SignInDisabled):
         auth_service.issue_demo()
+
+
+def test_production_refuses_to_start_without_jwt_secret(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("PW_ENV", "prod")
+    monkeypatch.setenv("PW_JWT_SECRET", "")
+    get_settings.cache_clear()
+    try:
+        with pytest.raises(ValueError, match="PW_JWT_SECRET"):
+            get_settings()
+    finally:
+        get_settings.cache_clear()

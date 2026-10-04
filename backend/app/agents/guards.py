@@ -71,14 +71,29 @@ _QUANTITY_AFTER = re.compile(
     r"""^\s*(?:
         %|per\s?cent|percent
       | h\b|hrs?\b|hours?\b|-hours?\b|-h\b
-      | d\b|days?\b|-days?\b
+      | d\b|days?\b|-days?\b|(?:earth|lunar)[\s-]+days?\b
+      | weeks?\b|months?\b|years?\b|sols?\b|orbits?\b
       | min\b|minutes?\b|s\b|secs?\b|seconds?\b
       | km\b|m\b|metres?\b|meters?\b|-metre\b|-meter\b
-      | °|deg\b|degrees?\b|-degree\b
-      | w\b|watts?\b|k\b|kelvin\b
+      | knots?\b|kts?\b|kt\b|mph\b|km/h\b|kph\b|m/s\b|km/s\b
+      | ft\b|feet\b|foot\b|mi\b|miles?\b|nmi\b|au\b
+      | m?sv\b|µsv\b|usv\b|c?gy\b|mgy\b|rads?\b|rem\b|[kmg]ev\b|pfu\b
+      | db[mwi]?\b|[kmg]?hz\b|[km]?w\b|w·?h\b|kwh\b|kg\b|hpa\b|mbar\b|bars?\b
+      | °|deg\b|degrees?\b|-degree\b|celsius\b|fahrenheit\b
+      | watts?\b|k\b|kelvin\b
+      | x\b|times\b|-fold\b
     )""",
     re.VERBOSE | re.IGNORECASE,
 )
+
+#: Range or pair connector followed by a second number.
+_RANGE_AFTER = re.compile(
+    r"^\s*(?:-|\u2013|\u2014|to|and|or)\s*[-\u2212]?\d[\d,]*(?:\.\d+)?",
+    re.IGNORECASE,
+)
+
+#: Multiplier phrase immediately preceding a number.
+_MULTIPLIER_BEFORE = re.compile(r"(?:factor\s+of|×)\s*$", re.IGNORECASE)
 
 #: Calendar dates are positions in time, not claims about a site. ISO stamps
 #: are removed before scanning; a day-of-month beside a month name is exempt.
@@ -290,6 +305,15 @@ def _scan_text(text: str, path: str) -> list[Claim]:
         is_date = (
             is_int and 1 <= val <= 31 and bool(_DAY_MONTH.match(after) or _MONTH_DAY.search(before))
         )
+        has_quantity_after = bool(_QUANTITY_AFTER.match(after))
+        if not has_quantity_after:
+            rm = _RANGE_AFTER.match(cleaned[m.end() :])
+            if rm:
+                after_second = cleaned[m.end() + rm.end() : m.end() + rm.end() + 16]
+                if _QUANTITY_AFTER.match(after_second):
+                    has_quantity_after = True
+        before16 = cleaned[max(0, m.start() - 16) : m.start()]
+        is_multiplier = bool(_MULTIPLIER_BEFORE.search(before16))
         lo, hi = max(0, m.start() - 45), min(len(text), m.end() + 45)
         out.append(
             Claim(
@@ -297,7 +321,7 @@ def _scan_text(text: str, path: str) -> list[Claim]:
                 value=val,
                 context=text[lo:hi].strip(),
                 in_prose=True,
-                bare_count=is_int and not _QUANTITY_AFTER.match(after),
+                bare_count=is_int and not has_quantity_after and not is_multiplier,
                 is_date=is_date,
             )
         )
@@ -306,6 +330,10 @@ def _scan_text(text: str, path: str) -> list[Claim]:
         if worded is None:
             continue
         after = cleaned[m.end() : m.end() + 16]
+        before16 = cleaned[max(0, m.start() - 16) : m.start()]
+        is_multiplier = bool(_MULTIPLIER_BEFORE.search(before16))
+        # Word-number ranges ("three to seven hours") are omitted: _WORD_NUMBER_RE
+        # matches multi-word number phrases and word ranges are rare in tool summaries.
         lo, hi = max(0, m.start() - 45), min(len(text), m.end() + 45)
         out.append(
             Claim(
@@ -313,7 +341,7 @@ def _scan_text(text: str, path: str) -> list[Claim]:
                 value=worded,
                 context=text[lo:hi].strip(),
                 in_prose=True,
-                bare_count=not _QUANTITY_AFTER.match(after),
+                bare_count=not _QUANTITY_AFTER.match(after) and not is_multiplier,
             )
         )
     return out

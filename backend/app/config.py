@@ -13,7 +13,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, Literal
 
-from pydantic import AliasChoices, Field, field_validator
+from pydantic import AliasChoices, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 #: Bumped whenever a change to core/ alters the numbers. Stamped onto every
@@ -171,6 +171,9 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/polar_window"
     redis_url: str = "redis://localhost:6379/0"
     redis_enabled: bool = True
+    #: Socket connect and read timeout for Redis. A stalled Redis costs at most
+    #: this long, never hanging the request indefinitely.
+    redis_timeout_s: float = 1.0
 
     # --- compute -----------------------------------------------------------
     #: Default timeline sampling step. 900 s over a 708 h window is 2,835
@@ -313,6 +316,15 @@ class Settings(BaseSettings):
     @classmethod
     def _expand(cls, v: object) -> object:
         return Path(str(v)).expanduser().resolve() if v else v
+
+    @model_validator(mode="after")
+    def _check_prod_secrets(self) -> Settings:
+        if self.env == "prod" and not self.jwt_secret:
+            raise ValueError(
+                "PW_JWT_SECRET must be set when PW_ENV=prod; "
+                "a random process secret cannot be used in production."
+            )
+        return self
 
 
 @lru_cache(maxsize=1)

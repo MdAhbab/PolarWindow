@@ -284,6 +284,22 @@ class JobRepository:
         )
         return status
 
+    async def release(self, job_id: int, owner: str) -> bool:
+        """Hand a running job back on worker shutdown without spending an attempt."""
+        res = await self._s.execute(
+            update(Job)
+            .where(Job.id == job_id, Job.lease_owner == owner, Job.status == "running")
+            .values(
+                status="queued",
+                attempts=func.greatest(Job.attempts - 1, 0),
+                lease_owner=None,
+                lease_until=None,
+                run_after=func.now(),
+                message="Interrupted when its worker stopped; queued again.",
+            )
+        )
+        return bool(getattr(res, "rowcount", 0))
+
 
 class AssessmentRepository:
     def __init__(self, session: AsyncSession) -> None:

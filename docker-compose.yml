@@ -7,10 +7,17 @@
 #   compute          the compute worker: trip, contact and launch answers (ADR-12)
 #   feeds            the feeds worker, the one service that fetches live data (ADR-8)
 #
+#   web              the dashboard, built and served by nginx, with /api passed to the
+#                    api (only with `--profile web`; run_onVM.py uses it)
+#
 # The api and both workers start once `data` has finished. On a new machine that is
 # the download of the kernels, terrain and the rest (about 600 MB); on one that has
-# them it is a check. The frontend is not a service: `make frontend` serves it on
-# :5173 against this api.
+# them it is a check. Without `--profile web` the frontend is not a service:
+# `make frontend` serves it on :5173 against this api.
+#
+# PW_BIND_ADDR is the address the database, the cache and the api are published on:
+# every interface by default, as before; 127.0.0.1 on a host open to the internet,
+# where only `web` should be reachable from outside.
 #
 # Settings come from .env (copy .env.example), the same file make and run.py read.
 # Only the three that differ inside a container are set here. Docker Compose 2.24 or
@@ -49,7 +56,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: polar_window
-    ports: ['5432:5432']
+    ports: ['${PW_BIND_ADDR:-0.0.0.0}:5432:5432']
     volumes: ['pgdata:/var/lib/postgresql/data']
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres -d polar_window']
@@ -61,7 +68,7 @@ services:
     image: redis:7-alpine
     # Cache only; nothing here is the source of truth, so no persistence.
     command: redis-server --save '' --appendonly no
-    ports: ['6379:6379']
+    ports: ['${PW_BIND_ADDR:-0.0.0.0}:6379:6379']
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
@@ -101,7 +108,12 @@ services:
   # visible failure rather than a slow mystery.
   api:
     <<: *app
-    ports: ['8000:8000']
+    ports: ['${PW_BIND_ADDR:-0.0.0.0}:8000:8000']
+    environment:
+      <<: *env
+      # Whose X-Forwarded-For the api believes: its own machine by default, the web
+      # service's when run_onVM.py puts nginx in front of it.
+      FORWARDED_ALLOW_IPS: ${PW_FORWARDED_ALLOW_IPS:-127.0.0.1}
     depends_on: *ready
     restart: unless-stopped
     healthcheck:
@@ -126,6 +138,20 @@ services:
     <<: *app
     command: python -m app.workers.feeds
     depends_on: *ready
+    restart: unless-stopped
+
+  # The dashboard for a host other people reach: `docker compose --profile web up`.
+  # Built with the api's address as a path (/api/v1), so one origin serves both.
+  web:
+    profiles: ['web']
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE: /api/v1
+    image: polar-window-web
+    ports: ['${PW_WEB_PORT:-80}:80']
+    depends_on:
+      api: {condition: service_healthy}
     restart: unless-stopped
 
 volumes:

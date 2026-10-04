@@ -16,12 +16,14 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
+from pathlib import Path
 
 import numpy as np
 
 from app.config import get_settings
 from app.core.projections import geographic_to_polar
 from app.data.lola import (
+    LDEM_60S_60M,
     LDEM_80S_20M,
     LDEM_80S_80M,
     DemTile,
@@ -29,8 +31,17 @@ from app.data.lola import (
     fetch_full,
     fetch_window_async,
 )
+from app.data.sldem import SldemTile, fetch_sldem_window_async, find_sldem_tile
 
 log = logging.getLogger("ingest_lola")
+
+
+def load_dem_tile(path: Path) -> DemTile | SldemTile:
+    """Load either a polar stereographic DemTile or a simple cylindrical SldemTile."""
+    with np.load(path, allow_pickle=False) as z:
+        if "origin_lat_deg" in z:
+            return SldemTile.load(path)
+        return DemTile.load(path)
 
 
 def ensure_regional_dem() -> DemTile:
@@ -48,29 +59,54 @@ def ensure_regional_dem() -> DemTile:
     return DemTile.load(path)
 
 
-async def ensure_fine_dem(site_id: str, lat_deg: float, lon_deg: float) -> DemTile | None:
-    """The 20 m window around a site, fetched if absent.
+async def ensure_fine_dem(
+    site_id: str, lat_deg: float, lon_deg: float
+) -> DemTile | SldemTile | None:
+    """The elevation window around a site, fetched if absent.
 
-    Returns ``None`` -- rather than raising -- when it cannot be had. A site
-    without its fine window still gets a mask from the 80 m model; it is simply
-    coarser, and the coverage figure and ``meta.uncertainty`` say so.
+    Supports polar 20 m (LDEM_80S_20M), polar 60 m (LDEM_60S_60M), and SLDEM2015.
+    Returns ``None`` when it cannot be had.
     """
     s = get_settings()
     path = s.fine_dem_path(site_id)
     if path.exists():
-        return DemTile.load(path)
+        return load_dem_tile(path)
     if s.offline:
-        log.warning(
-            "  %s: OFFLINE=1 and no 20 m window on disk; using the 80 m model only", site_id
-        )
+        log.warning("  %s: OFFLINE=1 and no DEM window on disk", site_id)
         return None
-    x, y = geographic_to_polar(np.array([lon_deg]), np.array([lat_deg]))
-    try:
-        await fetch_window_async(LDEM_80S_20M, float(x[0]), float(y[0]), s.fine_dem_radius_m, path)
-    except DemUnavailable as exc:
-        log.warning("  %s: fine DEM unavailable (%s); falling back to 80 m", site_id, exc)
-        return None
-    return DemTile.load(path)
+
+    if lat_deg <= -80.0:
+        x, y = geographic_to_polar(np.array([lon_deg]), np.array([lat_deg]))
+        try:
+            await fetch_window_async(
+                LDEM_80S_20M, float(x[0]), float(y[0]), s.fine_dem_radius_m, path
+            )
+        except DemUnavailable as exc:
+            log.warning("  %s: fine DEM unavailable (%s); falling back to 80 m", site_id, exc)
+            return None
+        return load_dem_tile(path)
+    elif -80.0 < lat_deg <= -60.0:
+        x, y = geographic_to_polar(np.array([lon_deg]), np.array([lat_deg]))
+        try:
+            await fetch_window_async(
+                LDEM_60S_60M, float(x[0]), float(y[0]), s.fine_dem_radius_m, path
+            )
+        except DemUnavailable as exc:
+            log.warning("  %s: 60S DEM unavailable (%s)", site_id, exc)
+            return None
+        return load_dem_tile(path)
+    elif -60.0 < lat_deg < 60.0:
+        tile_info = find_sldem_tile(lat_deg, lon_deg)
+        if tile_info is None:
+            return None
+        try:
+            await fetch_sldem_window_async(tile_info, lat_deg, lon_deg, s.fine_dem_radius_m, path)
+        except DemUnavailable as exc:
+            log.warning("  %s: SLDEM unavailable (%s)", site_id, exc)
+
+            return None
+        return load_dem_tile(path)
+    return None
 
 
 async def _fine_for_all_sites() -> int:

@@ -20,6 +20,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, ORJSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.api.limits import AGENTS, COMPARE, SIGN_IN, WRITES, BodyLimit, RateLimit
@@ -259,6 +260,41 @@ def create_app() -> FastAPI:
                         "and every other section still answers.",
                         "retryable": True,
                         "action": "Try again in a minute",
+                    },
+                }
+            },
+        )
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_exception(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+        """Wrap plain HTTP exceptions in RFC 7807 problem details with ui.still_works."""
+        detail: Any = exc.detail
+        if isinstance(detail, dict) and "ui" in detail:
+            return JSONResponse(
+                status_code=exc.status_code,
+                headers=exc.headers,
+                content={"detail": detail},
+            )
+        slug = "not-found" if exc.status_code == 404 else "http-error"
+        title = "Not found" if exc.status_code == 404 else "Request error"
+        still_works = (
+            "The site list and other sections are available."
+            if exc.status_code == 404
+            else "Everything else is unaffected."
+        )
+        return JSONResponse(
+            status_code=exc.status_code,
+            headers=exc.headers,
+            content={
+                "detail": {
+                    "type": f"https://polar-window.dev/errors/{slug}",
+                    "title": title,
+                    "status": exc.status_code,
+                    "detail": str(exc.detail),
+                    "ui": {
+                        "still_works": still_works,
+                        "retryable": False,
+                        "action": "Check the address or browse the site list",
                     },
                 }
             },

@@ -72,7 +72,7 @@ def surface_window(m: MissionRecord) -> SurfaceWindow:
     landing = m.landing
     if landing is None:
         return SurfaceWindow(None, None, "none", "The landing date is not published.")
-    if landing["precision"] not in ("minute", "day"):
+    if landing["precision"] not in ("second", "minute", "day"):
         return SurfaceWindow(
             None,
             None,
@@ -82,7 +82,7 @@ def surface_window(m: MissionRecord) -> SurfaceWindow:
         )
     start = lifecycle.parse_time(landing["date"])
     eom = m.end_of_mission
-    if eom is not None and eom["precision"] in ("minute", "day"):
+    if eom is not None and eom["precision"] in ("second", "minute", "day"):
         return SurfaceWindow(
             start,
             _end_of(eom),

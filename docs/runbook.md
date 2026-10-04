@@ -23,6 +23,16 @@ machine only, no password) on the port in `PW_DATABASE_URL`. When the NASA
 servers are slow, copy the data from a machine that has it (`--export-data` and
 `--data-from`, in the README's quick start).
 
+Processes started by `run.py` are tracked in `.local/run.pids` (JSON) to avoid
+affecting other checkouts or unrelated software on the host. If a required port
+(8000 or 5173) is occupied by a foreign process, the runner refuses to terminate
+it, logs an informative error with the foreign process command line, and exits with
+code 1. On shutdown, all child processes receive termination signals concurrently;
+compute workers get up to `POLAR_STOP_GRACE_S` (default 15 s) to return claimed jobs
+cleanly before SIGKILL. Exit codes: `0` (clean), `1` (child crash), `130` (Ctrl+C),
+and `143` (SIGTERM). Project-local database and Redis instances remain running for fast
+restarts; stop them explicitly with `python3 run.py --stop-services`.
+
 `make seed` is a **hard prerequisite**, not an optimisation. Until it runs the
 API starts, answers `/healthz`, and returns 409 with a readable message for
 every geometry request. It runs the steps below, and each is separately
@@ -201,8 +211,29 @@ that folder with `npm run snapshot` against a running API.
 This is a single-node demo, not a production service. `docker compose up` runs
 the whole backend: Postgres, Redis, a `migrate` step (the database migrations),
 a `data` step (it fetches what `data/` lacks and builds the skylines), the API on
-:8000, the compute worker and the feeds worker. The frontend is not a service:
-`make frontend` serves it on :5173 against this API.
+:8000, the compute worker and the feeds worker. Without the `web` profile the
+frontend is not a service: `make frontend` serves it on :5173 against this API.
+
+**On an Ubuntu server, one command.** `python3 run_onVM.py` does everything in
+this section and adds the dashboard: `docker compose --profile web` builds
+`frontend/Dockerfile` (the pages, built with the API's address as the path
+`/api/v1`) and serves it with nginx (`frontend/nginx.conf`), which passes `/api/`
+and `/healthz` to the API, so one address serves both and no CORS origin has to
+be set. The script installs Docker when it is missing, stops this project's
+earlier containers and any container on a port it needs, removes stopped
+containers, dangling images and the build cache, builds both images from nothing
+(`--keep-cache` reuses the cache), runs the `data` step in the foreground so the
+downloads are visible, starts the stack and waits for `/healthz`. It sets three
+things the plain `docker compose up` does not: `PW_BIND_ADDR=127.0.0.1` (the
+database, the cache and the API are published to the machine only; just the
+dashboard's port is open), `PW_FORWARDED_ALLOW_IPS=*` (nginx sets
+`X-Forwarded-For` to the visitor's address itself, so the API's limits count per
+visitor and cannot be dodged with a forged header) and a random `PW_JWT_SECRET`
+in `.env` when there is none. `--status`, `--stop`, `--port`, `--data-from`,
+`--with-validation`, `--fresh-db` and `--dry-run` are described by
+`python3 run_onVM.py --help`. It serves plain HTTP: HTTPS needs a TLS proxy or a
+load balancer in front. After it finishes, `python3 run_onVM.py --status` shows
+the containers and what `/healthz` says.
 
 **Before the first start**
 
@@ -336,7 +367,7 @@ Postgres:
 
 After a code change restart the API **and** the compute workers: a worker keeps the
 code it started with, and a stored answer is reused until its inputs or engine
-versions change (ADR-13).
+versions change (ADR-13). Stopping a worker hands its job back without spending an attempt.
 
 **Keys** (all optional, in `.env`, never committed or printed):
 

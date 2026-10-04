@@ -180,9 +180,9 @@
         "as_published": "February 15, 2024"
       },
       "landing": {
-        "date": "2024-02-22",
-        "precision": "day",
-        "as_published": "February 22, 2024"
+        "date": "2024-02-22T23:23:44Z",
+        "precision": "second",
+        "as_published": "February 22, 2024 (press release); 23:23:44 UTC derived from NAIF EDL reconstruction"
       },
       "end_of_mission": {
         "date": "2024-02-29",
@@ -301,6 +301,12 @@
           "title": "Commercial Lunar Payload Services (CLPS) Deliveries (page updated May 06, 2026)",
           "publisher": "NASA",
           "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/clps/clps_spice/spice_kernels/spk/clps_to2im_im1_edl_rec_240222_v01.bsp",
+          "title": "IM-1 Odysseus reconstructed descent trajectory (CLPS SPICE archive)",
+          "publisher": "NASA JPL NAIF / PDS",
+          "accessed": "2026-10-03"
         }
       ],
       "unconfirmed_fields": [
@@ -312,7 +318,7 @@
         "transfer"
       ],
       "notes": [
-        "Landing and end of mission are known to the day, not the hour."
+        "End of mission is known to the day, not the hour."
       ],
       "id": "im-1",
       "name": "IM-1",
@@ -332,6 +338,7 @@
       "returns": "none",
       "rovers": [],
       "field_sources": {
+        "landing": "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/clps/clps_spice/spice_kernels/spk/clps_to2im_im1_edl_rec_240222_v01.bsp",
         "vehicle_id": "https://ll.thespacedevs.com/2.3.0/launches/942a1814-c237-41de-9970-d27bb9630f3b/",
         "pad_id": "https://ll.thespacedevs.com/2.3.0/launches/942a1814-c237-41de-9970-d27bb9630f3b/",
         "t0": "https://ll.thespacedevs.com/2.3.0/launches/942a1814-c237-41de-9970-d27bb9630f3b/",
@@ -362,9 +369,9 @@
         "as_published": "January 15th 2025"
       },
       "landing": {
-        "date": "2025-03-02T08:34:00Z",
-        "precision": "minute",
-        "as_published": "3:34 a.m. EST on Sunday [March 2, 2025]"
+        "date": "2025-03-02T08:34:54Z",
+        "precision": "second",
+        "as_published": "3:34 a.m. EST on Sunday [March 2, 2025] (press release); 08:34:54 UTC from NAIF EDL reconstruction"
       },
       "end_of_mission": {
         "date": "2025-03-16",
@@ -539,6 +546,12 @@
           "title": "Commercial Lunar Payload Services (CLPS) Deliveries (page updated May 06, 2026)",
           "publisher": "NASA",
           "accessed": "2026-09-23"
+        },
+        {
+          "url": "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/clps/clps_spice/spice_kernels/spk/clps_to19d_bgm1_edl_rec_250302_v01.bsp",
+          "title": "Blue Ghost Mission 1 reconstructed descent trajectory (CLPS SPICE archive)",
+          "publisher": "NASA JPL NAIF / PDS",
+          "accessed": "2026-10-03"
         }
       ],
       "unconfirmed_fields": [
@@ -568,6 +581,7 @@
       "returns": "none",
       "rovers": [],
       "field_sources": {
+        "landing": "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/clps/clps_spice/spice_kernels/spk/clps_to19d_bgm1_edl_rec_250302_v01.bsp",
         "vehicle_id": "https://ll.thespacedevs.com/2.3.0/launches/9a30d934-fa56-4fe5-81df-7c4b24386da2/",
         "pad_id": "https://ll.thespacedevs.com/2.3.0/launches/9a30d934-fa56-4fe5-81df-7c4b24386da2/",
         "t0": "https://ll.thespacedevs.com/2.3.0/launches/9a30d934-fa56-4fe5-81df-7c4b24386da2/",
@@ -598,9 +612,9 @@
         "as_published": "launched on a Falcon 9 on 27 February, 2025"
       },
       "landing": {
-        "date": "2025-03-06T17:30:00Z",
-        "precision": "minute",
-        "as_published": "approximately 11:30 a.m. [CST] March 6, 2025"
+        "date": "2025-03-06T17:28:43Z",
+        "precision": "second",
+        "as_published": "approximately 11:30 a.m. [CST] March 6, 2025 (press release); 17:28:43 UTC from NAIF EDL reconstruction"
       },
       "end_of_mission": {
         "date": "2025-03-07T06:15:00Z",
@@ -689,6 +703,12 @@
           "title": "NSSDCA Master Catalog: Intuitive Machines 2 (PRIME 1)",
           "publisher": "NASA NSSDCA",
           "accessed": "2026-09-27"
+        },
+        {
+          "url": "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/clps/clps_spice/spice_kernels/spk/clps_prime1_im2_edl_rec_250306_v01.bsp",
+          "title": "IM-2 Athena reconstructed descent trajectory (CLPS SPICE archive)",
+          "publisher": "NASA JPL NAIF / PDS",
+          "accessed": "2026-10-03"
         }
       ],
       "unconfirmed_fields": [
@@ -729,6 +749,7 @@
         }
       ],
       "field_sources": {
+        "landing": "https://naif.jpl.nasa.gov/pub/naif/pds/pds4/clps/clps_spice/spice_kernels/spk/clps_prime1_im2_edl_rec_250306_v01.bsp",
         "vehicle_id": "https://ll.thespacedevs.com/2.3.0/launches/fd0fbaac-d079-4027-98b0-bcf25c15a166/",
         "pad_id": "https://ll.thespacedevs.com/2.3.0/launches/fd0fbaac-d079-4027-98b0-bcf25c15a166/",
         "t0": "https://ll.thespacedevs.com/2.3.0/launches/fd0fbaac-d079-4027-98b0-bcf25c15a166/",
