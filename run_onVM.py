@@ -226,7 +226,11 @@ def install_docker() -> None:
     run([*s, "chmod", "a+r", "/etc/apt/keyrings/docker.asc"])
     source = (f"deb [arch={arch} signed-by=/etc/apt/keyrings/docker.asc] "
               f"https://download.docker.com/linux/ubuntu {codename} stable\n")
-    run([*s, "sh", "-c", f"printf %s {source!r} > /etc/apt/sources.list.d/docker.list"])
+    if DRY:
+        print(f"    $ echo {source.strip()!r} | {shown([*s, 'tee', '/etc/apt/sources.list.d/docker.list'])}", flush=True)
+    else:
+        subprocess.run([*s, "tee", "/etc/apt/sources.list.d/docker.list"], input=source, text=True,
+                       stdout=subprocess.DEVNULL, check=True)
     run([*s, "apt-get", "update"], env=apt_env)
     run([*s, "apt-get", "install", "-y", "docker-ce", "docker-ce-cli", "containerd.io",
          "docker-buildx-plugin", "docker-compose-plugin"], env=apt_env)
@@ -425,7 +429,8 @@ def prepare_data_dir() -> None:
 
 def build(env: dict[str, str], keep_cache: bool) -> None:
     log("BUILD", CYAN, "Building the backend image (Python packages) and the dashboard image (Node packages)...")
-    run(compose("build", "--pull", *([] if keep_cache else ["--no-cache"])), env=env)
+    # Two services name the two images; the workers and the data step reuse the api's.
+    run(compose("build", "--pull", *([] if keep_cache else ["--no-cache"]), "api", "web"), env=env)
     log("BUILD", GREEN, "Images built.")
 
 
