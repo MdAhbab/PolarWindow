@@ -271,5 +271,3 @@ async def test_latest_for_job_uses_index() -> None:
         )
         plan = " ".join(r[0] for r in res.fetchall())
         assert "ix_jobs_latest" in plan
-
-
