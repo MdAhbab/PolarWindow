@@ -94,7 +94,9 @@ export function MissionRecord({ mission: m }: { mission: MissionDetail }) {
                 </ul>
               </>
             )}
-            <p className="font-mono text-caption text-ink-3">Record version {m.dataVersion}</p>
+            <p className="text-caption text-ink-3">
+              Record version <span className="font-mono">{m.dataVersion}</span>
+            </p>
           </Disclosure>
         </RowGroup>
       </div>

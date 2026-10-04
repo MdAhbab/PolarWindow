@@ -125,18 +125,20 @@ export function ReportScreen() {
       >
         <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b-2 border-ink pb-3">
           <BrandName mark="h-10" words="h-3" />
-          <div className="font-mono text-small leading-5 text-ink-2 sm:text-right">
+          <div className="text-small leading-5 text-ink-2 sm:text-right">
             Landing site comparison
             <br />
-            generated {new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC
+            <span className="font-mono">
+              generated {new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC
+            </span>
           </div>
         </header>
 
         <div className="mt-5 flex flex-wrap items-start justify-between gap-5 sm:flex-nowrap">
           <div className="flex flex-col gap-2">
-            <h1 className="text-figure leading-9 font-semibold tracking-display text-balance">
+            <h2 className="text-figure leading-9 font-semibold tracking-display text-balance">
               {compareIds.length} candidate sites, {spanWords(windowHours)}
-            </h1>
+            </h2>
             <p className="text-lede leading-6 text-ink-2">
               {shortDate(msFromModelH(windowStartH))} → {shortDate(msFromModelH(windowStartH + windowHours))} · battery limit{' '}
               {SURVIVAL_LIMIT_H} h of continuous darkness
@@ -234,7 +236,7 @@ export function ReportScreen() {
 
         <div className="mt-5 border border-line-strong bg-panel p-4">
           <div className="mb-1.5 text-small font-semibold tracking-caps-md text-ink-3 uppercase">
-            Recommendation
+            Assessment
           </div>
           <p className="text-lede leading-6">
             {survivors.length === 0 ? (
@@ -283,8 +285,10 @@ export function ReportScreen() {
         </div>
 
         <footer className="mt-6 flex flex-wrap justify-between gap-5 border-t border-line-strong pt-2.5">
-          <p className="font-mono text-caption leading-caption text-ink-2">
-            <SourcesLine meta={reportMeta} />
+          <p className="text-caption leading-caption text-ink-2">
+            <span className="font-mono">
+              <SourcesLine meta={reportMeta} />
+            </span>
             <br />
             Every figure is an estimate computed by this build from those inputs. Not an official
             product of any space agency.

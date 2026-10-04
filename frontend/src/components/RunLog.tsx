@@ -28,7 +28,7 @@ export function RunLogDrawer() {
           the check against that data.
         </p>
         {runs.isPending ? (
-          <p role="status" className="font-mono text-caption text-ink-3">
+          <p role="status" className="text-caption text-ink-3">
             Loading the run log…
           </p>
         ) : runs.error ? (
