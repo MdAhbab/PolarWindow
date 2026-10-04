@@ -187,3 +187,21 @@ def test_text_and_lists_are_bounded() -> None:
         RiskIn(**base, scale_id="s", ratings=[rating] * 21)
     with pytest.raises(ValidationError):
         BookingIn(station="d" * 65, start="2026-01-01T00:00Z", end="2026-01-01T01:00Z")
+
+
+def test_not_found_returns_problem_detail_with_ui() -> None:
+    import asyncio
+
+    async def go() -> httpx.Response:
+        transport = httpx.ASGITransport(app=create_app())
+        async with httpx.AsyncClient(transport=transport, base_url="http://t") as c:
+            return await c.get(f"{P}/not-a-real-endpoint")
+
+    r = asyncio.run(go())
+    assert r.status_code == 404
+    body = r.json()
+    assert "detail" in body
+    assert body["detail"]["type"].endswith("/not-found")
+    assert body["detail"]["title"] == "Not found"
+    assert "still_works" in body["detail"]["ui"]
+
