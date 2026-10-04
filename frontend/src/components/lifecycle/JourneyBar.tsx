@@ -186,7 +186,7 @@ export function JourneyBar({
   const draw = useMotionClass('pw-journey-draw')
   return (
     <nav aria-label="Mission sections" data-guide="journey" className={`flex flex-col gap-2 ${draw}`}>
-      <ol className={`grid grid-cols-3 gap-x-1.5 min-[360px]:gap-x-3 gap-y-4 md:grid-cols-6 md:gap-x-4 ${progress?.now ? 'md:pt-6' : ''}`}>
+      <ol className={`grid grid-cols-3 gap-x-1.5 min-[360px]:gap-x-3 gap-y-4 md:grid-cols-6 md:gap-x-4 ${progress?.now ? 'md:pt-9' : ''}`}>
         {SECTIONS.map((s, i) => {
           const st = byId.get(s.id)
           const active = s.id === current
@@ -212,7 +212,8 @@ export function JourneyBar({
                   <StateLine status={st} loading={loading} className={active ? 'text-ink-2' : 'text-ink-3'} />
                 </span>
                 {progress?.now && i === reached && (
-                  <span className="absolute -top-6 left-0 hidden md:block">
+                  // Clear of the open step's ring, which reaches 6 px above the disc.
+                  <span className="absolute -top-9 left-0 hidden md:block">
                     <NowTag />
                   </span>
                 )}
