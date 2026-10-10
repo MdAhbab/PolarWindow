@@ -478,7 +478,7 @@ export function AdvisePanel({ start, end }: { start: string; end: string }) {
         label="The requirement, in your own words"
         value={req}
         onChange={setReq}
-        placeholder="200 W solar and at least 4 hours of Earth contact per day"
+        placeholder="At least 50% sunlight and Earth contact"
         fieldRef={field}
         onSubmit={submit}
       />

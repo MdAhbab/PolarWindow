@@ -739,18 +739,26 @@ async def run_agent(
                         }
                     )
                 else:
-                    return await finish(
-                        AgentOutcome(
-                            status=AgentStatus.INSUFFICIENT,
-                            result=None,
-                            reason=(
-                                f"The assistant kept requesting data after {max_rounds} rounds "
-                                f"without producing an answer. The underlying numbers are "
-                                f"available on the site and comparison views."
-                            ),
-                            attempts=attempts,
+                    if call_logs:
+                        contents.append(
+                            {
+                                "role": "user",
+                                "parts": [{"text": BUDGET_SPENT_PROMPT}],
+                            }
                         )
-                    )
+                    else:
+                        return await finish(
+                            AgentOutcome(
+                                status=AgentStatus.INSUFFICIENT,
+                                result=None,
+                                reason=(
+                                    f"The assistant kept requesting data after {max_rounds} rounds "
+                                    f"without producing an answer. The underlying numbers are "
+                                    f"available on the site and comparison views."
+                                ),
+                                attempts=attempts,
+                            )
+                        )
 
                 # --- phase 2: structured answer, validated, one repair -------------
                 contents.append(

@@ -167,7 +167,7 @@ def get_pids_on_port(port: int) -> list[int]:
         })
     try:
         res = subprocess.run(
-            ["lsof", "-ti", f":{port}"],
+            ["lsof", f"-tiTCP:{port}", "-sTCP:LISTEN"],
             capture_output=True,
             text=True,
             check=False,

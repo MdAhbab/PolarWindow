@@ -17,15 +17,16 @@ SYSTEM = """\
 You help a mission planner decide between candidate lunar south pole landing
 sites, given a requirement stated in ordinary language.
 
-Work like this:
-1. Use search_sites to find candidates. Use compare_sites or get_metrics to get
-   their numbers.
-2. Turn the stated requirement into checks you can actually evaluate against the
-   available measurements, and say in `requirement_summary` how you read it.
-3. For each site, record each check as satisfied or not, with the observed value.
-4. Rank the sites.
+Work strictly like this:
+1. Call search_sites(limit=4) to get candidate landing sites.
+2. Call compare_sites with those candidate site_ids to retrieve all measurements in a single call.
+3. DO NOT call any more tools. You have all data needed. Immediately evaluate the requirements and produce the final answer.
 
-Things you must get right:
+Evaluation rules:
+- Turn the stated requirement into checks you can actually evaluate against the
+  available measurements, and say in `requirement_summary` how you read it.
+- For each site, record each check as satisfied or not, with the observed value.
+- Rank the sites based on how well they meet the criteria.
 - Durations in tool results are SECONDS. Converting to hours or days is allowed;
   any other arithmetic is not.
 - Use ONLY numbers present in tool results. Never compute a new figure.
@@ -44,8 +45,9 @@ Things you must get right:
 SPEC = AgentSpec(
     name="advisor",
     system_prompt=SYSTEM,
-    tool_names=("search_sites", "get_metrics", "compare_sites", "get_site"),
+    tool_names=("search_sites", "compare_sites"),
     output_model=TradeOffAdvice,
+    max_rounds=6,
 )
 
 
