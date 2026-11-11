@@ -41,7 +41,7 @@ function SourceMark({ source, panelId }: { source: NonNullable<Source>; panelId:
             setFocus(false)
           }
         }}
-        className="pw-press inline-flex min-h-8 items-center gap-1.5 rounded-pill border border-line-strong bg-inset px-2.5 text-caption font-semibold text-ink-2 hover:text-ink"
+        className="pw-press inline-flex min-h-11 items-center gap-1.5 rounded-pill border border-line-strong bg-inset px-2.5 text-caption font-semibold text-ink-2 hover:text-ink sm:min-h-8"
       >
         <Icon name={worked ? 'info' : 'check'} size={13} strokeWidth={2.2} />
         {worked ? 'Worked out' : 'From the file'}

@@ -162,7 +162,7 @@ export function KeyNumberTile({
             aria-expanded={explained}
             aria-controls={explainId}
             onClick={() => setExplained((v) => !v)}
-            className="-my-2 -mr-2 flex grow cursor-pointer items-start justify-between gap-2 py-2 pr-2 text-left hover:text-ink"
+            className="-my-3 -mr-2 flex min-h-11 grow cursor-pointer items-start justify-between gap-2 py-3 pr-2 text-left hover:text-ink"
           >
             <span>{label}</span>
             <Icon name="info" size={14} strokeWidth={2} className="mt-px shrink-0 opacity-70" />

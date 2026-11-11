@@ -54,7 +54,7 @@ export function HomeScreen() {
       <section aria-labelledby="home-title" className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)] lg:gap-10">
         <div className="flex min-w-0 flex-col gap-7">
           <div className="flex flex-col gap-3">
-            <p className="text-small text-ink-3">{utcDateWords(now)}</p>
+            <p className="text-small text-ink-2">{utcDateWords(now)}</p>
             <h1 id="home-title" className="pw-display max-w-[22ch] text-display-sm leading-[1.08] text-ink lg:text-display lg:leading-display">
               {title ?? <span className="text-ink-3">Checking your projects…</span>}
             </h1>

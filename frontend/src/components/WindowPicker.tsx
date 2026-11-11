@@ -100,7 +100,7 @@ export function WindowPicker({
                 const ms = Date.parse(`${e.target.value}T00:00:00Z`)
                 if (!Number.isNaN(ms)) setWindow(modelHFromMs(ms), windowHours)
               }}
-              className="bg-transparent text-body text-ink outline-none"
+              className="h-full min-h-11 bg-transparent text-body text-ink outline-none"
             />
           </div>
         </div>

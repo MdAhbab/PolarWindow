@@ -61,7 +61,7 @@ function UtcClock() {
   const clock = utcClock(now)
   return (
     <p className="flex flex-col items-end text-right">
-      <span className="text-caption leading-caption text-ink-3">{utcDateWords(now)}</span>
+      <span className="text-caption leading-caption text-ink-2">{utcDateWords(now)}</span>
       <time
         dateTime={new Date(now).toISOString()}
         className="font-mono text-figure-sm leading-none font-medium tracking-figure-sm text-ink tabular-nums sm:text-figure"

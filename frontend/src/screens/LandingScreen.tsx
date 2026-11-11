@@ -254,9 +254,16 @@ export default function LandingScreen() {
       <div ref={canvasWrapRef} aria-hidden="true" className={webgl ? '' : 'hidden'} />
       {/* The picture is shaded behind the words, so they read over the Milky Way or the Moon. */}
       {webgl && <div aria-hidden="true" className="pw-sky-shade pointer-events-none fixed inset-0" />}
+      {webgl && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-0 bg-canvas/55 lg:hidden"
+          style={{ opacity: 'calc(1 - var(--pw-space, 0))' }}
+        />
+      )}
       {/* The first picture's own shade. It stays with the window and thins as the words scroll away,
           so it never shows an edge crossing the picture. */}
-      {onGround && <div aria-hidden="true" className="pw-ground-shade pointer-events-none fixed inset-0" />}
+      {onGround && <div aria-hidden="true" className="pw-ground-shade pointer-events-none fixed inset-0 max-lg:bg-black/55" />}
       <a
         href="#landing-main"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-pill focus:bg-raised focus:px-5 focus:py-3"
@@ -284,7 +291,7 @@ export default function LandingScreen() {
         <div ref={heroRef} data-theme={onGround ? 'dark' : undefined}>
         <Section className={`justify-center ${onGround ? 'min-h-[100vh]' : 'min-h-[86vh]'}`}>
           <div className="flex max-w-2xl flex-col gap-7">
-            <p className="pw-eyebrow">NASA CLPS missions · the Moon’s south pole</p>
+            <p className="pw-eyebrow !text-ink-2">NASA CLPS missions · the Moon’s south pole</p>
             <h1 className="pw-display text-[40px] leading-[1.02] sm:text-[60px] lg:text-[72px]">
               Plan a landing where the Sun barely rises
             </h1>
@@ -303,7 +310,7 @@ export default function LandingScreen() {
                 <span aria-hidden="true">↓</span>
               </a>
             </div>
-            <p className="text-caption leading-caption text-ink-3">
+            <p className="text-caption leading-caption font-medium text-ink-2">
               No account needed: the button signs you in as the project manager.
             </p>
           </div>
@@ -329,7 +336,7 @@ export default function LandingScreen() {
                 <p className="text-lede leading-7 text-ink-2 text-pretty">{idea.body}</p>
                 <figure className="flex flex-col gap-2 border-t border-line pt-4">
                   <idea.Art />
-                  <figcaption className="text-caption leading-caption text-ink-3">Drawing, not to scale.</figcaption>
+                  <figcaption className="text-caption leading-caption text-ink-2">Drawing, not to scale.</figcaption>
                 </figure>
               </article>
             </Section>
@@ -401,11 +408,11 @@ function Counts() {
   return (
     <dl className="flex flex-wrap gap-10">
       <div className="flex flex-col-reverse">
-        <dt className="text-small text-ink-3">CLPS missions</dt>
+        <dt className="text-small font-medium text-ink-2">CLPS missions</dt>
         <dd className="pw-figure text-[34px] leading-[38px]">{m}</dd>
       </div>
       <div className="flex flex-col-reverse">
-        <dt className="text-small text-ink-3">candidate landing sites</dt>
+        <dt className="text-small font-medium text-ink-2">candidate landing sites</dt>
         <dd className="pw-figure text-[34px] leading-[38px]">{c}</dd>
       </div>
     </dl>
