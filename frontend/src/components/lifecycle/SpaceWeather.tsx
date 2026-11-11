@@ -73,6 +73,15 @@ function Reading({ q, age }: { q: QuantityDTO; age: string | null }) {
 
 const SHOWN_EVENTS = 3
 
+/**
+ * What an empty DONKI list says. The service gives one reason for the block when any of
+ * its three products has no data; a product with a count has data, so its empty list is
+ * "None listed", and only a product with no count shows the reason.
+ */
+export function donkiEmpty(count: number | null, reason: string | null): string {
+  return count === null ? (reason ?? 'Not available.') : 'None listed.'
+}
+
 /** "3 newest of 133" when DONKI gave more than are shown; null when every one is shown. */
 export function eventCountWords(listed: number, count: number | null): string | null {
   const shownN = Math.min(listed, SHOWN_EVENTS)
@@ -212,13 +221,13 @@ export function SpaceWeatherRow() {
             <h4 className="text-small font-semibold text-ink">
               Newest events on the Sun{sw.donki.days ? `, last ${sw.donki.days} days` : ''} (NASA DONKI)
             </h4>
-            {sw.donki.missing_reason ? (
-              <p className="text-small leading-5 text-ink-2">{sw.donki.missing_reason}</p>
+            {Object.values(sw.donki.counts).every((c) => c === null) ? (
+              <p className="text-small leading-5 text-ink-2">{sw.donki.missing_reason ?? 'Not available.'}</p>
             ) : (
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 <EventList
                   title="Clouds thrown off the Sun (coronal mass ejections)"
-                  empty="None listed."
+                  empty={donkiEmpty(sw.donki.counts.cme, sw.donki.missing_reason)}
                   count={sw.donki.counts.cme}
                   items={sw.donki.cme.map((c) => ({
                     key: c.id,
@@ -232,13 +241,13 @@ export function SpaceWeatherRow() {
                 />
                 <EventList
                   title="Flares"
-                  empty="None listed."
+                  empty={donkiEmpty(sw.donki.counts.flares, sw.donki.missing_reason)}
                   count={sw.donki.counts.flares}
                   items={sw.donki.flares.map((f) => ({ key: f.id, text: `${f.class ?? 'Class not given'}, peak ${when(f.peak)}`, link: f.link }))}
                 />
                 <EventList
                   title="Solar particle events"
-                  empty="None listed."
+                  empty={donkiEmpty(sw.donki.counts.sep, sw.donki.missing_reason)}
                   count={sw.donki.counts.sep}
                   items={sw.donki.sep.map((e) => ({ key: e.id, text: when(e.time), link: e.link }))}
                 />

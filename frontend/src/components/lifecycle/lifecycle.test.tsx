@@ -25,7 +25,7 @@ import { coverageGaps, tripStretches } from './TripStrip'
 import { CorrectionsRow, errorsHeading, shadowAndContact } from '../../screens/sections/TripSection'
 import { checkWords, climatologyWords, forecastLine, observedWords, percentWords, rulesSummary, WeatherRuleTable } from './WeatherRules'
 import { RadiationRow, radiationSentence, screeningFigure } from './Radiation'
-import { eventCountWords, outlookSentence, readingAge, spaceWeatherSentence, SpaceWeatherRow } from './SpaceWeather'
+import { donkiEmpty, eventCountWords, outlookSentence, readingAge, spaceWeatherSentence, SpaceWeatherRow } from './SpaceWeather'
 import spaceWeatherFixture from '../../lib/api/__fixtures__/lifecycle/space-weather.json'
 import weatherFixture from '../../lib/api/__fixtures__/lifecycle/launch-weather.json'
 import type { RadiationDTO, SpaceWeatherDTO } from '../../lib/api/lifecycle'
@@ -743,6 +743,13 @@ describe('Space weather now', () => {
     expect(eventCountWords(3, 3)).toBeNull()
     expect(eventCountWords(2, 2)).toBeNull()
     expect(eventCountWords(0, 0)).toBeNull()
+  })
+  it('gives the DONKI reason only for a product with no data, not for one that has a count', () => {
+    const why = 'No data from NASA space weather database (DONKI) has been recorded yet.'
+    expect(donkiEmpty(null, why)).toBe(why)
+    expect(donkiEmpty(0, why)).toBe('None listed.')
+    expect(donkiEmpty(85, why)).toBe('None listed.')
+    expect(donkiEmpty(null, null)).toBe('Not available.')
   })
   it('says why the X-ray class and the alerts are not shown, never "None" for no data', async () => {
     const why = { ...sw, now: { ...sw.now, xray_class: null, xray_missing_reason: 'The X-ray reading is 2 days old.', alerts: [], alerts_missing_reason: 'The alert list is 2 days old.' } }
