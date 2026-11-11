@@ -24,6 +24,7 @@ import { useWindowParams } from '../lib/mission'
 import { bearing, compassWords, coords, degrees, edgeMargin, hoursWithUnit, msFromModelH, windowLine } from '../lib/format'
 import type { SiteMetrics } from '../lib/types'
 import type { Meta } from '../lib/api/adapters'
+import { SurfaceTools } from '../components/surface/SurfaceTools'
 
 /**
  * S2, "Site" in the navigation: one site over the chosen dates.
@@ -139,6 +140,13 @@ export function TwoClockScreen() {
       </section>
 
       {showTable && metrics && <ArcTable metrics={metrics} />}
+
+      <SurfaceTools
+        siteId={siteId}
+        siteName={site.name}
+        startMs={msFromModelH(windowStartH)}
+        endMs={msFromModelH(windowStartH + windowHours)}
+      />
     </div>
   )
 }

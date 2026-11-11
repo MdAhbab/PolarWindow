@@ -38,6 +38,7 @@ import { SceneFrame } from '../scenes/SceneFrame'
 import { hillshadeTile } from '../scenes/tiles'
 import { ScenarioGate } from '../components/scenario/ScenarioGate'
 import { ScenarioEntry, WhatIfLink } from '../components/scenario/ScenarioEntry'
+import { SurfaceTools } from '../components/surface/SurfaceTools'
 import type { ScenarioResultsDTO } from '../lib/api/experience.types'
 import type { SiteMetrics } from '../lib/types'
 
@@ -271,6 +272,7 @@ function SurfaceRecord({ mission: m }: { mission: MissionDetail }) {
           <>
             <TargetPanel mission={m} siteId={m.siteId} />
             <WhatIfLink />
+            <MissionSurfaceTools siteId={m.siteId} siteName={m.site.name} />
           </>
         ) : (
           <StatePanel
@@ -292,6 +294,19 @@ function SurfaceRecord({ mission: m }: { mission: MissionDetail }) {
         )}
       </section>
     </SectionLayout>
+  )
+}
+
+/** The lander tools on the mission's own target, for the window the Surface step is showing. */
+function MissionSurfaceTools({ siteId, siteName }: { siteId: string; siteName: string }) {
+  const { windowStartH, windowHours } = useStore(useShallow((s) => ({ windowStartH: s.windowStartH, windowHours: s.windowHours })))
+  return (
+    <SurfaceTools
+      siteId={siteId}
+      siteName={siteName}
+      startMs={msFromModelH(windowStartH)}
+      endMs={msFromModelH(windowStartH + windowHours)}
+    />
   )
 }
 

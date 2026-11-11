@@ -27,6 +27,8 @@ import { ScenarioGate } from '../../components/scenario/ScenarioGate'
 import { WhatIfLink } from '../../components/scenario/ScenarioEntry'
 import { HeldRow } from '../../components/scenario/HeldRow'
 import { useInScenario, useScenarioShown } from '../../components/scenario/context'
+import { LinkBudgetRow } from '../../components/surface/LinkBudget'
+import type { ContactBudgetDTO } from '../../lib/api/surface.types'
 
 const TERMS = ['stationHears', 'viaRelay', 'contactUnheard', 'messageWait']
 
@@ -281,6 +283,7 @@ function ContactAnswer({
           </>
         }
       >
+        <LinkBudgetRow contact={contact as ContactDTO & Pick<ContactBudgetDTO, 'link_budget' | 'links'>} />
         {relays.length > 0 && (
           <Disclosure title="Relays" meta={relays.map((r) => (r.state ? `${r.name} · ${r.state.words.toLowerCase()}` : r.name)).join(', ')}>
             {contact.relay_note && <p className="text-body text-ink-2">{contact.relay_note}</p>}
