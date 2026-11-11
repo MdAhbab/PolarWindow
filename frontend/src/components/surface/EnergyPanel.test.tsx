@@ -24,9 +24,14 @@ describe('EnergyPanel', () => {
 
   it('marks a typed figure as entered and says how many are the person’s own', () => {
     renderApp(<EnergyPanel siteId="shackleton-rim" siteName="Shackleton rim" startIso="2027-01-01T00:00:00Z" endIso="2027-01-31T00:00:00Z" />)
-    fireEvent.change(screen.getByLabelText(/Battery capacity/), { target: { value: '1500' } })
+    const battery = screen.getByLabelText(/Battery capacity/) as HTMLInputElement
+    const layout = screen.getByLabelText(/Panel layout/) as HTMLSelectElement
+    expect(battery.className).toContain('pw-scenario')
+    expect(layout.className).toContain('pw-scenario')
+    fireEvent.change(battery, { target: { value: '1500' } })
+    expect(battery.className).not.toContain('pw-scenario')
     expect(screen.getByText(/Example lander with 1 of your figure./)).toBeTruthy()
-    const field = screen.getByLabelText(/Battery capacity/).closest('div') as HTMLElement
+    const field = battery.closest('div') as HTMLElement
     expect(within(field).getByText('entered')).toBeTruthy()
   })
 
@@ -48,6 +53,8 @@ describe('EnergyResult', () => {
     expect(screen.getByRole('img', { name: /battery empties about 576 hours in/i })).toBeTruthy()
     expect(screen.getByText(/operational minimum −20 °C/)).toBeTruthy()
     expect(screen.getByText(/Diviner, 22 triangles within 1,000 m/)).toBeTruthy()
+    expect(screen.getByText(/not a weather forecast/)).toBeTruthy()
+    expect(screen.getByText(/midpoint of those two bounds, not a best estimate/)).toBeTruthy()
     expect(screen.getByText('What this does not model')).toBeTruthy()
     expect(screen.getAllByText('assumed').length).toBeGreaterThan(20)
   })

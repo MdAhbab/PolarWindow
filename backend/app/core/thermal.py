@@ -1,23 +1,29 @@
 """A one-node bus thermal model, coupled to the battery (ADR-21). Pure.
 
+This is a single-node lumped-heat-capacity balance bounded by steady-state ground
+temperature limits from the LRO Diviner Polar Resource Product (annual mean and
+annual bolometric maximum); it computes a bounding range on entered lander figures,
+never a time-resolved lunar surface temperature forecast or flight thermal prediction.
+
     C dT/dt = Q_solar + Q_regolith + P_dissipated - Q_space
 
 * ``Q_solar = alpha * A_proj(el) * S * lit``, with ``A_proj = A_side cos el + A_top sin el``.
 * ``Q_regolith = sigma eps_bus eps_reg F A_base (T_surf^4 - T^4)``.
 * ``Q_space = sigma eps_rad A_rad (T^4 - T_space^4)``.
-* ``T_surf`` is the ground temperature: while the Sun is up, radiative
-  equilibrium from its elevation, ``(alpha_reg S sin el / (eps_reg sigma))^(1/4)``,
-  never above a cap (Diviner's annual maximum); while it is down, whatever the
-  caller passes (the two ends of a range -- see ``app.services.energy_service``).
+* ``T_surf`` is the bounding ground temperature: while the Sun is up, instantaneous
+  steady-state radiative equilibrium from its elevation,
+  ``(alpha_reg S sin el / (eps_reg sigma))^(1/4)``, never above a cap (Diviner's
+  annual bolometric maximum); while it is down, whatever bounding constant the caller
+  passes (from ``T_space`` up to Diviner's annual mean -- see ``app.services.energy_service``).
 * The heater is a thermostat, on when ``T < setpoint`` (decided once per
   sub-step). Its power comes from the battery and is dissipated in the bus; with
   an empty battery only what the arrays generate can be spent, and nothing the
   arrays do not generate is dissipated.
 
 The state ``(T, SoC)`` is integrated together with RK4 on a fixed sub-step.
-Not modelled: a second node (panels, payload), multi-layer insulation detail,
-conduction through the legs, light reflected from sunlit terrain, the heat
-capacity of the battery as a separate node.
+Not modelled: regolith thermal inertia and diurnal ground cooling curves, a second
+node (panels, payload), multi-layer insulation detail, conduction through the legs,
+light reflected from sunlit terrain, the heat capacity of the battery as a separate node.
 """
 
 from __future__ import annotations
@@ -119,7 +125,9 @@ def ground_temperature(
     cap_k: float,
     dark_k: float,
 ) -> FloatArray:
-    """Ground temperature, K: radiative equilibrium while lit (capped), ``dark_k`` otherwise."""
+    """Bounding ground temperature, K: instantaneous steady-state radiative equilibrium while lit
+    (capped at ``cap_k``, e.g. Diviner annual bolometric maximum), and constant ``dark_k``
+    otherwise (not a time-resolved diurnal regolith curve)."""
     sin_el = np.maximum(0.0, np.sin(np.radians(np.asarray(el_deg, dtype=np.float64))))
     t_eq = (regolith_absorptivity * s_w_m2 * sin_el / (regolith_emissivity * SIGMA)) ** 0.25
     return np.asarray(np.where(lit > 0.5, np.minimum(t_eq, cap_k), dark_k), dtype=np.float64)

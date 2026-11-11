@@ -288,7 +288,8 @@ function Legend({ warmUnknown }: { warmUnknown: boolean }) {
           <rect width="20" height="12" fill="url(#pw-uncertain)" />
           <line x1="0" x2="20" y1="6" y2="6" stroke="var(--color-ink)" strokeWidth="2" />
         </svg>
-        Range between the cold and warm ends of the ground temperature{warmUnknown ? ' (warm end unknown where the band stops)' : ''}
+        Steady-state range between the cold and warm ground bounds (solid line is their midpoint, not a forecast or best estimate)
+        {warmUnknown ? '; warm end unknown where the band stops' : ''}
       </li>
       <li className="flex items-center gap-2">
         <svg className={sw} aria-hidden="true">

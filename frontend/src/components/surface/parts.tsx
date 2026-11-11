@@ -19,7 +19,7 @@ const PROV_TITLE: Record<ProvenanceWord, string> = {
  * assumed wears the dashed scenario hatch, entered a solid outline, published
  * an underline, computed nothing extra.
  */
-export function ProvTag({ p, className = '' }: { p: ProvenanceWord; className?: string }) {
+export function ProvTag({ p, detail, className = '' }: { p: ProvenanceWord; detail?: string; className?: string }) {
   const shape =
     p === 'assumed'
       ? 'pw-scenario rounded-sm px-1'
@@ -30,7 +30,7 @@ export function ProvTag({ p, className = '' }: { p: ProvenanceWord; className?: 
           : ''
   return (
     <span
-      title={PROV_TITLE[p]}
+      title={detail ? `${PROV_TITLE[p]}: ${detail}` : PROV_TITLE[p]}
       className={`inline-block font-mono text-micro leading-4 tracking-caps-sm whitespace-nowrap text-ink-3 uppercase ${shape} ${className}`}
     >
       {p}

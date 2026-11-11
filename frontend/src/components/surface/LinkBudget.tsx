@@ -170,8 +170,9 @@ function BudgetBody({ b, contact }: { b: LinkBudgetDTO; contact: ContactBudgetDT
 }
 
 /**
- * The downlink budget on the Contact step (ADR-20). With no EIRP stated the
- * answer is line of sight only, and the service's note says so as it is.
+ * The downlink budget on the Contact step (ADR-20). Without the lander's EIRP,
+ * an X-band downlink frequency (8,200 to 8,600 MHz) and the required Eb/N0,
+ * the answer is line of sight only, and the service's note says so as it is.
  */
 export function LinkBudgetRow({ contact }: { contact: ContactBudgetDTO }) {
   const b = contact.link_budget
@@ -186,7 +187,8 @@ export function LinkBudgetRow({ contact }: { contact: ContactBudgetDTO }) {
         <BudgetBody b={b} contact={contact} />
       ) : (
         <p className="text-caption leading-caption text-ink-3">
-          Stating the lander&apos;s EIRP in the project&apos;s radio figures turns the budget on: data rates and margins per pass appear here.
+          Stating the lander&apos;s EIRP, an X-band downlink frequency (8,200 to 8,600 MHz) and the required Eb/N0 in the project&apos;s radio figures
+          turns the budget on: data rates and margins per pass appear here.
         </p>
       )}
     </Disclosure>

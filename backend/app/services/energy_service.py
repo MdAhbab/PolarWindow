@@ -1,9 +1,11 @@
 """Battery state of charge and bus temperature at a site (ADR-21).
 
 Takes the Sun's track against the site's skyline from ``site_service.compute``,
-the lander's figures from the caller, and the ground temperature from Diviner,
-and runs the coupled power-and-thermal model at both ends of the ground
-temperature range. Stores nothing.
+the lander's figures from the caller, and the Diviner annual mean and bolometric
+maximum ground temperatures, and runs the coupled single-node power-and-thermal
+model at both ends of that steady-state ground temperature range. Computes a
+bounding envelope on the entered figures, never a time-resolved thermal forecast
+or prediction. Stores nothing.
 
 Every lander figure is an input. Each is echoed back with where it came from:
 entered by the caller, or filled from a catalogue example that says whether it
@@ -71,14 +73,18 @@ VERTICAL_ONLY: dict[str, tuple[str, str]] = {
 
 NOT_MODELLED = [
     "Solar-panel temperature and cell degradation (efficiency is the number entered).",
-    "Multi-node thermal gradients: the bus is one lumped node at one temperature.",
+    "Multi-node thermal gradients and internal conduction paths: the entire bus is one lumped "
+    "node at one uniform temperature, not a multi-node spacecraft thermal model.",
     "Multi-layer insulation detail: it is inside the emissivities and areas entered.",
     "Heat conducted through the landing legs into the ground.",
     "Light and infrared reflected from sunlit terrain onto the lander.",
     "Shading of one array face by the lander or by another face.",
     "Battery charge and discharge efficiency, ageing, and temperature limits on charging.",
-    "The ground's temperature through the lunar day: Diviner gives only an annual average "
-    "and an annual maximum, so the ground in the dark is a range, not a curve.",
+    "The ground's time-resolved temperature through the lunar day and regolith thermal inertia: "
+    "Diviner gives only an annual average and an annual bolometric maximum per triangle, so "
+    "sunlit ground is taken at steady-state radiative equilibrium capped by the Diviner annual "
+    "maximum, and dark ground is bounded between 2.725 K (space) and the Diviner annual average. "
+    "The output is a steady-state-bounded range, not a diurnal temperature curve or prediction.",
     "The Sun's partial-disc fraction at the skyline: a step an arc edge falls in is lit for "
     "the share of it inside the arc.",
 ]
@@ -531,11 +537,15 @@ def _run(
     unc = dict(meta["uncertainty"])
     unc["notes"] = [
         *unc["notes"],
-        "Power and thermal: the range on bus temperature and state of charge is the ground-"
-        "temperature range in the dark only. Arc-edge timing is carried into the energy "
-        "generated, not into the temperature or charge curves, and lander figures are taken as "
-        "entered, with no margin of their own.",
-        "The central curve is the midpoint of the two ends. It is not a best estimate.",
+        "Power and thermal: a single-node lumped bus model bounded by steady-state radiative "
+        "equilibrium and Diviner annual average and bolometric maximum ground temperatures -- "
+        "a bounding range on entered figures, not a time-resolved thermal prediction. The "
+        "range on bus temperature and state of charge is the ground-temperature range in the "
+        "dark (and the Diviner triangle spread on the sunlit cap) only. Arc-edge timing is "
+        "carried into the energy generated, not into the temperature or charge curves, and "
+        "lander figures are taken as entered, with no margin of their own.",
+        "The central curve is the midpoint of the cold and warm bounding ends. It is not a "
+        "prediction or a best estimate.",
     ]
     meta["uncertainty"] = unc
 
@@ -544,6 +554,14 @@ def _run(
         "reason": cold_reason,
         "radius_m": radius_m,
         "source": diviner.SOURCE_URL,
+        "basis": (
+            "Steady-state bounding range from the LRO Diviner Polar Resource Product (annual "
+            "average and annual bolometric maximum surface temperatures), not a time-resolved "
+            "ground temperature curve: while sunlit, ground temperature is instantaneous "
+            "radiative equilibrium capped by the Diviner annual maximum; while dark, the cold "
+            "end holds the ground at 2.725 K (space) and the warm end holds it at the Diviner "
+            "annual average."
+        ),
         "dark_ground_k": {"lo": thermal.T_SPACE_K, "hi": ground.temp_avg_k.hi if ground else None},
         "lit_ground_cap_k": {
             "lo": ground.temp_max_k.lo if ground else None,
@@ -565,6 +583,12 @@ def _run(
         "step_s": r.step_s,
         "inputs": echo_inputs(figs),
         "model": {
+            "thermal_model": (
+                "single-node lumped bus heat balance coupled to battery state of charge, "
+                "bounded by steady-state radiative equilibrium and Diviner annual average "
+                "and bolometric maximum ground temperatures; a bounding range on entered "
+                "figures, not a time-resolved prediction"
+            ),
             "solar_irradiance": "1361 W/m2 at 1 au scaled by (1 au / Sun distance)^2, "
             "the distance taken from the track",
             "lit": "the Sun's centre above the skyline (the track's lit arcs); no partial-disc "

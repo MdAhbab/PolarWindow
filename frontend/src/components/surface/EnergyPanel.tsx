@@ -220,7 +220,7 @@ export function EnergyPanel({
                     value={entered.array_geometry ?? ''}
                     onChange={(e) => set('array_geometry', e.target.value)}
                     aria-describedby={`${id}-geo-p`}
-                    className="h-11 w-full min-w-0 rounded-control border border-field bg-panel px-3 text-small text-ink focus:border-focus"
+                    className={`h-11 w-full min-w-0 rounded-control border border-field bg-panel px-3 text-small text-ink focus:border-focus ${provOf('array_geometry') === 'assumed' ? 'pw-scenario' : ''}`}
                   >
                     <option value="">
                       {exampleId ? `As the example${echo?.array_geometry ? `: ${GEOMETRY_WORDS[echo.array_geometry.value as ArrayGeometry] ?? echo.array_geometry.value}` : ''}` : 'Choose'}
@@ -231,7 +231,15 @@ export function EnergyPanel({
                       </option>
                     ))}
                   </select>
-                  <span id={`${id}-geo-p`}>{provOf('array_geometry') && <ProvTag p={provOf('array_geometry')!} />}</span>
+                  <span id={`${id}-geo-p`}>
+                    {provOf('array_geometry') && (
+                      <ProvTag
+                        p={provOf('array_geometry')!}
+                        detail={echo?.array_geometry?.source && provOf('array_geometry') !== 'entered' ? echo.array_geometry.source : undefined}
+                        className={echo?.array_geometry?.source && provOf('array_geometry') !== 'entered' ? 'cursor-help' : ''}
+                      />
+                    )}
+                  </span>
                 </div>
               )}
               {g.fields
@@ -256,10 +264,10 @@ export function EnergyPanel({
                         aria-invalid={err ? true : undefined}
                         aria-describedby={`${fid}-p`}
                         onChange={(e) => set(f.key, e.target.value)}
-                        className="h-11 px-3 font-mono tabular-nums"
+                        className={`h-11 px-3 font-mono tabular-nums ${p === 'assumed' ? 'pw-scenario' : ''}`}
                       />
                       <span id={`${fid}-p`} className="flex flex-wrap items-center gap-x-2 text-caption leading-4">
-                        {p && <ProvTag p={p} className={why && p !== 'entered' ? 'cursor-help' : ''} />}
+                        {p && <ProvTag p={p} detail={why && p !== 'entered' ? why : undefined} className={why && p !== 'entered' ? 'cursor-help' : ''} />}
                         {why && p !== 'entered' && <span className="sr-only">{why}</span>}
                         {err && <span className="font-semibold text-alert">{err}</span>}
                       </span>
@@ -330,7 +338,9 @@ export function EnergyResult({ data, stale = false }: { data: EnergyResponseDTO;
           <p className="text-small leading-5 text-ink-2">
             Diviner, {g.n_triangles ?? 'some'} triangles within {num(Number(g.radius_m ?? 0), 0)} m of the site
             {g.dark_ground_k && <>: dark ground {kRange(g.dark_ground_k)}</>}
-            {g.lit_ground_cap_k && <>, sunlit ground at most {kRange(g.lit_ground_cap_k)}</>}. Their spread is the band on the charts.{' '}
+            {g.lit_ground_cap_k && <>, sunlit ground at most {kRange(g.lit_ground_cap_k)}</>}. Their spread is the band on the charts: a single-node
+            thermal balance between two steady-state ground bounds (Diviner annual average and annual maximum), which is a bounding range, not a
+            weather forecast, and the solid curve is the midpoint of those two bounds, not a best estimate.{' '}
             {g.source && (
               <a href={g.source} target="_blank" rel="noreferrer" className="text-earth underline underline-offset-2">
                 Diviner data
@@ -340,7 +350,7 @@ export function EnergyResult({ data, stale = false }: { data: EnergyResponseDTO;
           </p>
         ) : (
           <p className="text-small leading-5 text-ink-2">
-            Outside the product&apos;s coverage: cold end only.{g.reason ? ` ${g.reason}` : ''}
+            Outside the product&apos;s coverage: cold end only (a steady-state bound, not a forecast).{g.reason ? ` ${g.reason}` : ''}
           </p>
         )}
       </div>

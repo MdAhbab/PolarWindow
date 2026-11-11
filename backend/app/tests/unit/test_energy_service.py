@@ -158,6 +158,12 @@ def test_the_example_lander_is_complete_and_labelled() -> None:
 
 def test_no_field_is_a_score_or_verdict(monkeypatch: pytest.MonkeyPatch) -> None:
     covered(monkeypatch)
-    text = json.dumps(run()).lower()
+    out = run()
+    text = json.dumps(out).lower()
     for word in ("score", "verdict", "rating"):
         assert f'"{word}' not in text
+    assert "not a time-resolved" in out["model"]["thermal_model"]
+    assert "Diviner" in out["ground"]["basis"]
+    notes_text = " ".join(out["meta"]["uncertainty"]["notes"])
+    assert "not a time-resolved thermal prediction" in notes_text
+    assert "not a prediction or a best estimate" in notes_text
