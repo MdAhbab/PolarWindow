@@ -151,11 +151,56 @@ Gemini on this key: `gemini-3.6-flash`, `3.5-flash` and `3.5-flash-lite` answer 
 5 s; `3.8-flash` and `3.7-flash` accept a request and stay silent. The local `.env`
 orders the chain accordingly. 503s happen under load; the fall-through handles them.
 
-## 4. What is left
+## 4. Where the 12 November work ended
 
-- Package D, the design pass on the new panels and the phone project form: with the
-  orchestrator.
-- Package F, the integration tests and the end-to-end suites: with the orchestrator.
+All six packages from the 12 November plan are done and pushed (`757bcbd` to `681d867`).
+
+Checked live, in the running app:
+
+- Landing ellipse: 0.3 s at a covered site; an uncovered one falls back to the 20 m terrain
+  and says so. The earlier "no answer in 90 s" was the screenshot script never typing the six
+  figures, which start empty by design.
+- Mesh over HTTP and on screen at Connecting Ridge (fixture in
+  `lib/api/__fixtures__/surface/connecting-ridge.mesh.json`): lander 195 h direct, 195 h on
+  certain links, 168 h if uncertain links hold.
+- Ask dock: answers from the model, names Launch Complex 39A, and does not call a 2025
+  mission upcoming.
+- Downlink budget on Contact: it needs the EIRP, an X-band frequency (8200 to 8600 MHz) and
+  the required Eb/N0. With EIRP alone it says line of sight only and names what is missing.
+- Every new panel at 1280 or 1440 and at 390, dark and light: no sideways scroll, no console
+  errors.
+
+Gates at the end: backend 901 unit tests passed, 2 skipped; frontend 401 tests. Integration:
+181 of 184 in one run (after `make test-db`, which had never been run on this machine), and
+the 3 that failed were fixed and pass when run alone. End-to-end: 49 of 61 in the first run
+against the running app; the other 12 pass in reruns (5 were cold computes timing out after
+a restart, 7 were stale tests, now updated). Neither suite has had one clean full run since.
+
+Fixed on the way, each with its reason in the commit:
+
+- `run.py` stopped reading Vite's output after a line the Windows console could not
+  print; Vite then blocked on a full pipe and the web server froze.
+- The theme token `--spacing-block` made Tailwind give every `inline-block` element a
+  40 px width (provenance tags overflowed). Renamed `--spacing-section`.
+- Editing a project cleared its launch vehicle, pad, transfer, bands, relays, mass and
+  returns.
+- Space weather hid all DONKI lists when one product (flares) had never fetched.
+
+Left, for whoever picks it up:
+
+- Playwright 1.63 expects headless shell build 1243; this machine has 1234, 1248 and 1254.
+  The suite was run with a temporary config pointing at 1254. `npx playwright install
+  chromium` fixes it for good.
+- The DONKI flare feed has never fetched successfully on this machine (`flr`); the reason
+  is not looked into.
+- Saving a project edit still drops `rovers`, `field_sources`, vehicle and pad names: the
+  request has no field for them.
+- For the teammate (design): on the site page the metric "what this means" buttons are
+  36 px tall and the date picker's start input 21 px (`WindowPicker.tsx`), under the 44 px
+  phone target; on the light landing page at 390 the grey captions sit on the Moon texture
+  with weak contrast.
+- `docs/README.md` and `docs/adr/README.md` still list ADR-0001 to 0019.
+- Not run: the optional SPICE pool comparison (`PW_SPICE_WORKERS=4`).
 
 ## 5. Shapes the frontend work needs
 
@@ -201,3 +246,11 @@ Things to look at hardest, because they were built quickly or not seen:
 - `components/surface/*`: about 2,400 lines written by one agent in one sitting and reviewed
   only by the gates and one live run of the power panel.
 - Every change the teammate makes to shared styles.
+- The mesh response's `meta.resolution` describes the 20 m horizon terrain while its
+  `terrain` block gives the 5 m link terrain; both are right, but side by side they read
+  as a contradiction.
+- In the Connecting Ridge mesh run the lander spends 194 h in `active_relay` while
+  forwarding nothing (no link is usable). Check what that state costs and whether the
+  name says what happens.
+- `components/surface/MeshPanel.tsx` and the radio group in `components/project/*`, which
+  were written by agents and checked by the gates and one live run each.
