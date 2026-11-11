@@ -346,3 +346,110 @@ export interface ContactBudgetDTO {
   link_budget_note: string | null
   link_budget?: LinkBudgetDTO | null
 }
+
+// ---- Rovers relaying for each other (the surface mesh, POST /sites/{id}/mesh/simulate) ----
+
+export interface MeshNodeInDTO {
+  id: string
+  name?: string
+  position: { east_m: number; north_m: number }
+  antenna_height_m: number
+  battery_capacity_wh: number
+  initial_soc_fraction: number
+  own_traffic_bps: number
+  may_help: boolean
+  earth_uplink_bps?: number
+  earth_uplink_power_w?: number
+}
+
+export interface MeshRadioInDTO {
+  frequency_hz: number
+  tx_power_w: number
+  forwarding_tx_power_w: number
+  tx_efficiency: number
+  antenna_gain_dbi: number
+  bandwidth_hz: number
+  noise_figure_db: number
+  snr_threshold_db: number
+  eps_r: number
+  polarisation: 'horizontal' | 'vertical'
+}
+
+export interface MeshGuardInDTO {
+  soc_cutoff_fraction: number
+  quota_share_per_lunar_day: number
+  max_forwarding_power_w: number
+  buffer_bytes: number
+}
+
+export interface MeshRequestDTO {
+  start: string | null
+  end: string | null
+  step_s: number
+  loss_threshold_s: number
+  radio: MeshRadioInDTO
+  guard: MeshGuardInDTO
+  nodes: MeshNodeInDTO[]
+}
+
+export type MeshSight = 'clear' | 'uncertain' | 'blocked'
+
+export interface MeshLongestDTO {
+  direct_only: QuantityDTO
+  with_mesh: QuantityDTO
+  with_mesh_if_uncertain_links_hold: QuantityDTO
+  direct_only_starts_utc: string | null
+  with_mesh_starts_utc: string | null
+  with_mesh_if_uncertain_links_hold_starts_utc?: string | null
+  basis: string
+}
+
+export interface MeshNodeOutDTO {
+  id: string
+  name: string
+  may_help: boolean
+  positions: { east_m: number; north_m: number }[]
+  time_in_state_h: Record<string, number>
+  longest_without_path_to_earth: MeshLongestDTO
+}
+
+export interface MeshLinkDTO {
+  a: string
+  b: string
+  /** The stretch of the dates this entry covers; a pair can have several. */
+  start_s: number
+  end_s: number
+  start_utc: string
+  end_utc: string
+  distance_m: number
+  terrain_sight: MeshSight
+  terrain_fresnel: MeshSight
+  path_loss_db: number
+  snr_db: number
+  radio_closes: boolean
+  usable: boolean
+}
+
+export interface MeshHelperDTO {
+  id: string
+  forwarded_mb: QuantityDTO
+  dropped_mb: QuantityDTO
+  buffered_at_end_mb: QuantityDTO
+  energy_spent_wh: QuantityDTO
+  minimum_state_of_charge: QuantityDTO
+  refusals: unknown[]
+  refused_hours_by_rule: Record<string, number>
+}
+
+export interface MeshResponseDTO {
+  site_id: string
+  start: string
+  end: string
+  step_s: number
+  nodes: MeshNodeOutDTO[]
+  links: MeshLinkDTO[]
+  helpers: MeshHelperDTO[]
+  terrain: { products: string[]; post_m: number; vertical_error_m: number }
+  not_modelled: string[]
+  meta: { computed_at: string; engine_version: string }
+}

@@ -1,0 +1,71 @@
+{
+ "start": "2027-03-14T00:00:00Z",
+ "end": "2027-03-28T00:00:00Z",
+ "step_s": 3600,
+ "loss_threshold_s": 900.0,
+ "radio": {
+  "frequency_hz": 900000000.0,
+  "tx_power_w": 2.0,
+  "forwarding_tx_power_w": 2.0,
+  "tx_efficiency": 0.3,
+  "antenna_gain_dbi": 2.0,
+  "bandwidth_hz": 5000000.0,
+  "noise_figure_db": 5.0,
+  "snr_threshold_db": 3.0,
+  "eps_r": 2.7,
+  "polarisation": "vertical"
+ },
+ "guard": {
+  "soc_cutoff_fraction": 0.65,
+  "quota_share_per_lunar_day": 0.05,
+  "max_forwarding_power_w": 5.0,
+  "buffer_bytes": 50000000.0
+ },
+ "nodes": [
+  {
+   "id": "lander",
+   "name": "Lander",
+   "position": {
+    "east_m": 0,
+    "north_m": 0
+   },
+   "antenna_height_m": 4.0,
+   "battery_capacity_wh": 2000.0,
+   "initial_soc_fraction": 1.0,
+   "own_traffic_bps": 20000.0,
+   "may_help": true,
+   "earth_uplink_bps": 100000.0,
+   "earth_uplink_power_w": 20.0
+  },
+  {
+   "id": "r1",
+   "name": "Rover 1",
+   "position": {
+    "east_m": 0.0,
+    "north_m": 300.0
+   },
+   "antenna_height_m": 1.5,
+   "battery_capacity_wh": 2000.0,
+   "initial_soc_fraction": 1.0,
+   "own_traffic_bps": 20000.0,
+   "may_help": true,
+   "earth_uplink_bps": 100000.0,
+   "earth_uplink_power_w": 20.0
+  },
+  {
+   "id": "r2",
+   "name": "Rover 2",
+   "position": {
+    "east_m": 202.6389541653453,
+    "north_m": -221.21811466237364
+   },
+   "antenna_height_m": 1.5,
+   "battery_capacity_wh": 2000.0,
+   "initial_soc_fraction": 1.0,
+   "own_traffic_bps": 20000.0,
+   "may_help": true,
+   "earth_uplink_bps": 100000.0,
+   "earth_uplink_power_w": 20.0
+  }
+ ]
+}

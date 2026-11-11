@@ -1,5 +1,6 @@
 import { DispersionPanel } from './DispersionPanel'
 import { EnergyPanel } from './EnergyPanel'
+import { MeshPanel } from './MeshPanel'
 import { ToolSection } from './parts'
 
 /**
@@ -34,6 +35,13 @@ export function SurfaceTools({
         lede="How steep the ground is where a lander might come down, for an ellipse and lander you type in."
       >
         <DispersionPanel key={siteId} siteId={siteId} siteName={siteName} />
+      </ToolSection>
+      <ToolSection
+        guide="surface-mesh"
+        title="Rovers relaying for each other"
+        lede="How long a lander and up to five rovers go without a path to Earth, alone and passing each other's data on."
+      >
+        <MeshPanel key={siteId} siteId={siteId} siteName={siteName} startIso={iso(startMs)} endIso={iso(endMs)} />
       </ToolSection>
     </div>
   )
