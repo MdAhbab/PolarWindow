@@ -81,12 +81,14 @@ test('demo path: volatiles → IM-2 → shift the date → compare → ask → r
   // Beat 2: the Volatiles chip.
   await page.goto('/missions')
   const count = page.locator('[aria-live="polite"]').filter({ hasText: 'missions' }).first()
-  await expect(count).toHaveText('Showing 20 of 20 missions')
+  // The seeded missions plus any projects saved on this database.
+  await expect(count).toHaveText(/^Showing (\d+) of \1 missions$/)
+  const all = Number(/of (\d+) missions/.exec((await count.textContent()) ?? '')?.[1])
   await expectNoSeriousAxe(page, '/missions')
   await page.getByRole('button', { name: 'Instruments' }).click()
   await page.getByRole('button', { name: 'Volatiles' }).click()
   await expect(page).toHaveURL(/type=volatiles/)
-  await expect(count).toHaveText('Showing 5 of 20 missions')
+  await expect(count).toHaveText(`Showing 5 of ${all} missions`)
   const list = page.getByRole('region', { name: 'Missions' }).or(page.locator('section[aria-labelledby="missions-list-h"]'))
   await expect(list.getByRole('link')).toHaveCount(5)
   await expectNoSeriousAxe(page, '/missions?type=volatiles')
@@ -156,8 +158,11 @@ test('demo path: volatiles → IM-2 → shift the date → compare → ask → r
   await page.getByRole('link', { name: 'Missions' }).first().click()
   await openRow(page, 'Ask about missions and sites')
   await page.getByLabel('Your question').fill('Which south-polar CLPS targets carry volatiles instruments, and what is their longest night?')
-  await page.getByRole('button', { name: 'Ask', exact: true }).click()
-  await expect(page.getByText(/^Summary from measurements \(no AI\)/)).toBeVisible()
+  // The shell has its own Ask button; this is the one in the row.
+  const askRow = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Ask about missions and sites' }) })
+  await askRow.getByRole('button', { name: 'Ask', exact: true }).click()
+  // Without a model key the answer is built from the measurements; with one it is the model's, which takes seconds.
+  await expect(page.getByText(/^(Summary from measurements \((no AI|AI answer replaced)\)|AI answer · )/)).toBeVisible({ timeout: 60_000 })
   await openRow(page, /numbers, each checked/)
   const how = page.getByRole('button', { name: 'How the AI got this' })
   await how.click()

@@ -1,6 +1,13 @@
 import { expect, test } from '@playwright/test'
 import { expectNoSeriousAxe, openRow, returningVisitor, watchConsole } from './helpers'
 
+/** How many missions the list holds unfiltered: the seeded ones plus any projects saved on this database. */
+async function missionTotal(page: import('@playwright/test').Page): Promise<number> {
+  const count = page.locator('[aria-live="polite"]').filter({ hasText: 'missions' }).first()
+  await expect(count).toHaveText(/^Showing (\d+) of \1 missions$/)
+  return Number(/of (\d+) missions/.exec((await count.textContent()) ?? '')?.[1])
+}
+
 const ROUTES = [
   '/',
   '/missions',
@@ -130,8 +137,8 @@ test('axe and the fixed tab bar on a phone', async ({ page, context }) => {
   ]) {
     await page.goto(r)
     await page.waitForLoadState('networkidle')
-    // Two views: the missions and the landing sites.
-    await expect(tabs.getByRole('link')).toHaveCount(2)
+    // Three views: home, the missions and the landing sites.
+    await expect(tabs.getByRole('link')).toHaveCount(3)
     await expect(tabs).toHaveCSS('position', 'fixed')
     await expectNoSeriousAxe(page, `${r} at 375 px`)
     // Nothing runs off the side: no sideways scroll on a phone.
@@ -210,15 +217,16 @@ test('mission filters live in the URL; the back button undoes a chip', async ({ 
   await returningVisitor(context)
   await page.goto('/missions')
   const count = page.locator('[aria-live="polite"]').filter({ hasText: 'missions' }).first()
+  const all = await missionTotal(page)
   await page.getByRole('button', { name: 'Instruments' }).click()
   await page.getByRole('button', { name: 'Volatiles' }).click()
   await page.getByRole('button', { name: 'Upcoming' }).click()
   await expect(page).toHaveURL(/type=volatiles.*status=upcoming|status=upcoming.*type=volatiles/)
-  await expect(count).toHaveText('Showing 3 of 20 missions')
+  await expect(count).toHaveText(`Showing 3 of ${all} missions`)
   await page.goBack()
-  await expect(count).toHaveText('Showing 5 of 20 missions')
+  await expect(count).toHaveText(`Showing 5 of ${all} missions`)
   await page.goBack()
-  await expect(count).toHaveText('Showing 20 of 20 missions')
+  await expect(count).toHaveText(`Showing ${all} of ${all} missions`)
   await page.goForward()
   await expect(page.getByRole('button', { name: 'Volatiles' })).toHaveAttribute('aria-pressed', 'true')
 })
@@ -234,18 +242,19 @@ test('empty state names the filters and relaxes them in one click', async ({ pag
   await page.goto('/missions?status=flown&provider=Blue%20Origin')
   await page.getByRole('button', { name: 'Clear filters' }).click()
   await expect(page.locator('[aria-live="polite"]').filter({ hasText: 'missions' }).first()).toHaveText(
-    'Showing 20 of 20 missions',
+    /^Showing (\d+) of \1 missions$/,
   )
 })
 
 test('the timeline has a table twin, by button and by T; the shortcut can be switched off', async ({ page, context }) => {
   await returningVisitor(context)
   await page.goto('/missions')
+  const all = await missionTotal(page)
   const table = page.getByRole('table', { name: /Every mission shown/ })
   await openRow(page, 'Timeline')
   await page.getByRole('button', { name: 'Read the timeline as a table' }).click()
   await expect(table).toBeVisible()
-  await expect(table.getByRole('row')).toHaveCount(21)
+  await expect(table.getByRole('row')).toHaveCount(all + 1)
   await page.locator('main').click({ position: { x: 5, y: 5 } })
   await page.keyboard.press('t')
   await expect(table).toBeHidden()

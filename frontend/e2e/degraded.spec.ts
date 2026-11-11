@@ -31,7 +31,9 @@ test('API unreachable: saved answers, the Saved copy badge, and a degraded agent
   await page.getByRole('link', { name: 'Missions' }).first().click()
   await openRow(page, 'Ask about missions and sites')
   await page.getByLabel('Your question').fill('Which targets carry volatiles instruments?')
-  await page.getByRole('button', { name: 'Ask', exact: true }).click()
+  // The shell has its own Ask button; this is the one in the row.
+  const askRow = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Ask about missions and sites' }) })
+  await askRow.getByRole('button', { name: 'Ask', exact: true }).click()
   await expect(page.getByText(/^Summary from measurements \(no AI\)/)).toBeVisible()
   await expect(page.getByText('Built from the measurements')).toBeVisible()
 
