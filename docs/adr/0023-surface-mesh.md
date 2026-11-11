@@ -27,6 +27,11 @@ battery or mission.
    antennas a few metres up the ground is always inside that zone (about 5 m deep at 300 m
    and 900 MHz) and its effect is what the two-ray loss already carries; requiring both
    would count the ground twice and no low link would ever be used.
+   The longest time without a path to Earth is therefore given twice with the mesh: on the
+   links that are certain, and if the uncertain ones hold as well. On real terrain the
+   second is where the mesh shows: at Connecting Ridge over 14 days, with a lander and two
+   rovers 300 m away, a 2 m height error leaves every low link uncertain or blocked, so the
+   certain figure equals direct-only (195 h for the lander) and the other is 159 to 168 h.
 4. **Skies per node.** Each node's Earth and Sun come from its own skyline, marched only over
    the bearings Earth and the Sun cover, at a coarser step and shorter range than the site mask.
 5. **Radio state machine.** Deep sleep while the direct link is healthy; standby once lost;

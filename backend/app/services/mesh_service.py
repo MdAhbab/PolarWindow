@@ -212,7 +212,7 @@ async def simulate(
     cw = await site_service.compute(session, site_id, start, end, step_s)
     if len(cw.result.earth.t_s) > MAX_STEPS:
         raise BadMesh("step_s", f"at most {MAX_STEPS} steps; use a longer step or a shorter window")
-    return await asyncio.to_thread(_run, cw, ns, rad, guard, float(loss_threshold_s), radius)
+    return await asyncio.to_thread(_both, cw, ns, rad, guard, float(loss_threshold_s), radius)
 
 
 @dataclass(slots=True)
@@ -291,6 +291,33 @@ def _iso(start: datetime, t_s: float) -> str:
     return (start + timedelta(seconds=t_s)).isoformat().replace("+00:00", "Z")
 
 
+def _both(
+    cw: site_service.ComputedWindow,
+    ns: list[Node],
+    rad: core.Radio,
+    guard: dict[str, Any],
+    loss_threshold_s: float,
+    radius_m: float,
+) -> dict[str, Any]:
+    """The run, and the same run again counting on the links whose line of sight the
+    terrain model cannot settle. Low antennas a few hundred metres apart are often in
+    that band, so the mesh's answer is a pair: what it gives for certain, and what it
+    gives if those links hold. Everything else in the answer is the first, certain run."""
+    out = _run(cw, ns, rad, guard, loss_threshold_s, radius_m)
+    hopeful = _run(cw, ns, rad, guard, loss_threshold_s, radius_m, use_uncertain=True)
+    by_id = {n["id"]: n for n in hopeful["nodes"]}
+    for node in out["nodes"]:
+        lw = node["longest_without_path_to_earth"]
+        lw["with_mesh_if_uncertain_links_hold"] = by_id[node["id"]][
+            "longest_without_path_to_earth"
+        ]["with_mesh"]
+        lw["basis"] += (
+            " 'If uncertain links hold' counts on links whose line of sight is within the "
+            "terrain model's height error; the first figure does not."
+        )
+    return out
+
+
 def _run(
     cw: site_service.ComputedWindow,
     ns: list[Node],
@@ -298,6 +325,7 @@ def _run(
     guard: dict[str, Any],
     loss_threshold_s: float,
     radius_m: float,
+    use_uncertain: bool = False,
 ) -> dict[str, Any]:
     import time
 
@@ -424,7 +452,10 @@ def _run(
                     # that zone, and its effect is what the two-ray loss already carries.
                     if b.closes and lk.terrain.sight == "uncertain" and u.id == src:
                         uncertain_peers.append(v.id)
-                    if b.closes and lk.terrain.sight == "clear":
+                    seen = lk.terrain.sight == "clear" or (
+                        use_uncertain and lk.terrain.sight == "uncertain"
+                    )
+                    if b.closes and seen:
                         p = rad.tx_power_w if u.id == src else rad.forwarding_tx_power_w
                         edges.setdefault(u.id, {})[v.id] = core.energy_per_bit_j(
                             p, rad.tx_efficiency, b.shannon_bps

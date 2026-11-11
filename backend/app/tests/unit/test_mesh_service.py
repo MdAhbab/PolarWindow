@@ -319,3 +319,16 @@ def test_low_antennas_on_flat_ground_still_link(monkeypatch: pytest.MonkeyPatch)
     assert link["usable"] is True
     lw = rover(out)["longest_without_path_to_earth"]
     assert lw["with_mesh"]["value"] < lw["direct_only"]["value"]
+
+
+def test_the_mesh_figure_comes_with_what_uncertain_links_would_give(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    flat(monkeypatch, {(0.0, 0.0): always, (200.0, 0.0): rover_view})
+    nodes = [ms._node(d) for d in (lander(), node("r1", ROVER_AT, own_traffic_bps=1e3))]
+    out = ms._both(window(), nodes, core.Radio(**RADIO), GUARD, 7200.0, 300.0)
+    lw = rover(out)["longest_without_path_to_earth"]
+    hopeful = lw["with_mesh_if_uncertain_links_hold"]
+    # Counting on more links can only shorten the wait, never lengthen it.
+    assert hopeful["value"] <= lw["with_mesh"]["value"] <= lw["direct_only"]["value"]
+    assert hopeful["unit"] == "h"
