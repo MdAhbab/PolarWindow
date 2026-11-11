@@ -288,6 +288,44 @@ class Claim:
     bare_count: bool = False
     #: The number is a calendar position (a day of the month, a year).
     is_date: bool = False
+    #: The number with the word beside it, as it could be quoted from a tool's own
+    #: sentence: a name ("Complex 39A") and a counted thing ("13 items", "16 UTC").
+    quotable: tuple[str, ...] = ()
+
+
+#: A capitalised word and one space or hyphen, straight before a number.
+_NAME_WORD_BEFORE = re.compile(r"(?<![A-Za-z])([A-Z][A-Za-z]+)([ -])$")
+#: A letter or two straight after a number, as in a pad's "39A".
+_DESIGNATOR_AFTER = re.compile(r"^[A-Za-z]{1,2}(?![A-Za-z])")
+#: The word a number counts or is measured in: "13 items", "16 UTC", "39 hours".
+_WORD_AFTER = re.compile(r"^ ?([A-Za-z]{3,})")
+
+
+def _quotable(cleaned: str, start: int, end: int) -> tuple[str, ...]:
+    """The number with its neighbouring word, each way a tool's sentence could hold it:
+    "Complex 39A" from "...from Launch Complex 39A." and "13 items" from "All 13 items"."""
+    out: list[str] = []
+    word = _NAME_WORD_BEFORE.search(cleaned[max(0, start - 32) : start])
+    if word is not None:
+        tail = _DESIGNATOR_AFTER.match(cleaned[end : end + 4])
+        out.append(
+            f"{word.group(1)}{word.group(2)}{cleaned[start:end]}{tail.group(0) if tail else ''}"
+        )
+    after = _WORD_AFTER.match(cleaned[end : end + 24])
+    if after is not None:
+        out.append(f"{cleaned[start:end]}{after.group(0)}")
+    return tuple(out)
+
+
+def _quotes_the_tool(phrases: tuple[str, ...], tool_text: list[str]) -> bool:
+    """Whether a tool result writes one of these very phrases. Then the number is the
+    tool's own words repeated ("Launch Complex 39A", "13 items"), not a figure made up.
+    A bare digit in a tool's string grounds nothing: the word beside it must match too."""
+    for phrase in phrases:
+        pattern = re.compile(rf"(?<![A-Za-z0-9.]){re.escape(phrase.lower())}(?![A-Za-z0-9])")
+        if any(pattern.search(t) for t in tool_text):
+            return True
+    return False
 
 
 def _scan_text(text: str, path: str) -> list[Claim]:
@@ -323,6 +361,7 @@ def _scan_text(text: str, path: str) -> list[Claim]:
                 in_prose=True,
                 bare_count=is_int and not has_quantity_after and not is_multiplier,
                 is_date=is_date,
+                quotable=() if is_multiplier else _quotable(cleaned, m.start(), m.end()),
             )
         )
     for m in _WORD_NUMBER_RE.finditer(cleaned):
@@ -541,10 +580,14 @@ def check_grounding(output: dict[str, Any], tool_results: list[dict[str, Any]]) 
     """
     measured: list[tuple[str, float, str, int]] = []
     quoted: list[tuple[str, float, str, int]] = []
+    #: Every string a tool returned, lower-cased: where a name can be quoted from.
+    tool_text: list[str] = []
     for call in tool_results:
         seq = int(call.get("seq", 0))
         tool = str(call.get("tool", "?"))
         result = call.get("result")
+        if tool != USER_REQUEST_TOOL:
+            tool_text.extend(text.lower() for _path, text in _string_leaves(result))
         if tool == USER_REQUEST_TOOL:
             # The user's request arrives as prose -- "600 hours of continuous
             # sunlight" -- so its numbers are inside strings. They are parsed out
@@ -567,6 +610,11 @@ def check_grounding(output: dict[str, Any], tool_results: list[dict[str, Any]]) 
             continue
         pool = measured + quoted if claim.in_prose else measured
         value = claim.value
+        # "Launch Complex 39A", "13 items", "00:16 UTC": the tool's own words, repeated
+        # with the word beside the number. Checked before the pools, because a result
+        # made only of sentences has no numeric field to match against.
+        if claim.in_prose and claim.quotable and _quotes_the_tool(claim.quotable, tool_text):
+            continue
         if not pool:
             violations.append(
                 Violation(

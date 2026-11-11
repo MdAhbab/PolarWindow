@@ -376,3 +376,75 @@ def test_evidence_words_are_not_verdicts(text: str) -> None:
 def test_the_users_own_words_may_carry_a_verdict_word() -> None:
     out = {"answer": "The wind rule is over its limit.", "question": "Is it safe to launch?"}
     assert guards.check_verdict_words(out).ok
+
+
+def test_a_name_the_tool_wrote_may_be_repeated_with_its_digits() -> None:
+    """ "Launch Complex 39A" was rejected as the invented number 39, so a question about
+    where IM-2 launched from fell back to a summary that said nothing."""
+    tools = [
+        {
+            "seq": 1,
+            "tool": "get_mission_sections",
+            "result": {
+                "sections": [
+                    {
+                        "section": "launch",
+                        "summary": "Launched on Falcon 9 Block 5 from Launch Complex 39A.",
+                    }
+                ],
+                "pad": "Space Launch Complex 41",
+                "sun_fraction": 0.61,
+            },
+        }
+    ]
+    ok = {"status": "ok", "answer": "IM-2 lifted off from Launch Complex 39A on a Falcon 9."}
+    assert guards.check_grounding(ok, tools).ok
+    other = {"status": "ok", "answer": "Vulcan flies from Space Launch Complex 41."}
+    assert guards.check_grounding(other, tools).ok
+
+
+def test_a_digit_inside_a_tool_s_name_still_grounds_no_measurement() -> None:
+    tools = [
+        {
+            "seq": 1,
+            "tool": "get_mission_sections",
+            "result": {"summary": "Launched from Launch Complex 39A.", "sun_fraction": 0.61},
+        }
+    ]
+    for answer in (
+        "The Sun is up 39 % of the time.",  # the pad's digits are not a share
+        "It launched from Launch Complex 40.",  # a pad the tool never named
+        "Contact lasts 39 hours.",
+        "Pad 39A saw 41 launches.",  # the name is quoted, the count is invented
+    ):
+        verdict = guards.check_grounding({"status": "ok", "answer": answer}, tools)
+        assert not verdict.ok, answer
+
+
+def test_a_tool_s_own_sentence_may_be_repeated_when_it_has_no_numeric_field() -> None:
+    """The steps of a mission come back as sentences only, so nothing in them could be
+    matched and "All 13 items flew" was refused as having no tool behind it."""
+    tools = [
+        {
+            "seq": 1,
+            "tool": "get_mission_sections",
+            "result": {
+                "sections": [
+                    {"section": "ready", "summary": "All 13 items flew; nothing was entered."},
+                    {
+                        "section": "launch",
+                        "summary": "Launched 27 Feb 2025 00:16 UTC on Falcon 9 Block 5 "
+                        "from Launch Complex 39A.",
+                    },
+                ]
+            },
+        }
+    ]
+    for answer in (
+        "Ready for IM-2: All 13 items flew; nothing was entered.",
+        "Launch for IM-2: Launched 27 Feb 2025 00:16 UTC on Falcon 9 Block 5 from "
+        "Launch Complex 39A.",
+    ):
+        assert guards.check_grounding({"status": "ok", "answer": answer}, tools).ok, answer
+    for answer in ("All 14 items flew.", "It launched at 00:17 UTC.", "13 hours of sunlight."):
+        assert not guards.check_grounding({"status": "ok", "answer": answer}, tools).ok, answer
