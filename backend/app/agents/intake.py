@@ -28,13 +28,13 @@ import time
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from itertools import pairwise
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from app.agents import base
 from app.agents.tools import Session
-from app.config import get_settings
 from app.services.agent_log import AgentRunRecord, record_run
 
 log = logging.getLogger(__name__)
@@ -74,6 +74,15 @@ LOOKED_FOR: tuple[str, ...] = (
     "payloads",
     "notes",
 )
+
+#: One reading may take this long in all, however long the chain is (the request must not
+#: hang), and no single model may hold it for more than ``MODEL_TIMEOUT_S``: the first
+#: models of a long chain can be slow or not served to this key, so at least two or three
+#: models get their turn. Under ``MODEL_MIN_S`` left, no new model is started.
+EN_DASH, EM_DASH = chr(0x2013), chr(0x2014)
+MODEL_BUDGET_S = 70.0
+MODEL_TIMEOUT_S = 25.0
+MODEL_MIN_S = 5.0
 
 EVIDENCE_MAX = 240
 #: Most characters of the file's text handed to the model.
@@ -464,14 +473,106 @@ def find_coordinate(doc: Doc) -> Found | None:
 _SEP = r"\s*(?::|=|\s[-\u2013\u2014]\s)\s*"
 
 
+#: Words whose full stop does not end a sentence ("Acme Corp. Lander: X", "Mar. 14").
+_ABBREV = frozenset(
+    {"inc", "ltd", "corp", "co", "llc", "dr", "st", "no", "mr", "mrs", "ms", "vs", "approx", "est"}
+)
+_MONTH_ABBREV = frozenset(m for m in _MONTHS if len(m) == 3 and m != "may") | {"sept"}
+_BOUNDARY = re.compile(r"[.;]\s+")
+
+
+def _boundaries(text: str) -> list[int]:
+    """Where a new sentence or clause starts: after '. ' or '; ', not after 'Corp.' or 'Mar. 14'."""
+    out: list[int] = []
+    for m in _BOUNDARY.finditer(text):
+        if m.group(0)[0] == ".":
+            word = re.search(r"([^\W\d_]+)$", text[: m.start()])
+            if word:
+                w = word.group(1).lower()
+                labelled = re.match(r"[A-Z][\w ]{0,30}:", text[m.end() :])
+                if (len(w) == 1 or w in _ABBREV) and not labelled:
+                    continue
+                if w in _MONTH_ABBREV and text[m.end() : m.end() + 1].isdigit():
+                    continue
+        out.append(m.end())
+    return out
+
+
+def _segments(line: str) -> list[str]:
+    """The line's sentences ("Provider: X. Lander: Y." is two)."""
+    cuts = [0, *_boundaries(line), len(line)]
+    return [s for a, b in pairwise(cuts) if (s := line[a:b].strip())]
+
+
 def _labelled(doc: Doc, labels: str) -> tuple[str, int, str] | None:
-    """``Label: value`` on its own line -> (value, page, line)."""
+    """``Label: value`` as a line or as one sentence of a line -> (value, page, sentence)."""
     pat = re.compile(rf"^\W{{0,4}}(?:{labels}){_SEP}(.{{1,200}}?)\s*[.;]?\s*$", re.IGNORECASE)
     for page, line in doc.lines:
-        m = pat.match(line.strip())
-        if m and m.group(1).strip():
-            return m.group(1).strip(), page, line
+        for seg in _segments(line):
+            m = pat.match(seg)
+            if m and m.group(1).strip():
+                return m.group(1).strip(), page, seg
     return None
+
+
+_LEGAL = r"(?:\s*,?\s*(?:inc|llc|ltd|corp|corporation|co|company|gmbh|ag)\.?)?"
+
+
+def _fold(text: str) -> str:
+    return re.sub(r"[\W_]+", " ", text).strip().casefold()
+
+
+def _catalogue_name(value: str, names: Sequence[str]) -> str:
+    """The catalogue's spelling when ``value`` is one of its names (or one plus 'Inc.')."""
+    key = _fold(value)
+    for n in names:
+        if _fold(n) == key:
+            return n
+    for n in names:
+        if re.fullmatch(rf"{re.escape(n)}{_LEGAL}", value.strip(), re.IGNORECASE):
+            return n
+    return value
+
+
+_GENERIC_TITLE = {"mission", "brief", "summary", "overview", "document", "report", "plan"}
+_GENERIC_TITLE |= {"notes", "project", "profile", "description", "data", "sheet", "file"}
+
+
+def _title(doc: Doc) -> Found | None:
+    """The file's first line, when it reads as a title and not as a label or a sentence."""
+    for page, line in doc.lines:
+        text = re.sub(r"^[\s#*_>|-]+|[\s*_|]+$", "", line)
+        if not text:
+            continue
+        words = text.split()
+        if (
+            len(words) > 8
+            or re.search(r"[:=.;!?]", text)
+            or not re.search(r"[A-Za-z]{3}", text)
+            or find_dates(text)
+            or {w.casefold().strip(",") for w in words} <= _GENERIC_TITLE
+        ):
+            return None
+        return Found(
+            "name",
+            text[:160],
+            "inferred",
+            _quote(line),
+            page,
+            "The first line of the file, taken as its title; it is not labelled as the "
+            "mission's name. Check it.",
+        )
+    return None
+
+
+def _site_label(value: str) -> str | None:
+    """A site's name from 'Shackleton rim, near 89.45 S' -> 'Shackleton rim'."""
+    dash = rf"\s[-{EN_DASH}{EM_DASH}]\s"
+    cut = re.split(rf"[,;(]|\s(?:near|at|about|around)\s|{dash}|\d", value, maxsplit=1)[0]
+    cut = cut.strip(" -:" + EN_DASH + EM_DASH)
+    if not re.search(r"[A-Za-z]{3}", cut) or re.match(r"(?:lat|lon)", cut, re.IGNORECASE):
+        return None
+    return cut
 
 
 def _mentions(
@@ -487,7 +588,15 @@ def _mentions(
                 if m:
                     out.append((key, page, line, m.start(), m.end()))
                     break
-    return out
+    # "Shackleton" inside "Shackleton rim" is the longer name, not a second record.
+    return [
+        h
+        for h in out
+        if not any(
+            o[2] == h[2] and (o[3], o[4]) != (h[3], h[4]) and o[3] <= h[3] and h[4] <= o[4]
+            for o in out
+        )
+    ]
 
 
 def _one_of(
@@ -532,20 +641,57 @@ _NOT_A_DATE_LINE: dict[str, str] = {
 }
 
 
+_CHAINED = re.compile(r"[\s,/&]*(?:and|or)?[\s,/&]*", re.IGNORECASE)
+
+
+def _cues(line: str) -> list[tuple[int, int, str]]:
+    """Every launch / landing / end-of-mission cue in the line: (start, end, date path)."""
+    out: list[tuple[int, int, str]] = []
+    for key, pattern in _DATE_LABELS.items():
+        for m in re.finditer(pattern, line, re.IGNORECASE):
+            if re.match(_NOT_A_DATE_LINE[key], line[m.start() :], re.IGNORECASE):
+                continue
+            out.append((m.start(), m.end(), key))
+    return sorted(out)
+
+
+def bound_dates(line: str) -> dict[str, list[DateHit]]:
+    """Each date in the line bound to the cue that owns it, or to none.
+
+    A date belongs to the nearest cue before it in its own clause (a full stop or
+    semicolon ends a clause), with no other date in between. Two cues side by side
+    ("launch and landing: 14 March 2028") own nothing. A date with no cue before it
+    belongs to the one cue after it only when it is the clause's only date.
+    """
+    hits = find_dates(line)
+    cues = _cues(line)
+    bounds = _boundaries(line)
+    out: dict[str, list[DateHit]] = {k: [] for k in _DATE_LABELS}
+    for i, h in enumerate(hits):
+        start = max([0, *(b for b in bounds if b <= h.start)])
+        end = min([len(line), *(b for b in bounds if b > h.start)])
+        lo = max(start, hits[i - 1].end) if i else start
+        before = [c for c in cues if lo <= c[0] and c[1] <= h.start]
+        if before:
+            if (
+                len(before) > 1
+                and before[-2][2] != before[-1][2]
+                and _CHAINED.fullmatch(line[before[-2][1] : before[-1][0]])
+            ):
+                continue
+            out[before[-1][2]].append(h)
+            continue
+        alone = sum(1 for o in hits if start <= o.start < end) == 1
+        after = {c[2] for c in cues if h.end <= c[0] < end}
+        if alone and len(after) == 1:
+            out[after.pop()].append(h)
+    return out
+
+
 def _date_field(doc: Doc, path: str, warnings: list[str]) -> Found:
-    label = re.compile(_DATE_LABELS[path], re.IGNORECASE)
-    skip = re.compile(_NOT_A_DATE_LINE[path], re.IGNORECASE)
     seen: list[tuple[DateHit, int, str]] = []
     for page, line in doc.lines:
-        if not label.search(line):
-            continue
-        hits = find_dates(line)
-        if not hits:
-            continue
-        if skip.search(line) and not re.search(r"\b(?:on|in|by|date)\b", line, re.IGNORECASE):
-            continue
-        best = max(hits, key=lambda h: _ORDER.index(h.precision))
-        seen.append((best, page, line))
+        seen.extend((h, page, line) for h in bound_dates(line)[path])
     if not seen:
         return Found(path, None, "not_found", None, None, "No date is given next to these words.")
     first, page, line = seen[0]
@@ -655,7 +801,7 @@ def _payloads(doc: Doc) -> tuple[list[dict[str, Any]], Found]:
     """Payloads named on 'Payload: X' lines, or as a list under a 'Payloads' heading."""
     out: list[dict[str, Any]] = []
     first: tuple[int, str] | None = None
-    single = re.compile(rf"^\W{{0,4}}(?:payload|instrument){_SEP}(.{{2,200}}?)\s*$", re.I)
+    single = re.compile(rf"^\W{{0,4}}(?:payloads?|instruments?){_SEP}(.{{2,400}}?)\s*$", re.I)
     heading = re.compile(
         r"^\W{0,4}(?:nasa\s+|science\s+)?(?:payloads?|instruments?)\b[^:]{0,40}:?\s*$", re.I
     )
@@ -663,10 +809,15 @@ def _payloads(doc: Doc) -> tuple[list[dict[str, Any]], Found]:
     i = 0
     while i < len(lines):
         page, line = lines[i]
-        m = single.match(line.strip())
+        m = None
+        for seg in _segments(line):
+            m = single.match(seg)
+            if m:
+                out.extend(_payload_items(m.group(1)))
+                first = first or (page, seg)
+                break
         if m:
-            out.append({"name": m.group(1).strip().rstrip("."), "instrument_types": []})
-            first = first or (page, line)
+            pass
         elif heading.match(line.strip()):
             j = i + 1
             while j < len(lines) and len(out) < 30:
@@ -676,7 +827,7 @@ def _payloads(doc: Doc) -> tuple[list[dict[str, Any]], Found]:
                         break
                     j += 1
                     continue
-                out.append({"name": b.group(1).strip().rstrip("."), "instrument_types": []})
+                out.extend(_payload_items(b.group(1), split=False))
                 first = first or lines[j]
                 j += 1
             i = j
@@ -690,14 +841,81 @@ def _payloads(doc: Doc) -> tuple[list[dict[str, Any]], Found]:
             unique.append(p)
     if not unique or first is None:
         return [], Found("payloads", None, "not_found", None, None, "No payload is listed.")
-    return unique, Found(
-        "payloads",
-        unique,
-        "stated",
-        _quote(first[1]),
-        first[0],
-        f"{len(unique)} payload{'s' if len(unique) != 1 else ''} named; their types are not set.",
-    )
+    note = f"{len(unique)} payload{'s' if len(unique) != 1 else ''} named; their types are not set."
+    if any(p["purpose"] for p in unique):
+        note += " The form has no mass field, so a mass the file states is kept in the purpose."
+    return unique, Found("payloads", unique, "stated", _quote(first[1]), first[0], note)
+
+
+_ARTICLE = re.compile(r"^(?:an?|the)\s+", re.IGNORECASE)
+_MASS_PAREN = re.compile(
+    rf"\(\s*(?:mass\s*[:=]?\s*)?{_NUM}\s*(kg|kilograms?|t|tonnes?|lbs?|pounds?)\s*\)", re.I
+)
+_MASS_TAIL = re.compile(
+    rf"[,:{EN_DASH}{EM_DASH}-]\s*{_NUM}\s*(kg|kilograms?|lbs?|pounds?)\s*$", re.I
+)
+
+
+def _top_level_split(text: str, seps: str) -> list[str]:
+    """Split on any character of ``seps`` that is not inside brackets."""
+    parts: list[str] = []
+    depth = 0
+    cur: list[str] = []
+    for ch in text:
+        depth += (ch in "([") - (ch in ")]")
+        if ch in seps and depth <= 0:
+            parts.append("".join(cur))
+            cur = []
+        else:
+            cur.append(ch)
+    parts.append("".join(cur))
+    return [p.strip() for p in parts if p.strip()]
+
+
+def _payload_items(text: str, split: bool = True) -> list[dict[str, Any]]:
+    """'a neutron spectrometer (4.2 kg) and a laser retroreflector (0.3 kg)' -> two payloads.
+
+    'and' separates two payloads only when the second starts with an article or either
+    has a mass in brackets ('neutron and gamma-ray spectrometer' is one).
+    """
+    pieces: list[str] = []
+    for chunk in _top_level_split(text.strip().rstrip("."), ",;") if split else [text]:
+        chunk = re.sub(r"^(?:and|&)\s+", "", chunk.strip(), flags=re.IGNORECASE)
+        sub = re.split(r"\s+(?:and|&)\s+", chunk, flags=re.IGNORECASE) if split else [chunk]
+        merged = [sub[0]]
+        for nxt in sub[1:]:
+            prev = merged[-1]
+            if _ARTICLE.match(nxt) or _MASS_PAREN.search(prev) or _MASS_PAREN.search(nxt):
+                merged.append(nxt)
+            else:
+                merged[-1] = f"{prev} and {nxt}"
+        pieces += merged
+    items: list[dict[str, Any]] = []
+    for piece in pieces:
+        phrase: str | None = None
+        kg: float | None = None
+        m = _MASS_PAREN.search(piece) or _MASS_TAIL.search(piece)
+        if m:
+            phrase = m.group(0).strip("()[] ,:-" + EN_DASH + EM_DASH).strip()
+            kg = round(_num(m.group(1)) * _TO_KG.get(m.group(2).lower(), 1.0), 3)
+            piece = (piece[: m.start()] + piece[m.end() :]).strip()
+        name = _ARTICLE.sub("", piece).strip(" .,;")
+        if len(name) < 2:
+            continue
+        item: dict[str, Any] = {
+            "name": name[:1].upper() + name[1:],
+            "instrument_types": [],
+            "purpose": None,
+        }
+        if kg is not None:
+            item["purpose"] = f"Mass stated in the file: {kg:g} kg" + (
+                "" if phrase and phrase.lower().replace(" ", "") == f"{kg:g}kg" else f" ({phrase})"
+            )
+        items.append(item)
+    return items
+
+
+_BARE_SITE = re.compile(r"\s*\((?:feature centre|IAU[^)]*)\)\s*$")
 
 
 def read_rules(doc: Doc, lex: Lexicon) -> Reading:
@@ -705,19 +923,23 @@ def read_rules(doc: Doc, lex: Lexicon) -> Reading:
     warnings: list[str] = []
     found: list[Found] = []
 
-    def label(path: str, labels: str, max_len: int) -> Found | None:
+    def label(path: str, labels: str, max_len: int, names: Sequence[str] = ()) -> Found | None:
         hit = _labelled(doc, labels)
         if hit is None:
             return None
         value, page, line = hit
-        return Found(path, value[:max_len], "stated", _quote(line), page)
+        return Found(path, _catalogue_name(value, names)[:max_len], "stated", _quote(line), page)
 
     found.append(
-        label("name", r"mission(?: name)?|project(?: name)?|mission title", 160)
+        label("name", r"mission(?: name| brief| title)?|project(?: name)?", 160)
+        or _title(doc)
         or Found("name", None, "not_found", None, None, "No line names the mission.")
     )
     prov = label(
-        "provider", r"provider|clps provider|lander provider|company|prime contractor", 120
+        "provider",
+        r"provider|clps provider|lander provider|company|prime contractor",
+        120,
+        lex.providers,
     )
     if prov is None:
         hits = _mentions(doc, [(p, (p,)) for p in lex.providers])
@@ -730,7 +952,7 @@ def read_rules(doc: Doc, lex: Lexicon) -> Reading:
             "provider",
         )
     found.append(prov)
-    lander = label("lander", r"lander(?: name)?|lander type", 120)
+    lander = label("lander", r"lander(?: name)?|lander type", 120, lex.landers)
     if lander is None:
         hits = _mentions(doc, [(n, (n,)) for n in lex.landers])
         lander = _one_of("lander", hits, {n: n for n in lex.landers}, r"lander", warnings, "lander")
@@ -752,17 +974,42 @@ def read_rules(doc: Doc, lex: Lexicon) -> Reading:
     )
 
     coord = find_coordinate(doc)
+    bare = {s.id: _BARE_SITE.sub("", s.name) for s in lex.sites}
+    # "Shackleton rim, east shoulder" is also named by its first part, "Shackleton rim".
+    site_aliases = [
+        (s.id, tuple(dict.fromkeys((bare[s.id], bare[s.id].split(",")[0].strip()))))
+        for s in lex.sites
+    ]
+    hits = _mentions(doc, site_aliases)
     if coord is not None:
-        named = label("target", r"landing site|target(?: site)?|landing target|site", 160)
-        if named is not None:
-            coord.value["name"] = named.value
+        # The form takes a site or a coordinate, not both: the coordinate stays as the
+        # file states it, and a site the file also names is offered, never dropped.
+        named = _labelled(doc, r"landing site|target(?: site)?|landing target|site")
+        name = _site_label(named[0]) if named else None
+        site_ids = list(dict.fromkeys(h[0] for h in hits))
+        if len(site_ids) == 1:
+            name = bare[site_ids[0]].split(",")[0].strip() if name is None else name
+            _, spage, sline, sa, sb = hits[0]
+            full = bare[site_ids[0]]
+            if _fold(sline[sa:sb]) == _fold(full):
+                name = full
+            found.append(
+                Found(
+                    "target.site_id",
+                    None,
+                    "inferred",
+                    _quote(sline, sa, sb),
+                    spage,
+                    f"The file names {sline[sa:sb]}, which matches the surveyed site {full} "
+                    f"({site_ids[0]}), as well as coordinates. The form takes a site or a "
+                    "coordinate, not both, so the coordinates are kept as stated and the "
+                    "site is offered here.",
+                )
+            )
+        if name:
+            coord.value["name"] = name[:160]
         found.append(coord)
     else:
-        site_aliases = [
-            (s.id, (re.sub(r"\s*\((?:feature centre|IAU[^)]*)\)\s*$", "", s.name),))
-            for s in lex.sites
-        ]
-        hits = _mentions(doc, site_aliases)
         site_found = _one_of(
             "target",
             hits,
@@ -772,9 +1019,19 @@ def read_rules(doc: Doc, lex: Lexicon) -> Reading:
             "surveyed site",
         )
         if site_found.value is not None:
-            site_found.value = {"site_id": site_found.value}
-            site_found.note = (site_found.note or "") + " Matched to a surveyed site by name."
-            site_found.note = site_found.note.strip()
+            sid = site_found.value
+            site_found.value = {"site_id": sid}
+            _, _, sline, sa, sb = next(h for h in hits if h[0] == sid)
+            if _fold(sline[sa:sb]) != _fold(bare[sid]):
+                site_found.confidence = "inferred"
+                site_found.note = (
+                    f"The file says {sline[sa:sb]}; matched to the surveyed site "
+                    f"{bare[sid]} by the first part of its name. Check it."
+                )
+            else:
+                site_found.note = (
+                    f"{site_found.note or ''} Matched to a surveyed site by name.".strip()
+                )
         found.append(site_found)
 
     for path in ("launch.date", "landing.date", "end_of_mission.date"):
@@ -1382,8 +1639,8 @@ async def read_with_model(
 ) -> tuple[Reading, str]:
     """The model's reading, checked against the file. Raises ``GeminiUnavailable`` when no
     model is configured, and ``ModelFailed`` when none gave a usable reading."""
-    s = get_settings()
     models = list(base.model_chain())
+    light = base.model_chain(light=True)
     prompt = _prompt(doc, lex, filename, with_text=bool(doc.text.strip()))
     parts: list[dict[str, Any]] = []
     if is_pdf:
@@ -1396,8 +1653,18 @@ async def read_with_model(
     tried: list[dict[str, Any]] = []
     status, model, error = "error", models[0] if models else "none", None
     result: Reading | None = None
+    timed_out = False
+    # The main chain first, then the light chain's models it does not already hold.
+    chain = list(dict.fromkeys([*base._usable(models), *base._usable(list(light))]))
+    deadline = time.monotonic() + MODEL_BUDGET_S
     try:
-        for model in base._usable(models):
+        for model in chain:
+            left = deadline - time.monotonic()
+            if left < MODEL_MIN_S:
+                tried.append(
+                    {"kind": "budget_spent", "model": model, "detail": f"{left:.0f} s left"}
+                )
+                break
             try:
                 resp = await base._generate(
                     model,
@@ -1405,11 +1672,15 @@ async def read_with_model(
                     SYSTEM,
                     [],
                     response_schema=schema,
-                    timeout_s=max(30.0, s.agent_timeout_s * 2),
+                    timeout_s=min(MODEL_TIMEOUT_S, left),
                 )
             except base.ModelUnavailable as exc:
                 base._cool(exc.model, exc.cooldown_s, exc.why)
                 tried.append({"kind": "model_unavailable", "model": exc.model, "detail": exc.why})
+                continue
+            except TimeoutError:
+                timed_out = True
+                tried.append({"kind": "timeout", "model": model, "detail": "no answer in time"})
                 continue
             tokens[0] += resp["prompt_tokens"]
             tokens[1] += resp["completion_tokens"]
@@ -1421,14 +1692,14 @@ async def read_with_model(
             result = verify(parsed, doc, lex)
             status = "ok"
             return result, model
-        error = "No model could read the file right now."
+        if timed_out and not any(t["kind"] == "schema_invalid" for t in tried):
+            status, error = "timeout", "The model did not answer in time."
+        else:
+            error = "No model could read the file right now."
         raise ModelFailed(error)
     except base.GeminiUnavailable:
         status, error = "degraded", "The model is not configured."
         raise
-    except TimeoutError as exc:
-        status, error = "timeout", "The model did not answer in time."
-        raise ModelFailed(error) from exc
     except ModelFailed:
         raise
     except Exception as exc:
