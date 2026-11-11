@@ -22,7 +22,7 @@ export interface Site {
    * borders that crater's permanently shadowed floor), on a massif/plateau, or
    * used exactly as published (a CLPS mission target).
    */
-  searchKind: 'rim' | 'massif' | 'published'
+  searchKind: 'rim' | 'massif' | 'published' | 'entered'
   /** A derived candidate, or the site standing for a CLPS mission's target. */
   kind: 'candidate' | 'mission_target'
   /** Searched in the DEM for open sky, or used exactly as published. */

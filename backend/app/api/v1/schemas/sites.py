@@ -79,9 +79,10 @@ class SiteBrief(BaseModel):
     )
     slope_deg: float | None
     note: str
-    search_kind: Literal["rim", "massif", "published"] = Field(
+    search_kind: Literal["rim", "massif", "published", "entered"] = Field(
         description="How the landing point was found: on the rim of a named crater "
-        "(so it borders that crater's shadowed floor) or on a massif or plateau."
+        "(so it borders that crater's shadowed floor), on a massif or plateau, taken "
+        "as published, or entered by a project manager for their own project."
     )
     kind: Literal["candidate", "mission_target"] = Field(
         default="candidate",

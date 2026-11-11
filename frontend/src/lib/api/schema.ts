@@ -4120,7 +4120,7 @@ export interface components {
              * @description How the landing point was found: on the rim of a named crater (so it borders that crater's shadowed floor) or on a massif or plateau.
              * @enum {string}
              */
-            search_kind: "rim" | "massif" | "published";
+            search_kind: "rim" | "massif" | "published" | "entered";
             /**
              * Kind
              * @description A derived candidate site, or a CLPS mission target (ADR-6).
@@ -4171,7 +4171,7 @@ export interface components {
              * @description How the landing point was found: on the rim of a named crater (so it borders that crater's shadowed floor) or on a massif or plateau.
              * @enum {string}
              */
-            search_kind: "rim" | "massif" | "published";
+            search_kind: "rim" | "massif" | "published" | "entered";
             /**
              * Kind
              * @description A derived candidate site, or a CLPS mission target (ADR-6).

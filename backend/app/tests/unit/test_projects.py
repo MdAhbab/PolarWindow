@@ -337,3 +337,15 @@ async def test_rebuilding_needs_a_target_and_a_project(world: World) -> None:
     world.missions["m-c"] = record("m-c", CATALOGUE, site_id="s")
     with pytest.raises(project_service.NotAProject):
         await project_service.rebuild_skyline(None, NAMED, "m-c")  # type: ignore[arg-type]
+
+
+def test_a_project_s_landing_spot_can_be_listed_with_the_other_sites() -> None:
+    """A project's site is stored as 'entered'. The site list's schema did not allow
+    that word, so one saved project turned GET /sites?kind=all into a 500."""
+    from typing import get_args
+
+    from app.api.v1.schemas.sites import SiteBrief
+
+    allowed = get_args(SiteBrief.model_fields["search_kind"].annotation)
+    assert "entered" in allowed
+    assert {"rim", "massif", "published"} <= set(allowed)
