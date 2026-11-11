@@ -92,6 +92,14 @@ export interface ProjectLifecycleIn {
   relays?: string[]
   mass_kg?: number | null
   returns?: 'none' | 'sample_capsule' | 'crew' | null
+  /** Radio figures; with `eirp_dbw` stated the Contact step runs a link budget. Leave a key out when unknown. */
+  eirp_dbw?: number | null
+  eirp_tol_db?: number | null
+  gt_dbk?: number | null
+  frequency_mhz?: number | null
+  data_rates_kbps?: number[]
+  required_ebn0_db?: number | null
+  required_margin_db?: number | null
 }
 
 /** The project form. Only `name` is required; everything else may be left unknown. */

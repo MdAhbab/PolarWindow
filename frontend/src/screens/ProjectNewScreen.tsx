@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMission } from '../lib/api/queries'
-import { PROJECTS_OFFLINE, ProjectApiError, useDeleteProject, useIntake, useProjectOptions, useSaveProject } from '../lib/api/projects'
+import { PROJECTS_OFFLINE, ProjectApiError, useDeleteProject, useIntake, useProjectOptions, useSaveProject, useStoredRadio } from '../lib/api/projects'
 import type { IntakeDTO } from '../lib/api/experience.types'
 import { Button, Panel, pillClass } from '../components/ui'
 import { PageHeader } from '../components/Page'
@@ -63,11 +63,20 @@ function ProjectPage({ id }: { id?: string }) {
 
 function EditLoader({ id }: { id: string }) {
   const mission = useMission(id)
-  if (mission.isPending) {
+  const radio = useStoredRadio(id)
+  if (mission.isPending || (radio.isPending && !radio.error)) {
     return (
       <div className="pw-page flex flex-col gap-4 pt-10" aria-busy="true">
         <Skeleton className="h-10 w-72 rounded-control" />
         <Skeleton className="h-64 w-full rounded-card" />
+      </div>
+    )
+  }
+  if (!mission.error && mission.data?.origin === 'project' && radio.error) {
+    // Saving without the stored radio figures would erase them, so the form waits for them.
+    return (
+      <div className="pw-page pt-10">
+        <ProblemPanel error={radio.error} fallbackTitle="Cannot load this project’s radio figures" onRetry={() => void radio.refetch()} />
       </div>
     )
   }
@@ -95,7 +104,7 @@ function EditLoader({ id }: { id: string }) {
       </div>
     )
   }
-  return <ProjectEditor id={id} initial={formFromMission(mission.data)} name={mission.data.name} />
+  return <ProjectEditor id={id} initial={formFromMission(mission.data, radio.data)} name={mission.data.name} />
 }
 
 const stageOf = (p: ReturnType<typeof useIntake>['progress']): ReadStage => (p?.stage === 'sending' ? 'sending' : 'reading')
@@ -354,7 +363,7 @@ function ProjectEditor({ id, initial, name }: { id?: string; initial?: ProjectFo
           </div>
         )}
 
-        <div className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] z-20 -mx-4 flex flex-col gap-3 border-t border-line bg-glass px-4 py-3 backdrop-blur lg:bottom-0 lg:mx-0 lg:rounded-card lg:border lg:px-5">
+        <div className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom)+var(--pw-guide-h,0px))] z-20 -mx-4 flex flex-col gap-3 border-t border-line bg-glass px-4 py-3 backdrop-blur lg:bottom-0 lg:mx-0 lg:rounded-card lg:border lg:px-5">
           {leaveTo && (
             <div role="alertdialog" aria-label="Leave without saving" className="flex flex-wrap items-center gap-3">
               <p className="text-small font-semibold text-ink">Leave without saving? What you entered here will be lost.</p>

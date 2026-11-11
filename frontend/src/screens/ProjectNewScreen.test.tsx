@@ -17,7 +17,8 @@ vi.mock('../lib/api/projects', async (orig) => {
     useIntake: () => ({ mutateAsync: async () => reply.next, progress: null }),
   }
 })
-import { ProjectNewScreen } from './ProjectNewScreen'
+import mission from '../lib/api/__fixtures__/mission-im-2.detail.json'
+import { ProjectEditScreen, ProjectNewScreen } from './ProjectNewScreen'
 
 const posts: { url: string; body: Record<string, unknown> }[] = []
 
@@ -41,6 +42,21 @@ beforeEach(() => {
             detail: { title: 'The dates do not fit', detail: 'Check them.', errors: [{ field: 'landing.date', message: 'Landing is before launch.' }] },
           })
         return json(201, saved)
+      }
+      if (url.pathname.endsWith('/missions/mine-1'))
+        return json(200, {
+          ...mission,
+          id: 'mine-1',
+          origin: 'project',
+          lifecycle: {
+            vehicle_id: null, vehicle_name: null, pad_id: null, pad_name: null, t0: null, transfer: null, descent: null, spacecraft: null,
+            rovers: [], returns: null, field_sources: {},
+            comms: { bands: [], ground_stations: [], relays: [], eirp_dbw: 12.5, gt_dbk: null, frequency_mhz: 2250, data_rates_kbps: [2, 64], required_ebn0_db: null, required_margin_db: 3, eirp_tol_db: null },
+          },
+        })
+      if (url.pathname.endsWith('/projects/mine-1') && init?.method === 'PUT') {
+        posts.push({ url: url.pathname, body: JSON.parse(String(init.body)) as Record<string, unknown> })
+        return json(200, saved)
       }
       return new Promise(() => {})
     }),
@@ -118,5 +134,54 @@ describe('adding a project', () => {
     await waitFor(() => expect(container.querySelector('input[type=file]')!.getAttribute('accept')).toContain('.pdf'))
     await dropIn(container, new File(['x'], 'pic.png', { type: 'image/png' }))
     expect(await screen.findByText(/pic.png is not a kind of file/)).toBeTruthy()
+  })
+})
+
+describe('the radio figures in the form', () => {
+  it('is closed by default, takes optional figures, and sends only what was typed', async () => {
+    const { container } = shell()
+    const eirp = (await screen.findByLabelText('EIRP (dBW)')) as HTMLInputElement
+    expect(eirp.closest('details')!.hasAttribute('open')).toBe(false)
+    expect(screen.getByText(/The downlink budget on the Contact step needs three of these/)).toBeTruthy()
+    expect(screen.getAllByLabelText(/Ground station G\/T \(dB\/K\)|Downlink frequency \(MHz\)|Required Eb\/N0 \(dB\)|Required margin \(dB\)|EIRP tolerance \(dB\)|Data rates \(kbps/).length).toBe(6)
+    expect(eirp.value).toBe('')
+    fireEvent.change(screen.getByLabelText(/Mission name/), { target: { value: 'Aurora 1' } })
+    fireEvent.change(eirp, { target: { value: '12.5' } })
+    fireEvent.change(screen.getByLabelText(/Data rates/), { target: { value: '2, 64,256' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save project' }))
+    expect(await screen.findByText('hub')).toBeTruthy()
+    expect(posts[0].body.lifecycle).toMatchObject({ eirp_dbw: 12.5, data_rates_kbps: [2, 64, 256] })
+    for (const k of ['eirp_tol_db', 'gt_dbk', 'frequency_mhz', 'required_ebn0_db', 'required_margin_db']) expect(k in (posts[0].body.lifecycle as object)).toBe(false)
+    expect(container).toBeTruthy()
+  })
+
+  it('names a bad rate in a sentence and does not send it', async () => {
+    shell()
+    fireEvent.change(await screen.findByLabelText(/Mission name/), { target: { value: 'Aurora 1' } })
+    fireEvent.change(screen.getByLabelText(/Data rates/), { target: { value: '2, fast' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save project' }))
+    expect(await screen.findByText(/Give the data rates as numbers above 0/)).toBeTruthy()
+    expect(posts.length).toBe(0)
+  })
+
+  it('loads a saved project’s figures when editing, and saves them back', async () => {
+    renderApp(
+      <Routes>
+        <Route path="/projects/:id/edit" element={<ProjectEditScreen />} />
+        <Route path="/missions/:id" element={<p>hub</p>} />
+      </Routes>,
+      { route: '/projects/mine-1/edit' },
+    )
+    const eirp = (await screen.findByLabelText('EIRP (dBW)')) as HTMLInputElement
+    expect(eirp.value).toBe('12.5')
+    expect((screen.getByLabelText('Downlink frequency (MHz)') as HTMLInputElement).value).toBe('2250')
+    expect((screen.getByLabelText(/Data rates/) as HTMLInputElement).value).toBe('2, 64')
+    expect((screen.getByLabelText('Required margin (dB)') as HTMLInputElement).value).toBe('3')
+    expect((screen.getByLabelText('Ground station G/T (dB/K)') as HTMLInputElement).value).toBe('')
+    expect(eirp.closest('details')!.hasAttribute('open')).toBe(true)
+    fireEvent.change(eirp, { target: { value: '14' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+    expect(await screen.findByText('hub')).toBeTruthy()
+    expect(posts[0].body.lifecycle).toMatchObject({ eirp_dbw: 14, frequency_mhz: 2250, data_rates_kbps: [2, 64], required_margin_db: 3 })
   })
 })

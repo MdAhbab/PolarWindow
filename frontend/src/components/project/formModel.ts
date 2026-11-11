@@ -53,6 +53,14 @@ export interface ProjectFormState {
   relays: string[]
   mass: string
   returns: '' | 'none' | 'sample_capsule' | 'crew'
+  /** The radio figures, as typed. An empty one is unknown and is never sent. */
+  eirp: string
+  eirpTol: string
+  gt: string
+  frequency: string
+  dataRates: string
+  ebn0: string
+  margin: string
   payloads: PayloadRow[]
   notes: string
   /** Lifecycle values the form has no field for; kept as they came so a save does not drop them. */
@@ -86,6 +94,13 @@ export function emptyForm(): ProjectFormState {
     relays: [],
     mass: '',
     returns: '',
+    eirp: '',
+    eirpTol: '',
+    gt: '',
+    frequency: '',
+    dataRates: '',
+    ebn0: '',
+    margin: '',
     payloads: [],
     notes: '',
     keep: {},
@@ -127,6 +142,7 @@ export type GroupKey =
   | 'relays'
   | 'mass'
   | 'returns'
+  | 'radio'
   | 'payloads'
   | 'notes'
 
@@ -155,6 +171,19 @@ export const GROUPS: Record<GroupKey, { fields: Slice; paths: string[]; label: s
   relays: { fields: ['relays'], paths: ['lifecycle.relays'], label: 'Relays' },
   mass: { fields: ['mass'], paths: ['lifecycle.mass_kg'], label: 'Mass' },
   returns: { fields: ['returns'], paths: ['lifecycle.returns'], label: 'What returns' },
+  radio: {
+    fields: ['eirp', 'eirpTol', 'gt', 'frequency', 'dataRates', 'ebn0', 'margin'],
+    paths: [
+      'lifecycle.eirp_dbw',
+      'lifecycle.eirp_tol_db',
+      'lifecycle.gt_dbk',
+      'lifecycle.frequency_mhz',
+      'lifecycle.data_rates_kbps',
+      'lifecycle.required_ebn0_db',
+      'lifecycle.required_margin_db',
+    ],
+    label: 'Radio figures',
+  },
   payloads: { fields: ['payloads'], paths: ['payloads'], label: 'Payloads' },
   notes: { fields: ['notes'], paths: ['notes'], label: 'Notes' },
 }
@@ -194,6 +223,24 @@ const dateIn = (d: ProjectDateIn | null | undefined): DateField => {
 
 const numWords = (n: number | null | undefined) => (n === null || n === undefined ? '' : String(n))
 
+/** The seven radio figures a saved or read project states, as the form's text. */
+export type RadioFigures = Pick<
+  ProjectLifecycleIn,
+  'eirp_dbw' | 'eirp_tol_db' | 'gt_dbk' | 'frequency_mhz' | 'data_rates_kbps' | 'required_ebn0_db' | 'required_margin_db'
+>
+
+export function radioToForm(r: RadioFigures | null | undefined): Pick<ProjectFormState, 'eirp' | 'eirpTol' | 'gt' | 'frequency' | 'dataRates' | 'ebn0' | 'margin'> {
+  return {
+    eirp: numWords(r?.eirp_dbw),
+    eirpTol: numWords(r?.eirp_tol_db),
+    gt: numWords(r?.gt_dbk),
+    frequency: numWords(r?.frequency_mhz),
+    dataRates: (r?.data_rates_kbps ?? []).join(', '),
+    ebn0: numWords(r?.required_ebn0_db),
+    margin: numWords(r?.required_margin_db),
+  }
+}
+
 /** The draft as form state. Only what the file said; the rest stays empty. */
 export function formFromDraft(d: ProjectIn): ProjectFormState {
   const f = emptyForm()
@@ -226,6 +273,7 @@ export function formFromDraft(d: ProjectIn): ProjectFormState {
   f.relays = lc.relays ?? []
   f.mass = numWords(lc.mass_kg)
   f.returns = lc.returns ?? ''
+  Object.assign(f, radioToForm(lc))
   f.payloads = (d.payloads ?? []).map((p) =>
     newPayload({
       name: p.name,
@@ -322,8 +370,9 @@ const pubIn = (d: PublishedDate | null): DateField => {
 }
 
 /** A project's mission record as the form. The record's fields only; nothing is guessed. */
-export function formFromMission(m: MissionDetail): ProjectFormState {
+export function formFromMission(m: MissionDetail, radio?: RadioFigures | null): ProjectFormState {
   const f = emptyForm()
+  Object.assign(f, radioToForm(radio))
   f.name = m.name
   f.provider = m.provider ?? ''
   f.lander = m.lander ?? ''
@@ -404,6 +453,21 @@ export function validate(f: ProjectFormState): Errors {
       if (!hasLon || !isNumber(f.lon) || Number(f.lon) < -180 || Number(f.lon) > 360) e.lon = 'Longitude is a number of degrees east, from 0 to 360 (−180 to 180 also works).'
     }
   }
+  const radio = (k: 'eirp' | 'eirpTol' | 'gt' | 'frequency' | 'ebn0' | 'margin', what: string, min: number, max: number, unit: string) => {
+    const v = f[k].trim()
+    if (v && !(isNumber(v) && Number(v) >= min && Number(v) <= max)) e[k] = `${what} is a number from ${min} to ${max} ${unit}, or leave it empty.`
+  }
+  radio('eirp', 'The EIRP', -20, 100, 'dBW')
+  radio('eirpTol', 'The EIRP tolerance', 0, 30, 'dB')
+  radio('gt', 'The G/T', -60, 80, 'dB/K')
+  radio('ebn0', 'The required Eb/N0', -10, 40, 'dB')
+  radio('margin', 'The required margin', 0, 30, 'dB')
+  const fq = f.frequency.trim()
+  if (fq && !(isNumber(fq) && Number(fq) > 0 && Number(fq) <= 300000)) e.frequency = 'The frequency is a number of megahertz above 0 and at most 300000, or leave it empty.'
+  const rates = dataRatesOf(f.dataRates)
+  if (rates.some((r) => !(Number.isFinite(r) && r > 0 && r <= 1e7)))
+    e.dataRates = 'Give the data rates as numbers above 0 and at most 10000000, such as 2, 64, 256.'
+  else if (rates.length > 20) e.dataRates = 'Give at most 20 data rates.'
   f.payloads.forEach((p, i) => {
     const used = p.acronym || p.organisation || p.purpose || p.types.length
     if (used && !p.name.trim()) e[`payload-${i}`] = 'Name this payload, or remove the row.'
@@ -417,6 +481,12 @@ export function validate(f: ProjectFormState): Errors {
 
 const text = (s: string) => (s.trim() ? s.trim() : null)
 const num = (s: string) => (s.trim() ? Number(s) : null)
+/** A typed list of rates ("2, 64,256") as numbers; a word that is no number stays NaN so validation can name it. */
+export const dataRatesOf = (s: string): number[] =>
+  s
+    .split(/[,;\s]+/)
+    .filter(Boolean)
+    .map((x) => Number(x))
 const dateOut = (d: DateField): ProjectDateIn | null => (d.date ? { date: d.date, precision: d.precision } : null)
 
 export function toRequest(f: ProjectFormState): ProjectIn {
@@ -432,6 +502,14 @@ export function toRequest(f: ProjectFormState): ProjectIn {
     relays: f.relays,
     mass_kg: num(f.mass),
     returns: f.returns || null,
+    // Radio figures: a figure left empty is left out, never sent as 0.
+    ...(num(f.eirp) !== null && { eirp_dbw: num(f.eirp) }),
+    ...(num(f.eirpTol) !== null && { eirp_tol_db: num(f.eirpTol) }),
+    ...(num(f.gt) !== null && { gt_dbk: num(f.gt) }),
+    ...(num(f.frequency) !== null && { frequency_mhz: num(f.frequency) }),
+    ...(dataRatesOf(f.dataRates).length > 0 && { data_rates_kbps: dataRatesOf(f.dataRates) }),
+    ...(num(f.ebn0) !== null && { required_ebn0_db: num(f.ebn0) }),
+    ...(num(f.margin) !== null && { required_margin_db: num(f.margin) }),
   }
   const hasLifecycle = Object.values(lifecycle).some((v) => (Array.isArray(v) ? v.length > 0 : v !== null && v !== undefined))
   let target: ProjectIn['target'] = null
@@ -499,6 +577,13 @@ export function keyForServerPath(path: string): string {
       relays: 'relays',
       mass_kg: 'mass',
       returns: 'returns',
+      eirp_dbw: 'eirp',
+      eirp_tol_db: 'eirpTol',
+      gt_dbk: 'gt',
+      frequency_mhz: 'frequency',
+      data_rates_kbps: 'dataRates',
+      required_ebn0_db: 'ebn0',
+      required_margin_db: 'margin',
     }
     return lc[leaf] ?? 'lifecycle'
   }

@@ -1,5 +1,8 @@
+import { useState } from 'react'
 import type { ProjectOptionsDTO } from '../../lib/api/experience.types'
 import { STATUS_LABEL } from '../../lib/missions'
+import { Disclosure } from '../ui'
+import { ProvTag } from '../surface/parts'
 import { CheckGroup, DateRow, Group, NotesField, SelectField, TextField, TWO_COLUMNS } from './fields'
 import { PayloadRows } from './PayloadRows'
 import { SitePick } from './SitePick'
@@ -25,6 +28,8 @@ const withHint = (o: { value: string; label: string; hint?: string | null }) => 
   label: o.hint ? `${o.label} · ${o.hint}` : o.label,
 })
 
+const RADIO_KEYS = ['eirp', 'eirpTol', 'gt', 'frequency', 'dataRates', 'ebn0', 'margin'] as const
+
 /** The whole form, grouped as the journey. Only the name is needed. */
 export function ProjectForm({
   form,
@@ -40,6 +45,11 @@ export function ProjectForm({
   onChange: (patch: Partial<ProjectFormState>) => void
 }) {
   const p = provenance
+  // The radio figures stay closed until there is something in them or wrong in them; once open, they stay as the person leaves them.
+  const radioWanted = RADIO_KEYS.some((k) => form[k].trim() !== '' || errors[k])
+  const [radioSeen, setRadioSeen] = useState(false)
+  if (radioWanted && !radioSeen) setRadioSeen(true)
+  const rsrc = (k: (typeof RADIO_KEYS)[number]) => (form[k].trim() ? p.radio : undefined)
   return (
     <div className="flex flex-col gap-5">
       <Group title="Mission" intro="Who is flying what.">
@@ -100,6 +110,20 @@ export function ProjectForm({
         {(options?.relays.length ?? 0) > 0 && (
           <CheckGroup legend="Relays it may use" options={options!.relays} value={form.relays} onChange={(v) => onChange({ relays: v })} source={p.relays} />
         )}
+        <Disclosure title="Radio figures" meta="optional" defaultOpen={radioSeen}>
+          <div className={TWO_COLUMNS}>
+            <TextField label="EIRP (dBW)" value={form.eirp} onChange={(v) => onChange({ eirp: v })} error={errors.eirp} source={rsrc('eirp')} inputMode="decimal" hint="Optional. From −20 to 100." />
+            <TextField label="EIRP tolerance (dB)" value={form.eirpTol} onChange={(v) => onChange({ eirpTol: v })} error={errors.eirpTol} source={rsrc('eirpTol')} inputMode="decimal" hint="Optional. From 0 to 30." />
+            <TextField label="Ground station G/T (dB/K)" value={form.gt} onChange={(v) => onChange({ gt: v })} error={errors.gt} source={rsrc('gt')} inputMode="decimal" hint="Optional. From −60 to 80." />
+            <TextField label="Downlink frequency (MHz)" value={form.frequency} onChange={(v) => onChange({ frequency: v })} error={errors.frequency} source={rsrc('frequency')} inputMode="decimal" hint="Optional. Above 0, up to 300000." />
+            <TextField label="Data rates (kbps, comma-separated)" value={form.dataRates} onChange={(v) => onChange({ dataRates: v })} error={errors.dataRates} source={rsrc('dataRates')} hint="Optional. Up to 20 rates, each above 0." className="sm:col-span-2" />
+            <TextField label="Required Eb/N0 (dB)" value={form.ebn0} onChange={(v) => onChange({ ebn0: v })} error={errors.ebn0} source={rsrc('ebn0')} inputMode="decimal" hint="Optional. From −10 to 40." />
+            <TextField label="Required margin (dB)" value={form.margin} onChange={(v) => onChange({ margin: v })} error={errors.margin} source={rsrc('margin')} inputMode="decimal" hint="Optional. From 0 to 30." />
+          </div>
+          <p className="max-w-2xl text-small leading-5 text-ink-2">
+            The downlink budget on the Contact step needs three of these: the EIRP, an X-band downlink frequency (8200 to 8600 MHz) and the required Eb/N0. Without all three, Contact shows line of sight only and names what is missing. Figures you type here are shown as <ProvTag p="entered" />.
+          </p>
+        </Disclosure>
       </Group>
 
       <Group title="Payloads" intro="What it carries. Add one row for each.">
