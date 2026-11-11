@@ -54,6 +54,41 @@ beforeEach(() => {
             comms: { bands: [], ground_stations: [], relays: [], eirp_dbw: 12.5, gt_dbk: null, frequency_mhz: 2250, data_rates_kbps: [2, 64], required_ebn0_db: null, required_margin_db: 3, eirp_tol_db: null },
           },
         })
+      if (url.pathname.endsWith('/missions/mine-2'))
+        return json(200, {
+          ...mission,
+          id: 'mine-2',
+          origin: 'project',
+          lifecycle: {
+    vehicle_id: 'falcon-9',
+    vehicle_name: 'Falcon 9',
+    pad_id: 'ksc-39a',
+    pad_name: 'LC-39A',
+    t0: null,
+    transfer: { type: 'low_energy', flight_days: 90, lunar_orbit_days: 12.5 },
+    descent: { sun_el_min_deg: 2, sun_el_max_deg: 15, earth_required: null },
+    comms: {
+      bands: ['S', 'X'],
+      ground_stations: ['dss-43'],
+      relays: ['queqiao-2'],
+      eirp_dbw: 12.5,
+      gt_dbk: -3,
+      frequency_mhz: 2250,
+      data_rates_kbps: [2, 64],
+      required_ebn0_db: 2.5,
+      required_margin_db: 3,
+      eirp_tol_db: 1,
+    },
+    spacecraft: { mass_kg: 1900, area_m2: null, cr: null },
+    rovers: [],
+    returns: 'sample_capsule',
+    field_sources: {},
+  },
+        })
+      if (url.pathname.endsWith('/projects/mine-2') && init?.method === 'PUT') {
+        posts.push({ url: url.pathname, body: JSON.parse(String(init.body)) as Record<string, unknown> })
+        return json(200, saved)
+      }
       if (url.pathname.endsWith('/projects/mine-1') && init?.method === 'PUT') {
         posts.push({ url: url.pathname, body: JSON.parse(String(init.body)) as Record<string, unknown> })
         return json(200, saved)
@@ -183,5 +218,24 @@ describe('the radio figures in the form', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
     expect(await screen.findByText('hub')).toBeTruthy()
     expect(posts[0].body.lifecycle).toMatchObject({ eirp_dbw: 14, frequency_mhz: 2250, data_rates_kbps: [2, 64], required_margin_db: 3 })
+  })
+
+  it('keeps the vehicle, pad, transfer, bands, relays, mass and the rest when a saved project is saved untouched', async () => {
+    renderApp(
+      <Routes>
+        <Route path="/projects/:id/edit" element={<ProjectEditScreen />} />
+        <Route path="/missions/:id" element={<p>hub</p>} />
+      </Routes>,
+      { route: '/projects/mine-2/edit' },
+    )
+    expect(((await screen.findByLabelText('EIRP (dBW)')) as HTMLInputElement).value).toBe('12.5')
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+    expect(await screen.findByText('hub')).toBeTruthy()
+    expect(posts[0].body.lifecycle).toEqual({
+      vehicle_id: 'falcon-9', pad_id: 'ksc-39a', transfer_type: 'low_energy', flight_days: 90, lunar_orbit_days: 12.5,
+      sun_el_min_deg: 2, sun_el_max_deg: 15, bands: ['S', 'X'], ground_stations: ['dss-43'], relays: ['queqiao-2'],
+      mass_kg: 1900, returns: 'sample_capsule', eirp_dbw: 12.5, eirp_tol_db: 1, gt_dbk: -3, frequency_mhz: 2250,
+      data_rates_kbps: [2, 64], required_ebn0_db: 2.5, required_margin_db: 3,
+    })
   })
 })

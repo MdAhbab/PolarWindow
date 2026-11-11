@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMission } from '../lib/api/queries'
-import { PROJECTS_OFFLINE, ProjectApiError, useDeleteProject, useIntake, useProjectOptions, useSaveProject, useStoredRadio } from '../lib/api/projects'
+import { PROJECTS_OFFLINE, ProjectApiError, useDeleteProject, useIntake, useProjectOptions, useSaveProject, useStoredLifecycle } from '../lib/api/projects'
 import type { IntakeDTO } from '../lib/api/experience.types'
 import { Button, Panel, pillClass } from '../components/ui'
 import { PageHeader } from '../components/Page'
@@ -63,8 +63,8 @@ function ProjectPage({ id }: { id?: string }) {
 
 function EditLoader({ id }: { id: string }) {
   const mission = useMission(id)
-  const radio = useStoredRadio(id)
-  if (mission.isPending || (radio.isPending && !radio.error)) {
+  const stored = useStoredLifecycle(id)
+  if (mission.isPending || (stored.isPending && !stored.error)) {
     return (
       <div className="pw-page flex flex-col gap-4 pt-10" aria-busy="true">
         <Skeleton className="h-10 w-72 rounded-control" />
@@ -72,11 +72,11 @@ function EditLoader({ id }: { id: string }) {
       </div>
     )
   }
-  if (!mission.error && mission.data?.origin === 'project' && radio.error) {
-    // Saving without the stored radio figures would erase them, so the form waits for them.
+  if (!mission.error && mission.data?.origin === 'project' && stored.error) {
+    // Saving without the stored lifecycle would erase it, so the form waits for it.
     return (
       <div className="pw-page pt-10">
-        <ProblemPanel error={radio.error} fallbackTitle="Cannot load this project’s radio figures" onRetry={() => void radio.refetch()} />
+        <ProblemPanel error={stored.error} fallbackTitle="Cannot load this project’s saved details" onRetry={() => void stored.refetch()} />
       </div>
     )
   }
@@ -104,7 +104,7 @@ function EditLoader({ id }: { id: string }) {
       </div>
     )
   }
-  return <ProjectEditor id={id} initial={formFromMission(mission.data, radio.data)} name={mission.data.name} />
+  return <ProjectEditor id={id} initial={formFromMission(mission.data, stored.data)} name={mission.data.name} />
 }
 
 const stageOf = (p: ReturnType<typeof useIntake>['progress']): ReadStage => (p?.stage === 'sending' ? 'sending' : 'reading')

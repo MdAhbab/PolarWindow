@@ -19,7 +19,7 @@ import type {
   ProjectOptionsDTO,
   ProjectSavedDTO,
 } from './experience.types'
-import type { RadioFigures } from '../../components/project/formModel'
+import { lifecycleFromStored } from '../../components/project/formModel'
 
 /** True in a build that has no service to talk to. */
 export const PROJECTS_OFFLINE = DATA_MODE === 'snapshot'
@@ -171,30 +171,21 @@ export const projectKeys = {
 }
 
 /**
- * The radio figures a saved project states, read from its mission record (the
- * mission the form adapter does not carry them). Always asked afresh, so an
- * edit never starts from figures that were since changed.
+ * The lifecycle a saved project states (vehicle, pad, transfer, bands, relays, mass,
+ * what returns, the radio figures and the rest), as the request carries it, read from
+ * its mission record (the mission adapter does not carry it). An update replaces the
+ * whole lifecycle, so an edit must start from all of it. Always asked afresh, so an
+ * edit never starts from values that were since changed.
  */
-export function useStoredRadio(id: string | undefined) {
+export function useStoredLifecycle(id: string | undefined) {
   return useQuery({
-    queryKey: ['projects', 'radio', id] as const,
+    queryKey: ['projects', 'lifecycle', id] as const,
     enabled: Boolean(id),
     staleTime: 0,
     gcTime: 0,
     retry: 1,
-    queryFn: async ({ signal }) => {
-      // The generated schema predates these fields, so they are read through their own type.
-      const c = (await api.mission(id as string, signal)).lifecycle?.comms as RadioFigures & { eirp_dbw?: number | null; gt_dbk?: number | null } | null | undefined
-      return {
-        eirp_dbw: c?.eirp_dbw ?? null,
-        eirp_tol_db: c?.eirp_tol_db ?? null,
-        gt_dbk: c?.gt_dbk ?? null,
-        frequency_mhz: c?.frequency_mhz ?? null,
-        data_rates_kbps: c?.data_rates_kbps ?? [],
-        required_ebn0_db: c?.required_ebn0_db ?? null,
-        required_margin_db: c?.required_margin_db ?? null,
-      }
-    },
+    // The generated schema predates some of these fields, so the block is read loosely.
+    queryFn: async ({ signal }) => lifecycleFromStored((await api.mission(id as string, signal)).lifecycle),
   })
 }
 

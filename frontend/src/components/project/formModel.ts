@@ -241,6 +241,98 @@ export function radioToForm(r: RadioFigures | null | undefined): Pick<ProjectFor
   }
 }
 
+/** The lifecycle values the form has fields for, and the rest (`keep`), from a request-shaped lifecycle. */
+function lifecycleToForm(lc: ProjectLifecycleIn | null | undefined) {
+  const l = lc ?? {}
+  const keep: Partial<ProjectLifecycleIn> = {}
+  const set = (k: keyof ProjectLifecycleIn, v: unknown) => {
+    if (v !== undefined && v !== null && !(Array.isArray(v) && v.length === 0)) (keep as Record<string, unknown>)[k] = v
+  }
+  set('flight_days', l.flight_days)
+  set('lunar_orbit_days', l.lunar_orbit_days)
+  set('sun_el_min_deg', l.sun_el_min_deg)
+  set('sun_el_max_deg', l.sun_el_max_deg)
+  set('ground_stations', l.ground_stations)
+  return {
+    fields: {
+      vehicleId: l.vehicle_id ?? '',
+      padId: l.pad_id ?? '',
+      transfer: l.transfer_type ?? ('' as const),
+      bands: (l.bands ?? []).join(', '),
+      relays: [...(l.relays ?? [])],
+      mass: numWords(l.mass_kg),
+      returns: l.returns ?? ('' as const),
+      ...radioToForm(l),
+    },
+    keep,
+  }
+}
+
+const TRANSFERS = ['direct', 'phasing_loops', 'low_energy', 'unknown'] as const
+const RETURNS = ['none', 'sample_capsule', 'crew'] as const
+/** [min, max, min is excluded], as ProjectLifecycleIn states them. */
+const RANGES: Record<string, [number, number, boolean]> = {
+  flight_days: [0, 1000, true],
+  lunar_orbit_days: [0, 1000, false],
+  sun_el_min_deg: [-5, 90, false],
+  sun_el_max_deg: [-5, 90, false],
+  mass_kg: [0, 1e6, true],
+  eirp_dbw: [-20, 100, false],
+  eirp_tol_db: [0, 30, false],
+  gt_dbk: [-60, 80, false],
+  frequency_mhz: [0, 300000, true],
+  required_ebn0_db: [-10, 40, false],
+  required_margin_db: [0, 30, false],
+}
+
+type Loose = Record<string, unknown>
+const loose = (v: unknown): Loose => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Loose) : {})
+
+/**
+ * A stored mission's lifecycle block (the shape `lifecycle_of` writes) as the request's
+ * lifecycle, so an edit sends back what was saved. A value the request cannot express
+ * (a number out of range, a word it does not know, a list too long) is left out.
+ */
+export function lifecycleFromStored(stored: unknown): ProjectLifecycleIn {
+  const s = loose(stored)
+  const transfer = loose(s.transfer)
+  const descent = loose(s.descent)
+  const comms = loose(s.comms)
+  const craft = loose(s.spacecraft)
+  const out: Loose = {}
+  const number = (k: string, v: unknown) => {
+    const r = RANGES[k]
+    if (typeof v !== 'number' || !Number.isFinite(v) || v < r[0] || v > r[1] || (r[2] && v === r[0])) return
+    out[k] = v
+  }
+  const ids = (k: string, v: unknown, max: number) => {
+    if (!Array.isArray(v)) return
+    const list = v.filter((x): x is string => typeof x === 'string' && x.length > 0 && x.length <= 64)
+    if (list.length) out[k] = list.slice(0, max)
+  }
+  const id = (k: string, v: unknown) => {
+    if (typeof v === 'string' && v.trim() && v.length <= 64) out[k] = v
+  }
+  id('vehicle_id', s.vehicle_id)
+  id('pad_id', s.pad_id)
+  if ((TRANSFERS as readonly unknown[]).includes(transfer.type)) out.transfer_type = transfer.type
+  number('flight_days', transfer.flight_days)
+  number('lunar_orbit_days', transfer.lunar_orbit_days)
+  number('sun_el_min_deg', descent.sun_el_min_deg)
+  number('sun_el_max_deg', descent.sun_el_max_deg)
+  ids('bands', comms.bands, 8)
+  ids('ground_stations', comms.ground_stations, 40)
+  ids('relays', comms.relays, 12)
+  number('mass_kg', craft.mass_kg)
+  if ((RETURNS as readonly unknown[]).includes(s.returns)) out.returns = s.returns
+  for (const k of ['eirp_dbw', 'eirp_tol_db', 'gt_dbk', 'frequency_mhz', 'required_ebn0_db', 'required_margin_db']) number(k, comms[k])
+  if (Array.isArray(comms.data_rates_kbps)) {
+    const rates = comms.data_rates_kbps.filter((r: unknown): r is number => typeof r === 'number' && Number.isFinite(r) && r > 0 && r <= 1e7)
+    if (rates.length) out.data_rates_kbps = rates.slice(0, 20)
+  }
+  return out as ProjectLifecycleIn
+}
+
 /** The draft as form state. Only what the file said; the rest stays empty. */
 export function formFromDraft(d: ProjectIn): ProjectFormState {
   const f = emptyForm()
@@ -266,14 +358,8 @@ export function formFromDraft(d: ProjectIn): ProjectFormState {
   f.landing = dateIn(d.landing)
   f.endOfMission = dateIn(d.end_of_mission)
   f.plannedDays = numWords(d.planned_surface_days)
-  f.vehicleId = lc.vehicle_id ?? ''
-  f.padId = lc.pad_id ?? ''
-  f.transfer = lc.transfer_type ?? ''
-  f.bands = (lc.bands ?? []).join(', ')
-  f.relays = lc.relays ?? []
-  f.mass = numWords(lc.mass_kg)
-  f.returns = lc.returns ?? ''
-  Object.assign(f, radioToForm(lc))
+  const l = lifecycleToForm(lc)
+  Object.assign(f, l.fields)
   f.payloads = (d.payloads ?? []).map((p) =>
     newPayload({
       name: p.name,
@@ -284,13 +370,7 @@ export function formFromDraft(d: ProjectIn): ProjectFormState {
     }),
   )
   f.notes = (d.notes ?? []).join('\n')
-  f.keep = {
-    flight_days: lc.flight_days,
-    lunar_orbit_days: lc.lunar_orbit_days,
-    sun_el_min_deg: lc.sun_el_min_deg,
-    sun_el_max_deg: lc.sun_el_max_deg,
-    ground_stations: lc.ground_stations,
-  }
+  f.keep = l.keep
   f.intakeId = null
   return f
 }
@@ -369,10 +449,16 @@ const pubIn = (d: PublishedDate | null): DateField => {
   return { date: d.iso.slice(0, 10), precision: p === 'month' || p === 'quarter' || p === 'year' ? p : 'day' }
 }
 
-/** A project's mission record as the form. The record's fields only; nothing is guessed. */
-export function formFromMission(m: MissionDetail, radio?: RadioFigures | null): ProjectFormState {
+/**
+ * A project's mission record as the form. The record's fields only; nothing is guessed.
+ * `lifecycle` is the stored lifecycle as the request states it (`lifecycleFromStored`);
+ * the mission adapter does not carry it.
+ */
+export function formFromMission(m: MissionDetail, lifecycle?: ProjectLifecycleIn | null): ProjectFormState {
   const f = emptyForm()
-  Object.assign(f, radioToForm(radio))
+  const l = lifecycleToForm(lifecycle)
+  Object.assign(f, l.fields)
+  f.keep = l.keep
   f.name = m.name
   f.provider = m.provider ?? ''
   f.lander = m.lander ?? ''
