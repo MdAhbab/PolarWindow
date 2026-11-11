@@ -260,14 +260,30 @@ async def test_a_full_queue_answers_503_with_a_wait(queue_of_one, anon_client) -
 
 
 async def test_latest_for_job_uses_index() -> None:
-    async with session_scope() as s:
-        await s.execute(text("SET enable_seqscan = off"))
-        res = await s.execute(
-            text(
-                "EXPLAIN SELECT * FROM jobs "
-                "WHERE kind = 'launch' AND params_hash = 'test' AND closure = 'test' "
-                "ORDER BY id DESC LIMIT 1"
+    """On an empty table the planner may scan the primary key backwards and filter, which
+    is as cheap as anything there, so the plan said nothing about the index. The rows are
+    made inside a transaction that is rolled back, with statistics, so the plan is the one
+    a table with history gets."""
+    from app.db.session import get_sessionmaker
+
+    async with get_sessionmaker()() as s:
+        try:
+            await s.execute(
+                text(
+                    "INSERT INTO jobs (kind, params, params_hash, closure, status) "
+                    "SELECT (ARRAY['launch','trip','contact','surface'])[1 + g % 4], '{}'::jsonb, "
+                    "md5(g::text), 'c' || (g % 50), 'done' FROM generate_series(1, 20000) g"
+                )
             )
-        )
-        plan = " ".join(r[0] for r in res.fetchall())
-        assert "ix_jobs_latest" in plan
+            await s.execute(text("ANALYZE jobs"))
+            res = await s.execute(
+                text(
+                    "EXPLAIN SELECT * FROM jobs "
+                    "WHERE kind = 'launch' AND params_hash = 'test' AND closure = 'test' "
+                    "ORDER BY id DESC LIMIT 1"
+                )
+            )
+            plan = " ".join(r[0] for r in res.fetchall())
+        finally:
+            await s.rollback()
+    assert "ix_jobs_latest" in plan, plan

@@ -268,9 +268,10 @@ async def test_tool_results_carry_their_numbers(client) -> None:
     assert entry.result["sunlit_s"] in entry.numbers
 
 
-async def test_agents_declare_exactly_ten_tools() -> None:
+async def test_agents_declare_exactly_these_tools() -> None:
     """The complete, auditable surface area an LLM can reach: the brief's six over the
-    sites and four over the missions' sections (ADR-6, amended)."""
+    sites, four over the missions' sections (ADR-6, amended), and the list of what a
+    scenario may change, which the scenario reader calls first (`agents/scenario_reader.py`)."""
     from app.agents.tools import TOOL_NAMES
 
     assert {
@@ -284,6 +285,7 @@ async def test_agents_declare_exactly_ten_tools() -> None:
         "get_mission_sections",
         "get_mission_section",
         "get_space_weather",
+        "list_scenario_options",
     } == TOOL_NAMES
 
 
