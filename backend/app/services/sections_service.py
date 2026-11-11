@@ -7,12 +7,15 @@ answer, and a step whose answer is still being worked out says so.
 
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import ENGINE_VERSION
 from app.db.repositories.missions import MissionRecord, MissionRepository
+from app.db.repositories.sites import MaskRepository
 from app.services import lifecycle, mission_service, ready_service
 from app.services.mission_service import MissionNotFound
 
@@ -27,6 +30,52 @@ def _when(text: str) -> str:
     t = lifecycle.parse_time(text)
     date = f"{t.day} {t.strftime('%b %Y')}"
     return f"{date} {t.strftime('%H:%M')} UTC" if "T" in text else date
+
+
+async def skyline_gate(
+    session: AsyncSession, section: str, m: MissionRecord
+) -> dict[str, Any] | None:
+    """An honest status for a step that needs the landing spot's skyline, when it has none.
+
+    None when the skyline is built (or the mission has no landing spot). Otherwise the
+    state says what is happening: ``computing`` with the job's number while it is built,
+    ``no_data`` with the reason when the build failed or was never started.
+    """
+    if m.site_id is None:
+        return None
+    if m.site_id in await MaskRepository(session).existing_site_ids(ENGINE_VERSION):
+        return None
+    from sqlalchemy import text
+
+    row = (
+        await session.execute(
+            text(
+                "SELECT id, status, error, coalesce(finished_at, created_at) AS last_at "
+                "FROM jobs WHERE kind = 'site_build' AND mission_id = :m "
+                "ORDER BY id DESC LIMIT 1"
+            ),
+            {"m": m.id},
+        )
+    ).one_or_none()
+    if row is not None and row.status in ("queued", "running"):
+        return _status(
+            section,
+            "computing",
+            f"The skyline at this spot is still being mapped (job {row.id}).",
+            row.last_at,
+        )
+    if row is not None and row.status == "failed":
+        # First line only, and without the exception class the worker prefixes.
+        why = str(row.error or "").splitlines()[0] if row.error else ""
+        why = re.sub(r"^[A-Za-z_][\w.]*: ", "", why)
+        return _status(
+            section,
+            "no_data",
+            f"The skyline at this spot could not be mapped: {why or 'the build failed'}"
+            f" (job {row.id}).",
+            row.last_at,
+        )
+    return _status(section, "no_data", "The skyline at this spot has not been mapped yet.")
 
 
 async def _ready(session: AsyncSession, m: MissionRecord) -> dict[str, Any]:
@@ -55,6 +104,8 @@ async def _launch(session: AsyncSession, m: MissionRecord) -> dict[str, Any]:
     if job and job[0] in ("queued", "running"):
         return _status("launch", "computing", "Launch opportunities are being worked out.", job[1])
     if not lc.get("t0") and lc.get("pad_id") and lc.get("vehicle_id") and m.site_id:
+        if (gate := await skyline_gate(session, "launch", m)) is not None:
+            return gate
         pad = mission_service.catalogue_name("launch_sites", lc.get("pad_id"))
         return _status(
             "launch",
@@ -84,6 +135,8 @@ async def _landing(session: AsyncSession, m: MissionRecord) -> dict[str, Any]:
     if m.status in ready_service.CANCELLED or window.basis == "none":
         state = "not_applicable" if m.status in mission_service.NO_SURFACE else "no_data"
         return _status("landing", state, window.note)
+    if (gate := await skyline_gate(session, "landing", m)) is not None:
+        return gate
     target = m.target_name or "the target"
     return _status("landing", "available", f"Sunlight and contact with Earth at {target}.")
 
@@ -167,6 +220,8 @@ async def _contact(session: AsyncSession, m: MissionRecord) -> dict[str, Any]:
             "no_data",
             "No landing spot is published, so contact " "cannot be worked out.",
         )
+    if (gate := await skyline_gate(session, "contact", m)) is not None:
+        return gate
     job = await _stored(session, "contact", m.id)
     if job and job[0] in ("queued", "running"):
         return _status("contact", "computing", "Contact is being worked out.", job[1])

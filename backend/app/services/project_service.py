@@ -731,6 +731,22 @@ async def update(
     return {"mission": await mission_service.get_mission(session, mission_id), "site_job": site_job}
 
 
+async def rebuild_skyline(session: AsyncSession, who: Claims, mission_id: str) -> dict[str, Any]:
+    """Queue the skyline of a project's target again, e.g. after a failed build.
+
+    A running or waiting build is joined, not doubled; a failed one never blocks a new
+    one (the queue only dedupes live jobs). ``{mission, site_job}``; ``site_job`` is
+    None when the skyline is already built.
+    """
+    if not who.named:
+        raise audit_service.NotNamed("Changes are recorded against a name; this session has none.")
+    m = await _project(session, mission_id)
+    if m.site_id is None:
+        raise BadProject("this project has no target to map", "target")
+    site_job = await _site_job(session, who, mission_id, m.site_id, False)
+    return {"mission": await mission_service.get_mission(session, mission_id), "site_job": site_job}
+
+
 async def delete(session: AsyncSession, who: Claims, mission_id: str) -> dict[str, Any]:
     """Remove a project (never a catalogue record). ``{id, deleted}``."""
     if not who.named:

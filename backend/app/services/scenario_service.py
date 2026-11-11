@@ -570,28 +570,44 @@ def job_params(m: MissionRecord, rec: ScenarioRecord) -> dict[str, Any]:
 
 
 async def enqueue(
-    session: AsyncSession, m: MissionRecord, rec: ScenarioRecord, who: Claims | None
+    session: AsyncSession,
+    m: MissionRecord,
+    rec: ScenarioRecord,
+    who: Claims | None,
+    fresh: bool = False,
 ) -> ScenarioRecord:
-    """Queue the work, or finish at once from an answer already stored for this key."""
+    """Queue the work, or finish at once from an answer already stored for this key.
+
+    A stored answer with a step that failed is not an answer: the work runs again.
+    """
     repo = ScenarioRepository(session)
-    ans = await job_service.answer_or_enqueue(
-        session,
-        kind=KIND,
-        closure=CLOSURE,
-        params=job_params(m, rec),
-        mission_id=m.id,
-        requested_by=who.user_id if who else None,
-        priority=PRIORITY_PRESET if rec.preset else PRIORITY_ASKED,
-    )
+
+    async def ask(again: bool) -> job_service.Answer:
+        return await job_service.answer_or_enqueue(
+            session,
+            kind=KIND,
+            closure=CLOSURE,
+            params=job_params(m, rec),
+            mission_id=m.id,
+            requested_by=who.user_id if who else None,
+            priority=PRIORITY_PRESET if rec.preset else PRIORITY_ASKED,
+            fresh=again,
+        )
+
+    ans = await ask(fresh)
+    if ans.assessment is not None and core.failed_phases(ans.assessment.result.get("phases", [])):
+        ans = await ask(True)
     if ans.assessment is not None:
         r = ans.assessment.result
+        status, message = core.outcome(r["phases"], r.get("message", "Worked out."))
         await repo.finish(
             rec.id,
             results=r["results"],
             summaries=r["summaries"],
             assumptions=r["assumptions"],
             phases=r["phases"],
-            message=r.get("message", "Worked out."),
+            message=message,
+            status=status,
         )
     elif ans.job is not None:
         await repo.set_job(rec.id, int(ans.job["job_id"]))
@@ -632,9 +648,11 @@ async def create(
     )
     if created:
         rec = await enqueue(session, m, rec, who)
-    elif rec.status == "failed":
-        await repo.requeue(rec.id)
-        rec = await enqueue(session, m, rec, who)
+    elif rec.status == "failed" or core.failed_phases(rec.phases):
+        # Stored as failed, or "done" with a step that could not be worked out: neither
+        # is an answer to join; the same scenario runs again.
+        await repo.requeue(rec.id, core.phases(rec.sections))
+        rec = await enqueue(session, m, rec, who, fresh=True)
     return rec, created
 
 
@@ -702,13 +720,15 @@ async def _sync(session: AsyncSession, rec: ScenarioRecord) -> ScenarioRecord:
         a = await AssessmentRepository(session).get(job.assessment_id)
         if a is not None:
             r = a.result
+            status, message = core.outcome(r["phases"], r.get("message", "Worked out."))
             await repo.finish(
                 rec.id,
                 results=r["results"],
                 summaries=r["summaries"],
                 assumptions=r["assumptions"],
                 phases=r["phases"],
-                message=r.get("message", "Worked out."),
+                message=message,
+                status=status,
             )
     else:
         return rec

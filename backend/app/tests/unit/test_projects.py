@@ -321,3 +321,19 @@ async def test_a_new_coordinate_becomes_a_site_and_queues_its_skyline(world: Wor
     assert world.jobs[0]["params"] == {"site_id": "project-far"}
     row = world.rows["p-far"][0]
     assert row["site_id"] == "project-far" and row["target"]["lon_deg"] == 190.0
+
+
+async def test_the_skyline_can_be_queued_again_for_a_project_with_a_target(world: World) -> None:
+    world.missions["p-a"] = record("p-a", PROJECT, site_id="project-a")
+    out = await project_service.rebuild_skyline(None, NAMED, "p-a")  # type: ignore[arg-type]
+    assert out["site_job"] == {"kind": "site_build"}
+    assert world.jobs[0]["params"] == {"site_id": "project-a"}
+
+
+async def test_rebuilding_needs_a_target_and_a_project(world: World) -> None:
+    world.missions["p-b"] = record("p-b", PROJECT)
+    with pytest.raises(project_service.BadProject):
+        await project_service.rebuild_skyline(None, NAMED, "p-b")  # type: ignore[arg-type]
+    world.missions["m-c"] = record("m-c", CATALOGUE, site_id="s")
+    with pytest.raises(project_service.NotAProject):
+        await project_service.rebuild_skyline(None, NAMED, "m-c")  # type: ignore[arg-type]

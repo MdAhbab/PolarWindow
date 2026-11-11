@@ -144,6 +144,22 @@ async def update(
         raise _http(exc) from exc
 
 
+@router.post(
+    "/{project_id}/skyline",
+    response_model=ProjectSaved,
+    summary="Build the target's skyline again (after a failed build)",
+)
+async def rebuild_skyline(
+    project_id: ProjectId,
+    session: Any = Depends(deps.db),
+    who: Named = Depends(deps.named_manager),
+) -> dict[str, Any]:
+    try:
+        return await project_service.rebuild_skyline(session, who, project_id)
+    except Exception as exc:
+        raise _http(exc) from exc
+
+
 @router.delete(
     "/{project_id}",
     response_model=ProjectDeleted,

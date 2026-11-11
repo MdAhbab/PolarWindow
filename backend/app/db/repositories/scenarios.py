@@ -185,19 +185,21 @@ class ScenarioRepository:
         assumptions: list[dict[str, Any]],
         phases: list[dict[str, Any]],
         message: str,
+        status: str = "done",
+        error: str | None = None,
     ) -> None:
         await self._s.execute(
             update(Scenario)
             .where(Scenario.id == scenario_id)
             .values(
-                status="done",
+                status=status,
                 progress=1.0,
                 message=message,
                 results=results,
                 summaries=summaries,
                 assumptions=assumptions,
                 phases=phases,
-                error=None,
+                error=error,
                 finished_at=_now(),
             )
         )
@@ -214,18 +216,17 @@ class ScenarioRepository:
             )
         )
 
-    async def requeue(self, scenario_id: str) -> None:
-        await self._s.execute(
-            update(Scenario)
-            .where(Scenario.id == scenario_id)
-            .values(
-                status="queued",
-                progress=0.0,
-                message="Waiting for a compute worker.",
-                error=None,
-                finished_at=None,
-            )
-        )
+    async def requeue(self, scenario_id: str, phases: list[dict[str, Any]] | None = None) -> None:
+        values: dict[str, Any] = {
+            "status": "queued",
+            "progress": 0.0,
+            "message": "Waiting for a compute worker.",
+            "error": None,
+            "finished_at": None,
+        }
+        if phases is not None:
+            values["phases"] = phases
+        await self._s.execute(update(Scenario).where(Scenario.id == scenario_id).values(**values))
 
     async def delete(self, scenario_id: str) -> bool:
         res = await self._s.execute(delete(Scenario).where(Scenario.id == scenario_id))

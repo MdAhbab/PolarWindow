@@ -1,3 +1,10 @@
 """Job handlers, one module per kind. Importing this package registers them all."""
 
-from app.workers.handlers import contact, launch, rover, scenario, trip  # noqa: F401
+from app.workers.handlers import (  # noqa: F401
+    contact,
+    launch,
+    rover,
+    scenario,
+    site_build,
+    trip,
+)

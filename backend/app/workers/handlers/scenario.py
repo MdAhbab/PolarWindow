@@ -464,17 +464,19 @@ async def run(ctx: JobContext) -> HandlerResult:
             got = await steps[sec]()
         except Exception as exc:  # one step failing must not cost the others
             log.warning("scenario %s: %s failed: %s", sid, sec, exc)
-            await tr.set(sec, "failed", f"{type(exc).__name__}: {str(exc)[:200]}")
-            failures.append(f"{sec}: {exc}")
+            why = plain_reason(exc)
+            await tr.set(sec, "failed", why)
+            failures.append(f"{sec}: {why}")
             continue
         if got is not None:
             results[sec] = got
-    if failures and not results:
-        raise RuntimeError("; ".join(failures)[:500])
 
     summaries = summarise(results, res, nm)
     message = "Worked out." if results else "Nothing could be worked out from these assumptions."
+    status, message = core.outcome(tr.phases, message)
+    error = "; ".join(failures)[:900] if status == "failed" else None
     out = {
+        "status": status,
         "results": lifecycle.jsonable(results),
         "summaries": summaries,
         "assumptions": assumptions,
@@ -489,6 +491,8 @@ async def run(ctx: JobContext) -> HandlerResult:
             assumptions=assumptions,
             phases=tr.phases,
             message=message,
+            status=status,
+            error=error,
         )
     log.info("scenario %s done in %.1f s", sid, time.perf_counter() - t_wall)
     return HandlerResult(
@@ -500,6 +504,17 @@ async def run(ctx: JobContext) -> HandlerResult:
         ],
         message=message,
     )
+
+
+def plain_reason(exc: Exception) -> str:
+    """Why a step failed, in words a reader can use (no exception class names)."""
+    if isinstance(exc, site_service.MaskNotBuilt):
+        return (
+            "The skyline at the landing spot is not built yet, so this step could not be "
+            "worked out. Ask again once it is."
+        )
+    text = str(exc).strip()
+    return text[:200] if text else "It could not be worked out."
 
 
 async def _skip(tr: Tracker, pid: str, why: str) -> None:

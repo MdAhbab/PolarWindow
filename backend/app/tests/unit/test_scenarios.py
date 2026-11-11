@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import contextlib
 from collections.abc import AsyncIterator
+from dataclasses import replace
 from datetime import UTC, date, datetime
 from typing import Any
 
@@ -109,6 +110,7 @@ class World:
         self.mission_writes: list[str] = []
         self.enqueued: list[dict[str, Any]] = []
         self.audit: list[dict[str, Any]] = []
+        self.requeued: list[str] = []
 
 
 @pytest.fixture
@@ -167,6 +169,10 @@ def world(monkeypatch: pytest.MonkeyPatch) -> World:
             return w.scenarios.get(sid)
 
         async def set_job(self, sid: str, job_id: int) -> None: ...
+
+        async def requeue(self, sid: str, _phases: Any = None) -> None:
+            w.requeued.append(sid)
+            w.scenarios[sid] = replace(w.scenarios[sid], status="queued", phases=[])
 
         async def by_key(self, key: str) -> ScenarioRecord | None:
             return next((r for r in w.scenarios.values() if r.key == key), None)
@@ -393,6 +399,27 @@ async def test_a_second_equivalent_request_joins_the_first(world: World) -> None
     body2 = {"assumptions": [{"field": "surface_days", "value": 9.9}], "sections": ["launch"]}
     c2, b = await scenario_service.start(None, NAMED, "m1", body2)  # type: ignore[arg-type]
     assert c1 and not c2 and a["id"] == b["id"] and len(world.enqueued) == 1
+
+
+async def test_a_stored_scenario_with_a_failed_step_runs_again_instead_of_joining(
+    world: World,
+) -> None:
+    world.missions["m1"] = mission(
+        site_id="s", lifecycle={"vehicle_id": "falcon-9", "pad_id": "ksc-lc-39a"}
+    )
+    body = {"assumptions": [{"field": "surface_days", "value": 10}], "sections": ["launch"]}
+    _, first = await scenario_service.start(None, NAMED, "m1", body)  # type: ignore[arg-type]
+    sid = first["id"]
+    # It finished, but a step could not be worked out (as when the skyline was missing).
+    world.scenarios[sid] = replace(
+        world.scenarios[sid],
+        status="done",
+        phases=[{"id": "launch", "label": "Launch", "state": "failed", "detail": "x"}],
+    )
+    created, again = await scenario_service.start(None, NAMED, "m1", body)  # type: ignore[arg-type]
+    assert not created and again["id"] == sid
+    assert world.requeued == [sid] and len(world.enqueued) == 2
+    assert again["status"] == "queued"
 
 
 async def test_nothing_runnable_is_refused_in_plain_words(world: World) -> None:

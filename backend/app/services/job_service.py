@@ -148,15 +148,20 @@ async def answer_or_enqueue(
     mission_id: str | None,
     requested_by: int | None = None,
     priority: int | None = None,
+    fresh: bool = False,
 ) -> Answer:
-    """The stored answer for this key, or a job that will produce it."""
+    """The stored answer for this key, or a job that will produce it.
+
+    ``fresh`` ignores a stored answer and an earlier failed job: the caller has
+    decided that the stored answer is not good enough and wants the work done again.
+    """
     key = params_hash(kind, closure, params)
-    found = await AssessmentRepository(session).latest(kind, key, closure)
+    found = None if fresh else await AssessmentRepository(session).latest(kind, key, closure)
     if found is not None:
         return Answer(assessment=found, job=None)
     repo = JobRepository(session)
     last = await repo.latest_for(kind, key, closure)
-    if last is not None and last.status == "failed":
+    if last is not None and last.status == "failed" and not fresh:
         # A failed job is reported, not silently retried on every page load:
         # the failure message is the answer until the inputs change.
         return Answer(assessment=None, job=job_ref(last))

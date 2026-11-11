@@ -18,6 +18,7 @@ import asyncio
 import json
 import logging
 import time
+from collections.abc import Callable
 from datetime import timedelta
 
 import numpy as np
@@ -167,6 +168,82 @@ async def compute_reference_metrics(
 # ---------------------------------------------------------------------------
 
 
+async def build_and_store_mask(
+    site: SiteRecord, coarse: DemTile, on_phase: Callable[[str], None] | None = None
+) -> HorizonMask:
+    """Build one site's skyline from terrain and store it; the one path every site takes.
+
+    Shared by the seed worker and the ``site_build`` job, so a project's coordinate
+    gets its skyline exactly as a seeded site does. ``on_phase`` is told, in plain
+    words, which step starts next.
+    """
+    s = get_settings()
+    say = on_phase or (lambda _msg: None)
+    say("Fetching the elevation window around the spot.")
+    fine = await ensure_fine_dem(site.id, site.lat_deg, site.lon_deg)
+    if fine is None and not site.terrain_modelled:
+        # No elevation model covers this site: a smooth-sphere skyline,
+        # flagged everywhere it is used.
+        mask = smooth_mask(azimuth_step_deg=s.azimuth_step_deg, max_range_m=s.max_range_m)
+        async with session_scope() as session:
+            await MaskRepository(session).upsert(
+                site.id,
+                ENGINE_VERSION,
+                mask,
+                dem_product=SMOOTH_SPHERE_PRODUCT,
+                dem_resolution_m=0.0,
+                dem_vertical_error_m=0.0,
+            )
+        log.info("         mask: smooth sphere (no terrain model covers this site)")
+        return mask
+    say("Tracing the skyline in every direction.")
+    # CPU-bound numpy: off the event loop so the job's heartbeat keeps beating.
+    mask, product, res_m, err_m = await asyncio.to_thread(
+        build_site_mask, site.lat_deg, site.lon_deg, fine, coarse
+    )
+    log.info(
+        "         mask: max %+.3f deg @ %.2f deg, mean %+.3f, coverage %.0f%%, %.0f ms",
+        mask.max_el_deg,
+        mask.max_el_bearing_deg,
+        float(np.mean(mask.el_deg)),
+        mask.coverage * 100,
+        mask.compute_ms,
+    )
+    log.info("         terrain: %s, blocker error up to %.1f m", product, err_m)
+    async with session_scope() as session:
+        await MaskRepository(session).upsert(
+            site.id,
+            ENGINE_VERSION,
+            mask,
+            dem_product=product,
+            dem_resolution_m=res_m,
+            dem_vertical_error_m=err_m,
+        )
+    return mask
+
+
+async def store_reference_metrics(site: SiteRecord, mask: HorizonMask) -> WindowMetricsRecord:
+    """The four reference numbers for a site with a skyline, computed and stored."""
+    rec_metrics = await compute_reference_metrics(
+        site.id, site.lat_deg, site.lon_deg, site.elev_m, mask
+    )
+    async with session_scope() as session:
+        await WindowMetricsRepository(session).upsert(ENGINE_VERSION, rec_metrics)
+    log.info(
+        "         metrics: sun %.0f h (%.0f%%)  dte %.0f h (%.0f%%)  "
+        "night %s%.0f h  blackout %s%.0f h",
+        rec_metrics.sunlit_s / 3600,
+        rec_metrics.sun_fraction_up * 100,
+        rec_metrics.earth_contact_s / 3600,
+        rec_metrics.earth_fraction_up * 100,
+        ">=" if rec_metrics.longest_dark_open else "",
+        rec_metrics.longest_dark_s / 3600,
+        ">=" if rec_metrics.longest_blackout_open else "",
+        rec_metrics.longest_blackout_s / 3600,
+    )
+    return rec_metrics
+
+
 async def seed_sites() -> int:
     """Load the resolved site list into Postgres."""
     s = get_settings()
@@ -269,7 +346,6 @@ async def _one_site(
     kernels_ok: bool,
     skip_metrics: bool,
 ) -> None:
-    s = get_settings()
     mask: HorizonMask | None = None
     # An existing mask skips the *mask build*, not the whole site. These are
     # separate pieces of work with separate costs, and conflating them meant
@@ -283,60 +359,10 @@ async def _one_site(
             log.info("         mask: reused (%d bearings)", mask.azimuth_count)
 
     if mask is None:
-        fine = await ensure_fine_dem(site.id, site.lat_deg, site.lon_deg)
-        if fine is None and not site.terrain_modelled:
-            # No elevation model covers this site: a smooth-sphere skyline,
-            # flagged everywhere it is used.
-            mask = smooth_mask(azimuth_step_deg=s.azimuth_step_deg, max_range_m=s.max_range_m)
-            async with session_scope() as session:
-                await MaskRepository(session).upsert(
-                    site.id,
-                    ENGINE_VERSION,
-                    mask,
-                    dem_product=SMOOTH_SPHERE_PRODUCT,
-                    dem_resolution_m=0.0,
-                    dem_vertical_error_m=0.0,
-                )
-            log.info("         mask: smooth sphere (no terrain model covers this site)")
-        else:
-            mask, product, res_m, err_m = build_site_mask(site.lat_deg, site.lon_deg, fine, coarse)
-        log.info(
-            "         mask: max %+.3f deg @ %.2f deg, mean %+.3f, coverage %.0f%%, %.0f ms",
-            mask.max_el_deg,
-            mask.max_el_bearing_deg,
-            float(np.mean(mask.el_deg)),
-            mask.coverage * 100,
-            mask.compute_ms,
-        )
-        log.info("         terrain: %s, blocker error up to %.1f m", product, err_m)
-        async with session_scope() as session:
-            await MaskRepository(session).upsert(
-                site.id,
-                ENGINE_VERSION,
-                mask,
-                dem_product=product,
-                dem_resolution_m=res_m,
-                dem_vertical_error_m=err_m,
-            )
+        mask = await build_and_store_mask(site, coarse)
 
     if kernels_ok and not skip_metrics:
-        rec_metrics = await compute_reference_metrics(
-            site.id, site.lat_deg, site.lon_deg, site.elev_m, mask
-        )
-        async with session_scope() as session:
-            await WindowMetricsRepository(session).upsert(ENGINE_VERSION, rec_metrics)
-        log.info(
-            "         metrics: sun %.0f h (%.0f%%)  dte %.0f h (%.0f%%)  "
-            "night %s%.0f h  blackout %s%.0f h",
-            rec_metrics.sunlit_s / 3600,
-            rec_metrics.sun_fraction_up * 100,
-            rec_metrics.earth_contact_s / 3600,
-            rec_metrics.earth_fraction_up * 100,
-            ">=" if rec_metrics.longest_dark_open else "",
-            rec_metrics.longest_dark_s / 3600,
-            ">=" if rec_metrics.longest_blackout_open else "",
-            rec_metrics.longest_blackout_s / 3600,
-        )
+        await store_reference_metrics(site, mask)
 
 
 async def main_async(argv: list[str] | None = None) -> None:

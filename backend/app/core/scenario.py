@@ -691,3 +691,25 @@ def phases(sections: Sequence[str]) -> list[dict[str, Any]]:
         if s in sections
     ]
     return out
+
+
+def failed_phases(phases: Sequence[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+    """The steps of a stored scenario that could not be worked out."""
+    return [p for p in phases if p.get("state") == "failed"]
+
+
+def outcome(phases: Sequence[Mapping[str, Any]], message: str) -> tuple[str, str]:
+    """``(status, message)`` for a finished scenario, honest about steps that failed.
+
+    The status vocabulary has no "partly done", so: some steps failed but more worked
+    gives ``done`` with a message that names the failed ones; when the failed steps
+    outnumber the worked ones the scenario is ``failed``.
+    """
+    bad = failed_phases(phases)
+    if not bad:
+        return "done", message
+    ok = sum(1 for p in phases if p.get("state") == "done")
+    names = ", ".join(str(p.get("label", p.get("id"))).lower() for p in bad)
+    if len(bad) > ok:
+        return "failed", f"Could not be worked out: {names}."
+    return "done", f"Worked out, except {names}, which could not be."
