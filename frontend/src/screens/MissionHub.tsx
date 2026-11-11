@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useId, useRef } from 'react'
+import { lazy, Suspense, useEffect, useId, useRef, useState } from 'react'
 import { useTransitionClick } from '../lib/viewTransition'
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { PageHeader } from '../components/Page'
@@ -7,7 +7,8 @@ import { useMission as useMissionQuery } from '../lib/api/queries'
 import { useSections } from '../lib/api/lifecycleQueries'
 import { ApiError } from '../lib/api/client'
 import type { SectionId } from '../lib/api/lifecycle'
-import { JourneyBar, SECTIONS, StepCards, sectionPath } from '../components/lifecycle/JourneyBar'
+import { JourneyBar, JourneyPath, SECTIONS, sectionPath } from '../components/lifecycle/JourneyBar'
+import { nextEvent } from '../lib/api/home'
 import { OldFeedsNote } from '../components/lifecycle/OldFeeds'
 import { ProblemPanel, SectionSkeleton, Skeleton } from '../components/States'
 import { MissionRecord, SurfaceSection, initialWindow } from './MissionDetailScreen'
@@ -45,6 +46,8 @@ export function MissionHub() {
   const applied = useRef<string | null>(null)
   const navigate = useNavigate()
   const location = useLocation()
+  // The moment the page opened: the countdown to the next dated event is from it.
+  const [openedAt] = useState(() => Date.now())
 
   // "Next step" at the foot of a step opens the next one at its top, with
   // focus on its place in the step bar, as if that had been pressed.
@@ -147,12 +150,14 @@ export function MissionHub() {
             <h2 id="steps-h" className="pw-eyebrow">
               Six steps, from getting ready to coming home
             </h2>
-            <StepCards
+            <JourneyPath
               missionId={m.id}
               statuses={sections.data?.data}
               loading={sections.isPending}
               problem={problem}
               status={m.status}
+              target={m.target?.name ?? null}
+              next={nextEvent(m, openedAt)}
             />
             <OldFeedsNote />
           </section>
@@ -226,13 +231,16 @@ function HubSkeleton({ home }: { home: boolean }) {
         <Skeleton className="h-5 w-80 max-w-full" />
       </div>
       {home ? (
-        <div className="grid gap-8 xl:grid-cols-12">
-          <div className="grid gap-3 sm:grid-cols-2 xl:col-span-8 xl:grid-cols-3">
+        // The journey's shape: the band the arc is drawn in, then six stops
+        // (down the page on a phone), then the record.
+        <div className="flex flex-col gap-8">
+          <Skeleton className="hidden h-24 lg:block" />
+          <div className="flex flex-col gap-6 lg:grid lg:grid-cols-6 lg:gap-5 lg:px-11">
             {Array.from({ length: 6 }, (_, i) => (
-              <Skeleton key={i} className="h-44" />
+              <Skeleton key={i} className="h-28" />
             ))}
           </div>
-          <Skeleton className="h-64 xl:col-span-4" />
+          <Skeleton className="h-64" />
         </div>
       ) : (
         <>

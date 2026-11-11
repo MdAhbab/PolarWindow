@@ -1,11 +1,16 @@
-import { useMotionClass } from '../../hooks/useMotion'
-import { Link } from 'react-router-dom'
+import { useEffect, useId, useRef, useState } from 'react'
+import { useMotionClass, useReducedMotion } from '../../hooks/useMotion'
+import { useWidth } from '../../hooks/useWidth'
+import { Link, useLocation } from 'react-router-dom'
 import { useTransitionClick } from '../../lib/viewTransition'
 import type { SectionId, SectionState, SectionStatusDTO } from '../../lib/api/lifecycle'
 import type { MissionStatus } from '../../lib/api/adapters'
+import type { NextEvent } from '../../lib/api/home'
 import { STATUS_GLYPH, STATUS_LABEL } from '../../lib/missions'
+import { useActiveScenario } from '../scenario/store'
 import { Icon, type IconName } from '../Icon'
 import { Skeleton } from '../States'
+import { CountUp } from '../ui'
 
 /**
  * The six steps, in the order a mission lives them. `slug` is the address;
@@ -43,6 +48,25 @@ export const STATE_WORDS: Record<SectionState, { icon: IconName; words: string }
 export function sectionPath(missionId: string, section: SectionId): string {
   const slug = SECTIONS.find((s) => s.id === section)?.slug ?? section
   return `/missions/${encodeURIComponent(missionId)}/${slug}`
+}
+
+/**
+ * A step's address, keeping the scenario being read (`?scenario=<id>`), so
+ * moving between steps does not drop the reader out of it. Ready is entered
+ * by people and never assumed, so it always opens on the record.
+ */
+export function stepHref(missionId: string, section: SectionId, scenario?: string | null): string {
+  const base = sectionPath(missionId, section)
+  return scenario && section !== 'ready' ? `${base}?scenario=${encodeURIComponent(scenario)}` : base
+}
+
+/** The scenario being read in a mission: the address's, or the one kept for the session. */
+export function useOpenScenario(missionId: string): string | null {
+  const { search } = useLocation()
+  const stored = useActiveScenario((s) => s.active[missionId])
+  const sc = new URLSearchParams(search).get('scenario')
+  if (sc && sc !== 'new') return sc
+  return stored ?? null
 }
 
 /**
@@ -160,7 +184,8 @@ function NowTag() {
  * line solid as far as the mission has got. Each step says its state in
  * words; the summary is for screen readers here, since the mission's home
  * shows it in full. Six across from 768 px; three by two below, without the
- * line, so a phone keeps the words.
+ * line, so a phone keeps the words. A scenario being read stays open across
+ * the steps.
  */
 export function JourneyBar({
   missionId,
@@ -184,6 +209,7 @@ export function JourneyBar({
   const progress = missionProgress(status)
   const reached = progress?.reached ?? -1
   const draw = useMotionClass('pw-journey-draw')
+  const scenario = useOpenScenario(missionId)
   return (
     <nav aria-label="Mission sections" data-guide="journey" className={`flex flex-col gap-2 ${draw}`}>
       <ol className={`grid grid-cols-3 gap-x-1.5 min-[360px]:gap-x-3 gap-y-4 md:grid-cols-6 md:gap-x-4 ${progress?.now ? 'md:pt-9' : ''}`}>
@@ -191,6 +217,7 @@ export function JourneyBar({
           const st = byId.get(s.id)
           const active = s.id === current
           const behind = i <= reached
+          const href = stepHref(missionId, s.id, scenario)
           return (
             <li key={s.id} className="relative flex min-w-0">
               {i < SECTIONS.length - 1 && (
@@ -199,8 +226,8 @@ export function JourneyBar({
                 </span>
               )}
               <Link
-                to={sectionPath(missionId, s.id)}
-                onClick={go(sectionPath(missionId, s.id))}
+                to={href}
+                onClick={go(href)}
                 aria-current={active ? 'page' : undefined}
                 className={`group relative flex min-h-12 w-full min-w-0 items-start gap-1.5 min-[360px]:gap-2.5 rounded-control no-underline md:flex-col md:gap-2 ${
                   active ? 'text-ink' : 'text-ink-2 hover:text-ink'
@@ -228,85 +255,309 @@ export function JourneyBar({
   )
 }
 
+/* ---------------------------------------------------------------------------
+   The mission's home: one path from Earth to the Moon with six stops.
+   --------------------------------------------------------------------------- */
+
+/** The band the arc is drawn in above the stops, from 1024 px. */
+const BAND = 112
+/** Where Earth and the Moon sit in it, and how far the arc rises above them. */
+const BASE = 84
+const LIFT = 58
+/** The room either side of the six columns, for Earth and the Moon. */
+const PAD = 44
+/** Earth's and the Moon's centres, in from the edges. */
+const END = 20
+/** A stop's mark. */
+const MARK = 28
+
+/** The arc's height at `x`: a parabola from Earth (x0) to the Moon (x1), which is what the drawn curve is. */
+function arcY(x: number, x0: number, x1: number): number {
+  const u = (x - x0) / (x1 - x0)
+  return BASE - LIFT * 4 * u * (1 - u)
+}
+
+/** Missions whose journey has drawn itself in this visit: it draws once, not on every return. */
+const drawnThisVisit = new Set<string>()
+
 /**
- * The mission's home: its six steps on one line, each with the question it
- * answers, its state in glyph and words, and the service's one-sentence
- * summary in full. Each step is one link. Across the page from 1024 px; down
- * it below, the line running beside the steps.
+ * A stop's mark: its state as a shape. Solid with a dot once there is an
+ * answer; an open ring around a quarter (being worked out), a pencil (needs
+ * input) or a ring (no data yet); a faint dash where the step does not apply.
+ * The same shapes as Home's strip; the words are always beside it.
  */
-export function StepCards({
+function StopMark({ state, loading }: { state?: SectionState; loading: boolean }) {
+  if (!state) {
+    return loading ? (
+      <Skeleton className="size-7 rounded-pill" />
+    ) : (
+      <span className="flex size-7 items-center justify-center rounded-pill border border-line-strong bg-canvas text-caption text-ink-3 shadow-[0_0_0_4px_var(--color-canvas)]">
+        ?
+      </span>
+    )
+  }
+  const look =
+    state === 'available'
+      ? 'bg-ink text-canvas'
+      : state === 'not_applicable'
+        ? 'border border-line-strong bg-canvas text-ink-3'
+        : 'border-2 border-ink bg-canvas text-ink'
+  return (
+    <span className={`flex size-7 items-center justify-center rounded-pill shadow-[0_0_0_4px_var(--color-canvas)] ${look}`}>
+      <Icon name={STATE_WORDS[state].icon} size={14} strokeWidth={2.2} />
+    </span>
+  )
+}
+
+/** The next dated event, the days to it counting up once; the date as published when it is vaguer than a day. */
+function NextWords({ ev }: { ev: NextEvent }) {
+  if (ev.days === null) {
+    return (
+      <>
+        {ev.what}: {ev.date.asPublished}
+      </>
+    )
+  }
+  if (ev.days === 0) return <>{ev.what} today</>
+  if (ev.days === 1) return <>{ev.what} tomorrow</>
+  return (
+    <>
+      {ev.what} in <CountUp value={ev.days} className="font-semibold text-ink" /> days, on {ev.date.asPublished}
+    </>
+  )
+}
+
+/**
+ * The mission's home: its six steps as stops on one path from Earth to the
+ * Moon. Each stop says its state twice, as a shape on the path and in words
+ * under it, with the question it answers and the service's one-line answer;
+ * a step with nothing to show (no data, or input missing) offers a scenario.
+ * The path is ink as far as the mission has got and a hairline beyond.
+ *
+ * From 1024 px the path is an arc across the page over six columns; below,
+ * it runs straight down the left with each stop beside it, so a phone keeps
+ * every word. It draws itself once per mission per visit, and not at all
+ * under reduced motion.
+ */
+export function JourneyPath({
   missionId,
   statuses,
   loading,
   problem,
   status,
+  target,
+  next,
 }: {
   missionId: string
   statuses: SectionStatusDTO[] | undefined
   loading: boolean
   problem?: string
   status?: MissionStatus
+  /** The landing spot's name, for the Moon's end of the path. */
+  target?: string | null
+  /** The next dated event, counted down to when it is known to the day. */
+  next?: NextEvent | null
 }) {
   const byId = new Map(statuses?.map((s) => [s.section, s]))
   const go = useTransitionClick()
   const progress = missionProgress(status)
   const reached = progress?.reached ?? -1
-  const draw = useMotionClass('pw-journey-draw')
+  const scenario = useOpenScenario(missionId)
+  const wrap = useRef<HTMLDivElement>(null)
+  const w = useWidth(wrap, 1200)
+  const reduced = useReducedMotion()
+  const [fresh] = useState(() => !drawnThisVisit.has(missionId))
+  useEffect(() => {
+    drawnThisVisit.add(missionId)
+  }, [missionId])
+  const animate = fresh && !reduced
+  const clipId = `pw-ink-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
+
+  const x0 = END
+  const x1 = Math.max(w - END, x0 + 1)
+  const col = (w - 2 * PAD) / SECTIONS.length
+  const stops = SECTIONS.map((_, i) => {
+    const x = PAD + i * col + MARK / 2
+    return { x, y: arcY(x, x0, x1) }
+  })
+  const finished = Boolean(progress && !progress.now && reached === SECTIONS.length - 1)
+  const inkTo = reached < 0 ? 0 : finished ? x1 : stops[reached].x
+  const d = `M ${x0} ${BASE} Q ${w / 2} ${BASE - 2 * LIFT} ${x1} ${BASE}`
+  // The segments down the page on a phone draw one after another (globals.css, .pw-journey-draw).
+  const railDraw = animate ? 'pw-journey-draw' : ''
+  const pop = animate ? 'pw-stop-in' : ''
+
   return (
-    <nav aria-label="Mission sections" data-guide="journey" className={`flex flex-col gap-4 ${draw}`}>
-      {progress && (
-        <p className="flex items-center gap-2 text-small text-ink-2">
-          <span aria-hidden="true" className="text-ink">
-            {status ? STATUS_GLYPH[status] : ''}
-          </span>
-          {progress.words}
+    <nav aria-label="Mission sections" data-guide="journey" className="flex flex-col gap-5">
+      {(progress || next) && (
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6">
+          {progress && (
+            <p className="flex items-center gap-2 text-small text-ink-2">
+              <span aria-hidden="true" className="text-ink">
+                {status ? STATUS_GLYPH[status] : ''}
+              </span>
+              {progress.words}
+            </p>
+          )}
+          {next && (
+            <p className="flex items-center gap-2 text-small text-ink-2">
+              <Icon name="clocks" size={15} strokeWidth={2} className="shrink-0 text-ink-3" />
+              <span>
+                <NextWords ev={next} />
+              </span>
+            </p>
+          )}
+        </div>
+      )}
+      {scenario && (
+        <p className="pw-scenario self-start rounded-control px-3 py-2 text-small leading-5 text-ink-2">
+          The steps open in the scenario you were reading. Ready always shows the record.
         </p>
       )}
-      <ol className="flex flex-col lg:grid lg:grid-cols-6 lg:gap-x-5 lg:pt-7">
-        {SECTIONS.map((s, i) => {
-          const st = byId.get(s.id)
-          const behind = i <= reached
-          return (
-            <li key={s.id} className="relative flex min-w-0 pb-6 last:pb-0 lg:pb-0">
-              {i < SECTIONS.length - 1 && <Segment behind={i < reached} orient="both" index={i} />}
-              <Link
-                to={sectionPath(missionId, s.id)}
-                onClick={go(sectionPath(missionId, s.id))}
-                className="group relative -m-3 flex w-full min-w-0 gap-4 rounded-card p-3 no-underline transition-colors duration-[var(--pw-dur-quick)] hover:bg-tray lg:flex-col lg:gap-3"
-              >
-                <Node n={i + 1} behind={behind} open={false} />
-                <span className="flex min-w-0 grow flex-col gap-2">
-                  <span className="flex items-center justify-between gap-3">
-                    <span className="text-title-lg font-semibold tracking-title text-ink">{s.name}</span>
-                    <Icon
-                      name="arrow"
-                      size={17}
-                      strokeWidth={1.8}
-                      className="shrink-0 text-ink-3 opacity-60 transition-[transform,opacity,color] duration-[var(--pw-dur-lift)] ease-[var(--ease-settle)] group-hover:translate-x-1 group-hover:text-ink group-hover:opacity-100"
-                    />
+
+      <div ref={wrap} className={`relative ${railDraw}`}>
+        {/* The arc, from 1024 px: a hairline all the way, ink over it as far as the mission has got. */}
+        <svg
+          aria-hidden="true"
+          width={w}
+          height={BAND}
+          className={`pointer-events-none absolute top-0 left-0 hidden overflow-visible lg:block ${animate ? 'pw-path-draw' : ''}`}
+        >
+          <defs>
+            <clipPath id={clipId}>
+              <rect x={0} y={0} width={inkTo} height={BAND} />
+            </clipPath>
+          </defs>
+          <path d={d} fill="none" strokeWidth={1.5} className="stroke-line-strong" />
+          {inkTo > 0 && <path d={d} fill="none" strokeWidth={2} clipPath={`url(#${clipId})`} className="stroke-ink" />}
+        </svg>
+        <Terminal kind="earth" wide={{ left: x0, top: BASE }} inked={reached >= 0} />
+
+        <ol className="relative flex flex-col lg:grid lg:grid-cols-6 lg:px-[44px]">
+          {SECTIONS.map((s, i) => {
+            const st = byId.get(s.id)
+            const here = Boolean(progress?.now && i === reached)
+            const href = stepHref(missionId, s.id, scenario)
+            const missing = Boolean(st && s.id !== 'ready' && (st.state === 'no_data' || st.state === 'needs_input'))
+            const vars = {
+              ['--pw-y' as string]: `${stops[i].y}px`,
+              ['--pw-at' as string]: `${500 + i * 150}ms`,
+              ['--pw-at-lg' as string]: `${Math.round(160 + 720 * (stops[i].x / w))}ms`,
+            }
+            return (
+              <li key={s.id} className="relative flex min-w-0 gap-4 pb-8 lg:block lg:pr-5 lg:pb-0" style={vars}>
+                <span aria-hidden="true" className="relative z-[1] flex w-7 shrink-0 justify-center lg:absolute lg:top-[calc(var(--pw-y)_-_14px)] lg:left-0">
+                  <span className={`flex ${pop}`}>
+                    <StopMark state={st?.state} loading={loading} />
                   </span>
-                  <span className="text-small leading-5 text-ink-3">{s.question}</span>
-                  <StateLine status={st} loading={loading} className="text-ink" />
-                  {st?.summary ? (
-                    <span className="text-body leading-6 text-ink-2">{st.summary}</span>
-                  ) : loading ? (
-                    <span className="flex flex-col gap-1.5">
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-2/3" />
-                    </span>
-                  ) : null}
                 </span>
-                {progress?.now && i === reached && (
-                  <span className="absolute top-3 right-3 lg:-top-6 lg:right-auto lg:left-3">
-                    <NowTag />
-                  </span>
-                )}
-              </Link>
-            </li>
-          )
-        })}
-      </ol>
+                {/* Down the page on a phone: the stretch to the next stop (the last one to the Moon). */}
+                <span
+                  aria-hidden="true"
+                  data-journey-segment={i < reached || (i === SECTIONS.length - 1 && finished) ? 'behind' : 'ahead'}
+                  data-orient="column"
+                  style={{ ['--pw-i' as string]: i + 1 }}
+                  className={`pointer-events-none absolute top-7 bottom-0 left-[13px] w-0.5 lg:hidden ${
+                    i < reached || (i === SECTIONS.length - 1 && finished) ? 'bg-ink' : 'bg-line-strong'
+                  }`}
+                />
+                <div className="flex min-w-0 grow flex-col items-start gap-2.5 lg:pt-[112px]">
+                  <Link
+                    to={href}
+                    onClick={go(href)}
+                    className="-mx-2 -my-1.5 flex w-[calc(100%+1rem)] min-w-0 flex-col gap-1.5 rounded-control px-2 py-1.5 no-underline transition-colors duration-[var(--pw-dur-quick)] hover:bg-tray"
+                  >
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="font-mono text-body text-ink-3">{i + 1}</span>{' '}
+                      <span className="text-title-lg font-semibold tracking-title text-ink">{s.name}</span>
+                      {here && <NowTag />}
+                    </span>
+                    <span className="text-small leading-5 text-ink-3">{s.question}</span>
+                    <StateLine status={st} loading={loading} className="text-ink" />
+                    {st?.summary ? (
+                      <span className="text-body leading-6 text-ink-2">{st.summary}</span>
+                    ) : loading ? (
+                      <span className="flex w-full flex-col gap-1.5">
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-2/3" />
+                      </span>
+                    ) : null}
+                  </Link>
+                  {missing && (
+                    <Link
+                      to={`${sectionPath(missionId, s.id)}?scenario=new`}
+                      className="pw-scenario pw-press inline-flex min-h-11 items-center gap-2 rounded-pill px-3.5 text-small font-semibold text-ink no-underline hover:bg-inset"
+                    >
+                      <Icon name="plus" size={14} strokeWidth={2.2} className="shrink-0" />
+                      <span>
+                        Explore a scenario<span className="sr-only"> for {s.name}</span>
+                      </span>
+                    </Link>
+                  )}
+                </div>
+              </li>
+            )
+          })}
+        </ol>
+
+        <Terminal kind="moon" wide={{ left: x1, top: BASE }} inked={finished} target={target} />
+      </div>
       {problem && <p className="text-caption leading-caption text-ink-3">Step summaries are not available: {problem}</p>}
     </nav>
+  )
+}
+
+/**
+ * Either end of the path. From 1024 px a glyph on the arc's end with its name
+ * under it; below, a row of its own on the line down the page (Earth above
+ * the first stop, the Moon and the landing spot below the last).
+ */
+function Terminal({
+  kind,
+  wide,
+  inked,
+  target,
+}: {
+  kind: 'earth' | 'moon'
+  wide: { left: number; top: number }
+  inked: boolean
+  target?: string | null
+}) {
+  const earth = kind === 'earth'
+  const glyph = (
+    <span
+      aria-hidden="true"
+      className={`flex size-7 items-center justify-center rounded-pill bg-canvas shadow-[0_0_0_4px_var(--color-canvas)] ${earth ? 'text-earth' : 'text-ink-2'}`}
+    >
+      <Icon name={earth ? 'earth' : 'moon'} size={20} strokeWidth={1.7} />
+    </span>
+  )
+  const name = earth ? 'Earth' : 'The Moon'
+  return (
+    <>
+      <div
+        className="pointer-events-none absolute hidden flex-col items-center gap-1 lg:flex"
+        style={{ left: wide.left - MARK / 2, top: wide.top - MARK / 2, width: MARK }}
+      >
+        {glyph}
+        <span className="text-caption leading-caption whitespace-nowrap text-ink-3">{earth ? 'Earth' : 'Moon'}</span>
+      </div>
+      <div className={`relative flex items-center gap-4 lg:hidden ${earth ? 'pb-8' : ''}`}>
+        {glyph}
+        <span className="min-w-0 text-small text-ink-3">
+          {name}
+          {!earth && target ? `, ${target}` : ''}
+        </span>
+        {earth && (
+          <span
+            aria-hidden="true"
+            data-journey-segment={inked ? 'behind' : 'ahead'}
+            data-orient="column"
+            style={{ ['--pw-i' as string]: 0 }}
+            className={`pointer-events-none absolute top-7 bottom-0 left-[13px] w-0.5 ${inked ? 'bg-ink' : 'bg-line-strong'}`}
+          />
+        )}
+      </div>
+    </>
   )
 }

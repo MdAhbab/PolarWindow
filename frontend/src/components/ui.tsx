@@ -1,6 +1,7 @@
 import type React from 'react'
-import { useId, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { Icon } from './Icon'
+import { easeOut, useReducedMotion } from '../hooks/useMotion'
 
 /* Every control here is a real button, anchor or input with a label, so Tab
    reaches it and a screen reader has something to announce. Minimum target
@@ -311,6 +312,54 @@ export function Eyebrow({
     <As id={id} className={`pw-eyebrow ${className}`}>
       {children}
     </As>
+  )
+}
+
+/** A duration token from globals.css, in milliseconds (`fallback` where there is no layout). */
+function durationMs(token: string, fallback: number): number {
+  if (typeof document === 'undefined' || typeof getComputedStyle === 'undefined') return fallback
+  const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(token))
+  return Number.isFinite(v) && v > 0 ? v : fallback
+}
+
+/**
+ * A whole number that counts up to its value once, when it first appears, on
+ * the settle curve over the arrival duration (`--pw-dur-arrive`). Assistive
+ * technology reads only the value itself, never a number on the way to it;
+ * the digits keep their width (tabular) so nothing beside them moves. After
+ * the first count a new value is shown at once, and under reduced motion
+ * there is no count at all.
+ */
+export function CountUp({ value, className = '' }: { value: number; className?: string }) {
+  const reduced = useReducedMotion()
+  const [shown, setShown] = useState(() => (reduced ? value : 0))
+  const settled = useRef(false)
+  useEffect(() => {
+    const plain = reduced || !Number.isFinite(value) || value <= 0 || typeof requestAnimationFrame === 'undefined'
+    if (settled.current || plain) {
+      settled.current = true
+      setShown(value)
+      return
+    }
+    const ms = durationMs('--pw-dur-arrive', 820)
+    const t0 = performance.now()
+    let raf = 0
+    const tick = (now: number) => {
+      const k = easeOut(Math.min(1, (now - t0) / ms))
+      setShown(Math.round(value * k))
+      if (k < 1) raf = requestAnimationFrame(tick)
+      else settled.current = true
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [value, reduced])
+  return (
+    <span className={`tnum ${className}`}>
+      <span aria-hidden="true" className="inline-block text-right" style={{ minWidth: `${String(value).length}ch` }}>
+        {shown}
+      </span>
+      <span className="sr-only">{value}</span>
+    </span>
   )
 }
 

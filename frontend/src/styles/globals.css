@@ -915,6 +915,43 @@ dialog.pw-sheet-out::backdrop {
   }
 }
 
+/* The mission's home: the path from Earth to the Moon uncovered from Earth's
+   end once per mission per visit, each stop settling as the line reaches it
+   (`--pw-at` down the page on a phone, `--pw-at-lg` along the arc). The stop
+   marks carry no words, so they may grow; the words beside them never move. */
+.pw-path-draw {
+  animation: pw-path-draw 960ms var(--ease-move) 120ms backwards;
+}
+.pw-stop-in {
+  animation: pw-stop-in var(--pw-dur-lift) var(--ease-settle) var(--pw-at, 0ms) backwards;
+}
+@media (min-width: 64rem) {
+  .pw-stop-in {
+    animation-delay: var(--pw-at-lg, var(--pw-at, 0ms));
+  }
+}
+@keyframes pw-path-draw {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+}
+@keyframes pw-stop-in {
+  from {
+    transform: scale(0.4);
+  }
+}
+
+/* The Ask dock coming in from the right edge on a wide screen (a phone gets
+   the sheet). It is not modal, so it goes at once when closed. */
+.pw-dock-in {
+  animation: pw-dock-in var(--pw-dur-sheet) var(--ease-move);
+}
+@keyframes pw-dock-in {
+  from {
+    transform: translateX(calc(100% + 24px));
+  }
+}
+
 /* A disclosure's body as it opens. Closing is instant: it removes, never hides. */
 details[open] > .pw-disclosure-body {
   animation: pw-drop var(--pw-dur-base) var(--ease-settle);
