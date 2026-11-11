@@ -21,8 +21,12 @@ battery or mission.
 3. **Link.** Two-ray ground reflection over a flat plane of the entered permittivity (Fresnel
    coefficient for the entered polarisation); SNR from the entered bandwidth and noise figure;
    the link closes at the entered SNR threshold. Throughput is the Shannon bound, an upper
-   bound. Terrain decides whether a path exists (line of sight and first Fresnel zone from the
-   node's own terrain model); an uncertain path is reported and not used.
+   bound. Terrain decides whether a path exists: the straight line between the two antennas
+   must be clear of the node's own terrain model, and an uncertain line is reported and not
+   used. The first Fresnel zone is reported beside it and does not decide, because between
+   antennas a few metres up the ground is always inside that zone (about 5 m deep at 300 m
+   and 900 MHz) and its effect is what the two-ray loss already carries; requiring both
+   would count the ground twice and no low link would ever be used.
 4. **Skies per node.** Each node's Earth and Sun come from its own skyline, marched only over
    the bearings Earth and the Sun cover, at a coarser step and shorter range than the site mask.
 5. **Radio state machine.** Deep sleep while the direct link is healthy; standby once lost;

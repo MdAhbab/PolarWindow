@@ -301,3 +301,21 @@ def test_no_composite_names_in_the_response(monkeypatch: pytest.MonkeyPatch) -> 
     banned = ("score", "verdict", "rating", "go_no_go", "suitability")
     bad = [k for k in walk(out) if isinstance(k, str) and any(b in k.lower() for b in banned)]
     assert bad == []
+
+
+def test_low_antennas_on_flat_ground_still_link(monkeypatch: pytest.MonkeyPatch) -> None:
+    """At 2 m the ground is inside the first Fresnel zone, as it always is between low
+    antennas. The two-ray loss carries that; the terrain test is the line between them."""
+    flat(monkeypatch, {(0.0, 0.0): always, (200.0, 0.0): rover_view})
+    out = run(
+        [
+            lander(antenna_height_m=2.0),
+            node("r1", ROVER_AT, own_traffic_bps=1e3, antenna_height_m=2.0),
+        ]
+    )
+    link = next(x for x in out["links"] if {x["a"], x["b"]} == {"lander", "r1"})
+    assert link["terrain_sight"] == "clear"
+    assert link["terrain_fresnel"] != "clear"
+    assert link["usable"] is True
+    lw = rover(out)["longest_without_path_to_earth"]
+    assert lw["with_mesh"]["value"] < lw["direct_only"]["value"]

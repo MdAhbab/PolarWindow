@@ -418,9 +418,13 @@ def _run(
                         continue
                     lk = link(u.id, pos_of[u.id][i], v.id, pos_of[v.id][i])
                     b = lk.own if u.id == src else lk.fwd
-                    if b.closes and lk.terrain.radio == "uncertain" and u.id == src:
+                    # The terrain test for a link is the straight line between the two
+                    # antennas. The first Fresnel zone is reported beside it but does not
+                    # decide: between antennas a few metres up the ground is always inside
+                    # that zone, and its effect is what the two-ray loss already carries.
+                    if b.closes and lk.terrain.sight == "uncertain" and u.id == src:
                         uncertain_peers.append(v.id)
-                    if b.closes and lk.terrain.radio == "clear":
+                    if b.closes and lk.terrain.sight == "clear":
                         p = rad.tx_power_w if u.id == src else rad.forwarding_tx_power_w
                         edges.setdefault(u.id, {})[v.id] = core.energy_per_bit_j(
                             p, rad.tx_efficiency, b.shannon_bps
@@ -747,7 +751,7 @@ def _present(
                     "free_space_loss_db": round(bud.free_space_db, 2),
                     "snr_db": round(bud.snr_db, 2),
                     "radio_closes": bud.closes,
-                    "usable": bool(bud.closes and radio_state == "clear"),
+                    "usable": bool(bud.closes and sight == "clear"),
                     "range_to_first_failure_m": None if rng is None else round(rng, 1),
                     "throughput_bound_bps": round(bud.shannon_bps, 1),
                 }
@@ -759,8 +763,10 @@ def _present(
         *unc["notes"],
         "Mesh: every radio, battery, traffic and guard figure is entered and taken as given; "
         "none has a margin of its own. Sight and Fresnel-zone states carry the terrain "
-        f"model's height error ({terrain.vertical_error_m:g} m); an uncertain path is "
-        "reported and not used.",
+        f"model's height error ({terrain.vertical_error_m:g} m); a link is used only when "
+        "the line between the antennas is clear, and an uncertain one is reported and not "
+        "used. The Fresnel-zone state is shown but does not decide: the ground's effect on "
+        "a low link is in the two-ray loss.",
         f"Skylines away from the site: {sky_note}.",
         "Earth is 'healthy' only when its whole disc is above the node's skyline; a partly "
         "hidden disc is not.",
