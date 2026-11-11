@@ -26,3 +26,4 @@ Index of architecture decisions for POLAR WINDOW.
 | [ADR-0020](0020-link-budget.md) | The downlink budget runs on sourced or entered radio figures, and gives ranges | Accepted |
 | [ADR-0021](0021-power-and-thermal.md) | Battery charge and bus temperature are one coupled model, run over a range of ground temperatures | Accepted |
 | [ADR-0022](0022-landing-dispersion.md) | A landing ellipse is sampled, and slope and illumination are read at every sample | Accepted |
+| [ADR-0023](0023-surface-mesh.md) | A surface mesh is simulated on entered figures, and no helper is spent to serve another | Accepted |

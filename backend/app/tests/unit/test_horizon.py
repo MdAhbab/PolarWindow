@@ -8,6 +8,8 @@ run.
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 import pytest
 
@@ -456,3 +458,17 @@ def test_bilinear_sample_at_last_row_column_and_nodata() -> None:
     # Outside the tile must return NaN
     h_out = tile.sample_grid(np.array([25.0]), np.array([-20.0]))
     assert np.isnan(h_out[0])
+
+
+def test_azimuth_subset_matches_the_full_march_on_those_bearings() -> None:
+    """A subset of bearings gives the same elevations as the full march at those bearings,
+    and the full set of bearings given explicitly is the default path."""
+    surface = cone(40.0, 3000.0, 400.0)
+    kw: dict[str, Any] = {"azimuth_step_deg": 2.0, "max_range_m": 10_000.0, "site_height_m": 0.0}
+    full = build_mask(surface, **kw)
+    pick = np.array([0.0, 40.0, 42.0, 100.0, 358.0])
+    sub = build_mask(surface, azimuths_deg=pick, **kw)
+    assert sub.el_deg.shape == (5,)
+    np.testing.assert_allclose(sub.el_deg, full.el_deg[(pick / 2.0).astype(int)], atol=1e-9)
+    every = build_mask(surface, azimuths_deg=np.arange(180) * 2.0, **kw)
+    np.testing.assert_allclose(every.el_deg, full.el_deg, atol=1e-9)

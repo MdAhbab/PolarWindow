@@ -198,8 +198,13 @@ def build_mask(
     sample_sigma: TerrainSampler | None = None,
     r_body_m: float = R_MOON_M,
     use_jit: bool = True,
+    azimuths_deg: FloatArray | None = None,
 ) -> HorizonMask:
     """Ray-march a full horizon mask.
+
+    ``azimuths_deg`` limits the march to those bearings (a node that only needs
+    the skyline where Earth and the Sun go): ``el_deg`` then has one entry per
+    bearing given, in the order given, through the same per-ray routine.
 
     Every ray is sampled in one vectorised call, and the per-sample skyline
     selection runs in ``skyline_reference`` -- compiled with numba when it is
@@ -243,6 +248,9 @@ def build_mask(
         h0 = float(site_height_m)
 
     azimuths = np.arange(n_az, dtype=np.float64) * azimuth_step_deg
+    if azimuths_deg is not None:
+        azimuths = np.mod(np.asarray(azimuths_deg, dtype=np.float64), 360.0)
+        n_az = int(azimuths.size)
     # Azimuth is measured from north, clockwise: east = sin(A), north = cos(A).
     sin_a = np.sin(np.radians(azimuths))
     cos_a = np.cos(np.radians(azimuths))

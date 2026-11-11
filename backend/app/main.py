@@ -29,6 +29,7 @@ from app.api.limits import (
     COMPARE,
     DISPERSION,
     ENERGY,
+    MESH,
     SIGN_IN,
     WRITES,
     BodyLimit,
@@ -191,6 +192,7 @@ def create_app() -> FastAPI:
                 COMPARE: s.rate_compare_per_min,
                 ENERGY: s.rate_energy_per_min,
                 DISPERSION: s.rate_energy_per_min,
+                MESH: s.rate_energy_per_min,
                 WRITES: s.rate_writes_per_min,
             },
         )
@@ -219,6 +221,7 @@ def create_app() -> FastAPI:
         health,
         jobs,
         lifecycle,
+        mesh,
         missions,
         ready,
         settings,
@@ -234,6 +237,7 @@ def create_app() -> FastAPI:
     app.include_router(compare.router, prefix=s.api_prefix)
     app.include_router(energy.router, prefix=s.api_prefix)
     app.include_router(dispersion.router, prefix=s.api_prefix)
+    app.include_router(mesh.router, prefix=s.api_prefix)
     app.include_router(tiles.router, prefix=s.api_prefix)
     app.include_router(contact_tiles.router, prefix=s.api_prefix)
     app.include_router(contact_relays.router, prefix=s.api_prefix)

@@ -27,6 +27,7 @@ NOT_A_CHANGE = {
     ("POST", f"{P}/compare"): set(),  # a comparison computed on the request; nothing stored
     ("POST", f"{P}/sites/{{site_id}}/energy"): set(),  # computed on the request; nothing stored
     ("POST", f"{P}/sites/{{site_id}}/dispersion"): set(),  # computed on the request; nothing stored
+    ("POST", f"{P}/sites/{{site_id}}/mesh/simulate"): set(),  # computed; nothing stored
     ("POST", f"{P}/agents/explain"): {"project_manager"},  # the AI assistant reads
     ("POST", f"{P}/agents/advise"): {"project_manager"},
     ("POST", f"{P}/agents/brief"): {"project_manager"},
@@ -88,6 +89,7 @@ def test_what_a_request_counts_against() -> None:
     assert allowance("POST", f"{P}/compare", P) == COMPARE
     assert allowance("POST", f"{P}/sites/x/energy", P) == "energy"
     assert allowance("POST", f"{P}/sites/x/dispersion", P) == "dispersion"
+    assert allowance("POST", f"{P}/sites/x/mesh/simulate", P) == "mesh"
     assert allowance("PATCH", f"{P}/risks/1", P) == WRITES
     assert allowance("DELETE", f"{P}/settings/cache", P) == WRITES
 
