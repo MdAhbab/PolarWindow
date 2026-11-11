@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from app.agents.base import _seconds_to_daily_reset, classify_api_error
+from app.agents.base import (
+    SLOW_MODEL_COOLDOWN_S,
+    _seconds_to_daily_reset,
+    classify_api_error,
+    slow_model,
+)
 
 DAILY = (
     "RESOURCE_EXHAUSTED {'error': {'code': 429, 'details': [{'@type': "
@@ -42,6 +47,17 @@ def test_an_outage_moves_on_briefly() -> None:
 
 def test_a_bad_request_is_not_the_model_s_fault() -> None:
     assert classify_api_error("gemini-3.8-flash", 400, "INVALID_ARGUMENT") is None
+
+
+def test_a_silent_model_gives_way_to_the_next_while_the_run_has_time() -> None:
+    e = slow_model("gemini-3.8-flash", 8.0, 20.0)
+    assert e is not None and e.model == "gemini-3.8-flash"
+    assert e.why == "did not answer within 8 s"
+    assert e.cooldown_s == SLOW_MODEL_COOLDOWN_S
+
+
+def test_a_run_out_of_time_has_no_next_model_to_try() -> None:
+    assert slow_model("gemini-3.8-flash", 4.0, 4.0) is None
 
 
 def test_daily_quotas_reset_at_midnight_pacific() -> None:

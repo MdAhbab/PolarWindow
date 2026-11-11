@@ -287,6 +287,8 @@ class Settings(BaseSettings):
         "gemini-2.5-flash",
     )
     agent_timeout_s: float = 20.0
+    #: The most one model may take of a run before the next in the chain is tried.
+    agent_attempt_timeout_s: float = 8.0
     agent_max_rounds: int = 4
     agent_max_tool_calls: int = 8
     agent_max_output_tokens: int = 2048

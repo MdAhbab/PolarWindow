@@ -124,7 +124,16 @@ def fake_gemini(monkeypatch: pytest.MonkeyPatch) -> Iterator:
 
     state: dict[str, object] = {"queue": [], "calls": 0}
 
-    async def fake(model, contents, system_prompt, tool_decls, *, response_schema, timeout_s):
+    async def fake(
+        model,
+        contents,
+        system_prompt,
+        tool_decls,
+        *,
+        response_schema,
+        timeout_s,
+        attempt_timeout_s=None,
+    ):
         """Stand in for one model call.
 
         The loop makes two kinds of call and the fake has to tell them apart, or

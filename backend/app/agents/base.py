@@ -237,6 +237,26 @@ def classify_api_error(model: str, code: object, details: str) -> ModelUnavailab
     return None
 
 
+#: How long a model that did not answer in time is skipped.
+SLOW_MODEL_COOLDOWN_S = 600.0
+
+
+def slow_model(model: str, waited_s: float, budget_s: float) -> ModelUnavailable | None:
+    """Whether a model that did not answer in time means "try the next model".
+
+    A model can accept the request and then say nothing for half a minute (seen
+    with the newest model of a chain on a fresh key). If it used only its own
+    share of the time and the run still has some, that is an outage of this one
+    model, and the next may answer in seconds. If the whole budget is gone,
+    there is nothing to move on to.
+    """
+    if waited_s < budget_s:
+        return ModelUnavailable(
+            model, f"did not answer within {waited_s:.0f} s", SLOW_MODEL_COOLDOWN_S
+        )
+    return None
+
+
 async def _generate(
     model: str,
     contents: list[Any],
@@ -245,8 +265,13 @@ async def _generate(
     *,
     response_schema: dict[str, Any] | None,
     timeout_s: float,
+    attempt_timeout_s: float | None = None,
 ) -> dict[str, Any]:
     """One call to Gemini via google-genai's async client.
+
+    ``timeout_s`` is what the run has left. ``attempt_timeout_s``, when given,
+    is the most this one model may take of it: past that the call raises
+    ``ModelUnavailable`` so the chain moves on (see ``slow_model``).
 
     Isolated behind a function so the whole loop can be exercised offline. The
     SDK's async client speaks httpx, so tests can intercept it at the HTTP layer
@@ -287,13 +312,19 @@ async def _generate(
         config["response_mime_type"] = "application/json"
         config["response_schema"] = response_schema
 
+    attempt_s = timeout_s if attempt_timeout_s is None else min(timeout_s, attempt_timeout_s)
     try:
         resp = await asyncio.wait_for(
             client.aio.models.generate_content(
                 model=model, contents=contents, config=gt.GenerateContentConfig(**config)
             ),
-            timeout=timeout_s,
+            timeout=attempt_s,
         )
+    except TimeoutError as exc:
+        slow = slow_model(model, attempt_s, timeout_s)
+        if slow is None:
+            raise
+        raise slow from exc
     except genai_errors.APIError as exc:
         unavailable = classify_api_error(model, exc.code, f"{exc.status} {exc.details}")
         if unavailable is None:
@@ -695,6 +726,7 @@ async def run_agent(
                         decls,
                         response_schema=None,
                         timeout_s=remaining(),
+                        attempt_timeout_s=s.agent_attempt_timeout_s,
                     )
                     prompt_tokens += response["prompt_tokens"]
                     completion_tokens += response["completion_tokens"]
@@ -799,6 +831,7 @@ async def run_agent(
                         [],
                         response_schema=_schema_for(spec.output_model),
                         timeout_s=remaining(),
+                        attempt_timeout_s=s.agent_attempt_timeout_s,
                     )
                     prompt_tokens += response["prompt_tokens"]
                     completion_tokens += response["completion_tokens"]
