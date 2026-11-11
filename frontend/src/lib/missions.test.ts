@@ -106,6 +106,12 @@ describe('published dates on screen', () => {
     expect(publishedTitle(d)).toBe('As published: approximately 11:30 a.m. CST March 6, 2025')
   })
 
+  it('puts the precision inside a phrase that already ends in a bracket', () => {
+    const d = { ...mission('peregrine-m1').launch!, precision: 'year' as const, asPublished: '2027 (Launch Library 2, a placeholder year)' }
+    expect(publishedWords(d)).toBe('2027 (Launch Library 2, a placeholder year; known to the year)')
+    expect(publishedWords({ ...d, asPublished: 'late 2026' })).toBe('late 2026 (known to the year)')
+  })
+
   it('writes a date known to the day without a time', () => {
     const d = mission('peregrine-m1').launch!
     expect(publishedWords(d)).toBe('8 Jan 2024')

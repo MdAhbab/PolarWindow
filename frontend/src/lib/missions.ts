@@ -122,7 +122,10 @@ export function publishedWords(d: PublishedDate, long = false): string {
   if (d.precision === 'second') return `${day(d.startMs)}, ${hhmmss(d.startMs)}`
   if (d.precision === 'minute') return `${day(d.startMs)}, ${hhmm(d.startMs)}`
   if (d.precision === 'day') return day(d.startMs)
-  return `${cleanPhrase(d.asPublished)} (known to the ${d.precision})`
+  const phrase = cleanPhrase(d.asPublished)
+  // A phrase that already ends in a bracket takes the precision inside it, not a second bracket.
+  if (phrase.endsWith(')')) return `${phrase.slice(0, -1)}; known to the ${d.precision})`
+  return `${phrase} (known to the ${d.precision})`
 }
 
 /** The tooltip for a date written in words: the phrase as the source published it. */

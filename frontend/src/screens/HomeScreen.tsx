@@ -50,7 +50,7 @@ export function HomeScreen() {
       : headline(needsLoading ? null : needs.length, LIVE_SERVICE && activity.data ? activity.data.active.length : null)
 
   return (
-    <div className="pw-page mx-auto flex w-full max-w-[1320px] flex-col gap-12 pt-6 pb-4 lg:gap-14 lg:pt-10">
+    <div className="pw-page flex w-full flex-col gap-12 pt-6 pb-4 lg:gap-14 lg:pt-10">
       <section aria-labelledby="home-title" className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)] lg:gap-10">
         <div className="flex min-w-0 flex-col gap-7">
           <div className="flex flex-col gap-3">

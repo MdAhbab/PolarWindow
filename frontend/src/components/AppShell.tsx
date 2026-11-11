@@ -300,10 +300,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         onClick={toggleAsk}
         aria-expanded={askOpen}
         aria-keyshortcuts="/ Control+K Meta+K"
-        className="pw-press fixed right-4 bottom-[calc(5.25rem+env(safe-area-inset-bottom)+var(--pw-guide-h,0px))] z-40 inline-flex h-14 items-center gap-2 rounded-pill bg-ink pr-5 pl-4 text-control font-semibold text-canvas shadow-lift hover:bg-ink-2 lg:hidden"
+        aria-label="Ask"
+        title="Ask"
+        className="pw-press fixed right-4 bottom-[calc(5.25rem+env(safe-area-inset-bottom)+var(--pw-guide-h,0px))] z-40 inline-flex size-14 items-center justify-center rounded-pill bg-ink text-canvas shadow-lift hover:bg-ink-2 lg:hidden"
       >
-        <Icon name="ask" size={20} strokeWidth={2} />
-        Ask
+        {/* A round button, not a labelled one: it floats over the page's own words. */}
+        <Icon name="ask" size={22} strokeWidth={2} />
       </button>
 
       {/* On a phone the three views float at the bottom, in reach of a thumb and
