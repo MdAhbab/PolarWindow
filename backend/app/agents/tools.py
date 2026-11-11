@@ -238,7 +238,8 @@ TOOL_DECLARATIONS: list[dict[str, Any]] = [
         "name": "list_missions",
         "description": (
             "The CLPS missions: id, name, provider, lander, status, target site and "
-            "published launch and landing dates. Use it to find a mission's id."
+            "published launch and landing dates. A date is given only as precisely as "
+            "it was published: '2026' is a year, not a day. Use it to find a mission's id."
         ),
         "parameters": tool_parameters(ListMissionsArgs.model_json_schema()),
     },
@@ -329,6 +330,33 @@ def _window(args: WindowArgs | CompareArgs) -> tuple[datetime, datetime]:
     if end.tzinfo is None:
         end = end.replace(tzinfo=UTC)
     return start, end
+
+
+def published_when(key: str, block: dict[str, Any] | None) -> dict[str, Any]:
+    """A published date for the AI, cut to the precision it was published at.
+
+    The record stores "late 2026" as 2026-01-01 with precision "year". Handing the
+    model the stored day lets it say "on 2026-01-01": a date nobody published. So a
+    year is given as "2026", a month as "2026-03", a quarter as "2026-Q1", with the
+    words as published beside it; only a date known to the day keeps its day.
+    """
+    b = block or {}
+    date = b.get("date")
+    if not isinstance(date, str) or len(date) < 10:
+        return {key: None}
+    precision = b.get("precision")
+    if precision == "year":
+        shown = date[:4]
+    elif precision == "month":
+        shown = date[:7]
+    elif precision == "quarter":
+        shown = f"{date[:4]}-Q{(int(date[5:7]) - 1) // 3 + 1}"
+    else:
+        return {key: date}
+    out: dict[str, Any] = {key: shown, f"{key}_precision": precision}
+    if b.get("as_published"):
+        out[f"{key}_as_published"] = b["as_published"]
+    return out
 
 
 def _trim(payload: dict[str, Any], keep: tuple[str, ...]) -> dict[str, Any]:
@@ -628,8 +656,8 @@ async def execute(session: Session, name: str, raw_args: dict[str, Any], seq: in
                         "lander": m.lander,
                         "status": m.status,
                         "site_id": m.site_id,
-                        "launch": (m.launch or {}).get("date"),
-                        "landing": (m.landing or {}).get("date"),
+                        **published_when("launch", m.launch),
+                        **published_when("landing", m.landing),
                     }
                     for m in found
                 ],
