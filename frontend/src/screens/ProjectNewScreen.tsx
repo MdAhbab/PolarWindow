@@ -169,7 +169,10 @@ function ProjectEditor({ id, initial, name }: { id?: string; initial?: ProjectFo
     const keys = Object.keys(patch)
     const nextProv = { ...cur.prov }
     for (const g of GROUP_KEYS) if (GROUPS[g].fields.some((f) => keys.includes(f))) delete nextProv[g]
-    setDoc({ form: { ...cur.form, ...patch }, prov: nextProv })
+    const nextKeep = { ...cur.form.keep }
+    if ('vehicleId' in patch && patch.vehicleId !== cur.form.vehicleId) delete nextKeep.vehicle_name
+    if ('padId' in patch && patch.padId !== cur.form.padId) delete nextKeep.pad_name
+    setDoc({ form: { ...cur.form, ...patch, keep: nextKeep }, prov: nextProv })
     if (Object.keys(serverErrors).length) {
       const drop = { ...serverErrors }
       for (const k of keys) delete drop[k]

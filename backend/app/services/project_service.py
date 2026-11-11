@@ -187,11 +187,39 @@ def _start(d: dict[str, Any] | None) -> datetime | None:
     return None if d is None else _parse(d["date"])
 
 
+def rover_rows(mission_id: str, rovers: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    taken: set[str] = set()
+    for r in rovers:
+        name = (r.get("name") or "").strip()
+        if not name:
+            continue
+        raw_id = (r.get("id") or "").strip()
+        base = (
+            raw_id
+            if raw_id.startswith(f"{mission_id}/") and len(raw_id) > len(mission_id) + 1
+            else f"{mission_id}/{slug(name)[:56].strip('-') or 'rover'}"
+        )
+        rid = free_id(base, taken)
+        taken.add(rid)
+        out.append(
+            {
+                "id": rid,
+                "name": name,
+                "organisation": _clean(r.get("organisation")),
+                "source_url": (r.get("source_url") or "").strip(),
+            }
+        )
+    return out
+
+
 def lifecycle_of(
     lc: dict[str, Any] | None,
     status: str,
     launch: dict[str, Any] | None,
     intake_id: int | None,
+    *,
+    mission_id: str = "p-project",
 ) -> dict[str, Any]:
     """The v2 facts in the stored shape (``ingest_missions.lifecycle_of``), from the form.
 
@@ -244,18 +272,31 @@ def lifecycle_of(
             "precision": "minute",
             "as_published": launch["as_published"],
         }
+    vehicle_id = lc.get("vehicle_id")
+    pad_id = lc.get("pad_id")
+    vehicle_name = _clean(lc.get("vehicle_name")) or mission_service.catalogue_name(
+        "vehicles", vehicle_id
+    )
+    pad_name = _clean(lc.get("pad_name")) or mission_service.catalogue_name("launch_sites", pad_id)
+    field_sources = {
+        str(k).strip(): str(v).strip()
+        for k, v in (lc.get("field_sources") or {}).items()
+        if str(k).strip() and v is not None
+    }
     out: dict[str, Any] = {
-        "vehicle_id": lc.get("vehicle_id"),
-        "pad_id": lc.get("pad_id"),
+        "vehicle_id": vehicle_id,
+        "vehicle_name": vehicle_name,
+        "pad_id": pad_id,
+        "pad_name": pad_name,
         "t0": t0,
         "transfer": transfer,
         "descent": descent,
         "comms": comms,
         "spacecraft": spacecraft,
-        "rovers": [],
+        "rovers": rover_rows(mission_id, list(lc.get("rovers") or [])),
         "returns": lc.get("returns"),
-        # Entered facts have no URL; the mission's sources say who entered them.
-        "field_sources": {},
+        # Entered facts have no URL unless kept from a saved record; sources say who entered them.
+        "field_sources": field_sources,
     }
     if intake_id is not None:
         out["intake_id"] = intake_id
@@ -356,7 +397,7 @@ def build_row(
         "site_id": site_id,
         "sources": sources,
         "notes": [n.strip() for n in data.get("notes") or [] if n and n.strip()],
-        "lifecycle": lifecycle_of(lc, status, launch, intake_id),
+        "lifecycle": lifecycle_of(lc, status, launch, intake_id, mission_id=mission_id),
     }
     payloads = payload_rows(mission_id, list(data.get("payloads") or []))
     row["unconfirmed_fields"] = unconfirmed(row, payloads)

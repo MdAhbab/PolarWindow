@@ -80,9 +80,9 @@ beforeEach(() => {
       eirp_tol_db: 1,
     },
     spacecraft: { mass_kg: 1900, area_m2: null, cr: null },
-    rovers: [],
+    rovers: [{ id: 'mine-2/iris', name: 'Iris', organisation: 'CMU', source_url: 'https://example.org/iris' }],
     returns: 'sample_capsule',
-    field_sources: {},
+    field_sources: { comms: 'https://example.org/comms' },
   },
         })
       if (url.pathname.endsWith('/projects/mine-2') && init?.method === 'PUT') {
@@ -232,9 +232,14 @@ describe('the radio figures in the form', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
     expect(await screen.findByText('hub')).toBeTruthy()
     expect(posts[0].body.lifecycle).toEqual({
-      vehicle_id: 'falcon-9', pad_id: 'ksc-39a', transfer_type: 'low_energy', flight_days: 90, lunar_orbit_days: 12.5,
+      vehicle_id: 'falcon-9', vehicle_name: 'Falcon 9', pad_id: 'ksc-39a', pad_name: 'LC-39A',
+      transfer_type: 'low_energy', flight_days: 90, lunar_orbit_days: 12.5,
       sun_el_min_deg: 2, sun_el_max_deg: 15, bands: ['S', 'X'], ground_stations: ['dss-43'], relays: ['queqiao-2'],
-      mass_kg: 1900, returns: 'sample_capsule', eirp_dbw: 12.5, eirp_tol_db: 1, gt_dbk: -3, frequency_mhz: 2250,
+      mass_kg: 1900,
+      rovers: [{ id: 'mine-2/iris', name: 'Iris', organisation: 'CMU', source_url: 'https://example.org/iris' }],
+      returns: 'sample_capsule',
+      field_sources: { comms: 'https://example.org/comms' },
+      eirp_dbw: 12.5, eirp_tol_db: 1, gt_dbk: -3, frequency_mhz: 2250,
       data_rates_kbps: [2, 64], required_ebn0_db: 2.5, required_margin_db: 3,
     })
   })

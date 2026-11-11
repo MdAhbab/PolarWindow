@@ -246,13 +246,23 @@ function lifecycleToForm(lc: ProjectLifecycleIn | null | undefined) {
   const l = lc ?? {}
   const keep: Partial<ProjectLifecycleIn> = {}
   const set = (k: keyof ProjectLifecycleIn, v: unknown) => {
-    if (v !== undefined && v !== null && !(Array.isArray(v) && v.length === 0)) (keep as Record<string, unknown>)[k] = v
+    if (
+      v !== undefined &&
+      v !== null &&
+      !(Array.isArray(v) && v.length === 0) &&
+      !(typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0)
+    )
+      (keep as Record<string, unknown>)[k] = v
   }
+  set('vehicle_name', l.vehicle_name)
+  set('pad_name', l.pad_name)
   set('flight_days', l.flight_days)
   set('lunar_orbit_days', l.lunar_orbit_days)
   set('sun_el_min_deg', l.sun_el_min_deg)
   set('sun_el_max_deg', l.sun_el_max_deg)
   set('ground_stations', l.ground_stations)
+  set('rovers', l.rovers)
+  set('field_sources', l.field_sources)
   return {
     fields: {
       vehicleId: l.vehicle_id ?? '',
@@ -313,8 +323,13 @@ export function lifecycleFromStored(stored: unknown): ProjectLifecycleIn {
   const id = (k: string, v: unknown) => {
     if (typeof v === 'string' && v.trim() && v.length <= 64) out[k] = v
   }
+  const word = (k: string, v: unknown, max: number) => {
+    if (typeof v === 'string' && v.trim() && v.length <= max) out[k] = v
+  }
   id('vehicle_id', s.vehicle_id)
+  word('vehicle_name', s.vehicle_name, 160)
   id('pad_id', s.pad_id)
+  word('pad_name', s.pad_name, 160)
   if ((TRANSFERS as readonly unknown[]).includes(transfer.type)) out.transfer_type = transfer.type
   number('flight_days', transfer.flight_days)
   number('lunar_orbit_days', transfer.lunar_orbit_days)
@@ -324,7 +339,26 @@ export function lifecycleFromStored(stored: unknown): ProjectLifecycleIn {
   ids('ground_stations', comms.ground_stations, 40)
   ids('relays', comms.relays, 12)
   number('mass_kg', craft.mass_kg)
+  if (Array.isArray(s.rovers)) {
+    const rovers = s.rovers
+      .map((item) => loose(item))
+      .filter((r) => typeof r.name === 'string' && r.name.trim().length > 0 && r.name.length <= 200)
+      .slice(0, 20)
+      .map((r) => ({
+        ...(typeof r.id === 'string' && r.id.trim() && r.id.length <= 128 ? { id: r.id } : {}),
+        name: r.name as string,
+        organisation: typeof r.organisation === 'string' && r.organisation.length <= 200 ? r.organisation : null,
+        ...(typeof r.source_url === 'string' && r.source_url.length <= 500 ? { source_url: r.source_url } : {}),
+      }))
+    if (rovers.length) out.rovers = rovers
+  }
   if ((RETURNS as readonly unknown[]).includes(s.returns)) out.returns = s.returns
+  if (s.field_sources && typeof s.field_sources === 'object' && !Array.isArray(s.field_sources)) {
+    const entries = Object.entries(s.field_sources as Loose)
+      .filter(([k, v]) => k.length > 0 && k.length <= 64 && typeof v === 'string' && v.length <= 500)
+      .slice(0, 40)
+    if (entries.length) out.field_sources = Object.fromEntries(entries)
+  }
   for (const k of ['eirp_dbw', 'eirp_tol_db', 'gt_dbk', 'frequency_mhz', 'required_ebn0_db', 'required_margin_db']) number(k, comms[k])
   if (Array.isArray(comms.data_rates_kbps)) {
     const rates = comms.data_rates_kbps.filter((r: unknown): r is number => typeof r === 'number' && Number.isFinite(r) && r > 0 && r <= 1e7)

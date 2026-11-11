@@ -14143,6 +14143,18 @@
             ],
             "title": "Vehicle Id"
           },
+          "vehicle_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vehicle Name"
+          },
           "pad_id": {
             "anyOf": [
               {
@@ -14154,6 +14166,18 @@
               }
             ],
             "title": "Pad Id"
+          },
+          "pad_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pad Name"
           },
           "transfer_type": {
             "anyOf": [
@@ -14261,6 +14285,14 @@
             ],
             "title": "Mass Kg"
           },
+          "rovers": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectRoverIn"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Rovers"
+          },
           "returns": {
             "anyOf": [
               {
@@ -14276,6 +14308,13 @@
               }
             ],
             "title": "Returns"
+          },
+          "field_sources": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Field Sources"
           },
           "eirp_dbw": {
             "anyOf": [
@@ -14557,6 +14596,52 @@
           "name"
         ],
         "title": "ProjectPayloadIn"
+      },
+      "ProjectRoverIn": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "organisation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organisation"
+          },
+          "source_url": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Source Url",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ProjectRoverIn"
       },
       "ProjectSaved": {
         "properties": {

@@ -334,8 +334,8 @@ def lifecycle_brief(m: MissionRecord) -> dict[str, Any] | None:
                 "returns",
             )
         },
-        "vehicle_name": catalogue_name("vehicles", lc.get("vehicle_id")),
-        "pad_name": catalogue_name("launch_sites", lc.get("pad_id")),
+        "vehicle_name": lc.get("vehicle_name") or catalogue_name("vehicles", lc.get("vehicle_id")),
+        "pad_name": lc.get("pad_name") or catalogue_name("launch_sites", lc.get("pad_id")),
         "t0": None if t0 is None else {k: t0[k] for k in ("date", "precision", "as_published")},
         "rovers": list(lc.get("rovers") or []),
         "field_sources": dict(lc.get("field_sources") or {}),

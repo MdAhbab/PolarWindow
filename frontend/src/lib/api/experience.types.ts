@@ -78,10 +78,19 @@ export interface ProjectPayloadIn {
   purpose?: string | null
 }
 
+export interface ProjectRoverIn {
+  id?: string | null
+  name: string
+  organisation?: string | null
+  source_url?: string
+}
+
 export interface ProjectLifecycleIn {
   /** Catalogue ids from /projects/options. */
   vehicle_id?: string | null
+  vehicle_name?: string | null
   pad_id?: string | null
+  pad_name?: string | null
   transfer_type?: 'direct' | 'phasing_loops' | 'low_energy' | 'unknown' | null
   flight_days?: number | null
   lunar_orbit_days?: number | null
@@ -91,7 +100,9 @@ export interface ProjectLifecycleIn {
   ground_stations?: string[]
   relays?: string[]
   mass_kg?: number | null
+  rovers?: ProjectRoverIn[]
   returns?: 'none' | 'sample_capsule' | 'crew' | null
+  field_sources?: Record<string, string>
   /** Radio figures; with `eirp_dbw` stated the Contact step runs a link budget. Leave a key out when unknown. */
   eirp_dbw?: number | null
   eirp_tol_db?: number | null

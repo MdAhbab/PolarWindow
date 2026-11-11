@@ -4537,8 +4537,12 @@ export interface components {
         ProjectLifecycleIn: {
             /** Vehicle Id */
             vehicle_id?: string | null;
+            /** Vehicle Name */
+            vehicle_name?: string | null;
             /** Pad Id */
             pad_id?: string | null;
+            /** Pad Name */
+            pad_name?: string | null;
             /** Transfer Type */
             transfer_type?: ("direct" | "phasing_loops" | "low_energy" | "unknown") | null;
             /** Flight Days */
@@ -4557,8 +4561,14 @@ export interface components {
             relays?: string[];
             /** Mass Kg */
             mass_kg?: number | null;
+            /** Rovers */
+            rovers?: components["schemas"]["ProjectRoverIn"][];
             /** Returns */
             returns?: ("none" | "sample_capsule" | "crew") | null;
+            /** Field Sources */
+            field_sources?: {
+                [key: string]: string;
+            };
             /**
              * Eirp Dbw
              * @description The lander's transmit EIRP, dBW. Stating it turns the link budget on.
@@ -4649,6 +4659,20 @@ export interface components {
             instrument_types?: ("volatiles" | "geology_geophysics" | "heat_flow" | "radiation_space_weather" | "exosphere_dust" | "imaging" | "landing_navigation" | "communications" | "laser_retroreflector" | "rover_mobility" | "technology_demo" | "other")[];
             /** Purpose */
             purpose?: string | null;
+        };
+        /** ProjectRoverIn */
+        ProjectRoverIn: {
+            /** Id */
+            id?: string | null;
+            /** Name */
+            name: string;
+            /** Organisation */
+            organisation?: string | null;
+            /**
+             * Source Url
+             * @default
+             */
+            source_url: string;
         };
         /**
          * ProjectSaved

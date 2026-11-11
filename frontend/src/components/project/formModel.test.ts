@@ -113,16 +113,18 @@ describe('editing a saved project', () => {
     eirp_tol_db: 1,
   },
   spacecraft: { mass_kg: 1900, area_m2: null, cr: null },
-  rovers: [],
+  rovers: [{ id: 'mine-1/iris', name: 'Iris', organisation: 'CMU', source_url: 'https://example.org/iris' }],
   returns: 'sample_capsule',
-  field_sources: {},
+  field_sources: { comms: 'https://example.org/comms' },
 }
   const detail = adaptMissionDetail({ ...mission, id: 'mine-1' } as never)
 
   it('reads the stored lifecycle back as the request states it', () => {
     expect(lifecycleFromStored(stored)).toEqual({
       vehicle_id: 'falcon-9',
+      vehicle_name: 'Falcon 9',
       pad_id: 'ksc-39a',
+      pad_name: 'LC-39A',
       transfer_type: 'low_energy',
       flight_days: 90,
       lunar_orbit_days: 12.5,
@@ -132,7 +134,9 @@ describe('editing a saved project', () => {
       ground_stations: ['dss-43'],
       relays: ['queqiao-2'],
       mass_kg: 1900,
+      rovers: [{ id: 'mine-1/iris', name: 'Iris', organisation: 'CMU', source_url: 'https://example.org/iris' }],
       returns: 'sample_capsule',
+      field_sources: { comms: 'https://example.org/comms' },
       eirp_dbw: 12.5,
       eirp_tol_db: 1,
       gt_dbk: -3,
@@ -149,7 +153,17 @@ describe('editing a saved project', () => {
       'falcon-9', 'ksc-39a', 'low_energy', 'S, X', ['queqiao-2'], '1900', 'sample_capsule',
     ])
     expect([f.eirp, f.eirpTol, f.gt, f.frequency, f.dataRates, f.ebn0, f.margin]).toEqual(['12.5', '1', '-3', '2250', '2, 64', '2.5', '3'])
-    expect(f.keep).toEqual({ flight_days: 90, lunar_orbit_days: 12.5, sun_el_min_deg: 2, sun_el_max_deg: 15, ground_stations: ['dss-43'] })
+    expect(f.keep).toEqual({
+      vehicle_name: 'Falcon 9',
+      pad_name: 'LC-39A',
+      flight_days: 90,
+      lunar_orbit_days: 12.5,
+      sun_el_min_deg: 2,
+      sun_el_max_deg: 15,
+      ground_stations: ['dss-43'],
+      rovers: [{ id: 'mine-1/iris', name: 'Iris', organisation: 'CMU', source_url: 'https://example.org/iris' }],
+      field_sources: { comms: 'https://example.org/comms' },
+    })
   })
 
   it('sends the same lifecycle back when nothing was edited', () => {

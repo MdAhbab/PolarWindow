@@ -404,3 +404,43 @@ def test_radio_ranges_are_checked() -> None:
     for bad in ({"eirp_dbw": 500}, {"frequency_mhz": 0}, {"data_rates_kbps": [0]}):
         with pytest.raises(ValidationError):
             ProjectIn.model_validate({"name": "A", "lifecycle": bad})
+
+
+def test_rovers_field_sources_and_vehicle_pad_names_round_trip() -> None:
+    import dataclasses
+
+    from app.api.v1.schemas.missions import MissionLifecycle
+
+    form = ProjectIn.model_validate(
+        {
+            "name": "Athena",
+            "lifecycle": {
+                "vehicle_id": "falcon-9-block-5",
+                "vehicle_name": "Falcon 9",
+                "pad_id": "ksc-lc-39a",
+                "pad_name": "LC-39A",
+                "rovers": [
+                    {
+                        "id": "p-x/iris",
+                        "name": "Iris",
+                        "organisation": "CMU",
+                        "source_url": "https://example.org/iris",
+                    },
+                    {"name": "MAPP", "organisation": "Lunar Outpost"},
+                ],
+                "field_sources": {"comms": "https://example.org/comms"},
+            },
+        }
+    )
+    row, _ = build(form.model_dump(mode="json"))
+    lc = row["lifecycle"]
+    assert lc["vehicle_name"] == "Falcon 9" and lc["pad_name"] == "LC-39A"
+    assert [r["id"] for r in lc["rovers"]] == ["p-x/iris", "p-x/mapp"]
+    assert lc["field_sources"] == {"comms": "https://example.org/comms"}
+    m = dataclasses.replace(record("p-x", PROJECT), lifecycle=lc)
+    brief = mission_service.lifecycle_brief(m)
+    assert brief is not None
+    validated = MissionLifecycle.model_validate(brief)
+    assert validated.vehicle_name == "Falcon 9" and validated.pad_name == "LC-39A"
+    assert [r.name for r in validated.rovers] == ["Iris", "MAPP"]
+    assert validated.field_sources == {"comms": "https://example.org/comms"}

@@ -67,9 +67,18 @@ class ProjectPayloadIn(_In):
     purpose: str | None = Field(default=None, max_length=2000)
 
 
+class ProjectRoverIn(_In):
+    id: str | None = Field(default=None, max_length=128)
+    name: str = Field(min_length=1, max_length=200)
+    organisation: str | None = Field(default=None, max_length=200)
+    source_url: str = Field(default="", max_length=500)
+
+
 class ProjectLifecycleIn(_In):
     vehicle_id: str | None = Field(default=None, max_length=64)
+    vehicle_name: str | None = Field(default=None, max_length=160)
     pad_id: str | None = Field(default=None, max_length=64)
+    pad_name: str | None = Field(default=None, max_length=160)
     transfer_type: Literal["direct", "phasing_loops", "low_energy", "unknown"] | None = None
     flight_days: float | None = Field(default=None, gt=0.0, le=1000.0)
     lunar_orbit_days: float | None = Field(default=None, ge=0.0, le=1000.0)
@@ -79,7 +88,9 @@ class ProjectLifecycleIn(_In):
     ground_stations: list[str] = Field(default_factory=list, max_length=40)
     relays: list[str] = Field(default_factory=list, max_length=12)
     mass_kg: float | None = Field(default=None, gt=0.0, le=1.0e6)
+    rovers: list[ProjectRoverIn] = Field(default_factory=list, max_length=20)
     returns: Literal["none", "sample_capsule", "crew"] | None = None
+    field_sources: dict[str, str] = Field(default_factory=dict)
     # Radio figures (ADR-20): with ``eirp_dbw`` stated, Contact runs a link budget.
     eirp_dbw: float | None = Field(
         default=None,
@@ -118,6 +129,12 @@ class ProjectLifecycleIn(_In):
                 raise ValueError(f"each of {name} is 1 to 64 characters")
         if any(not 0.0 < r <= 1.0e7 for r in self.data_rates_kbps):
             raise ValueError("each of data_rates_kbps is above 0 and at most 10 000 000")
+        if len(self.field_sources) > 40 or any(
+            not (0 < len(k) <= 64 and len(v) <= 500) for k, v in self.field_sources.items()
+        ):
+            raise ValueError(
+                "each of field_sources has a key of 1 to 64 characters and a URL of at most 500"
+            )
         return self
 
 
