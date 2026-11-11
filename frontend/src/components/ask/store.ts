@@ -11,6 +11,8 @@ export interface AskTurn {
   id: number
   question: string
   context: ChatContextDTO
+  /** What the page was about when it was asked, in the chip's words ("About IM-3 · Launch"). */
+  about: string | null
   state: TurnState
   response: ChatResponseDTO | null
   error: unknown
@@ -38,7 +40,7 @@ interface AskState {
   close: () => void
   toggle: () => void
   /** A question goes out: it is added as `asking`, and its id returned. */
-  begin: (question: string, context: ChatContextDTO) => number
+  begin: (question: string, context: ChatContextDTO, about?: string | null) => number
   answer: (id: number, response: ChatResponseDTO) => void
   fail: (id: number, error: unknown) => void
   /** A question taken back (cancelled) leaves no trace. */
@@ -60,11 +62,11 @@ export const useAsk = create<AskState>((set) => ({
     }),
   close: () => set({ isOpen: false }),
   toggle: () => set((s) => ({ isOpen: !s.isOpen })),
-  begin: (question, context) => {
+  begin: (question, context, about = null) => {
     let id = 0
     set((s) => {
       id = s.nextId
-      const turn: AskTurn = { id, question, context, state: 'asking', response: null, error: null }
+      const turn: AskTurn = { id, question, context, about, state: 'asking', response: null, error: null }
       return { nextId: s.nextId + 1, turns: [...s.turns, turn] }
     })
     return id

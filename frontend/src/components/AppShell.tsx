@@ -8,6 +8,7 @@ import { useKeyboardMap } from '../hooks/useKeyboard'
 import { useMotionClass, useReducedMotion } from '../hooks/useMotion'
 import { LIVE_SERVICE, useActivity } from '../lib/api/home'
 import { useAsk, useAskShortcuts } from './ask/store'
+import { ASK_DOCK_ID, AskDock } from './ask/AskDock'
 import { ActivityRing } from './activity/ActivityRing'
 import { ACTIVITY_TRAY_ID, ActivityTray } from './activity/ActivityTray'
 import { ringState, useActivityTray } from './activity/model'
@@ -192,6 +193,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               type="button"
               onClick={toggleAsk}
               aria-expanded={askOpen}
+              aria-controls={askOpen ? ASK_DOCK_ID : undefined}
               aria-keyshortcuts="/ Control+K Meta+K"
               title="Ask (/ or Ctrl+K)"
               className="pw-press hidden h-12 items-center gap-2 rounded-pill border border-line-strong bg-tray pr-2 pl-4 text-body font-semibold text-ink hover:border-ink-3 hover:bg-inset aria-expanded:bg-inset lg:inline-flex"
@@ -270,11 +272,15 @@ export function AppShell({ children }: { children: ReactNode }) {
       )}
 
       {/* Below lg the floating dock, and at every width the guide card when it
-          is open, must never cover the last line. */}
+          is open, must never cover the last line. From lg the open Ask panel
+          sits beside the page, which makes room for it rather than hiding
+          under it. */}
       <main
         id="pw-main"
         tabIndex={-1}
-        className="flex grow flex-col pb-[calc(9.5rem+env(safe-area-inset-bottom)+var(--pw-guide-h,0px))] outline-none lg:pb-[var(--pw-guide-h,0px)]"
+        className={`flex grow flex-col pb-[calc(9.5rem+env(safe-area-inset-bottom)+var(--pw-guide-h,0px))] outline-none lg:pb-[var(--pw-guide-h,0px)] ${
+          askOpen ? 'lg:pr-[25.5rem]' : ''
+        }`}
       >
         {/* The part that cross-fades when the page changes. On a mission's
             step only the step itself does (MissionHub names it), so the
@@ -327,6 +333,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </nav>
 
       <GuideBar />
+      <AskDock />
       <RunLogDrawer />
       <ActivityTray open={trayOpen} onClose={() => setTrayOpen(false)} live={LIVE_SERVICE} feed={activity} />
       {settingsLoaded.current && (

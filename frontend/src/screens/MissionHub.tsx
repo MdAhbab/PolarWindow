@@ -30,9 +30,10 @@ BY_SLUG.set('landing', 'landing')
 
 /**
  * A mission's page (design-lifecycle.md, 2026-09-30): its home at
- * `/missions/:id`, with the record and the six steps as cards, each saying its
- * state and one-line answer; and one step at a time at `/missions/:id/<step>`,
- * under the same header with the step bar.
+ * `/missions/:id`, the six steps as stops on one path from Earth to the Moon,
+ * each saying its state and one-line answer, with the record below; and one
+ * step at a time at `/missions/:id/<step>`, under the same header with the
+ * step bar.
  */
 export function MissionHub() {
   const params = useParams()
@@ -232,10 +233,10 @@ function HubSkeleton({ home }: { home: boolean }) {
       </div>
       {home ? (
         // The journey's shape: the band the arc is drawn in, then six stops
-        // (down the page on a phone), then the record.
-        <div className="flex flex-col gap-8">
-          <Skeleton className="hidden h-24 lg:block" />
-          <div className="flex flex-col gap-6 lg:grid lg:grid-cols-6 lg:gap-5 lg:px-11">
+        // (down the page where the journey is narrow, as JourneyPath decides), then the record.
+        <div className="@container flex flex-col gap-8">
+          <Skeleton className="hidden h-24 @4xl:block" />
+          <div className="flex flex-col gap-6 @4xl:grid @4xl:grid-cols-6 @4xl:gap-5 @4xl:px-11">
             {Array.from({ length: 6 }, (_, i) => (
               <Skeleton key={i} className="h-28" />
             ))}

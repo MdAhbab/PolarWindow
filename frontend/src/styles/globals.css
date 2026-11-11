@@ -917,15 +917,17 @@ dialog.pw-sheet-out::backdrop {
 
 /* The mission's home: the path from Earth to the Moon uncovered from Earth's
    end once per mission per visit, each stop settling as the line reaches it
-   (`--pw-at` down the page on a phone, `--pw-at-lg` along the arc). The stop
-   marks carry no words, so they may grow; the words beside them never move. */
+   (`--pw-at` down the page, `--pw-at-lg` along the arc, which is drawn when
+   the journey itself is 56rem wide: a container query, as in JourneyPath).
+   The stop marks carry no words, so they may grow; the words beside them
+   never move. */
 .pw-path-draw {
   animation: pw-path-draw 960ms var(--ease-move) 120ms backwards;
 }
 .pw-stop-in {
   animation: pw-stop-in var(--pw-dur-lift) var(--ease-settle) var(--pw-at, 0ms) backwards;
 }
-@media (min-width: 64rem) {
+@container (min-width: 56rem) {
   .pw-stop-in {
     animation-delay: var(--pw-at-lg, var(--pw-at, 0ms));
   }

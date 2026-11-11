@@ -57,7 +57,8 @@ for (const theme of ['dark', 'light'] as const) {
     }
     // Settings with every project row open, a parameter's form and history among them.
     await page.goto('/missions')
-    await page.getByRole('button', { name: 'Settings' }).click()
+    await page.getByRole('button', { name: 'Guide and settings' }).click()
+    await page.getByRole('menuitem', { name: /^Settings\b/ }).click()
     const sheet = page.getByRole('dialog', { name: 'Settings' })
     // Each group of Settings, every row in it open, axe on each.
     for (const tab of ['Project', 'Risk scale', 'Data sources', 'Appearance', 'Offline copy']) {
@@ -168,7 +169,8 @@ test('axe and the fixed tab bar on a phone', async ({ page, context }) => {
   expect(f!.y + f!.height).toBeLessThanOrEqual(t!.y + 1)
 
   // With the guide open, it sits above the tab bar, and the page still ends above both.
-  await page.getByRole('button', { name: 'Guide', exact: true }).click()
+  await page.getByRole('button', { name: 'Guide and settings' }).click()
+  await page.getByRole('menuitem', { name: /^Guide\b/ }).click()
   const guide = page.getByRole('region', { name: 'Guide' })
   await expect(guide).toBeVisible()
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
@@ -182,7 +184,8 @@ test('settings on a phone: every project row and a parameter form fit, with no s
   await returningVisitor(context)
   await page.setViewportSize({ width: 375, height: 812 })
   await page.goto('/missions')
-  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByRole('button', { name: 'Guide and settings' }).click()
+  await page.getByRole('menuitem', { name: /^Settings\b/ }).click()
   const sheet = page.getByRole('dialog', { name: 'Settings' })
   // Every group: its rows open, nothing wider than the phone.
   for (const tab of ['Project', 'Risk scale', 'Data sources', 'Appearance', 'Offline copy']) {
@@ -250,7 +253,8 @@ test('the timeline has a table twin, by button and by T; the shortcut can be swi
   await expect(table).toBeVisible()
 
   // WCAG 2.1.4: the settings sheet turns single-key shortcuts off.
-  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByRole('button', { name: 'Guide and settings' }).click()
+  await page.getByRole('menuitem', { name: /^Settings\b/ }).click()
   const sheet = page.getByRole('dialog', { name: 'Settings' })
   await expect(sheet).toBeVisible()
   await expectNoSeriousAxe(page, 'settings sheet')

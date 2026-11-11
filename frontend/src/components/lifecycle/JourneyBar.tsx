@@ -167,7 +167,8 @@ function Segment({ behind, orient, index }: { behind: boolean; orient: 'row' | '
 function NowTag() {
   return (
     <>
-      <span className="sr-only"> (where it is now)</span>
+      {/* The space is said, not drawn: the tag sits in a flex row, which drops it. */}{' '}
+      <span className="sr-only">(where it is now)</span>
       <span
         aria-hidden="true"
         className="pw-eyebrow inline-flex h-5 items-center rounded-pill border border-line-strong bg-tray px-2 text-[10px] leading-none tracking-[0.12em] text-ink"
@@ -259,7 +260,7 @@ export function JourneyBar({
    The mission's home: one path from Earth to the Moon with six stops.
    --------------------------------------------------------------------------- */
 
-/** The band the arc is drawn in above the stops, from 1024 px. */
+/** The band the arc is drawn in above the stops, on a journey 56rem wide or more. */
 const BAND = 112
 /** Where Earth and the Moon sit in it, and how far the arc rises above them. */
 const BASE = 84
@@ -334,10 +335,13 @@ function NextWords({ ev }: { ev: NextEvent }) {
  * a step with nothing to show (no data, or input missing) offers a scenario.
  * The path is ink as far as the mission has got and a hairline beyond.
  *
- * From 1024 px the path is an arc across the page over six columns; below,
- * it runs straight down the left with each stop beside it, so a phone keeps
- * every word. It draws itself once per mission per visit, and not at all
- * under reduced motion.
+ * Where the journey itself is 56rem wide or more, the path is an arc across
+ * it over six columns; narrower, it runs straight down the left with each
+ * stop beside it, so a phone keeps every word. The choice is the journey's
+ * own width (a container query), not the screen's: with the Ask panel open
+ * beside the page on a laptop, the journey goes down the page rather than
+ * squeezing six columns. It draws itself once per mission per visit, and
+ * not at all under reduced motion.
  */
 export function JourneyPath({
   missionId,
@@ -388,7 +392,7 @@ export function JourneyPath({
   const pop = animate ? 'pw-stop-in' : ''
 
   return (
-    <nav aria-label="Mission sections" data-guide="journey" className="flex flex-col gap-5">
+    <nav aria-label="Mission sections" data-guide="journey" className="@container flex flex-col gap-5">
       {(progress || next) && (
         <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6">
           {progress && (
@@ -416,12 +420,12 @@ export function JourneyPath({
       )}
 
       <div ref={wrap} className={`relative ${railDraw}`}>
-        {/* The arc, from 1024 px: a hairline all the way, ink over it as far as the mission has got. */}
+        {/* The arc, on a wide journey: a hairline all the way, ink over it as far as the mission has got. */}
         <svg
           aria-hidden="true"
           width={w}
           height={BAND}
-          className={`pointer-events-none absolute top-0 left-0 hidden overflow-visible lg:block ${animate ? 'pw-path-draw' : ''}`}
+          className={`pointer-events-none absolute top-0 left-0 hidden overflow-visible @4xl:block ${animate ? 'pw-path-draw' : ''}`}
         >
           <defs>
             <clipPath id={clipId}>
@@ -433,7 +437,7 @@ export function JourneyPath({
         </svg>
         <Terminal kind="earth" wide={{ left: x0, top: BASE }} inked={reached >= 0} />
 
-        <ol className="relative flex flex-col lg:grid lg:grid-cols-6 lg:px-[44px]">
+        <ol className="relative flex flex-col @4xl:grid @4xl:grid-cols-6 @4xl:px-[44px]">
           {SECTIONS.map((s, i) => {
             const st = byId.get(s.id)
             const here = Boolean(progress?.now && i === reached)
@@ -445,8 +449,8 @@ export function JourneyPath({
               ['--pw-at-lg' as string]: `${Math.round(160 + 720 * (stops[i].x / w))}ms`,
             }
             return (
-              <li key={s.id} className="relative flex min-w-0 gap-4 pb-8 lg:block lg:pr-5 lg:pb-0" style={vars}>
-                <span aria-hidden="true" className="relative z-[1] flex w-7 shrink-0 justify-center lg:absolute lg:top-[calc(var(--pw-y)_-_14px)] lg:left-0">
+              <li key={s.id} className="relative flex min-w-0 gap-4 pb-8 @4xl:block @4xl:pr-5 @4xl:pb-0" style={vars}>
+                <span aria-hidden="true" className="relative z-[1] flex w-7 shrink-0 justify-center @4xl:absolute @4xl:top-[calc(var(--pw-y)_-_14px)] @4xl:left-0">
                   <span className={`flex ${pop}`}>
                     <StopMark state={st?.state} loading={loading} />
                   </span>
@@ -457,11 +461,11 @@ export function JourneyPath({
                   data-journey-segment={i < reached || (i === SECTIONS.length - 1 && finished) ? 'behind' : 'ahead'}
                   data-orient="column"
                   style={{ ['--pw-i' as string]: i + 1 }}
-                  className={`pointer-events-none absolute top-7 bottom-0 left-[13px] w-0.5 lg:hidden ${
+                  className={`pointer-events-none absolute top-7 bottom-0 left-[13px] w-0.5 @4xl:hidden ${
                     i < reached || (i === SECTIONS.length - 1 && finished) ? 'bg-ink' : 'bg-line-strong'
                   }`}
                 />
-                <div className="flex min-w-0 grow flex-col items-start gap-2.5 lg:pt-[112px]">
+                <div className="flex min-w-0 grow flex-col items-start gap-2.5 @4xl:pt-[112px]">
                   <Link
                     to={href}
                     onClick={go(href)}
@@ -490,7 +494,8 @@ export function JourneyPath({
                     >
                       <Icon name="plus" size={14} strokeWidth={2.2} className="shrink-0" />
                       <span>
-                        Explore a scenario<span className="sr-only"> for {s.name}</span>
+                        Explore a scenario{' '}
+                        <span className="sr-only">for {s.name}</span>
                       </span>
                     </Link>
                   )}
@@ -508,7 +513,7 @@ export function JourneyPath({
 }
 
 /**
- * Either end of the path. From 1024 px a glyph on the arc's end with its name
+ * Either end of the path. On a wide journey a glyph on the arc's end with its name
  * under it; below, a row of its own on the line down the page (Earth above
  * the first stop, the Moon and the landing spot below the last).
  */
@@ -536,13 +541,13 @@ function Terminal({
   return (
     <>
       <div
-        className="pointer-events-none absolute hidden flex-col items-center gap-1 lg:flex"
+        className="pointer-events-none absolute hidden flex-col items-center gap-1 @4xl:flex"
         style={{ left: wide.left - MARK / 2, top: wide.top - MARK / 2, width: MARK }}
       >
         {glyph}
         <span className="text-caption leading-caption whitespace-nowrap text-ink-3">{earth ? 'Earth' : 'Moon'}</span>
       </div>
-      <div className={`relative flex items-center gap-4 lg:hidden ${earth ? 'pb-8' : ''}`}>
+      <div className={`relative flex items-center gap-4 @4xl:hidden ${earth ? 'pb-8' : ''}`}>
         {glyph}
         <span className="min-w-0 text-small text-ink-3">
           {name}

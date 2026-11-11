@@ -16,10 +16,13 @@ test('front page: one click signs in and the guide opens on the first feature', 
   await expect(page.getByRole('heading', { name: 'The Sun never climbs' })).toBeVisible()
 
   await page.getByRole('button', { name: 'Open the dashboard' }).first().click()
-  await expect(page).toHaveURL(/\/missions$/)
+  // Signing in opens Home; the guide's first step is about Missions, one press away.
+  await expect(page).toHaveURL(/\/home$/)
   const guide = page.getByRole('region', { name: 'Guide' })
   await expect(guide).toContainText('1 of 5')
   await expect(guide).toContainText('Find a CLPS mission')
+  await guide.getByRole('button', { name: 'Take me there' }).click()
+  await expect(page).toHaveURL(/\/missions$/)
   await expect(page.locator('[data-guide-active]')).toHaveAttribute('data-guide', 'missions-filters')
   await expectNoSeriousAxe(page, '/missions with the guide open')
 
@@ -31,12 +34,13 @@ test('front page: one click signs in and the guide opens on the first feature', 
   await guide.getByRole('button', { name: 'Back' }).click()
   await expect(page).toHaveURL(/\/missions$/)
 
-  // Closed, it stays closed across a reload, and Guide in the header brings it back.
+  // Closed, it stays closed across a reload, and Guide in the header's menu brings it back.
   await guide.getByRole('button', { name: 'Close the guide' }).click()
   await expect(guide).toHaveCount(0)
   await page.reload()
   await expect(page.getByRole('region', { name: 'Guide' })).toHaveCount(0)
-  await page.getByRole('button', { name: 'Guide', exact: true }).click()
+  await page.getByRole('button', { name: 'Guide and settings' }).click()
+  await page.getByRole('menuitem', { name: /^Guide\b/ }).click()
   await expect(page.getByRole('region', { name: 'Guide' })).toContainText('Find a CLPS mission')
   expect(problems).toEqual([])
 })
@@ -52,7 +56,8 @@ test('a deep link without a session goes to the front page, then on to the page 
 test('settings: the project controls, behind a confirm step', async ({ page, context }) => {
   await returningVisitor(context)
   await page.goto('/missions')
-  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByRole('button', { name: 'Guide and settings' }).click()
+  await page.getByRole('menuitem', { name: /^Settings\b/ }).click()
   const sheet = page.getByRole('dialog', { name: 'Settings' })
   await expect(sheet).toContainText('Signed in as Project manager')
   await expect(sheet.getByRole('group', { name: 'AI assistant' })).toBeVisible()
