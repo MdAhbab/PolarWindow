@@ -448,3 +448,102 @@ def test_a_tool_s_own_sentence_may_be_repeated_when_it_has_no_numeric_field() ->
         assert guards.check_grounding({"status": "ok", "answer": answer}, tools).ok, answer
     for answer in ("All 14 items flew.", "It launched at 00:17 UTC.", "13 hours of sunlight."):
         assert not guards.check_grounding({"status": "ok", "answer": answer}, tools).ok, answer
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [
+        # Sentence-initial determiner/verb/preposition before a number cannot repurpose it
+        "All 13 hours of darkness.",
+        "All 13 % of the window.",
+        "All 13 rovers landed.",
+        "Launched 27 hours after roll-out.",
+        "Launched 27 payloads.",
+        "For 48 days the lander waits.",
+        # Designator word before a number cannot ground a unit or counted noun after it
+        "Complex 41 hours of contact.",
+        "Complex 41 % of the window.",
+        "Complex 41 launches occurred.",
+        # Stop words / connectors after a number cannot ground a different claim
+        "The blackout lasts 41 and 55 hours.",
+        "The slope is 41 for this site.",
+        "Sunlight lasts 15 and 20 hours.",
+        # Shared modifier or unit prefix with a different unit or scale
+        "The night lasts 14 Earth hours.",
+        "It records 15 per hour.",
+        "The antenna mast is 18 meters tall.",
+        "The terrain slope is 20 degrees.",
+        "The surface reaches 20 degrees Fahrenheit.",
+        # Clock-time hour substitution or invented small-integer clock time
+        "It launched at 05:16 UTC.",
+        "It launched at 12:16 UTC.",
+        "It launched at 09:05 UTC.",
+        # Sign, comma, decimal, denominator ("of 13"), and negation boundaries
+        "The terrain slope is 45 degrees.",
+        "The battery holds 234 Wh.",
+        "It flew on Falcon 9 Block 15.",
+        "All 19 items have a state.",
+        "19 items have a state.",
+        "22 anomalies were recorded.",
+    ],
+)
+def test_adjacent_word_rule_rejects_numbers_repurposed_in_another_sense(answer: str) -> None:
+    """Every way a shared neighbour word, stop word, modifier, clock fragment or
+    loose token boundary could sneak a tool's number through in a different sense."""
+    tools = [
+        {
+            "seq": 1,
+            "tool": "get_mission_sections",
+            "result": {
+                "sections": [
+                    {"section": "ready", "summary": "All 13 items flew; nothing was entered."},
+                    {
+                        "section": "partial",
+                        "summary": "2 of 19 items have a state; no 22 anomalies.",
+                    },
+                    {
+                        "section": "launch",
+                        "summary": "Launched 27 Feb 2025 00:16 UTC on Falcon 9 Block 15.2 "
+                        "from Space Launch Complex 41 and Launch Complex 39A for the mission.",
+                    },
+                    {
+                        "section": "surface",
+                        "summary": "The rover rests for 48 hours; the night lasts 14 Earth days; "
+                        "reflectance is 15 per cent; winds are 18 meters per second; "
+                        "surface reaches 20 degrees Celsius and -45 degrees at night; "
+                        "window is between 15 and 20 minutes; battery holds 1,234 Wh.",
+                    },
+                ]
+            },
+        }
+    ]
+    verdict = guards.check_grounding({"status": "ok", "answer": answer}, tools)
+    assert not verdict.ok, f"{answer!r} should have been rejected"
+
+
+def test_adjacent_word_rule_keeps_legitimate_compound_and_clock_quotes() -> None:
+    tools = [
+        {
+            "seq": 1,
+            "tool": "get_mission_sections",
+            "result": {
+                "sections": [
+                    {"section": "ready", "summary": "13 of 15 items have a state."},
+                    {"section": "launch", "summary": "Launched 27 Feb 2025 17:16 UTC."},
+                    {
+                        "section": "surface",
+                        "summary": "The night lasts 14 Earth days; temperature is 20 degrees "
+                        "Celsius; wind is 18 meters per second.",
+                    },
+                ]
+            },
+        }
+    ]
+    for answer in (
+        "13 of 15 items have a state.",
+        "It launched on 27 Feb 2025 at 17:16 UTC.",
+        "The night lasts 14 Earth days.",
+        "Temperature is 20 degrees Celsius and wind is 18 meters per second.",
+    ):
+        verdict = guards.check_grounding({"status": "ok", "answer": answer}, tools)
+        assert verdict.ok, f"{answer!r} failed: {[v.detail for v in verdict.violations]}"

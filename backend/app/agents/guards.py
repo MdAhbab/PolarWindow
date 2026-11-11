@@ -297,40 +297,412 @@ class Claim:
 _NAME_WORD_BEFORE = re.compile(r"(?<![A-Za-z])([A-Z][A-Za-z]+)([ -])$")
 #: A letter or two straight after a number, as in a pad's "39A".
 _DESIGNATOR_AFTER = re.compile(r"^[A-Za-z]{1,2}(?![A-Za-z])")
-#: The word a number counts or is measured in: "13 items", "16 UTC", "39 hours".
+#: The word a number counts or is measured in: "13 items", "39 hours".
 _WORD_AFTER = re.compile(r"^ ?([A-Za-z]{3,})")
+#: A clock time in prose ("00:16 UTC", "17:16", "00:16:30 GMT"). Neither half is a
+#: bare count, and only the complete timestamp may be quoted from a tool sentence.
+_CLOCK_TIME_RE = re.compile(
+    r"(?<![:\d])\b\d{1,2}:\d{2}(?::\d{2})?(?:\s*(?:UTC|GMT))?\b",
+    re.IGNORECASE,
+)
+#: A part-of-total phrase after a number ("13 of 15 items").
+_OF_TOTAL_AFTER = re.compile(r"^\s+of\s+\d+\s+([A-Za-z]{3,})")
+#: A rate or temperature-scale suffix that changes the unit of the word before it.
+_RATE_OR_SCALE_SUFFIX = re.compile(
+    r"^(?:\s+per\s+[A-Za-z]{2,}|/[A-Za-z]{1,6}|\s+(?:celsius|fahrenheit|kelvin|[cfk])\b)",
+    re.IGNORECASE,
+)
+#: Words that can follow a bare pad/block designator ("Launch Complex 41 in Florida")
+#: without turning the number into a count of the following word ("Complex 41 launches").
+_CLAUSE_CONNECTORS_AFTER = frozenset(
+    {
+        "in",
+        "on",
+        "at",
+        "to",
+        "from",
+        "for",
+        "with",
+        "by",
+        "of",
+        "as",
+        "and",
+        "or",
+        "but",
+        "is",
+        "are",
+        "was",
+        "were",
+        "has",
+        "had",
+        "can",
+        "will",
+        "would",
+        "where",
+        "when",
+        "which",
+        "that",
+        "near",
+        "over",
+        "under",
+        "after",
+        "before",
+        "during",
+        "since",
+        "until",
+        "through",
+        "into",
+        "onto",
+        "upon",
+    }
+)
+#: Sentence-initial determiners, prepositions, conjunctions, pronouns, auxiliaries and
+#: verbs that are never proper-name designators before a number ("All 13", "Launched 27").
+_NON_NAME_WORDS_BEFORE = frozenset(
+    {
+        *_CLAUSE_CONNECTORS_AFTER,
+        "a",
+        "an",
+        "the",
+        "all",
+        "both",
+        "each",
+        "every",
+        "some",
+        "any",
+        "no",
+        "not",
+        "none",
+        "only",
+        "just",
+        "even",
+        "also",
+        "still",
+        "many",
+        "most",
+        "more",
+        "less",
+        "fewer",
+        "several",
+        "few",
+        "other",
+        "another",
+        "such",
+        "same",
+        "own",
+        "above",
+        "below",
+        "between",
+        "among",
+        "within",
+        "without",
+        "throughout",
+        "across",
+        "around",
+        "about",
+        "approximately",
+        "roughly",
+        "nearly",
+        "almost",
+        "behind",
+        "beyond",
+        "against",
+        "toward",
+        "towards",
+        "via",
+        "per",
+        "than",
+        "up",
+        "down",
+        "out",
+        "off",
+        "yet",
+        "so",
+        "nor",
+        "if",
+        "while",
+        "because",
+        "although",
+        "though",
+        "unless",
+        "whether",
+        "this",
+        "these",
+        "those",
+        "there",
+        "here",
+        "then",
+        "now",
+        "it",
+        "its",
+        "they",
+        "them",
+        "their",
+        "we",
+        "our",
+        "you",
+        "your",
+        "be",
+        "been",
+        "being",
+        "have",
+        "having",
+        "do",
+        "does",
+        "did",
+        "could",
+        "shall",
+        "should",
+        "may",
+        "might",
+        "must",
+        "launched",
+        "landed",
+        "flew",
+        "flown",
+        "built",
+        "entered",
+        "lasts",
+        "lasted",
+        "takes",
+        "took",
+        "gives",
+        "gave",
+        "shows",
+        "showed",
+        "reaches",
+        "reached",
+        "needs",
+        "needed",
+        "uses",
+        "used",
+        "runs",
+        "ran",
+        "starts",
+        "started",
+        "ends",
+        "ended",
+        "remains",
+        "stayed",
+        "stays",
+        "drops",
+        "dropped",
+        "rises",
+        "rose",
+        "falls",
+        "fell",
+        "exceeds",
+        "exceeded",
+        "covers",
+        "covered",
+        "includes",
+        "included",
+        "contains",
+        "contained",
+        "requires",
+        "required",
+        "holds",
+        "held",
+        "carries",
+        "carried",
+        "saw",
+        "seen",
+        "found",
+        "made",
+        "set",
+        "got",
+        "kept",
+        "left",
+        "total",
+    }
+)
+#: Function words and month names that cannot ground a number as the word after it
+#: ("41 and", "41 for", "15 to", "27 Feb").
+_STOP_WORDS_AFTER = frozenset(
+    {
+        *_NON_NAME_WORDS_BEFORE,
+        "january",
+        "february",
+        "march",
+        "april",
+        "may",
+        "june",
+        "july",
+        "august",
+        "september",
+        "october",
+        "november",
+        "december",
+        "jan",
+        "feb",
+        "mar",
+        "apr",
+        "jun",
+        "jul",
+        "aug",
+        "sep",
+        "sept",
+        "oct",
+        "nov",
+        "dec",
+    }
+)
+#: Unit modifiers that require the following noun to complete the unit ("14 Earth days",
+#: "15 per cent") so "14 Earth hours" cannot match "14 Earth days".
+_MODIFIER_WORDS_AFTER = frozenset(
+    {
+        "earth",
+        "lunar",
+        "solar",
+        "sidereal",
+        "synodic",
+        "square",
+        "cubic",
+        "nautical",
+        "statute",
+        "metric",
+        "astronomical",
+        "per",
+    }
+)
+_SECOND_WORD_AFTER = re.compile(r"^[ -]([A-Za-z]{2,})")
+_FOLLOWING_WORD = re.compile(r"^\s+([A-Za-z]{2,})")
+_OF_BEFORE = re.compile(r"\bof\s+$", re.IGNORECASE)
+_NEGATION_BEFORE = re.compile(r"\b(?:no|not|without|never)\s+$", re.IGNORECASE)
 
 
-def _quotable(cleaned: str, start: int, end: int) -> tuple[str, ...]:
+def _quotable(
+    cleaned: str,
+    start: int,
+    end: int,
+    *,
+    has_quantity_after: bool = False,
+    is_date: bool = False,
+    clock_phrase: str | None = None,
+) -> tuple[str, ...]:
     """The number with its neighbouring word, each way a tool's sentence could hold it:
     "Complex 39A" from "...from Launch Complex 39A." and "13 items" from "All 13 items"."""
+    if clock_phrase is not None:
+        return (f"clock:{clock_phrase}",)
+    if is_date:
+        return ()
     out: list[str] = []
-    word = _NAME_WORD_BEFORE.search(cleaned[max(0, start - 32) : start])
-    if word is not None:
-        tail = _DESIGNATOR_AFTER.match(cleaned[end : end + 4])
-        out.append(
-            f"{word.group(1)}{word.group(2)}{cleaned[start:end]}{tail.group(0) if tail else ''}"
-        )
-    after = _WORD_AFTER.match(cleaned[end : end + 24])
+    before_slice = cleaned[max(0, start - 32) : start]
+    after_slice = cleaned[end : end + 40]
+    word = _NAME_WORD_BEFORE.search(before_slice)
+    if word is not None and not has_quantity_after:
+        w_before = word.group(1)
+        if w_before.lower() not in _NON_NAME_WORDS_BEFORE:
+            tail = _DESIGNATOR_AFTER.match(cleaned[end : end + 4])
+            # Without a letter suffix ("39A"), a following lowercase noun ("Complex 41 launches")
+            # means the number counts the noun after it rather than naming the word before it.
+            next_word = _FOLLOWING_WORD.match(after_slice) if tail is None else None
+            has_counted_noun_after = (
+                next_word is not None and next_word.group(1).lower() not in _CLAUSE_CONNECTORS_AFTER
+            )
+            if not has_counted_noun_after and not _RANGE_AFTER.match(after_slice):
+                out.append(
+                    f"name:{w_before}{word.group(2)}{cleaned[start:end]}"
+                    f"{tail.group(0) if tail else ''}"
+                )
+
+    if _RANGE_AFTER.match(after_slice):
+        return tuple(out)
+
+    prefix_tag = (
+        "of_after:"
+        if _OF_BEFORE.search(before_slice)
+        else "neg_after:"
+        if _NEGATION_BEFORE.search(before_slice)
+        else "after:"
+    )
+    of_total = _OF_TOTAL_AFTER.match(after_slice)
+    if of_total is not None and of_total.group(1).lower() not in _STOP_WORDS_AFTER:
+        out.append(f"{prefix_tag}{cleaned[start:end]}{of_total.group(0)}")
+        return tuple(out)
+
+    after = _WORD_AFTER.match(after_slice)
     if after is not None:
-        out.append(f"{cleaned[start:end]}{after.group(0)}")
+        w1 = after.group(1).lower()
+        if w1 not in _STOP_WORDS_AFTER:
+            rest = after_slice[after.end() :]
+            if w1 in _MODIFIER_WORDS_AFTER:
+                second = _SECOND_WORD_AFTER.match(rest)
+                if second is not None and second.group(1).lower() not in _STOP_WORDS_AFTER:
+                    rest_after_second = rest[second.end() :]
+                    suffix = _RATE_OR_SCALE_SUFFIX.match(rest_after_second)
+                    ext = suffix.group(0) if suffix else ""
+                    out.append(
+                        f"{prefix_tag}{cleaned[start:end]}{after.group(0)}{second.group(0)}{ext}"
+                    )
+            else:
+                suffix = _RATE_OR_SCALE_SUFFIX.match(rest)
+                ext = suffix.group(0) if suffix else ""
+                out.append(f"{prefix_tag}{cleaned[start:end]}{after.group(0)}{ext}")
     return tuple(out)
+
+
+_LEFT_BOUNDARY = r"(?<![A-Za-z0-9.,:\u2212/-])"
+_RIGHT_BOUNDARY = r"(?![A-Za-z0-9]|[.,]\d|[:\u2212/-][A-Za-z0-9])"
 
 
 def _quotes_the_tool(phrases: tuple[str, ...], tool_text: list[str]) -> bool:
     """Whether a tool result writes one of these very phrases. Then the number is the
     tool's own words repeated ("Launch Complex 39A", "13 items"), not a figure made up.
     A bare digit in a tool's string grounds nothing: the word beside it must match too."""
-    for phrase in phrases:
-        pattern = re.compile(rf"(?<![A-Za-z0-9.]){re.escape(phrase.lower())}(?![A-Za-z0-9])")
-        if any(pattern.search(t) for t in tool_text):
-            return True
+    for tagged in phrases:
+        kind, sep, phrase = tagged.partition(":")
+        if not sep:
+            kind, phrase = "after", tagged
+        if kind == "name":
+            # Name designators ("Complex 39A", "Complex 41") match case-sensitively and
+            # only when the number in the tool is not itself followed by a unit, month,
+            # or counted noun ("Launched 27 Feb", "Total 41 hours").
+            pattern = re.compile(rf"{_LEFT_BOUNDARY}{re.escape(phrase)}{_RIGHT_BOUNDARY}")
+            for t in tool_text:
+                for m in pattern.finditer(t):
+                    tail_slice = t[m.end() : m.end() + 24]
+                    if _QUANTITY_AFTER.match(tail_slice) or _DAY_MONTH.match(tail_slice):
+                        continue
+                    nw = _FOLLOWING_WORD.match(tail_slice)
+                    if nw is not None and nw.group(1).lower() not in _CLAUSE_CONNECTORS_AFTER:
+                        continue
+                    return True
+            continue
+        if kind == "clock":
+            pattern = re.compile(
+                rf"{_LEFT_BOUNDARY}{re.escape(phrase)}{_RIGHT_BOUNDARY}",
+                re.IGNORECASE,
+            )
+            if any(pattern.search(t) for t in tool_text):
+                return True
+            continue
+        # Counted or measured phrases ("13 items", "14 Earth days").
+        pattern = re.compile(
+            rf"{_LEFT_BOUNDARY}{re.escape(phrase)}{_RIGHT_BOUNDARY}",
+            re.IGNORECASE,
+        )
+        for t in tool_text:
+            for m in pattern.finditer(t):
+                tail_slice = t[m.end() : m.end() + 24]
+                # "15 meters" in a claim must not match "15 meters per second" in a tool,
+                # and "20 degrees" must not match "20 degrees Celsius".
+                if _RATE_OR_SCALE_SUFFIX.match(tail_slice):
+                    continue
+                head_slice = t[max(0, m.start() - 16) : m.start()]
+                # "2 of 13 items" in a tool states a denominator, not "All 13 items".
+                if kind != "of_after" and _OF_BEFORE.search(head_slice):
+                    continue
+                if kind != "neg_after" and _NEGATION_BEFORE.search(head_slice):
+                    continue
+                return True
     return False
 
 
 def _scan_text(text: str, path: str) -> list[Claim]:
     out: list[Claim] = []
     cleaned = _ISO_DATETIME.sub(lambda m: " " * len(m.group(0)), text)
+    clock_spans = [(cm.start(), cm.end(), cm.group(0)) for cm in _CLOCK_TIME_RE.finditer(cleaned)]
     for m in _NUMBER_RE.finditer(cleaned):
         raw = m.group("num").replace(",", "").replace("\u2212", "-")
         try:
@@ -342,6 +714,10 @@ def _scan_text(text: str, path: str) -> list[Claim]:
         is_int = val == int(val) and "." not in raw and "e" not in raw.lower()
         is_date = (
             is_int and 1 <= val <= 31 and bool(_DAY_MONTH.match(after) or _MONTH_DAY.search(before))
+        )
+        clock_phrase = next(
+            (ct for cs, ce, ct in clock_spans if cs <= m.start() and m.end() <= ce),
+            None,
         )
         has_quantity_after = bool(_QUANTITY_AFTER.match(after))
         if not has_quantity_after:
@@ -359,9 +735,22 @@ def _scan_text(text: str, path: str) -> list[Claim]:
                 value=val,
                 context=text[lo:hi].strip(),
                 in_prose=True,
-                bare_count=is_int and not has_quantity_after and not is_multiplier,
+                bare_count=(
+                    is_int and not has_quantity_after and not is_multiplier and clock_phrase is None
+                ),
                 is_date=is_date,
-                quotable=() if is_multiplier else _quotable(cleaned, m.start(), m.end()),
+                quotable=(
+                    ()
+                    if is_multiplier
+                    else _quotable(
+                        cleaned,
+                        m.start(),
+                        m.end(),
+                        has_quantity_after=has_quantity_after,
+                        is_date=is_date,
+                        clock_phrase=clock_phrase,
+                    )
+                ),
             )
         )
     for m in _WORD_NUMBER_RE.finditer(cleaned):
@@ -580,14 +969,14 @@ def check_grounding(output: dict[str, Any], tool_results: list[dict[str, Any]]) 
     """
     measured: list[tuple[str, float, str, int]] = []
     quoted: list[tuple[str, float, str, int]] = []
-    #: Every string a tool returned, lower-cased: where a name can be quoted from.
+    #: Every string a tool returned: where a name or counted phrase can be quoted from.
     tool_text: list[str] = []
     for call in tool_results:
         seq = int(call.get("seq", 0))
         tool = str(call.get("tool", "?"))
         result = call.get("result")
         if tool != USER_REQUEST_TOOL:
-            tool_text.extend(text.lower() for _path, text in _string_leaves(result))
+            tool_text.extend(text for _path, text in _string_leaves(result))
         if tool == USER_REQUEST_TOOL:
             # The user's request arrives as prose -- "600 hours of continuous
             # sunlight" -- so its numbers are inside strings. They are parsed out
