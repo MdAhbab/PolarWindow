@@ -1,3 +1,5 @@
+> What is left, and the plan for it, is in [handoff-2026-11-12.md](handoff-2026-11-12.md). Read that first.
+
 # Handoff: the "experience" work
 
 State on disk as of 2026-11-11, 00:40 (Asia/Dhaka). Everything below was checked by running
