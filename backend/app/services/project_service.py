@@ -220,15 +220,19 @@ def lifecycle_of(
     bands = list(lc.get("bands") or [])
     stations = list(lc.get("ground_stations") or [])
     relays = list(lc.get("relays") or [])
+    radio = {
+        "eirp_dbw": lc.get("eirp_dbw"),
+        "gt_dbk": lc.get("gt_dbk"),
+        "frequency_mhz": lc.get("frequency_mhz"),
+        "data_rates_kbps": list(lc.get("data_rates_kbps") or []),
+        "required_ebn0_db": lc.get("required_ebn0_db"),
+        "required_margin_db": lc.get("required_margin_db"),
+        "eirp_tol_db": lc.get("eirp_tol_db"),
+    }
+    stated = any(v not in (None, []) for v in radio.values())
     comms = (
-        {
-            "bands": bands,
-            "eirp_dbw": None,
-            "gt_dbk": None,
-            "ground_stations": stations,
-            "relays": relays,
-        }
-        if bands or stations or relays
+        {"bands": bands, "ground_stations": stations, "relays": relays, **radio}
+        if bands or stations or relays or stated
         else None
     )
     mass = lc.get("mass_kg")

@@ -349,3 +349,58 @@ def test_a_project_s_landing_spot_can_be_listed_with_the_other_sites() -> None:
     allowed = get_args(SiteBrief.model_fields["search_kind"].annotation)
     assert "entered" in allowed
     assert {"rim", "massif", "published"} <= set(allowed)
+
+
+RADIO = {
+    "eirp_dbw": 12.5,
+    "eirp_tol_db": 1.0,
+    "gt_dbk": -20.0,
+    "frequency_mhz": 8425.0,
+    "data_rates_kbps": [64.0, 512.0],
+    "required_ebn0_db": 2.5,
+    "required_margin_db": 3.0,
+}
+
+
+def test_radio_figures_round_trip_into_the_stored_comms_block() -> None:
+    from app.api.v1.schemas.missions import Comms
+
+    form = ProjectIn.model_validate({"name": "Athena", "lifecycle": {"bands": ["X"], **RADIO}})
+    row, _ = build(form.model_dump(mode="json"))
+    comms = row["lifecycle"]["comms"]
+    assert comms["bands"] == ["X"]
+    assert {k: comms[k] for k in RADIO} == RADIO
+    # The response model (GET/PUT) returns every figure under lifecycle.comms.
+    out = Comms.model_validate(comms)
+    assert out.eirp_dbw == 12.5 and out.data_rates_kbps == [64.0, 512.0]
+
+
+def test_a_project_with_an_eirp_reaches_the_link_inputs() -> None:
+    import dataclasses
+
+    from app.services import contact_service
+
+    row, _ = build({"name": "Athena", "lifecycle": dict(RADIO)})
+    m = dataclasses.replace(record("p-x", PROJECT), lifecycle=row["lifecycle"])
+    li = contact_service._link_inputs(m)["link_inputs"]
+    assert li["eirp_dbw"] == 12.5 and li["frequency_mhz"] == 8425.0
+    assert li["data_rates_kbps"] == [64.0, 512.0] and li["provenance"] == "entered"
+
+
+def test_without_an_eirp_nothing_changes() -> None:
+    from app.services import contact_service
+
+    row, _ = build({"name": "Athena"})
+    assert row["lifecycle"]["comms"] is None
+    row, _ = build({"name": "Athena", "lifecycle": {"bands": ["X"]}})
+    assert row["lifecycle"]["comms"]["eirp_dbw"] is None
+    import dataclasses
+
+    m = dataclasses.replace(record("p-x", PROJECT), lifecycle=row["lifecycle"])
+    assert contact_service._link_inputs(m) == {}
+
+
+def test_radio_ranges_are_checked() -> None:
+    for bad in ({"eirp_dbw": 500}, {"frequency_mhz": 0}, {"data_rates_kbps": [0]}):
+        with pytest.raises(ValidationError):
+            ProjectIn.model_validate({"name": "A", "lifecycle": bad})

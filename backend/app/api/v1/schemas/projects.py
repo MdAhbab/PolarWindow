@@ -80,12 +80,44 @@ class ProjectLifecycleIn(_In):
     relays: list[str] = Field(default_factory=list, max_length=12)
     mass_kg: float | None = Field(default=None, gt=0.0, le=1.0e6)
     returns: Literal["none", "sample_capsule", "crew"] | None = None
+    # Radio figures (ADR-20): with ``eirp_dbw`` stated, Contact runs a link budget.
+    eirp_dbw: float | None = Field(
+        default=None,
+        ge=-20.0,
+        le=100.0,
+        description="The lander's transmit EIRP, dBW. Stating it turns the link budget on.",
+    )
+    eirp_tol_db: float | None = Field(
+        default=None, ge=0.0, le=30.0, description="The stated tolerance on the EIRP, dB."
+    )
+    gt_dbk: float | None = Field(
+        default=None, ge=-60.0, le=80.0, description="The lander's receive G/T, dB/K."
+    )
+    frequency_mhz: float | None = Field(
+        default=None, gt=0.0, le=300000.0, description="The downlink carrier frequency, MHz."
+    )
+    data_rates_kbps: list[float] = Field(
+        default_factory=list,
+        max_length=20,
+        description="The downlink data rates on offer, kbit/s (each above 0, at most 1e7).",
+    )
+    required_ebn0_db: float | None = Field(
+        default=None,
+        ge=-10.0,
+        le=40.0,
+        description="The Eb/N0 the coding needs for its target error rate, dB.",
+    )
+    required_margin_db: float | None = Field(
+        default=None, ge=0.0, le=30.0, description="The margin required over Eb/N0, dB."
+    )
 
     @model_validator(mode="after")
     def _short_ids(self) -> ProjectLifecycleIn:
         for name in ("bands", "ground_stations", "relays"):
             if any(not 0 < len(x) <= 64 for x in getattr(self, name)):
                 raise ValueError(f"each of {name} is 1 to 64 characters")
+        if any(not 0.0 < r <= 1.0e7 for r in self.data_rates_kbps):
+            raise ValueError("each of data_rates_kbps is above 0 and at most 10 000 000")
         return self
 
 
