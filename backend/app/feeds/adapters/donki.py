@@ -1,9 +1,12 @@
 """NASA DONKI (Space Weather Database Of Notifications, Knowledge, Information).
 
 Coronal mass ejections, solar flares and solar energetic particle events for
-the last 30 days, through api.nasa.gov. ``PW_NASA_API_KEY`` raises the
-allowance from DEMO_KEY's 30 requests an hour to 1,000; the key is sent as a
-query parameter and never stored with the snapshot URL.
+the last 30 days. When ``PW_NASA_API_KEY`` is set, requests go through
+``api.nasa.gov`` (1,000 requests/hour, with the key stripped from the stored
+snapshot URL). Without a personal key, ``api.nasa.gov``'s shared ``DEMO_KEY``
+pool is throttled to a few requests per multi-hour window and starves ``flr``
+behind ``HTTP 429``, so unkeyed requests go straight to NASA GSFC CCMC's public
+DONKI web service (``ccmc.gsfc.nasa.gov``), which ``api.nasa.gov`` proxies.
 """
 
 from __future__ import annotations
@@ -16,6 +19,7 @@ from app.config import get_settings
 from app.feeds.base import PUBLIC_DOMAIN, Parsed, ParseError, Product, ProviderSpec, iso, utc
 
 BASE = "https://api.nasa.gov/DONKI"
+CCMC_BASE = "https://ccmc.gsfc.nasa.gov/DONKI/WS/get"
 LICENCE = f"NASA CCMC DONKI, {PUBLIC_DOMAIN}"
 DAYS = 30
 
@@ -117,7 +121,12 @@ def products(now: datetime | None = None) -> list[Product]:
     now = now or datetime.now(UTC)
     start = (now - timedelta(days=DAYS)).date().isoformat()
     end = now.date().isoformat()
-    key = get_settings().nasa_api_key or "DEMO_KEY"
+    key = get_settings().nasa_api_key
+    keyed = key not in ("", "DEMO_KEY")
+    base = BASE if keyed else CCMC_BASE
+    params: dict[str, str] = {"startDate": start, "endDate": end}
+    if keyed:
+        params["api_key"] = key
     out = []
     for product, path, parse in (
         ("cme", "CME", parse_cme),
@@ -128,8 +137,8 @@ def products(now: datetime | None = None) -> list[Product]:
             Product(
                 provider="donki",
                 product=product,
-                url=f"{BASE}/{path}",
-                params={"startDate": start, "endDate": end, "api_key": key},
+                url=f"{base}/{path}",
+                params=dict(params),
                 secret_params=frozenset({"api_key"}),
                 licence=LICENCE,
                 parser_version=f"{product}-1",

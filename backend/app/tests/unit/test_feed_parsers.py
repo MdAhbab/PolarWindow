@@ -141,10 +141,22 @@ def test_donki_events() -> None:
     assert c.issued_at is None and f.issued_at is None and s.issued_at is None
 
 
-def test_donki_never_stores_the_key() -> None:
-    p = donki.products(datetime(2026, 9, 26, tzinfo=UTC))[0]
-    assert "api_key" not in p.public_url()
-    assert "startDate=2026-08-27" in p.public_url()
+def test_donki_never_stores_the_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    unkeyed = {p.product: p for p in donki.products(datetime(2026, 9, 26, tzinfo=UTC))}
+    assert unkeyed["flr"].url == f"{donki.CCMC_BASE}/FLR"
+    assert "api_key" not in unkeyed["flr"].params
+    assert "startDate=2026-08-27" in unkeyed["flr"].public_url()
+
+    monkeypatch.setattr(
+        donki,
+        "get_settings",
+        lambda: type("S", (), {"nasa_api_key": "personal-key-123"})(),
+    )
+    keyed = {p.product: p for p in donki.products(datetime(2026, 9, 26, tzinfo=UTC))}
+    assert keyed["flr"].url == f"{donki.BASE}/FLR"
+    assert keyed["flr"].params["api_key"] == "personal-key-123"
+    assert "api_key" not in keyed["flr"].public_url()
+    assert "startDate=2026-08-27" in keyed["flr"].public_url()
 
 
 # --- DSN Now, NWS, NDBC, LL2 ----------------------------------------------------------
