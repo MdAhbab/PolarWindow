@@ -129,7 +129,7 @@
   /* Space, by role. Everything else is the 4 px scale. */
   --spacing-gutter: 16px; /* page edge on a phone; 32 px from lg (see .pw-page) */
   --spacing-stack: 24px; /* between blocks inside a page */
-  --spacing-block: 40px; /* between a page's major parts */
+  --spacing-section: 40px; /* between a page's major parts. Not 'block': Tailwind would make it an inline-size utility named inline-block, which clashed with display: inline-block */
 
   /* Radius (decisions D1, D2): 0 on everything that draws data (bars, arcs,
      hatches, tables, pins, rings, the map, a row in a list); 12 px on fields
