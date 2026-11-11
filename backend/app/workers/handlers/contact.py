@@ -17,7 +17,7 @@ import numpy.typing as npt
 
 from app.config import ENGINE_VERSION
 from app.core import contact as core_contact
-from app.core import intervals, network, spice, timeline, visibility
+from app.core import intervals, network, rf_link, spice, timeline, visibility
 from app.core.quantity import Quantity
 from app.core.spice import R_MOON_M
 from app.data import catalogues
@@ -27,7 +27,7 @@ from app.db.repositories.missions import MissionRepository
 from app.db.session import session_scope
 from app.services import lifecycle, site_service
 from app.workers.compute import HandlerResult, JobContext, handler
-from app.workers.handlers import orbiter_passes, relay_sweep
+from app.workers.handlers import link_budget, orbiter_passes, relay_sweep
 
 C_M_S = 299_792_458.0
 H = 3600.0
@@ -357,13 +357,30 @@ async def run(ctx: JobContext) -> HandlerResult:
     if p.get("orbiters"):
         ctx.progress(0.98, "Orbiter passes worked out.")
 
+    li: dict[str, Any] = p.get("link_inputs") or {}
+    runs_ok, missing_inputs = link_budget.can_run(li)
+    in_band = (
+        runs_ok
+        and link_budget.X_BAND_MHZ[0] <= float(li["frequency_mhz"]) <= link_budget.X_BAND_MHZ[1]
+    )
+    budgets: dict[str, dict[str, Any]] = {}
+    budget_basis: dict[str, Any] | None = None
+    if in_band:
+        budgets = link_budget.stations(li, stations, looks, t_s, heard_by)
+        budget_basis = link_budget.basis(li, stations)
+        budget_note = link_budget.ran_note(li, budget_basis)
+    elif runs_ok:
+        budget_note = link_budget.off_band_note(li)
+    else:
+        budget_note = rf_link.line_of_sight_note(missing_inputs)
     links = [
         {
             "from": "lander",
             "to": g.id,
             "stretches": _stretches(heard_by[g.id], r.start, t1),
-            "data_rate_kbps": None,
-            "margin_db": None,
+            "data_rate_kbps": budgets.get(g.id, {}).get("best_rate"),
+            "margin_db": budgets.get(g.id, {}).get("best_margin"),
+            "passes": budgets[g.id]["passes"] if g.id in budgets else None,
         }
         for g in stations
     ]
@@ -397,8 +414,8 @@ async def run(ctx: JobContext) -> HandlerResult:
         else "Numbers that use the relay are ranges over what its orbit could be, if it flies as "
         "planned; a message may wait on the relay until a ground station can hear it. "
         "The same two numbers without the relay are given beside them.",
-        "link_budget_note": "Line of sight only: the lander's radio power and data rate "
-        "are not published, so no data rate or link margin is given.",
+        "link_budget_note": budget_note,
+        "link_budget": budget_basis,
         "orbiters": orbiters,
         "orbiters_note": orbiter_passes.NOTE if orbiters else None,
         "light_time_s": {"min": float(rng_all.min() / C_M_S), "max": float(rng_all.max() / C_M_S)},
@@ -419,6 +436,16 @@ async def run(ctx: JobContext) -> HandlerResult:
                 "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/",
             ),
             lifecycle.source_ref("LOLA terrain skyline at the landing spot", None),
+            *(
+                [
+                    lifecycle.source_ref(
+                        "DSN 810-005 modules 101, 104 and 105: antenna gain, noise, atmosphere",
+                        "https://deepspace.jpl.nasa.gov/dsndocs/810-005/",
+                    )
+                ]
+                if budget_basis
+                else []
+            ),
             *orb_sources,
         ],
         parts=[

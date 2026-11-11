@@ -196,11 +196,34 @@ async def _orbiters(
     return out
 
 
+def _link_inputs(m: MissionRecord) -> dict[str, Any]:
+    """The mission's radio figures for the link budget (ADR-20), only when the EIRP is
+    stated; otherwise nothing is added and the contact answer is line of sight only."""
+    lc = m.lifecycle or {}
+    c = lc.get("comms") or {}
+    if c.get("eirp_dbw") is None:
+        return {}
+    url = (lc.get("field_sources") or {}).get("comms")
+    return {
+        "link_inputs": {
+            "eirp_dbw": c["eirp_dbw"],
+            "eirp_tol_db": c.get("eirp_tol_db"),
+            "frequency_mhz": c.get("frequency_mhz"),
+            "required_ebn0_db": c.get("required_ebn0_db"),
+            "required_margin_db": c.get("required_margin_db"),
+            "data_rates_kbps": list(c.get("data_rates_kbps") or []),
+            "provenance": "published" if url else "entered",
+            "source": url or f"entered on the mission record for {m.id}",
+        }
+    }
+
+
 def _params(
     m: MissionRecord, start: datetime, end: datetime, note: str, extra: list[str]
 ) -> dict[str, Any]:
     lc = m.lifecycle or {}
     return {
+        **_link_inputs(m),
         "mission_id": m.id,
         "data_version": m.data_version,
         "start": lifecycle.iso(start),

@@ -196,6 +196,12 @@ class CommsIn(_Strict):
     gt_dbk: float | None = None
     ground_stations: list[str] = Field(default_factory=list)
     relays: list[str] = Field(default_factory=list)
+    # The downlink budget's other inputs (ADR-20); each optional, none invented.
+    frequency_mhz: float | None = Field(default=None, gt=0)
+    data_rates_kbps: list[float] = Field(default_factory=list)
+    required_ebn0_db: float | None = None
+    required_margin_db: float | None = Field(default=None, ge=0)
+    eirp_tol_db: float | None = Field(default=None, ge=0)
 
 
 class SpacecraftIn(_Strict):

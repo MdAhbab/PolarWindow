@@ -31,14 +31,86 @@ class Node(_M):
     launch_note: str | None
 
 
+class RateMargin(_M):
+    rate_kbps: QuantityOut = Field(description="A data rate the mission states, as stated.")
+    margin_db: QuantityOut = Field(
+        description="Eb/N0 over the coding's required Eb/N0 at that rate. `lo` is adverse "
+        "weather with every tolerance adverse; `hi` is clear sky with every one favourable."
+    )
+
+
+class PassPoint(_M):
+    at: Literal["edge", "peak"] = Field(
+        description="`edge`: the weaker end of the pass (where the lander is lowest in the "
+        "station's sky). `peak`: the sample of highest elevation."
+    )
+    elevation_deg: QuantityOut
+    range_km: QuantityOut
+    path_loss_db: QuantityOut = Field(description="Free-space path loss.")
+    atmosphere_db: QuantityOut = Field(
+        description="Atmospheric attenuation on the slant path; `lo` clear sky, `hi` the 99 % "
+        "weather point (810-005 module 105)."
+    )
+    g_over_t_dbk: QuantityOut = Field(description="The station's G/T at this elevation.")
+    max_rate_kbps: QuantityOut = Field(
+        description="The highest data rate that keeps the stated margin over the required "
+        "Eb/N0, with the uncertainty from weather and tolerances as `lo` and `hi`."
+    )
+    margins: list[RateMargin] = Field(
+        description="Link margin at each rate the mission states. Empty when none is stated."
+    )
+
+
+class PassBudget(_M):
+    edge: PassPoint
+    peak: PassPoint
+
+
 class Link(_M):
     from_: str = Field(alias="from")
     to: str
     stretches: list[StretchOut]
-    data_rate_kbps: QuantityOut | None
-    margin_db: QuantityOut | None
+    data_rate_kbps: QuantityOut | None = Field(
+        description="With a link budget: the highest achievable rate at the peak of the best "
+        "pass of this link. Null otherwise."
+    )
+    margin_db: QuantityOut | None = Field(
+        description="With a link budget and a stated rate: the margin at the first stated rate "
+        "at the peak of that best pass. Null otherwise."
+    )
+    passes: list[PassBudget] | None = Field(
+        default=None,
+        description="With a link budget: one entry per stretch, in the same order. Null when no "
+        "budget ran for this station (figures missing).",
+    )
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+
+class StationFigures(_M):
+    id: str
+    configuration: str
+    gain_dbi: QuantityOut = Field(description="Published; `lo`/`hi` are the published tolerance.")
+    t_amw_k: QuantityOut = Field(description="Published antenna-microwave noise, no atmosphere.")
+    zenith_clear_db: QuantityOut
+    zenith_adverse_db: QuantityOut
+    module: str
+    source_urls: list[str]
+
+
+class LinkBudget(_M):
+    method: str
+    band: str
+    frequency_mhz: QuantityOut
+    eirp_dbw: QuantityOut
+    required_ebn0_db: QuantityOut
+    required_margin_db: QuantityOut
+    stated_rates_kbps: list[QuantityOut]
+    stations: list[StationFigures]
+    stations_without_figures: list[str] = Field(
+        description="Stations with no published X-band figures: no budget is given there."
+    )
+    not_modelled: list[str]
 
 
 class ContactNumbers(_M):
@@ -179,7 +251,14 @@ class Contact(_M):
         description="Real lunar orbiters' passes over the landing spot (could see the lander)."
     )
     orbiters_note: str | None
-    link_budget_note: str | None
+    link_budget_note: str | None = Field(
+        description="What the budget ran on, or why there is none (starts 'Line of sight only')."
+    )
+    link_budget: LinkBudget | None = Field(
+        default=None,
+        description="The figures the downlink budget ran on, each with provenance. Null when "
+        "the mission states too little (then the answer is line of sight only).",
+    )
     bookings: list[Booking]
     light_time_s: LightTime
     longest_wait_from: datetime

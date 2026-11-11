@@ -219,6 +219,41 @@ class HorizonMaskPoint(_Strict):
     el_deg: float = Field(ge=-5, le=90)
 
 
+class XBandReceive(_Strict):
+    """A DSN antenna's published X-band receive figures (810-005 module 101 or 104).
+
+    Gain is at the peak of the gain-elevation curve, no atmosphere; the noise
+    temperature is the antenna-microwave part near zenith, no atmosphere and no
+    cosmic noise. G/T is not stored: it is worked out from these with the
+    atmosphere of the moment (``app.core.rf_link``).
+    """
+
+    frequency_mhz: float = Field(gt=0, description="The frequency the gain is published at.")
+    configuration: str
+    gain_dbi: float
+    gain_tol_adverse_db: float = Field(ge=0)
+    gain_tol_favourable_db: float = Field(ge=0)
+    t_amw_k: float = Field(gt=0)
+    t_amw_tol_adverse_k: float = Field(ge=0)
+    t_amw_tol_favourable_k: float = Field(ge=0)
+    module: str
+    source_url: str
+
+
+class XBandAtmosphere(_Strict):
+    """Zenith attenuation at X-band for the station's complex (810-005 module 105)."""
+
+    complex: str
+    zenith_clear_db: float = Field(ge=0, description="Cumulative distribution 25 %, year average.")
+    zenith_adverse_db: float = Field(
+        ge=0, description="Cumulative distribution 99 %, year average."
+    )
+    cd_clear: float
+    cd_adverse: float
+    module: str
+    source_url: str
+
+
 class GroundStation(CitedRecord):
     network: Literal["DSN", "ESTRACK", "KSAT", "SSC", "Goonhilly", "JAXA", "ISRO", "other"]
     operator: str | None
@@ -235,6 +270,10 @@ class GroundStation(CitedRecord):
     #: Mask used when ``mask`` is empty: a flat minimum elevation.
     min_elevation_deg: float | None
     status: Literal["operating", "planned", "retired"]
+    #: Published X-band receive gain and noise (module 101 or 104); null where none is sourced.
+    rx_x: XBandReceive | None
+    #: Published X-band zenith attenuation at the complex (module 105).
+    atmosphere_x: XBandAtmosphere | None
 
 
 class Relay(CitedRecord):

@@ -105,6 +105,120 @@ def read_masks(path: Path) -> dict[str, dict[str, Any]]:
     return out
 
 
+M101_URL = "https://deepspace.jpl.nasa.gov/dsndocs/810-005/101/101I.pdf"
+M104_URL = "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf"
+M105_URL = "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
+
+#: 810-005 module 101 Rev. I: 70-m X-band receive, X-only configuration (S/X dichroic
+#: retracted), 8420 MHz. Gain from Table 2 (+/- 0.1 dBi); T_AMW from Table 4 (+/- 1 K).
+RX_70M: dict[str, tuple[float, float]] = {
+    "DSS-14": (74.55, 11.65),
+    "DSS-43": (74.63, 12.10),
+    "DSS-63": (74.66, 11.46),
+}
+#: Module 104 Rev. O Table 9: 34-m BWG X/Ka-mode, HEMT-1 (RCP), gain 68.32 +0.1/-0.2 dBi at
+#: 8425 MHz (one value for these antennas); T_AMW per antenna, -1.0/+2.0 K. DSS-24 (maser,
+#: several paths) and DSS-65 (not in module 104) are not taken.
+RX_34M_TAMW: dict[str, float] = {
+    "DSS-25": 16.2,
+    "DSS-26": 16.29,
+    "DSS-34": 16.28,
+    "DSS-35": 14.7,
+    "DSS-36": 12.59,
+    "DSS-53": 13.1,
+    "DSS-54": 18.31,
+    "DSS-55": 17.42,
+    "DSS-56": 14.47,
+}
+#: Module 105 Rev. E Tables 13-15, year-average column: zenith attenuation at X-band, dB,
+#: at cumulative distribution 25 % and 99 %.
+ATM_X: dict[str, tuple[str, float, float, str]] = {
+    "DSS-1": ("Goldstone", 0.039, 0.070, "Table 13"),
+    "DSS-2": ("Canberra", 0.045, 0.132, "Table 14"),
+    "DSS-4": ("Madrid", 0.043, 0.132, "Table 15"),
+}
+
+
+def _complex_of(name: str) -> str:
+    """DSS-14 -> Goldstone (1x/2x), DSS-34 -> Canberra (3x/4x), DSS-54 -> Madrid (5x/6x)."""
+    first = int(name.split("-")[1][0])
+    return {1: "DSS-1", 2: "DSS-1", 3: "DSS-2", 4: "DSS-2", 5: "DSS-4", 6: "DSS-4"}[first]
+
+
+def rf_fields(name: str, accessed: str) -> dict[str, Any]:
+    """The X-band figures for one antenna, with the sources they stand on."""
+    out: dict[str, Any] = {"rx_x": None, "atmosphere_x": None, "sources": [], "field_sources": {}}
+    if name in RX_70M:
+        g, t = RX_70M[name]
+        out["rx_x"] = {
+            "frequency_mhz": 8420.0,
+            "configuration": "X-only (S/X dichroic retracted), LNA-1/-2 HEMT",
+            "gain_dbi": g,
+            "gain_tol_adverse_db": 0.1,
+            "gain_tol_favourable_db": 0.1,
+            "t_amw_k": t,
+            "t_amw_tol_adverse_k": 1.0,
+            "t_amw_tol_favourable_k": 1.0,
+            "module": "810-005 module 101 Rev. I, Table 2 (gain) and Table 4 (T_AMW)",
+            "source_url": M101_URL,
+        }
+        out["sources"].append(
+            {
+                "url": M101_URL,
+                "title": "DSN Telecommunications Link Design Handbook 810-005, module 101 "
+                "Rev. I, 70-m Subnet Telecommunications Interfaces",
+                "publisher": "NASA JPL Deep Space Network",
+                "accessed": accessed,
+            }
+        )
+        out["field_sources"]["rx_x"] = M101_URL
+    elif name in RX_34M_TAMW:
+        out["rx_x"] = {
+            "frequency_mhz": 8425.0,
+            "configuration": "X/Ka-mode, HEMT-1 (RCP)",
+            "gain_dbi": 68.32,
+            "gain_tol_adverse_db": 0.2,
+            "gain_tol_favourable_db": 0.1,
+            "t_amw_k": RX_34M_TAMW[name],
+            "t_amw_tol_adverse_k": 2.0,
+            "t_amw_tol_favourable_k": 1.0,
+            "module": "810-005 module 104 Rev. O, Table 9",
+            "source_url": M104_URL,
+        }
+        out["sources"].append(
+            {
+                "url": M104_URL,
+                "title": "DSN Telecommunications Link Design Handbook 810-005, module 104 "
+                "Rev. O, 34-m BWG Stations Telecommunications Interfaces",
+                "publisher": "NASA JPL Deep Space Network",
+                "accessed": accessed,
+            }
+        )
+        out["field_sources"]["rx_x"] = M104_URL
+    cx = _complex_of(name)
+    cname, clear, adverse, table = ATM_X[cx]
+    out["atmosphere_x"] = {
+        "complex": cname,
+        "zenith_clear_db": clear,
+        "zenith_adverse_db": adverse,
+        "cd_clear": 0.25,
+        "cd_adverse": 0.99,
+        "module": f"810-005 module 105 Rev. E, {table} (year average)",
+        "source_url": M105_URL,
+    }
+    out["sources"].append(
+        {
+            "url": M105_URL,
+            "title": "DSN Telecommunications Link Design Handbook 810-005, module 105 "
+            "Rev. E, Atmospheric and Environmental Effects",
+            "publisher": "NASA JPL Deep Space Network",
+            "accessed": accessed,
+        }
+    )
+    out["field_sources"]["atmosphere_x"] = M105_URL
+    return out
+
+
 def build(dsn_dir: Path, accessed: str) -> dict[str, Any]:
     masks = read_masks(dsn_dir / XLSX)
     xlsx_src = {
@@ -127,6 +241,7 @@ def build(dsn_dir: Path, accessed: str) -> dict[str, Any]:
             continue  # DSS-23 and DSS-33 are future antennas at estimated locations
         lat, lon, h = TABLE_5[name]
         lon_e = _deg(lon)
+        rf = rf_fields(name, accessed)
         recs.append(
             {
                 "id": name.lower(),
@@ -142,7 +257,9 @@ def build(dsn_dir: Path, accessed: str) -> dict[str, Any]:
                 "mask": [{"az_deg": float(az), "el_deg": el} for az, el in enumerate(m["rcv"])],
                 "min_elevation_deg": min(m["rcv"]),
                 "status": "operating",
-                "sources": [pdf_src, xlsx_src],
+                "rx_x": rf["rx_x"],
+                "atmosphere_x": rf["atmosphere_x"],
+                "sources": [pdf_src, xlsx_src, *rf["sources"]],
                 "field_sources": {
                     "network": pdf_src["url"],
                     "operator": pdf_src["url"],
@@ -154,9 +271,10 @@ def build(dsn_dir: Path, accessed: str) -> dict[str, Any]:
                     "mask": xlsx_src["url"],
                     "min_elevation_deg": xlsx_src["url"],
                     "status": xlsx_src["url"],
+                    **rf["field_sources"],
                 },
                 "assumed_fields": {},
-                "unconfirmed_fields": ["bands"],
+                "unconfirmed_fields": ["bands", *(["rx_x"] if rf["rx_x"] is None else [])],
                 "notes": [
                     f"{COMPLEX.get(name[:5], '')}. Receive mask: the lowest elevation the "
                     "antenna can track at each degree of azimuth (terrain, neighbouring "
@@ -170,7 +288,9 @@ def build(dsn_dir: Path, accessed: str) -> dict[str, Any]:
         "catalogue": "ground_stations",
         "compiled": accessed,
         "about": "Deep Space Network antennas with their published receive horizon masks "
-        "(810-005 module 301 Rev. O). Other networks' stations are not listed yet: their "
+        "(810-005 module 301 Rev. O), with X-band receive gain and noise (modules 101, 104) and "
+        "zenith attenuation (module 105) where published. Other networks' stations are not "
+        "listed yet: their "
         "masks are not published, so any added later carry an assumed flat limit, labelled.",
         "records": recs,
     }

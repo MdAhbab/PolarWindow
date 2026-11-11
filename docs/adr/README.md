@@ -23,3 +23,4 @@ Index of architecture decisions for POLAR WINDOW.
 | [ADR-0017](0017-project-manager-data.md) | The project manager's records have a name on every change | Accepted (amends ADR-7) |
 | [ADR-0018](0018-kernel-pinning.md) | Kernels and data files are dated and pinned | Accepted |
 | [ADR-0019](0019-terrain-outside-the-pole.md) | Real terrain models for mission targets outside 80°S (LOLA 60S and SLDEM2015) | Accepted |
+| [ADR-0020](0020-link-budget.md) | The downlink budget runs on sourced or entered radio figures, and gives ranges | Accepted |

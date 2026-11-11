@@ -187,6 +187,11 @@ class Comms(_Model):
     gt_dbk: float | None
     ground_stations: list[str]
     relays: list[str]
+    frequency_mhz: float | None = None
+    data_rates_kbps: list[float] = []
+    required_ebn0_db: float | None = None
+    required_margin_db: float | None = None
+    eirp_tol_db: float | None = None
 
 
 class Spacecraft(_Model):

@@ -2,7 +2,7 @@
  "schema_version": 1,
  "catalogue": "ground_stations",
  "compiled": "2026-09-27",
- "about": "Deep Space Network antennas with their published receive horizon masks (810-005 module 301 Rev. O). Other networks' stations are not listed yet: their masks are not published, so any added later carry an assumed flat limit, labelled.",
+ "about": "Deep Space Network antennas with their published receive horizon masks (810-005 module 301 Rev. O), with X-band receive gain and noise (modules 101, 104) and zenith attenuation (module 105) where published. Other networks' stations are not listed yet: their masks are not published, so any added later carry an assumed flat limit, labelled.",
  "records": [
   {
    "id": "dss-14",
@@ -1459,6 +1459,27 @@
    ],
    "min_elevation_deg": 6.0,
    "status": "operating",
+   "rx_x": {
+    "frequency_mhz": 8420.0,
+    "configuration": "X-only (S/X dichroic retracted), LNA-1/-2 HEMT",
+    "gain_dbi": 74.55,
+    "gain_tol_adverse_db": 0.1,
+    "gain_tol_favourable_db": 0.1,
+    "t_amw_k": 11.65,
+    "t_amw_tol_adverse_k": 1.0,
+    "t_amw_tol_favourable_k": 1.0,
+    "module": "810-005 module 101 Rev. I, Table 2 (gain) and Table 4 (T_AMW)",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/101/101I.pdf"
+   },
+   "atmosphere_x": {
+    "complex": "Goldstone",
+    "zenith_clear_db": 0.039,
+    "zenith_adverse_db": 0.07,
+    "cd_clear": 0.25,
+    "cd_adverse": 0.99,
+    "module": "810-005 module 105 Rev. E, Table 13 (year average)",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
+   },
    "sources": [
     {
      "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
@@ -1471,6 +1492,18 @@
      "title": "DSN 810-005 module 301 Rev. O horizon mask download spreadsheet (masks effective 1 May 2024)",
      "publisher": "NASA JPL Deep Space Network",
      "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/101/101I.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 101 Rev. I, 70-m Subnet Telecommunications Interfaces",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 105 Rev. E, Atmospheric and Environmental Effects",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
     }
    ],
    "field_sources": {
@@ -1483,7 +1516,9 @@
     "diameter_m": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
     "mask": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
     "min_elevation_deg": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
-    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx"
+    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
+    "rx_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/101/101I.pdf",
+    "atmosphere_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
    },
    "assumed_fields": {},
    "unconfirmed_fields": [
@@ -2949,6 +2984,16 @@
    ],
    "min_elevation_deg": 6.1,
    "status": "operating",
+   "rx_x": null,
+   "atmosphere_x": {
+    "complex": "Goldstone",
+    "zenith_clear_db": 0.039,
+    "zenith_adverse_db": 0.07,
+    "cd_clear": 0.25,
+    "cd_adverse": 0.99,
+    "module": "810-005 module 105 Rev. E, Table 13 (year average)",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
+   },
    "sources": [
     {
      "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
@@ -2961,6 +3006,12 @@
      "title": "DSN 810-005 module 301 Rev. O horizon mask download spreadsheet (masks effective 1 May 2024)",
      "publisher": "NASA JPL Deep Space Network",
      "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 105 Rev. E, Atmospheric and Environmental Effects",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
     }
    ],
    "field_sources": {
@@ -2973,11 +3024,13 @@
     "diameter_m": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
     "mask": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
     "min_elevation_deg": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
-    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx"
+    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
+    "atmosphere_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
    },
    "assumed_fields": {},
    "unconfirmed_fields": [
-    "bands"
+    "bands",
+    "rx_x"
    ],
    "notes": [
     "Goldstone, California (GDSCC). Receive mask: the lowest elevation the antenna can track at each degree of azimuth (terrain, neighbouring antennas, or the mechanical limit)."
@@ -4438,6 +4491,27 @@
    ],
    "min_elevation_deg": 6.1,
    "status": "operating",
+   "rx_x": {
+    "frequency_mhz": 8425.0,
+    "configuration": "X/Ka-mode, HEMT-1 (RCP)",
+    "gain_dbi": 68.32,
+    "gain_tol_adverse_db": 0.2,
+    "gain_tol_favourable_db": 0.1,
+    "t_amw_k": 16.2,
+    "t_amw_tol_adverse_k": 2.0,
+    "t_amw_tol_favourable_k": 1.0,
+    "module": "810-005 module 104 Rev. O, Table 9",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf"
+   },
+   "atmosphere_x": {
+    "complex": "Goldstone",
+    "zenith_clear_db": 0.039,
+    "zenith_adverse_db": 0.07,
+    "cd_clear": 0.25,
+    "cd_adverse": 0.99,
+    "module": "810-005 module 105 Rev. E, Table 13 (year average)",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
+   },
    "sources": [
     {
      "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
@@ -4450,6 +4524,18 @@
      "title": "DSN 810-005 module 301 Rev. O horizon mask download spreadsheet (masks effective 1 May 2024)",
      "publisher": "NASA JPL Deep Space Network",
      "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 104 Rev. O, 34-m BWG Stations Telecommunications Interfaces",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 105 Rev. E, Atmospheric and Environmental Effects",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
     }
    ],
    "field_sources": {
@@ -4462,7 +4548,9 @@
     "diameter_m": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
     "mask": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
     "min_elevation_deg": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
-    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx"
+    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
+    "rx_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf",
+    "atmosphere_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
    },
    "assumed_fields": {},
    "unconfirmed_fields": [
@@ -5927,6 +6015,27 @@
    ],
    "min_elevation_deg": 6.1,
    "status": "operating",
+   "rx_x": {
+    "frequency_mhz": 8425.0,
+    "configuration": "X/Ka-mode, HEMT-1 (RCP)",
+    "gain_dbi": 68.32,
+    "gain_tol_adverse_db": 0.2,
+    "gain_tol_favourable_db": 0.1,
+    "t_amw_k": 16.29,
+    "t_amw_tol_adverse_k": 2.0,
+    "t_amw_tol_favourable_k": 1.0,
+    "module": "810-005 module 104 Rev. O, Table 9",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf"
+   },
+   "atmosphere_x": {
+    "complex": "Goldstone",
+    "zenith_clear_db": 0.039,
+    "zenith_adverse_db": 0.07,
+    "cd_clear": 0.25,
+    "cd_adverse": 0.99,
+    "module": "810-005 module 105 Rev. E, Table 13 (year average)",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
+   },
    "sources": [
     {
      "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
@@ -5939,6 +6048,18 @@
      "title": "DSN 810-005 module 301 Rev. O horizon mask download spreadsheet (masks effective 1 May 2024)",
      "publisher": "NASA JPL Deep Space Network",
      "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 104 Rev. O, 34-m BWG Stations Telecommunications Interfaces",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 105 Rev. E, Atmospheric and Environmental Effects",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
     }
    ],
    "field_sources": {
@@ -5951,7 +6072,9 @@
     "diameter_m": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
     "mask": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
     "min_elevation_deg": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
-    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx"
+    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
+    "rx_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf",
+    "atmosphere_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
    },
    "assumed_fields": {},
    "unconfirmed_fields": [
@@ -7416,6 +7539,27 @@
    ],
    "min_elevation_deg": 6.1,
    "status": "operating",
+   "rx_x": {
+    "frequency_mhz": 8425.0,
+    "configuration": "X/Ka-mode, HEMT-1 (RCP)",
+    "gain_dbi": 68.32,
+    "gain_tol_adverse_db": 0.2,
+    "gain_tol_favourable_db": 0.1,
+    "t_amw_k": 16.28,
+    "t_amw_tol_adverse_k": 2.0,
+    "t_amw_tol_favourable_k": 1.0,
+    "module": "810-005 module 104 Rev. O, Table 9",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf"
+   },
+   "atmosphere_x": {
+    "complex": "Canberra",
+    "zenith_clear_db": 0.045,
+    "zenith_adverse_db": 0.132,
+    "cd_clear": 0.25,
+    "cd_adverse": 0.99,
+    "module": "810-005 module 105 Rev. E, Table 14 (year average)",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
+   },
    "sources": [
     {
      "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
@@ -7428,6 +7572,18 @@
      "title": "DSN 810-005 module 301 Rev. O horizon mask download spreadsheet (masks effective 1 May 2024)",
      "publisher": "NASA JPL Deep Space Network",
      "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 104 Rev. O, 34-m BWG Stations Telecommunications Interfaces",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 105 Rev. E, Atmospheric and Environmental Effects",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
     }
    ],
    "field_sources": {
@@ -7440,7 +7596,9 @@
     "diameter_m": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
     "mask": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
     "min_elevation_deg": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
-    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx"
+    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
+    "rx_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf",
+    "atmosphere_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
    },
    "assumed_fields": {},
    "unconfirmed_fields": [
@@ -8905,6 +9063,27 @@
    ],
    "min_elevation_deg": 6.1,
    "status": "operating",
+   "rx_x": {
+    "frequency_mhz": 8425.0,
+    "configuration": "X/Ka-mode, HEMT-1 (RCP)",
+    "gain_dbi": 68.32,
+    "gain_tol_adverse_db": 0.2,
+    "gain_tol_favourable_db": 0.1,
+    "t_amw_k": 14.7,
+    "t_amw_tol_adverse_k": 2.0,
+    "t_amw_tol_favourable_k": 1.0,
+    "module": "810-005 module 104 Rev. O, Table 9",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf"
+   },
+   "atmosphere_x": {
+    "complex": "Canberra",
+    "zenith_clear_db": 0.045,
+    "zenith_adverse_db": 0.132,
+    "cd_clear": 0.25,
+    "cd_adverse": 0.99,
+    "module": "810-005 module 105 Rev. E, Table 14 (year average)",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
+   },
    "sources": [
     {
      "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
@@ -8917,6 +9096,18 @@
      "title": "DSN 810-005 module 301 Rev. O horizon mask download spreadsheet (masks effective 1 May 2024)",
      "publisher": "NASA JPL Deep Space Network",
      "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 104 Rev. O, 34-m BWG Stations Telecommunications Interfaces",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 105 Rev. E, Atmospheric and Environmental Effects",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
     }
    ],
    "field_sources": {
@@ -8929,7 +9120,9 @@
     "diameter_m": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
     "mask": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
     "min_elevation_deg": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
-    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx"
+    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
+    "rx_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf",
+    "atmosphere_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
    },
    "assumed_fields": {},
    "unconfirmed_fields": [
@@ -10394,6 +10587,27 @@
    ],
    "min_elevation_deg": 6.1,
    "status": "operating",
+   "rx_x": {
+    "frequency_mhz": 8425.0,
+    "configuration": "X/Ka-mode, HEMT-1 (RCP)",
+    "gain_dbi": 68.32,
+    "gain_tol_adverse_db": 0.2,
+    "gain_tol_favourable_db": 0.1,
+    "t_amw_k": 12.59,
+    "t_amw_tol_adverse_k": 2.0,
+    "t_amw_tol_favourable_k": 1.0,
+    "module": "810-005 module 104 Rev. O, Table 9",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf"
+   },
+   "atmosphere_x": {
+    "complex": "Canberra",
+    "zenith_clear_db": 0.045,
+    "zenith_adverse_db": 0.132,
+    "cd_clear": 0.25,
+    "cd_adverse": 0.99,
+    "module": "810-005 module 105 Rev. E, Table 14 (year average)",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
+   },
    "sources": [
     {
      "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
@@ -10406,6 +10620,18 @@
      "title": "DSN 810-005 module 301 Rev. O horizon mask download spreadsheet (masks effective 1 May 2024)",
      "publisher": "NASA JPL Deep Space Network",
      "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 104 Rev. O, 34-m BWG Stations Telecommunications Interfaces",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 105 Rev. E, Atmospheric and Environmental Effects",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
     }
    ],
    "field_sources": {
@@ -10418,7 +10644,9 @@
     "diameter_m": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
     "mask": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
     "min_elevation_deg": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
-    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx"
+    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
+    "rx_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf",
+    "atmosphere_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
    },
    "assumed_fields": {},
    "unconfirmed_fields": [
@@ -11883,6 +12111,27 @@
    ],
    "min_elevation_deg": 6.0,
    "status": "operating",
+   "rx_x": {
+    "frequency_mhz": 8420.0,
+    "configuration": "X-only (S/X dichroic retracted), LNA-1/-2 HEMT",
+    "gain_dbi": 74.63,
+    "gain_tol_adverse_db": 0.1,
+    "gain_tol_favourable_db": 0.1,
+    "t_amw_k": 12.1,
+    "t_amw_tol_adverse_k": 1.0,
+    "t_amw_tol_favourable_k": 1.0,
+    "module": "810-005 module 101 Rev. I, Table 2 (gain) and Table 4 (T_AMW)",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/101/101I.pdf"
+   },
+   "atmosphere_x": {
+    "complex": "Canberra",
+    "zenith_clear_db": 0.045,
+    "zenith_adverse_db": 0.132,
+    "cd_clear": 0.25,
+    "cd_adverse": 0.99,
+    "module": "810-005 module 105 Rev. E, Table 14 (year average)",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
+   },
    "sources": [
     {
      "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
@@ -11895,6 +12144,18 @@
      "title": "DSN 810-005 module 301 Rev. O horizon mask download spreadsheet (masks effective 1 May 2024)",
      "publisher": "NASA JPL Deep Space Network",
      "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/101/101I.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 101 Rev. I, 70-m Subnet Telecommunications Interfaces",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 105 Rev. E, Atmospheric and Environmental Effects",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
     }
    ],
    "field_sources": {
@@ -11907,7 +12168,9 @@
     "diameter_m": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
     "mask": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
     "min_elevation_deg": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
-    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx"
+    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
+    "rx_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/101/101I.pdf",
+    "atmosphere_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
    },
    "assumed_fields": {},
    "unconfirmed_fields": [
@@ -13372,6 +13635,27 @@
    ],
    "min_elevation_deg": 6.1,
    "status": "operating",
+   "rx_x": {
+    "frequency_mhz": 8425.0,
+    "configuration": "X/Ka-mode, HEMT-1 (RCP)",
+    "gain_dbi": 68.32,
+    "gain_tol_adverse_db": 0.2,
+    "gain_tol_favourable_db": 0.1,
+    "t_amw_k": 13.1,
+    "t_amw_tol_adverse_k": 2.0,
+    "t_amw_tol_favourable_k": 1.0,
+    "module": "810-005 module 104 Rev. O, Table 9",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf"
+   },
+   "atmosphere_x": {
+    "complex": "Madrid",
+    "zenith_clear_db": 0.043,
+    "zenith_adverse_db": 0.132,
+    "cd_clear": 0.25,
+    "cd_adverse": 0.99,
+    "module": "810-005 module 105 Rev. E, Table 15 (year average)",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
+   },
    "sources": [
     {
      "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
@@ -13384,6 +13668,18 @@
      "title": "DSN 810-005 module 301 Rev. O horizon mask download spreadsheet (masks effective 1 May 2024)",
      "publisher": "NASA JPL Deep Space Network",
      "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 104 Rev. O, 34-m BWG Stations Telecommunications Interfaces",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 105 Rev. E, Atmospheric and Environmental Effects",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
     }
    ],
    "field_sources": {
@@ -13396,7 +13692,9 @@
     "diameter_m": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
     "mask": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
     "min_elevation_deg": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
-    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx"
+    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
+    "rx_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf",
+    "atmosphere_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
    },
    "assumed_fields": {},
    "unconfirmed_fields": [
@@ -14861,6 +15159,27 @@
    ],
    "min_elevation_deg": 6.1,
    "status": "operating",
+   "rx_x": {
+    "frequency_mhz": 8425.0,
+    "configuration": "X/Ka-mode, HEMT-1 (RCP)",
+    "gain_dbi": 68.32,
+    "gain_tol_adverse_db": 0.2,
+    "gain_tol_favourable_db": 0.1,
+    "t_amw_k": 18.31,
+    "t_amw_tol_adverse_k": 2.0,
+    "t_amw_tol_favourable_k": 1.0,
+    "module": "810-005 module 104 Rev. O, Table 9",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf"
+   },
+   "atmosphere_x": {
+    "complex": "Madrid",
+    "zenith_clear_db": 0.043,
+    "zenith_adverse_db": 0.132,
+    "cd_clear": 0.25,
+    "cd_adverse": 0.99,
+    "module": "810-005 module 105 Rev. E, Table 15 (year average)",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
+   },
    "sources": [
     {
      "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
@@ -14873,6 +15192,18 @@
      "title": "DSN 810-005 module 301 Rev. O horizon mask download spreadsheet (masks effective 1 May 2024)",
      "publisher": "NASA JPL Deep Space Network",
      "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 104 Rev. O, 34-m BWG Stations Telecommunications Interfaces",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 105 Rev. E, Atmospheric and Environmental Effects",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
     }
    ],
    "field_sources": {
@@ -14885,7 +15216,9 @@
     "diameter_m": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
     "mask": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
     "min_elevation_deg": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
-    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx"
+    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
+    "rx_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf",
+    "atmosphere_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
    },
    "assumed_fields": {},
    "unconfirmed_fields": [
@@ -16350,6 +16683,27 @@
    ],
    "min_elevation_deg": 6.079,
    "status": "operating",
+   "rx_x": {
+    "frequency_mhz": 8425.0,
+    "configuration": "X/Ka-mode, HEMT-1 (RCP)",
+    "gain_dbi": 68.32,
+    "gain_tol_adverse_db": 0.2,
+    "gain_tol_favourable_db": 0.1,
+    "t_amw_k": 17.42,
+    "t_amw_tol_adverse_k": 2.0,
+    "t_amw_tol_favourable_k": 1.0,
+    "module": "810-005 module 104 Rev. O, Table 9",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf"
+   },
+   "atmosphere_x": {
+    "complex": "Madrid",
+    "zenith_clear_db": 0.043,
+    "zenith_adverse_db": 0.132,
+    "cd_clear": 0.25,
+    "cd_adverse": 0.99,
+    "module": "810-005 module 105 Rev. E, Table 15 (year average)",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
+   },
    "sources": [
     {
      "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
@@ -16362,6 +16716,18 @@
      "title": "DSN 810-005 module 301 Rev. O horizon mask download spreadsheet (masks effective 1 May 2024)",
      "publisher": "NASA JPL Deep Space Network",
      "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 104 Rev. O, 34-m BWG Stations Telecommunications Interfaces",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 105 Rev. E, Atmospheric and Environmental Effects",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
     }
    ],
    "field_sources": {
@@ -16374,7 +16740,9 @@
     "diameter_m": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
     "mask": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
     "min_elevation_deg": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
-    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx"
+    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
+    "rx_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf",
+    "atmosphere_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
    },
    "assumed_fields": {},
    "unconfirmed_fields": [
@@ -17839,6 +18207,27 @@
    ],
    "min_elevation_deg": 6.1,
    "status": "operating",
+   "rx_x": {
+    "frequency_mhz": 8425.0,
+    "configuration": "X/Ka-mode, HEMT-1 (RCP)",
+    "gain_dbi": 68.32,
+    "gain_tol_adverse_db": 0.2,
+    "gain_tol_favourable_db": 0.1,
+    "t_amw_k": 14.47,
+    "t_amw_tol_adverse_k": 2.0,
+    "t_amw_tol_favourable_k": 1.0,
+    "module": "810-005 module 104 Rev. O, Table 9",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf"
+   },
+   "atmosphere_x": {
+    "complex": "Madrid",
+    "zenith_clear_db": 0.043,
+    "zenith_adverse_db": 0.132,
+    "cd_clear": 0.25,
+    "cd_adverse": 0.99,
+    "module": "810-005 module 105 Rev. E, Table 15 (year average)",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
+   },
    "sources": [
     {
      "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
@@ -17851,6 +18240,18 @@
      "title": "DSN 810-005 module 301 Rev. O horizon mask download spreadsheet (masks effective 1 May 2024)",
      "publisher": "NASA JPL Deep Space Network",
      "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 104 Rev. O, 34-m BWG Stations Telecommunications Interfaces",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 105 Rev. E, Atmospheric and Environmental Effects",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
     }
    ],
    "field_sources": {
@@ -17863,7 +18264,9 @@
     "diameter_m": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
     "mask": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
     "min_elevation_deg": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
-    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx"
+    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
+    "rx_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/104/104O.pdf",
+    "atmosphere_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
    },
    "assumed_fields": {},
    "unconfirmed_fields": [
@@ -19328,6 +19731,27 @@
    ],
    "min_elevation_deg": 6.0,
    "status": "operating",
+   "rx_x": {
+    "frequency_mhz": 8420.0,
+    "configuration": "X-only (S/X dichroic retracted), LNA-1/-2 HEMT",
+    "gain_dbi": 74.66,
+    "gain_tol_adverse_db": 0.1,
+    "gain_tol_favourable_db": 0.1,
+    "t_amw_k": 11.46,
+    "t_amw_tol_adverse_k": 1.0,
+    "t_amw_tol_favourable_k": 1.0,
+    "module": "810-005 module 101 Rev. I, Table 2 (gain) and Table 4 (T_AMW)",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/101/101I.pdf"
+   },
+   "atmosphere_x": {
+    "complex": "Madrid",
+    "zenith_clear_db": 0.043,
+    "zenith_adverse_db": 0.132,
+    "cd_clear": 0.25,
+    "cd_adverse": 0.99,
+    "module": "810-005 module 105 Rev. E, Table 15 (year average)",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
+   },
    "sources": [
     {
      "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
@@ -19340,6 +19764,18 @@
      "title": "DSN 810-005 module 301 Rev. O horizon mask download spreadsheet (masks effective 1 May 2024)",
      "publisher": "NASA JPL Deep Space Network",
      "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/101/101I.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 101 Rev. I, 70-m Subnet Telecommunications Interfaces",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 105 Rev. E, Atmospheric and Environmental Effects",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
     }
    ],
    "field_sources": {
@@ -19352,7 +19788,9 @@
     "diameter_m": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
     "mask": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
     "min_elevation_deg": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
-    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx"
+    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
+    "rx_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/101/101I.pdf",
+    "atmosphere_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
    },
    "assumed_fields": {},
    "unconfirmed_fields": [
@@ -20817,6 +21255,16 @@
    ],
    "min_elevation_deg": 6.0,
    "status": "operating",
+   "rx_x": null,
+   "atmosphere_x": {
+    "complex": "Madrid",
+    "zenith_clear_db": 0.043,
+    "zenith_adverse_db": 0.132,
+    "cd_clear": 0.25,
+    "cd_adverse": 0.99,
+    "module": "810-005 module 105 Rev. E, Table 15 (year average)",
+    "source_url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
+   },
    "sources": [
     {
      "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
@@ -20829,6 +21277,12 @@
      "title": "DSN 810-005 module 301 Rev. O horizon mask download spreadsheet (masks effective 1 May 2024)",
      "publisher": "NASA JPL Deep Space Network",
      "accessed": "2026-09-27"
+    },
+    {
+     "url": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf",
+     "title": "DSN Telecommunications Link Design Handbook 810-005, module 105 Rev. E, Atmospheric and Environmental Effects",
+     "publisher": "NASA JPL Deep Space Network",
+     "accessed": "2026-11-11"
     }
    ],
    "field_sources": {
@@ -20841,11 +21295,13 @@
     "diameter_m": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/301O.pdf",
     "mask": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
     "min_elevation_deg": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
-    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx"
+    "status": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/301/Horizon-Masks-Download-V2-301O.xlsx",
+    "atmosphere_x": "https://deepspace.jpl.nasa.gov/dsndocs/810-005/105/105E.pdf"
    },
    "assumed_fields": {},
    "unconfirmed_fields": [
-    "bands"
+    "bands",
+    "rx_x"
    ],
    "notes": [
     "Madrid, Spain (MDSCC). Receive mask: the lowest elevation the antenna can track at each degree of azimuth (terrain, neighbouring antennas, or the mechanical limit)."
