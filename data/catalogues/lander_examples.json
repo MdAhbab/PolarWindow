@@ -5,31 +5,272 @@
       "id": "nova-c-class-assumed",
       "name": "Nova-C-class lander (every figure assumed)",
       "figures": {
-        "array_geometry": {"value": "top_deck_flat", "provenance": "assumed", "source": "A single top-deck panel is the simplest layout for a lander of this class; not a published design."},
-        "array_area_m2": {"value": 1.9, "provenance": "assumed", "source": "Hexagon 1.57 m across flats is 2.13 m2; 90 % packing."},
-        "cell_efficiency": {"value": 0.28, "provenance": "assumed", "source": "Typical space triple-junction cell efficiency, 28 to 30 %, less assembly losses."},
-        "dust_loss_fraction": {"value": 0.05, "provenance": "assumed", "source": "A round allowance for plume-lofted dust on the panel; no measurement."},
-        "battery_capacity_wh": {"value": 1000, "provenance": "assumed", "source": "About 5 h at 200 W, the only power figure found for this class (unverified)."},
-        "initial_soc_fraction": {"value": 1.0, "provenance": "assumed", "source": "Full at the start of the window."},
-        "avionics_w": {"value": 100, "provenance": "assumed", "source": "Half of the 200 W class figure."},
-        "payload_w": {"value": 50, "provenance": "assumed", "source": "A quarter of the 200 W class figure."},
-        "load_dissipation_fraction": {"value": 0.9, "provenance": "assumed", "source": "Nearly all electrical load ends as heat in the bus; 10 % left as radiated or transmitted power."},
-        "heater_power_w": {"value": 60, "provenance": "assumed", "source": "About 30 % of the 200 W class figure."},
-        "heater_setpoint_c": {"value": -10, "provenance": "assumed", "source": "10 K above the operational threshold below."},
-        "initial_bus_temp_c": {"value": 15, "provenance": "assumed", "source": "Typical cruise-end bus temperature."},
-        "operational_min_c": {"value": -20, "provenance": "assumed", "source": "Typical avionics qualification lower limit, as used in the project's improvement spec."},
-        "survival_min_c": {"value": -40, "provenance": "assumed", "source": "Typical non-operating lower limit, as used in the project's improvement spec."},
-        "bus_absorptivity": {"value": 0.3, "provenance": "assumed", "source": "Light-coloured thermal blanket or paint, solar absorptivity 0.2 to 0.4."},
-        "bus_side_area_m2": {"value": 3.1, "provenance": "assumed", "source": "1.57 m width times an assumed 2.0 m bus height."},
-        "bus_top_area_m2": {"value": 0.0, "provenance": "assumed", "source": "The top deck is the solar panel; it is not counted as bus."},
-        "bus_emissivity": {"value": 0.8, "provenance": "assumed", "source": "Typical for painted or blanketed spacecraft surface."},
-        "regolith_emissivity": {"value": 0.95, "provenance": "assumed", "source": "Typical value used for lunar regolith in thermal models."},
-        "regolith_absorptivity": {"value": 0.88, "provenance": "assumed", "source": "One minus an albedo of about 0.12."},
-        "view_factor": {"value": 0.5, "provenance": "assumed", "source": "Half the base's view is the ground for a body standing on legs."},
-        "base_area_m2": {"value": 2.1, "provenance": "assumed", "source": "Hexagonal footprint of 1.57 m across flats."},
-        "radiator_emissivity": {"value": 0.85, "provenance": "assumed", "source": "Typical for a second-surface-mirror radiator."},
-        "radiator_area_m2": {"value": 0.5, "provenance": "assumed", "source": "Sized so the bus holds near 15 C with the loads above; a guess."},
-        "heat_capacity_j_per_k": {"value": 400000, "provenance": "assumed", "source": "675 kg dry mass at about 600 J/kg/K for a mixed aluminium and electronics bus."}
+        "array_geometry": {
+          "value": "top_deck_flat",
+          "provenance": "assumed",
+          "source": "A single top-deck panel is the simplest layout for a lander of this class; not a published design."
+        },
+        "array_area_m2": {
+          "value": 1.9,
+          "provenance": "assumed",
+          "source": "Hexagon 1.57 m across flats is 2.13 m2; 90 % packing."
+        },
+        "cell_efficiency": {
+          "value": 0.28,
+          "provenance": "assumed",
+          "source": "Typical space triple-junction cell efficiency, 28 to 30 %, less assembly losses."
+        },
+        "dust_loss_fraction": {
+          "value": 0.05,
+          "provenance": "assumed",
+          "source": "A round allowance for plume-lofted dust on the panel; no measurement."
+        },
+        "battery_capacity_wh": {
+          "value": 1000,
+          "provenance": "assumed",
+          "source": "About 5 h at 200 W, the only power figure found for this class (unverified)."
+        },
+        "initial_soc_fraction": {
+          "value": 1.0,
+          "provenance": "assumed",
+          "source": "Full at the start of the window."
+        },
+        "avionics_w": {
+          "value": 100,
+          "provenance": "assumed",
+          "source": "Half of the 200 W class figure."
+        },
+        "payload_w": {
+          "value": 50,
+          "provenance": "assumed",
+          "source": "A quarter of the 200 W class figure."
+        },
+        "load_dissipation_fraction": {
+          "value": 0.9,
+          "provenance": "assumed",
+          "source": "Nearly all electrical load ends as heat in the bus; 10 % left as radiated or transmitted power."
+        },
+        "heater_power_w": {
+          "value": 60,
+          "provenance": "assumed",
+          "source": "About 30 % of the 200 W class figure."
+        },
+        "heater_setpoint_c": {
+          "value": -10,
+          "provenance": "assumed",
+          "source": "10 K above the operational threshold below."
+        },
+        "initial_bus_temp_c": {
+          "value": 15,
+          "provenance": "assumed",
+          "source": "Typical cruise-end bus temperature."
+        },
+        "operational_min_c": {
+          "value": -20,
+          "provenance": "assumed",
+          "source": "Typical avionics qualification lower limit, as used in the project's improvement spec."
+        },
+        "survival_min_c": {
+          "value": -40,
+          "provenance": "assumed",
+          "source": "Typical non-operating lower limit, as used in the project's improvement spec."
+        },
+        "bus_absorptivity": {
+          "value": 0.3,
+          "provenance": "assumed",
+          "source": "Light-coloured thermal blanket or paint, solar absorptivity 0.2 to 0.4."
+        },
+        "bus_side_area_m2": {
+          "value": 3.1,
+          "provenance": "assumed",
+          "source": "1.57 m width times an assumed 2.0 m bus height."
+        },
+        "bus_top_area_m2": {
+          "value": 0.0,
+          "provenance": "assumed",
+          "source": "The top deck is the solar panel; it is not counted as bus."
+        },
+        "bus_emissivity": {
+          "value": 0.8,
+          "provenance": "assumed",
+          "source": "Typical for painted or blanketed spacecraft surface."
+        },
+        "regolith_emissivity": {
+          "value": 0.95,
+          "provenance": "assumed",
+          "source": "Typical value used for lunar regolith in thermal models."
+        },
+        "regolith_absorptivity": {
+          "value": 0.88,
+          "provenance": "assumed",
+          "source": "One minus an albedo of about 0.12."
+        },
+        "view_factor": {
+          "value": 0.5,
+          "provenance": "assumed",
+          "source": "Half the base's view is the ground for a body standing on legs."
+        },
+        "base_area_m2": {
+          "value": 2.1,
+          "provenance": "assumed",
+          "source": "Hexagonal footprint of 1.57 m across flats."
+        },
+        "radiator_emissivity": {
+          "value": 0.85,
+          "provenance": "assumed",
+          "source": "Typical for a second-surface-mirror radiator."
+        },
+        "radiator_area_m2": {
+          "value": 0.5,
+          "provenance": "assumed",
+          "source": "Sized so the bus holds near 15 C with the loads above; a guess."
+        },
+        "heat_capacity_j_per_k": {
+          "value": 400000,
+          "provenance": "assumed",
+          "source": "675 kg dry mass at about 600 J/kg/K for a mixed aluminium and electronics bus."
+        }
+      }
+    },
+    {
+      "id": "nova-c-class-assumed-body-panels",
+      "name": "Nova-C-class lander with panels on its six sides (every figure assumed)",
+      "figures": {
+        "array_geometry": {
+          "value": "vertical_faces",
+          "provenance": "assumed",
+          "source": "Panels on the six side faces of a hexagonal body: at the pole the Sun stays near the horizon, where a flat top deck collects almost nothing. Not a published design."
+        },
+        "array_area_m2": {
+          "value": 0.8,
+          "provenance": "assumed",
+          "source": "One side face: a hexagon 1.57 m across flats has 0.91 m sides; a panel 1 m tall with 90 % packing is 0.8 m2."
+        },
+        "cell_efficiency": {
+          "value": 0.28,
+          "provenance": "assumed",
+          "source": "Typical space triple-junction cell efficiency, 28 to 30 %, less assembly losses."
+        },
+        "dust_loss_fraction": {
+          "value": 0.05,
+          "provenance": "assumed",
+          "source": "A round allowance for plume-lofted dust on the panel; no measurement."
+        },
+        "battery_capacity_wh": {
+          "value": 1000,
+          "provenance": "assumed",
+          "source": "About 5 h at 200 W, the only power figure found for this class (unverified)."
+        },
+        "initial_soc_fraction": {
+          "value": 1.0,
+          "provenance": "assumed",
+          "source": "Full at the start of the window."
+        },
+        "avionics_w": {
+          "value": 100,
+          "provenance": "assumed",
+          "source": "Half of the 200 W class figure."
+        },
+        "payload_w": {
+          "value": 50,
+          "provenance": "assumed",
+          "source": "A quarter of the 200 W class figure."
+        },
+        "load_dissipation_fraction": {
+          "value": 0.9,
+          "provenance": "assumed",
+          "source": "Nearly all electrical load ends as heat in the bus; 10 % left as radiated or transmitted power."
+        },
+        "heater_power_w": {
+          "value": 60,
+          "provenance": "assumed",
+          "source": "About 30 % of the 200 W class figure."
+        },
+        "heater_setpoint_c": {
+          "value": -10,
+          "provenance": "assumed",
+          "source": "10 K above the operational threshold below."
+        },
+        "initial_bus_temp_c": {
+          "value": 15,
+          "provenance": "assumed",
+          "source": "Typical cruise-end bus temperature."
+        },
+        "operational_min_c": {
+          "value": -20,
+          "provenance": "assumed",
+          "source": "Typical avionics qualification lower limit, as used in the project's improvement spec."
+        },
+        "survival_min_c": {
+          "value": -40,
+          "provenance": "assumed",
+          "source": "Typical non-operating lower limit, as used in the project's improvement spec."
+        },
+        "bus_absorptivity": {
+          "value": 0.3,
+          "provenance": "assumed",
+          "source": "Light-coloured thermal blanket or paint, solar absorptivity 0.2 to 0.4."
+        },
+        "bus_side_area_m2": {
+          "value": 3.1,
+          "provenance": "assumed",
+          "source": "1.57 m width times an assumed 2.0 m bus height."
+        },
+        "bus_top_area_m2": {
+          "value": 0.0,
+          "provenance": "assumed",
+          "source": "The top deck is the solar panel; it is not counted as bus."
+        },
+        "bus_emissivity": {
+          "value": 0.8,
+          "provenance": "assumed",
+          "source": "Typical for painted or blanketed spacecraft surface."
+        },
+        "regolith_emissivity": {
+          "value": 0.95,
+          "provenance": "assumed",
+          "source": "Typical value used for lunar regolith in thermal models."
+        },
+        "regolith_absorptivity": {
+          "value": 0.88,
+          "provenance": "assumed",
+          "source": "One minus an albedo of about 0.12."
+        },
+        "view_factor": {
+          "value": 0.5,
+          "provenance": "assumed",
+          "source": "Half the base's view is the ground for a body standing on legs."
+        },
+        "base_area_m2": {
+          "value": 2.1,
+          "provenance": "assumed",
+          "source": "Hexagonal footprint of 1.57 m across flats."
+        },
+        "radiator_emissivity": {
+          "value": 0.85,
+          "provenance": "assumed",
+          "source": "Typical for a second-surface-mirror radiator."
+        },
+        "radiator_area_m2": {
+          "value": 0.5,
+          "provenance": "assumed",
+          "source": "Sized so the bus holds near 15 C with the loads above; a guess."
+        },
+        "heat_capacity_j_per_k": {
+          "value": 400000,
+          "provenance": "assumed",
+          "source": "675 kg dry mass at about 600 J/kg/K for a mixed aluminium and electronics bus."
+        },
+        "face_count": {
+          "value": 6,
+          "provenance": "assumed",
+          "source": "A hexagonal body has six side faces."
+        },
+        "face_azimuth_offset_deg": {
+          "value": 0,
+          "provenance": "assumed",
+          "source": "One face towards north; the resting heading is not known before landing."
+        }
       }
     }
   ]
