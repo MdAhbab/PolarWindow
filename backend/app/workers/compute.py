@@ -280,6 +280,10 @@ def main() -> None:
         log.info("SPICE ready: %d kernels", state.count)
     except KernelError as exc:
         log.error("SPICE kernels unavailable; jobs that need them will fail with this:\n%s", exc)
+    if s.spice_workers >= 2:
+        from app.core import spice_pool
+
+        spice_pool.start(s.spice_workers, s.kernel_dir)
 
     # Run as ``python -m``, this file is ``__main__``, and the handlers
     # registered themselves in the importable ``app.workers.compute`` module:

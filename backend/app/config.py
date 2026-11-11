@@ -165,6 +165,10 @@ class Settings(BaseSettings):
     #: mystery. The seed step downloads them; the API only checks.
     download_kernels_on_start: bool = False
 
+    #: SPICE worker processes (ADR-24). 0 keeps today's single SPICE thread; 2 or
+    #: more routes eligible read-only calls to a process pool.
+    spice_workers: int = Field(default=0, ge=0, le=32)
+
     # --- stores ------------------------------------------------------------
     #: Defaults match docker-compose and `.env.example`. A machine with its own
     #: Postgres or Redis overrides them in `.env`, never by editing this file.

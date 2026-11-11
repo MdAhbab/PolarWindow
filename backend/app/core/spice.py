@@ -27,6 +27,7 @@ distinction is asserted in the tests.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -285,6 +286,14 @@ def ephemeris(start_utc: str, end_utc: str, step_s: float) -> Ephemeris:
 
 async def ephemeris_async(start_utc: str, end_utc: str, step_s: float) -> Ephemeris:
     """``ephemeris`` on the dedicated SPICE thread: one hop per window, not four."""
+    from app.core import spice_pool
+
+    if spice_pool.eligible():
+        try:
+            pooled: Ephemeris = await spice_pool.ephemeris(start_utc, end_utc, step_s)
+            return pooled
+        except spice_pool.PoolUnavailableError:
+            pass  # pool died or was shut down: the single thread is always correct
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(_get_executor(), ephemeris, start_utc, end_utc, step_s)
 
@@ -621,7 +630,48 @@ def describe() -> dict[str, Any]:
         "ephemeris": "de440 + moon_pa_de440 (MOON_ME)",
         "kernels_loaded": _state.count,
         "r_moon_m": R_MOON_M,
+        "pool": _pool_description(),
     }
+
+
+def _pool_description() -> dict[str, Any]:
+    from app.core import spice_pool
+
+    return spice_pool.describe()
+
+
+def fingerprint() -> str:
+    """Identity of the loaded kernel set: kernel count plus the metakernel's SHA-256.
+
+    The metakernel names every file by pinned name (ADR-18), so equal
+    fingerprints mean two processes furnsh'd the same set.
+    """
+    mk = Path(_state.directory) / METAKERNEL_NAME
+    digest = hashlib.sha256(mk.read_bytes()).hexdigest() if mk.exists() else "none"
+    return f"{_state.count}:{digest}"
+
+
+def load_existing(directory: Path) -> KernelState:
+    """Furnsh the metakernel already on disk, without regenerating it.
+
+    For pool workers: ``load`` rewrites the metakernel, and N workers racing to
+    rewrite one file could read each other's half-written output.
+    """
+    global _state
+    with _lock:
+        mk = directory / METAKERNEL_NAME
+        if not mk.exists():
+            raise KernelError(f"metakernel {mk} not found; the parent process has not loaded.")
+        spice.kclear()
+        _extra.clear()
+        spice.furnsh(str(mk))
+        _state = KernelState(loaded=True, count=int(spice.ktotal("ALL")), directory=str(directory))
+        return _state
+
+
+def has_extra() -> bool:
+    """True when kernels beyond the pinned set are loaded in this process."""
+    return bool(_extra)
 
 
 def busy() -> bool:

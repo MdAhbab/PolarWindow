@@ -150,9 +150,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             "through /healthz.\n%s",
             exc,
         )
+    if s.spice_workers >= 2:
+        from app.core import spice_pool
+
+        await asyncio.to_thread(spice_pool.start, s.spice_workers, s.kernel_dir)
     presets_task = asyncio.create_task(_queue_presets())
     yield
     presets_task.cancel()
+    from app.core import spice_pool as _spice_pool
+
+    _spice_pool.shutdown()
     from app.db.session import dispose_engine
 
     await dispose_engine()
