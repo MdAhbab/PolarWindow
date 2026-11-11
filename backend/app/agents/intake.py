@@ -83,6 +83,9 @@ EN_DASH, EM_DASH = chr(0x2013), chr(0x2014)
 MODEL_BUDGET_S = 70.0
 MODEL_TIMEOUT_S = 25.0
 MODEL_MIN_S = 5.0
+#: Room for the whole form with its quotes. With the agents' 2048 a thinking model spent
+#: the cap on reasoning and the form came back cut off after a few fields.
+MODEL_MAX_OUTPUT_TOKENS = 8192
 
 EVIDENCE_MAX = 240
 #: Most characters of the file's text handed to the model.
@@ -1673,6 +1676,7 @@ async def read_with_model(
                     [],
                     response_schema=schema,
                     timeout_s=min(MODEL_TIMEOUT_S, left),
+                    max_output_tokens=MODEL_MAX_OUTPUT_TOKENS,
                 )
             except base.ModelUnavailable as exc:
                 base._cool(exc.model, exc.cooldown_s, exc.why)

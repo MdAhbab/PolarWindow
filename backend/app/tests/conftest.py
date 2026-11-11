@@ -133,6 +133,7 @@ def fake_gemini(monkeypatch: pytest.MonkeyPatch) -> Iterator:
         response_schema,
         timeout_s,
         attempt_timeout_s=None,
+        max_output_tokens=None,
     ):
         """Stand in for one model call.
 

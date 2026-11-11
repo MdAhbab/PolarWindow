@@ -233,6 +233,7 @@ class Settings(BaseSettings):
     rate_sign_in_per_min: int = 60
     rate_agents_per_min: int = 20
     rate_compare_per_min: int = 60
+    rate_energy_per_min: int = 60
     rate_writes_per_min: int = 120
     #: Jobs waiting for a compute worker. Past this a section that needs a new
     #: job answers 503 with Retry-After instead of queueing it, so asking for
@@ -291,7 +292,7 @@ class Settings(BaseSettings):
     agent_attempt_timeout_s: float = 8.0
     agent_max_rounds: int = 4
     agent_max_tool_calls: int = 8
-    agent_max_output_tokens: int = 2048
+    agent_max_output_tokens: int = 4096
     #: None leaves the model's default. Gemini 3 is tuned for its default
     #: temperature, and lowering it is documented to cause looping.
     agent_temperature: float | None = None

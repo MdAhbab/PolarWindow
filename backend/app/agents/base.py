@@ -266,6 +266,7 @@ async def _generate(
     response_schema: dict[str, Any] | None,
     timeout_s: float,
     attempt_timeout_s: float | None = None,
+    max_output_tokens: int | None = None,
 ) -> dict[str, Any]:
     """One call to Gemini via google-genai's async client.
 
@@ -297,7 +298,9 @@ async def _generate(
     client = genai.Client(api_key=s.gemini_api_key)
     config: dict[str, Any] = {
         "system_instruction": system_prompt,
-        "max_output_tokens": s.agent_max_output_tokens,
+        # A thinking model counts its reasoning against this cap, so a long structured
+        # answer (a whole form read from a file) needs more room than a paragraph.
+        "max_output_tokens": max_output_tokens or s.agent_max_output_tokens,
         # The loop in run_agent executes tools itself, bounded and logged; the
         # SDK must never call anything on its own.
         "automatic_function_calling": gt.AutomaticFunctionCallingConfig(disable=True),
