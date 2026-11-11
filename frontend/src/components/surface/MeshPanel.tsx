@@ -424,7 +424,11 @@ export function MeshPanel({
   )
 }
 
-const STATE_WORDS: Record<string, string> = { deep_sleep: 'Deep sleep', standby: 'Standby', active_relay: 'Active relay' }
+const STATE_WORDS: Record<string, string> = {
+  deep_sleep: 'Deep sleep',
+  standby: 'Standby',
+  active_relay: 'Active relay',
+}
 const RULE_WORDS: Record<string, string> = {
   night: 'at night',
   charge_below_cutoff: 'charge below the cut-off',
@@ -457,6 +461,8 @@ export function MeshResult({ data, request, stale = false }: { data: MeshRespons
     return l.with_mesh.value !== null && l.direct_only.value !== null && l.direct_only.value - l.with_mesh.value > 1e-6
   }).length
   const basis = data.nodes[0]?.longest_without_path_to_earth.basis
+  const horizonRes = (data.meta.resolution ?? {}) as { dem_product?: string; dem_resolution_m?: number; max_range_m?: number }
+  const horizonUnc = (data.meta.uncertainty ?? {}) as { dem_vertical_error_m?: number }
 
   return (
     <section aria-label="Rovers relaying, worked out" className={`flex min-w-0 flex-col gap-6 ${stale ? 'opacity-60' : ''}`}>
@@ -488,7 +494,9 @@ export function MeshResult({ data, request, stale = false }: { data: MeshRespons
             ? "On links certainly clear, the mesh shortened no node's longest stretch without a path to Earth."
             : `On links certainly clear, the mesh shortened the longest stretch for ${shortened} of ${data.nodes.length} nodes.`}{' '}
           The elevation model&apos;s height error ({num(data.terrain.vertical_error_m, Number.isInteger(data.terrain.vertical_error_m) ? 0 : 1)} m) leaves most low links uncertain on real terrain, so the
-          certain gain is often nil, and the third figure is what it would be if those links held.
+          certain gain is often nil, and the third figure is what it would be if those links held. A link is marked uncertain when its path passes
+          within the height error of a ridge, where the map cannot tell whether terrain blocks it; only certainly clear links carry traffic in the
+          main run and in the helper figures below.
         </p>
         {basis && (
           <Disclosure title="What the third figure assumes">
@@ -565,10 +573,28 @@ export function MeshResult({ data, request, stale = false }: { data: MeshRespons
 
       <div className="flex flex-col gap-3">
         <h3 className="pw-eyebrow">What helping cost each helper</h3>
+        <p className="text-caption leading-caption text-ink-3">
+          A node enters active relay only during steps where it sends or forwards traffic over a certainly clear mesh link; while its direct link is
+          down with no usable route, it stays in standby (0 W; idle listening power is not modelled).
+        </p>
         {data.helpers.length === 0 && <p className="text-small leading-5 text-ink-2">No node was allowed to help others.</p>}
         {data.helpers.map((h) => (
           <HelperCost key={h.id} h={h} name={nameOf(h.id)} hours={data.nodes.find((n) => n.id === h.id)?.time_in_state_h} />
         ))}
+      </div>
+
+      <div className="flex flex-col gap-1 border-t border-line pt-3">
+        <h3 className="pw-eyebrow">Terrain basis</h3>
+        <p className="text-small leading-5 text-ink-2">
+          Two elevation maps are used together: peer-to-peer links and off-site node skylines (to 20 km) use{' '}
+          <span className="font-mono text-caption">{data.terrain.products.join(' + ')}</span> (posts every{' '}
+          {num(data.terrain.post_m, Number.isInteger(data.terrain.post_m) ? 0 : 1)} m, height error{' '}
+          {num(data.terrain.vertical_error_m, Number.isInteger(data.terrain.vertical_error_m) ? 0 : 1)} m), while the site point&apos;s own{' '}
+          {num((horizonRes.max_range_m ?? 50000) / 1000, 0)} km skyline in the response metadata uses{' '}
+          <span className="font-mono text-caption">{horizonRes.dem_product ?? 'LOLA_LDEM_80S_20M'}</span> (posts every{' '}
+          {num(horizonRes.dem_resolution_m ?? 20, 0)} m, height error {num(horizonUnc.dem_vertical_error_m ?? 4, 0)} m).{' '}
+          <ProvTag p="published" />
+        </p>
       </div>
 
       <Disclosure title="What this does not model" meta={`${data.not_modelled.length} things`}>

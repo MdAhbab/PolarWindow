@@ -158,12 +158,15 @@ def test_mesh_shortens_the_wait_and_never_lengthens_it(monkeypatch: pytest.Monke
     flat(monkeypatch, {(0.0, 0.0): always, (200.0, 0.0): rover_view})
     out = run([lander(), node("r1", ROVER_AT, own_traffic_bps=1e3)])
     r1 = rover(out)
+    lnd = next(n for n in out["nodes"] if n["id"] == "lander")
     lw = r1["longest_without_path_to_earth"]
     assert lw["direct_only"]["value"] == pytest.approx(120.0)  # five days, in hours
     assert 0.0 < lw["with_mesh"]["value"] < lw["direct_only"]["value"]
     assert any(x["status"] == "mesh" and x["path"] == ["r1", "lander"] for x in r1["routes"])
     assert helper(out)["forwarded_mb"]["value"] > 0
     assert r1["delivered_via_mesh_mb"] > 0
+    assert r1["time_in_state_h"]["active_relay"] == pytest.approx(117.0)
+    assert lnd["time_in_state_h"]["active_relay"] == pytest.approx(117.0)
 
 
 def test_mesh_equals_direct_only_when_nobody_may_help(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -178,6 +181,8 @@ def test_isolated_node_with_no_peer(monkeypatch: pytest.MonkeyPatch) -> None:
     out = run([node("r1", ROVER_AT)])
     statuses = {x["status"] for x in out["nodes"][0]["routes"]}
     assert "isolated" in statuses and statuses <= {"waiting", "isolated"}
+    assert out["nodes"][0]["time_in_state_h"]["active_relay"] == 0.0
+    assert out["nodes"][0]["time_in_state_h"]["standby"] == pytest.approx(240.0)
 
 
 def test_forwarding_stops_below_the_charge_cutoff(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -332,3 +337,8 @@ def test_the_mesh_figure_comes_with_what_uncertain_links_would_give(
     # Counting on more links can only shorten the wait, never lengthen it.
     assert hopeful["value"] <= lw["with_mesh"]["value"] <= lw["direct_only"]["value"]
     assert hopeful["unit"] == "h"
+    assert "with_mesh_if_uncertain_links_hold_starts_utc" in lw
+    assert "used_for" in out["terrain"]
+    notes_text = " ".join(out["meta"]["uncertainty"]["notes"])
+    assert "Two terrain grids are used" in notes_text
+    assert "with_mesh_if_uncertain_links_hold" in notes_text

@@ -230,17 +230,10 @@
     },
     {
      "start_s": 507600.0000411272,
-     "end_s": 511200.0000413656,
-     "start_utc": "2027-03-19T21:00:00.000041Z",
-     "end_utc": "2027-03-19T22:00:00.000041Z",
-     "state": "standby"
-    },
-    {
-     "start_s": 511200.0000413656,
      "end_s": 1209600.00009799,
-     "start_utc": "2027-03-19T22:00:00.000041Z",
+     "start_utc": "2027-03-19T21:00:00.000041Z",
      "end_utc": "2027-03-28T00:00:00.000098Z",
-     "state": "active_relay"
+     "state": "standby"
     }
    ],
    "radio_transitions": [
@@ -249,18 +242,12 @@
      "utc": "2027-03-19T21:00:00.000041Z",
      "from": "deep_sleep",
      "to": "standby"
-    },
-    {
-     "t_s": 511200.0000413656,
-     "utc": "2027-03-19T22:00:00.000041Z",
-     "from": "standby",
-     "to": "active_relay"
     }
    ],
    "time_in_state_h": {
     "deep_sleep": 141.0,
-    "standby": 1.0,
-    "active_relay": 194.0
+    "standby": 195.0,
+    "active_relay": 0.0
    },
    "direct_earth_link": [
     {
@@ -395,17 +382,10 @@
     },
     {
      "start_s": 183600.00001490116,
-     "end_s": 187200.00001513958,
-     "start_utc": "2027-03-16T03:00:00.000015Z",
-     "end_utc": "2027-03-16T04:00:00.000015Z",
-     "state": "standby"
-    },
-    {
-     "start_s": 187200.00001513958,
      "end_s": 1209600.00009799,
-     "start_utc": "2027-03-16T04:00:00.000015Z",
+     "start_utc": "2027-03-16T03:00:00.000015Z",
      "end_utc": "2027-03-28T00:00:00.000098Z",
-     "state": "active_relay"
+     "state": "standby"
     }
    ],
    "radio_transitions": [
@@ -414,18 +394,12 @@
      "utc": "2027-03-16T03:00:00.000015Z",
      "from": "deep_sleep",
      "to": "standby"
-    },
-    {
-     "t_s": 187200.00001513958,
-     "utc": "2027-03-16T04:00:00.000015Z",
-     "from": "standby",
-     "to": "active_relay"
     }
    ],
    "time_in_state_h": {
     "deep_sleep": 51.0,
-    "standby": 1.0,
-    "active_relay": 284.0
+    "standby": 285.0,
+    "active_relay": 0.0
    },
    "direct_earth_link": [
     {
@@ -559,17 +533,10 @@
     },
     {
      "start_s": 604800.000048995,
-     "end_s": 608400.0000492334,
-     "start_utc": "2027-03-21T00:00:00.000049Z",
-     "end_utc": "2027-03-21T01:00:00.000049Z",
-     "state": "standby"
-    },
-    {
-     "start_s": 608400.0000492334,
      "end_s": 1209600.00009799,
-     "start_utc": "2027-03-21T01:00:00.000049Z",
+     "start_utc": "2027-03-21T00:00:00.000049Z",
      "end_utc": "2027-03-28T00:00:00.000098Z",
-     "state": "active_relay"
+     "state": "standby"
     }
    ],
    "radio_transitions": [
@@ -578,18 +545,12 @@
      "utc": "2027-03-21T00:00:00.000049Z",
      "from": "deep_sleep",
      "to": "standby"
-    },
-    {
-     "t_s": 608400.0000492334,
-     "utc": "2027-03-21T01:00:00.000049Z",
-     "from": "standby",
-     "to": "active_relay"
     }
    ],
    "time_in_state_h": {
     "deep_sleep": 168.0,
-    "standby": 1.0,
-    "active_relay": 167.0
+    "standby": 168.0,
+    "active_relay": 0.0
    },
    "direct_earth_link": [
     {

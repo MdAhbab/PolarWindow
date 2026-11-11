@@ -1,7 +1,9 @@
 """Surface-to-surface mesh fallback (ADR-23). Pure: arrays and numbers in, numbers out.
 
-When a rover loses its direct link to Earth, can a peer that still has one pass its
-data on, without the peer being harmed? Four parts, each usable alone:
+This module evaluates the physics and routing rules on figures entered by the caller;
+it is a conditional calculation on those inputs, not a prediction of any flight radio
+or mission. When a rover loses its direct link to Earth, can a peer that still has one
+pass its data on, without the peer being harmed? Four parts, each usable alone:
 
 1. **Radio link.** Two-ray ground-reflection path loss over regolith (Fresnel
    reflection coefficient for the stated polarisation and relative permittivity),
@@ -9,10 +11,13 @@ data on, without the peer being harmed? Four parts, each usable alone:
    figure; the link closes when the SNR reaches an entered threshold. Throughput is
    the Shannon bound ``B log2(1 + SNR)`` and is an **upper bound**: no coding or
    modulation scheme reaches it. Every radio figure is an input.
-2. **Radio state machine** per node, over "direct link healthy" at each time step:
-   ``deep_sleep`` while healthy, ``standby`` once it is lost and the loss is counted,
-   ``active_relay`` when the loss has lasted longer than the threshold, and back to
-   ``deep_sleep`` at once when the direct link returns.
+2. **Radio state machine** per node: ``deep_sleep`` while the node's own direct link
+   to Earth is healthy and it is not forwarding peer traffic; ``standby`` once its
+   direct link is lost (both while counting the loss up to the wake threshold and
+   afterwards whenever no usable mesh route carries traffic); ``active_relay`` only
+   while the node is actively sending over a mesh route after the loss has exceeded
+   the threshold, or while it is forwarding peer data as a helper; and back to
+   ``deep_sleep`` when the direct link is healthy and no peer traffic is forwarded.
 3. **Helper guard.** A helper forwards only while it is sunlit, its charge is at or
    above the cut-off, its forwarding energy this lunar day is within its share of the
    battery, and the forwarding power is within the cap. Forwarded data gets only the
@@ -270,31 +275,53 @@ class Transition:
     to_state: RadioState
 
 
-def run_state_machine(
+def seeking_relay(
     t_s: FloatArray, healthy: npt.NDArray[np.bool_], threshold_s: float
+) -> npt.NDArray[np.bool_]:
+    """True where the direct link has been unhealthy for longer than ``threshold_s``."""
+    out = np.zeros(len(t_s), dtype=bool)
+    lost_since: float | None = None
+    for i, (t, ok) in enumerate(zip(t_s, healthy, strict=True)):
+        if ok:
+            lost_since = None
+        else:
+            if lost_since is None:
+                lost_since = float(t)
+            out[i] = float(t) - lost_since > threshold_s
+    return out
+
+
+def run_state_machine(
+    t_s: FloatArray,
+    healthy: npt.NDArray[np.bool_],
+    threshold_s: float,
+    *,
+    usable_route: npt.NDArray[np.bool_] | None = None,
+    forwarding: npt.NDArray[np.bool_] | None = None,
 ) -> tuple[list[RadioState], list[Transition]]:
     """States at each sample, and the changes between them.
 
     A loss is counted from the first sample at which the direct link is not healthy
     (a loss already there at the window's start is counted from the start, so the
-    time to wake is then a late estimate). The radio wakes when the loss has lasted
-    *longer than* ``threshold_s``, and sleeps again at the first healthy sample.
+    time to wake is then a late estimate). The radio is in ``deep_sleep`` while the
+    direct link is healthy and the node is not forwarding peer data. Once the direct
+    link is lost, the radio enters ``standby`` and stays in ``standby`` whenever no
+    usable mesh route carries traffic; it enters ``active_relay`` only while the loss
+    has lasted *longer than* ``threshold_s`` and ``usable_route`` holds (or while
+    ``forwarding`` holds for a helper relaying peer traffic).
     """
+    seek = seeking_relay(t_s, healthy, threshold_s)
     states: list[RadioState] = []
     events: list[Transition] = []
-    lost_since: float | None = None
-    for i, (t, ok) in enumerate(zip(t_s, healthy, strict=True)):
-        if ok:
-            lost_since = None
+    for i, (t, ok, sk) in enumerate(zip(t_s, healthy, seek, strict=True)):
+        fwd = False if forwarding is None else bool(forwarding[i])
+        route_ok = True if usable_route is None else bool(usable_route[i])
+        if fwd:
+            s = RadioState.ACTIVE_RELAY
+        elif ok:
             s = RadioState.DEEP_SLEEP
         else:
-            if lost_since is None:
-                lost_since = float(t)
-            s = (
-                RadioState.ACTIVE_RELAY
-                if float(t) - lost_since > threshold_s
-                else RadioState.STANDBY
-            )
+            s = RadioState.ACTIVE_RELAY if (sk and route_ok) else RadioState.STANDBY
         if states and states[-1] != s:
             events.append(Transition(i, float(t), states[-1], s))
         states.append(s)

@@ -129,6 +129,10 @@ describe('MeshResult', () => {
     expect(screen.getByText('Rover 1 to Rover 2')).toBeTruthy()
     expect(screen.getAllByText('computed').length).toBeGreaterThanOrEqual(15)
     expect(screen.getAllByText('Lowest state of charge')).toHaveLength(3)
+    expect(screen.getAllByText(/Active relay/)).toHaveLength(3)
+    expect(screen.getByText('Terrain basis')).toBeTruthy()
+    expect(screen.getByText('LOLA_LDEM_875S_5M + LOLA_LDEM_80S_80M')).toBeTruthy()
+    expect(screen.getByText('LOLA_LDEM_80S_20M + LDEM_80S_80M')).toBeTruthy()
     expect(screen.getByText('What this does not model')).toBeTruthy()
   })
 

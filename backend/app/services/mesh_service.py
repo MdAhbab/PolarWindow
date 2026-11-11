@@ -5,10 +5,20 @@ antennas, batteries and traffic from the caller, and one radio block, and asks: 
 node loses its direct link to Earth, can a peer relay for it, and what does that cost the
 peer? Every figure is an input (nothing here has a default); the answer says so.
 
-Each node needs its own skyline for Earth and the Sun. The site's mask is 1440 bearings
-and takes minutes, so a node away from the site marches only the bearings Earth's and
-the Sun's tracks pass through, at a coarser step and a shorter range (``horizon.build_mask``
-with an azimuth subset: the same per-ray code).
+Two terrain grids are used: a node at the site origin ``(0, 0)`` reuses the site's
+far-horizon mask described in ``meta.resolution`` (1440 bearings to 50 km on the 20 m
+regional DEM), whereas nodes away from ``(0, 0)`` and all surface-to-surface links use
+the local DEM patch described in the ``terrain`` block (5 m post spacing where covered,
+20 m otherwise, with partial skylines marched to 20 km at 0.5 deg over the bearings
+Earth's and the Sun's tracks pass through).
+
+Surface-to-surface links are tested by straight-line sight between the antennas against
+the local DEM's height error; first-Fresnel-zone clearance is reported beside it in
+``links[]`` without gating ``usable``, because flat-ground reflection inside the first
+Fresnel zone between low antennas is already in the two-ray path loss. The simulation
+is run twice: the primary run uses only links whose line of sight is ``clear``, and a
+conditional second run also allows links whose line of sight is ``uncertain`` (within
+the DEM's height error) to populate ``with_mesh_if_uncertain_links_hold`` alone.
 """
 
 from __future__ import annotations
@@ -55,14 +65,18 @@ NOT_MODELLED = [
     "A helper's charge falls only by the forwarding energy counted here: its own loads and "
     "its solar charging are not modelled, so a charge cut-off is reached later than it would "
     "be in flight.",
-    "Receive and idle-listening power, wake-up and discovery signalling, and handshake time.",
+    "Receive and idle-listening power, wake-up and discovery signalling, and handshake time: "
+    "standby and isolated listening draw 0 W here, and only transmitted or forwarded bits "
+    "spend battery energy.",
     "The Earth-uplink energy and rate of an exit node are counted only if its uplink figures "
     "are entered; otherwise its uplink is taken as neither limiting nor costing energy.",
     "Data buffered in a helper that is no longer on any route is not drained.",
-    "Ground reflection off the actual terrain: the two-ray model reflects from one flat plane "
-    "of the stated permittivity at the antennas' common height reference; rough or sloping "
-    "ground, rocks and diffraction past a ridge are not in the loss (a ridge that blocks the "
-    "path blocks the link).",
+    "Ground reflection and diffraction off the actual terrain: the two-ray model reflects from "
+    "one flat plane of the stated permittivity at the antennas' common height reference, which "
+    "is why the first Fresnel zone is reported in the links table without gating a link; rough "
+    "or sloping ground, rocks and knife-edge diffraction where terrain intrudes into the "
+    "Fresnel zone without blocking the line of sight are not in the loss (a ridge that blocks "
+    "the line of sight blocks the link).",
     "Delay-tolerant bundle handling (custody, retransmission, expiry): data is moved or "
     "dropped by the buffer rule only; light-time and queueing delay are not computed.",
     "Rover motion between waypoints: a node sits at each waypoint until the next.",
@@ -299,21 +313,26 @@ def _both(
     loss_threshold_s: float,
     radius_m: float,
 ) -> dict[str, Any]:
-    """The run, and the same run again counting on the links whose line of sight the
-    terrain model cannot settle. Low antennas a few hundred metres apart are often in
-    that band, so the mesh's answer is a pair: what it gives for certain, and what it
-    gives if those links hold. Everything else in the answer is the first, certain run."""
+    """Two runs: the primary run on links whose line of sight is certainly clear beyond
+    the local DEM's height error, and a conditional second run that also allows surface
+    links whose line of sight lies within that height-error band ('uncertain'). Only
+    ``with_mesh_if_uncertain_links_hold`` (and its start time) comes from the second
+    run; ``with_mesh``, ``routes``, ``links[].usable``, ``helpers`` and the radio state
+    timelines all come from the first, certain run."""
     out = _run(cw, ns, rad, guard, loss_threshold_s, radius_m)
     hopeful = _run(cw, ns, rad, guard, loss_threshold_s, radius_m, use_uncertain=True)
     by_id = {n["id"]: n for n in hopeful["nodes"]}
     for node in out["nodes"]:
         lw = node["longest_without_path_to_earth"]
-        lw["with_mesh_if_uncertain_links_hold"] = by_id[node["id"]][
-            "longest_without_path_to_earth"
-        ]["with_mesh"]
+        hopeful_lw = by_id[node["id"]]["longest_without_path_to_earth"]
+        lw["with_mesh_if_uncertain_links_hold"] = hopeful_lw["with_mesh"]
+        lw["with_mesh_if_uncertain_links_hold_starts_utc"] = hopeful_lw["with_mesh_starts_utc"]
         lw["basis"] += (
-            " 'If uncertain links hold' counts on links whose line of sight is within the "
-            "terrain model's height error; the first figure does not."
+            " 'With the mesh' uses only surface links whose line of sight is clear above the "
+            "terrain model's height error; 'if uncertain links hold' is a conditional second "
+            "run that also allows surface links whose line of sight lies within that height-"
+            "error band (routes, link usability and helper costs in this response do not use "
+            "those uncertain links)."
         )
     return out
 
@@ -364,11 +383,16 @@ def _run(
         unsure[nd.id] = np.array([skies[p].earth_uncertain[i] for i, p in enumerate(idx)])
         sunlit[nd.id] = np.array([skies[p].sunlit[i] for i, p in enumerate(idx)])
 
-    # -- radio state machines ----------------------------------------------------------
-    sm: dict[str, tuple[list[core.RadioState], list[core.Transition]]] = {}
-    for nd in ns:
-        full = np.concatenate([healthy[nd.id], healthy[nd.id][-1:]])
-        sm[nd.id] = core.run_state_machine(t_s, full, loss_threshold_s)
+    # -- when a node's direct-link outage has passed the wake threshold ---------------
+    seeking: dict[str, npt.NDArray[np.bool_]] = {
+        nd.id: core.seeking_relay(t_s[:-1], healthy[nd.id], loss_threshold_s) for nd in ns
+    }
+    used_route: dict[str, npt.NDArray[np.bool_]] = {
+        nd.id: np.zeros(n_steps, dtype=bool) for nd in ns
+    }
+    forwarded_step: dict[str, npt.NDArray[np.bool_]] = {
+        nd.id: np.zeros(n_steps, dtype=bool) for nd in ns
+    }
 
     # -- links, cached by (node, position, node, position) -----------------------------
     links: dict[tuple[str, tuple[float, float], str, tuple[float, float]], _Link] = {}
@@ -429,7 +453,7 @@ def _run(
         asked: set[str] = set()
         used_out: dict[str, float] = {}
         for nd in ns:
-            if sm[nd.id][0][i] != core.RadioState.ACTIVE_RELAY:
+            if not seeking[nd.id][i]:
                 st = "direct" if healthy[nd.id][i] else "waiting"
                 route_keys[nd.id].append((st, (), None, None, (), ()))
                 mesh_up[nd.id].append(bool(healthy[nd.id][i]))
@@ -531,6 +555,7 @@ def _run(
             flow = min(nd.own_bps * dt, hop_caps[0] * dt)
             if flow > 0:
                 own_tx_wh[src] += p_own_dc * (flow / hop_caps[0]) / 3600.0
+                used_route[src][i] = True
             for k in range(1, len(nodes_on)):
                 hid = nodes_on[k]
                 h = helpers[hid]
@@ -559,6 +584,8 @@ def _run(
                     if p_dc > 0 and math.isfinite(air)
                     else 0.0
                 )
+                if step.sent_bits > 0:
+                    forwarded_step[hid][i] = True
                 h.buffer_bits = step.buffer_bits
                 h.dropped_bits += step.dropped_bits
                 h.forwarded_bits += step.sent_bits
@@ -572,10 +599,33 @@ def _run(
         for nid, h in helpers.items():
             h.refused.append(rule[nid] if nid in asked else None)
 
-    sky_note = (
-        f"{len(skies)} distinct positions, node skylines to {NODE_MAX_RANGE_M / 1000:g} km at "
-        f"{NODE_AZ_STEP_DEG:g} deg over the bearings Earth and the Sun cover"
-    )
+    # -- radio state machines (active_relay only while actually sending/forwarding) ----
+    sm: dict[str, tuple[list[core.RadioState], list[core.Transition]]] = {}
+    for nd in ns:
+        full_h = np.concatenate([healthy[nd.id], healthy[nd.id][-1:]])
+        full_u = np.concatenate([used_route[nd.id], used_route[nd.id][-1:]])
+        full_f = np.concatenate([forwarded_step[nd.id], forwarded_step[nd.id][-1:]])
+        sm[nd.id] = core.run_state_machine(
+            t_s, full_h, loss_threshold_s, usable_route=full_u, forwarding=full_f
+        )
+
+    away_count = sum(1 for p in skies if p != (0.0, 0.0))
+    at_origin = (0.0, 0.0) in skies
+    if away_count and at_origin:
+        sky_note = (
+            f"{len(skies)} distinct node positions: (0, 0) uses the site's far-horizon mask "
+            f"in meta.resolution, and {away_count} off-site position(s) are marched to "
+            f"{NODE_MAX_RANGE_M / 1000:g} km at {NODE_AZ_STEP_DEG:g} deg on the "
+            f"{terrain.post_m:g} m link terrain over the bearings Earth and the Sun cover"
+        )
+    elif away_count:
+        sky_note = (
+            f"{away_count} off-site node position(s), skylines marched to "
+            f"{NODE_MAX_RANGE_M / 1000:g} km at {NODE_AZ_STEP_DEG:g} deg on the "
+            f"{terrain.post_m:g} m link terrain over the bearings Earth and the Sun cover"
+        )
+    else:
+        sky_note = "1 position at (0, 0), using the site's far-horizon mask in meta.resolution"
     return _present(
         cw, ns, rad, guard, loss_threshold_s, t_s, healthy, unsure, sunlit, sm, route_keys,
         mesh_up, pair_keys, links, helpers, own_tx_wh, delivered_bits, terrain, pos_of,
@@ -789,18 +839,34 @@ def _present(
             )
 
     meta = cw.meta("bypass")
+    res = meta.get("resolution") or {}
     unc = dict(meta["uncertainty"])
+    site_post = res.get("dem_resolution_m", unc.get("dem_resolution_m", 20.0))
+    site_err = unc.get("dem_vertical_error_m", 4.0)
+    site_rng_km = float(res.get("max_range_m", 50_000.0)) / 1000.0
     unc["notes"] = [
         *unc["notes"],
+        f"Two terrain grids are used: meta.resolution and meta.uncertainty describe the site's "
+        f"far-horizon mask at (0, 0) ({site_post:g} m post spacing, {site_err:g} m height error, "
+        f"marched to {site_rng_km:g} km), while the terrain block ({terrain.post_m:g} m post "
+        f"spacing, {terrain.vertical_error_m:g} m height error, {', '.join(terrain.products)}) "
+        "is used for surface-to-surface links and for skylines of node positions away from (0, 0).",
         "Mesh: every radio, battery, traffic and guard figure is entered and taken as given; "
-        "none has a margin of its own. Sight and Fresnel-zone states carry the terrain "
-        f"model's height error ({terrain.vertical_error_m:g} m); a link is used only when "
-        "the line between the antennas is clear, and an uncertain one is reported and not "
-        "used. The Fresnel-zone state is shown but does not decide: the ground's effect on "
-        "a low link is in the two-ray loss.",
-        f"Skylines away from the site: {sky_note}.",
+        "none has a margin of its own. Sight and Fresnel-zone states carry the link terrain "
+        f"model's height error ({terrain.vertical_error_m:g} m). In the primary run ('with_mesh', "
+        "routes, link usability and helper costs), a surface link is used only when the straight "
+        "line between the antennas is clear; a link whose line of sight lies within that height-"
+        "error band ('uncertain') is reported with usable=false and counted only in the "
+        "conditional figure 'with_mesh_if_uncertain_links_hold'. The Fresnel-zone state is "
+        "reported beside it and does not gate a link: flat-ground reflection inside the first "
+        "Fresnel zone is in the two-ray loss.",
+        "Radio states: a node is in 'active_relay' only during steps where it sends or forwards "
+        "traffic over a usable mesh route; when its direct link is lost and no mesh route carries "
+        "traffic (waiting, isolated, refused or no spare capacity), it stays in 'standby' at 0 W "
+        "because receive and idle-listening power are not modelled.",
+        f"Node skylines: {sky_note}.",
         "Earth is 'healthy' only when its whole disc is above the node's skyline; a partly "
-        "hidden disc is not.",
+        "hidden disc ('earth_view_uncertain_h') counts as not healthy in both runs.",
     ]
     meta["uncertainty"] = unc
     meta["compute_ms"] = round(total_ms, 1)
@@ -845,6 +911,11 @@ def _present(
             "products": terrain.products,
             "post_m": terrain.post_m,
             "vertical_error_m": terrain.vertical_error_m,
+            "used_for": (
+                "surface-to-surface links (line of sight and first Fresnel zone) and skylines "
+                "for node positions away from (0, 0); the site origin (0, 0) uses the site "
+                "horizon mask described in meta.resolution"
+            ),
         },
         "timing_ms": {"skylines": round(sky_ms, 1), "total": round(total_ms, 1)},
         "not_modelled": NOT_MODELLED,

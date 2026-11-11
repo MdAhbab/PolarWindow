@@ -47,6 +47,33 @@ def test_state_machine_at_under_and_over_the_threshold() -> None:
     ]
 
 
+def test_state_machine_stays_in_standby_when_no_route_is_usable() -> None:
+    t = np.arange(0.0, 9001.0, 600.0)
+    healthy = np.array([t_ < 1000 for t_ in t])
+    no_route = np.zeros_like(healthy)
+    states, events = m.run_state_machine(t, healthy, 1800.0, usable_route=no_route)
+    assert m.RadioState.ACTIVE_RELAY not in states
+    assert states[-1] == m.RadioState.STANDBY
+    assert [e.to_state for e in events] == [m.RadioState.STANDBY]
+
+
+def test_state_machine_marks_a_healthy_helper_active_while_forwarding() -> None:
+    t = np.array([0.0, 3600.0, 7200.0, 10800.0])
+    healthy = np.ones(len(t), dtype=bool)
+    forwarding = np.array([False, True, True, False])
+    states, events = m.run_state_machine(t, healthy, 900.0, forwarding=forwarding)
+    assert states == [
+        m.RadioState.DEEP_SLEEP,
+        m.RadioState.ACTIVE_RELAY,
+        m.RadioState.ACTIVE_RELAY,
+        m.RadioState.DEEP_SLEEP,
+    ]
+    assert [e.to_state for e in events] == [
+        m.RadioState.ACTIVE_RELAY,
+        m.RadioState.DEEP_SLEEP,
+    ]
+
+
 def guard(**over: object) -> str | None:
     kw: dict[str, object] = {
         "sunlit": True,
