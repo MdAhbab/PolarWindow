@@ -188,11 +188,40 @@ async def launch(
     m = await MissionRepository(session).get(mission_id)
     if m is None:
         raise MissionNotFound(mission_id)
+    section, params_ = await launch_plan(session, m, start, end)
+    if section is not None:
+        return 200, section
+    assert params_ is not None
+    ans = await job_service.answer_or_enqueue(
+        session,
+        kind=KIND,
+        closure=engine_closure("lw", "traj", "vis"),
+        params=params_,
+        mission_id=m.id,
+        requested_by=requested_by,
+    )
+    if ans.assessment is None:
+        assert ans.job is not None
+        return 202, ans.job
+    return 200, ans.assessment.result
+
+
+async def launch_plan(
+    session: AsyncSession,
+    m: MissionRecord,
+    start: datetime | None = None,
+    end: datetime | None = None,
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+    """``(section, None)`` when there is nothing to work out, else ``(None, job parameters)``.
+
+    Takes the mission record, so a scenario can pass one with assumed values laid over it
+    (never saved) and run the same code as a real mission.
+    """
     params = await _parameters(session)
     lc = m.lifecycle or {}
     pad_id, vehicle_id, t0 = lc.get("pad_id"), lc.get("vehicle_id"), lc.get("t0")
     if m.status in ("cancelled", "reassigned"):
-        return 200, _none(m, "This delivery was cancelled.", params, pad_id)
+        return (_none(m, "This delivery was cancelled.", params, pad_id), None)
     flights, names = await reconstructed_flights(session)
     base: dict[str, Any] = {
         "names": names,
@@ -236,12 +265,15 @@ async def launch(
             if not v
         ]
         if missing:
-            return 200, _none(
-                m,
-                f"The {' and '.join(missing)} {'is' if len(missing) == 1 else 'are'} not "
-                "published, so launch opportunities cannot be worked out.",
-                params,
-                pad_id,
+            return (
+                _none(
+                    m,
+                    f"The {' and '.join(missing)} {'is' if len(missing) == 1 else 'are'} not "
+                    "published, so launch opportunities cannot be worked out.",
+                    params,
+                    pad_id,
+                ),
+                None,
             )
         s, e, note = _dates(start, end)
         climb = (
@@ -251,12 +283,15 @@ async def launch(
         )
         if climb is None:
             name = catalogues.load("vehicles").get(str(vehicle_id)).name
-            return 200, _none(
-                m,
-                f"No lunar launch of {name} has been reconstructed here, so how it climbs to "
-                "orbit is not known and launch instants cannot be worked out.",
-                params,
-                pad_id,
+            return (
+                _none(
+                    m,
+                    f"No lunar launch of {name} has been reconstructed here, so how it climbs to "
+                    "orbit is not known and launch instants cannot be worked out.",
+                    params,
+                    pad_id,
+                ),
+                None,
             )
         same = [
             f[0]
@@ -277,15 +312,4 @@ async def launch(
             "same_lander": same,
             "precedents": precedents,
         }
-    ans = await job_service.answer_or_enqueue(
-        session,
-        kind=KIND,
-        closure=engine_closure("lw", "traj", "vis"),
-        params=params_,
-        mission_id=m.id,
-        requested_by=requested_by,
-    )
-    if ans.assessment is None:
-        assert ans.job is not None
-        return 202, ans.job
-    return 200, ans.assessment.result
+    return None, params_

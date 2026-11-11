@@ -1,9 +1,10 @@
-"""CLPS mission persistence (ADR-5).
+"""CLPS mission persistence (ADR-5), and the projects the team enters beside them.
 
 Returns plain records, never ORM instances, like every repository here. The
-mission table is small (tens of rows) and replaced whole on each seed, so a
-load is one transaction that deletes and re-inserts: a partially updated
-mission list is worse than a stale one.
+catalogue rows are few (tens) and replaced whole on each seed, so a load is
+one transaction that deletes and re-inserts them: a partially updated mission
+list is worse than a stale one. A project (``origin = 'project'``) is never
+touched by a seed; it is written through ``ProjectRepository``.
 """
 
 from __future__ import annotations
@@ -17,7 +18,9 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.db.models import Mission, MissionPayload
+from app.db.models import Mission, MissionPayload, User
+
+CATALOGUE, PROJECT = "catalogue", "project"
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,6 +62,13 @@ class MissionRecord:
     payloads: list[PayloadRecord] = field(default_factory=list)
     #: Schema v2 facts (ADR-10); empty for a v1 row.
     lifecycle: dict[str, Any] = field(default_factory=dict)
+    #: 'catalogue' or 'project'.
+    origin: str = CATALOGUE
+    owner_id: int | None = None
+    #: Who entered a project, as the change history names them; None for a catalogue record.
+    owner_name: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     @property
     def payload_types(self) -> list[str]:
@@ -69,8 +79,20 @@ class MissionRecord:
         return list(seen)
 
 
-def _record(row: Mission) -> MissionRecord:
+def owner_label(name: str | None, team: str | None) -> str | None:
+    """A person as the change history names them: "Ada Lovelace (Payloads)"."""
+    if not name:
+        return None
+    return f"{name} ({team})" if team else name
+
+
+def _record(row: Mission, owner_name: str | None = None) -> MissionRecord:
     return MissionRecord(
+        origin=row.origin or CATALOGUE,
+        owner_id=row.owner_id,
+        owner_name=owner_name,
+        created_at=row.created_at,
+        updated_at=row.updated_at,
         id=row.id,
         name=row.name,
         vehicle_name=row.vehicle_name,
@@ -117,11 +139,19 @@ class MissionRepository:
     async def replace_all(
         self, missions: list[dict[str, Any]], payloads: list[dict[str, Any]]
     ) -> None:
-        """Make the tables exactly the given rows, in the caller's transaction."""
-        await self._s.execute(delete(MissionPayload))
-        await self._s.execute(delete(Mission))
+        """Make the catalogue rows exactly the given rows, in the caller's transaction.
+
+        Catalogue rows only: a project the team entered, and its payloads, survive
+        every re-seed of the CLPS records.
+        """
+        catalogue_ids = select(Mission.id).where(Mission.origin == CATALOGUE)
+        await self._s.execute(
+            delete(MissionPayload).where(MissionPayload.mission_id.in_(catalogue_ids))
+        )
+        await self._s.execute(delete(Mission).where(Mission.origin == CATALOGUE))
         if missions:
-            await self._s.execute(pg_insert(Mission).values(missions))
+            rows = [{**m, "origin": CATALOGUE, "owner_id": None} for m in missions]
+            await self._s.execute(pg_insert(Mission).values(rows))
         if payloads:
             await self._s.execute(pg_insert(MissionPayload).values(payloads))
 
@@ -136,8 +166,15 @@ class MissionRepository:
         date_to: datetime | None = None,
         q: str | None = None,
         site_ids: list[str] | None = None,
+        origin: str | None = None,
     ) -> list[MissionRecord]:
-        stmt = select(Mission).options(selectinload(Mission.payloads))
+        stmt = (
+            select(Mission, User.name, User.team)
+            .outerjoin(User, User.id == Mission.owner_id)
+            .options(selectinload(Mission.payloads))
+        )
+        if origin:
+            stmt = stmt.where(Mission.origin == origin)
         if statuses:
             stmt = stmt.where(Mission.status.in_(statuses))
         if provider:
@@ -168,18 +205,21 @@ class MissionRepository:
             )
         # Undated missions last; then by date; then by name, so the order is stable.
         stmt = stmt.order_by(Mission.sort_at.is_(None), Mission.sort_at, Mission.name)
-        rows = (await self._s.execute(stmt)).scalars().all()
-        return [_record(r) for r in rows]
+        rows = (await self._s.execute(stmt)).all()
+        return [_record(r[0], owner_label(r[1], r[2])) for r in rows]
 
     async def count(self) -> int:
         return int((await self._s.execute(select(func.count()).select_from(Mission))).scalar_one())
 
     async def get(self, mission_id: str) -> MissionRecord | None:
         stmt = (
-            select(Mission).options(selectinload(Mission.payloads)).where(Mission.id == mission_id)
+            select(Mission, User.name, User.team)
+            .outerjoin(User, User.id == Mission.owner_id)
+            .options(selectinload(Mission.payloads))
+            .where(Mission.id == mission_id)
         )
-        row = (await self._s.execute(stmt)).scalars().first()
-        return None if row is None else _record(row)
+        row = (await self._s.execute(stmt)).first()
+        return None if row is None else _record(row[0], owner_label(row[1], row[2]))
 
     async def by_site(self, site_ids: list[str]) -> dict[str, list[MissionRecord]]:
         """Missions grouped by the site that stands for their target."""

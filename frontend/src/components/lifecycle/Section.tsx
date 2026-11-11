@@ -14,6 +14,9 @@ import { Button, Disclosure, Panel, RowGroup } from '../ui'
 import { NumberRow } from './QuantityTile'
 import { KeyNumberTile } from '../KeyNumbers'
 import { termLabel } from '../../lib/format'
+import { useInScenario } from '../scenario/context'
+import { ScenarioEntry } from '../scenario/ScenarioEntry'
+import type { ScenarioSection } from '../../lib/api/experience.types'
 
 /**
  * The one shape every lifecycle section has (design-lifecycle.md §2):
@@ -25,9 +28,12 @@ import { termLabel } from '../../lib/format'
  *
  * Learn it once on one section and the other five read the same way.
  */
-export function SectionLayout({ question, children }: { question: string; children: ReactNode }) {
+export function SectionLayout({ question: asked, children, scenario = false }: { question: string; children: ReactNode; scenario?: boolean }) {
   const id = useId()
   const ref = useRef<HTMLElement>(null)
+  // A scenario is never mistaken for the record: its heading and its docked answer say so.
+  const shown = useInScenario() || scenario
+  const question = shown ? `Scenario · ${asked}` : asked
   return (
     <section ref={ref} aria-labelledby={id} className="flex w-full min-w-0 flex-col gap-7 lg:gap-8">
       {/* The question as an eyebrow: the answer under it is the page's hero. */}
@@ -168,9 +174,12 @@ export function SectionStates<T>({
   view,
   terms,
   status,
+  missionId,
   children,
 }: {
   view: SectionView<T>
+  /** With it, a step that has no data offers a scenario. */
+  missionId?: string
   /** The key numbers' terms, so their labels show while the answer comes. */
   terms: string[]
   /** This step's own status, from the step bar: it names why there is no answer. */
@@ -190,6 +199,11 @@ export function SectionStates<T>({
           title={w.words}
           detail={status.summary}
           stillWorks="The other steps are unaffected; each answers on its own."
+          action={
+            missionId && (status.state === 'no_data' || status.state === 'needs_input') && status.section !== 'ready' ? (
+              <ScenarioEntry missionId={missionId} section={status.section as ScenarioSection} />
+            ) : undefined
+          }
         />
       )
     }

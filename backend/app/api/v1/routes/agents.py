@@ -21,6 +21,8 @@ from app.api.v1.schemas.agents import (
     AgentRunList,
     AskRequest,
     BriefRequest,
+    ChatRequest,
+    ChatResponse,
     ExplainRequest,
 )
 from app.config import ENGINE_VERSION, Settings
@@ -173,6 +175,28 @@ async def ask(
     try:
         with agent_runtime(await _runtime(session)):
             outcome = await run(session, body.question)
+    except Exception as exc:
+        raise deps.to_http(exc) from exc
+    return _envelope(outcome, s)
+
+
+@router.post(
+    "/chat", response_model=ChatResponse, dependencies=signed_in, summary="A5 Ask: a quick answer"
+)
+async def chat(
+    body: ChatRequest,
+    session: Any = Depends(deps.db),
+    s: Settings = Depends(deps.settings),
+) -> dict[str, Any]:
+    """Two to four sentences about the page the person is on, on the light models, with
+    the same guard and run log as the other agents. ``actions`` are links the app builds."""
+    from app.agents.chatter import chat as run
+
+    messages = [m.model_dump() for m in body.messages]
+    context = body.context.model_dump(mode="json") if body.context else None
+    try:
+        with agent_runtime(await _runtime(session)):
+            outcome = await run(session, messages, context)
     except Exception as exc:
         raise deps.to_http(exc) from exc
     return _envelope(outcome, s)

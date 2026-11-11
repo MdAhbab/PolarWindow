@@ -1,0 +1,99 @@
+{
+  "id": "sc-1",
+  "mission_id": "im-3",
+  "name": "Falcon Heavy, 10 days",
+  "prompt": "launch on Falcon Heavy, 10 days on the surface",
+  "status": "running",
+  "progress": 0.4,
+  "message": "Working out the trip",
+  "preset": false,
+  "sections": [
+    "launch",
+    "trip",
+    "contact"
+  ],
+  "created_at": "2026-11-10T08:00:00Z",
+  "created_by_name": null,
+  "assumptions": [
+    {
+      "field": "vehicle_id",
+      "label": "Launch vehicle",
+      "value": "falcon-heavy",
+      "display": "Falcon Heavy",
+      "unit": null,
+      "basis": "you",
+      "source": null,
+      "note": null
+    },
+    {
+      "field": "pad_id",
+      "label": "Launch pad",
+      "value": "lc-39a",
+      "display": "LC-39A",
+      "unit": null,
+      "basis": "default",
+      "source": null,
+      "note": "Nearest precedent: the pad Falcon Heavy flew from."
+    },
+    {
+      "field": "landing_date",
+      "label": "Landing date",
+      "value": "2027-11-15",
+      "display": "15 November 2027",
+      "unit": null,
+      "basis": "live",
+      "source": {
+        "name": "Launch Library 2",
+        "url": null,
+        "fetched_at": "2026-11-10T07:50:00Z"
+      },
+      "note": "Launch Library 2 lists a target."
+    },
+    {
+      "field": "surface_days",
+      "label": "Days on the surface",
+      "value": 10,
+      "display": "10 days",
+      "unit": null,
+      "basis": "you",
+      "source": null,
+      "note": null
+    }
+  ],
+  "summaries": {},
+  "results": null,
+  "error": null,
+  "phases": [
+    {
+      "id": "inputs",
+      "label": "Checking live sources",
+      "state": "done",
+      "detail": "Asked Launch Library 2: one target listed"
+    },
+    {
+      "id": "launch",
+      "label": "Launch opportunities",
+      "state": "done",
+      "detail": null
+    },
+    {
+      "id": "trip",
+      "label": "Trip",
+      "state": "active",
+      "detail": null
+    },
+    {
+      "id": "contact",
+      "label": "Contact",
+      "state": "pending",
+      "detail": null
+    },
+    {
+      "id": "return",
+      "label": "Return",
+      "state": "skipped",
+      "detail": "Needs a booster; none assumed"
+    }
+  ],
+  "poll_after_s": 2
+}

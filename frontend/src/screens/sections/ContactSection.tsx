@@ -23,6 +23,10 @@ import { anyGiven, plainReason } from '../../lib/lifecycle/roverInputs'
 import { PlanDownload } from '../../components/lifecycle/PlanDownload'
 import { Icon } from '../../components/Icon'
 import { useCanWrite } from './ReadySection'
+import { ScenarioGate } from '../../components/scenario/ScenarioGate'
+import { WhatIfLink } from '../../components/scenario/ScenarioEntry'
+import { HeldRow } from '../../components/scenario/HeldRow'
+import { useInScenario, useScenarioShown } from '../../components/scenario/context'
 
 const TERMS = ['stationHears', 'viaRelay', 'contactUnheard', 'messageWait']
 
@@ -32,6 +36,33 @@ const TERMS = ['stationHears', 'viaRelay', 'contactUnheard', 'messageWait']
  * dates as Landing, so the two answers agree.
  */
 export function ContactSection({ mission: m }: { mission: MissionDetail }) {
+  return (
+    <ScenarioGate
+      missionId={m.id}
+      section="contact"
+      question={CONTACT_QUESTION}
+      record={<ContactRecord mission={m} />}
+      pick={(r) => r.contact}
+    >
+      {({ data, meta }) => <ScenarioContact contact={data} meta={meta} mission={m} />}
+    </ScenarioGate>
+  )
+}
+
+/** A scenario's contact answer: its own dates, from the answer or else from the assumptions. */
+function ScenarioContact({ contact, meta, mission }: { contact: ContactDTO; meta: LifecycleMetaDTO; mission: MissionDetail }) {
+  const sc = useScenarioShown()
+  const val = (f: string) => sc?.assumptions.find((a) => a.field === f)?.value
+  const landing = typeof val('landing_date') === 'string' ? Date.parse(val('landing_date') as string) : NaN
+  const days = typeof val('surface_days') === 'number' ? (val('surface_days') as number) : 14
+  const start = contact.start ? Date.parse(contact.start) : Number.isNaN(landing) ? Date.now() : landing
+  const end = contact.end ? Date.parse(contact.end) : start + days * 86_400_000
+  return <ContactAnswer contact={contact} meta={meta} mission={mission} added={[]} onAdded={() => {}} start={start} end={end} />
+}
+
+const CONTACT_QUESTION = 'How often can the lander talk to Earth?'
+
+function ContactRecord({ mission: m }: { mission: MissionDetail }) {
   const w = useWindowParams()
   // Relays added to compare (catalogue ids, at most three), for this mission only.
   const [pick, setPick] = useState<{ mission: string; ids: string[] }>({ mission: m.id, ids: [] })
@@ -44,8 +75,8 @@ export function ContactSection({ mission: m }: { mission: MissionDetail }) {
   )
   const status = useSectionStatus(m.id, 'contact')
   return (
-    <SectionLayout question="How often can the lander talk to Earth?">
-      <SectionStates view={view} terms={TERMS} status={status}>
+    <SectionLayout question={CONTACT_QUESTION}>
+      <SectionStates view={view} terms={TERMS} status={status} missionId={m.id}>
         {({ data, meta }) => (
           <ContactAnswer
             contact={data}
@@ -61,6 +92,7 @@ export function ContactSection({ mission: m }: { mission: MissionDetail }) {
           />
         )}
       </SectionStates>
+      {view.status === 'answer' && <WhatIfLink />}
     </SectionLayout>
   )
 }
@@ -192,6 +224,7 @@ function ContactAnswer({
   datesNote?: string | null
 }) {
   const offline = useSnapshotActive()
+  const scenario = useInScenario()
   const hours = (end - start) / 3_600_000
   const n = contact.numbers
   const rows = contactRows(contact)
@@ -292,7 +325,7 @@ function ContactAnswer({
             </ul>
           </Disclosure>
         )}
-        {!offline && (
+        {!offline && !scenario && (
           <RelayCompare own={contact.relays.filter((r) => r.for_this_mission !== false).map((r) => r.id)} applied={added} onApply={onAdded} />
         )}
         {orbiters.length > 0 && (
@@ -328,8 +361,14 @@ function ContactAnswer({
             </ul>
           </Disclosure>
         )}
-        <BookingsRow contact={contact} missionId={m.id} />
-        <RoverRow mission={m} />
+        {scenario ? (
+          <HeldRow title="Bookings, rover line of sight and the plan file" what="They belong to the mission’s own lander, dates and record." />
+        ) : (
+          <>
+            <BookingsRow contact={contact} missionId={m.id} />
+            <RoverRow mission={m} />
+          </>
+        )}
         <Disclosure title="More numbers">
           <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-body sm:grid-cols-[max-content_1fr]">
             <dt className="text-ink-3">Time in contact with Earth (Earth above the skyline)</dt>
@@ -348,8 +387,8 @@ function ContactAnswer({
             <dd className="text-ink">{numberWords(n.dark_and_unheard_h, 'with the relay, if it flies as planned')}</dd>
           </dl>
         </Disclosure>
-        <PlanDownload missionId={m.id} start={start} end={end} relays={contact.relays} />
-        {m.siteId && hasSite(m.siteId) && (
+        {!scenario && <PlanDownload missionId={m.id} start={start} end={end} relays={contact.relays} />}
+        {!scenario && m.siteId && hasSite(m.siteId) && (
           <Disclosure title="Change the dates" meta={windowLine(msFromModelH(windowStartH), windowHours)}>
             <p className="text-small text-ink-2">The same dates as Landing: changing them here changes them there.</p>
             <WindowPicker

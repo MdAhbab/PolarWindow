@@ -6,7 +6,8 @@ its headers and its problem detail (``ui.still_works`` included):
 - :class:`BodyLimit` refuses a request body over ``max_body_bytes`` with 413,
   from ``Content-Length`` before anything is read, or while reading a body
   sent without one. The largest body the API takes (a risk with every text
-  field full) is under 20 KB.
+  field full) is under 20 KB. The one exception is the file a project is read
+  from (``POST /projects/intake``), which has its own ``max_upload_bytes``.
 - :class:`RateLimit` counts requests that are not reads, per client address,
   in a sliding minute, and answers 429 with ``Retry-After`` past the limit:
   signing in, the AI assistant (each call spends model quota), the site
@@ -68,22 +69,32 @@ def _too_large(limit: int) -> tuple[str, str, str, str]:
 
 
 class BodyLimit:
-    def __init__(self, app: ASGIApp, max_bytes: int) -> None:
+    """``max_bytes`` for every request body, except the exact paths in ``overrides``
+    (the file upload of ``POST /projects/intake``), which have their own limit."""
+
+    def __init__(
+        self, app: ASGIApp, max_bytes: int, overrides: dict[str, int] | None = None
+    ) -> None:
         self.app = app
         self.max_bytes = max_bytes
+        self.overrides = dict(overrides or {})
+
+    def limit_for(self, path: str) -> int:
+        return self.overrides.get(path.rstrip("/") or "/", self.max_bytes)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http" or scope["method"] in READS:
             await self.app(scope, receive, send)
             return
+        limit = self.limit_for(scope["path"])
         declared = dict(scope["headers"]).get(b"content-length")
         if declared is not None:
             try:
                 n = int(declared)
             except ValueError:
-                n = self.max_bytes + 1
-            if n > self.max_bytes:
-                await _send_problem(send, 413, _problem_body(413, *_too_large(self.max_bytes)))
+                n = limit + 1
+            if n > limit:
+                await _send_problem(send, 413, _problem_body(413, *_too_large(limit)))
                 return
             await self.app(scope, receive, send)
             return
@@ -95,10 +106,10 @@ class BodyLimit:
             message = await receive()
             if message["type"] == "http.request":
                 seen += len(message.get("body", b""))
-                if seen > self.max_bytes:
+                if seen > limit:
                     # FastAPI passes an HTTPException raised while reading the
                     # body through as itself, so this becomes the same 413.
-                    raise deps.problem(413, *_too_large(self.max_bytes))
+                    raise deps.problem(413, *_too_large(limit))
             return message
 
         await self.app(scope, counted, send)

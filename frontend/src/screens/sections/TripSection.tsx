@@ -22,6 +22,9 @@ import { UncertaintyNote } from '../../components/States'
 import { Disclosure } from '../../components/ui'
 import { RadiationRow } from '../../components/lifecycle/Radiation'
 import { PathCard } from '../../scenes/PathCard'
+import { ScenarioGate } from '../../components/scenario/ScenarioGate'
+import { ScenarioEntry, WhatIfLink } from '../../components/scenario/ScenarioEntry'
+import { useInScenario } from '../../components/scenario/context'
 
 const TERMS = ['tripSunlight', 'tripHeard', 'tripShadow', 'tripUnheard']
 const HOUR = 3_600_000
@@ -36,25 +39,41 @@ const TRIP_EXPORTS = [
  * sunlight, the shadow and the contact along it.
  */
 export function TripSection({ mission: m }: { mission: MissionDetail }) {
+  return (
+    <ScenarioGate missionId={m.id} section="trip" question={TRIP_QUESTION} record={<TripRecord mission={m} />} pick={(r) => r.trip}>
+      {({ data, meta }) => <TripBody trip={data} meta={meta} missionId={m.id} />}
+    </ScenarioGate>
+  )
+}
+
+const TRIP_QUESTION = 'What does the lander go through on the way?'
+
+function TripRecord({ mission: m }: { mission: MissionDetail }) {
   const view = useSection<TripDTO>('trip', m.id, (signal) => api.trip(m.id, signal))
   const status = useSectionStatus(m.id, 'trip')
   return (
-    <SectionLayout question="What does the lander go through on the way?">
-      <SectionStates view={view} terms={TERMS} status={status}>
-        {({ data: trip, meta }) =>
-          trip.source === 'none' ? (
-            <StatePanel
-              icon="ring"
-              title="No trip to show yet"
-              detail={trip.none_reason ?? 'No trajectory is available for this mission.'}
-              stillWorks="Surface, Contact and the other steps do not depend on the trip and work as usual."
-            />
-          ) : (
-            <TripAnswer trip={trip} meta={meta} missionId={m.id} />
-          )
-        }
+    <SectionLayout question={TRIP_QUESTION}>
+      <SectionStates view={view} terms={TERMS} status={status} missionId={m.id}>
+        {({ data, meta }) => <TripBody trip={data} meta={meta} missionId={m.id} />}
       </SectionStates>
+      {view.status === 'answer' && view.section.data.source !== 'none' && <WhatIfLink />}
     </SectionLayout>
+  )
+}
+
+/** The trip answer, drawn from any `SectionDTO`: the mission's own or a scenario's. */
+function TripBody({ trip, meta, missionId }: { trip: TripDTO; meta: LifecycleMetaDTO; missionId: string }) {
+  const scenario = useInScenario()
+  return trip.source === 'none' ? (
+    <StatePanel
+      icon="ring"
+      title="No trip to show yet"
+      detail={trip.none_reason ?? 'No trajectory is available for this mission.'}
+      stillWorks="Surface, Contact and the other steps do not depend on the trip and work as usual."
+      action={scenario ? undefined : <ScenarioEntry missionId={missionId} section="trip" />}
+    />
+  ) : (
+    <TripAnswer trip={trip} meta={meta} missionId={missionId} />
   )
 }
 
@@ -85,6 +104,7 @@ export function tripSentence(hours: number, source: TripDTO['source'], rest: str
 }
 
 function TripAnswer({ trip, meta, missionId }: { trip: TripDTO; meta: LifecycleMetaDTO; missionId: string }) {
+  const scenario = useInScenario()
   const { t0, t1 } = tripSpan(trip)
   const hours = (t1 - t0) / HOUR
   const stretches = tripStretches(trip)
@@ -110,7 +130,7 @@ function TripAnswer({ trip, meta, missionId }: { trip: TripDTO; meta: LifecycleM
         legend={<Legend items={TripLegendItems(trip)} />}
         table={<TripTable trip={trip} stretches={stretches} />}
       />
-      <PathCard trip={trip} missionId={missionId} />
+      {!scenario && <PathCard trip={trip} missionId={missionId} />}
       <Rows about={<><HowSure meta={meta} /><SourcesRow meta={meta} /></>}>
         <RadiationRow r={trip.radiation} note={trip.radiation_note} />
         <Disclosure title="Burns" meta={trip.burns.length ? `${trip.burns.length}` : 'none listed'}>
@@ -138,7 +158,7 @@ function TripAnswer({ trip, meta, missionId }: { trip: TripDTO; meta: LifecycleM
         <CorrectionsRow c={trip.corrections} note={trip.corrections_note} />
         {trip.moon_pull && <MoonPullRow pull={trip.moon_pull} />}
         {/* Only a flown trip can be exported; a designed one answers 409 no-export. */}
-        {trip.source === 'flown' && <TripDownloads trip={trip} missionId={missionId} />}
+        {trip.source === 'flown' && !scenario && <TripDownloads trip={trip} missionId={missionId} />}
       </Rows>
     </>
   )

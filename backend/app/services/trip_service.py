@@ -90,6 +90,11 @@ async def trip(session: AsyncSession, mission_id: str) -> tuple[int, dict[str, A
     m = await MissionRepository(session).get(mission_id)
     if m is None:
         raise MissionNotFound(mission_id)
+    return await trip_for(session, m)
+
+
+async def trip_for(session: AsyncSession, m: MissionRecord) -> tuple[int, dict[str, Any]]:
+    """The trip for a mission record (a scenario passes one with assumed values laid over it)."""
     if m.status in ("cancelled", "reassigned"):
         return 200, _none("This delivery was cancelled.")
     if m.id not in FLOWN:

@@ -78,9 +78,11 @@ async def run(ctx: JobContext) -> HandlerResult:
     end = lifecycle.parse_time(p["end"])
     async with session_scope() as s:
         m = await MissionRepository(s).get(p["mission_id"])
-        if m is None or m.site_id is None:
+        # A scenario names the spot it assumes; a real mission uses its own.
+        site_id = p.get("site_id") or (m.site_id if m is not None else None)
+        if m is None or site_id is None:
             raise ValueError("the mission or its landing spot is gone")
-        cw = await site_service.compute(s, m.site_id, start, end, int(p["site_step_s"]))
+        cw = await site_service.compute(s, site_id, start, end, int(p["site_step_s"]))
     ctx.progress(0.2, "Sun and Earth over the landing spot worked out.")
     r = cw.result
     site = cw.site

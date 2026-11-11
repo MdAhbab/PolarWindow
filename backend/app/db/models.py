@@ -315,6 +315,18 @@ class Mission(Base):
     #: Schema v2 facts (ADR-10): vehicle, pad, T-0, transfer, descent, radio,
     #: spacecraft, rovers, return, and the URL each came from.
     lifecycle: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    #: 'catalogue' (data/missions.json, replaced on each seed) or 'project'
+    #: (entered by the team; a seed never touches it). Checked in the database.
+    origin: Mapped[str] = mapped_column(
+        Text, nullable=False, default="catalogue", server_default="catalogue", index=True
+    )
+    #: Who entered a project; null for a catalogue record.
+    owner_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
@@ -347,6 +359,35 @@ class MissionPayload(Base):
     mission: Mapped[Mission] = relationship(back_populates="payloads")
 
     __table_args__ = (Index("ix_payload_types", "instrument_types", postgresql_using="gin"),)
+
+
+class ProjectIntake(Base):
+    """One reading of a file dropped on the project form: what was found and where.
+
+    The file itself is not kept: only its name, size, hash, the words read from
+    it (an excerpt) and the draft with each field's evidence.
+    """
+
+    __tablename__ = "project_intakes"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    media_type: Mapped[str] = mapped_column(String(127), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    #: 'model' or 'rules'. Checked in the database.
+    method: Mapped[str] = mapped_column(String(8), nullable=False)
+    model: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    #: {draft, fields, characters_read}
+    extracted: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    warnings: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    text_excerpt: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    created_by: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
 
 class AppSetting(Base):
@@ -750,4 +791,48 @@ class ReturnLimits(Base):
     entered_by: Mapped[str] = mapped_column(String(250), nullable=False)
     entered_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class Scenario(Base):
+    """A what-if for one mission. Its values live here and are never written to the
+    mission's record. One row per (mission, canonical assumptions, steps)."""
+
+    __tablename__ = "scenarios"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    #: Not a foreign key: a re-seed replaces the catalogue's mission rows, and a scenario
+    #: (rebuilt or kept) must not go with them.
+    mission_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    #: SHA-256 of the mission, the steps and the canonical assumptions.
+    key: Mapped[str] = mapped_column(String(64), nullable=False)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
+    #: Only the values the person (or the preset) set, canonical.
+    given: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    sections: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    preset: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    #: queued | running | done | failed
+    status: Mapped[str] = mapped_column(String(12), nullable=False, default="queued")
+    progress: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    message: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    #: Every field with its basis, once the compute worker has resolved them.
+    assumptions: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False, default=list)
+    phases: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False, default=list)
+    summaries: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    results: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    job_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    created_by: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_by_name: Mapped[str | None] = mapped_column(String(250), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        Index("uq_scenarios_key", "key", unique=True),
+        Index("ix_scenarios_mission", "mission_id", "created_at"),
     )

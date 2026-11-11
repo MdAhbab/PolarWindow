@@ -514,6 +514,10 @@ export interface Mission {
   /** Field names no source confirms. The UI prints "Unconfirmed" for them, never a guess. */
   unconfirmedFields: string[]
   dataVersion: string
+  /** `project`: entered by the team. Absent from a service older than the projects release. */
+  origin?: 'catalogue' | 'project'
+  /** Who entered a project. */
+  ownerName?: string | null
 }
 
 export interface Payload {
@@ -533,6 +537,8 @@ export interface MissionSource {
   publisher: string
   /** ISO date the source was last read. */
   accessed: string
+  /** `entered` and `file` have no address: they are drawn as words, never a link. */
+  kind?: 'published' | 'entered' | 'file'
 }
 
 export interface TargetSite {
@@ -561,6 +567,12 @@ export interface MissionDetail extends Mission {
   /** Rovers the lander carries, as the rover line-of-sight endpoint knows them; empty when none. */
   rovers: { id: string; name: string; organisation: string | null }[]
   meta: Meta
+}
+
+/** The two fields the projects release adds, read without waiting for the generated schema. */
+function originOf(dto: unknown): { origin?: 'catalogue' | 'project'; ownerName?: string | null } {
+  const o = dto as { origin?: 'catalogue' | 'project'; owner_name?: string | null }
+  return o.origin ? { origin: o.origin, ownerName: o.owner_name ?? null } : {}
 }
 
 export function adaptMission(dto: MissionBriefDTO): Mission {
@@ -612,6 +624,7 @@ export function adaptMission(dto: MissionBriefDTO): Mission {
       : null,
     unconfirmedFields: dto.unconfirmed_fields,
     dataVersion: dto.data_version,
+    ...originOf(dto),
   }
 }
 
@@ -648,6 +661,7 @@ export function adaptMissionDetail(dto: MissionDetailDTO): MissionDetail {
       title: x.title,
       publisher: x.publisher,
       accessed: x.accessed,
+      kind: (x as { kind?: 'published' | 'entered' | 'file' }).kind,
     })),
     notes: dto.notes,
     ellipseRing: dto.ellipse_ring

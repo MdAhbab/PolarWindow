@@ -20,7 +20,8 @@ sites, given a requirement stated in ordinary language.
 Work strictly like this:
 1. Call search_sites(limit=4) to get candidate landing sites.
 2. Call compare_sites with those candidate site_ids to retrieve all measurements in a single call.
-3. DO NOT call any more tools. You have all data needed. Immediately evaluate the requirements and produce the final answer.
+3. DO NOT call any more tools. You have all data needed. Immediately evaluate the
+   requirements and produce the final answer.
 
 Evaluation rules:
 - Turn the stated requirement into checks you can actually evaluate against the

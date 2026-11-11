@@ -220,19 +220,15 @@ def _params(
     }
 
 
-async def _stored(
+async def contact_params(
     session: AsyncSession,
-    mission_id: str,
+    m: MissionRecord,
     start: datetime | None,
     end: datetime | None,
-    requested_by: int | None,
     relays: list[str] | None,
-) -> tuple[int, dict[str, Any]]:
-    """``(200, the stored result)`` or ``(202, job ref)``. The result holds the section's
-    ``data`` and ``meta`` and, for the exports only, ``plan``."""
-    m = await MissionRepository(session).get(mission_id)
-    if m is None:
-        raise MissionNotFound(mission_id)
+) -> dict[str, Any]:
+    """The job parameters for a mission record (a scenario passes one with assumed values laid
+    over it). Raises ``NoContact`` or ``BadRequest`` saying why contact cannot be worked out."""
     if m.site_id is None:
         raise NoContact(
             "No landing spot is published for this mission, so when a ground "
@@ -248,6 +244,23 @@ async def _stored(
     s, e, note = window(m, start, end)
     params = _params(m, s, e, note, _extra_relays(m, relays))
     params["orbiters"] = await _orbiters(session, m.id, s, e)
+    return params
+
+
+async def _stored(
+    session: AsyncSession,
+    mission_id: str,
+    start: datetime | None,
+    end: datetime | None,
+    requested_by: int | None,
+    relays: list[str] | None,
+) -> tuple[int, dict[str, Any]]:
+    """``(200, the stored result)`` or ``(202, job ref)``. The result holds the section's
+    ``data`` and ``meta`` and, for the exports only, ``plan``."""
+    m = await MissionRepository(session).get(mission_id)
+    if m is None:
+        raise MissionNotFound(mission_id)
+    params = await contact_params(session, m, start, end, relays)
     ans = await job_service.answer_or_enqueue(
         session,
         kind=KIND,

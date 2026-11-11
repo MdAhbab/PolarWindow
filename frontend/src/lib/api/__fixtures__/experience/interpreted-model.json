@@ -1,0 +1,54 @@
+{
+  "assumptions": [
+    {
+      "field": "vehicle_id",
+      "label": "Launch vehicle",
+      "value": "falcon-heavy",
+      "display": "Falcon Heavy",
+      "unit": null,
+      "basis": "you",
+      "source": null,
+      "note": null
+    },
+    {
+      "field": "pad_id",
+      "label": "Launch pad",
+      "value": "lc-39a",
+      "display": "LC-39A",
+      "unit": null,
+      "basis": "default",
+      "source": null,
+      "note": "Nearest precedent: the pad Falcon Heavy flew from."
+    },
+    {
+      "field": "landing_date",
+      "label": "Landing date",
+      "value": "2027-11-15",
+      "display": "15 November 2027",
+      "unit": null,
+      "basis": "live",
+      "source": {
+        "name": "Launch Library 2",
+        "url": null,
+        "fetched_at": "2026-11-10T07:50:00Z"
+      },
+      "note": "Launch Library 2 lists a target."
+    },
+    {
+      "field": "surface_days",
+      "label": "Days on the surface",
+      "value": 10,
+      "display": "10 days",
+      "unit": null,
+      "basis": "you",
+      "source": null,
+      "note": null
+    }
+  ],
+  "interpreted_as": "Falcon Heavy, ten days on the surface.",
+  "unresolved": [
+    "\"in March\" has no year"
+  ],
+  "method": "model",
+  "matches_preset": null
+}

@@ -25,7 +25,7 @@ import { PolarMap, POLAR_MAP_EDGE_LAT, type MissionPin } from '../components/Pol
 import { ProgrammeTimeline } from '../components/ProgrammeTimeline'
 import { AskPanel } from '../components/Agents'
 import { EmptyState, FarSide, LoadingPanel, ProblemPanel } from '../components/States'
-import { Button, Chip, Disclosure, Panel, Segmented, Unconfirmed } from '../components/ui'
+import { Button, Chip, Disclosure, Panel, Segmented, Unconfirmed, pillClass } from '../components/ui'
 import { Icon } from '../components/Icon'
 import { Select } from '../components/Select'
 
@@ -209,13 +209,19 @@ export function MissionsScreen() {
           <h1 className="pw-display text-[36px] leading-[38px] sm:text-[48px] sm:leading-[50px] lg:text-[56px] lg:leading-[58px]">
             CLPS missions
           </h1>
-          <p
-            aria-live="polite"
-            className="inline-flex h-9 items-center rounded-pill border border-line-strong bg-tray px-4 text-small font-semibold text-ink-2 tnum"
-          >
-            <span className="sr-only">Showing </span>
-            {count}
-          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <p
+              aria-live="polite"
+              className="inline-flex h-9 items-center rounded-pill border border-line-strong bg-tray px-4 text-small font-semibold text-ink-2 tnum"
+            >
+              <span className="sr-only">Showing </span>
+              {count}
+            </p>
+            <Link to="/projects/new" className={pillClass('primary')} data-guide="new-project">
+              <Icon name="plus" size={16} strokeWidth={2.2} />
+              New project
+            </Link>
+          </div>
         </div>
         <p className="max-w-3xl text-lede leading-7 text-ink-2">
           Every NASA CLPS delivery to the Moon, flown and planned. Open one to follow it from getting ready to coming
@@ -306,8 +312,11 @@ export function MissionsScreen() {
             </Panel>
           ) : (
             <Panel flush className={`relative flex flex-col xl:max-h-[640px] xl:overflow-y-auto ${list.isPlaceholderData ? 'opacity-70' : ''}`}>
-              {LIST_GROUPS.map((g) => {
-                const ms = shown.filter((m) => g.statuses.includes(m.status))
+              {[{ id: 'projects', label: 'Your projects', statuses: [] as Mission['status'][] }, ...LIST_GROUPS].map((g) => {
+                const ms =
+                  g.id === 'projects'
+                    ? shown.filter((m) => m.origin === 'project')
+                    : shown.filter((m) => m.origin !== 'project' && g.statuses.includes(m.status))
                 if (!ms.length) return null
                 return (
                   <div key={g.id} className="flex flex-col">
@@ -460,6 +469,11 @@ function MissionRow({
           </>
         )}
       </span>
+      {m.origin === 'project' && (
+        <span className="text-caption leading-caption text-ink-2">
+          Entered by {m.ownerName ?? 'the team'}
+        </span>
+      )}
       <span className="text-caption leading-caption text-ink-3">
         {m.payloadTypes.length ? m.payloadTypes.map((t) => INSTRUMENT_LABEL[t]).join(' · ') : 'Payloads unconfirmed'}
       </span>

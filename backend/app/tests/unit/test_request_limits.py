@@ -29,6 +29,9 @@ NOT_A_CHANGE = {
     ("POST", f"{P}/agents/advise"): {"project_manager"},
     ("POST", f"{P}/agents/brief"): {"project_manager"},
     ("POST", f"{P}/agents/ask"): {"project_manager"},
+    ("POST", f"{P}/agents/chat"): {"project_manager"},
+    # reads plain words into assumptions; nothing is worked out or saved
+    ("POST", f"{P}/missions/{{mission_id}}/scenarios/interpret"): {"project_manager"},
 }
 
 

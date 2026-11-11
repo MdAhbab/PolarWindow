@@ -1,0 +1,15 @@
+{
+  "vehicles": [{ "value": "falcon-9", "label": "Falcon 9", "hint": "SpaceX" }, { "value": "falcon-heavy", "label": "Falcon Heavy", "hint": "SpaceX" }],
+  "pads": [{ "value": "lc-39a", "label": "Launch Complex 39A", "hint": "Florida" }],
+  "sites": [
+    { "value": "shackleton-rim", "label": "Shackleton rim", "hint": "89.7°S", "lat_deg": -89.7, "lon_deg": 129.0, "kind": "candidate" },
+    { "value": "mons-mouton", "label": "Mons Mouton", "hint": "84.8°S", "lat_deg": -84.8, "lon_deg": 28.0, "kind": "mission_target" }
+  ],
+  "providers": ["Intuitive Machines", "Firefly Aerospace"],
+  "landers": ["Nova-C", "Blue Ghost"],
+  "instrument_types": [{ "value": "imaging", "label": "Imaging" }, { "value": "volatiles", "label": "Volatiles" }],
+  "relays": [{ "value": "lunar-pathfinder", "label": "Lunar Pathfinder" }],
+  "max_upload_bytes": 8388608,
+  "accepted_extensions": ["pdf", "docx", "txt", "md", "csv", "json"],
+  "model_reading": true
+}

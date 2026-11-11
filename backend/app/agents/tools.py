@@ -43,6 +43,7 @@ from app.services import (
     mission_service,
     ready_service,
     return_service,
+    scenario_service,
     sections_service,
     site_service,
     space_weather_service,
@@ -169,6 +170,12 @@ class NoArgs(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class ScenarioOptionsArgs(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    mission_id: str = Field(description="Mission id, e.g. 'im-3'.")
+
+
 # ---------------------------------------------------------------------------
 # Declarations handed to the model
 # ---------------------------------------------------------------------------
@@ -253,6 +260,16 @@ TOOL_DECLARATIONS: list[dict[str, Any]] = [
             "not worked out yet says so and is not started from here."
         ),
         "parameters": tool_parameters(SectionArgs.model_json_schema()),
+    },
+    {
+        "name": "list_scenario_options",
+        "description": (
+            "For one mission: today's date, the launch vehicles, launch pads, relays and "
+            "transfer types a scenario can assume (id and name), the next 18 months with "
+            "their first and last days, and what the mission's record already says. Use "
+            "only these ids and dates when reading a what-if prompt."
+        ),
+        "parameters": tool_parameters(ScenarioOptionsArgs.model_json_schema()),
     },
     {
         "name": "get_space_weather",
@@ -631,6 +648,10 @@ async def execute(session: Session, name: str, raw_args: dict[str, Any], seq: in
                 **compact(_plain(await _section(session, sa))),
             }
 
+        elif name == "list_scenario_options":
+            so = ScenarioOptionsArgs(**raw_args)
+            result = _plain(await scenario_service.reading_context(session, so.mission_id))
+
         elif name == "get_space_weather":
             NoArgs(**raw_args)
             result = compact(_plain(await space_weather_service.now(session)))
@@ -652,3 +673,8 @@ async def execute(session: Session, name: str, raw_args: dict[str, Any], seq: in
 
     log_entry.latency_ms = (time.perf_counter() - t0) * 1000.0
     return log_entry
+
+
+async def scenario_context(session: Session, mission_id: str) -> dict[str, Any]:
+    """What a what-if prompt can name for this mission (the reader's door to the domain)."""
+    return _plain(await scenario_service.reading_context(session, mission_id))  # type: ignore[no-any-return]

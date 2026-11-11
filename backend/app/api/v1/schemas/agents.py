@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class ExplainRequest(BaseModel):
@@ -155,3 +155,70 @@ class AgentRunList(BaseModel):
 
     items: list[AgentRunView]
     meta: AgentMeta
+
+
+# --- Ask: the quick chat (POST /agents/chat) --------------------------------
+
+
+class ChatMessage(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    role: Literal["user", "assistant"]
+    text: str = Field(min_length=1, max_length=2000)
+
+
+class ChatContext(BaseModel):
+    """Where the person is, so "this mission" and "these dates" mean something."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    path: str = Field(max_length=300)
+    mission_id: str | None = Field(default=None, max_length=64)
+    site_id: str | None = Field(default=None, max_length=160)
+    section: Literal["ready", "launch", "trip", "landing", "contact", "return"] | None = None
+    scenario_id: str | None = Field(default=None, max_length=64)
+    start: str | None = Field(default=None, max_length=40, description="ISO 8601 UTC.")
+    end: str | None = Field(default=None, max_length=40, description="ISO 8601 UTC.")
+
+
+class ChatRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    messages: list[ChatMessage] = Field(
+        min_length=1,
+        max_length=12,
+        description="The conversation so far, oldest first; the last one is the question.",
+    )
+    context: ChatContext | None = None
+
+    @model_validator(mode="after")
+    def _ends_with_a_question(self) -> ChatRequest:
+        if self.messages[-1].role != "user":
+            raise ValueError("the last message is the question, from the user")
+        return self
+
+
+class ChatAction(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    label: str
+    href: str = Field(description='An in-app path, e.g. "/missions/im-3/launch".')
+
+
+class ChatResult(BaseModel):
+    """``result`` of a chat answer. Every number traces to ``provenance``."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    answer: str
+    interpreted_as: str
+    follow_ups: list[str] = Field(max_length=3)
+    actions: list[ChatAction] = Field(
+        max_length=3, description="Built from the tools called and the page, never by the model."
+    )
+
+
+class ChatResponse(AgentResponse):
+    """The shared agent envelope with a chat answer as its result."""
+
+    result: ChatResult | None = None  # type: ignore[assignment]

@@ -22,7 +22,7 @@ import json
 import logging
 import re
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
@@ -438,6 +438,14 @@ def _facts(tool_calls: list[tools.ToolCallLog]) -> tuple[list[str], str | None]:
     return facts, site_id
 
 
+#: Measurement-only answers for agents whose contract the branches of
+#: ``deterministic_summary`` do not cover, keyed by output model name. An agent
+#: module registers its own (the chat agent does); the result is validated and
+#: guarded exactly like the built-in ones.
+Fallback = Callable[[list[tools.ToolCallLog], str, dict[str, Any]], dict[str, Any]]
+FALLBACKS: dict[str, Fallback] = {}
+
+
 def deterministic_summary(
     spec: AgentSpec,
     tool_calls: list[tools.ToolCallLog],
@@ -464,12 +472,15 @@ def deterministic_summary(
     req = request_payload or {}
     name = spec.output_model.__name__
 
-    if name == "TradeOffAdvice":
+    payload: dict[str, Any]
+    if name in FALLBACKS:
+        payload = FALLBACKS[name](tool_calls, reason, req)
+    elif name == "TradeOffAdvice":
         not_assessed = (
             "The requirement was not assessed: that needs the written answer, which is "
             "unavailable. No site is claimed to meet it."
         )
-        payload: dict[str, Any] = {
+        payload = {
             "status": "insufficient_data",
             "reason": f"{reason} {not_assessed} {paragraph}".strip(),
             "requirement_summary": None,

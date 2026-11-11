@@ -1,0 +1,30 @@
+{
+  "intake_id": 11,
+  "filename": "brief.pdf",
+  "media_type": "application/pdf",
+  "size_bytes": 120400,
+  "method": "model",
+  "model": "light-model",
+  "draft": {
+    "name": "Aurora 1",
+    "provider": "Firefly Aerospace",
+    "lander": "Blue Ghost",
+    "landing": { "date": "2027-10-14", "precision": "month" },
+    "target": { "site_id": "mons-mouton" },
+    "lifecycle": { "vehicle_id": "falcon-9", "mass_kg": 1500 },
+    "payloads": [{ "name": "Ice drill", "acronym": "ID", "organisation": "Honeybee", "instrument_types": ["volatiles"], "purpose": "Drills for ice." }]
+  },
+  "fields": {
+    "name": { "confidence": "stated", "evidence": "Mission Aurora 1 will deliver", "page": 1, "note": null },
+    "provider": { "confidence": "stated", "evidence": "operated by Firefly Aerospace", "page": 1, "note": null },
+    "landing.date": { "confidence": "inferred", "evidence": "landing in October 2027", "page": 3, "note": "The brief gives a month, not a day." },
+    "target.site_id": { "confidence": "stated", "evidence": "near Mons Mouton", "page": 2, "note": null },
+    "lifecycle.vehicle_id": { "confidence": "stated", "evidence": "on a Falcon 9", "page": 2, "note": null },
+    "lifecycle.mass_kg": { "confidence": "stated", "evidence": "a 1,500 kg lander", "page": 2, "note": null },
+    "payloads": { "confidence": "stated", "evidence": "Ice drill (ID), Honeybee", "page": 4, "note": null },
+    "launch.date": { "confidence": "not_found", "evidence": null, "page": null, "note": "No launch date is given." },
+    "lifecycle.pad_id": { "confidence": "not_found", "evidence": null, "page": null, "note": null }
+  },
+  "warnings": ["Page 5 is a scanned image and could not be read."],
+  "characters_read": 8120
+}

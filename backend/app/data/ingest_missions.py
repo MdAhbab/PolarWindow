@@ -404,6 +404,22 @@ def sort_at(m: MissionIn) -> datetime | None:
     return parse_date(d.date) if d is not None else None
 
 
+def region_of(lat_deg: float, lon_deg: float) -> Region:
+    """The region a coordinate lies in, by the rule every record in the file follows.
+
+    At or south of the polar elevation model's edge (80 deg S): ``south_polar``;
+    as far north: ``polar_other``; otherwise ``farside`` when the longitude is
+    more than 90 deg from the sub-Earth meridian, else ``nearside``. Longitude
+    is degrees east, either convention.
+    """
+    if lat_deg <= POLAR_DEM_EDGE_LAT_DEG:
+        return "south_polar"
+    if lat_deg >= -POLAR_DEM_EDGE_LAT_DEG:
+        return "polar_other"
+    lon = lon_deg % 360.0
+    return "farside" if 90.0 < lon < 270.0 else "nearside"
+
+
 def _slug(text: str) -> str:
     ascii_ = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
     return re.sub(r"[^a-z0-9]+", "-", ascii_.lower()).strip("-")
@@ -540,6 +556,7 @@ def mission_row(m: MissionIn) -> dict[str, Any]:
         "notes": list(m.notes),
         "data_version": data_version(m),
         "lifecycle": lifecycle_of(m),
+        "origin": "catalogue",
     }
 
 

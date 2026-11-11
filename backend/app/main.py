@@ -10,6 +10,7 @@ common way this project breaks, so it gets the visible failure mode.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -110,6 +111,21 @@ identifiers of the inputs, nothing more.
 """
 
 
+async def _queue_presets() -> None:
+    """Queue the likely scenarios of upcoming missions, at the lowest priority.
+
+    Best effort and in the background: an API with no database yet, or no missions, starts
+    all the same."""
+    try:
+        from app.workers.presets import queue_presets
+
+        await queue_presets()
+    except asyncio.CancelledError:
+        raise
+    except Exception as exc:
+        log.info("presets were not queued at start: %s", exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     s = get_settings()
@@ -124,7 +140,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             "through /healthz.\n%s",
             exc,
         )
+    presets_task = asyncio.create_task(_queue_presets())
     yield
+    presets_task.cancel()
     from app.db.session import dispose_engine
 
     await dispose_engine()
@@ -149,7 +167,11 @@ def create_app() -> FastAPI:
     app.add_middleware(ProblemOn500)
     # Limits sit inside CORS (and outside the 500 handler), so a refusal
     # reaches the browser with its headers and its own words.
-    app.add_middleware(BodyLimit, max_bytes=s.max_body_bytes)
+    app.add_middleware(
+        BodyLimit,
+        max_bytes=s.max_body_bytes,
+        overrides={f"{s.api_prefix}/projects/intake": s.max_upload_bytes},
+    )
     if s.rate_limits:
         app.add_middleware(
             RateLimit,
@@ -206,6 +228,13 @@ def create_app() -> FastAPI:
     app.include_router(jobs.router, prefix=s.api_prefix)
     app.include_router(lifecycle.router, prefix=s.api_prefix)
     app.include_router(ready.router, prefix=s.api_prefix)
+    from app.api.v1.routes import projects
+
+    app.include_router(projects.router, prefix=s.api_prefix)
+    from app.api.v1.routes import activity, scenarios
+
+    app.include_router(scenarios.router, prefix=s.api_prefix)
+    app.include_router(activity.router, prefix=s.api_prefix)
 
     # /healthz is also mounted unprefixed: container health checks and load
     # balancers look there, and they should not need to know the API version.
@@ -232,6 +261,13 @@ def create_app() -> FastAPI:
                     "title": "That request could not be read",
                     "status": 422,
                     "detail": "; ".join(problems),
+                    "errors": [
+                        {
+                            "field": ".".join(str(p) for p in e["loc"][1:]) or "body",
+                            "message": str(e["msg"]).removeprefix("Value error, "),
+                        }
+                        for e in exc.errors()
+                    ],
                     "ui": {
                         "still_works": "Everything else is unaffected. Adjusting the "
                         "highlighted value will work.",

@@ -22,6 +22,10 @@ and on another, before anything is downloaded,
 
 --data-from takes a folder, a .zip, or the several .zip parts Google Drive gives
 for a large folder. Every file is checked against the SHA-256 the export listed.
+
+On Windows run it as ``python run.py`` (``python3`` there is the Store stub). A
+Windows machine with no PostgreSQL gets a portable one in .local/tools/pgsql the
+first time; without Redis the app runs with its cache switched off.
 """
 
 from __future__ import annotations
@@ -40,6 +44,7 @@ import time
 import urllib.parse
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 # Base Paths
 ROOT_DIR = Path(__file__).resolve().parent
@@ -110,15 +115,34 @@ for pattern in ("opt/homebrew/opt/postgresql@*/bin", "usr/local/opt/postgresql@*
 DEFAULT_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/polar_window"
 DEFAULT_REDIS_URL = "redis://localhost:6379/0"
 
-HOW_TO_INSTALL = {
-    "uv": "Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh",
-    "npm": "Install Node.js 20 or newer (it brings npm): https://nodejs.org, or `brew install node`.",
-    "postgres": "Install PostgreSQL 16 (`brew install postgresql@16` on macOS, "
-    "`sudo apt install postgresql` on Debian or Ubuntu), or start the database with "
-    "`docker compose up -d postgres redis`, then run this again.",
-    "redis": "Install Redis (`brew install redis` or `sudo apt install redis-server`), or set "
-    "PW_REDIS_ENABLED=false in .env: Redis only caches answers, the app works without it.",
-}
+#: PostgreSQL's portable Windows build (EDB's "binaries" zip: no installer, no service).
+#: Only bin/, lib/ and share/ are unpacked, into .local/tools/pgsql.
+PG_WINDOWS_VERSION = os.environ.get("POLAR_PG_WINDOWS_VERSION", "16.11-1")
+PG_WINDOWS_URL = (
+    f"https://get.enterprisedb.com/postgresql/postgresql-{PG_WINDOWS_VERSION}-windows-x64-binaries.zip"
+)
+PG_WINDOWS_DIR = LOCAL_DIR / "tools" / "pgsql"
+
+if os.name == "nt":
+    HOW_TO_INSTALL = {
+        "uv": "Install uv: powershell -c \"irm https://astral.sh/uv/install.ps1 | iex\"",
+        "npm": "Install Node.js 22 or newer (it brings npm): https://nodejs.org",
+        "postgres": f"Unpack PostgreSQL 16's Windows binaries ({PG_WINDOWS_URL}) so that "
+        f"{PG_WINDOWS_DIR / 'bin' / 'pg_ctl.exe'} exists, or install PostgreSQL 16 and point "
+        "PW_DATABASE_URL in .env at it, then run this again.",
+        "redis": "Redis only caches answers; the app works without it. Install Memurai or a "
+        "Redis for Windows build and it is used on the next run.",
+    }
+else:
+    HOW_TO_INSTALL = {
+        "uv": "Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh",
+        "npm": "Install Node.js 20 or newer (it brings npm): https://nodejs.org, or `brew install node`.",
+        "postgres": "Install PostgreSQL 16 (`brew install postgresql@16` on macOS, "
+        "`sudo apt install postgresql` on Debian or Ubuntu), or start the database with "
+        "`docker compose up -d postgres redis`, then run this again.",
+        "redis": "Install Redis (`brew install redis` or `sudo apt install redis-server`), or set "
+        "PW_REDIS_ENABLED=false in .env: Redis only caches answers, the app works without it.",
+    }
 
 # ANSI Color Codes
 CYAN = "\033[36m"
@@ -208,6 +232,43 @@ def get_matching_pids(pattern: str) -> list[int]:
     return []
 
 
+def is_pid_alive(pid: int) -> bool:
+    """Check whether a process with the given PID is currently running."""
+    if pid <= 0:
+        return False
+    try:
+        import psutil
+        return psutil.pid_exists(pid)
+    except Exception:
+        pass
+    if os.name == "nt":
+        try:
+            import ctypes
+            SYNCHRONIZE = 0x00100000
+            PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+            kernel32 = ctypes.windll.kernel32
+            handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE, False, pid)
+            if not handle:
+                return False
+            try:
+                res = kernel32.WaitForSingleObject(handle, 0)
+                return res == 0x00000102
+            finally:
+                kernel32.CloseHandle(handle)
+        except Exception:
+            return False
+    else:
+        try:
+            os.kill(pid, 0)
+            return True
+        except ProcessLookupError:
+            return False
+        except PermissionError:
+            return True
+        except OSError:
+            return False
+
+
 def stop_pids(pids: set[int], desc: str) -> None:
     """Terminate and if needed kill a set of PIDs."""
     if not pids:
@@ -215,11 +276,16 @@ def stop_pids(pids: set[int], desc: str) -> None:
     log("CLEANUP", YELLOW, f"Stopping previous {desc} processes: {sorted(pids)}")
     for pid in pids:
         try:
-            os.kill(pid, signal.SIGTERM)
+            if os.name == "nt":
+                subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True, check=False)
+            else:
+                os.kill(pid, signal.SIGTERM)
         except ProcessLookupError:
             pass
         except PermissionError as err:
             log("CLEANUP", RED, f"Permission denied stopping PID {pid}: {err}")
+        except OSError:
+            pass
 
     # Wait up to 2.5 seconds for graceful shutdown
     deadline = time.time() + 2.5
@@ -227,10 +293,7 @@ def stop_pids(pids: set[int], desc: str) -> None:
     while time.time() < deadline and remaining:
         time.sleep(0.1)
         for pid in list(remaining):
-            try:
-                # 0 signal checks if process is alive
-                os.kill(pid, 0)
-            except ProcessLookupError:
+            if not is_pid_alive(pid):
                 remaining.remove(pid)
 
     # Force kill any stubborn remnants
@@ -241,11 +304,11 @@ def stop_pids(pids: set[int], desc: str) -> None:
                 subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True, check=False)
             else:
                 os.kill(pid, signal.SIGKILL)
-        except ProcessLookupError:
+        except (ProcessLookupError, OSError):
             pass
 
 
-def load_run_pids() -> dict[str, dict[str, any]]:
+def load_run_pids() -> dict[str, dict[str, Any]]:
     """Read the PID file recording processes started by this checkout."""
     if not RUN_PIDS_FILE.is_file():
         return {}
@@ -258,7 +321,7 @@ def load_run_pids() -> dict[str, dict[str, any]]:
     return {}
 
 
-def save_run_pids(pids: dict[str, dict[str, any]]) -> None:
+def save_run_pids(pids: dict[str, dict[str, Any]]) -> None:
     """Persist or remove the PID file for processes started by this checkout."""
     LOCAL_DIR.mkdir(parents=True, exist_ok=True)
     if not pids:
@@ -276,6 +339,12 @@ def save_run_pids(pids: dict[str, dict[str, any]]) -> None:
 
 def get_process_cmdline(pid: int) -> str:
     """Return the command line of a process, or an empty string if it cannot be read."""
+    try:
+        import psutil
+        p = psutil.Process(pid)
+        return " ".join(p.cmdline())
+    except Exception:
+        pass
     if os.name == "nt":
         try:
             res = subprocess.run(
@@ -312,6 +381,11 @@ def get_process_cmdline(pid: int) -> str:
 
 def get_process_cwd(pid: int) -> Path | None:
     """Return the current working directory of a process, if accessible."""
+    try:
+        import psutil
+        return Path(psutil.Process(pid).cwd())
+    except Exception:
+        pass
     if os.name == "nt":
         return None
     if sys.platform == "darwin":
@@ -392,9 +466,7 @@ def stop_previous_instances(be_port: int = 8000, fe_port: int = 5173) -> None:
             pid = info.get("pid")
             if not isinstance(pid, int):
                 continue
-            try:
-                os.kill(pid, 0)
-            except (ProcessLookupError, PermissionError):
+            if not is_pid_alive(pid):
                 continue
             expected_cmd = str(info.get("cmd", ""))
             current_cmd = get_process_cmdline(pid)
@@ -508,9 +580,94 @@ class Database:
         return is_port_open(self.port, "127.0.0.1" if self.host == "localhost" else self.host)
 
 
+def install_windows_postgres() -> bool:
+    """Put PostgreSQL's portable Windows build in .local/tools/pgsql (first run on Windows).
+
+    Nothing is installed on the system: it is a zip of programs, unpacked beside the
+    project and removed by deleting .local/tools/pgsql. The download resumes if it is
+    interrupted; only bin/, lib/ and share/ are unpacked (the zip also carries pgAdmin).
+    """
+    import urllib.error
+    import urllib.request
+    import zipfile
+
+    bin_dir = PG_WINDOWS_DIR / "bin"
+    if (bin_dir / "pg_ctl.exe").is_file():
+        return True
+    archive = LOCAL_DIR / "cache" / PG_WINDOWS_URL.rsplit("/", 1)[-1]
+    part = archive.with_name(archive.name + ".part")
+    archive.parent.mkdir(parents=True, exist_ok=True)
+    if not archive.is_file():
+        log("SERVICES", YELLOW, "PostgreSQL is not on this machine. Downloading its portable "
+            f"Windows build (about 330 MB, once) from {PG_WINDOWS_URL} ...")
+        for attempt in range(1, 6):
+            have = part.stat().st_size if part.is_file() else 0
+            req = urllib.request.Request(  # noqa: S310 -- fixed https URL
+                PG_WINDOWS_URL,
+                headers={"User-Agent": "polar-window-runner", **({"Range": f"bytes={have}-"} if have else {})},
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=60) as resp:  # noqa: S310
+                    resumed = have > 0 and resp.status == 206
+                    if not resumed:
+                        have = 0
+                    total = have + int(resp.headers.get("Content-Length") or 0)
+                    shown = time.time()
+                    with part.open("ab" if resumed else "wb") as out:
+                        while chunk := resp.read(1 << 20):
+                            out.write(chunk)
+                            have += len(chunk)
+                            if time.time() - shown >= 5:
+                                shown = time.time()
+                                pct = f" ({have * 100 // total}%)" if total else ""
+                                log("SERVICES", YELLOW, f"  PostgreSQL download: {have >> 20} MB{pct}")
+                if total and have < total:
+                    raise OSError(f"the connection closed at {have >> 20} of {total >> 20} MB")
+                part.replace(archive)
+                break
+            except urllib.error.HTTPError as err:
+                if err.code == 416 and have:  # the part on disk is already the whole file
+                    part.replace(archive)
+                    break
+                log("SERVICES", RED, f"The PostgreSQL download was refused ({err}).")
+                return False
+            except OSError as err:
+                log("SERVICES", YELLOW, f"The PostgreSQL download stopped ({err}); try {attempt} of 5.")
+                time.sleep(3)
+        else:
+            log("SERVICES", RED, "PostgreSQL could not be downloaded. Run this again to resume.")
+            return False
+    log("SERVICES", YELLOW, f"Unpacking PostgreSQL into {PG_WINDOWS_DIR} ...")
+    staging = PG_WINDOWS_DIR.with_name("pgsql.unpacking")
+    shutil.rmtree(staging, ignore_errors=True)
+    try:
+        with zipfile.ZipFile(archive) as z:
+            wanted = [n for n in z.namelist() if n.startswith(("pgsql/bin/", "pgsql/lib/", "pgsql/share/"))]
+            if not any(n == "pgsql/bin/pg_ctl.exe" for n in wanted):
+                raise zipfile.BadZipFile("pg_ctl.exe is not in the archive")
+            z.extractall(staging, members=wanted)
+    except (zipfile.BadZipFile, OSError) as err:
+        log("SERVICES", RED, f"The PostgreSQL archive could not be unpacked ({err}); it is "
+            "downloaded again on the next run.")
+        shutil.rmtree(staging, ignore_errors=True)
+        with contextlib.suppress(OSError):
+            archive.unlink()
+        return False
+    shutil.rmtree(PG_WINDOWS_DIR, ignore_errors=True)
+    (staging / "pgsql").replace(PG_WINDOWS_DIR)
+    shutil.rmtree(staging, ignore_errors=True)
+    with contextlib.suppress(OSError):
+        archive.unlink()  # 330 MB that is not needed again
+    os.environ["PATH"] = str(bin_dir) + os.pathsep + os.environ.get("PATH", "")
+    log("SERVICES", GREEN, "PostgreSQL's programs are in place.")
+    return True
+
+
 def start_local_postgres(db: Database) -> bool:
     """Start the project's own database in .local/pgdata, creating it on the first run."""
     pg_ctl, initdb = shutil.which("pg_ctl"), shutil.which("initdb")
+    if os.name == "nt" and (pg_ctl is None or initdb is None) and install_windows_postgres():
+        pg_ctl, initdb = shutil.which("pg_ctl"), shutil.which("initdb")
     if pg_ctl is None or (initdb is None and not PGDATA_DIR.exists()):
         log("SERVICES", RED, f"PostgreSQL does not answer at {db.where} and its programs "
             f"were not found. {HOW_TO_INSTALL['postgres']}")
@@ -540,6 +697,9 @@ def start_local_postgres(db: Database) -> bool:
             [pg_ctl, "-D", str(PGDATA_DIR), "-l", str(PGLOG_FILE), "-o",
              f"-p {db.port}" + (" -h 127.0.0.1" if os.name == "nt" else f" -k {socket_dir}"), "-w", "start"],
             env=env, stdout=output, stderr=subprocess.STDOUT, check=False,
+            # Its own hidden console on Windows: the server would otherwise share the
+            # runner's, and Ctrl+C there would shut the database down with the app.
+            creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
         )
     if res.returncode != 0:
         log("SERVICES", RED, f"Failed to start PostgreSQL ({start_log.read_text(encoding='utf-8').strip()}); "
@@ -577,21 +737,30 @@ def ensure_database(db: Database) -> None:
         log("SERVICES", RED, f"Could not create the database '{db.name}': {made.stderr.strip()}")
 
 
-def ensure_postgres(env: dict[str, str]) -> None:
-    """Make sure the database in PW_DATABASE_URL answers and exists.
+def ensure_postgres(env: dict[str, str]) -> bool:
+    """Make sure the database in PW_DATABASE_URL answers and exists; False when it does not.
 
     One on this machine is started from .local/pgdata (created on the first run when
-    PostgreSQL's programs are installed); one elsewhere is only checked.
+    PostgreSQL's programs are installed; on Windows they are fetched first); one
+    elsewhere is only checked. Nothing in the app works without it, so the caller stops.
     """
     db = Database.from_env(env)
     if db.answers():
         log("SERVICES", GREEN, f"PostgreSQL is running ({db.where}).")
     elif not db.on_this_machine:
         log("SERVICES", RED, f"PostgreSQL at {db.where} does not answer; check PW_DATABASE_URL.")
-        return
+        return False
     elif not start_local_postgres(db):
-        return
+        return False
     ensure_database(db)
+    return True
+
+
+def without_redis(why: str) -> None:
+    """Run this start with the cache off, so no request waits on a Redis that is not there."""
+    os.environ["PW_REDIS_ENABLED"] = "false"  # the backend and the workers inherit it
+    log("SERVICES", YELLOW, f"{why} Running without the cache this time: every answer is still "
+        "right, repeated ones are worked out again.")
 
 
 def ensure_redis(env: dict[str, str]) -> None:
@@ -605,7 +774,7 @@ def ensure_redis(env: dict[str, str]) -> None:
         log("SERVICES", GREEN, f"Redis is running (port {port}).")
         return
     if host not in ("localhost", "127.0.0.1", "::1"):
-        log("SERVICES", RED, f"Redis at {host}:{port} does not answer; check PW_REDIS_URL.")
+        without_redis(f"Redis at {host}:{port} does not answer; check PW_REDIS_URL.")
         return
     server = shutil.which("redis-server")
     if server is None and os.name == "nt":
@@ -613,7 +782,7 @@ def ensure_redis(env: dict[str, str]) -> None:
         if memurai.is_file():
             server = str(memurai)
     if server is None:
-        log("SERVICES", YELLOW, f"Redis is not running and not installed. {HOW_TO_INSTALL['redis']}")
+        without_redis(f"Redis is not running and not installed. {HOW_TO_INSTALL['redis']}")
         return
     log("SERVICES", YELLOW, f"Starting local Redis on port {port}...")
     REDIS_DIR.mkdir(parents=True, exist_ok=True)
@@ -635,14 +804,14 @@ def ensure_redis(env: dict[str, str]) -> None:
                     (LOCAL_DIR / "redis.managed").write_text(str(port), encoding="utf-8")
                 return
             time.sleep(0.2)
-        log("SERVICES", RED, f"Redis did not start; check {REDIS_DIR / 'redis.log'}.")
+        without_redis(f"Redis did not start; check {REDIS_DIR / 'redis.log'}.")
         return
     res = subprocess.run(
         [server, "--port", str(port), "--dir", str(REDIS_DIR), "--daemonize", "yes"],
         capture_output=True, text=True, check=False,
     )
     if res.returncode != 0:
-        log("SERVICES", RED, f"Failed to start Redis: {res.stderr or res.stdout}")
+        without_redis(f"Failed to start Redis: {(res.stderr or res.stdout).strip()}.")
     else:
         log("SERVICES", GREEN, "Redis started.")
         pids = load_run_pids()
@@ -978,12 +1147,18 @@ class Stack:
         env = read_env()
         db = Database.from_env(env)
         redis_url = urllib.parse.urlsplit(env.get("PW_REDIS_URL") or DEFAULT_REDIS_URL)
-        redis_port = redis_url.port or 6380
-        log(
-            "SERVICES",
-            CYAN,
-            f"PostgreSQL (port {db.port}) and Redis (port {redis_port}) are still running; python3 run.py --stop-services stops this project's own.",
-        )
+        redis_port = redis_url.port or 6379
+        still = [f"PostgreSQL (port {db.port})"] if db.answers() else []
+        if is_port_open(redis_port):
+            still.append(f"Redis (port {redis_port})")
+        if still:
+            python = "python" if os.name == "nt" else "python3"
+            log(
+                "SERVICES",
+                CYAN,
+                f"{' and '.join(still)} {'is' if len(still) == 1 else 'are'} still running; "
+                f"{python} run.py --stop-services stops this project's own.",
+            )
         sys.exit(exit_code)
 
     def monitor(self) -> None:
@@ -1186,7 +1361,10 @@ def main() -> None:
 
     # 2. Ensure supporting services (Postgres & Redis), as .env configures them
     env = read_env()
-    ensure_postgres(env)
+    if not ensure_postgres(env):
+        log("SERVICES", RED, "Stopping here: every page of the app reads the database, so "
+            "starting without it would only show errors.")
+        sys.exit(1)
     ensure_redis(env)
 
     # 3. Install requirements

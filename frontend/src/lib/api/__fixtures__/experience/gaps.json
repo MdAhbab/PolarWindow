@@ -1,0 +1,179 @@
+{
+  "mission_id": "im-3",
+  "gaps": [
+    {
+      "section": "launch",
+      "state": "no_data",
+      "missing": [
+        {
+          "field": "vehicle_id",
+          "label": "Launch vehicle",
+          "why": "The vehicle is not published."
+        },
+        {
+          "field": "pad_id",
+          "label": "Launch pad",
+          "why": "The pad is not published."
+        }
+      ],
+      "can_explore": true
+    },
+    {
+      "section": "trip",
+      "state": "no_data",
+      "missing": [],
+      "can_explore": true
+    }
+  ],
+  "fields": [
+    {
+      "field": "vehicle_id",
+      "label": "Launch vehicle",
+      "help": "Decides the climb and the speed it can add.",
+      "kind": "choice",
+      "unit": null,
+      "options": [
+        {
+          "value": "falcon-9",
+          "label": "Falcon 9",
+          "hint": "SpaceX"
+        },
+        {
+          "value": "falcon-heavy",
+          "label": "Falcon Heavy",
+          "hint": "SpaceX"
+        }
+      ],
+      "min": null,
+      "max": null,
+      "default": {
+        "field": "vehicle_id",
+        "label": "Launch vehicle",
+        "value": "falcon-9",
+        "display": "Falcon 9",
+        "unit": null,
+        "basis": "default",
+        "source": null,
+        "note": "The vehicle most Moon missions of this size used."
+      },
+      "sections": [
+        "launch",
+        "trip"
+      ]
+    },
+    {
+      "field": "pad_id",
+      "label": "Launch pad",
+      "help": "Where it lifts off.",
+      "kind": "choice",
+      "unit": null,
+      "options": [
+        {
+          "value": "lc-39a",
+          "label": "LC-39A",
+          "hint": "Kennedy Space Center"
+        }
+      ],
+      "min": null,
+      "max": null,
+      "default": null,
+      "sections": [
+        "launch"
+      ]
+    },
+    {
+      "field": "landing_date",
+      "label": "Landing date",
+      "help": "The day it lands.",
+      "kind": "date",
+      "unit": null,
+      "options": null,
+      "min": null,
+      "max": null,
+      "default": {
+        "field": "landing_date",
+        "label": "Landing date",
+        "value": "2027-11-15",
+        "display": "15 November 2027",
+        "unit": null,
+        "basis": "live",
+        "source": {
+          "name": "Launch Library 2",
+          "url": "https://ll.thespacedevs.com",
+          "fetched_at": "2026-11-10T07:50:00Z"
+        },
+        "note": "Launch Library 2 lists a target."
+      },
+      "sections": [
+        "launch",
+        "contact"
+      ]
+    },
+    {
+      "field": "surface_days",
+      "label": "Days on the surface",
+      "help": "How long it works there.",
+      "kind": "number",
+      "unit": "days",
+      "options": null,
+      "min": 1,
+      "max": 60,
+      "default": {
+        "field": "surface_days",
+        "label": "Days on the surface",
+        "value": 14,
+        "display": "14 days",
+        "unit": null,
+        "basis": "published",
+        "source": null,
+        "note": null
+      },
+      "sections": [
+        "contact",
+        "landing"
+      ]
+    },
+    {
+      "field": "relays",
+      "label": "Relays",
+      "help": "Which relays could carry its data.",
+      "kind": "multi_choice",
+      "unit": null,
+      "options": [
+        {
+          "value": "r1",
+          "label": "Relay one"
+        }
+      ],
+      "min": null,
+      "max": null,
+      "default": null,
+      "sections": [
+        "contact"
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "id": "sc-preset-1",
+      "mission_id": "im-3",
+      "name": "Most likely: Falcon 9 from LC-39A, landing Q4 2027",
+      "prompt": null,
+      "status": "done",
+      "progress": 1,
+      "message": "Ready",
+      "preset": true,
+      "sections": [
+        "launch",
+        "trip",
+        "contact"
+      ],
+      "created_at": "2026-11-10T08:00:00Z",
+      "created_by_name": null
+    }
+  ],
+  "suggestions": [
+    "Launch on Falcon Heavy in March, 10 days on the surface",
+    "Land in November 2027"
+  ]
+}

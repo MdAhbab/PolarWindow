@@ -110,6 +110,11 @@ async def sections(session: AsyncSession, mission_id: str) -> dict[str, Any]:
     m = await MissionRepository(session).get(mission_id)
     if m is None:
         raise MissionNotFound(mission_id)
+    return await sections_for(session, m)
+
+
+async def sections_for(session: AsyncSession, m: MissionRecord) -> dict[str, Any]:
+    """The six steps for a mission record (a scenario passes one with assumed values over it)."""
     out = [
         await _ready(session, m),
         await _launch(session, m),

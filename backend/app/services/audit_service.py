@@ -30,6 +30,9 @@ ENTITIES = frozenset(
         "feed",
         "job",
         "settings",
+        "project",
+        "intake",
+        "scenario",
     }
 )
 

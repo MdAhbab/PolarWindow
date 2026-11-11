@@ -180,14 +180,14 @@ export interface RoverOptions {
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 /** The calls the server checks a session on: the AI panels (they cost quota) and the settings. */
-const SESSION_PATHS = /^\/(agents\/(explain|advise|brief|ask)$|settings|auth\/me)/
+const SESSION_PATHS = /^\/(agents\/(explain|advise|brief|ask|chat)$|settings|auth\/me)/
 
 /**
  * The project manager's writes (ADR-17): each needs a named session. Reads of
  * the same paths stay public, so the token goes only on a write.
  */
 const WRITE_PATHS =
-  /^\/(missions\/[^/]+\/(ready\/items|parts|risks|lessons\/[^/]+\/adopt|launch\/official-forecast|contact\/bookings|return\/limits)|ready\/items\/|parts\/|risks\/|vehicles\/[^/]+\/limits|feeds\/[^/]+\/refresh|parameters\/)/
+  /^\/(missions\/[^/]+\/(ready\/items|parts|risks|lessons\/[^/]+\/adopt|launch\/official-forecast|contact\/bookings|return\/limits|scenarios)|scenarios\/|ready\/items\/|parts\/|risks\/|vehicles\/[^/]+\/limits|feeds\/[^/]+\/refresh|parameters\/)/
 
 interface RequestOptions {
   signal?: AbortSignal
@@ -199,6 +199,10 @@ interface RequestOptions {
 async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   return (await requestWithStatus<T>(path, opts)).body
 }
+
+/** For feature modules that own their endpoints (scenarios): the same request, session and offline rules as `api`. */
+export const apiRequest = request
+export type { RequestOptions as ApiRequestOptions }
 
 /**
  * The answer and its HTTP status. A lifecycle section answers 202 with a job

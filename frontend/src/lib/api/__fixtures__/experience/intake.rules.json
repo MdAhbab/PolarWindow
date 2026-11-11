@@ -1,0 +1,23 @@
+{
+  "intake_id": 12,
+  "filename": "dates.txt",
+  "media_type": "text/plain",
+  "size_bytes": 900,
+  "method": "rules",
+  "model": null,
+  "draft": {
+    "name": "Aurora 1",
+    "provider": "Intuitive Machines",
+    "landing": { "date": "2028-01-05", "precision": "day" },
+    "target": { "name": "Ridge", "lat_deg": -85.5, "lon_deg": 30 }
+  },
+  "fields": {
+    "name": { "confidence": "stated", "evidence": "Aurora 1", "page": 1, "note": null },
+    "provider": { "confidence": "stated", "evidence": "Intuitive Machines", "page": 2, "note": null },
+    "landing.date": { "confidence": "stated", "evidence": "landing 5 January 2028", "page": 3, "note": null },
+    "target.lat_deg": { "confidence": "stated", "evidence": "85.5 S", "page": 4, "note": null },
+    "launch.date": { "confidence": "not_found", "evidence": null, "page": null, "note": null }
+  },
+  "warnings": [],
+  "characters_read": 900
+}

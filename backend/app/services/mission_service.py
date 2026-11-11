@@ -163,6 +163,8 @@ def _brief(
         "summary": summary,
         "unconfirmed_fields": m.unconfirmed_fields,
         "data_version": m.data_version,
+        "origin": m.origin,
+        "owner_name": m.owner_name,
     }
 
 
@@ -177,7 +179,9 @@ async def _meta(session: AsyncSession, missions: list[MissionRecord]) -> dict[st
     ids = sorted({m.site_id for m in missions if m.site_id})
     masks = await MaskRepository(session).get_many(ids, ENGINE_VERSION)
     meta = site_service.set_meta(masks, {}, filtered=False)
-    accessed = sorted({s.get("accessed", "") for m in missions for s in m.sources} - {""})
+    catalogue = [m for m in missions if m.origin != "project"]
+    projects = len(missions) - len(catalogue)
+    accessed = sorted({s.get("accessed", "") for m in catalogue for s in m.sources} - {""})
     unconfirmed = sum(1 for m in missions if m.unconfirmed_fields)
     notes = [
         "Mission facts are compiled by hand from NASA pages, LROC images and the IAU "
@@ -185,6 +189,15 @@ async def _meta(session: AsyncSession, missions: list[MissionRecord]) -> dict[st
         + (f", last read {accessed[-1]}." if accessed else "."),
         f"{unconfirmed} of {len(missions)} missions have fields no source confirms; they "
         "are listed as unconfirmed, never filled in.",
+        *(
+            [
+                f"{projects} of these {'is a project' if projects == 1 else 'are projects'} "
+                "entered by the team: each fact is as entered (or read from a file), with "
+                "who entered it."
+            ]
+            if projects
+            else []
+        ),
         "Numbers are Sun and Earth geometry at the target over the mission's surface window, "
         "not what any lander measured.",
     ]
@@ -219,6 +232,7 @@ async def list_missions(
     date_from: datetime | None = None,
     date_to: datetime | None = None,
     q: str | None = None,
+    origin: str | None = None,
 ) -> dict[str, Any]:
     missions = await MissionRepository(session).find(
         statuses=statuses,
@@ -228,14 +242,21 @@ async def list_missions(
         date_from=date_from,
         date_to=date_to,
         q=q,
+        origin=origin,
     )
+    items = await briefs(session, missions)
+    return {"items": items, "total": len(items), "meta": await _meta(session, missions)}
+
+
+async def briefs(session: AsyncSession, missions: list[MissionRecord]) -> list[dict[str, Any]]:
+    """The list rows for these missions, in the order given."""
     sites = await _sites(session, [m.site_id for m in missions if m.site_id])
     items = []
     for m in missions:
         site = sites.get(m.site_id) if m.site_id else None
         window = surface_window(m)
         items.append(_brief(m, site, window, await _summary(session, m, window, site)))
-    return {"items": items, "total": len(items), "meta": await _meta(session, missions)}
+    return items
 
 
 async def get_mission(session: AsyncSession, mission_id: str) -> dict[str, Any]:

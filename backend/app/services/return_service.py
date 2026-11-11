@@ -448,6 +448,11 @@ async def recovery(session: AsyncSession, mission_id: str) -> dict[str, Any]:
     m = await MissionRepository(session).get(mission_id)
     if m is None:
         raise MissionNotFound(mission_id)
+    return await recovery_for(session, m)
+
+
+async def recovery_for(session: AsyncSession, m: MissionRecord) -> dict[str, Any]:
+    """Recovery for a mission record (a scenario passes one with assumed values laid over it)."""
     entered = await PmRepository(session).return_limits(m.id)
     repo = MissionRepository(session)
     names = {}

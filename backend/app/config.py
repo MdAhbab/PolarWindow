@@ -224,6 +224,9 @@ class Settings(BaseSettings):
     #: The largest request body taken, in bytes. The largest real one (a risk
     #: with every text field full) is under 20 KB.
     max_body_bytes: int = 64 * 1024
+    #: The largest file POST /projects/intake takes (its body is the file's
+    #: bytes): a mission plan as PDF, DOCX, text, CSV or JSON. Only that route.
+    max_upload_bytes: int = 8 * 1024 * 1024
     #: Requests that are not reads, per client address per minute. Off (for a
     #: load test) with PW_RATE_LIMITS=off.
     rate_limits: bool = True

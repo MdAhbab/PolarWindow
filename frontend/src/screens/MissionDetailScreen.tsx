@@ -36,6 +36,10 @@ import { PolarMap, POLAR_MAP_EDGE_LAT, type MissionPin } from '../components/Pol
 import { MoonDiscs } from '../components/MoonDiscs'
 import { SceneFrame } from '../scenes/SceneFrame'
 import { hillshadeTile } from '../scenes/tiles'
+import { ScenarioGate } from '../components/scenario/ScenarioGate'
+import { ScenarioEntry, WhatIfLink } from '../components/scenario/ScenarioEntry'
+import type { ScenarioResultsDTO } from '../lib/api/experience.types'
+import type { SiteMetrics } from '../lib/types'
 
 /**
  * A mission's record (§10.3), fully sourced: how it went, its dates, and its
@@ -71,11 +75,15 @@ export function MissionRecord({ mission: m }: { mission: MissionDetail }) {
 
           <Disclosure title="Sources" meta={`${m.sources.length}${asOf ? `, last read ${asOf}` : ''}`}>
             <ul className="flex flex-col gap-3">
-              {m.sources.map((s) => (
-                <li key={s.url} className="flex flex-col gap-0.5 text-body leading-5">
-                  <a href={s.url} target="_blank" rel="noreferrer">
-                    {s.title}
-                  </a>
+              {m.sources.map((s, i) => (
+                <li key={`${s.url}-${i}`} className="flex flex-col gap-0.5 text-body leading-5">
+                  {s.kind === 'entered' || s.kind === 'file' || !s.url ? (
+                    <span className="text-ink">{s.kind === 'file' ? `From ${s.title}` : `Entered by ${s.publisher || 'the team'}`}</span>
+                  ) : (
+                    <a href={s.url} target="_blank" rel="noreferrer">
+                      {s.title}
+                    </a>
+                  )}
                   <span className="text-caption text-ink-3">
                     {s.publisher} · accessed {isoDateWords(s.accessed)}
                   </span>
@@ -181,12 +189,89 @@ function TargetCard({ mission: m, asOf }: { mission: MissionDetail; asOf: string
  * mission's days on the surface. The same shape as the other five steps.
  */
 export function SurfaceSection({ mission: m }: { mission: MissionDetail }) {
+  return (
+    <ScenarioGate
+      missionId={m.id}
+      section="landing"
+      question={SURFACE_QUESTION}
+      record={<SurfaceRecord mission={m} />}
+      pick={(r) => r.landing}
+    >
+      {({ data, meta }) => <ScenarioSurface data={data} meta={meta} />}
+    </ScenarioGate>
+  )
+}
+
+type LandingResult = NonNullable<ScenarioResultsDTO['landing']>['data']
+
+/**
+ * A scenario's Surface: the same four numbers and sentence as the record's,
+ * drawn from the four figures the scenario worked out (no number added).
+ */
+function ScenarioSurface({ data: d, meta }: { data: LandingResult; meta: NonNullable<ScenarioResultsDTO['landing']>['meta'] }) {
+  const arrive = useMotionClass('pw-arrive')
+  const hours = (Date.parse(d.window_end) - Date.parse(d.window_start)) / 3_600_000
+  const body = (body: 'sun' | 'earth', up_s: number, frac: number, dark_s: number, open: boolean) => ({
+    body,
+    arcs: [],
+    upHours: up_s / 3600,
+    downHours: hours - up_s / 3600,
+    fractionUp: frac,
+    longestDownH: dark_s / 3600,
+    longestDownToleranceH: 0,
+    longestDownArc: dark_s > 0 ? { body, up: false, startH: 0, endH: dark_s / 3600, hours: dark_s / 3600, toleranceH: 0, grazing: false } : undefined,
+    longestDownOpen: open,
+    samples: [],
+  })
+  const metrics = {
+    siteId: d.site_id,
+    windowStartH: 0,
+    windowHours: hours,
+    sun: body('sun', d.sunlit_s, d.sun_fraction_up, d.longest_dark_s, d.longest_dark_open),
+    earth: body('earth', d.earth_contact_s, d.earth_fraction_up, d.longest_blackout_s, d.longest_blackout_open),
+    compound: [],
+    worstCompoundH: 0,
+    computeMs: 0,
+  } as unknown as SiteMetrics
+  return (
+    <>
+      <div className={`${UNDER_QUESTION} flex flex-col gap-3 ${arrive}`}>
+        <p data-guide="section-answer" className={ANSWER_TEXT}>
+          {surfaceSentence(metrics)}
+        </p>
+        <p className="text-caption leading-caption text-ink-3">
+          At {d.site_name}, {dateTimeWords(Date.parse(d.window_start))} to {dateTimeWords(Date.parse(d.window_end))}.
+        </p>
+      </div>
+      {!d.terrain_modelled && (
+        <UncertaintyNote>No terrain model covers this site, so this is worked out as if the ground were flat. Real hills could block more.</UncertaintyNote>
+      )}
+      <KeyNumberRow metrics={metrics} uncertain={!d.terrain_modelled} />
+      <Rows
+        about={
+          <Disclosure title="How this was worked out">
+            <p className="text-body leading-6 text-ink-2">
+              The Sun and Earth are traced across the sky at the assumed spot for the assumed dates and counted up while above the skyline. These
+              are the four totals only; the day-by-day charts are worked out for the mission’s own target.
+            </p>
+            <p className="text-caption leading-caption text-ink-3">Worked out {dateTimeWords(Date.parse(meta.computed_at))}.</p>
+          </Disclosure>
+        }
+      />
+    </>
+  )
+}
+
+function SurfaceRecord({ mission: m }: { mission: MissionDetail }) {
   const navigate = useNavigate()
   return (
     <SectionLayout question={SURFACE_QUESTION}>
       <section aria-label="Sun and Earth at this target" data-guide="sun-earth" className="flex min-w-0 flex-col gap-6">
         {m.siteId && m.site && hasSite(m.siteId) ? (
-          <TargetPanel mission={m} siteId={m.siteId} />
+          <>
+            <TargetPanel mission={m} siteId={m.siteId} />
+            <WhatIfLink />
+          </>
         ) : (
           <StatePanel
             icon="ring"
@@ -197,7 +282,12 @@ export function SurfaceSection({ mission: m }: { mission: MissionDetail }) {
                 : 'No destination with coordinates has been published for this mission, so the Sun and Earth cannot be worked out for it yet.'
             }
             stillWorks="The other steps, and the mission’s record, are unaffected."
-            action={<Button onClick={() => navigate('/missions')}>Back to missions</Button>}
+            action={
+              <>
+                <ScenarioEntry missionId={m.id} section="landing" />
+                <Button onClick={() => navigate('/missions')}>Back to missions</Button>
+              </>
+            }
           />
         )}
       </section>

@@ -274,6 +274,7 @@ source_modules = [
     "app.agents.base", "app.agents.explainer", "app.agents.advisor",
     "app.agents.writer", "app.agents.asker", "app.agents.guards",
     "app.agents.schemas", "app.agents.schema_convert",
+    "app.agents.chatter", "app.agents.intake", "app.agents.scenario_reader",
 ]
 # `app.services.agent_log` is deliberately absent: the orchestrator must record
 # what an agent did, which is the platform auditing the agent rather than the

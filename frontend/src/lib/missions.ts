@@ -171,6 +171,7 @@ export function missionAccessibleName(m: Mission): string {
       ? `carries ${m.payloadTypes.map((t) => INSTRUMENT_LABEL[t].toLowerCase()).join(', ')}`
       : 'payloads unconfirmed',
   ]
+  if (m.origin === 'project') parts.push(m.ownerName ? `your project, entered by ${m.ownerName}` : 'your project')
   if (m.unconfirmedFields.length) parts.push('some details unconfirmed')
   return parts.join(', ')
 }

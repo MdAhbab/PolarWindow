@@ -1,0 +1,10 @@
+{
+  "mission": {
+    "id": "p-aurora-1",
+    "name": "Aurora 1",
+    "origin": "project",
+    "owner_name": "Ada",
+    "status": "planned"
+  },
+  "site_job": { "job_id": 77, "kind": "site_build", "status": "queued", "progress": 0, "message": "", "poll_after_s": 2 }
+}

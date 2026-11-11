@@ -13,6 +13,10 @@ import { Field, FormSheet, HistoryList, TextInput } from '../../components/lifec
 import { Button, Disclosure } from '../../components/ui'
 import { Icon } from '../../components/Icon'
 import { useCanWrite } from './ReadySection'
+import { ScenarioGate } from '../../components/scenario/ScenarioGate'
+import { ScenarioEntry, WhatIfLink } from '../../components/scenario/ScenarioEntry'
+import { HeldRow } from '../../components/scenario/HeldRow'
+import { useInScenario } from '../../components/scenario/context'
 import { ZoneCard } from '../../scenes/ZoneCard'
 
 const TERMS = ['boosterWaves', 'boosterWind', 'capsuleWaves', 'capsuleWind']
@@ -63,13 +67,24 @@ export function seaWords(b: Booster): string {
  * down, and the sea there beside the team's own limits.
  */
 export function ReturnSection({ mission: m }: { mission: MissionDetail }) {
+  return (
+    <ScenarioGate missionId={m.id} section="return" question={RETURN_QUESTION} record={<ReturnRecord mission={m} />} pick={(r) => r.return}>
+      {({ data, meta }) => <ReturnAnswer ret={data} meta={meta} missionId={m.id} />}
+    </ScenarioGate>
+  )
+}
+
+const RETURN_QUESTION = 'Where do the booster and any capsule come down, and what is the sea like there?'
+
+function ReturnRecord({ mission: m }: { mission: MissionDetail }) {
   const view = useSection<ReturnDTO>('return', m.id, (signal) => api.returnSection(m.id, signal))
   const status = useSectionStatus(m.id, 'return')
   return (
-    <SectionLayout question="Where do the booster and any capsule come down, and what is the sea like there?">
-      <SectionStates view={view} terms={TERMS} status={status}>
+    <SectionLayout question={RETURN_QUESTION}>
+      <SectionStates view={view} terms={TERMS} status={status} missionId={m.id}>
         {({ data, meta }) => <ReturnAnswer ret={data} meta={meta} missionId={m.id} status={status} />}
       </SectionStates>
+      {view.status === 'answer' && (view.section.data.booster || view.section.data.capsule?.applicable) && <WhatIfLink />}
     </SectionLayout>
   )
 }
@@ -77,6 +92,7 @@ export function ReturnSection({ mission: m }: { mission: MissionDetail }) {
 function ReturnAnswer({ ret, meta, missionId, status }: { ret: ReturnDTO; meta: LifecycleMetaDTO; missionId: string; status?: SectionStatusDTO }) {
   const b = ret.booster
   const c = ret.capsule
+  const scenario = useInScenario()
   const capsule = Boolean(c?.applicable)
   const fetched = meta.sources.map((s) => (s.fetched_at ? Date.parse(s.fetched_at) : NaN)).filter((n) => !Number.isNaN(n))
   const age = fetched.length ? `as of ${ageWords(Math.min(...fetched))}` : undefined
@@ -96,6 +112,7 @@ function ReturnAnswer({ ret, meta, missionId, status }: { ret: ReturnDTO; meta: 
               : 'Nothing launches on this mission, so nothing comes back.')
           }
           stillWorks="Every other step is unaffected."
+          action={scenario ? undefined : <ScenarioEntry missionId={missionId} section="return" />}
         />
         <Rows about={<SourcesRow meta={meta} />} />
       </>
@@ -220,7 +237,12 @@ function ReturnAnswer({ ret, meta, missionId, status }: { ret: ReturnDTO; meta: 
           </p>
         </Disclosure>
         {c?.model_check && <CapsuleCheckRow check={c.model_check} />}
-        {(recovered || capsule) && <LimitsRow ret={ret} missionId={missionId} />}
+        {(recovered || capsule) &&
+          (scenario ? (
+            <HeldRow title="The team’s sea limits" what="They are entered for the mission’s own booster and would write to its record." />
+          ) : (
+            <LimitsRow ret={ret} missionId={missionId} />
+          ))}
       </Rows>
     </>
   )

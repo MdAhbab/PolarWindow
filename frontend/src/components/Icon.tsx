@@ -159,6 +159,29 @@ const PATHS: Record<string, JSX.Element> = {
       <path d="M18.5 5.5 a9 9 0 0 1 0 13" />
     </>
   ),
+  /* The shell (experience release): Home, Ask, the one menu, a file. */
+  home: (
+    <>
+      <path d="M4 11 L12 4 L20 11" />
+      <path d="M6 9.5 V20 H18 V9.5" />
+      <path d="M10 20 V14 H14 V20" />
+    </>
+  ),
+  ask: (
+    <>
+      <path d="M4 5 H20 V16 H11 L6 20 V16 H4 Z" />
+      <path d="M8.5 9.5 h0.01 M12 9.5 h0.01 M15.5 9.5 h0.01" />
+    </>
+  ),
+  menu: <path d="M5 12 h0.01 M12 12 h0.01 M19 12 h0.01" />,
+  moon: <path d="M19 15.5 A8 8 0 1 1 8.5 5 A6.5 6.5 0 0 0 19 15.5 Z" />,
+  file: (
+    <>
+      <path d="M6 3 H14 L19 8 V21 H6 Z" />
+      <path d="M14 3 V8 H19" />
+      <path d="M9 13 H16 M9 17 H14" />
+    </>
+  ),
 }
 
 export type IconName = keyof typeof PATHS

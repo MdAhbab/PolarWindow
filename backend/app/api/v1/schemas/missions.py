@@ -113,6 +113,14 @@ class MissionBrief(_Model):
     )
     unconfirmed_fields: list[str]
     data_version: str
+    origin: Literal["catalogue", "project"] = Field(
+        default="catalogue",
+        description="`catalogue`: a CLPS record compiled from published sources. "
+        "`project`: entered by the team.",
+    )
+    owner_name: str | None = Field(
+        default=None, description="Who entered a project; null for a catalogue record."
+    )
 
 
 class MissionList(_Model):
@@ -135,10 +143,17 @@ class Payload(_Model):
 
 
 class Source(_Model):
-    url: str
+    url: str = Field(
+        description="Empty for `entered` and `file`: draw those as words, never as a link."
+    )
     title: str
     publisher: str
     accessed: date
+    kind: Literal["published", "entered", "file"] = Field(
+        default="published",
+        description="`published`: a page that states it. `entered`: typed by the named person. "
+        "`file`: read from a file the named person provided.",
+    )
 
 
 class TargetSite(_Model):

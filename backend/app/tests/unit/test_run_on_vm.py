@@ -61,6 +61,10 @@ def test_the_compose_file_has_what_the_script_relies_on() -> None:
     assert "proxy_add_x_forwarded_for" not in nginx
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="run_onVM.py is the Linux server script: it reads the user and group ids",
+)
 def test_a_dry_run_prints_the_steps_in_order_and_runs_nothing(tmp_path: Path) -> None:
     res = subprocess.run(  # noqa: S603
         [sys.executable, str(SCRIPT), "--dry-run", "--port", "8080", "--keep-cache"],

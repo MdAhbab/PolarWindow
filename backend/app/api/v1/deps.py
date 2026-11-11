@@ -36,18 +36,18 @@ def problem(
     retryable: bool = False,
     action: str | None = None,
     headers: dict[str, str] | None = None,
+    errors: list[dict[str, str]] | None = None,
 ) -> HTTPException:
-    return HTTPException(
-        status_code=status,
-        headers=headers,
-        detail={
-            "type": f"{ERROR_BASE}/{type_}",
-            "title": title,
-            "status": status,
-            "detail": detail,
-            "ui": {"still_works": still_works, "retryable": retryable, "action": action},
-        },
-    )
+    body: dict[str, object] = {
+        "type": f"{ERROR_BASE}/{type_}",
+        "title": title,
+        "status": status,
+        "detail": detail,
+        "ui": {"still_works": still_works, "retryable": retryable, "action": action},
+    }
+    if errors is not None:
+        body["errors"] = errors
+    return HTTPException(status_code=status, headers=headers, detail=body)
 
 
 def to_http(exc: Exception) -> HTTPException:

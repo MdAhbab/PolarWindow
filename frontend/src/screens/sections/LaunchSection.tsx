@@ -25,6 +25,10 @@ import { Button, Disclosure } from '../../components/ui'
 import { Icon } from '../../components/Icon'
 import { SpaceWeatherRow } from '../../components/lifecycle/SpaceWeather'
 import { useCanWrite } from './ReadySection'
+import { ScenarioGate } from '../../components/scenario/ScenarioGate'
+import { ScenarioEntry, WhatIfLink } from '../../components/scenario/ScenarioEntry'
+import { HeldRow } from '../../components/scenario/HeldRow'
+import { useInScenario } from '../../components/scenario/context'
 
 const TERMS = ['launchTime', 'flightTime', 'sunAtLanding', 'sunlightAfterLanding']
 const DAY_MS = 86_400_000
@@ -36,48 +40,77 @@ const MAX_DAYS = 180
  * for the opportunity chosen, the landing it gives and the weather rules.
  */
 export function LaunchSection({ mission: m }: { mission: MissionDetail }) {
-  const [params, setParams] = useSearchParams()
+  return (
+    <ScenarioGate
+      missionId={m.id}
+      section="launch"
+      question={LAUNCH_QUESTION}
+      record={<LaunchRecord mission={m} />}
+      pick={(r) => r.launch}
+    >
+      {({ data, meta }) => <LaunchBody data={data} meta={meta} missionId={m.id} />}
+    </ScenarioGate>
+  )
+}
+
+const LAUNCH_QUESTION = 'When and from where can it launch?'
+
+function LaunchRecord({ mission: m }: { mission: MissionDetail }) {
+  const [params] = useSearchParams()
   const from = params.get('from') ?? undefined
   const to = params.get('to') ?? undefined
   const view = useSection<LaunchCalendarDTO>('launch', m.id, (signal) => api.launch(m.id, { from, to }, signal), [from ?? null, to ?? null])
   const status = useSectionStatus(m.id, 'launch')
   return (
-    <SectionLayout question="When and from where can it launch?">
-      <SectionStates view={view} terms={TERMS} status={status}>
-        {({ data, meta }) =>
-          data.none_reason ? (
-            <>
-              <StatePanel
-                icon="ring"
-                title="No launch to show yet"
-                detail={data.none_reason}
-                stillWorks="Surface, Contact and the other steps do not depend on the launch and work as usual."
-              />
-              <Rows about={<SourcesRow meta={meta} />} />
-            </>
-          ) : data.opportunities.length ? (
-            <LaunchAnswer cal={data} meta={meta} missionId={m.id} />
-          ) : (
-            <>
-              <StatePanel
-                icon="ring"
-                title="No launch opportunity in these dates"
-                detail={`None of the days searched meets the landing rule: ${data.landing_rule.note}`}
-                stillWorks="Try other dates below. The other steps are unaffected."
-              />
-              <Rows about={<SourcesRow meta={meta} />}>
-                <DatesRow
-                  from={from}
-                  to={to}
-                  datesNote={data.dates_note}
-                  onApply={(f, t) => setParams({ ...(f ? { from: f } : {}), ...(t ? { to: t } : {}) })}
-                />
-              </Rows>
-            </>
-          )
-        }
+    <SectionLayout question={LAUNCH_QUESTION}>
+      <SectionStates view={view} terms={TERMS} status={status} missionId={m.id}>
+        {({ data, meta }) => <LaunchBody data={data} meta={meta} missionId={m.id} />}
       </SectionStates>
+      {status?.state === 'available' && !data_none(view) && <WhatIfLink />}
     </SectionLayout>
+  )
+}
+
+function data_none(view: ReturnType<typeof useSection<LaunchCalendarDTO>>): boolean {
+  return view.status === 'answer' && Boolean(view.section.data.none_reason)
+}
+
+/** The launch answer, drawn from any `SectionDTO`: the mission's own or a scenario's. */
+function LaunchBody({ data, meta, missionId }: { data: LaunchCalendarDTO; meta: LifecycleMetaDTO; missionId: string }) {
+  const [params, setParams] = useSearchParams()
+  const scenario = useInScenario()
+  return data.none_reason ? (
+    <>
+      <StatePanel
+        icon="ring"
+        title="No launch to show yet"
+        detail={data.none_reason}
+        stillWorks="Surface, Contact and the other steps do not depend on the launch and work as usual."
+        action={scenario ? undefined : <ScenarioEntry missionId={missionId} section="launch" />}
+      />
+      <Rows about={<SourcesRow meta={meta} />} />
+    </>
+  ) : data.opportunities.length ? (
+    <LaunchAnswer cal={data} meta={meta} missionId={missionId} />
+  ) : (
+    <>
+      <StatePanel
+        icon="ring"
+        title="No launch opportunity in these dates"
+        detail={`None of the days searched meets the landing rule: ${data.landing_rule.note}`}
+        stillWorks={scenario ? 'Edit the scenario’s dates to try others. The other steps are unaffected.' : 'Try other dates below. The other steps are unaffected.'}
+      />
+      <Rows about={<SourcesRow meta={meta} />}>
+        {!scenario && (
+          <DatesRow
+            from={params.get('from') ?? undefined}
+            to={params.get('to') ?? undefined}
+            datesNote={data.dates_note}
+            onApply={(f, t) => setParams({ ...(f ? { from: f } : {}), ...(t ? { to: t } : {}) })}
+          />
+        )}
+      </Rows>
+    </>
   )
 }
 
@@ -117,7 +150,9 @@ function LaunchAnswer({ cal, meta, missionId }: { cal: LaunchCalendarDTO; meta: 
   const toMs = cal.end ? Date.parse(cal.end) : (sorted[sorted.length - 1].t0.value ?? 0) * 1000
   // The weather endpoint answers at once for any opportunity, a flown one too:
   // the rules and the team's limits stand even where no forecast reaches.
-  const weather = useSection<LaunchWeatherDTO>('launch-weather', missionId, (signal) => api.launchWeather(missionId, o.id, signal), [o.id])
+  const scenario = useInScenario()
+  // A scenario's opportunities are not the record's: the weather endpoint knows only the record.
+  const weather = useSection<LaunchWeatherDTO>('launch-weather', missionId, (signal) => api.launchWeather(missionId, o.id, signal), [o.id], !scenario)
   const wx = weather.status === 'answer' ? weather.section : null
 
   return (
@@ -200,13 +235,19 @@ function LaunchAnswer({ cal, meta, missionId }: { cal: LaunchCalendarDTO; meta: 
           meta={
             wx
               ? `${rulesSummary(wx.data.rules)}${o.weather === 'none' ? '; no forecast for this date' : o.weather === 'climatology' ? ', past years only' : ''}`
-              : weather.status === 'error'
+              : scenario
+                ? 'not worked out for a scenario'
+                : weather.status === 'error'
                 ? 'not available'
                 : 'loading'
           }
         >
           {wx ? (
             <WeatherBody wx={wx.data} meta={wx.meta} note={o.weather_note} />
+          ) : scenario ? (
+            <p className="text-body leading-6 text-ink-2">
+              Weather rules and forecasts are worked out for the mission’s own launches. They are not worked out for assumed ones.
+            </p>
           ) : weather.status === 'error' ? (
             <p className="text-body text-ink-2">The weather could not be loaded: {(weather.error as Error).message}</p>
           ) : weather.status === 'working' ? (
@@ -215,8 +256,12 @@ function LaunchAnswer({ cal, meta, missionId }: { cal: LaunchCalendarDTO; meta: 
             <p className="text-small text-ink-3">Loading the weather…</p>
           )}
         </Disclosure>
-        <OfficialRow wx={wx?.data ?? null} missionId={missionId} />
-        <LimitsRow rules={wx?.data.rules ?? []} vehicleId={wx?.data.vehicle_id ?? cal.vehicle_id ?? o.vehicle_id} />
+        {scenario ? (
+          <HeldRow title="Official forecast and launch limits" what="They are entered for the mission’s own launches and would write to its record." />
+        ) : (
+          <OfficialRow wx={wx?.data ?? null} missionId={missionId} />
+        )}
+        {!scenario && <LimitsRow rules={wx?.data.rules ?? []} vehicleId={wx?.data.vehicle_id ?? cal.vehicle_id ?? o.vehicle_id} />}
         <Disclosure title="Other launches from this range that day" meta={wx?.data.range_conflicts.length ? String(wx.data.range_conflicts.length) : undefined}>
           {wx?.data.range_conflicts.length ? (
             <ul className="flex flex-col gap-1.5">
@@ -233,7 +278,7 @@ function LaunchAnswer({ cal, meta, missionId }: { cal: LaunchCalendarDTO; meta: 
         </Disclosure>
         <SpaceWeatherRow />
         {/* A flown mission's launch is the one it flew: there are no dates to change. */}
-        {!flown && (
+        {!flown && !scenario && (
           <DatesRow
             from={params.get('from') ?? undefined}
             to={params.get('to') ?? undefined}
