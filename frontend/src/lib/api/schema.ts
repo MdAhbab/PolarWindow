@@ -191,6 +191,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sites/{site_id}/energy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Battery state of charge and bus temperature for a lander at a site */
+        post: operations["post_energy_api_v1_sites__site_id__energy_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sites/{site_id}/dispersion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Slope and illumination across a landing ellipse at a site */
+        post: operations["post_dispersion_api_v1_sites__site_id__dispersion_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sites/{site_id}/mesh/simulate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Simulate peer relaying to Earth between a site's landers and rovers */
+        post: operations["post_mesh_api_v1_sites__site_id__mesh_simulate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tiles/{layer}/{z}/{x}/{y}.png": {
         parameters: {
             query?: never;
@@ -321,6 +372,27 @@ export interface paths {
         put?: never;
         /** A4 Question Answerer */
         post: operations["ask_api_v1_agents_ask_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agents/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * A5 Ask: a quick answer
+         * @description Two to four sentences about the page the person is on, on the light models, with
+         *     the same guard and run log as the other agents. ``actions`` are links the app builds.
+         */
+        post: operations["chat_api_v1_agents_chat_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1098,6 +1170,184 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Choices for the project form */
+        get: operations["options_api_v1_projects_options_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The team's projects, newest first */
+        get: operations["list_projects_api_v1_projects_get"];
+        put?: never;
+        /** Save a new project */
+        post: operations["create_api_v1_projects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/intake": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Read a file into the project form (the body is the file's bytes)
+         * @description The draft is not saved as a project: the form arrives filled, and Save saves it.
+         */
+        post: operations["intake_api_v1_projects_intake_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One project, as a mission */
+        get: operations["get_project_api_v1_projects__project_id__get"];
+        /** Change a project */
+        put: operations["update_api_v1_projects__project_id__put"];
+        post?: never;
+        /** Delete a project (a published mission is refused) */
+        delete: operations["delete_api_v1_projects__project_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/skyline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Build the target's skyline again (after a failed build) */
+        post: operations["rebuild_skyline_api_v1_projects__project_id__skyline_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/scenarios/gaps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What a mission's record lacks for each step, the fields a scenario can set, presets */
+        get: operations["gaps_api_v1_missions__mission_id__scenarios_gaps_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/scenarios/interpret": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read plain words into assumptions (nothing is worked out or saved) */
+        post: operations["interpret_api_v1_missions__mission_id__scenarios_interpret_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/missions/{mission_id}/scenarios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A mission's scenarios, presets first, then newest */
+        get: operations["listing_api_v1_missions__mission_id__scenarios_get"];
+        put?: never;
+        /** Start a scenario, or join the one with the same assumptions */
+        post: operations["start_api_v1_missions__mission_id__scenarios_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scenarios/{scenario_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A scenario: its progress, then its answer, always with its assumptions */
+        get: operations["one_api_v1_scenarios__scenario_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete a scenario (never a preset) */
+        delete: operations["remove_api_v1_scenarios__scenario_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Jobs and scenarios being worked out, and those finished in the last 15 minutes */
+        get: operations["activity_api_v1_activity_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -1119,6 +1369,46 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ActivityItemOut */
+        ActivityItemOut: {
+            /** Key */
+            key: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "launch" | "trip" | "contact" | "rover" | "site_build" | "scenario";
+            /** Label */
+            label: string;
+            /** Mission Id */
+            mission_id: string | null;
+            /** Mission Name */
+            mission_name: string | null;
+            /** Href */
+            href: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "done" | "failed";
+            /** Progress */
+            progress: number | null;
+            /** Message */
+            message: string;
+            /** Started At */
+            started_at: string;
+            /** Finished At */
+            finished_at: string | null;
+        };
+        /** ActivityOut */
+        ActivityOut: {
+            /** Active */
+            active: components["schemas"]["ActivityItemOut"][];
+            /** Recent */
+            recent: components["schemas"]["ActivityItemOut"][];
+            /** Poll After S */
+            poll_after_s: number;
+        };
         /** Adopted */
         Adopted: {
             /** Adopted */
@@ -1374,6 +1664,13 @@ export interface components {
             /** Question */
             question: string;
         };
+        /** AssumedValueIn */
+        AssumedValueIn: {
+            /** Field */
+            field: string;
+            /** Value */
+            value?: string | number | string[] | null;
+        };
         /** Assumption */
         Assumption: {
             /** What */
@@ -1392,6 +1689,61 @@ export interface components {
              * @description Where a published figure is from (the guide, table and page); null if assumed.
              */
             source?: string | null;
+        };
+        /** AssumptionFieldOut */
+        AssumptionFieldOut: {
+            /** Field */
+            field: string;
+            /** Label */
+            label: string;
+            /** Help */
+            help: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "choice" | "multi_choice" | "date" | "number";
+            /** Unit */
+            unit: string | null;
+            /** Options */
+            options: components["schemas"]["OptionOut"][] | null;
+            /** Min */
+            min: number | null;
+            /** Max */
+            max: number | null;
+            default: components["schemas"]["AssumptionOut"] | null;
+            /** Sections */
+            sections: ("launch" | "trip" | "landing" | "contact" | "return")[];
+        };
+        /** AssumptionOut */
+        AssumptionOut: {
+            /** Field */
+            field: string;
+            /** Label */
+            label: string;
+            /** Value */
+            value: string | number | string[] | null;
+            /** Display */
+            display: string;
+            /** Unit */
+            unit: string | null;
+            /**
+             * Basis
+             * @enum {string}
+             */
+            basis: "you" | "published" | "live" | "default";
+            source: components["schemas"]["AssumptionSourceOut"] | null;
+            /** Note */
+            note: string | null;
+        };
+        /** AssumptionSourceOut */
+        AssumptionSourceOut: {
+            /** Name */
+            name: string;
+            /** Url */
+            url?: string | null;
+            /** Fetched At */
+            fetched_at?: string | null;
         };
         /** Attempt */
         Attempt: {
@@ -1456,6 +1808,18 @@ export interface components {
             survival_open: boolean;
             /** Worst Compound Open */
             worst_compound_open: boolean;
+        };
+        /** Band */
+        Band: {
+            /** Lo */
+            lo: (number | null)[];
+            /** Value */
+            value: (number | null)[];
+            /**
+             * Hi
+             * @description Entries are null when the warm end of the ground range is unknown.
+             */
+            hi: (number | null)[];
         };
         /** BodyTimeline */
         BodyTimeline: {
@@ -1710,6 +2074,122 @@ export interface components {
             /** Note */
             note: string;
         };
+        /** ChatAction */
+        ChatAction: {
+            /** Label */
+            label: string;
+            /**
+             * Href
+             * @description An in-app path, e.g. "/missions/im-3/launch".
+             */
+            href: string;
+        };
+        /**
+         * ChatContext
+         * @description Where the person is, so "this mission" and "these dates" mean something.
+         */
+        ChatContext: {
+            /** Path */
+            path: string;
+            /** Mission Id */
+            mission_id?: string | null;
+            /** Site Id */
+            site_id?: string | null;
+            /** Section */
+            section?: ("ready" | "launch" | "trip" | "landing" | "contact" | "return") | null;
+            /** Scenario Id */
+            scenario_id?: string | null;
+            /**
+             * Start
+             * @description ISO 8601 UTC.
+             */
+            start?: string | null;
+            /**
+             * End
+             * @description ISO 8601 UTC.
+             */
+            end?: string | null;
+        };
+        /** ChatMessage */
+        ChatMessage: {
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "assistant";
+            /** Text */
+            text: string;
+        };
+        /** ChatRequest */
+        ChatRequest: {
+            /**
+             * Messages
+             * @description The conversation so far, oldest first; the last one is the question.
+             */
+            messages: components["schemas"]["ChatMessage"][];
+            context?: components["schemas"]["ChatContext"] | null;
+        };
+        /**
+         * ChatResponse
+         * @description The shared agent envelope with a chat answer as its result.
+         */
+        ChatResponse: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "insufficient_data" | "degraded";
+            /**
+             * Run Status
+             * @description Why this answer is what it is, exactly as recorded in the run log. `status` folds the last four into `degraded`; this keeps them apart.
+             * @enum {string}
+             */
+            run_status: "ok" | "insufficient_data" | "guard_rejected" | "timeout" | "degraded" | "error";
+            /** Reason */
+            reason?: string | null;
+            result?: components["schemas"]["ChatResult"] | null;
+            /** Provenance */
+            provenance?: components["schemas"]["ProvenanceItem"][];
+            /** Tool Calls */
+            tool_calls?: components["schemas"]["ToolCallView"][];
+            /** Run Id */
+            run_id?: string | null;
+            /**
+             * Attempts
+             * @default 1
+             */
+            attempts: number;
+            /**
+             * Latency Ms
+             * @default 0
+             */
+            latency_ms: number;
+            /**
+             * Guard Failures
+             * @description Guards that fired, including ones a retry then fixed. Kept so the guard can be shown working rather than asserted to exist.
+             */
+            guard_failures?: {
+                [key: string]: unknown;
+            }[];
+            meta: components["schemas"]["AgentMeta"];
+        };
+        /**
+         * ChatResult
+         * @description ``result`` of a chat answer. Every number traces to ``provenance``.
+         */
+        ChatResult: {
+            /** Answer */
+            answer: string;
+            /** Interpreted As */
+            interpreted_as: string;
+            /** Follow Ups */
+            follow_ups: string[];
+            /**
+             * Actions
+             * @description Built from the tools called and the page, never by the model.
+             */
+            actions: components["schemas"]["ChatAction"][];
+        };
         /** Cleared */
         Cleared: {
             /** What */
@@ -1756,6 +2236,19 @@ export interface components {
             ground_stations: string[];
             /** Relays */
             relays: string[];
+            /** Frequency Mhz */
+            frequency_mhz?: number | null;
+            /**
+             * Data Rates Kbps
+             * @default []
+             */
+            data_rates_kbps: number[];
+            /** Required Ebn0 Db */
+            required_ebn0_db?: number | null;
+            /** Required Margin Db */
+            required_margin_db?: number | null;
+            /** Eirp Tol Db */
+            eirp_tol_db?: number | null;
         };
         /** CompareItem */
         CompareItem: {
@@ -1938,8 +2431,13 @@ export interface components {
             orbiters: components["schemas"]["Orbiter"][];
             /** Orbiters Note */
             orbiters_note: string | null;
-            /** Link Budget Note */
+            /**
+             * Link Budget Note
+             * @description What the budget ran on, or why there is none (starts 'Line of sight only').
+             */
             link_budget_note: string | null;
+            /** @description The figures the downlink budget ran on, each with provenance. Null when the mission states too little (then the answer is line of sight only). */
+            link_budget?: components["schemas"]["LinkBudget"] | null;
             /** Bookings */
             bookings: components["schemas"]["Booking"][];
             light_time_s: components["schemas"]["LightTime"];
@@ -2048,6 +2546,57 @@ export interface components {
             longest_unheard_h: components["schemas"]["QuantityOut"];
             longest_message_wait_min: components["schemas"]["QuantityOut"];
         };
+        /** DispersionRequest */
+        DispersionRequest: {
+            ellipse: components["schemas"]["EllipseIn"];
+            lander: components["schemas"]["LanderFiguresIn"];
+            /**
+             * Samples
+             * @description Landing points drawn.
+             * @default 1000
+             */
+            samples: number;
+        };
+        /** DispersionResponse */
+        DispersionResponse: {
+            /** Site Id */
+            site_id: string;
+            /** Inputs */
+            inputs: {
+                [key: string]: unknown;
+            };
+            /** Slope Source */
+            slope_source: {
+                [key: string]: unknown;
+            };
+            /** Slope */
+            slope: {
+                [key: string]: unknown;
+            };
+            /** Tip Over */
+            tip_over: {
+                [key: string]: unknown;
+            };
+            /** Shares */
+            shares: {
+                [key: string]: unknown;
+            };
+            /** Illumination */
+            illumination: {
+                [key: string]: unknown;
+            };
+            /** Heatmap */
+            heatmap: {
+                [key: string]: unknown;
+            };
+            /** Sources */
+            sources: {
+                [key: string]: string;
+            }[];
+            /** Not Modelled */
+            not_modelled: string[];
+            meta: components["schemas"]["Meta"];
+        };
         /** Donki */
         Donki: {
             /**
@@ -2083,6 +2632,104 @@ export interface components {
             flares: number | null;
             /** Sep */
             sep: number | null;
+        };
+        /** EllipseIn */
+        EllipseIn: {
+            /**
+             * Semi Major M
+             * @description 3-sigma semi-major axis, metres.
+             */
+            semi_major_m: number;
+            /**
+             * Semi Minor M
+             * @description 3-sigma semi-minor axis, metres.
+             */
+            semi_minor_m: number;
+            /**
+             * Azimuth Deg
+             * @description Bearing of the major axis from true north, clockwise.
+             */
+            azimuth_deg: number;
+        };
+        /** EnergyKey */
+        EnergyKey: {
+            energy_generated: components["schemas"]["QuantityOut"];
+            lowest_soc: components["schemas"]["QuantityOut"];
+            battery_empty_at: components["schemas"]["TimeQuantityOut"];
+            lowest_bus_temperature: components["schemas"]["QuantityOut"];
+            hours_below_operational: components["schemas"]["QuantityOut"];
+            survival_threshold_crossed_at: components["schemas"]["TimeQuantityOut"];
+        };
+        /** EnergyRequest */
+        EnergyRequest: {
+            /** Start */
+            start?: string | null;
+            /** End */
+            end?: string | null;
+            /** Step S */
+            step_s?: number | null;
+            lander: components["schemas"]["LanderIn"];
+            /**
+             * Lander Example Id
+             * @description Fill figures not given in `lander` from a catalogue example, each keeping its own provenance.
+             */
+            lander_example_id?: string | null;
+            /**
+             * Ground Radius M
+             * @description Diviner triangles within this distance of the site set the ground temperatures; their spread is the uncertainty.
+             * @default 1000
+             */
+            ground_radius_m: number;
+        };
+        /** EnergyResponse */
+        EnergyResponse: {
+            /** Site Id */
+            site_id: string;
+            /** Start */
+            start: string | null;
+            /** End */
+            end: string | null;
+            /** Step S */
+            step_s: number;
+            /**
+             * Inputs
+             * @description Every lander figure echoed with its provenance (entered, published, assumed).
+             */
+            inputs: {
+                [key: string]: unknown;
+            };
+            /** Model */
+            model: {
+                [key: string]: unknown;
+            };
+            /** Ground */
+            ground: {
+                [key: string]: unknown;
+            };
+            series: components["schemas"]["EnergySeries"];
+            key: components["schemas"]["EnergyKey"];
+            /** Not Modelled */
+            not_modelled: string[];
+            meta: components["schemas"]["Meta"];
+        };
+        /** EnergySeries */
+        EnergySeries: {
+            /**
+             * T S
+             * @description Seconds from the window start.
+             */
+            t_s: number[];
+            /** T Utc */
+            t_utc: (string | null)[];
+            /** P Gen W */
+            p_gen_w: number[];
+            /**
+             * Lit
+             * @description 1 while the Sun's centre is above the skyline.
+             */
+            lit: number[];
+            soc_wh: components["schemas"]["Band"];
+            t_bus_c: components["schemas"]["Band"];
         };
         /** ExplainRequest */
         ExplainRequest: {
@@ -2174,6 +2821,25 @@ export interface components {
             /** Feeds */
             feeds: components["schemas"]["FeedOut"][];
         };
+        /**
+         * FigureIn
+         * @description A figure with its provenance. A bare number means 'entered by the caller'.
+         */
+        FigureIn: {
+            /** Value */
+            value: number | string;
+            /**
+             * Provenance
+             * @default entered
+             * @enum {string}
+             */
+            provenance: "entered" | "published" | "assumed";
+            /**
+             * Source
+             * @description Required for published (the URL) and assumed (how it was derived).
+             */
+            source?: string | null;
+        };
         /** Flare */
         Flare: {
             /** Id */
@@ -2184,6 +2850,46 @@ export interface components {
             class: string | null;
             /** Link */
             link: string | null;
+        };
+        /** GapOut */
+        GapOut: {
+            /**
+             * Section
+             * @enum {string}
+             */
+            section: "launch" | "trip" | "landing" | "contact" | "return";
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "available" | "computing" | "no_data" | "needs_input" | "not_applicable";
+            /** Missing */
+            missing: components["schemas"]["MissingOut"][];
+            /** Can Explore */
+            can_explore: boolean;
+        };
+        /** GuardIn */
+        GuardIn: {
+            /**
+             * Soc Cutoff Fraction
+             * @description A helper stops below this charge.
+             */
+            soc_cutoff_fraction: number;
+            /**
+             * Quota Share Per Lunar Day
+             * @description Share of a helper's battery it may spend forwarding per day.
+             */
+            quota_share_per_lunar_day: number;
+            /**
+             * Max Forwarding Power W
+             * @description Cap on a helper's forwarding power.
+             */
+            max_forwarding_power_w: number;
+            /**
+             * Buffer Bytes
+             * @description A helper's buffer for waiting peer data.
+             */
+            buffer_bytes: number;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -2291,6 +2997,79 @@ export interface components {
             /** Kind */
             kind: string;
         };
+        /**
+         * Intake
+         * @description POST /projects/intake: the form filled with what the file says, and where.
+         */
+        Intake: {
+            /** Intake Id */
+            intake_id: number;
+            /** Filename */
+            filename: string;
+            /** Media Type */
+            media_type: string;
+            /** Size Bytes */
+            size_bytes: number;
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "model" | "rules";
+            /** Model */
+            model: string | null;
+            draft: components["schemas"]["ProjectDraft"];
+            /** Fields */
+            fields: {
+                [key: string]: components["schemas"]["IntakeField"];
+            };
+            /** Warnings */
+            warnings: string[];
+            /** Characters Read */
+            characters_read: number;
+        };
+        /** IntakeField */
+        IntakeField: {
+            /**
+             * Confidence
+             * @enum {string}
+             */
+            confidence: "stated" | "inferred" | "not_found";
+            /**
+             * Evidence
+             * @description The words in the file, at most ~240 characters.
+             */
+            evidence: string | null;
+            /**
+             * Page
+             * @description 1-based page (PDF) or line (text), when known.
+             */
+            page: number | null;
+            /** Note */
+            note: string | null;
+        };
+        /** InterpretIn */
+        InterpretIn: {
+            /** Prompt */
+            prompt: string;
+            /** Section */
+            section?: ("launch" | "trip" | "landing" | "contact" | "return") | null;
+        };
+        /** InterpretedOut */
+        InterpretedOut: {
+            /** Assumptions */
+            assumptions: components["schemas"]["AssumptionOut"][];
+            /** Interpreted As */
+            interpreted_as: string;
+            /** Unresolved */
+            unresolved: string[];
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "model" | "rules";
+            /** Matches Preset */
+            matches_preset: string | null;
+        };
         /** ItemCreateIn */
         ItemCreateIn: {
             /**
@@ -2371,6 +3150,106 @@ export interface components {
             lat_deg: number;
             /** Lon Deg */
             lon_deg: number;
+        };
+        /** LanderFiguresIn */
+        LanderFiguresIn: {
+            /**
+             * Footprint Diameter M
+             * @description Diameter of the footpad circle.
+             */
+            footprint_diameter_m: number;
+            /**
+             * Cg Height M
+             * @description Centre-of-gravity height above ground.
+             */
+            cg_height_m: number;
+            /**
+             * Slope Limit Deg
+             * @description The lander's entered slope limit.
+             */
+            slope_limit_deg: number;
+        };
+        /**
+         * LanderIn
+         * @description Every lander figure is an input; there are no defaults. A missing required
+         *     figure is a 422 naming the field. Temperatures are in degrees Celsius.
+         */
+        LanderIn: {
+            /** Array Geometry */
+            array_geometry?: ("vertical_faces" | "top_deck_flat" | "sun_tracking") | components["schemas"]["FigureIn"] | null;
+            /**
+             * Array Area M2
+             * @description One face's area for vertical_faces; the whole array otherwise.
+             */
+            array_area_m2?: number | components["schemas"]["FigureIn"] | null;
+            /**
+             * Face Count
+             * @description vertical_faces only; at least 3.
+             */
+            face_count?: number | components["schemas"]["FigureIn"] | null;
+            /**
+             * Face Azimuth Offset Deg
+             * @description vertical_faces only: bearing of face 0; the rest are evenly spaced.
+             */
+            face_azimuth_offset_deg?: number | components["schemas"]["FigureIn"] | null;
+            /** Cell Efficiency */
+            cell_efficiency?: number | components["schemas"]["FigureIn"] | null;
+            /** Dust Loss Fraction */
+            dust_loss_fraction?: number | components["schemas"]["FigureIn"] | null;
+            /** Battery Capacity Wh */
+            battery_capacity_wh?: number | components["schemas"]["FigureIn"] | null;
+            /** Initial Soc Fraction */
+            initial_soc_fraction?: number | components["schemas"]["FigureIn"] | null;
+            /** Avionics W */
+            avionics_w?: number | components["schemas"]["FigureIn"] | null;
+            /** Payload W */
+            payload_w?: number | components["schemas"]["FigureIn"] | null;
+            /**
+             * Load Dissipation Fraction
+             * @description Share of avionics and payload power that heats the bus.
+             */
+            load_dissipation_fraction?: number | components["schemas"]["FigureIn"] | null;
+            /** Heater Power W */
+            heater_power_w?: number | components["schemas"]["FigureIn"] | null;
+            /** Heater Setpoint C */
+            heater_setpoint_c?: number | components["schemas"]["FigureIn"] | null;
+            /** Initial Bus Temp C */
+            initial_bus_temp_c?: number | components["schemas"]["FigureIn"] | null;
+            /** Operational Min C */
+            operational_min_c?: number | components["schemas"]["FigureIn"] | null;
+            /** Survival Min C */
+            survival_min_c?: number | components["schemas"]["FigureIn"] | null;
+            /** Bus Absorptivity */
+            bus_absorptivity?: number | components["schemas"]["FigureIn"] | null;
+            /**
+             * Bus Side Area M2
+             * @description Area the Sun sees from the horizon (vertical sides).
+             */
+            bus_side_area_m2?: number | components["schemas"]["FigureIn"] | null;
+            /**
+             * Bus Top Area M2
+             * @description Area the Sun sees from overhead.
+             */
+            bus_top_area_m2?: number | components["schemas"]["FigureIn"] | null;
+            /** Bus Emissivity */
+            bus_emissivity?: number | components["schemas"]["FigureIn"] | null;
+            /** Regolith Emissivity */
+            regolith_emissivity?: number | components["schemas"]["FigureIn"] | null;
+            /** Regolith Absorptivity */
+            regolith_absorptivity?: number | components["schemas"]["FigureIn"] | null;
+            /**
+             * View Factor
+             * @description Lander to regolith.
+             */
+            view_factor?: number | components["schemas"]["FigureIn"] | null;
+            /** Base Area M2 */
+            base_area_m2?: number | components["schemas"]["FigureIn"] | null;
+            /** Radiator Emissivity */
+            radiator_emissivity?: number | components["schemas"]["FigureIn"] | null;
+            /** Radiator Area M2 */
+            radiator_area_m2?: number | components["schemas"]["FigureIn"] | null;
+            /** Heat Capacity J Per K */
+            heat_capacity_j_per_k?: number | components["schemas"]["FigureIn"] | null;
         };
         /** LandingHistory */
         LandingHistory: {
@@ -2542,8 +3421,93 @@ export interface components {
             to: string;
             /** Stretches */
             stretches: components["schemas"]["StretchOut"][];
+            /** @description With a link budget: the highest achievable rate at the peak of the best pass of this link. Null otherwise. */
             data_rate_kbps: components["schemas"]["QuantityOut"] | null;
+            /** @description With a link budget and a stated rate: the margin at the first stated rate at the peak of that best pass. Null otherwise. */
             margin_db: components["schemas"]["QuantityOut"] | null;
+            /**
+             * Passes
+             * @description With a link budget: one entry per stretch, in the same order. Null when no budget ran for this station (figures missing).
+             */
+            passes?: components["schemas"]["PassBudget"][] | null;
+        };
+        /** LinkBudget */
+        LinkBudget: {
+            /** Method */
+            method: string;
+            /** Band */
+            band: string;
+            frequency_mhz: components["schemas"]["QuantityOut"];
+            eirp_dbw: components["schemas"]["QuantityOut"];
+            required_ebn0_db: components["schemas"]["QuantityOut"];
+            required_margin_db: components["schemas"]["QuantityOut"];
+            /** Stated Rates Kbps */
+            stated_rates_kbps: components["schemas"]["QuantityOut"][];
+            /** Stations */
+            stations: components["schemas"]["StationFigures"][];
+            /**
+             * Stations Without Figures
+             * @description Stations with no published X-band figures: no budget is given there.
+             */
+            stations_without_figures: string[];
+            /** Not Modelled */
+            not_modelled: string[];
+        };
+        /** MeshRequest */
+        MeshRequest: {
+            /** Start */
+            start?: string | null;
+            /** End */
+            end?: string | null;
+            /** Step S */
+            step_s?: number | null;
+            /** Nodes */
+            nodes: components["schemas"]["NodeIn"][];
+            radio: components["schemas"]["RadioIn"];
+            guard: components["schemas"]["GuardIn"];
+            /**
+             * Loss Threshold S
+             * @description A direct-link loss longer than this wakes the radio.
+             */
+            loss_threshold_s: number;
+        };
+        /** MeshResponse */
+        MeshResponse: {
+            /** Site Id */
+            site_id: string;
+            /** Start */
+            start: string;
+            /** End */
+            end: string;
+            /** Step S */
+            step_s: number;
+            /** Inputs */
+            inputs: {
+                [key: string]: unknown;
+            };
+            /** Nodes */
+            nodes: {
+                [key: string]: unknown;
+            }[];
+            /** Links */
+            links: {
+                [key: string]: unknown;
+            }[];
+            /** Helpers */
+            helpers: {
+                [key: string]: unknown;
+            }[];
+            /** Terrain */
+            terrain: {
+                [key: string]: unknown;
+            };
+            /** Timing Ms */
+            timing_ms: {
+                [key: string]: unknown;
+            };
+            /** Not Modelled */
+            not_modelled: string[];
+            meta: components["schemas"]["Meta"];
         };
         /** Meta */
         Meta: {
@@ -2665,6 +3629,15 @@ export interface components {
             /** Source */
             source: string | null;
         };
+        /** MissingOut */
+        MissingOut: {
+            /** Field */
+            field: string;
+            /** Label */
+            label: string;
+            /** Why */
+            why: string;
+        };
         /** MissionBrief */
         MissionBrief: {
             /** Id */
@@ -2712,6 +3685,18 @@ export interface components {
             unconfirmed_fields: string[];
             /** Data Version */
             data_version: string;
+            /**
+             * Origin
+             * @description `catalogue`: a CLPS record compiled from published sources. `project`: entered by the team.
+             * @default catalogue
+             * @enum {string}
+             */
+            origin: "catalogue" | "project";
+            /**
+             * Owner Name
+             * @description Who entered a project; null for a catalogue record.
+             */
+            owner_name?: string | null;
         };
         /** MissionDetail */
         MissionDetail: {
@@ -2760,6 +3745,18 @@ export interface components {
             unconfirmed_fields: string[];
             /** Data Version */
             data_version: string;
+            /**
+             * Origin
+             * @description `catalogue`: a CLPS record compiled from published sources. `project`: entered by the team.
+             * @default catalogue
+             * @enum {string}
+             */
+            origin: "catalogue" | "project";
+            /**
+             * Owner Name
+             * @description Who entered a project; null for a catalogue record.
+             */
+            owner_name?: string | null;
             /** Outcome Note */
             outcome_note: string;
             end_of_mission: components["schemas"]["PublishedDate"] | null;
@@ -2933,6 +3930,46 @@ export interface components {
             /** Launch Note */
             launch_note: string | null;
         };
+        /** NodeIn */
+        NodeIn: {
+            /** Id */
+            id: string;
+            /** Name */
+            name?: string | null;
+            /** @description A fixed node (lander or parked rover). */
+            position?: components["schemas"]["XY"] | null;
+            /**
+             * Waypoints
+             * @description Positions by time, instead of position.
+             */
+            waypoints?: components["schemas"]["WaypointIn"][] | null;
+            /** Antenna Height M */
+            antenna_height_m: number;
+            /** Battery Capacity Wh */
+            battery_capacity_wh: number;
+            /** Initial Soc Fraction */
+            initial_soc_fraction: number;
+            /**
+             * Own Traffic Bps
+             * @description The node's own traffic, served first.
+             */
+            own_traffic_bps: number;
+            /**
+             * May Help
+             * @description Whether this node may forward for others.
+             */
+            may_help: boolean;
+            /**
+             * Earth Uplink Bps
+             * @description Optional: this node's direct Earth rate, if an exit.
+             */
+            earth_uplink_bps?: number | null;
+            /**
+             * Earth Uplink Power W
+             * @description Optional: DC power drawn while uplinking to Earth.
+             */
+            earth_uplink_power_w?: number | null;
+        };
         /** Now */
         Now: {
             kp: components["schemas"]["QuantityOut"];
@@ -3081,6 +4118,27 @@ export interface components {
             azimuth_deg: components["schemas"]["QuantityOut"];
             dv_tli_m_s: components["schemas"]["QuantityOut"];
             coast_min: components["schemas"]["QuantityOut"];
+        };
+        /** Option */
+        Option: {
+            /** Value */
+            value: string;
+            /** Label */
+            label: string;
+            /**
+             * Hint
+             * @description A short second line.
+             */
+            hint?: string | null;
+        };
+        /** OptionOut */
+        OptionOut: {
+            /** Value */
+            value: string;
+            /** Label */
+            label: string;
+            /** Hint */
+            hint?: string | null;
         };
         /** Orbiter */
         Orbiter: {
@@ -3297,6 +4355,35 @@ export interface components {
             /** Failed */
             failed: number;
         };
+        /** PassBudget */
+        PassBudget: {
+            edge: components["schemas"]["PassPoint"];
+            peak: components["schemas"]["PassPoint"];
+        };
+        /** PassPoint */
+        PassPoint: {
+            /**
+             * At
+             * @description `edge`: the weaker end of the pass (where the lander is lowest in the station's sky). `peak`: the sample of highest elevation.
+             * @enum {string}
+             */
+            at: "edge" | "peak";
+            elevation_deg: components["schemas"]["QuantityOut"];
+            range_km: components["schemas"]["QuantityOut"];
+            /** @description Free-space path loss. */
+            path_loss_db: components["schemas"]["QuantityOut"];
+            /** @description Atmospheric attenuation on the slant path; `lo` clear sky, `hi` the 99 % weather point (810-005 module 105). */
+            atmosphere_db: components["schemas"]["QuantityOut"];
+            /** @description The station's G/T at this elevation. */
+            g_over_t_dbk: components["schemas"]["QuantityOut"];
+            /** @description The highest data rate that keeps the stated margin over the required Eb/N0, with the uncertainty from weather and tolerances as `lo` and `hi`. */
+            max_rate_kbps: components["schemas"]["QuantityOut"];
+            /**
+             * Margins
+             * @description Link margin at each rate the mission states. Empty when none is stated.
+             */
+            margins: components["schemas"]["RateMargin"][];
+        };
         /** Payload */
         Payload: {
             /** Id */
@@ -3318,6 +4405,276 @@ export interface components {
             source_url: string;
             /** Unconfirmed */
             unconfirmed: boolean;
+        };
+        /** PhaseOut */
+        PhaseOut: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "pending" | "active" | "done" | "skipped" | "failed";
+            /** Detail */
+            detail: string | null;
+        };
+        /**
+         * ProjectDateIn
+         * @description A date as the team knows it. ``as_published`` is written by the server when omitted.
+         */
+        ProjectDateIn: {
+            /**
+             * Date
+             * @description ISO date or datetime (UTC): '2027', '2027-03', '2027-03-14' or '2027-03-14T10:30Z'.
+             */
+            date: string;
+            /**
+             * Precision
+             * @enum {string}
+             */
+            precision: "second" | "minute" | "day" | "month" | "quarter" | "year";
+            /** As Published */
+            as_published?: string | null;
+        };
+        /** ProjectDeleted */
+        ProjectDeleted: {
+            /** Id */
+            id: string;
+            /**
+             * Deleted
+             * @constant
+             */
+            deleted: true;
+        };
+        /**
+         * ProjectDraft
+         * @description The form as read from a file: ``name`` is empty when the file did not say it.
+         */
+        ProjectDraft: {
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /** Provider */
+            provider?: string | null;
+            /** Lander */
+            lander?: string | null;
+            /**
+             * Vehicle Name
+             * @description The spacecraft's own name ('Athena').
+             */
+            vehicle_name?: string | null;
+            /** Task Order */
+            task_order?: string | null;
+            /**
+             * Status
+             * @default planned
+             * @enum {string}
+             */
+            status: "planned" | "in_transit" | "operating" | "completed";
+            target?: components["schemas"]["ProjectTargetIn"] | null;
+            launch?: components["schemas"]["ProjectDateIn"] | null;
+            landing?: components["schemas"]["ProjectDateIn"] | null;
+            end_of_mission?: components["schemas"]["ProjectDateIn"] | null;
+            /** Planned Surface Days */
+            planned_surface_days?: number | null;
+            lifecycle?: components["schemas"]["ProjectLifecycleIn"] | null;
+            /** Payloads */
+            payloads?: components["schemas"]["ProjectPayloadIn"][];
+            /** Notes */
+            notes?: string[];
+            /**
+             * Intake Id
+             * @description The file reading this form was filled from, so each field keeps its evidence.
+             */
+            intake_id?: number | null;
+        };
+        /**
+         * ProjectIn
+         * @description The project form. Only ``name`` is required; everything else may be left unknown.
+         */
+        ProjectIn: {
+            /** Name */
+            name: string;
+            /** Provider */
+            provider?: string | null;
+            /** Lander */
+            lander?: string | null;
+            /**
+             * Vehicle Name
+             * @description The spacecraft's own name ('Athena').
+             */
+            vehicle_name?: string | null;
+            /** Task Order */
+            task_order?: string | null;
+            /**
+             * Status
+             * @default planned
+             * @enum {string}
+             */
+            status: "planned" | "in_transit" | "operating" | "completed";
+            target?: components["schemas"]["ProjectTargetIn"] | null;
+            launch?: components["schemas"]["ProjectDateIn"] | null;
+            landing?: components["schemas"]["ProjectDateIn"] | null;
+            end_of_mission?: components["schemas"]["ProjectDateIn"] | null;
+            /** Planned Surface Days */
+            planned_surface_days?: number | null;
+            lifecycle?: components["schemas"]["ProjectLifecycleIn"] | null;
+            /** Payloads */
+            payloads?: components["schemas"]["ProjectPayloadIn"][];
+            /** Notes */
+            notes?: string[];
+            /**
+             * Intake Id
+             * @description The file reading this form was filled from, so each field keeps its evidence.
+             */
+            intake_id?: number | null;
+        };
+        /** ProjectLifecycleIn */
+        ProjectLifecycleIn: {
+            /** Vehicle Id */
+            vehicle_id?: string | null;
+            /** Pad Id */
+            pad_id?: string | null;
+            /** Transfer Type */
+            transfer_type?: ("direct" | "phasing_loops" | "low_energy" | "unknown") | null;
+            /** Flight Days */
+            flight_days?: number | null;
+            /** Lunar Orbit Days */
+            lunar_orbit_days?: number | null;
+            /** Sun El Min Deg */
+            sun_el_min_deg?: number | null;
+            /** Sun El Max Deg */
+            sun_el_max_deg?: number | null;
+            /** Bands */
+            bands?: string[];
+            /** Ground Stations */
+            ground_stations?: string[];
+            /** Relays */
+            relays?: string[];
+            /** Mass Kg */
+            mass_kg?: number | null;
+            /** Returns */
+            returns?: ("none" | "sample_capsule" | "crew") | null;
+            /**
+             * Eirp Dbw
+             * @description The lander's transmit EIRP, dBW. Stating it turns the link budget on.
+             */
+            eirp_dbw?: number | null;
+            /**
+             * Eirp Tol Db
+             * @description The stated tolerance on the EIRP, dB.
+             */
+            eirp_tol_db?: number | null;
+            /**
+             * Gt Dbk
+             * @description The lander's receive G/T, dB/K.
+             */
+            gt_dbk?: number | null;
+            /**
+             * Frequency Mhz
+             * @description The downlink carrier frequency, MHz.
+             */
+            frequency_mhz?: number | null;
+            /**
+             * Data Rates Kbps
+             * @description The downlink data rates on offer, kbit/s (each above 0, at most 1e7).
+             */
+            data_rates_kbps?: number[];
+            /**
+             * Required Ebn0 Db
+             * @description The Eb/N0 the coding needs for its target error rate, dB.
+             */
+            required_ebn0_db?: number | null;
+            /**
+             * Required Margin Db
+             * @description The margin required over Eb/N0, dB.
+             */
+            required_margin_db?: number | null;
+        };
+        /**
+         * ProjectList
+         * @description GET /projects: the team's own projects, newest first.
+         */
+        ProjectList: {
+            /** Items */
+            items: components["schemas"]["MissionBrief"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * ProjectOptions
+         * @description GET /projects/options: every choice the form offers, from the catalogues.
+         */
+        ProjectOptions: {
+            /** Vehicles */
+            vehicles: components["schemas"]["Option"][];
+            /** Pads */
+            pads: components["schemas"]["Option"][];
+            /**
+             * Sites
+             * @description Existing sites, candidates first.
+             */
+            sites: components["schemas"]["SiteOption"][];
+            /** Providers */
+            providers: string[];
+            /** Landers */
+            landers: string[];
+            /** Instrument Types */
+            instrument_types: components["schemas"]["Option"][];
+            /** Relays */
+            relays: components["schemas"]["Option"][];
+            /** Max Upload Bytes */
+            max_upload_bytes: number;
+            /** Accepted Extensions */
+            accepted_extensions: string[];
+            /**
+             * Model Reading
+             * @description False with no model key: files are read by rules (dates, names, coordinates) only.
+             */
+            model_reading: boolean;
+        };
+        /** ProjectPayloadIn */
+        ProjectPayloadIn: {
+            /** Name */
+            name: string;
+            /** Acronym */
+            acronym?: string | null;
+            /** Organisation */
+            organisation?: string | null;
+            /** Instrument Types */
+            instrument_types?: ("volatiles" | "geology_geophysics" | "heat_flow" | "radiation_space_weather" | "exosphere_dust" | "imaging" | "landing_navigation" | "communications" | "laser_retroreflector" | "rover_mobility" | "technology_demo" | "other")[];
+            /** Purpose */
+            purpose?: string | null;
+        };
+        /**
+         * ProjectSaved
+         * @description POST /projects (201) and PUT /projects/{id} (200).
+         */
+        ProjectSaved: {
+            mission: components["schemas"]["MissionDetail"];
+            /** @description Set when the target is a new coordinate: its skyline is being built (job kind `site_build`). Until it is done, Surface and Contact say so. */
+            site_job: components["schemas"]["JobRefOut"] | null;
+        };
+        /**
+         * ProjectTargetIn
+         * @description Exactly one of ``site_id`` or the coordinate (``lat_deg`` and ``lon_deg``).
+         */
+        ProjectTargetIn: {
+            /** Site Id */
+            site_id?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Lat Deg */
+            lat_deg?: number | null;
+            /**
+             * Lon Deg
+             * @description Degrees east, 0-360 (-180..180 is accepted and normalised).
+             */
+            lon_deg?: number | null;
         };
         /**
          * Provenance
@@ -3458,6 +4815,50 @@ export interface components {
             /** Confirm In */
             confirm_in: string[];
         };
+        /** RadioIn */
+        RadioIn: {
+            /** Frequency Hz */
+            frequency_hz: number;
+            /**
+             * Tx Power W
+             * @description A node's own transmit power (RF).
+             */
+            tx_power_w: number;
+            /**
+             * Forwarding Tx Power W
+             * @description A helper's transmit power (RF).
+             */
+            forwarding_tx_power_w: number;
+            /**
+             * Tx Efficiency
+             * @description RF output over DC input.
+             */
+            tx_efficiency: number;
+            /**
+             * Antenna Gain Dbi
+             * @description At each end.
+             */
+            antenna_gain_dbi: number;
+            /** Bandwidth Hz */
+            bandwidth_hz: number;
+            /** Noise Figure Db */
+            noise_figure_db: number;
+            /**
+             * Snr Threshold Db
+             * @description The link closes at or above this SNR.
+             */
+            snr_threshold_db: number;
+            /**
+             * Eps R
+             * @description Relative permittivity of the regolith.
+             */
+            eps_r: number;
+            /**
+             * Polarisation
+             * @enum {string}
+             */
+            polarisation: "horizontal" | "vertical";
+        };
         /** RangeConflict */
         RangeConflict: {
             /** Name */
@@ -3469,6 +4870,13 @@ export interface components {
             t0: string;
             /** Pad */
             pad: string;
+        };
+        /** RateMargin */
+        RateMargin: {
+            /** @description A data rate the mission states, as stated. */
+            rate_kbps: components["schemas"]["QuantityOut"];
+            /** @description Eb/N0 over the coding's required Eb/N0 at that rate. `lo` is adverse weather with every tolerance adverse; `hi` is clear sky with every one favourable. */
+            margin_db: components["schemas"]["QuantityOut"];
         };
         /** Ready */
         Ready: {
@@ -3912,6 +5320,118 @@ export interface components {
             observed: components["schemas"]["Observed"] | null;
             climatology: components["schemas"]["Climatology"] | null;
         };
+        /** ScenarioBriefOut */
+        ScenarioBriefOut: {
+            /** Id */
+            id: string;
+            /** Mission Id */
+            mission_id: string;
+            /** Name */
+            name: string;
+            /** Prompt */
+            prompt: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "done" | "failed";
+            /** Progress */
+            progress: number;
+            /** Message */
+            message: string;
+            /** Preset */
+            preset: boolean;
+            /** Sections */
+            sections: ("launch" | "trip" | "landing" | "contact" | "return")[];
+            /** Created At */
+            created_at: string;
+            /** Created By Name */
+            created_by_name: string | null;
+        };
+        /** ScenarioDeletedOut */
+        ScenarioDeletedOut: {
+            /** Id */
+            id: string;
+            /**
+             * Deleted
+             * @default true
+             * @constant
+             */
+            deleted: true;
+        };
+        /** ScenarioGapsOut */
+        ScenarioGapsOut: {
+            /** Mission Id */
+            mission_id: string;
+            /** Gaps */
+            gaps: components["schemas"]["GapOut"][];
+            /** Fields */
+            fields: components["schemas"]["AssumptionFieldOut"][];
+            /** Presets */
+            presets: components["schemas"]["ScenarioBriefOut"][];
+            /** Suggestions */
+            suggestions: string[];
+        };
+        /** ScenarioIn */
+        ScenarioIn: {
+            /** Name */
+            name?: string | null;
+            /** Prompt */
+            prompt?: string | null;
+            /** Assumptions */
+            assumptions?: components["schemas"]["AssumedValueIn"][];
+            /** Sections */
+            sections?: ("launch" | "trip" | "landing" | "contact" | "return")[] | null;
+        };
+        /** ScenarioListOut */
+        ScenarioListOut: {
+            /** Items */
+            items: components["schemas"]["ScenarioBriefOut"][];
+        };
+        /** ScenarioOut */
+        ScenarioOut: {
+            /** Id */
+            id: string;
+            /** Mission Id */
+            mission_id: string;
+            /** Name */
+            name: string;
+            /** Prompt */
+            prompt: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "done" | "failed";
+            /** Progress */
+            progress: number;
+            /** Message */
+            message: string;
+            /** Preset */
+            preset: boolean;
+            /** Sections */
+            sections: ("launch" | "trip" | "landing" | "contact" | "return")[];
+            /** Created At */
+            created_at: string;
+            /** Created By Name */
+            created_by_name: string | null;
+            /** Assumptions */
+            assumptions: components["schemas"]["AssumptionOut"][];
+            /** Phases */
+            phases: components["schemas"]["PhaseOut"][];
+            /** Summaries */
+            summaries: {
+                [key: string]: string;
+            };
+            /** Results */
+            results: {
+                [key: string]: unknown;
+            } | null;
+            /** Poll After S */
+            poll_after_s: number;
+            /** Error */
+            error: string | null;
+        };
         /** SeaLimits */
         SeaLimits: {
             wave_height_m: components["schemas"]["QuantityOut"];
@@ -4117,7 +5637,7 @@ export interface components {
             note: string;
             /**
              * Search Kind
-             * @description How the landing point was found: on the rim of a named crater (so it borders that crater's shadowed floor) or on a massif or plateau.
+             * @description How the landing point was found: on the rim of a named crater (so it borders that crater's shadowed floor), on a massif or plateau, taken as published, or entered by a project manager for their own project.
              * @enum {string}
              */
             search_kind: "rim" | "massif" | "published" | "entered";
@@ -4168,7 +5688,7 @@ export interface components {
             note: string;
             /**
              * Search Kind
-             * @description How the landing point was found: on the rim of a named crater (so it borders that crater's shadowed floor) or on a massif or plateau.
+             * @description How the landing point was found: on the rim of a named crater (so it borders that crater's shadowed floor), on a massif or plateau, taken as published, or entered by a project manager for their own project.
              * @enum {string}
              */
             search_kind: "rim" | "massif" | "published" | "entered";
@@ -4204,6 +5724,27 @@ export interface components {
             /** Total */
             total: number;
             meta: components["schemas"]["Meta"];
+        };
+        /** SiteOption */
+        SiteOption: {
+            /** Value */
+            value: string;
+            /** Label */
+            label: string;
+            /**
+             * Hint
+             * @description A short second line.
+             */
+            hint?: string | null;
+            /** Lat Deg */
+            lat_deg: number;
+            /** Lon Deg */
+            lon_deg: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "candidate" | "mission_target";
         };
         /**
          * SiteSummary
@@ -4260,7 +5801,10 @@ export interface components {
         };
         /** Source */
         Source: {
-            /** Url */
+            /**
+             * Url
+             * @description Empty for `entered` and `file`: draw those as words, never as a link.
+             */
             url: string;
             /** Title */
             title: string;
@@ -4271,6 +5815,13 @@ export interface components {
              * Format: date
              */
             accessed: string;
+            /**
+             * Kind
+             * @description `published`: a page that states it. `entered`: typed by the named person. `file`: read from a file the named person provided.
+             * @default published
+             * @enum {string}
+             */
+            kind: "published" | "entered" | "file";
         };
         /**
          * SourceRef
@@ -4312,6 +5863,23 @@ export interface components {
             area_m2: number | null;
             /** Cr */
             cr: number | null;
+        };
+        /** StationFigures */
+        StationFigures: {
+            /** Id */
+            id: string;
+            /** Configuration */
+            configuration: string;
+            /** @description Published; `lo`/`hi` are the published tolerance. */
+            gain_dbi: components["schemas"]["QuantityOut"];
+            /** @description Published antenna-microwave noise, no atmosphere. */
+            t_amw_k: components["schemas"]["QuantityOut"];
+            zenith_clear_db: components["schemas"]["QuantityOut"];
+            zenith_adverse_db: components["schemas"]["QuantityOut"];
+            /** Module */
+            module: string;
+            /** Source Urls */
+            source_urls: string[];
         };
         /** StretchOut */
         StretchOut: {
@@ -4463,6 +6031,65 @@ export interface components {
             report_url: string | null;
             /** Date */
             date: string | null;
+        };
+        /**
+         * TimeQuantityOut
+         * @description A time as hours after the window start, with its UTC copies.
+         */
+        TimeQuantityOut: {
+            /** Value */
+            value: number | null;
+            /** Unit */
+            unit: string;
+            /**
+             * Provenance
+             * @enum {string}
+             */
+            provenance: "computed" | "published" | "entered" | "assumed";
+            /**
+             * Pm
+             * @description Symmetric margin, same unit.
+             */
+            pm?: number | null;
+            /**
+             * Lo
+             * @description Lower end of a range.
+             */
+            lo?: number | null;
+            /**
+             * Hi
+             * @description Upper end of a range.
+             */
+            hi?: number | null;
+            /**
+             * Factor
+             * @description Multiplicative margin: value / factor to value * factor.
+             */
+            factor?: number | null;
+            /**
+             * Open
+             * @description A lower bound: the dates cut it short.
+             * @default false
+             */
+            open: boolean;
+            /** No Margin Reason */
+            no_margin_reason?: string | null;
+            /**
+             * Missing Reason
+             * @description Why there is no value, when `value` is null.
+             */
+            missing_reason?: string | null;
+            /**
+             * Source
+             * @description Who entered it, or the URL it was published at.
+             */
+            source?: string | null;
+            /** Value Utc */
+            value_utc?: string | null;
+            /** Lo Utc */
+            lo_utc?: string | null;
+            /** Hi Utc */
+            hi_utc?: string | null;
         };
         /** TimelineResponse */
         TimelineResponse: {
@@ -4720,6 +6347,24 @@ export interface components {
              */
             radio: ("clear" | "blocked" | "uncertain")[][];
         };
+        /** WaypointIn */
+        WaypointIn: {
+            /**
+             * East M
+             * @description East of the site origin, metres.
+             */
+            east_m: number;
+            /**
+             * North M
+             * @description North of the site origin, metres.
+             */
+            north_m: number;
+            /**
+             * T S
+             * @description Seconds from the window start; the node sits here.
+             */
+            t_s: number;
+        };
         /**
          * Who
          * @description Who a session belongs to.
@@ -4766,6 +6411,19 @@ export interface components {
             /** Worst Compound S */
             worst_compound_s: number;
             meta: components["schemas"]["Meta"];
+        };
+        /** XY */
+        XY: {
+            /**
+             * East M
+             * @description East of the site origin, metres.
+             */
+            east_m: number;
+            /**
+             * North M
+             * @description North of the site origin, metres.
+             */
+            north_m: number;
         };
         /** Zone */
         Zone: {
@@ -5180,6 +6838,111 @@ export interface operations {
             };
         };
     };
+    post_energy_api_v1_sites__site_id__energy_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnergyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnergyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_dispersion_api_v1_sites__site_id__dispersion_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DispersionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DispersionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_mesh_api_v1_sites__site_id__mesh_simulate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeshRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeshResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_tile_api_v1_tiles__layer___z___x___y__png_get: {
         parameters: {
             query?: never;
@@ -5462,6 +7225,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AgentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chat_api_v1_agents_chat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatResponse"];
                 };
             };
             /** @description Validation Error */
@@ -6970,6 +8766,461 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    options_api_v1_projects_options_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectOptions"];
+                };
+            };
+        };
+    };
+    list_projects_api_v1_projects_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectList"];
+                };
+            };
+        };
+    };
+    create_api_v1_projects_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectSaved"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    intake_api_v1_projects_intake_post: {
+        parameters: {
+            query: {
+                /** @description The file's name. */
+                filename: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Intake"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_project_api_v1_projects__project_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project id, e.g. `p-athena-2`. */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MissionDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_api_v1_projects__project_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project id, e.g. `p-athena-2`. */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectSaved"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_api_v1_projects__project_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project id, e.g. `p-athena-2`. */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectDeleted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rebuild_skyline_api_v1_projects__project_id__skyline_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project id, e.g. `p-athena-2`. */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectSaved"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    gaps_api_v1_missions__mission_id__scenarios_gaps_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScenarioGapsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    interpret_api_v1_missions__mission_id__scenarios_interpret_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InterpretIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InterpretedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    listing_api_v1_missions__mission_id__scenarios_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScenarioListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_api_v1_missions__mission_id__scenarios_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mission_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScenarioIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScenarioOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    one_api_v1_scenarios__scenario_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scenario_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScenarioOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_api_v1_scenarios__scenario_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scenario_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScenarioDeletedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    activity_api_v1_activity_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityOut"];
                 };
             };
         };

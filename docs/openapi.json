@@ -986,6 +986,162 @@
         }
       }
     },
+    "/api/v1/sites/{site_id}/energy": {
+      "post": {
+        "tags": [
+          "energy"
+        ],
+        "summary": "Battery state of charge and bus temperature for a lander at a site",
+        "operationId": "post_energy_api_v1_sites__site_id__energy_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnergyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnergyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sites/{site_id}/dispersion": {
+      "post": {
+        "tags": [
+          "dispersion"
+        ],
+        "summary": "Slope and illumination across a landing ellipse at a site",
+        "operationId": "post_dispersion_api_v1_sites__site_id__dispersion_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DispersionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispersionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sites/{site_id}/mesh/simulate": {
+      "post": {
+        "tags": [
+          "mesh"
+        ],
+        "summary": "Simulate peer relaying to Earth between a site's landers and rovers",
+        "operationId": "post_mesh_api_v1_sites__site_id__mesh_simulate_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeshRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeshResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/tiles/{layer}/{z}/{x}/{y}.png": {
       "get": {
         "tags": [
@@ -1410,6 +1566,53 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/agents/chat": {
+      "post": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "A5 Ask: a quick answer",
+        "description": "Two to four sentences about the page the person is on, on the light models, with\nthe same guard and run log as the other agents. ``actions`` are links the app builds.",
+        "operationId": "chat_api_v1_agents_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
                 }
               }
             }
@@ -3874,6 +4077,660 @@
         }
       }
     },
+    "/api/v1/projects/options": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Choices for the project form",
+        "operationId": "options_api_v1_projects_options_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectOptions"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "The team's projects, newest first",
+        "operationId": "list_projects_api_v1_projects_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Save a new project",
+        "operationId": "create_api_v1_projects_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectSaved"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/projects/intake": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Read a file into the project form (the body is the file's bytes)",
+        "description": "The draft is not saved as a project: the form arrives filled, and Save saves it.",
+        "operationId": "intake_api_v1_projects_intake_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "filename",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255,
+              "description": "The file's name.",
+              "title": "Filename"
+            },
+            "description": "The file's name."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Intake"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "One project, as a mission",
+        "operationId": "get_project_api_v1_projects__project_id__get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 64,
+              "description": "Project id, e.g. `p-athena-2`.",
+              "title": "Project Id"
+            },
+            "description": "Project id, e.g. `p-athena-2`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MissionDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Change a project",
+        "operationId": "update_api_v1_projects__project_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 64,
+              "description": "Project id, e.g. `p-athena-2`.",
+              "title": "Project Id"
+            },
+            "description": "Project id, e.g. `p-athena-2`."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectSaved"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Delete a project (a published mission is refused)",
+        "operationId": "delete_api_v1_projects__project_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 64,
+              "description": "Project id, e.g. `p-athena-2`.",
+              "title": "Project Id"
+            },
+            "description": "Project id, e.g. `p-athena-2`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDeleted"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/skyline": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Build the target's skyline again (after a failed build)",
+        "operationId": "rebuild_skyline_api_v1_projects__project_id__skyline_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 64,
+              "description": "Project id, e.g. `p-athena-2`.",
+              "title": "Project Id"
+            },
+            "description": "Project id, e.g. `p-athena-2`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectSaved"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/missions/{mission_id}/scenarios/gaps": {
+      "get": {
+        "tags": [
+          "scenarios"
+        ],
+        "summary": "What a mission's record lacks for each step, the fields a scenario can set, presets",
+        "operationId": "gaps_api_v1_missions__mission_id__scenarios_gaps_get",
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioGapsOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/missions/{mission_id}/scenarios/interpret": {
+      "post": {
+        "tags": [
+          "scenarios"
+        ],
+        "summary": "Read plain words into assumptions (nothing is worked out or saved)",
+        "operationId": "interpret_api_v1_missions__mission_id__scenarios_interpret_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InterpretIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterpretedOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/missions/{mission_id}/scenarios": {
+      "post": {
+        "tags": [
+          "scenarios"
+        ],
+        "summary": "Start a scenario, or join the one with the same assumptions",
+        "operationId": "start_api_v1_missions__mission_id__scenarios_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenarioIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "scenarios"
+        ],
+        "summary": "A mission's scenarios, presets first, then newest",
+        "operationId": "listing_api_v1_missions__mission_id__scenarios_get",
+        "parameters": [
+          {
+            "name": "mission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mission Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioListOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/scenarios/{scenario_id}": {
+      "get": {
+        "tags": [
+          "scenarios"
+        ],
+        "summary": "A scenario: its progress, then its answer, always with its assumptions",
+        "operationId": "one_api_v1_scenarios__scenario_id__get",
+        "parameters": [
+          {
+            "name": "scenario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Scenario Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "scenarios"
+        ],
+        "summary": "Delete a scenario (never a preset)",
+        "operationId": "remove_api_v1_scenarios__scenario_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "scenario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Scenario Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioDeletedOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/activity": {
+      "get": {
+        "tags": [
+          "activity"
+        ],
+        "summary": "Jobs and scenarios being worked out, and those finished in the last 15 minutes",
+        "operationId": "activity_api_v1_activity_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/healthz": {
       "get": {
         "tags": [
@@ -3898,6 +4755,149 @@
   },
   "components": {
     "schemas": {
+      "ActivityItemOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "launch",
+              "trip",
+              "contact",
+              "rover",
+              "site_build",
+              "scenario"
+            ],
+            "title": "Kind"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "mission_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mission Id"
+          },
+          "mission_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mission Name"
+          },
+          "href": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Href"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "done",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "started_at": {
+            "type": "string",
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "kind",
+          "label",
+          "mission_id",
+          "mission_name",
+          "href",
+          "status",
+          "progress",
+          "message",
+          "started_at",
+          "finished_at"
+        ],
+        "title": "ActivityItemOut"
+      },
+      "ActivityOut": {
+        "properties": {
+          "active": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityItemOut"
+            },
+            "type": "array",
+            "title": "Active"
+          },
+          "recent": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityItemOut"
+            },
+            "type": "array",
+            "title": "Recent"
+          },
+          "poll_after_s": {
+            "type": "number",
+            "title": "Poll After S"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "active",
+          "recent",
+          "poll_after_s"
+        ],
+        "title": "ActivityOut"
+      },
       "Adopted": {
         "properties": {
           "adopted": {
@@ -4465,6 +5465,43 @@
         ],
         "title": "AskRequest"
       },
+      "AssumedValueIn": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "field"
+        ],
+        "title": "AssumedValueIn"
+      },
       "Assumption": {
         "properties": {
           "what": {
@@ -4505,6 +5542,248 @@
           "value"
         ],
         "title": "Assumption"
+      },
+      "AssumptionFieldOut": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "help": {
+            "type": "string",
+            "title": "Help"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "choice",
+              "multi_choice",
+              "date",
+              "number"
+            ],
+            "title": "Kind"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "options": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/OptionOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Options"
+          },
+          "min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min"
+          },
+          "max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max"
+          },
+          "default": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssumptionOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sections": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "launch",
+                "trip",
+                "landing",
+                "contact",
+                "return"
+              ]
+            },
+            "type": "array",
+            "title": "Sections"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "field",
+          "label",
+          "help",
+          "kind",
+          "unit",
+          "options",
+          "min",
+          "max",
+          "default",
+          "sections"
+        ],
+        "title": "AssumptionFieldOut"
+      },
+      "AssumptionOut": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "display": {
+            "type": "string",
+            "title": "Display"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "basis": {
+            "type": "string",
+            "enum": [
+              "you",
+              "published",
+              "live",
+              "default"
+            ],
+            "title": "Basis"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssumptionSourceOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "field",
+          "label",
+          "value",
+          "display",
+          "unit",
+          "basis",
+          "source",
+          "note"
+        ],
+        "title": "AssumptionOut"
+      },
+      "AssumptionSourceOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "fetched_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetched At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "AssumptionSourceOut"
       },
       "Attempt": {
         "properties": {
@@ -4662,6 +5941,61 @@
           "worst_compound_open"
         ],
         "title": "Autonomy"
+      },
+      "Band": {
+        "properties": {
+          "lo": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Lo"
+          },
+          "value": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Value"
+          },
+          "hi": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Hi",
+            "description": "Entries are null when the warm end of the ground range is unknown."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "lo",
+          "value",
+          "hi"
+        ],
+        "title": "Band"
       },
       "BodyTimeline": {
         "properties": {
@@ -5352,6 +6686,320 @@
         "title": "CapsuleModelCheck",
         "description": "The capsule entry model (3-DOF, through an empirical model of the entry day's air)\nflown from OSIRIS-REx's reconstructed entry state, against where its capsule landed."
       },
+      "ChatAction": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "href": {
+            "type": "string",
+            "title": "Href",
+            "description": "An in-app path, e.g. \"/missions/im-3/launch\"."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "label",
+          "href"
+        ],
+        "title": "ChatAction"
+      },
+      "ChatContext": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Path"
+          },
+          "mission_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mission Id"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ready",
+                  "launch",
+                  "trip",
+                  "landing",
+                  "contact",
+                  "return"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
+          },
+          "scenario_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scenario Id"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start",
+            "description": "ISO 8601 UTC."
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End",
+            "description": "ISO 8601 UTC."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "path"
+        ],
+        "title": "ChatContext",
+        "description": "Where the person is, so \"this mission\" and \"these dates\" mean something."
+      },
+      "ChatMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "role",
+          "text"
+        ],
+        "title": "ChatMessage"
+      },
+      "ChatRequest": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "type": "array",
+            "maxItems": 12,
+            "minItems": 1,
+            "title": "Messages",
+            "description": "The conversation so far, oldest first; the last one is the question."
+          },
+          "context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "messages"
+        ],
+        "title": "ChatRequest"
+      },
+      "ChatResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "insufficient_data",
+              "degraded"
+            ],
+            "title": "Status"
+          },
+          "run_status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "insufficient_data",
+              "guard_rejected",
+              "timeout",
+              "degraded",
+              "error"
+            ],
+            "title": "Run Status",
+            "description": "Why this answer is what it is, exactly as recorded in the run log. `status` folds the last four into `degraded`; this keeps them apart."
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "provenance": {
+            "items": {
+              "$ref": "#/components/schemas/ProvenanceItem"
+            },
+            "type": "array",
+            "title": "Provenance"
+          },
+          "tool_calls": {
+            "items": {
+              "$ref": "#/components/schemas/ToolCallView"
+            },
+            "type": "array",
+            "title": "Tool Calls"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts",
+            "default": 1
+          },
+          "latency_ms": {
+            "type": "number",
+            "title": "Latency Ms",
+            "default": 0.0
+          },
+          "guard_failures": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Guard Failures",
+            "description": "Guards that fired, including ones a retry then fixed. Kept so the guard can be shown working rather than asserted to exist."
+          },
+          "meta": {
+            "$ref": "#/components/schemas/AgentMeta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "run_status",
+          "meta"
+        ],
+        "title": "ChatResponse",
+        "description": "The shared agent envelope with a chat answer as its result."
+      },
+      "ChatResult": {
+        "properties": {
+          "answer": {
+            "type": "string",
+            "title": "Answer"
+          },
+          "interpreted_as": {
+            "type": "string",
+            "title": "Interpreted As"
+          },
+          "follow_ups": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 3,
+            "title": "Follow Ups"
+          },
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/ChatAction"
+            },
+            "type": "array",
+            "maxItems": 3,
+            "title": "Actions",
+            "description": "Built from the tools called and the page, never by the model."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "answer",
+          "interpreted_as",
+          "follow_ups",
+          "actions"
+        ],
+        "title": "ChatResult",
+        "description": "``result`` of a chat answer. Every number traces to ``provenance``."
+      },
       "Cleared": {
         "properties": {
           "what": {
@@ -5517,6 +7165,58 @@
             },
             "type": "array",
             "title": "Relays"
+          },
+          "frequency_mhz": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frequency Mhz"
+          },
+          "data_rates_kbps": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Data Rates Kbps",
+            "default": []
+          },
+          "required_ebn0_db": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required Ebn0 Db"
+          },
+          "required_margin_db": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required Margin Db"
+          },
+          "eirp_tol_db": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eirp Tol Db"
           }
         },
         "additionalProperties": false,
@@ -5952,7 +7652,19 @@
                 "type": "null"
               }
             ],
-            "title": "Link Budget Note"
+            "title": "Link Budget Note",
+            "description": "What the budget ran on, or why there is none (starts 'Line of sight only')."
+          },
+          "link_budget": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LinkBudget"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The figures the downlink budget ran on, each with provenance. Null when the mission states too little (then the answer is line of sight only)."
           },
           "bookings": {
             "items": {
@@ -6264,6 +7976,110 @@
         ],
         "title": "DirectOnly"
       },
+      "DispersionRequest": {
+        "properties": {
+          "ellipse": {
+            "$ref": "#/components/schemas/EllipseIn"
+          },
+          "lander": {
+            "$ref": "#/components/schemas/LanderFiguresIn"
+          },
+          "samples": {
+            "type": "integer",
+            "maximum": 2000.0,
+            "minimum": 50.0,
+            "title": "Samples",
+            "description": "Landing points drawn.",
+            "default": 1000
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ellipse",
+          "lander"
+        ],
+        "title": "DispersionRequest"
+      },
+      "DispersionResponse": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "inputs": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Inputs"
+          },
+          "slope_source": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Slope Source"
+          },
+          "slope": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Slope"
+          },
+          "tip_over": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Tip Over"
+          },
+          "shares": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Shares"
+          },
+          "illumination": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Illumination"
+          },
+          "heatmap": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Heatmap"
+          },
+          "sources": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "not_modelled": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Not Modelled"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "inputs",
+          "slope_source",
+          "slope",
+          "tip_over",
+          "shares",
+          "illumination",
+          "heatmap",
+          "sources",
+          "not_modelled",
+          "meta"
+        ],
+        "title": "DispersionResponse"
+      },
       "Donki": {
         "properties": {
           "cme": {
@@ -6374,6 +8190,282 @@
           "sep"
         ],
         "title": "DonkiCounts"
+      },
+      "EllipseIn": {
+        "properties": {
+          "semi_major_m": {
+            "type": "number",
+            "maximum": 20000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Semi Major M",
+            "description": "3-sigma semi-major axis, metres."
+          },
+          "semi_minor_m": {
+            "type": "number",
+            "maximum": 20000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Semi Minor M",
+            "description": "3-sigma semi-minor axis, metres."
+          },
+          "azimuth_deg": {
+            "type": "number",
+            "maximum": 360.0,
+            "minimum": -360.0,
+            "title": "Azimuth Deg",
+            "description": "Bearing of the major axis from true north, clockwise."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "semi_major_m",
+          "semi_minor_m",
+          "azimuth_deg"
+        ],
+        "title": "EllipseIn"
+      },
+      "EnergyKey": {
+        "properties": {
+          "energy_generated": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "lowest_soc": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "battery_empty_at": {
+            "$ref": "#/components/schemas/TimeQuantityOut"
+          },
+          "lowest_bus_temperature": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "hours_below_operational": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "survival_threshold_crossed_at": {
+            "$ref": "#/components/schemas/TimeQuantityOut"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "energy_generated",
+          "lowest_soc",
+          "battery_empty_at",
+          "lowest_bus_temperature",
+          "hours_below_operational",
+          "survival_threshold_crossed_at"
+        ],
+        "title": "EnergyKey"
+      },
+      "EnergyRequest": {
+        "properties": {
+          "start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "step_s": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 86400.0,
+                "minimum": 60.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step S"
+          },
+          "lander": {
+            "$ref": "#/components/schemas/LanderIn"
+          },
+          "lander_example_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lander Example Id",
+            "description": "Fill figures not given in `lander` from a catalogue example, each keeping its own provenance."
+          },
+          "ground_radius_m": {
+            "type": "number",
+            "maximum": 20000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Ground Radius M",
+            "description": "Diviner triangles within this distance of the site set the ground temperatures; their spread is the uncertainty.",
+            "default": 1000.0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "lander"
+        ],
+        "title": "EnergyRequest"
+      },
+      "EnergyResponse": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "step_s": {
+            "type": "integer",
+            "title": "Step S"
+          },
+          "inputs": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Inputs",
+            "description": "Every lander figure echoed with its provenance (entered, published, assumed)."
+          },
+          "model": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Model"
+          },
+          "ground": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Ground"
+          },
+          "series": {
+            "$ref": "#/components/schemas/EnergySeries"
+          },
+          "key": {
+            "$ref": "#/components/schemas/EnergyKey"
+          },
+          "not_modelled": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Not Modelled"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "start",
+          "end",
+          "step_s",
+          "inputs",
+          "model",
+          "ground",
+          "series",
+          "key",
+          "not_modelled",
+          "meta"
+        ],
+        "title": "EnergyResponse"
+      },
+      "EnergySeries": {
+        "properties": {
+          "t_s": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "T S",
+            "description": "Seconds from the window start."
+          },
+          "t_utc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "T Utc"
+          },
+          "p_gen_w": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "P Gen W"
+          },
+          "lit": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Lit",
+            "description": "1 while the Sun's centre is above the skyline."
+          },
+          "soc_wh": {
+            "$ref": "#/components/schemas/Band"
+          },
+          "t_bus_c": {
+            "$ref": "#/components/schemas/Band"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "t_s",
+          "t_utc",
+          "p_gen_w",
+          "lit",
+          "soc_wh",
+          "t_bus_c"
+        ],
+        "title": "EnergySeries"
       },
       "ExplainRequest": {
         "properties": {
@@ -6607,6 +8699,50 @@
         ],
         "title": "FeedsOut"
       },
+      "FigureIn": {
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Value"
+          },
+          "provenance": {
+            "type": "string",
+            "enum": [
+              "entered",
+              "published",
+              "assumed"
+            ],
+            "title": "Provenance",
+            "default": "entered"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source",
+            "description": "Required for published (the URL) and assumed (how it was derived)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "title": "FigureIn",
+        "description": "A figure with its provenance. A bare number means 'entered by the caller'."
+      },
       "Flare": {
         "properties": {
           "id": {
@@ -6656,6 +8792,91 @@
           "link"
         ],
         "title": "Flare"
+      },
+      "GapOut": {
+        "properties": {
+          "section": {
+            "type": "string",
+            "enum": [
+              "launch",
+              "trip",
+              "landing",
+              "contact",
+              "return"
+            ],
+            "title": "Section"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "available",
+              "computing",
+              "no_data",
+              "needs_input",
+              "not_applicable"
+            ],
+            "title": "State"
+          },
+          "missing": {
+            "items": {
+              "$ref": "#/components/schemas/MissingOut"
+            },
+            "type": "array",
+            "title": "Missing"
+          },
+          "can_explore": {
+            "type": "boolean",
+            "title": "Can Explore"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "section",
+          "state",
+          "missing",
+          "can_explore"
+        ],
+        "title": "GapOut"
+      },
+      "GuardIn": {
+        "properties": {
+          "soc_cutoff_fraction": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Soc Cutoff Fraction",
+            "description": "A helper stops below this charge."
+          },
+          "quota_share_per_lunar_day": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Quota Share Per Lunar Day",
+            "description": "Share of a helper's battery it may spend forwarding per day."
+          },
+          "max_forwarding_power_w": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Max Forwarding Power W",
+            "description": "Cap on a helper's forwarding power."
+          },
+          "buffer_bytes": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Buffer Bytes",
+            "description": "A helper's buffer for waiting peer data."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "soc_cutoff_fraction",
+          "quota_share_per_lunar_day",
+          "max_forwarding_power_w",
+          "buffer_bytes"
+        ],
+        "title": "GuardIn"
       },
       "HTTPValidationError": {
         "properties": {
@@ -6913,6 +9134,224 @@
         ],
         "title": "ImpactItem"
       },
+      "Intake": {
+        "properties": {
+          "intake_id": {
+            "type": "integer",
+            "title": "Intake Id"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "media_type": {
+            "type": "string",
+            "title": "Media Type"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "model",
+              "rules"
+            ],
+            "title": "Method"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "draft": {
+            "$ref": "#/components/schemas/ProjectDraft"
+          },
+          "fields": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/IntakeField"
+            },
+            "type": "object",
+            "title": "Fields"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "characters_read": {
+            "type": "integer",
+            "title": "Characters Read"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "intake_id",
+          "filename",
+          "media_type",
+          "size_bytes",
+          "method",
+          "model",
+          "draft",
+          "fields",
+          "warnings",
+          "characters_read"
+        ],
+        "title": "Intake",
+        "description": "POST /projects/intake: the form filled with what the file says, and where."
+      },
+      "IntakeField": {
+        "properties": {
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "stated",
+              "inferred",
+              "not_found"
+            ],
+            "title": "Confidence"
+          },
+          "evidence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence",
+            "description": "The words in the file, at most ~240 characters."
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page",
+            "description": "1-based page (PDF) or line (text), when known."
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "confidence",
+          "evidence",
+          "page",
+          "note"
+        ],
+        "title": "IntakeField"
+      },
+      "InterpretIn": {
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Prompt"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "launch",
+                  "trip",
+                  "landing",
+                  "contact",
+                  "return"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "prompt"
+        ],
+        "title": "InterpretIn"
+      },
+      "InterpretedOut": {
+        "properties": {
+          "assumptions": {
+            "items": {
+              "$ref": "#/components/schemas/AssumptionOut"
+            },
+            "type": "array",
+            "title": "Assumptions"
+          },
+          "interpreted_as": {
+            "type": "string",
+            "title": "Interpreted As"
+          },
+          "unresolved": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unresolved"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "model",
+              "rules"
+            ],
+            "title": "Method"
+          },
+          "matches_preset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matches Preset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "assumptions",
+          "interpreted_as",
+          "unresolved",
+          "method",
+          "matches_preset"
+        ],
+        "title": "InterpretedOut"
+      },
       "ItemCreateIn": {
         "properties": {
           "kind": {
@@ -7144,6 +9583,437 @@
           "lon_deg"
         ],
         "title": "LanderAt"
+      },
+      "LanderFiguresIn": {
+        "properties": {
+          "footprint_diameter_m": {
+            "type": "number",
+            "maximum": 100.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Footprint Diameter M",
+            "description": "Diameter of the footpad circle."
+          },
+          "cg_height_m": {
+            "type": "number",
+            "maximum": 100.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Cg Height M",
+            "description": "Centre-of-gravity height above ground."
+          },
+          "slope_limit_deg": {
+            "type": "number",
+            "exclusiveMaximum": 90.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Slope Limit Deg",
+            "description": "The lander's entered slope limit."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "footprint_diameter_m",
+          "cg_height_m",
+          "slope_limit_deg"
+        ],
+        "title": "LanderFiguresIn"
+      },
+      "LanderIn": {
+        "properties": {
+          "array_geometry": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "vertical_faces",
+                  "top_deck_flat",
+                  "sun_tracking"
+                ]
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Array Geometry"
+          },
+          "array_area_m2": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Array Area M2",
+            "description": "One face's area for vertical_faces; the whole array otherwise."
+          },
+          "face_count": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Face Count",
+            "description": "vertical_faces only; at least 3."
+          },
+          "face_azimuth_offset_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Face Azimuth Offset Deg",
+            "description": "vertical_faces only: bearing of face 0; the rest are evenly spaced."
+          },
+          "cell_efficiency": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cell Efficiency"
+          },
+          "dust_loss_fraction": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dust Loss Fraction"
+          },
+          "battery_capacity_wh": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Battery Capacity Wh"
+          },
+          "initial_soc_fraction": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initial Soc Fraction"
+          },
+          "avionics_w": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avionics W"
+          },
+          "payload_w": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payload W"
+          },
+          "load_dissipation_fraction": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Load Dissipation Fraction",
+            "description": "Share of avionics and payload power that heats the bus."
+          },
+          "heater_power_w": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heater Power W"
+          },
+          "heater_setpoint_c": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heater Setpoint C"
+          },
+          "initial_bus_temp_c": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initial Bus Temp C"
+          },
+          "operational_min_c": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operational Min C"
+          },
+          "survival_min_c": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Survival Min C"
+          },
+          "bus_absorptivity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bus Absorptivity"
+          },
+          "bus_side_area_m2": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bus Side Area M2",
+            "description": "Area the Sun sees from the horizon (vertical sides)."
+          },
+          "bus_top_area_m2": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bus Top Area M2",
+            "description": "Area the Sun sees from overhead."
+          },
+          "bus_emissivity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bus Emissivity"
+          },
+          "regolith_emissivity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Regolith Emissivity"
+          },
+          "regolith_absorptivity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Regolith Absorptivity"
+          },
+          "view_factor": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "View Factor",
+            "description": "Lander to regolith."
+          },
+          "base_area_m2": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Area M2"
+          },
+          "radiator_emissivity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Radiator Emissivity"
+          },
+          "radiator_area_m2": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Radiator Area M2"
+          },
+          "heat_capacity_j_per_k": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "$ref": "#/components/schemas/FigureIn"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heat Capacity J Per K"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "LanderIn",
+        "description": "Every lander figure is an input; there are no defaults. A missing required\nfigure is a 422 naming the field. Temperatures are in degrees Celsius."
       },
       "LandingHistory": {
         "properties": {
@@ -7678,7 +10548,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "With a link budget: the highest achievable rate at the peak of the best pass of this link. Null otherwise."
           },
           "margin_db": {
             "anyOf": [
@@ -7688,7 +10559,23 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "With a link budget and a stated rate: the margin at the first stated rate at the peak of that best pass. Null otherwise."
+          },
+          "passes": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PassBudget"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passes",
+            "description": "With a link budget: one entry per stretch, in the same order. Null when no budget ran for this station (figures missing)."
           }
         },
         "additionalProperties": false,
@@ -7701,6 +10588,231 @@
           "margin_db"
         ],
         "title": "Link"
+      },
+      "LinkBudget": {
+        "properties": {
+          "method": {
+            "type": "string",
+            "title": "Method"
+          },
+          "band": {
+            "type": "string",
+            "title": "Band"
+          },
+          "frequency_mhz": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "eirp_dbw": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "required_ebn0_db": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "required_margin_db": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "stated_rates_kbps": {
+            "items": {
+              "$ref": "#/components/schemas/QuantityOut"
+            },
+            "type": "array",
+            "title": "Stated Rates Kbps"
+          },
+          "stations": {
+            "items": {
+              "$ref": "#/components/schemas/StationFigures"
+            },
+            "type": "array",
+            "title": "Stations"
+          },
+          "stations_without_figures": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Stations Without Figures",
+            "description": "Stations with no published X-band figures: no budget is given there."
+          },
+          "not_modelled": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Not Modelled"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "method",
+          "band",
+          "frequency_mhz",
+          "eirp_dbw",
+          "required_ebn0_db",
+          "required_margin_db",
+          "stated_rates_kbps",
+          "stations",
+          "stations_without_figures",
+          "not_modelled"
+        ],
+        "title": "LinkBudget"
+      },
+      "MeshRequest": {
+        "properties": {
+          "start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "step_s": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 86400.0,
+                "minimum": 60.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step S"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/NodeIn"
+            },
+            "type": "array",
+            "maxItems": 6,
+            "minItems": 1,
+            "title": "Nodes"
+          },
+          "radio": {
+            "$ref": "#/components/schemas/RadioIn"
+          },
+          "guard": {
+            "$ref": "#/components/schemas/GuardIn"
+          },
+          "loss_threshold_s": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Loss Threshold S",
+            "description": "A direct-link loss longer than this wakes the radio."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "nodes",
+          "radio",
+          "guard",
+          "loss_threshold_s"
+        ],
+        "title": "MeshRequest"
+      },
+      "MeshResponse": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "start": {
+            "type": "string",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "title": "End"
+          },
+          "step_s": {
+            "type": "integer",
+            "title": "Step S"
+          },
+          "inputs": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Inputs"
+          },
+          "nodes": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Nodes"
+          },
+          "links": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Links"
+          },
+          "helpers": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Helpers"
+          },
+          "terrain": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Terrain"
+          },
+          "timing_ms": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Timing Ms"
+          },
+          "not_modelled": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Not Modelled"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "start",
+          "end",
+          "step_s",
+          "inputs",
+          "nodes",
+          "links",
+          "helpers",
+          "terrain",
+          "timing_ms",
+          "not_modelled",
+          "meta"
+        ],
+        "title": "MeshResponse"
       },
       "Meta": {
         "properties": {
@@ -7949,6 +11061,30 @@
         ],
         "title": "Milestone"
       },
+      "MissingOut": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "why": {
+            "type": "string",
+            "title": "Why"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "field",
+          "label",
+          "why"
+        ],
+        "title": "MissingOut"
+      },
       "MissionBrief": {
         "properties": {
           "id": {
@@ -8149,6 +11285,28 @@
           "data_version": {
             "type": "string",
             "title": "Data Version"
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "catalogue",
+              "project"
+            ],
+            "title": "Origin",
+            "description": "`catalogue`: a CLPS record compiled from published sources. `project`: entered by the team.",
+            "default": "catalogue"
+          },
+          "owner_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Name",
+            "description": "Who entered a project; null for a catalogue record."
           }
         },
         "additionalProperties": false,
@@ -8377,6 +11535,28 @@
           "data_version": {
             "type": "string",
             "title": "Data Version"
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "catalogue",
+              "project"
+            ],
+            "title": "Origin",
+            "description": "`catalogue`: a CLPS record compiled from published sources. `project`: entered by the team.",
+            "default": "catalogue"
+          },
+          "owner_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Name",
+            "description": "Who entered a project; null for a catalogue record."
           },
           "outcome_note": {
             "type": "string",
@@ -8963,6 +12143,121 @@
         ],
         "title": "Node"
       },
+      "NodeIn": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.-]+$",
+            "title": "Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/XY"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A fixed node (lander or parked rover)."
+          },
+          "waypoints": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/WaypointIn"
+                },
+                "type": "array",
+                "maxItems": 8
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Waypoints",
+            "description": "Positions by time, instead of position."
+          },
+          "antenna_height_m": {
+            "type": "number",
+            "maximum": 50.0,
+            "minimum": 0.0,
+            "title": "Antenna Height M"
+          },
+          "battery_capacity_wh": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Battery Capacity Wh"
+          },
+          "initial_soc_fraction": {
+            "type": "number",
+            "maximum": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Initial Soc Fraction"
+          },
+          "own_traffic_bps": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Own Traffic Bps",
+            "description": "The node's own traffic, served first."
+          },
+          "may_help": {
+            "type": "boolean",
+            "title": "May Help",
+            "description": "Whether this node may forward for others."
+          },
+          "earth_uplink_bps": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Earth Uplink Bps",
+            "description": "Optional: this node's direct Earth rate, if an exit."
+          },
+          "earth_uplink_power_w": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Earth Uplink Power W",
+            "description": "Optional: DC power drawn while uplinking to Earth."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "antenna_height_m",
+          "battery_capacity_wh",
+          "initial_soc_fraction",
+          "own_traffic_bps",
+          "may_help"
+        ],
+        "title": "NodeIn"
+      },
       "Now": {
         "properties": {
           "kp": {
@@ -9369,6 +12664,67 @@
           "coast_min"
         ],
         "title": "Opportunity"
+      },
+      "Option": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hint",
+            "description": "A short second line."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value",
+          "label"
+        ],
+        "title": "Option"
+      },
+      "OptionOut": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hint"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value",
+          "label"
+        ],
+        "title": "OptionOut"
       },
       "Orbiter": {
         "properties": {
@@ -10178,6 +13534,79 @@
         ],
         "title": "PartsSummary"
       },
+      "PassBudget": {
+        "properties": {
+          "edge": {
+            "$ref": "#/components/schemas/PassPoint"
+          },
+          "peak": {
+            "$ref": "#/components/schemas/PassPoint"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "edge",
+          "peak"
+        ],
+        "title": "PassBudget"
+      },
+      "PassPoint": {
+        "properties": {
+          "at": {
+            "type": "string",
+            "enum": [
+              "edge",
+              "peak"
+            ],
+            "title": "At",
+            "description": "`edge`: the weaker end of the pass (where the lander is lowest in the station's sky). `peak`: the sample of highest elevation."
+          },
+          "elevation_deg": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "range_km": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "path_loss_db": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Free-space path loss."
+          },
+          "atmosphere_db": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Atmospheric attenuation on the slant path; `lo` clear sky, `hi` the 99 % weather point (810-005 module 105)."
+          },
+          "g_over_t_dbk": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "The station's G/T at this elevation."
+          },
+          "max_rate_kbps": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "The highest data rate that keeps the stated margin over the required Eb/N0, with the uncertainty from weather and tolerances as `lo` and `hi`."
+          },
+          "margins": {
+            "items": {
+              "$ref": "#/components/schemas/RateMargin"
+            },
+            "type": "array",
+            "title": "Margins",
+            "description": "Link margin at each rate the mission states. Empty when none is stated."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "at",
+          "elevation_deg",
+          "range_km",
+          "path_loss_db",
+          "atmosphere_db",
+          "g_over_t_dbk",
+          "max_rate_kbps",
+          "margins"
+        ],
+        "title": "PassPoint"
+      },
       "Payload": {
         "properties": {
           "id": {
@@ -10258,6 +13687,961 @@
           "unconfirmed"
         ],
         "title": "Payload"
+      },
+      "PhaseOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "active",
+              "done",
+              "skipped",
+              "failed"
+            ],
+            "title": "State"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "state",
+          "detail"
+        ],
+        "title": "PhaseOut"
+      },
+      "ProjectDateIn": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 4,
+            "title": "Date",
+            "description": "ISO date or datetime (UTC): '2027', '2027-03', '2027-03-14' or '2027-03-14T10:30Z'."
+          },
+          "precision": {
+            "type": "string",
+            "enum": [
+              "second",
+              "minute",
+              "day",
+              "month",
+              "quarter",
+              "year"
+            ],
+            "title": "Precision"
+          },
+          "as_published": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Published"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "date",
+          "precision"
+        ],
+        "title": "ProjectDateIn",
+        "description": "A date as the team knows it. ``as_published`` is written by the server when omitted."
+      },
+      "ProjectDeleted": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "deleted": {
+            "type": "boolean",
+            "const": true,
+            "title": "Deleted"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "deleted"
+        ],
+        "title": "ProjectDeleted"
+      },
+      "ProjectDraft": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 160,
+            "title": "Name",
+            "default": ""
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "lander": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lander"
+          },
+          "vehicle_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vehicle Name",
+            "description": "The spacecraft's own name ('Athena')."
+          },
+          "task_order": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Order"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "planned",
+              "in_transit",
+              "operating",
+              "completed"
+            ],
+            "title": "Status",
+            "default": "planned"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectTargetIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "launch": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectDateIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "landing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectDateIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "end_of_mission": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectDateIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "planned_surface_days": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 3650.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Surface Days"
+          },
+          "lifecycle": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectLifecycleIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payloads": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectPayloadIn"
+            },
+            "type": "array",
+            "maxItems": 60,
+            "title": "Payloads"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Notes"
+          },
+          "intake_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intake Id",
+            "description": "The file reading this form was filled from, so each field keeps its evidence."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ProjectDraft",
+        "description": "The form as read from a file: ``name`` is empty when the file did not say it."
+      },
+      "ProjectIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "lander": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lander"
+          },
+          "vehicle_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vehicle Name",
+            "description": "The spacecraft's own name ('Athena')."
+          },
+          "task_order": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Order"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "planned",
+              "in_transit",
+              "operating",
+              "completed"
+            ],
+            "title": "Status",
+            "default": "planned"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectTargetIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "launch": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectDateIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "landing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectDateIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "end_of_mission": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectDateIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "planned_surface_days": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 3650.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Surface Days"
+          },
+          "lifecycle": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectLifecycleIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payloads": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectPayloadIn"
+            },
+            "type": "array",
+            "maxItems": 60,
+            "title": "Payloads"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Notes"
+          },
+          "intake_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intake Id",
+            "description": "The file reading this form was filled from, so each field keeps its evidence."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ProjectIn",
+        "description": "The project form. Only ``name`` is required; everything else may be left unknown."
+      },
+      "ProjectLifecycleIn": {
+        "properties": {
+          "vehicle_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vehicle Id"
+          },
+          "pad_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pad Id"
+          },
+          "transfer_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "direct",
+                  "phasing_loops",
+                  "low_energy",
+                  "unknown"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transfer Type"
+          },
+          "flight_days": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flight Days"
+          },
+          "lunar_orbit_days": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1000.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lunar Orbit Days"
+          },
+          "sun_el_min_deg": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 90.0,
+                "minimum": -5.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sun El Min Deg"
+          },
+          "sun_el_max_deg": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 90.0,
+                "minimum": -5.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sun El Max Deg"
+          },
+          "bands": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "title": "Bands"
+          },
+          "ground_stations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 40,
+            "title": "Ground Stations"
+          },
+          "relays": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 12,
+            "title": "Relays"
+          },
+          "mass_kg": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1000000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mass Kg"
+          },
+          "returns": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "sample_capsule",
+                  "crew"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Returns"
+          },
+          "eirp_dbw": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": -20.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eirp Dbw",
+            "description": "The lander's transmit EIRP, dBW. Stating it turns the link budget on."
+          },
+          "eirp_tol_db": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 30.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eirp Tol Db",
+            "description": "The stated tolerance on the EIRP, dB."
+          },
+          "gt_dbk": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 80.0,
+                "minimum": -60.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gt Dbk",
+            "description": "The lander's receive G/T, dB/K."
+          },
+          "frequency_mhz": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 300000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frequency Mhz",
+            "description": "The downlink carrier frequency, MHz."
+          },
+          "data_rates_kbps": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Data Rates Kbps",
+            "description": "The downlink data rates on offer, kbit/s (each above 0, at most 1e7)."
+          },
+          "required_ebn0_db": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 40.0,
+                "minimum": -10.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required Ebn0 Db",
+            "description": "The Eb/N0 the coding needs for its target error rate, dB."
+          },
+          "required_margin_db": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 30.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required Margin Db",
+            "description": "The margin required over Eb/N0, dB."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ProjectLifecycleIn"
+      },
+      "ProjectList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MissionBrief"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "ProjectList",
+        "description": "GET /projects: the team's own projects, newest first."
+      },
+      "ProjectOptions": {
+        "properties": {
+          "vehicles": {
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            },
+            "type": "array",
+            "title": "Vehicles"
+          },
+          "pads": {
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            },
+            "type": "array",
+            "title": "Pads"
+          },
+          "sites": {
+            "items": {
+              "$ref": "#/components/schemas/SiteOption"
+            },
+            "type": "array",
+            "title": "Sites",
+            "description": "Existing sites, candidates first."
+          },
+          "providers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Providers"
+          },
+          "landers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Landers"
+          },
+          "instrument_types": {
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            },
+            "type": "array",
+            "title": "Instrument Types"
+          },
+          "relays": {
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            },
+            "type": "array",
+            "title": "Relays"
+          },
+          "max_upload_bytes": {
+            "type": "integer",
+            "title": "Max Upload Bytes"
+          },
+          "accepted_extensions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Accepted Extensions"
+          },
+          "model_reading": {
+            "type": "boolean",
+            "title": "Model Reading",
+            "description": "False with no model key: files are read by rules (dates, names, coordinates) only."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "vehicles",
+          "pads",
+          "sites",
+          "providers",
+          "landers",
+          "instrument_types",
+          "relays",
+          "max_upload_bytes",
+          "accepted_extensions",
+          "model_reading"
+        ],
+        "title": "ProjectOptions",
+        "description": "GET /projects/options: every choice the form offers, from the catalogues."
+      },
+      "ProjectPayloadIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "acronym": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acronym"
+          },
+          "organisation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organisation"
+          },
+          "instrument_types": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "volatiles",
+                "geology_geophysics",
+                "heat_flow",
+                "radiation_space_weather",
+                "exosphere_dust",
+                "imaging",
+                "landing_navigation",
+                "communications",
+                "laser_retroreflector",
+                "rover_mobility",
+                "technology_demo",
+                "other"
+              ]
+            },
+            "type": "array",
+            "maxItems": 12,
+            "title": "Instrument Types"
+          },
+          "purpose": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purpose"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ProjectPayloadIn"
+      },
+      "ProjectSaved": {
+        "properties": {
+          "mission": {
+            "$ref": "#/components/schemas/MissionDetail"
+          },
+          "site_job": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobRefOut"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set when the target is a new coordinate: its skyline is being built (job kind `site_build`). Until it is done, Surface and Contact say so."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mission",
+          "site_job"
+        ],
+        "title": "ProjectSaved",
+        "description": "POST /projects (201) and PUT /projects/{id} (200)."
+      },
+      "ProjectTargetIn": {
+        "properties": {
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "lat_deg": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 90.0,
+                "minimum": -90.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lat Deg"
+          },
+          "lon_deg": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMaximum": 360.0,
+                "minimum": -180.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lon Deg",
+            "description": "Degrees east, 0-360 (-180..180 is accepted and normalised)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ProjectTargetIn",
+        "description": "Exactly one of ``site_id`` or the coordinate (``lat_deg`` and ``lon_deg``)."
       },
       "Provenance": {
         "properties": {
@@ -10598,6 +14982,82 @@
         ],
         "title": "Radiation"
       },
+      "RadioIn": {
+        "properties": {
+          "frequency_hz": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Frequency Hz"
+          },
+          "tx_power_w": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Tx Power W",
+            "description": "A node's own transmit power (RF)."
+          },
+          "forwarding_tx_power_w": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Forwarding Tx Power W",
+            "description": "A helper's transmit power (RF)."
+          },
+          "tx_efficiency": {
+            "type": "number",
+            "maximum": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Tx Efficiency",
+            "description": "RF output over DC input."
+          },
+          "antenna_gain_dbi": {
+            "type": "number",
+            "title": "Antenna Gain Dbi",
+            "description": "At each end."
+          },
+          "bandwidth_hz": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Bandwidth Hz"
+          },
+          "noise_figure_db": {
+            "type": "number",
+            "title": "Noise Figure Db"
+          },
+          "snr_threshold_db": {
+            "type": "number",
+            "title": "Snr Threshold Db",
+            "description": "The link closes at or above this SNR."
+          },
+          "eps_r": {
+            "type": "number",
+            "minimum": 1.0,
+            "title": "Eps R",
+            "description": "Relative permittivity of the regolith."
+          },
+          "polarisation": {
+            "type": "string",
+            "enum": [
+              "horizontal",
+              "vertical"
+            ],
+            "title": "Polarisation"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "frequency_hz",
+          "tx_power_w",
+          "forwarding_tx_power_w",
+          "tx_efficiency",
+          "antenna_gain_dbi",
+          "bandwidth_hz",
+          "noise_figure_db",
+          "snr_threshold_db",
+          "eps_r",
+          "polarisation"
+        ],
+        "title": "RadioIn"
+      },
       "RangeConflict": {
         "properties": {
           "name": {
@@ -10622,6 +15082,25 @@
           "pad"
         ],
         "title": "RangeConflict"
+      },
+      "RateMargin": {
+        "properties": {
+          "rate_kbps": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "A data rate the mission states, as stated."
+          },
+          "margin_db": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Eb/N0 over the coding's required Eb/N0 at that rate. `lo` is adverse weather with every tolerance adverse; `hi` is clear sky with every one favourable."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rate_kbps",
+          "margin_db"
+        ],
+        "title": "RateMargin"
       },
       "Ready": {
         "properties": {
@@ -12016,6 +16495,391 @@
         ],
         "title": "RuleRow"
       },
+      "ScenarioBriefOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "mission_id": {
+            "type": "string",
+            "title": "Mission Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "done",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "progress": {
+            "type": "number",
+            "title": "Progress"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "preset": {
+            "type": "boolean",
+            "title": "Preset"
+          },
+          "sections": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "launch",
+                "trip",
+                "landing",
+                "contact",
+                "return"
+              ]
+            },
+            "type": "array",
+            "title": "Sections"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "created_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "mission_id",
+          "name",
+          "prompt",
+          "status",
+          "progress",
+          "message",
+          "preset",
+          "sections",
+          "created_at",
+          "created_by_name"
+        ],
+        "title": "ScenarioBriefOut"
+      },
+      "ScenarioDeletedOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "deleted": {
+            "type": "boolean",
+            "const": true,
+            "title": "Deleted",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "ScenarioDeletedOut"
+      },
+      "ScenarioGapsOut": {
+        "properties": {
+          "mission_id": {
+            "type": "string",
+            "title": "Mission Id"
+          },
+          "gaps": {
+            "items": {
+              "$ref": "#/components/schemas/GapOut"
+            },
+            "type": "array",
+            "title": "Gaps"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/AssumptionFieldOut"
+            },
+            "type": "array",
+            "title": "Fields"
+          },
+          "presets": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioBriefOut"
+            },
+            "type": "array",
+            "title": "Presets"
+          },
+          "suggestions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Suggestions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mission_id",
+          "gaps",
+          "fields",
+          "presets",
+          "suggestions"
+        ],
+        "title": "ScenarioGapsOut"
+      },
+      "ScenarioIn": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt"
+          },
+          "assumptions": {
+            "items": {
+              "$ref": "#/components/schemas/AssumedValueIn"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Assumptions"
+          },
+          "sections": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "launch",
+                    "trip",
+                    "landing",
+                    "contact",
+                    "return"
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sections"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ScenarioIn"
+      },
+      "ScenarioListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioBriefOut"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "ScenarioListOut"
+      },
+      "ScenarioOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "mission_id": {
+            "type": "string",
+            "title": "Mission Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "done",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "progress": {
+            "type": "number",
+            "title": "Progress"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "preset": {
+            "type": "boolean",
+            "title": "Preset"
+          },
+          "sections": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "launch",
+                "trip",
+                "landing",
+                "contact",
+                "return"
+              ]
+            },
+            "type": "array",
+            "title": "Sections"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "created_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Name"
+          },
+          "assumptions": {
+            "items": {
+              "$ref": "#/components/schemas/AssumptionOut"
+            },
+            "type": "array",
+            "title": "Assumptions"
+          },
+          "phases": {
+            "items": {
+              "$ref": "#/components/schemas/PhaseOut"
+            },
+            "type": "array",
+            "title": "Phases"
+          },
+          "summaries": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Summaries"
+          },
+          "results": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Results"
+          },
+          "poll_after_s": {
+            "type": "number",
+            "title": "Poll After S"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "mission_id",
+          "name",
+          "prompt",
+          "status",
+          "progress",
+          "message",
+          "preset",
+          "sections",
+          "created_at",
+          "created_by_name",
+          "assumptions",
+          "phases",
+          "summaries",
+          "results",
+          "poll_after_s",
+          "error"
+        ],
+        "title": "ScenarioOut"
+      },
       "SeaLimits": {
         "properties": {
           "wave_height_m": {
@@ -12588,10 +17452,11 @@
             "enum": [
               "rim",
               "massif",
-              "published"
+              "published",
+              "entered"
             ],
             "title": "Search Kind",
-            "description": "How the landing point was found: on the rim of a named crater (so it borders that crater's shadowed floor) or on a massif or plateau."
+            "description": "How the landing point was found: on the rim of a named crater (so it borders that crater's shadowed floor), on a massif or plateau, taken as published, or entered by a project manager for their own project."
           },
           "kind": {
             "type": "string",
@@ -12704,10 +17569,11 @@
             "enum": [
               "rim",
               "massif",
-              "published"
+              "published",
+              "entered"
             ],
             "title": "Search Kind",
-            "description": "How the landing point was found: on the rim of a named crater (so it borders that crater's shadowed floor) or on a massif or plateau."
+            "description": "How the landing point was found: on the rim of a named crater (so it borders that crater's shadowed floor), on a massif or plateau, taken as published, or entered by a project manager for their own project."
           },
           "kind": {
             "type": "string",
@@ -12806,6 +17672,56 @@
         ],
         "title": "SiteList"
       },
+      "SiteOption": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hint",
+            "description": "A short second line."
+          },
+          "lat_deg": {
+            "type": "number",
+            "title": "Lat Deg"
+          },
+          "lon_deg": {
+            "type": "number",
+            "title": "Lon Deg"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "candidate",
+              "mission_target"
+            ],
+            "title": "Kind"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value",
+          "label",
+          "lat_deg",
+          "lon_deg",
+          "kind"
+        ],
+        "title": "SiteOption"
+      },
       "SiteSummary": {
         "properties": {
           "sunlit_s": {
@@ -12896,7 +17812,8 @@
         "properties": {
           "url": {
             "type": "string",
-            "title": "Url"
+            "title": "Url",
+            "description": "Empty for `entered` and `file`: draw those as words, never as a link."
           },
           "title": {
             "type": "string",
@@ -12910,6 +17827,17 @@
             "type": "string",
             "format": "date",
             "title": "Accessed"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "published",
+              "entered",
+              "file"
+            ],
+            "title": "Kind",
+            "description": "`published`: a page that states it. `entered`: typed by the named person. `file`: read from a file the named person provided.",
+            "default": "published"
           }
         },
         "additionalProperties": false,
@@ -13066,6 +17994,56 @@
           "cr"
         ],
         "title": "Spacecraft"
+      },
+      "StationFigures": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "configuration": {
+            "type": "string",
+            "title": "Configuration"
+          },
+          "gain_dbi": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Published; `lo`/`hi` are the published tolerance."
+          },
+          "t_amw_k": {
+            "$ref": "#/components/schemas/QuantityOut",
+            "description": "Published antenna-microwave noise, no atmosphere."
+          },
+          "zenith_clear_db": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "zenith_adverse_db": {
+            "$ref": "#/components/schemas/QuantityOut"
+          },
+          "module": {
+            "type": "string",
+            "title": "Module"
+          },
+          "source_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Source Urls"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "configuration",
+          "gain_dbi",
+          "t_amw_k",
+          "zenith_clear_db",
+          "zenith_adverse_db",
+          "module",
+          "source_urls"
+        ],
+        "title": "StationFigures"
       },
       "StretchOut": {
         "properties": {
@@ -13464,6 +18442,167 @@
           "date"
         ],
         "title": "TestRecord"
+      },
+      "TimeQuantityOut": {
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "provenance": {
+            "type": "string",
+            "enum": [
+              "computed",
+              "published",
+              "entered",
+              "assumed"
+            ],
+            "title": "Provenance"
+          },
+          "pm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pm",
+            "description": "Symmetric margin, same unit."
+          },
+          "lo": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lo",
+            "description": "Lower end of a range."
+          },
+          "hi": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hi",
+            "description": "Upper end of a range."
+          },
+          "factor": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Factor",
+            "description": "Multiplicative margin: value / factor to value * factor."
+          },
+          "open": {
+            "type": "boolean",
+            "title": "Open",
+            "description": "A lower bound: the dates cut it short.",
+            "default": false
+          },
+          "no_margin_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "No Margin Reason"
+          },
+          "missing_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Missing Reason",
+            "description": "Why there is no value, when `value` is null."
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source",
+            "description": "Who entered it, or the URL it was published at."
+          },
+          "value_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Utc"
+          },
+          "lo_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lo Utc"
+          },
+          "hi_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hi Utc"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value",
+          "unit",
+          "provenance"
+        ],
+        "title": "TimeQuantityOut",
+        "description": "A time as hours after the window start, with its UTC copies."
       },
       "TimelineResponse": {
         "properties": {
@@ -14156,6 +19295,38 @@
         ],
         "title": "Viewshed"
       },
+      "WaypointIn": {
+        "properties": {
+          "east_m": {
+            "type": "number",
+            "maximum": 5000.0,
+            "minimum": -5000.0,
+            "title": "East M",
+            "description": "East of the site origin, metres."
+          },
+          "north_m": {
+            "type": "number",
+            "maximum": 5000.0,
+            "minimum": -5000.0,
+            "title": "North M",
+            "description": "North of the site origin, metres."
+          },
+          "t_s": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "T S",
+            "description": "Seconds from the window start; the node sits here."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "east_m",
+          "north_m",
+          "t_s"
+        ],
+        "title": "WaypointIn"
+      },
       "Who": {
         "properties": {
           "subject": {
@@ -14250,6 +19421,31 @@
           "meta"
         ],
         "title": "WindowsResponse"
+      },
+      "XY": {
+        "properties": {
+          "east_m": {
+            "type": "number",
+            "maximum": 5000.0,
+            "minimum": -5000.0,
+            "title": "East M",
+            "description": "East of the site origin, metres."
+          },
+          "north_m": {
+            "type": "number",
+            "maximum": 5000.0,
+            "minimum": -5000.0,
+            "title": "North M",
+            "description": "North of the site origin, metres."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "east_m",
+          "north_m"
+        ],
+        "title": "XY"
       },
       "Zone": {
         "properties": {

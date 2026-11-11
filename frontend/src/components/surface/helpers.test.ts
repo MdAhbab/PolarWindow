@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { bandPath, linePath, linear, niceDomain, niceTicks, num, pct, quantityWords, runs, shareWords } from './helpers'
 import type { QuantityDTO } from '../../lib/api/surface.types'
 
-const q = (over: Partial<QuantityDTO>): QuantityDTO => ({ value: 1, unit: 'h', provenance: 'computed', ...over })
+const q = (over: Partial<QuantityDTO>): QuantityDTO => ({ value: 1, unit: 'h', provenance: 'computed', open: false, ...over })
 
 describe('scales', () => {
   it('maps a domain onto a range, flipped when asked', () => {

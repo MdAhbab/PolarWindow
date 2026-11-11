@@ -65,6 +65,29 @@ See *On a server* below.
 | 7 | **Ask about missions and sites**, then *How the AI got this* | An answer whose every number is traced to a tool result; a number the tools did not return is refused. |
 | 8 | **Plan** and **Printable report** | Every stretch without contact, and the exports (CSV, SPICE interval lists). |
 
+### The lander tools on a site page
+
+Six pieces were added for a lander on the surface. Each says what it worked out and
+what it did not model.
+
+- **Mesh (ADR-23).** Simulates a lander and up to five rovers relaying for each other over a
+  site's terrain, from positions and radio figures you enter. It is a simulation with no live
+  topology. It gives the longest stretch without a path to Earth three ways: direct only, with
+  the mesh on links that are certainly clear, and if the uncertain links also hold.
+- **Power (ADR-21).** Solar generation and battery charge over the dates, from the skyline and
+  the lander figures you enter or assume. Every figure shows which it is.
+- **Thermal (ADR-21).** A single-node bus temperature. The ground temperature is a range from
+  Diviner's annual average and maximum, so the result is a range, not a forecast.
+- **Landing dispersion (ADR-22).** Takes a landing ellipse and reports the share of points
+  above a slope limit and above the tip-over angle, with average sunlight and Earth visibility.
+  Five sites have a 5 m slope map; elsewhere it uses the app's 20 m terrain and says so.
+- **Link budget (ADR-20).** The Contact step gives a downlink data rate and margin when the
+  mission states its EIRP, an X-band frequency and the required Eb/N0. Without all three the
+  step says line of sight only and names what is missing.
+- **SPICE worker pool (ADR-24).** Optional worker processes for ephemeris reads, off unless
+  `PW_SPICE_WORKERS` is 2 or more. Answers are identical to the single thread; it only helps
+  under concurrent load.
+
 ## Why the numbers can be trusted
 
 - **Real geometry.** The skyline at each site is ray-cast in 1,440 directions over
@@ -89,10 +112,10 @@ See *On a server* below.
 ## Test it
 
 ```bash
-make test-fast     # 680 unit, property and golden tests, no services, about 20 s
+make test-fast     # backend unit tests (901 pass, 2 skipped on 12 November), no services, about 1 min
 make lint          # ruff, mypy --strict, 10 layering contracts
-make test          # every backend test (900+) against real kernels, terrain and a test database, about 7 min
-cd frontend && npm run check && npm test     # TypeScript, 292 unit and component tests
+make test          # every backend test against real kernels, terrain and a test database, several minutes
+cd frontend && npm run check && npm test     # TypeScript, 400 unit and component tests
 cd frontend && npm run e2e                   # 61 browser tests with accessibility checks; needs the app running
 ```
 
@@ -115,7 +138,7 @@ docs/       architecture, API, validation, decisions (ADRs), runbook
 ```
 
 Start with [docs/README.md](docs/README.md): it indexes the system design, the
-API reference, the 19 architecture decision records and the runbook.
+API reference, the 24 architecture decision records and the runbook.
 
 ## Running it
 
@@ -168,8 +191,15 @@ has the details.
 
 ## Known limits
 
-- The battery limit (120 h) is a reference value; there is no thermal model, and
-  the backend returns durations, never a verdict on survival.
+- The thermal model is a single node. Its temperature range comes from Diviner's annual
+  average and maximum ground temperature, and the backend returns figures, never a verdict
+  on survival. The battery limit (120 h) is a reference value.
+- The mesh is a simulation on entered figures, with no live topology. On real terrain the
+  2 m elevation error leaves most low links uncertain, so the gain from the mesh on certain
+  links is often nil.
+- Landing dispersion reads a 5 m slope map at five sites only; elsewhere the slope comes from
+  the 20 m terrain over a 60 m baseline, which is coarser and is labelled as such.
+- The SPICE worker pool is opt-in (`PW_SPICE_WORKERS`, default 0).
 - Terrain height error is one figure per terrain product (2 m at 20 m spacing,
   4 m at 80 m and 60 m, 3.5 m for SLDEM2015), not per pixel.
 - A mission target with no terrain window on disk is computed on flat ground
@@ -303,6 +333,9 @@ the two disagree. Regenerate it with `uv run polar-data readme`.
 | [NOAA GEFSv12 reforecast, 10 m wind at the pads, 2000-2019 (reduced here)](https://noaa-gefs-retrospective.s3.amazonaws.com) | NOAA PSL and EMC, via AWS Open Data | 759 kB | `hindcast/gefs_reforecast_wind.cache.jsonl` | Re-running the many-year check of the wind rules at the Cape and Vandenberg. Only the pads' grid points are read, by byte ranges, from a 50 GB archive; the result is kept in the repository. | none |
 | [NOAA HRRR version 4, 10 m wind at the pads, 2021-2025 (reduced here)](https://noaa-hrrr-bdp-pds.s3.amazonaws.com) | NOAA NCEP, via AWS Open Data | 590 kB | `hindcast/hrrr_wind.cache.jsonl` | Re-running the check of HRRR's wind at the Cape and Vandenberg, read by byte ranges from a 100 GB archive. The result is kept in the repository. | none |
 | [Hourly wind at the Cape (KXMR) and Vandenberg (KVBG) weather stations (ASOS)](https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py) | Iowa Environmental Mesonet (Iowa State University), from NWS ASOS | 10 MB | `hindcast/asos_*.csv` | The observed wind that every weather check is scored against; fetched by the three weather-check commands. | none |
+| [Diviner Polar Resource Product, south: annual average and maximum surface temperature and depth to stable water ice](https://pds-geosciences.wustl.edu/lro/urn-nasa-pds-lro_diviner_derived1/data_derived_prp/) | NASA PDS Geosciences Node (LRO Diviner, derived data) | 605 MB | `external/diviner_prp/` | The ground temperature the power and temperature model reads (POST /sites/{id}/energy). Cite Paige et al. (2010), Science. Build its index once with `python -m app.data.diviner build`. | none |
+| [LOLA 5 m terrain for nine south-pole sites: elevation, slope and elevation uncertainty](https://pgda.gsfc.nasa.gov/products/78) | NASA GSFC Planetary Geodesy Data Archive (PGDA product 78) | 1.6 GB | `external/pgda_lola_5m/` | The slope under the landing ellipse (POST /sites/{id}/dispersion). Cite Barker et al. (2021), PSS 203, 105119. | none |
+| [Average sunlight, average Earth visibility, permanent shadow and sky visibility maps of the south pole (60, 120 and 240 m)](https://pgda.gsfc.nasa.gov/products/69) | NASA GSFC Planetary Geodesy Data Archive (PGDA product 69) | 270 MB | `external/pgda_illumination/` | Average sunlight and Earth visibility under the landing ellipse (POST /sites/{id}/dispersion). Cite Mazarico et al. (2011), Icarus. | none |
 
 <!-- required-data:end -->
 

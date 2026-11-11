@@ -1,39 +1,23 @@
 /**
- * Shapes for the lander tools on a site (ADR-20, 21, 22), written by hand from
- * the backend's pydantic schemas, which are the source of truth:
- * `backend/app/api/v1/schemas/{energy,dispersion}.py` and `common.py`.
+ * Shapes for the lander tools on a site (ADR-20 to 23). Where the backend's
+ * schema models a shape, the name here is an alias of the generated type in
+ * `schema.ts`; where the service returns a loose `dict`, the shape is written
+ * by hand from `backend/app/api/v1/schemas/{energy,dispersion,mesh}.py`.
  */
+import type { components } from './schema'
+
+type S = components['schemas']
 
 export type ProvenanceWord = 'computed' | 'published' | 'entered' | 'assumed'
 
 /** `QuantityOut`: a number with its margin in exactly one form, or the reason it has none. */
-export interface QuantityDTO {
-  value: number | null
-  unit: string
-  provenance: ProvenanceWord
-  pm?: number | null
-  lo?: number | null
-  hi?: number | null
-  factor?: number | null
-  /** A lower bound: the dates cut it short. */
-  open?: boolean
-  no_margin_reason?: string | null
-  missing_reason?: string | null
-  source?: string | null
-}
+export type QuantityDTO = S['QuantityOut']
 
 /** `TimeQuantityOut`: hours after the window start, with UTC copies. */
-export interface TimeQuantityDTO extends QuantityDTO {
-  value_utc?: string | null
-  lo_utc?: string | null
-  hi_utc?: string | null
-}
+export type TimeQuantityDTO = S['TimeQuantityOut']
 
-export interface MetaLiteDTO {
-  computed_at: string
-  engine_version: string
-  cache?: 'hit' | 'miss' | 'bypass' | 'memo'
-  compute_ms?: number | null
+/** The part of `Meta` the surface tools read (the schema's `resolution` and `uncertainty` are not used here). */
+export type MetaLiteDTO = Pick<S['Meta'], 'computed_at' | 'engine_version' | 'cache' | 'compute_ms'> & {
   [k: string]: unknown
 }
 
@@ -42,11 +26,7 @@ export interface MetaLiteDTO {
 // ---------------------------------------------------------------------------
 
 /** `FigureIn`: a figure with its provenance. A bare number means entered by the caller. */
-export interface FigureInDTO {
-  value: number | string
-  provenance?: 'entered' | 'published' | 'assumed'
-  source?: string | null
-}
+export type FigureInDTO = S['FigureIn']
 
 export type ArrayGeometry = 'vertical_faces' | 'top_deck_flat' | 'sun_tracking'
 
@@ -83,45 +63,16 @@ export type LanderNumberField = (typeof LANDER_NUMBER_FIELDS)[number]
 export type LanderField = LanderNumberField | 'array_geometry'
 
 /** `LanderIn`: every figure optional on the wire; a missing required one is a 422 naming it. */
-export type LanderInDTO = Partial<Record<LanderNumberField, number | FigureInDTO>> & {
-  array_geometry?: ArrayGeometry | FigureInDTO
-}
+export type LanderInDTO = S['LanderIn']
 
-export interface EnergyRequestDTO {
-  start?: string | null
-  end?: string | null
-  step_s?: number | null
-  lander: LanderInDTO
-  lander_example_id?: string | null
-  ground_radius_m?: number
-}
+/** `EnergyRequest`; the generated type marks defaulted fields required, so they are optional here. */
+export type EnergyRequestDTO = Omit<S['EnergyRequest'], 'ground_radius_m'> & { ground_radius_m?: number }
 
-export interface BandDTO {
-  lo: (number | null)[]
-  value: (number | null)[]
-  /** Null where the warm end of the ground range is unknown. */
-  hi: (number | null)[]
-}
+export type BandDTO = S['Band']
 
-export interface EnergySeriesDTO {
-  /** Seconds from the window start. */
-  t_s: number[]
-  t_utc: (string | null)[]
-  p_gen_w: number[]
-  /** 1 while the Sun's centre is above the skyline. */
-  lit: number[]
-  soc_wh: BandDTO
-  t_bus_c: BandDTO
-}
+export type EnergySeriesDTO = S['EnergySeries']
 
-export interface EnergyKeyDTO {
-  energy_generated: QuantityDTO
-  lowest_soc: QuantityDTO
-  battery_empty_at: TimeQuantityDTO
-  lowest_bus_temperature: QuantityDTO
-  hours_below_operational: QuantityDTO
-  survival_threshold_crossed_at: TimeQuantityDTO
-}
+export type EnergyKeyDTO = S['EnergyKey']
 
 /** One echoed lander figure (a QuantityOut for numbers; value, unit, provenance, source for words). */
 export interface EchoedFigureDTO {
@@ -151,6 +102,7 @@ export interface EnergyGroundDTO {
   [k: string]: unknown
 }
 
+// `EnergyResponse` types `inputs`, `model` and `ground` as loose dicts, so this stays hand-written.
 export interface EnergyResponseDTO {
   site_id: string
   start: string | null
@@ -169,12 +121,8 @@ export interface EnergyResponseDTO {
 // Landing ellipse: POST /sites/{site_id}/dispersion
 // ---------------------------------------------------------------------------
 
-export interface DispersionRequestDTO {
-  /** 3-sigma half-axes in metres; azimuth is the major axis's bearing from true north, clockwise. */
-  ellipse: { semi_major_m: number; semi_minor_m: number; azimuth_deg: number }
-  lander: { footprint_diameter_m: number; cg_height_m: number; slope_limit_deg: number }
-  samples?: number
-}
+/** `DispersionRequest`; `samples` has a default, so it is optional here. */
+export type DispersionRequestDTO = Omit<S['DispersionRequest'], 'samples'> & { samples?: number }
 
 export interface SourceRefDTO {
   name: string
@@ -251,6 +199,7 @@ export interface HeatmapDTO {
   [k: string]: unknown
 }
 
+// `DispersionResponse` types most of its blocks as loose dicts, so this stays hand-written.
 export interface DispersionResponseDTO {
   site_id: string
   inputs: Record<string, unknown>
@@ -277,118 +226,39 @@ export interface DispersionResponseDTO {
 // ---------------------------------------------------------------------------
 // Link budget on the Contact step (ADR-20): `Contact.link_budget`,
 // `Link.passes[].{edge,peak}`, `link_budget_note` in schemas/contact.py.
-// The generated schema predates these, so they are typed here.
+// Aliases of the generated types.
 // ---------------------------------------------------------------------------
 
-export interface RateMarginDTO {
-  /** A data rate the mission states, as stated. */
-  rate_kbps: QuantityDTO
-  /** Eb/N0 over the required Eb/N0 at that rate: `lo` adverse weather and tolerances, `hi` clear and favourable. */
-  margin_db: QuantityDTO
-}
+export type RateMarginDTO = S['RateMargin']
 
-export interface PassPointDTO {
-  /** `edge`: the weaker end of the pass; `peak`: the sample of highest elevation. */
-  at: 'edge' | 'peak'
-  elevation_deg: QuantityDTO
-  range_km: QuantityDTO
-  path_loss_db: QuantityDTO
-  atmosphere_db: QuantityDTO
-  g_over_t_dbk: QuantityDTO
-  /** The highest rate that keeps the stated margin, with weather and tolerances as `lo` and `hi`. */
-  max_rate_kbps: QuantityDTO
-  margins: RateMarginDTO[]
-}
+export type PassPointDTO = S['PassPoint']
 
-export interface PassBudgetDTO {
-  edge: PassPointDTO
-  peak: PassPointDTO
-}
+export type PassBudgetDTO = S['PassBudget']
 
-export interface StationFiguresDTO {
-  id: string
-  configuration: string
-  gain_dbi: QuantityDTO
-  t_amw_k: QuantityDTO
-  zenith_clear_db: QuantityDTO
-  zenith_adverse_db: QuantityDTO
-  /** The handbook module the figures are from. */
-  module: string
-  source_urls: string[]
-}
+export type StationFiguresDTO = S['StationFigures']
 
-export interface LinkBudgetDTO {
-  method: string
-  band: string
-  frequency_mhz: QuantityDTO
-  eirp_dbw: QuantityDTO
-  required_ebn0_db: QuantityDTO
-  required_margin_db: QuantityDTO
-  stated_rates_kbps: QuantityDTO[]
-  stations: StationFiguresDTO[]
-  /** Stations with no published figures: no budget is given there. */
-  stations_without_figures: string[]
-  not_modelled: string[]
-}
+export type LinkBudgetDTO = S['LinkBudget']
 
 /** The parts of the Contact answer the link budget reads. */
-export interface ContactBudgetDTO {
-  nodes: { id: string; kind: string; name: string }[]
-  links: {
-    from: string
-    to: string
-    stretches: { start: string; end: string; open_start: boolean; open_end: boolean }[]
-    data_rate_kbps?: QuantityDTO | null
-    margin_db?: QuantityDTO | null
-    /** One per stretch, in the same order; null when no budget ran for this station. */
-    passes?: PassBudgetDTO[] | null
-  }[]
-  link_budget_note: string | null
-  link_budget?: LinkBudgetDTO | null
+export type ContactBudgetDTO = Pick<S['Contact'], 'link_budget_note' | 'link_budget'> & {
+  nodes: Pick<S['Node'], 'id' | 'kind' | 'name'>[]
+  links: Pick<S['Link'], 'from' | 'to' | 'stretches' | 'data_rate_kbps' | 'margin_db' | 'passes'>[]
 }
 
 // ---- Rovers relaying for each other (the surface mesh, POST /sites/{id}/mesh/simulate) ----
 
-export interface MeshNodeInDTO {
-  id: string
-  name?: string
-  position: { east_m: number; north_m: number }
-  antenna_height_m: number
-  battery_capacity_wh: number
-  initial_soc_fraction: number
-  own_traffic_bps: number
-  may_help: boolean
-  earth_uplink_bps?: number
-  earth_uplink_power_w?: number
-}
+/** `NodeIn` for a fixed node: the service also takes `waypoints` for a moving one, which the panel does not send. */
+export type MeshNodeInDTO = Omit<S['NodeIn'], 'position' | 'waypoints'> & { position: S['XY'] }
 
-export interface MeshRadioInDTO {
-  frequency_hz: number
-  tx_power_w: number
-  forwarding_tx_power_w: number
-  tx_efficiency: number
-  antenna_gain_dbi: number
-  bandwidth_hz: number
-  noise_figure_db: number
-  snr_threshold_db: number
-  eps_r: number
-  polarisation: 'horizontal' | 'vertical'
-}
+export type MeshRadioInDTO = S['RadioIn']
 
-export interface MeshGuardInDTO {
-  soc_cutoff_fraction: number
-  quota_share_per_lunar_day: number
-  max_forwarding_power_w: number
-  buffer_bytes: number
-}
+export type MeshGuardInDTO = S['GuardIn']
 
-export interface MeshRequestDTO {
+/** `MeshRequest`, with the fixed-node form of `nodes`; the panel always sends `start`, `end` and `step_s` (the wire allows leaving them out). */
+export type MeshRequestDTO = Omit<S['MeshRequest'], 'nodes' | 'start' | 'end' | 'step_s'> & {
   start: string | null
   end: string | null
   step_s: number
-  loss_threshold_s: number
-  radio: MeshRadioInDTO
-  guard: MeshGuardInDTO
   nodes: MeshNodeInDTO[]
 }
 
@@ -441,15 +311,19 @@ export interface MeshHelperDTO {
   refused_hours_by_rule: Record<string, number>
 }
 
+// `MeshResponse` types `nodes`, `links`, `helpers` and `terrain` as loose dicts, so this stays hand-written.
 export interface MeshResponseDTO {
   site_id: string
   start: string
   end: string
   step_s: number
+  /** The request as the service read it, with defaults filled in. */
+  inputs: Record<string, unknown>
   nodes: MeshNodeOutDTO[]
   links: MeshLinkDTO[]
   helpers: MeshHelperDTO[]
   terrain: { products: string[]; post_m: number; vertical_error_m: number }
+  timing_ms: Record<string, unknown>
   not_modelled: string[]
-  meta: { computed_at: string; engine_version: string }
+  meta: MetaLiteDTO
 }

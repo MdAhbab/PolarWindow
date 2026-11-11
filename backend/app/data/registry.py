@@ -777,6 +777,55 @@ _SPECIFIC: Final[tuple[Dataset, ...]] = (
         licence="US government work (public domain)",
         build="uv run python -m app.validation.capsule_air_data (needs pyhdf)",
     ),
+    Dataset(
+        id="diviner_prp",
+        title="Diviner Polar Resource Product, south: annual average and maximum surface "
+        "temperature and depth to stable water ice",
+        provider="NASA PDS Geosciences Node (LRO Diviner, derived data)",
+        tier="bulk",
+        method="built",
+        urls=(
+            "https://pds-geosciences.wustl.edu/lro/urn-nasa-pds-lro_diviner_derived1/"
+            "data_derived_prp/",
+        ),
+        dest="external/diviner_prp/",
+        size_bytes=605_000_000,
+        used_for="The ground temperature the power and temperature model reads "
+        "(POST /sites/{id}/energy). Cite Paige et al. (2010), Science. Build its index once "
+        "with `python -m app.data.diviner build`.",
+        licence="Not stated in data/external/SOURCES.md",
+        build="bash data/external/_tools/fetch_external.sh data/external",
+    ),
+    Dataset(
+        id="pgda_lola_5m",
+        title="LOLA 5 m terrain for nine south-pole sites: elevation, slope and elevation "
+        "uncertainty",
+        provider="NASA GSFC Planetary Geodesy Data Archive (PGDA product 78)",
+        tier="bulk",
+        method="built",
+        urls=("https://pgda.gsfc.nasa.gov/products/78",),
+        dest="external/pgda_lola_5m/",
+        size_bytes=1_600_000_000,
+        used_for="The slope under the landing ellipse (POST /sites/{id}/dispersion). "
+        "Cite Barker et al. (2021), PSS 203, 105119.",
+        licence="Not stated in data/external/SOURCES.md",
+        build="bash data/external/_tools/fetch_external.sh data/external",
+    ),
+    Dataset(
+        id="pgda_illumination",
+        title="Average sunlight, average Earth visibility, permanent shadow and sky "
+        "visibility maps of the south pole (60, 120 and 240 m)",
+        provider="NASA GSFC Planetary Geodesy Data Archive (PGDA product 69)",
+        tier="bulk",
+        method="built",
+        urls=("https://pgda.gsfc.nasa.gov/products/69",),
+        dest="external/pgda_illumination/",
+        size_bytes=270_000_000,
+        used_for="Average sunlight and Earth visibility under the landing ellipse "
+        "(POST /sites/{id}/dispersion). Cite Mazarico et al. (2011), Icarus.",
+        licence="Not stated in data/external/SOURCES.md",
+        build="bash data/external/_tools/fetch_external.sh data/external",
+    ),
 )
 
 DATASETS: Final[tuple[Dataset, ...]] = (
