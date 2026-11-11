@@ -44,11 +44,13 @@ mesh `nodes`, `links`, `helpers` and `terrain`) stay hand-written and say so in 
   `title`, and an empty URL.
 - A scenario's contact result always carries `start` and `end`.
 - `ProjectLifecycleIn` (`backend/app/api/v1/schemas/projects.py`) takes, all optional:
-  `eirp_dbw`, `eirp_tol_db`, `gt_dbk`, `frequency_mhz`, `data_rates_kbps`,
-  `required_ebn0_db`, `required_margin_db`. `project_service.py` carries them into the comms
-  block. The Contact step shows the downlink budget when the EIRP, an X-band frequency
-  (8200 to 8600 MHz) and the required Eb/N0 are all stated; otherwise it says line of sight
-  only and names what is missing.
+  `vehicle_id`, `vehicle_name`, `pad_id`, `pad_name`, `transfer_type`, `flight_days`,
+  `lunar_orbit_days`, `sun_el_min_deg`, `sun_el_max_deg`, `bands`, `ground_stations`,
+  `relays`, `mass_kg`, `rovers`, `returns`, `field_sources`, `eirp_dbw`, `eirp_tol_db`,
+  `gt_dbk`, `frequency_mhz`, `data_rates_kbps`, `required_ebn0_db`, `required_margin_db`.
+  `project_service.py` carries them into the stored lifecycle block. The Contact step shows the
+  downlink budget when the EIRP, an X-band frequency (8200 to 8600 MHz) and the required Eb/N0
+  are all stated; otherwise it says line of sight only and names what is missing.
 
 ### Known gaps recorded on 11 November and not rechecked since
 
@@ -121,9 +123,11 @@ Backend, from `backend/`:
 
 Frontend, from `frontend/`: `npm run check` and `npx vitest run`.
 
-Last gate run (12 November): ruff, ruff format, mypy and the 10 import contracts clean;
-901 backend unit tests passed, 2 skipped; frontend type check clean, 400 tests passed. The
-integration tests and the Playwright suite were not part of that run.
+Last gate run (12 November, after the review pass): ruff, ruff format, mypy and the 10 import
+contracts clean; 931 backend unit tests passed, 2 skipped; frontend type check clean, 401 tests
+passed. Integration: 184 of 184; Playwright E2E: 61 of 61 (Chromium v1243 installed). SPICE
+worker-pool benchmark (`scripts/bench_spice_pool.py`, `K=8` sweeps of 30 d at 900 s): 1 thread
+`0.141 s`, pool of 2 `0.072 s` (`1.95x`), pool of 4 `0.046 s` (`3.08x`), all bit-identical.
 
 To regenerate the contracts: from `backend/` write `docs/openapi.json` with the command in the
 Makefile's `openapi` target, then `npm run codegen` in `frontend/`. After a change to the data
@@ -184,24 +188,18 @@ Fixed on the way, each with its reason in the commit:
 - The theme token `--spacing-block` made Tailwind give every `inline-block` element a
   40 px width (provenance tags overflowed). Renamed `--spacing-section`.
 - Editing a project cleared its launch vehicle, pad, transfer, bands, relays, mass and
-  returns.
-- Space weather hid all DONKI lists when one product (flares) had never fetched.
-
-Left, for whoever picks it up:
-
-- Playwright 1.63 expects headless shell build 1243; this machine has 1234, 1248 and 1254.
-  The suite was run with a temporary config pointing at 1254. `npx playwright install
-  chromium` fixes it for good.
-- The DONKI flare feed has never fetched successfully on this machine (`flr`); the reason
-  is not looked into.
-- Saving a project edit still drops `rovers`, `field_sources`, vehicle and pad names: the
-  request has no field for them.
-- For the teammate (design): on the site page the metric "what this means" buttons are
-  36 px tall and the date picker's start input 21 px (`WindowPicker.tsx`), under the 44 px
-  phone target; on the light landing page at 390 the grey captions sit on the Moon texture
-  with weak contrast.
-- `docs/README.md` and `docs/adr/README.md` still list ADR-0001 to 0019.
-- Not run: the optional SPICE pool comparison (`PW_SPICE_WORKERS=4`).
+  returns. `ProjectLifecycleIn` and the edit form now also round-trip `rovers`,
+  `field_sources`, `vehicle_name` and `pad_name`.
+- Space weather hid all DONKI lists when one product (flares) had never fetched; and the
+  `donki` adapter now uses NASA GSFC CCMC's public endpoint (`ccmc.gsfc.nasa.gov/DONKI/WS/get`)
+  when no personal `PW_NASA_API_KEY` is set, avoiding `api.nasa.gov` `DEMO_KEY` 429 throttling
+  that previously blocked `flr`.
+- Playwright Chromium v1243 (`chromium-1243` and `chromium_headless_shell-1243`) is installed.
+- `docs/README.md` and `docs/adr/README.md` list ADR-0001 to ADR-0024.
+- Site page metric "what this means" buttons (`KeyNumbers.tsx`), date picker start input
+  (`WindowPicker.tsx`), and provenance pills (`project/fields.tsx`) meet the 44 px phone tap
+  target height; light-mode landing page captions over the Moon image use `text-ink-2` with
+  mobile viewport backdrop shading (`LandingScreen.tsx`).
 
 ## 5. Shapes the frontend work needs
 
@@ -234,24 +232,33 @@ A link is usable when its sight is `clear`; `uncertain` counts only in the third
 Contact: `Contact.link_budget`, `Link.passes[].{edge,peak}`, `link_budget_note`.
 Typed in `lib/api/surface.types.ts` (`ContactBudgetDTO`) from the generated schema.
 
-## 6. For the review that follows
+## 6. Review pass completed (12 November)
 
-Things to look at hardest, because they were built quickly or not seen:
+Checked and fixed across backend and frontend:
 
-- `agents/guards.py`: the adjacent-word rule. Try to make it accept a number the tool
-  did not give in that sense.
-- `services/mesh_service.py`: the two runs and the sight rule; whether "uncertain" is
-  described honestly everywhere it appears.
-- `core/thermal.py`: a single-node model giving a range from Diviner annual average
-  and maximum. Check that nothing on screen reads as a prediction.
-- `components/surface/*`: about 2,400 lines written by one agent in one sitting and reviewed
-  only by the gates and one live run of the power panel.
-- Every change the teammate makes to shared styles.
-- The mesh response's `meta.resolution` describes the 20 m horizon terrain while its
-  `terrain` block gives the 5 m link terrain; both are right, but side by side they read
-  as a contradiction.
-- In the Connecting Ridge mesh run the lander spends 194 h in `active_relay` while
-  forwarding nothing (no link is usable). Check what that state costs and whether the
-  name says what happens.
-- `components/surface/MeshPanel.tsx` and the radio group in `components/project/*`, which
-  were written by agents and checked by the gates and one live run each.
+- `agents/guards.py`: hardened the adjacent-word rule against sentence-initial determiners,
+  verbs and prepositions (`All 13`, `Launched 27`, `For 48`), designator numbers repurposed as
+  measurements (`Complex 41 hours`), stop words and connectors (`41 and`, `41 for`), incomplete
+  unit modifiers (`14 Earth`, `15 per`, `18 meters`, `20 degrees`), split clock times (`05:16 UTC`),
+  and sign/comma/decimal/denominator/negation boundaries. Added 25 adversarial and positive unit
+  tests in `test_guards.py`.
+- `core/mesh.py`, `services/mesh_service.py` and `components/surface/MeshPanel.tsx`:
+  - `active_relay` is entered only during steps where a node actually sends or forwards traffic
+    over a usable mesh route (and helpers with a healthy direct Earth link also enter
+    `active_relay` while forwarding); a node whose direct link is down with no usable route
+    stays in `standby` (`0 W`; receive and idle-listening power are not modelled). Updated
+    `connecting-ridge.mesh.json` to match (`lander`: 141 h `deep_sleep`, 195 h `standby`, 0 h
+    `active_relay`).
+  - Added `terrain.used_for` in `mesh_service.py` and a **Terrain basis** section in
+    `MeshPanel.tsx` explaining that the 5 m local DEM (2 m height error) is used for
+    surface-to-surface links and off-site node skylines (to 20 km), while the site point at
+    `(0, 0)` uses the 20 m / 50 km site horizon mask in `meta.resolution`.
+  - Audited all "uncertain" wording in `mesh_service.py` and `MeshPanel.tsx` so the two runs
+    (certain links vs. if uncertain links hold) and the Fresnel reporting rule are stated
+    plainly without claiming the mesh improves anything.
+- `core/thermal.py`, `services/energy_service.py` and `components/surface/{EnergyPanel,EnergyCharts}.tsx`:
+  stated explicitly in service notes, ground basis and chart legend that temperatures come from
+  a single-node steady-state radiative balance bounded by LRO Diviner annual average and
+  bolometric maximum surface temperatures (a bounding range, never a weather forecast, with the
+  solid line as the midpoint of the two bounds), and marked assumed example lander inputs with
+  `.pw-scenario`.
