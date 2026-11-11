@@ -1680,6 +1680,8 @@ async def read_with_model(
                 continue
             except TimeoutError:
                 timed_out = True
+                # Later requests skip it for a while instead of waiting on it again.
+                base._cool(model, base.SLOW_MODEL_COOLDOWN_S, "did not answer in time")
                 tried.append({"kind": "timeout", "model": model, "detail": "no answer in time"})
                 continue
             tokens[0] += resp["prompt_tokens"]
