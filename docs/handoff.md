@@ -171,10 +171,11 @@ Checked live, in the running app:
   errors.
 
 Gates at the end: backend 901 unit tests passed, 2 skipped; frontend 401 tests. Integration:
-181 of 184 in one run (after `make test-db`, which had never been run on this machine), and
-the 3 that failed were fixed and pass when run alone. End-to-end: 49 of 61 in the first run
-against the running app; the other 12 pass in reruns (5 were cold computes timing out after
-a restart, 7 were stale tests, now updated). Neither suite has had one clean full run since.
+184 of 184 in one full run (after `make test-db`, which had never been run on this machine).
+End-to-end against the running app: 60 of 61 in one full run; the one failure was the demo
+path's own timing (its date-burst hold was too short and it ran under the 60 s default), and
+after the fix it passed 4 runs of 4. Live-API tests can time out on the first run after a
+restart, while the jobs compute cold.
 
 Fixed on the way, each with its reason in the commit:
 

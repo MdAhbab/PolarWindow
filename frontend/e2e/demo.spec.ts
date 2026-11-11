@@ -75,6 +75,8 @@ test('settings: the project controls, behind a confirm step', async ({ page, con
 })
 
 test('demo path: volatiles → IM-2 → shift the date → compare → ask → run log', async ({ page, context }) => {
+  // Six beats and, with a model key, a live answer that can take most of a minute.
+  test.setTimeout(150_000)
   await returningVisitor(context)
   const problems = watchConsole(page)
 
@@ -123,8 +125,10 @@ test('demo path: volatiles → IM-2 → shift the date → compare → ask → r
     const s = seen.find((x) => x.url === r.url() && x.state === 'pending')
     if (s) s.state = 'cancelled'
   })
+  // Long enough that each pick is still in flight when the next one is made: at 300 ms a
+  // slow click let the first request finish, and the test failed with the app behaving.
   await page.route(/\/sites\/mission-im-2\/(metrics|windows)/, async (route) => {
-    await new Promise((r) => setTimeout(r, 300))
+    await new Promise((r) => setTimeout(r, 1500))
     await route.continue().catch(() => {})
   })
   await openRow(page, 'Change the dates')
