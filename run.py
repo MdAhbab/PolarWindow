@@ -902,8 +902,20 @@ def stream_process_output(proc: subprocess.Popen, prefix: str, color: str, stop_
             if stop_event.is_set() and not line:
                 break
             line_str = line.rstrip("\r\n")
-            if line_str:
-                print(f"{color}{BOLD}[{prefix}]{RESET} {line_str}", flush=True)
+            if not line_str:
+                continue
+            text = f"{color}{BOLD}[{prefix}]{RESET} {line_str}"
+            try:
+                print(text, flush=True)
+            except UnicodeEncodeError:
+                # Vite's banner has characters a Windows console cannot encode. The
+                # loop must keep reading: a child whose pipe is not drained blocks on
+                # its next write, and the web server stops answering.
+                enc = getattr(sys.stdout, "encoding", None) or "ascii"
+                with contextlib.suppress(Exception):
+                    print(text.encode(enc, "replace").decode(enc), flush=True)
+            except Exception:  # noqa: BLE001, S112 - printing must never stop the draining
+                continue
     except Exception:
         pass
 
