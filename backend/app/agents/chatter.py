@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass, field, replace
+from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import quote
 
@@ -46,6 +47,9 @@ Rules:
   overall chance. Say what each number or rule shows; people decide.
 - If the data cannot answer it, set status to "insufficient_data" and say what
   is missing. Do not guess.
+- The prompt gives today's date. A date before it has passed: never call it
+  upcoming or next, and go by each mission's status. Do not write today's date
+  in the answer.
 """
 
 
@@ -433,6 +437,7 @@ def _prompt(
     ctx: dict[str, Any],
     intent: Intent,
     calls: list[tools.ToolCallLog],
+    today: str | None = None,
 ) -> str:
     where = [f"page {ctx.get('path') or 'unknown'}"]
     if intent.mission_id:
@@ -452,7 +457,8 @@ def _prompt(
         for c in calls
     )
     return (
-        f"Where the person is: {'; '.join(where)}.\n"
+        (f"Today is {today} (UTC).\n" if today else "")
+        + f"Where the person is: {'; '.join(where)}.\n"
         + (f"Conversation so far, oldest first:\n{talk}\n" if talk else "")
         + f"Question: {messages[-1]['text']}\n\n"
         f"Already retrieved:\n{facts}\n\n"
@@ -495,7 +501,7 @@ async def chat(
     outcome = await run_agent(
         session,
         spec,
-        _prompt(messages[-12:], ctx, intent, prefetched),
+        _prompt(messages[-12:], ctx, intent, prefetched, datetime.now(UTC).date().isoformat()),
         request,
         prefetched=prefetched,
     )

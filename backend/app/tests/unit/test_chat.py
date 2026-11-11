@@ -134,3 +134,12 @@ async def test_chat_degrades_to_the_tools_when_the_model_is_off(
     assert seen["request"]["earlier_questions"] == ["Ask about IM-3 launch"]
     assert seen["request"]["mission_id"] == "im-3"
     assert [c.tool for c in seen["prefetched"]][:2] == ["list_missions", "get_mission_sections"]
+
+
+def test_the_prompt_says_what_day_it_is_so_a_past_launch_is_not_called_upcoming() -> None:
+    intent = chatter.Intent()
+    asked = [{"role": "user", "text": "Which mission launches next?"}]
+    text = chatter._prompt(asked, {"path": "/home"}, intent, [], "2026-11-11")
+    assert text.startswith("Today is 2026-11-11 (UTC).")
+    assert "Today is" not in chatter._prompt(asked, {"path": "/home"}, intent, [])
+    assert "today's date" in chatter.SYSTEM
