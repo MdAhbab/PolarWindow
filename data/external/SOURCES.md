@@ -1,7 +1,7 @@
 # External reference data
 
-Public datasets fetched on 2026-11-10 for features that are planned but not built yet.
-Nothing in the app reads this folder today. The files are not in git (see `.gitignore`);
+Public datasets fetched on 2026-11-10 and 2026-11-11. Two folders are read by the app (see *State*
+below); the rest are for features that are planned but not built yet. The files are not in git (see `.gitignore`);
 this page is the record of what is here and where it came from. When a feature starts
 using one of these, move its entry into the data registry (`backend/app/data/registry.py`)
 so `polar-data sync` fetches it like the rest.
@@ -21,12 +21,21 @@ so `polar-data sync` fetches it like the rest.
 | `papers/` | Barker et al., improved LOLA elevation maps for south pole landing sites. | NASA NTRS 20205009660. | 10 MB | Method and error estimates behind `pgda_lola_5m/`. |
 | `artemis3_regions/` | NASA abstract on the nine Artemis III candidate regions (2026). Names and reasoning only. | NASA NTRS 20250011660. | 0.6 MB | Context. No coordinates are published in it. |
 
-## Not finished
+## State on 2026-11-11
 
-The download run was cut off. Still missing: three `pgda_illumination/` files
-(`AVGVISIB_65S_240M_201608_EARTH.TIF`, `LPSR_65S_240M_201608.TIF`, `SKYV_65S_240M.TIF`) and
-all of `pgda_lola_5m/`. Finish with `bash data/external/_tools/fetch_external.sh data/external`
-from the repository root; files already complete are skipped.
+Everything in the table is on disk and complete (2.5 GB, no failed file):
+`bash data/external/_tools/fetch_external.sh data/external` from the repository root fetches
+the lot and skips what is already there.
+
+Two folders are now read by the app. Their registry entries
+(`backend/app/data/registry.py`) are still to be added, so `polar-data sync` does not fetch
+them yet and the features say so when a file is missing:
+
+- `diviner_prp/` gives the ground temperature to the power and temperature model
+  (`POST /sites/{id}/energy`, ADR-21). Build its index once with
+  `python -m app.data.diviner build` from `backend/`.
+- `pgda_lola_5m/` and `pgda_illumination/` give slope and average sunlight to the landing
+  ellipse (`POST /sites/{id}/dispersion`, ADR-22).
 
 ## Looked for and not fetched
 
