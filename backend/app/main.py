@@ -24,7 +24,16 @@ from fastapi.responses import JSONResponse, ORJSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from app.api.limits import AGENTS, COMPARE, ENERGY, SIGN_IN, WRITES, BodyLimit, RateLimit
+from app.api.limits import (
+    AGENTS,
+    COMPARE,
+    DISPERSION,
+    ENERGY,
+    SIGN_IN,
+    WRITES,
+    BodyLimit,
+    RateLimit,
+)
 from app.config import ENGINE_VERSION, get_settings
 from app.core import spice
 from app.core.kernels import KernelError
@@ -181,6 +190,7 @@ def create_app() -> FastAPI:
                 AGENTS: s.rate_agents_per_min,
                 COMPARE: s.rate_compare_per_min,
                 ENERGY: s.rate_energy_per_min,
+                DISPERSION: s.rate_energy_per_min,
                 WRITES: s.rate_writes_per_min,
             },
         )
@@ -204,6 +214,7 @@ def create_app() -> FastAPI:
         compare,
         contact_relays,
         contact_tiles,
+        dispersion,
         energy,
         health,
         jobs,
@@ -222,6 +233,7 @@ def create_app() -> FastAPI:
     app.include_router(windows.router, prefix=s.api_prefix)
     app.include_router(compare.router, prefix=s.api_prefix)
     app.include_router(energy.router, prefix=s.api_prefix)
+    app.include_router(dispersion.router, prefix=s.api_prefix)
     app.include_router(tiles.router, prefix=s.api_prefix)
     app.include_router(contact_tiles.router, prefix=s.api_prefix)
     app.include_router(contact_relays.router, prefix=s.api_prefix)

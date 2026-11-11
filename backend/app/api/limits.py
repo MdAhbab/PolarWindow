@@ -118,12 +118,14 @@ class BodyLimit:
 #: Allowance names, by what the request does.
 SIGN_IN, AGENTS, COMPARE, WRITES = "sign_in", "agents", "compare", "writes"
 ENERGY = "energy"
+DISPERSION = "dispersion"
 
 _WORDS = {
     SIGN_IN: ("sign-ins", "Signing in again in a minute will work."),
     AGENTS: ("questions to the AI assistant", "Every number and section can still be read."),
     COMPARE: ("site comparisons", "Each site's own numbers can still be read."),
     ENERGY: ("power and thermal runs", "Each site's own numbers can still be read."),
+    DISPERSION: ("landing-ellipse runs", "Each site's own numbers can still be read."),
     WRITES: ("changes", "Nothing was changed by this request; everything can still be read."),
 }
 
@@ -141,6 +143,8 @@ def allowance(method: str, path: str, prefix: str) -> str | None:
         return COMPARE
     if p.startswith("/sites/") and p.endswith("/energy"):
         return ENERGY
+    if p.startswith("/sites/") and p.endswith("/dispersion"):
+        return DISPERSION
     return WRITES
 
 
