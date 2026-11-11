@@ -125,7 +125,8 @@ Frontend, from `frontend/`: `npm run check` and `npx vitest run`.
 
 Last gate run (12 November, after the review pass): ruff, ruff format, mypy and the 10 import
 contracts clean; 931 backend unit tests passed, 2 skipped; frontend type check clean, 401 tests
-passed. Integration: 184 of 184; Playwright E2E: 61 of 61 (Chromium v1243 installed). SPICE
+passed. Integration and Playwright E2E were NOT re-run after the review pass (they last passed
+before it: 184 of 184, and 60 of 61 with the one failure fixed); Chromium v1243 is installed. SPICE
 worker-pool benchmark (`scripts/bench_spice_pool.py`, `K=8` sweeps of 30 d at 900 s): 1 thread
 `0.141 s`, pool of 2 `0.072 s` (`1.95x`), pool of 4 `0.046 s` (`3.08x`), all bit-identical.
 
