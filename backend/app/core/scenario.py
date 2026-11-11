@@ -474,6 +474,7 @@ _MONTHS = {name.lower(): i for i, name in enumerate(calendar.month_name) if name
 }
 
 _NUM = r"(\d+(?:\.\d+)?)"
+_CLAUSE_END = r"[;,.]|\bthen\b|\band\b"
 
 
 @dataclass
@@ -506,20 +507,21 @@ def _find_named(text: str, options: Mapping[str, str]) -> list[str]:
 
 def _month_date(clause: str, today: date) -> tuple[date, bool] | None:
     """A month named in ``clause`` as ``(first day, year_was_said)``; with no year, the next one."""
-    m = re.search(
+    pattern = re.compile(
         r"\b("
         + "|".join(sorted(_MONTHS, key=len, reverse=True))
         + r")\b\.?(?:\s+(\d{1,2})(?:st|nd|rd|th)?\b)?(?:,?\s+(20\d\d))?",
-        clause,
         re.I,
     )
-    if not m:
+    for m in pattern.finditer(clause):
+        if m.group(1).lower() == "may" and not re.search(
+            r"\b(in|by|on|of|until|from)\s+$", clause[: m.start(1)], re.I
+        ):
+            continue  # the verb, not the month; a month named later still counts
+        break
+    else:
         return None
     word = m.group(1)
-    if word == "may" and not re.search(
-        r"\b(in|by|on|of|until|from)\s+$", clause[: m.start(1)], re.I
-    ):
-        return None  # the verb, not the month
     month = _MONTHS[word.lower()]
     year_said = m.group(3) is not None
     year = int(m.group(3)) if year_said else today.year
@@ -567,8 +569,9 @@ def parse_prompt(
 
     # Days on the surface.
     for dm in re.finditer(_NUM + r"\s*(?:-?\s*)?(?:earth\s+)?days?\b", low):
-        tail = low[dm.end() : dm.end() + 40]
-        head = low[max(0, dm.start() - 40) : dm.start()]
+        # Only the words of the same clause say what the days are for.
+        tail = re.split(_CLAUSE_END, low[dm.end() : dm.end() + 40])[0]
+        head = re.split(_CLAUSE_END, low[max(0, dm.start() - 40) : dm.start()])[-1]
         if re.search(r"surface|stay|operat|on the moon|lunar day|work", tail + head):
             r.values["surface_days"] = float(dm.group(1))
             break
