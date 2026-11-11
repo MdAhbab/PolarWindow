@@ -127,6 +127,11 @@ export interface NextEvent {
  * The next dated event of a mission after `now`, from its published dates:
  * a countdown in days when the date is known to the day, otherwise the date
  * as it is written. Null when nothing dated lies ahead.
+ *
+ * The events come in the mission's own order (launch, landing, end), so the
+ * next is the first still ahead. They are not sorted by date: a landing
+ * published as "late 2027" starts on 1 January 2027 and would otherwise come
+ * before a launch dated 20 January 2027.
  */
 export function nextEvent(
   m: { launch: PublishedDate | null; landing: PublishedDate | null; endOfMission?: PublishedDate | null },
@@ -142,6 +147,5 @@ export function nextEvent(
   add('Launch', m.launch)
   add('Landing', m.landing)
   add('End of mission', m.endOfMission)
-  candidates.sort((a, b) => a.date.startMs - b.date.startMs)
   return candidates[0] ?? null
 }

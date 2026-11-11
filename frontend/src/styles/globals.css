@@ -749,6 +749,27 @@
   .pw-content {
     view-transition-name: pw-content;
   }
+
+  /* A scenario: assumed, not published. Its own treatment, never a hue (a hue
+     would read as a state): a dashed edge and a faint, wide hatch in ink, so
+     it is told apart in greyscale too. The hatch is far fainter and wider
+     than the data hatches (blocked, uncertain), and text over it keeps its
+     contrast. Border utilities on the element (width, colour) still apply. */
+  .pw-scenario {
+    border-width: 1px;
+    border-style: dashed;
+    border-color: var(--color-ink-3);
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent 0 9px,
+      color-mix(in srgb, var(--color-ink) 6%, transparent) 9px 10px
+    );
+  }
+  @media print {
+    .pw-scenario {
+      background-image: none;
+    }
+  }
 }
 
 @layer utilities {
@@ -935,6 +956,26 @@ details[open] > .pw-disclosure-body {
 /* A toast arriving from below and leaving the same way. */
 .pw-toast-in {
   animation: pw-toast-in var(--pw-dur-base) var(--ease-settle);
+}
+
+/* The shell's activity ring: its arc grows to the progress on the settle
+   curve; with no figure yet a short arc turns. Both are dropped in code under
+   reduced motion (ActivityRing), and the floor below stops them anyway. */
+.pw-ring-fill {
+  transition: stroke-dashoffset var(--pw-dur-slow) var(--ease-settle);
+}
+.pw-ring-spin {
+  animation: pw-spin 1.4s linear infinite;
+}
+@keyframes pw-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* The shell's Guide and Settings menu dropping open. */
+.pw-menu-drop {
+  animation: pw-menu-in var(--pw-dur-quick) var(--ease-settle) both;
 }
 
 @keyframes pw-sheet-in {

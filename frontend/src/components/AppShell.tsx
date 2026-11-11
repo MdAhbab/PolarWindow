@@ -1,15 +1,22 @@
-import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import type React from 'react'
 import { useTransitionClick } from '../lib/viewTransition'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { useMission } from '../lib/store'
 import { useKeyboardMap } from '../hooks/useKeyboard'
-import { useReducedMotion } from '../hooks/useMotion'
+import { useMotionClass, useReducedMotion } from '../hooks/useMotion'
+import { LIVE_SERVICE, useActivity } from '../lib/api/home'
+import { useAsk, useAskShortcuts } from './ask/store'
+import { ActivityRing } from './activity/ActivityRing'
+import { ACTIVITY_TRAY_ID, ActivityTray } from './activity/ActivityTray'
+import { ringState, useActivityTray } from './activity/model'
+import { useActivityToasts } from './activity/useActivityToasts'
 import { useArrivals } from '../hooks/useArrivals'
 import { Icon } from './Icon'
 import { BrandName } from './Brand'
 import { useProvenance } from '../lib/useProvenance'
-import { IconButton, SampleDataBadge, SvgDefs } from './ui'
+import { SampleDataBadge, SvgDefs } from './ui'
 import { ConnectionBanner, ErrorBoundary, useOnline } from './States'
 import { Toaster } from './Toast'
 import { RunLogDrawer } from './RunLog'
@@ -22,13 +29,20 @@ import { snapshotCapturedAt } from '../lib/api/snapshot'
 const SettingsSheet = lazy(() => import('./SettingsSheet').then((m) => ({ default: m.SettingsSheet })))
 
 /**
- * Two views: the missions, and the landing sites with their four pages.
- * A mission's six steps live inside its own page; the skyline and the report
- * are reached from Site and keep their routes.
+ * Three views: Home (what needs the manager today), the missions (projects
+ * among them), and the landing sites with their four pages. A mission's six
+ * steps live inside its own page; the skyline and the report are reached
+ * from Site and keep their routes.
  */
 const VIEWS = [
-  { to: '/missions', label: 'Missions', icon: 'pin' as const, match: (p: string) => p.startsWith('/missions') },
-  { to: '/map', label: 'Landing sites', icon: 'layers' as const, match: (p: string) => SITE_PATHS.some((s) => p.startsWith(s)) },
+  { to: '/home', label: 'Home', icon: 'home' as const, match: (p: string) => p === '/home' },
+  {
+    to: '/missions',
+    label: 'Missions',
+    icon: 'pin' as const,
+    match: (p: string) => p.startsWith('/missions') || p.startsWith('/projects'),
+  },
+  { to: '/map', label: 'Sites', icon: 'layers' as const, match: (p: string) => SITE_PATHS.some((s) => p.startsWith(s)) },
 ]
 
 /** The landing-site pages, as tabs under the header while one is open. */
@@ -41,6 +55,8 @@ const SITE_PAGES = [
 const SITE_PATHS = ['/map', '/site', '/compare', '/plan', '/skyline', '/report']
 
 const TITLES: Record<string, string> = {
+  '/home': 'Home',
+  '/projects/new': 'New project',
   '/missions': 'CLPS missions',
   '/map': 'Map',
   '/site': 'Site',
@@ -106,6 +122,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   )
   const guideOpen = useGuide((g) => g.open)
   const setGuideOpen = useGuide((g) => g.setOpen)
+  const askOpen = useAsk((a) => a.isOpen)
+  const toggleAsk = useAsk((a) => a.toggle)
+  const trayOpen = useActivityTray((t) => t.isOpen)
+  const setTrayOpen = useActivityTray((t) => t.setOpen)
+  const activity = useActivity()
+  useActivityToasts(activity.data)
+  useAskShortcuts()
   useKeyboardMap({ reducedMotion: useReducedMotion() })
   useRouteFocus()
   useArrivals('pw-main')
@@ -133,10 +156,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="pointer-events-none sticky top-0 z-40 px-3 pt-3 sm:px-4">
         <div className="pw-island pointer-events-auto mx-auto flex w-fit max-w-full items-center gap-1 rounded-pill py-1.5 pr-1.5 pl-1.5 min-[360px]:pl-3 sm:pl-4">
           <NavLink
-            to="/missions"
-            onClick={go('/missions')}
+            to="/home"
+            onClick={go('/home')}
             className="flex h-12 min-w-12 shrink-0 items-center justify-center min-[360px]:justify-start gap-2.5 rounded-pill pr-0 min-[360px]:pr-2 sm:pr-3 no-underline"
-            aria-label="POLAR WINDOW, CLPS missions"
+            aria-label="POLAR WINDOW, Home"
           >
             <BrandName />
           </NavLink>
@@ -163,28 +186,39 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           <span aria-hidden="true" className="mx-1 hidden h-6 w-px bg-line-strong lg:block" />
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
+            {/* Ask opens the dock; on a phone it is the button over the bottom bar. */}
             <button
               type="button"
-              aria-pressed={guideOpen}
-              aria-label="Guide"
-              onClick={() => setGuideOpen(!guideOpen)}
-              title={guideOpen ? 'Hide the guide' : 'Show the guide: a short tour of every feature'}
-              className="pw-press inline-flex h-12 min-w-12 items-center justify-center gap-2 rounded-pill px-3 text-body font-semibold text-ink-2 hover:bg-inset hover:text-ink aria-pressed:bg-inset aria-pressed:text-ink sm:px-4"
+              onClick={toggleAsk}
+              aria-expanded={askOpen}
+              aria-keyshortcuts="/ Control+K Meta+K"
+              title="Ask (/ or Ctrl+K)"
+              className="pw-press hidden h-12 items-center gap-2 rounded-pill border border-line-strong bg-tray pr-2 pl-4 text-body font-semibold text-ink hover:border-ink-3 hover:bg-inset aria-expanded:bg-inset lg:inline-flex"
             >
-              <Icon name="info" size={18} aria-hidden="true" />
-              <span className="hidden sm:inline">Guide</span>
+              <Icon name="ask" size={18} strokeWidth={1.9} />
+              Ask
+              <kbd
+                aria-hidden="true"
+                className="inline-flex h-7 min-w-7 items-center justify-center rounded-control bg-inset px-1.5 font-mono text-caption font-normal text-ink-3"
+              >
+                /
+              </kbd>
             </button>
-            <IconButton
-              name="settings"
-              label="Settings"
-              guide="settings"
-              haspopup="dialog"
-              expanded={settingsOpen}
+            <ActivityRing
+              ring={ringState(activity.data)}
+              live={LIVE_SERVICE}
+              expanded={trayOpen}
+              controls={trayOpen ? ACTIVITY_TRAY_ID : undefined}
               onClick={(e) => {
                 e.currentTarget.focus()
-                setSettingsOpen(true)
+                setTrayOpen(true)
               }}
+            />
+            <ShellMenu
+              guideOpen={guideOpen}
+              onGuide={() => setGuideOpen(!guideOpen)}
+              onSettings={() => setSettingsOpen(true)}
             />
           </div>
         </div>
@@ -240,7 +274,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main
         id="pw-main"
         tabIndex={-1}
-        className="flex grow flex-col pb-[calc(6rem+env(safe-area-inset-bottom)+var(--pw-guide-h,0px))] outline-none lg:pb-[var(--pw-guide-h,0px)]"
+        className="flex grow flex-col pb-[calc(9.5rem+env(safe-area-inset-bottom)+var(--pw-guide-h,0px))] outline-none lg:pb-[var(--pw-guide-h,0px)]"
       >
         {/* The part that cross-fades when the page changes. On a mission's
             step only the step itself does (MissionHub names it), so the
@@ -254,12 +288,24 @@ export function AppShell({ children }: { children: ReactNode }) {
         </p>
       </main>
 
-      {/* On a phone the two views float at the bottom, in reach of a thumb and
+      {/* On a phone Ask floats over the bottom bar, on the thumb's side. */}
+      <button
+        type="button"
+        onClick={toggleAsk}
+        aria-expanded={askOpen}
+        aria-keyshortcuts="/ Control+K Meta+K"
+        className="pw-press fixed right-4 bottom-[calc(5.25rem+env(safe-area-inset-bottom)+var(--pw-guide-h,0px))] z-40 inline-flex h-14 items-center gap-2 rounded-pill bg-ink pr-5 pl-4 text-control font-semibold text-canvas shadow-lift hover:bg-ink-2 lg:hidden"
+      >
+        <Icon name="ask" size={20} strokeWidth={2} />
+        Ask
+      </button>
+
+      {/* On a phone the three views float at the bottom, in reach of a thumb and
           clear of the home indicator. The open one is filled in ink, with bold
           words: amber means sunlight. */}
       <nav
         aria-label="Views"
-        className="pw-island fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex w-[min(22rem,calc(100%-1.5rem))] -translate-x-1/2 gap-1 rounded-pill p-1.5 lg:hidden"
+        className="pw-island fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex w-[min(24rem,calc(100%-1.5rem))] -translate-x-1/2 gap-1 rounded-pill p-1.5 lg:hidden"
       >
         {VIEWS.map((n) => {
           const on = n.match(pathname)
@@ -269,7 +315,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               to={n.to}
               onClick={go(n.to)}
               aria-current={on ? 'page' : undefined}
-              className={`pw-press flex h-12 min-w-0 grow basis-0 items-center justify-center gap-2 rounded-pill px-3 text-body no-underline ${
+              className={`pw-press flex h-12 min-w-0 grow basis-0 items-center justify-center gap-1.5 rounded-pill px-2 text-body no-underline min-[400px]:gap-2 min-[400px]:px-3 ${
                 on ? 'bg-ink font-semibold text-canvas' : 'font-medium text-ink-2 hover:text-ink'
               }`}
             >
@@ -282,12 +328,122 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <GuideBar />
       <RunLogDrawer />
+      <ActivityTray open={trayOpen} onClose={() => setTrayOpen(false)} live={LIVE_SERVICE} feed={activity} />
       {settingsLoaded.current && (
         <Suspense fallback={null}>
           <SettingsSheet />
         </Suspense>
       )}
       <Toaster />
+    </div>
+  )
+}
+
+/**
+ * Guide and Settings, in one menu at the end of the island. A menu button
+ * (WAI-ARIA menu pattern): Enter, Space or the down arrow opens it on the
+ * first item, the arrows move, Esc closes it and returns to the button, and
+ * Tab or a click elsewhere closes it.
+ */
+function ShellMenu({
+  guideOpen,
+  onGuide,
+  onSettings,
+}: {
+  guideOpen: boolean
+  onGuide: () => void
+  onSettings: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const id = useId()
+  const drop = useMotionClass('pw-menu-drop')
+
+  useEffect(() => {
+    if (!open) return
+    menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus()
+    const away = (e: PointerEvent) => {
+      const t = e.target as Node
+      if (!menuRef.current?.contains(t) && !buttonRef.current?.contains(t)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', away)
+    return () => document.removeEventListener('pointerdown', away)
+  }, [open])
+
+  const items = () => [...(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])]
+  const onMenuKey = (e: React.KeyboardEvent) => {
+    const list = items()
+    const i = list.indexOf(document.activeElement as HTMLElement)
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      const n = list.length
+      list[(i + (e.key === 'ArrowDown' ? 1 : n - 1)) % n]?.focus()
+    } else if (e.key === 'Home' || e.key === 'End') {
+      e.preventDefault()
+      list[e.key === 'Home' ? 0 : list.length - 1]?.focus()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      setOpen(false)
+      buttonRef.current?.focus()
+    } else if (e.key === 'Tab') {
+      setOpen(false)
+    }
+  }
+  const choose = (run: () => void) => {
+    setOpen(false)
+    // Settings is a dialog: it returns focus to what had it, so the button holds focus first.
+    buttonRef.current?.focus()
+    run()
+  }
+
+  return (
+    <div className="relative">
+      <button
+        ref={buttonRef}
+        type="button"
+        aria-label="Guide and settings"
+        title="Guide and settings"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={open ? id : undefined}
+        data-guide="settings"
+        onClick={() => setOpen((o) => !o)}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowDown' && !open) {
+            e.preventDefault()
+            setOpen(true)
+          }
+        }}
+        className="pw-press inline-flex size-12 items-center justify-center rounded-pill border border-line-strong bg-tray text-ink hover:border-ink-3 hover:bg-inset aria-expanded:bg-inset"
+      >
+        <Icon name="menu" size={20} />
+      </button>
+      {open && (
+        <div
+          ref={menuRef}
+          id={id}
+          role="menu"
+          aria-label="Guide and settings"
+          onKeyDown={onMenuKey}
+          className={`absolute top-[calc(100%+10px)] right-0 z-50 flex w-64 flex-col rounded-card border border-line-strong bg-raised p-1.5 text-ink shadow-overlay ${drop}`}
+        >
+          <button type="button" role="menuitem" onClick={() => choose(onGuide)} className="pw-menu-option text-left hover:bg-inset focus-visible:bg-inset">
+            <Icon name="info" size={18} strokeWidth={1.8} className="shrink-0" />
+            <span className="flex flex-col">
+              <span className="font-semibold text-ink">{guideOpen ? 'Hide the guide' : 'Guide'}</span>
+              <span className="text-caption leading-caption text-ink-3">A short tour of every feature</span>
+            </span>
+          </button>
+          <button type="button" role="menuitem" aria-haspopup="dialog" onClick={() => choose(onSettings)} className="pw-menu-option text-left hover:bg-inset focus-visible:bg-inset">
+            <Icon name="settings" size={18} strokeWidth={1.8} className="shrink-0" />
+            <span className="flex flex-col">
+              <span className="font-semibold text-ink">Settings</span>
+              <span className="text-caption leading-caption text-ink-3">Project, data sources, appearance</span>
+            </span>
+          </button>
+        </div>
+      )}
     </div>
   )
 }

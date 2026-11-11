@@ -484,7 +484,7 @@ function EnterButton({ compact = false }: { compact?: boolean }) {
   const [error, setError] = useState<string | null>(null)
   const next = (() => {
     const n = new URLSearchParams(search).get('next')
-    return n && n.startsWith('/') && !n.startsWith('//') ? n : '/missions'
+    return n && n.startsWith('/') && !n.startsWith('//') ? n : '/home'
   })()
   const signedIn = Boolean(session && session.expiresAt > Date.now())
 

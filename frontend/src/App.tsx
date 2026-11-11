@@ -11,6 +11,8 @@ import { BlackoutScreen } from './screens/BlackoutScreen'
 import { ReportScreen } from './screens/ReportScreen'
 import { MissionsScreen } from './screens/MissionsScreen'
 import { MissionHub } from './screens/MissionHub'
+import { HomeScreen } from './screens/HomeScreen'
+import { ProjectEditScreen, ProjectNewScreen } from './screens/ProjectNewScreen'
 import { useMission } from './lib/store'
 import { useEngineVersionWatch, useSites } from './lib/api/queries'
 import { setSites, hasSite, defaultCompare, getCandidates } from './lib/sites'
@@ -157,6 +159,10 @@ function Dashboard() {
   return (
     <AppShell>
       <Routes>
+        {/* Where sign-in lands: what needs the manager today. */}
+        <Route path="/home" element={<HomeScreen />} />
+        <Route path="/projects/new" element={<ProjectNewScreen />} />
+        <Route path="/projects/:id/edit" element={<ProjectEditScreen />} />
         <Route path="/missions" element={<MissionsScreen />} />
         {/* A mission's hub: Landing by default, or one of its six steps. */}
         <Route path="/missions/:id/*" element={<MissionHub />} />
