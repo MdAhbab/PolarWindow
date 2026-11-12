@@ -54,6 +54,8 @@ export function SceneFrame<P>({
   className = '',
   sceneKey,
   onFail,
+  onReady,
+  overlay,
 }: {
   make: SceneFactory<P>
   props: P
@@ -66,6 +68,10 @@ export function SceneFrame<P>({
   sceneKey: string
   /** The scene could not be made. A card with no flat drawing of its own takes itself away. */
   onFail?: () => void
+  /** The live scene, for a card that adds its own controls. */
+  onReady?: (h: SceneHandle<P>) => void
+  /** Controls drawn over the live scene (never over the flat drawing). */
+  overlay?: ReactNode
 }) {
   const frame = useRef<HTMLDivElement>(null)
   const handle = useRef<SceneHandle<P> | null>(null)
@@ -73,6 +79,8 @@ export function SceneFrame<P>({
   latest.current = props
   const failed = useRef(onFail)
   failed.current = onFail
+  const ready = useRef(onReady)
+  ready.current = onReady
   const reduced = useReducedMotion()
   const [live, setLive] = useState(false)
 
@@ -97,6 +105,7 @@ export function SceneFrame<P>({
           .then((h) => {
             if (gone) return h.dispose()
             handle.current = h
+            ready.current?.(h)
             cv.classList.remove('pointer-events-none', 'opacity-0')
             cv.classList.add('opacity-100')
             setLive(true)
@@ -134,6 +143,7 @@ export function SceneFrame<P>({
         <div className={live ? 'invisible' : ''} aria-hidden={live ? true : undefined}>
           {fallback}
         </div>
+        {live && overlay}
       </div>
       {live && caption && <p className="text-caption leading-caption text-ink-3">{caption}</p>}
     </div>

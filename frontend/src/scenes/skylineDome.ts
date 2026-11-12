@@ -24,7 +24,7 @@ import {
 import { token } from '../landing/moonScene'
 import { easeOut } from '../hooks/useMotion'
 import type { TrackSample } from '../lib/types'
-import type { SceneFactory } from './SceneFrame'
+import type { SceneFactory, SceneHandle } from './SceneFrame'
 
 /**
  * The skyline dome: standing at the site and looking out. The site's own
@@ -75,6 +75,18 @@ function label(text: string, color: Color): Sprite {
   const s = new Sprite(new SpriteMaterial({ map: t, depthTest: false, transparent: true }))
   s.scale.setScalar(0.9)
   return s
+}
+
+/** The dome's own controls, for the buttons and the compass strip around it. */
+export interface DomeHandle extends SceneHandle<DomeProps> {
+  /** Turn by this many degrees (positive turns right, clockwise). */
+  turnBy: (deg: number) => void
+  /** Turn to face the Sun or Earth at the slider's moment, the short way round. */
+  face: (body: 'sun' | 'earth') => void
+  /** Called with the bearing faced (degrees clockwise from north) on every frame drawn. */
+  onYaw: (fn: (yawDeg: number) => void) => void
+  /** Called once, the first time someone drags the view. */
+  onFirstDrag: (fn: () => void) => void
 }
 
 export const createSkylineDome: SceneFactory<DomeProps> = async (canvas, props, { reduced }) => {
@@ -200,11 +212,16 @@ export const createSkylineDome: SceneFactory<DomeProps> = async (canvas, props, 
   earth.set(props.earth, props.nowH)
 
   // Where the viewer looks: toward the Sun at the slider's moment, a little above level.
-  let yaw = sun.az(props.nowH)
+  // It arrives a quarter turn away and turns to it once the view is on screen,
+  // so it is seen to move; under reduced motion it starts where it rests.
+  const rest = sun.az(props.nowH)
+  let yaw = reduced ? rest : rest - 90
   let pitch = 6
-  const arriveFrom = yaw - 50
-  let t0 = reduced ? 0 : performance.now()
+  let tween: { from: number; to: number; start: number; dur: number } | null = null
   let raf = 0
+  const yawFns: ((y: number) => void)[] = []
+  const dragFns: (() => void)[] = []
+  let dragged = false
 
   const size = () => {
     const w = canvas.clientWidth || 1
@@ -213,29 +230,60 @@ export const createSkylineDome: SceneFactory<DomeProps> = async (canvas, props, 
     camera.aspect = w / h
     camera.updateProjectionMatrix()
   }
+  /** Draws one frame; true while a turn is still under way. */
   const draw = () => {
-    const k = t0 ? easeOut(Math.min(1, (performance.now() - t0) / 1600)) : 1
-    const y = arriveFrom + (yaw - arriveFrom) * k
+    let moving = false
+    if (tween) {
+      const k = Math.min(1, (performance.now() - tween.start) / tween.dur)
+      yaw = tween.from + (tween.to - tween.from) * easeOut(k)
+      if (k >= 1) tween = null
+      else moving = true
+    }
     camera.position.set(0, 0, 0)
-    camera.lookAt(dir(y, pitch, 1, false))
+    camera.lookAt(dir(yaw, pitch, 1, false))
     renderer.render(scene, camera)
-    if (k >= 1) t0 = 0
-    return k
+    yawFns.forEach((f) => f(yaw))
+    return moving
   }
   const frame = () => {
     raf = 0
-    if (draw() < 1) raf = requestAnimationFrame(frame)
+    if (draw()) raf = requestAnimationFrame(frame)
   }
   const request = () => {
     if (!raf) raf = requestAnimationFrame(frame)
   }
+  const turnTo = (to: number, dur: number) => {
+    if (reduced) {
+      tween = null
+      yaw = to
+    } else {
+      tween = { from: yaw, to, start: performance.now(), dur }
+    }
+    request()
+  }
+
+  const seen = new IntersectionObserver(
+    (es) => {
+      if (!es.some((e) => e.isIntersecting)) return
+      seen.disconnect()
+      if (!reduced && !dragged) turnTo(rest, 2400)
+    },
+    { threshold: 0.5 },
+  )
+  seen.observe(canvas)
 
   // Drag to look around: sideways turns, up and down tilts a little.
   let drag: { x: number; y: number; yaw: number; pitch: number } | null = null
   const down = (e: PointerEvent) => {
-    t0 = 0
+    tween = null
+    seen.disconnect()
     drag = { x: e.clientX, y: e.clientY, yaw, pitch }
     canvas.setPointerCapture(e.pointerId)
+    canvas.style.cursor = 'grabbing'
+    if (!dragged) {
+      dragged = true
+      dragFns.forEach((f) => f())
+    }
   }
   const move = (e: PointerEvent) => {
     if (!drag) return
@@ -246,6 +294,7 @@ export const createSkylineDome: SceneFactory<DomeProps> = async (canvas, props, 
   }
   const up = () => {
     drag = null
+    canvas.style.cursor = 'grab'
   }
   canvas.addEventListener('pointerdown', down)
   canvas.addEventListener('pointermove', move)
@@ -256,7 +305,24 @@ export const createSkylineDome: SceneFactory<DomeProps> = async (canvas, props, 
   size()
   request()
 
-  return {
+  const handle: DomeHandle = {
+    turnBy: (deg) => {
+      seen.disconnect()
+      turnTo((tween?.to ?? yaw) + deg, 350)
+    },
+    face: (body) => {
+      seen.disconnect()
+      const to = (body === 'sun' ? sun : earth).az(current.nowH)
+      const d = ((((to - yaw) % 360) + 540) % 360) - 180
+      turnTo(yaw + d, 700)
+    },
+    onYaw: (fn) => {
+      yawFns.push(fn)
+      fn(yaw)
+    },
+    onFirstDrag: (fn) => {
+      dragFns.push(fn)
+    },
     update: (p) => {
       if (p.elDeg !== current.elDeg) buildWall(p.elDeg)
       sun.set(p.sun, p.nowH)
@@ -270,6 +336,7 @@ export const createSkylineDome: SceneFactory<DomeProps> = async (canvas, props, 
     },
     dispose: () => {
       cancelAnimationFrame(raf)
+      seen.disconnect()
       canvas.removeEventListener('pointerdown', down)
       canvas.removeEventListener('pointermove', move)
       canvas.removeEventListener('pointerup', up)
@@ -280,4 +347,5 @@ export const createSkylineDome: SceneFactory<DomeProps> = async (canvas, props, 
       renderer.forceContextLoss()
     },
   }
+  return handle
 }
