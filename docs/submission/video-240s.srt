@@ -1,0 +1,153 @@
+1
+00:00:00,500 --> 00:00:04,500
+At the Moon's south pole, the Sun never climbs.
+
+2
+00:00:04,500 --> 00:00:14,500
+It circles the horizon, so a single ridge can put a lander
+in the dark for days and cut its line to Earth.
+
+3
+00:00:15,500 --> 00:00:22,000
+We are [Team name]: [Name], [Name], [Name] and [Name].
+
+4
+00:00:22,000 --> 00:00:29,500
+Our challenge is the CLPS Lunar Mission Browser.
+Our answer is PolarWindow.
+
+5
+00:00:30,500 --> 00:00:36,500
+NASA's commercial lunar deliveries, CLPS, are public missions.
+
+6
+00:00:36,500 --> 00:00:44,000
+But their data is scattered: flight paths in one archive,
+terrain in another, ground stations in a handbook.
+
+7
+00:00:44,000 --> 00:00:50,500
+A lander team has one question first. Is this landing site,
+on these dates, workable for my lander?
+
+8
+00:00:50,500 --> 00:00:54,500
+Today that takes a specialist and days of work.
+
+9
+00:00:55,500 --> 00:01:00,000
+PolarWindow brings it together.
+It browses every CLPS delivery,
+
+10
+00:01:00,000 --> 00:01:09,500
+and it works out, hour by hour, what a lander gets at any site:
+sunlight, contact with Earth, and the gaps in between.
+
+11
+00:01:10,500 --> 00:01:18,500
+Here are all twenty CLPS deliveries, flown and planned. Every fact
+links to its source, and what is not published says so.
+
+12
+00:01:18,500 --> 00:01:23,500
+Each mission follows six steps,
+from getting ready to coming home.
+
+13
+00:01:24,500 --> 00:01:33,000
+This is IM-2 on the surface. Four numbers: time in sunlight, time in contact
+with Earth, the longest night, and the longest time without contact.
+
+14
+00:01:33,000 --> 00:01:37,500
+Each carries its margin.
+
+15
+00:01:38,500 --> 00:01:44,000
+The reason is the skyline.
+
+16
+00:01:44,000 --> 00:01:51,500
+As the dates play, the Sun and Earth move along the hills
+around the site, and every number is worked out again.
+
+17
+00:01:52,500 --> 00:01:58,500
+Compare candidate sites side by side, one measure at a time.
+
+18
+00:01:58,500 --> 00:02:05,500
+When two are too close to call, it says so.
+There is no score and no best site.
+
+19
+00:02:06,500 --> 00:02:12,500
+A team can add its own mission by dropping in a brief,
+then try a what-if.
+
+20
+00:02:12,500 --> 00:02:19,500
+Assumed values are always hatched,
+so nobody mistakes them for facts.
+
+21
+00:02:20,500 --> 00:02:24,000
+And you can simply ask.
+
+22
+00:02:24,000 --> 00:02:34,500
+The assistant may only state numbers its tools returned,
+and it shows how it got each one.
+
+23
+00:02:35,500 --> 00:02:38,500
+PolarWindow is built on NASA open data.
+
+24
+00:02:38,500 --> 00:02:45,500
+The LOLA laser height maps from the Lunar Reconnaissance Orbiter
+give every site its skyline.
+
+25
+00:02:45,500 --> 00:02:53,000
+NASA's SPICE kernels and the CLPS trajectory archive give the positions
+of the Sun, Earth and each spacecraft.
+
+26
+00:02:53,000 --> 00:02:57,500
+Deep Space Network horizon masks say when a dish can listen.
+
+27
+00:02:57,500 --> 00:03:04,500
+DONKI gives space weather, GRAIL the Moon's gravity,
+and Diviner the surface temperatures.
+
+28
+00:03:05,500 --> 00:03:11,000
+We checked the models against missions that have flown,
+using their reconstructed trajectories.
+
+29
+00:03:11,000 --> 00:03:15,000
+More than fourteen hundred automated tests guard the code.
+
+30
+00:03:15,000 --> 00:03:24,500
+Every number says whether it was worked out, published,
+entered or assumed, and how far it could be off.
+
+31
+00:03:25,500 --> 00:03:32,000
+For lander and payload teams, the answer is on one page
+instead of spread across archives.
+
+32
+00:03:32,000 --> 00:03:39,500
+For students and the public, it opens a real mission's choices
+to anyone with a browser.
+
+33
+00:03:40,500 --> 00:03:49,500
+PolarWindow. Open source, and live at clpsspaceapps.ahbab.dev.
+We are [Team name]. Thank you.
