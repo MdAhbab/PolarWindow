@@ -68,3 +68,10 @@ export const IDEAS: readonly Idea[] = [
 
 /** The closing film's three lines, in order: card 4's words, said as captions. */
 export const RIM_LINES = ['The power is in the light.', 'The ice is in the dark.', 'So the exact spot matters.'] as const
+
+/** One more line under each of the three, said smaller: what the line means for a landing. */
+export const RIM_MORE = [
+  'A lander lives on sunlight, and at the pole the Sun only skims the hills.',
+  'Crater floors nearby never see the Sun. That is where the water ice waits.',
+  'Move a little, and the hours of light and of contact with Earth change.',
+] as const

@@ -124,30 +124,81 @@
 }
 
 /* ---- The closing film's captions -------------------------------------------
-   On their own plate (the inset surface at about 85 percent, the card radius),
-   one line at a time, cross-fading. */
+   Timed, in the middle of the picture like a story caption: heavy, narrow
+   capitals (Archivo at 800 weight and 75 percent width) with a smaller line
+   under them, one caption at a time, cross-fading. A soft shade sits behind
+   the words only. Not timed, the same lines are a list on a plate. */
 .pw-caption-plate {
   background: color-mix(in srgb, var(--color-inset) 85%, transparent);
   border-radius: var(--radius-card);
+}
+.pw-caption-strong {
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-stretch: 75%;
+  text-transform: uppercase;
+  letter-spacing: 0.005em;
+  color: var(--color-ink);
+  text-wrap: balance;
+}
+.pw-caption-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 6rem 1.5rem 11rem;
+  text-align: center;
+  pointer-events: none;
   transition: opacity var(--pw-dur-base) var(--ease-settle);
 }
-.pw-caption-plate[data-caption='none'] {
+.pw-caption-stage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(ellipse 55% 38% at 50% 48%, var(--pw-shade), transparent 72%);
+}
+.pw-caption-stage[data-caption='none'] {
   opacity: 0;
   transition: opacity var(--pw-dur-quick) var(--ease-leave);
 }
+.pw-caption-stage .pw-caption-strong,
+.pw-caption-more {
+  text-shadow:
+    0 1px 2px rgb(0 0 0 / 0.55),
+    0 4px 28px rgb(0 0 0 / 0.45);
+}
+.pw-caption-more {
+  color: var(--color-ink);
+  font-weight: 500;
+  text-wrap: balance;
+}
 .pw-captions {
   display: grid;
+  max-width: 64rem;
 }
 .pw-caption {
   grid-area: 1 / 1;
   opacity: 0;
-  transition: opacity var(--pw-dur-quick) var(--ease-leave);
+  transform: translateY(6px);
+  transition:
+    opacity var(--pw-dur-quick) var(--ease-leave),
+    transform var(--pw-dur-quick) var(--ease-leave);
 }
-.pw-caption-plate[data-caption='0'] .pw-caption[data-i='0'],
-.pw-caption-plate[data-caption='1'] .pw-caption[data-i='1'],
-.pw-caption-plate[data-caption='2'] .pw-caption[data-i='2'] {
+.pw-caption-stage[data-caption='0'] .pw-caption[data-i='0'],
+.pw-caption-stage[data-caption='1'] .pw-caption[data-i='1'],
+.pw-caption-stage[data-caption='2'] .pw-caption[data-i='2'] {
   opacity: 1;
-  transition: opacity var(--pw-dur-base) var(--ease-settle) var(--pw-dur-quick);
+  transform: none;
+  transition:
+    opacity var(--pw-dur-base) var(--ease-settle) var(--pw-dur-quick),
+    transform var(--pw-dur-base) var(--ease-settle) var(--pw-dur-quick);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pw-caption {
+    transform: none;
+  }
 }
 
 /* ---- The sound control ------------------------------------------------------ */

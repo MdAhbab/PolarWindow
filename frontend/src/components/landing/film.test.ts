@@ -107,18 +107,18 @@ describe('the beats of a pinned stage', () => {
 describe('the closing film’s captions', () => {
   it('shows each line in its window by the film’s own clock', () => {
     expect(captionAt(0)).toBe(0)
-    expect(captionAt(3.9)).toBe(0)
-    expect(captionAt(5)).toBe(1)
-    expect(captionAt(11.9)).toBe(1)
-    expect(captionAt(13)).toBe(2)
-    expect(captionAt(19.2)).toBe(2)
+    expect(captionAt(5.4)).toBe(0)
+    expect(captionAt(6.5)).toBe(1)
+    expect(captionAt(17.4)).toBe(1)
+    expect(captionAt(18.5)).toBe(2)
+    expect(captionAt(24.8)).toBe(2)
   })
 
   it('leaves a second of quiet between the lines', () => {
-    expect(captionAt(4)).toBeNull()
-    expect(captionAt(4.9)).toBeNull()
-    expect(captionAt(12)).toBeNull()
-    expect(captionAt(12.9)).toBeNull()
+    expect(captionAt(5.5)).toBeNull()
+    expect(captionAt(6.4)).toBeNull()
+    expect(captionAt(17.5)).toBeNull()
+    expect(captionAt(18.4)).toBeNull()
   })
 
   it('shows nothing for a time that is not one', () => {
@@ -160,12 +160,12 @@ describe('how big a film is shown', () => {
     expect(filmFrame(2560, 1440, 1440, 3840, 2160)).toEqual({ w: 2560, h: 1440, featherX: false, featherY: false })
   })
 
-  it('knows the cropped films are 20:9', () => {
-    const light = filmNative('light', 'large')
-    expect(light.h / light.w).toBeCloseTo(9 / 20)
-    expect(filmNative('earth', 'large').h / filmNative('earth', 'large').w).toBeCloseTo(9 / 20)
-    expect(filmNative('shadow', 'large').h / filmNative('shadow', 'large').w).toBeCloseTo(9 / 16)
-    expect(filmNative('light', 'small').w).toBeLessThan(light.w)
+  it('knows every film is 16:9', () => {
+    for (const name of ['light', 'shadow', 'earth', 'rim'] as const) {
+      const f = filmNative(name, 'large')
+      expect(f.h / f.w).toBeCloseTo(9 / 16)
+    }
+    expect(filmNative('light', 'small').w).toBeLessThan(filmNative('light', 'large').w)
   })
 
   it('fetches the small file on a phone, on a slow connection and where it would be enough', () => {

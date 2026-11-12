@@ -74,11 +74,13 @@ export function CloseStage({ autoplay, phone, small }: { autoplay: boolean; phon
         <AutoplayFilm id="rim" still={!autoplay} small={small} ready={files === 'yes'} onFail={() => setFailed(true)} onTime={timed ? onTime : undefined} />
       )}
       <div aria-hidden="true" className="pw-film-shade pw-film-shade-low" />
+      {/* Timed captions sit in the middle of the picture; the list form stays above the button. */}
+      {timed && <Captions timed index={caption} />}
       <div data-reveal className="relative z-10 flex w-full max-w-3xl flex-col items-center gap-8 text-center">
         <h2 id="close-h" className="sr-only">
           {ENTER_WORDS}
         </h2>
-        <Captions timed={timed} index={caption} />
+        {!timed && <Captions timed={false} index={caption} />}
         <EnterButton />
       </div>
     </section>

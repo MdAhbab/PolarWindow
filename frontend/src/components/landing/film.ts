@@ -47,15 +47,19 @@ export function approach(current: number, target: number, share = 0.35, fps = SC
 /**
  * The beats of a pinned stage: the progress each one starts at, ascending. A
  * beat holds until the next starts, so there is no moment with none showing.
- * Set against the real frames (see landing-video notes in L1.md):
- *  - shadow: the lander is lit until 0.30, the shadow is across it from 0.37
- *    to 0.57, and the light is back by 0.63;
- *  - earth: Earth stands clear of the hill until about 0.45, then the hill
- *    covers more of it each moment (a quarter of it gone by 0.7, most by 0.9).
+ * Set against the real frames of the files (frame i of the 120 is at progress
+ * i / 120; shadow is the clip's first 10 s, earth its whole 10 s):
+ *  - shadow: the lander is lit while the Sun sinks toward a peak (to about
+ *    0.48), the peak's shadow reaches the lander at 0.48 and it is dark from
+ *    0.51 to 0.57, the Sun shows over the peak again at 0.57 and the lander is
+ *    lit by 0.62;
+ *  - earth: Earth stands clear of the hill until 0.49, then the hill covers
+ *    more of it each moment (a quarter of it gone by 0.6, half by 0.78, most
+ *    by 0.9).
  */
 export const BEATS = {
-  shadow: [0, 0.35, 0.65],
-  earth: [0, 0.42, 0.85],
+  shadow: [0, 0.48, 0.6],
+  earth: [0, 0.5, 0.85],
 } as const
 
 export type Beats = readonly number[]
@@ -71,15 +75,26 @@ export function beatFor(progress: number, starts: Beats): number {
  * The captions of the closing film, by the film's own clock. A second of
  * quiet between lines, so each one is read as a line and not as a blur.
  * `end` is exclusive; the last one holds to the end of the loop.
+ *
+ * The file (24.9 s) is the rim clip, then the descent clip, cross-faded where
+ * they meet (10 to 11 s) and again where the loop turns over. Against its frames:
+ *  - 0 to 5.5 s: sunlit boulders on the rim's outer slope ("the power is in the
+ *    light");
+ *  - 6.5 to 17.5 s: the rim's black crater with Earth rising over the far rim,
+ *    then, from the cross-fade, the big dark craters seen from above ("the ice
+ *    is in the dark");
+ *  - 18.5 s to the end: close along the hard line between a crater's shadow and
+ *    the lit ground, which stays in the picture to about 22 s ("so the exact
+ *    spot matters").
  */
 export interface CaptionWindow {
   start: number
   end: number
 }
 export const RIM_CAPTIONS: readonly CaptionWindow[] = [
-  { start: 0, end: 4 },
-  { start: 5, end: 12 },
-  { start: 13, end: Infinity },
+  { start: 0, end: 5.5 },
+  { start: 6.5, end: 17.5 },
+  { start: 18.5, end: Infinity },
 ]
 
 /** The caption showing at a time in the film, or null in the gaps. */
@@ -116,7 +131,7 @@ export function filmFilesReachable(ok: boolean, contentType: string | null): boo
 }
 
 /**
- * The films are 1280 wide (960 for a phone) and never shown more than 1.25 times as wide: stretched
+ * The films are 1920 wide (1280 for a phone or a small window) and never shown more than 1.25 times as wide: stretched
  * further they are soft, and on a big screen a clean file looks better small and centred than large
  * and blurred. Beyond that size the picture sits in the middle of its stage, which is the page's canvas
  * colour, and its edges fade into it (landing.css, .pw-film-frame).
@@ -134,8 +149,8 @@ export const FILM_FEATHER = 0.08
 export type FilmSize = 'large' | 'small'
 export const FILM_WIDTH: Record<FilmSize, number> = { large: 1920, small: 1280 }
 
-/** Height over width of each film as shipped: light and earth are cropped of their black bars to 20:9. */
-const FILM_ASPECT = { light: 576 / 1280, shadow: 720 / 1280, earth: 576 / 1280, rim: 720 / 1280 } as const
+/** Height over width of each film as shipped: all five clips are 1920 x 1080, with no black bars, so every film is 16:9. */
+const FILM_ASPECT = { light: 1080 / 1920, shadow: 1080 / 1920, earth: 1080 / 1920, rim: 1080 / 1920 } as const
 export type FilmName = keyof typeof FILM_ASPECT
 
 export function filmNative(name: FilmName, size: FilmSize): { w: number; h: number } {
