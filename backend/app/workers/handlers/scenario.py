@@ -226,6 +226,14 @@ async def _sub_run(
     pid: str,
 ) -> HandlerResult:
     last = {"t": 0.0}
+    loop = asyncio.get_running_loop()
+
+    def start(fraction: float, message: str | None) -> None:
+        task = loop.create_task(
+            tracker.set(pid, "active", message or tracker.phase(pid)["detail"], within=fraction)
+        )
+        _pending.add(task)
+        task.add_done_callback(_pending.discard)
 
     def report(fraction: float, message: str | None) -> None:
         # The section reports from inside its own work; the scenario's row is written at
@@ -234,11 +242,16 @@ async def _sub_run(
         if now - last["t"] < 1.5:
             return
         last["t"] = now
-        task = asyncio.get_running_loop().create_task(
-            tracker.set(pid, "active", message or tracker.phase(pid)["detail"], within=fraction)
-        )
-        _pending.add(task)
-        task.add_done_callback(_pending.discard)
+        # Some sections report from a worker thread (``asyncio.to_thread``), where
+        # there is no running loop: hand the write to the job's own loop.
+        try:
+            here = asyncio.get_running_loop()
+        except RuntimeError:
+            here = None
+        if here is loop:
+            start(fraction, message)
+        else:
+            loop.call_soon_threadsafe(start, fraction, message)
 
     sub = _Sub(job=dataclasses.replace(ctx.job, kind=kind, params=params), report=report)
     res: HandlerResult = await run(sub)

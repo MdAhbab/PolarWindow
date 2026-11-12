@@ -699,3 +699,31 @@ def test_precedents_prefer_the_same_lander_then_the_same_provider() -> None:
     pad = core.default_pad("falcon-heavy", "IM", "Nova-C", rows)
     assert pad is not None and pad.value == "ccsfs-slc-40"
     assert core.default_vehicle(None, None, []) is None
+
+
+async def test_a_section_may_report_progress_from_a_worker_thread() -> None:
+    """The contact step reports from ``asyncio.to_thread``; that once failed the step."""
+    import asyncio
+
+    from app.db.repositories.jobs import JobRecord
+    from app.workers.compute import HandlerResult, JobContext
+    from app.workers.handlers import scenario as handler
+
+    seen: list[tuple[str, str]] = []
+
+    class Tracker:
+        def phase(self, pid: str) -> dict[str, Any]:
+            return {"detail": None}
+
+        async def set(self, pid: str, state: str, detail: str, within: float = 0.0) -> None:
+            seen.append((pid, detail))
+
+    async def run(ctx: JobContext) -> HandlerResult:
+        await asyncio.to_thread(ctx.progress, 0.5, "half way, from a thread")
+        await asyncio.sleep(0.01)
+        return HandlerResult(result={"data": {}})
+
+    fields: dict[str, Any] = {f: None for f in JobRecord.__dataclass_fields__}
+    ctx = JobContext(job=JobRecord(**(fields | {"kind": "scenario", "params": {}})))
+    await handler._sub_run(ctx, run, {}, "contact", Tracker(), "contact")  # type: ignore[arg-type]
+    assert seen == [("contact", "half way, from a thread")]
