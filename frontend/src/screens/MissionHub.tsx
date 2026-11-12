@@ -123,7 +123,14 @@ export function MissionHub() {
           [m.provider, m.lander, m.taskOrder ? `NASA task order ${m.taskOrder}` : null].filter(Boolean).join(' · ') ||
           'Provider not published'
         }
-      />
+      >
+        {step && (
+          // Where you are and what comes next, in one line.
+          <p className="text-small font-medium text-ink-2" data-testid="where-now">
+            {m.name}, step {i + 1} of {SECTIONS.length}: {step.name}.{nextStep ? ` Next: ${nextStep.name}.` : ' This is the last step.'}
+          </p>
+        )}
+      </PageHeader>
       {step ? (
         <>
           <JourneyBar

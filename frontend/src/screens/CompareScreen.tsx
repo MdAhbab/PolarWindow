@@ -42,11 +42,12 @@ const API_METRIC: Record<MetricKey, string> = {
   longestBlackout: 'longest_blackout_s',
 }
 
-const RANKS: { value: MetricKey; label: string }[] = [
-  { value: 'sunHours', label: 'Time in sunlight' },
-  { value: 'earthHours', label: 'Time in contact with Earth' },
+/** The same measures in words short enough for one row of buttons on a phone. */
+const SHORT_RANKS: { value: MetricKey; label: string }[] = [
+  { value: 'sunHours', label: 'Sunlight' },
+  { value: 'earthHours', label: 'Contact' },
   { value: 'longestDark', label: 'Longest night' },
-  { value: 'longestBlackout', label: 'Longest time without contact' },
+  { value: 'longestBlackout', label: 'Longest without contact' },
 ]
 
 /** The window cut this site's value for `key` short: it is a lower bound. Totals never are. */
@@ -286,21 +287,9 @@ export function CompareScreen() {
       <DateSlider />
       <div className="flex flex-wrap items-end gap-x-6 gap-y-4">
         <div data-guide="rank-by" className="flex min-w-0 max-w-full flex-col gap-2">
-          <label htmlFor="pw-rank" className="pw-eyebrow xl:hidden">
-            Rank by
-          </label>
-          <Select
-            id="pw-rank"
-            look="pill"
-            value={rankBy}
-            onChange={setRankBy}
-            options={RANKS}
-            className="xl:hidden"
-          />
-          <div className="hidden flex-col gap-2 xl:flex">
-            <Eyebrow as="div">Rank by</Eyebrow>
-            <Segmented options={RANKS} value={rankBy} onChange={setRankBy} label="Rank by" />
-          </div>
+          {/* Buttons at every width, the chosen one marked: a dropdown hid the other measures. */}
+          <Eyebrow as="div">Order by</Eyebrow>
+          <Segmented options={SHORT_RANKS} value={rankBy} onChange={setRankBy} label="Order by" />
         </div>
         <AddSite compareIds={compareIds} />
         <Speaker summary={spoken} what="this comparison" resetKey={`${compareIds.join('|')}|${rankBy}|${w.start}`} />

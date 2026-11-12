@@ -224,6 +224,10 @@ export function MissionsScreen() {
               <span className="sr-only">Showing </span>
               {count}
             </p>
+            <Link to="/projects/new" className={pillClass('secondary')}>
+              <Icon name="file" size={16} strokeWidth={2} />
+              Start from a file
+            </Link>
             <Link to="/projects/new" className={pillClass('primary')} data-guide="new-project">
               <Icon name="plus" size={16} strokeWidth={2.2} />
               New project

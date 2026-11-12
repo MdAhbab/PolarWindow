@@ -14,6 +14,7 @@ import { EmptyState, LoadingPanel, ProblemPanel } from '../components/States'
 import { Button, Chip, Disclosure, Eyebrow, Panel, PillArrow, SearchField, pillClass } from '../components/ui'
 import { PageHeader } from '../components/Page'
 import { Icon } from '../components/Icon'
+import { ShareRing } from '../components/ShareRing'
 import { bound, coords, percent } from '../lib/format'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
 import { coordinateKindWords } from '../lib/missions'
@@ -206,10 +207,11 @@ export function MapScreen() {
                     type="button"
                     onClick={() => setSite(s.id)}
                     aria-current={active ? 'true' : undefined}
-                    className={`flex flex-col gap-0.5 rounded-none border-b border-line px-4 py-2.5 text-left last:border-b-0 ${
+                    className={`flex items-center gap-3 rounded-none border-b border-line px-4 py-2.5 text-left last:border-b-0 ${
                       active ? 'bg-inset shadow-[inset_3px_0_0_var(--color-ink)]' : 'hover:bg-inset'
                     }`}
                   >
+                    <span className="flex min-w-0 grow flex-col gap-0.5">
                     <span className="flex items-baseline gap-2 text-body font-semibold text-ink">
                       <span className="w-4 shrink-0 font-mono text-caption text-ink-3" aria-hidden="true">
                         {s.code}
@@ -230,6 +232,8 @@ export function MapScreen() {
                         'working out…'
                       )}
                     </span>
+                    </span>
+                    {m && <ShareRing sun={m.sun.fractionUp} earth={m.earth.fractionUp} />}
                   </button>
                 )
               })

@@ -12,6 +12,7 @@ import { NewProjectCard, ProjectCard, ProjectsEmpty } from '../components/home/P
 import { askSuggestions, headline, needsYou, utcDateWords } from '../components/home/model'
 import { useNow } from '../components/home/useSunNow'
 import { MarkLegend } from '../components/StepStrip'
+import { Doors } from '../components/home/Doors'
 
 /** Three CLPS missions worth opening first: the ones still ahead, soonest first, then the rest. */
 function toExplore(missions: Mission[], now: number): Mission[] {
@@ -70,6 +71,8 @@ export function HomeScreen() {
         </div>
         <NowOnTheMoon projects={projects} />
       </section>
+
+      <Doors />
 
       <section aria-labelledby="home-projects" className="flex min-w-0 flex-col gap-4">
         <BlockHeading id="home-projects" count={projectsLoading || PROJECTS_OFFLINE ? null : projects.length}>
