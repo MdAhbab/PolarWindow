@@ -60,7 +60,10 @@ function ScenarioContact({ contact, meta, mission }: { contact: ContactDTO; meta
   const days = typeof val('surface_days') === 'number' ? (val('surface_days') as number) : 14
   const start = contact.start ? Date.parse(contact.start) : Number.isNaN(landing) ? Date.now() : landing
   const end = contact.end ? Date.parse(contact.end) : start + days * 86_400_000
-  return <ContactAnswer contact={contact} meta={meta} mission={mission} added={[]} onAdded={() => {}} start={start} end={end} />
+  // A scenario's stored answer has no booked passes (bookings belong to the mission record), so it
+  // carries an empty list, as the record's answer does when nothing is booked.
+  const shown: ContactDTO = { ...contact, bookings: contact.bookings ?? [] }
+  return <ContactAnswer contact={shown} meta={meta} mission={mission} added={[]} onAdded={() => {}} start={start} end={end} />
 }
 
 const CONTACT_QUESTION = 'How often can the lander talk to Earth?'

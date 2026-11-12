@@ -86,6 +86,10 @@ async def get_tile(
             # deploy, not the URL, so a long max-age with an ETag is the right
             # trade for a demo.
             "Cache-Control": "public, max-age=86400",
+            # Public pictures, drawn both by a plain <img> and by a WebGL texture (which asks
+            # with CORS). Without this, the copy the <img> cached has no CORS header and the
+            # texture's request for the same tile is refused from the cache.
+            "Access-Control-Allow-Origin": "*",
             "X-Tile-Source": tile.source,
             "X-Tile-Note": tile_service.TILE_NOTE,
         },
