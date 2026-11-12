@@ -110,6 +110,18 @@ async def flight_rows(session: AsyncSession, exclude: str) -> list[FlightRow]:
     return out
 
 
+async def target_rows(session: AsyncSession) -> list[core.TargetRow]:
+    """Every mission with a published target: the precedents for an example landing spot."""
+    out = []
+    for r in await MissionRepository(session).find():
+        if r.site_id and r.origin != "project":
+            when = ((r.landing or r.launch or {}).get("date") or "")[:10]
+            out.append(
+                core.TargetRow(r.id, r.name, r.provider, r.region, r.site_id, r.target_name, when)
+            )
+    return out
+
+
 def _source_of(m: MissionRecord) -> tuple[str, str | None]:
     s = (m.sources or [{}])[0]
     url = s.get("url") or None
@@ -147,11 +159,13 @@ async def defaults(
     m: MissionRecord,
     chosen: dict[str, Any],
     rows: list[FlightRow] | None = None,
+    today: date | None = None,
 ) -> dict[str, Candidate]:
     """The named precedents and rules used when nothing else has a value.
 
     ``chosen`` holds the values already settled (so the default pad follows the vehicle)."""
     rows = await flight_rows(session, m.id) if rows is None else rows
+    today = today or datetime.now(UTC).date()
     out: dict[str, Candidate] = {}
     veh = core.default_vehicle(m.provider, m.lander, rows)
     if veh:
@@ -166,12 +180,12 @@ async def defaults(
     pad = core.default_pad(vehicle_id, m.provider, m.lander, rows, pads)
     if pad:
         out["pad_id"] = pad
-    if m.landing and m.landing.get("precision") not in ("second", "minute", "day"):
-        out["landing_date"] = Candidate(
-            str(m.landing["date"])[:10],
-            "Mission record",
-            note=f"The record says '{m.landing['as_published']}'; its first day is used.",
-        )
+    site = core.default_site(m.id, m.provider, m.region, await target_rows(session))
+    if site:
+        out["site_id"] = site
+    landing = core.default_landing(m.landing, m.launch, today)
+    if landing:
+        out["landing_date"] = landing
     out["surface_days"] = Candidate(
         mission_service.LUNAR_DAYLIGHT_S / 86400.0,
         "Surface window rule",
@@ -256,9 +270,9 @@ async def resolve_all(
             chosen[fid] = r.value
 
     # Order matters: the default pad follows the vehicle; the launch window follows the landing.
-    base = await defaults(session, m, {}, rows)
+    base = await defaults(session, m, {}, rows, today)
     settle("vehicle_id", base)
-    dflt = await defaults(session, m, chosen, rows)
+    dflt = await defaults(session, m, chosen, rows, today)
     for fid in ("pad_id", "site_id", "landing_date", "surface_days", "transfer_type"):
         settle(fid, dflt)
     for fid in ("launch_from", "launch_to"):
@@ -654,6 +668,33 @@ async def create(
         await repo.requeue(rec.id, core.phases(rec.sections))
         rec = await enqueue(session, m, rec, who, fresh=True)
     return rec, created
+
+
+#: How a stored trip step reads when the mission had no trip of its own and no example was shown.
+_NO_TRIP = "No trip has been worked out"
+
+
+async def rerun_if_more(
+    session: AsyncSession, m: MissionRecord, rec: ScenarioRecord, name: str
+) -> bool:
+    """Run a finished preset again when today's defaults can work out a step it skipped."""
+    if not rec.preset or rec.status != "done":
+        return False
+    res = await resolve_all(session, m, rec.given)
+    more = [
+        p["id"]
+        for p in rec.phases
+        if p.get("state") == "skipped"
+        and (
+            can_run(str(p["id"]), res)
+            or (p["id"] == "trip" and str(p.get("detail") or "").startswith(_NO_TRIP))
+        )
+    ]
+    if not more:
+        return False
+    await ScenarioRepository(session).requeue(rec.id, core.phases(rec.sections), name=name)
+    await enqueue(session, m, rec, None, fresh=True)
+    return True
 
 
 async def start(

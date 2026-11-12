@@ -288,8 +288,10 @@ async def test_resolve_all_leaves_out_what_nothing_supplies(world: World) -> Non
     world.missions[m.id] = m
     res = await scenario_service.resolve_all(None, m, {}, today=TODAY)  # type: ignore[arg-type]
     by = {r.field: r for r in res}
-    for gap in ("vehicle_id", "pad_id", "site_id", "landing_date"):
+    for gap in ("vehicle_id", "pad_id", "site_id"):
         assert gap not in by
+    # A landing day always has a stated example rule, so it is a default, never a gap.
+    assert by["landing_date"].basis == "default" and "not a plan" in (by["landing_date"].note or "")
     assert by["transfer_type"].basis == "default" and by["surface_days"].basis == "default"
     assert not scenario_service.can_run("launch", res)
     assert not scenario_service.can_run("contact", res)
@@ -727,3 +729,52 @@ async def test_a_section_may_report_progress_from_a_worker_thread() -> None:
     ctx = JobContext(job=JobRecord(**(fields | {"kind": "scenario", "params": {}})))
     await handler._sub_run(ctx, run, {}, "contact", Tracker(), "contact")  # type: ignore[arg-type]
     assert seen == [("contact", "half way, from a thread")]
+
+
+def _target(mid: str, provider: str | None, region: str, site: str, when: str) -> core.TargetRow:
+    return core.TargetRow(mid, mid.upper(), provider, region, site, site.title(), when)
+
+
+TARGETS = [
+    _target("im-2", "IM", "south_polar", "site-a", "2025-03-06"),
+    _target("im-4", "IM", "south_polar", "site-b", ""),
+    _target("griffin-1", "Voyager", "south_polar", "site-c", "2026-01-01"),
+    _target("bg-1", "Firefly", "nearside", "site-d", "2025-03-02"),
+]
+
+
+def test_an_example_site_is_the_providers_latest_target_in_the_region() -> None:
+    c = core.default_site("ct-4", "IM", "south_polar", TARGETS)
+    assert c is not None and c.value == "site-b"  # undated planned counts as latest
+    assert "IM-4" in (c.note or "") and "this provider's" in (c.note or "")
+    # No region published: the south pole. Another provider's: the latest CLPS polar target.
+    other = core.default_site("cs-8", None, None, TARGETS)
+    assert other is not None and other.value == "site-b"
+    assert "the CLPS list's" in (other.note or "")
+
+
+def test_an_example_site_keeps_a_published_region_and_never_makes_one_up() -> None:
+    near = core.default_site("bg-3", "Firefly", "nearside", TARGETS)
+    assert near is not None and near.value == "site-d"
+    assert core.default_site("bg-2", "Firefly", "farside", TARGETS) is None
+    assert core.default_site("im-4", "IM", "south_polar", TARGETS[1:2]) is None  # not itself
+
+
+def test_an_example_landing_day_says_where_it_came_from() -> None:
+    today = date(2026, 11, 13)
+    year = {"date": "2028-01-01", "precision": "year", "as_published": "2028"}
+    assert core.default_landing(year, None, today).value == "2028-01-01"  # type: ignore[union-attr]
+    launch = core.default_landing(None, {"date": "2027-01-01", "as_published": "2027"}, today)
+    assert launch is not None and launch.value == "2027-01-06" and "5 days" in (launch.note or "")
+    none = core.default_landing(None, None, today)
+    assert none is not None and none.value == "2027-01-01" and "not a plan" in (none.note or "")
+
+
+def test_an_example_trip_is_a_named_flight_of_the_same_provider_first() -> None:
+    rows = [
+        FlightRow("im-2", "IM-2", "IM", "Nova-C", "2025-03-06", "falcon-9", "lc-39a"),
+        FlightRow("bg-1", "BG-1", "Firefly", "Blue Ghost", "2025-03-02", "falcon-9", "lc-39a"),
+    ]
+    assert core.trip_precedent("Firefly", None, rows).mission_id == "bg-1"  # type: ignore[union-attr]
+    assert core.trip_precedent("Voyager", None, rows).mission_id == "im-2"  # type: ignore[union-attr]
+    assert core.trip_precedent(None, None, []) is None

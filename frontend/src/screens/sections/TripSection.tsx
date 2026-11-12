@@ -111,9 +111,16 @@ function TripAnswer({ trip, meta, missionId }: { trip: TripDTO; meta: LifecycleM
   const gaps = stretches.some((r) => r.kind === 'nodata')
   const coveredH = hours - stretches.filter((r) => r.kind === 'nodata').reduce((h, r) => h + (r.end - r.start) / HOUR, 0)
   const n = trip.numbers
+  const example = (trip as { example_of?: { mission_id: string; name: string } }).example_of
   return (
     <>
-      <Answer meta={meta}>
+      <Answer
+        meta={meta}
+        extra={
+          // A worked example with no trip of its own shows a named past flight's trip.
+          example ? `Worked example: the trip ${example.name} flew, not one designed for this mission.` : undefined
+        }
+      >
         {tripSentence(hours, trip.source, shadowAndContact(n, gaps ? coveredH : undefined))}
       </Answer>
       {/* Only when the data has gaps does the note change what the numbers mean. */}

@@ -293,17 +293,42 @@ async def _launch(
 
 
 async def _trip(ctx: JobContext, tr: Tracker, m2: MissionRecord) -> dict[str, Any] | None:
+    example: MissionRecord | None = None
     async with session_scope() as s:
         code, body = await trip_service.trip_for(s, m2)
+        if code == 200 and (body.get("data") or {}).get("source") == "none":
+            # No trip of its own: a worked example shows a named past flight's trip.
+            flown = [
+                r
+                for r in await scenario_service.flight_rows(s, m2.id)
+                if r.mission_id in trip_service.FLOWN
+            ]
+            if m2.status not in ("cancelled", "reassigned") and (
+                pick := core.trip_precedent(m2.provider, m2.lander, flown)
+            ):
+                example = await MissionRepository(s).get(pick.mission_id)
+                if example is not None:
+                    code, body = await trip_service.trip_for(s, example)
     if code == 202:
         await tr.set(
-            "trip", "skipped", "This trip is worked out on the Trip page; it is the mission's own."
+            "trip",
+            "skipped",
+            f"The trip {example.name} flew is still being worked out; run this again shortly."
+            if example
+            else "This trip is worked out on the Trip page; it is the mission's own.",
         )
         return None
     data = body.get("data") or {}
     if data.get("source") == "none":
         await tr.set("trip", "skipped", data.get("none_reason"))
         return None
+    if example is not None:
+        body = {
+            **body,
+            "data": {**data, "example_of": {"mission_id": example.id, "name": example.name}},
+        }
+        await tr.set("trip", "done", f"The trip {example.name} flew, as an example.")
+        return dict(body)
     await tr.set("trip", "done", "The trip from launch to the Moon.")
     return dict(body)
 
@@ -393,7 +418,12 @@ def summarise(
             f"{str(d.get('start'))[:10]} and {str(d.get('end'))[:10]}."
         )
     if "trip" in results:
-        out["trip"] = "The trip from launch to the Moon, as for a real mission."
+        ex = (results["trip"].get("data") or {}).get("example_of")
+        out["trip"] = (
+            f"The trip {ex['name']} flew, shown as an example of this mission's trip."
+            if ex
+            else "The trip from launch to the Moon, as for a real mission."
+        )
     if "landing" in results:
         d = results["landing"]["data"]
         out["landing"] = (

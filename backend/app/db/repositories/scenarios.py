@@ -216,7 +216,12 @@ class ScenarioRepository:
             )
         )
 
-    async def requeue(self, scenario_id: str, phases: list[dict[str, Any]] | None = None) -> None:
+    async def requeue(
+        self,
+        scenario_id: str,
+        phases: list[dict[str, Any]] | None = None,
+        name: str | None = None,
+    ) -> None:
         values: dict[str, Any] = {
             "status": "queued",
             "progress": 0.0,
@@ -226,6 +231,8 @@ class ScenarioRepository:
         }
         if phases is not None:
             values["phases"] = phases
+        if name is not None:
+            values["name"] = name
         await self._s.execute(update(Scenario).where(Scenario.id == scenario_id).values(**values))
 
     async def delete(self, scenario_id: str) -> bool:

@@ -39,6 +39,7 @@ async def variants(
     res = {r.field: r for r in await scenario_service.resolve_all(session, m, {})}
     veh, pad = res.get("vehicle_id"), res.get("pad_id")
     land = res.get("landing_date")
+    site = res.get("site_id")
     out: list[tuple[str, dict[str, Any]]] = []
 
     bits = []
@@ -48,6 +49,8 @@ async def variants(
         bits.append("from " + core.display("pad_id", pad.value, nm))
     head = " ".join(bits) if bits else "none stated"
     tail = f", landing {core.display('landing_date', land.value, nm)}" if land else ""
+    if site:
+        tail += f", at {core.display('site_id', site.value, nm)}"
     out.append((f"Defaults from past flights: {head}{tail}", {}))
 
     rows = await scenario_service.flight_rows(session, m.id)
@@ -102,6 +105,8 @@ async def queue_presets(only: list[str] | None = None) -> int:
                         preset=True,
                     )
                     queued += int(created)
+                    if not created and await scenario_service.rerun_if_more(s, m, rec, name):
+                        queued += 1
         except job_service.QueueFull:
             log.info("the queue is full; the remaining presets wait for the next start")
             break

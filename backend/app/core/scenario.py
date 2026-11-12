@@ -450,6 +450,91 @@ def next_precedent(
     return None
 
 
+def trip_precedent(
+    provider: str | None, lander: str | None, flown: Sequence[FlightRow]
+) -> FlightRow | None:
+    """The flight whose trip a worked example shows: this lander's or provider's last.
+
+    Else the newest flight of any lander.
+    """
+    for r in precedents(provider, lander, flown) + _recent(flown):
+        return r
+    return None
+
+
+@dataclass(frozen=True, slots=True)
+class TargetRow:
+    """One mission's published target, as a precedent for a worked example's landing spot."""
+
+    mission_id: str
+    name: str
+    provider: str | None
+    region: str | None
+    site_id: str
+    target_name: str | None
+    #: ISO date of landing or launch; empty when the mission has none published.
+    when: str
+
+
+REGION_WORDS = {"south_polar": "south-polar", "nearside": "near-side", "farside": "far-side"}
+
+
+def default_site(
+    mission_id: str, provider: str | None, region: str | None, rows: Sequence[TargetRow]
+) -> Candidate | None:
+    """The landing spot a worked example assumes when none is published.
+
+    The provider's latest target in the mission's published region (the south pole when no
+    region is published), else the latest CLPS target there. An undated planned target counts
+    as later than a dated one. Always a named mission's published target, never a made-up spot.
+    """
+    want = region if region in ("nearside", "farside") else "south_polar"
+    pool = [r for r in rows if r.mission_id != mission_id and r.region == want]
+    if not pool:
+        return None
+    own = [r for r in pool if provider and r.provider == provider]
+    pick = max(own or pool, key=lambda r: (r.when or "9999", r.mission_id))
+    where = REGION_WORDS[want]
+    whose = "this provider's" if own else "the CLPS list's"
+    place = pick.target_name or pick.site_id
+    return Candidate(
+        pick.site_id,
+        f"As {pick.name}, a published target",
+        note=f"{place}, the target of {pick.name}: {whose} latest {where} target. "
+        "An example spot, not a plan.",
+    )
+
+
+#: Days from launch to landing a worked example assumes: within a direct flight's 3.5 to 6.5.
+LAUNCH_TO_LANDING_DAYS = 5
+
+
+def default_landing(
+    landing: Mapping[str, Any] | None, launch: Mapping[str, Any] | None, today: date
+) -> Candidate | None:
+    """The landing day a worked example assumes when the record gives none to the day."""
+    if landing and landing.get("date"):
+        return Candidate(
+            str(landing["date"])[:10],
+            "Mission record",
+            note=f"The record says '{landing.get('as_published')}'; its first day is used.",
+        )
+    if launch and launch.get("date"):
+        d = date.fromisoformat(str(launch["date"])[:10]) + timedelta(days=LAUNCH_TO_LANDING_DAYS)
+        return Candidate(
+            d.isoformat(),
+            "Mission record",
+            note=f"Launch is published as '{launch.get('as_published')}'. Landing is assumed "
+            f"{LAUNCH_TO_LANDING_DAYS} days after its first day, as on a direct flight.",
+        )
+    return Candidate(
+        add_months(today, 2).isoformat(),
+        "Worked example rule",
+        note="No date is published. The example lands on the first day of the month after "
+        "next, so its sunlight and contact can be shown. An example date, not a plan.",
+    )
+
+
 # ---------------------------------------------------------------------------
 # Dates in the record
 # ---------------------------------------------------------------------------
