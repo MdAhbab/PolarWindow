@@ -264,7 +264,7 @@ Checked and fixed across backend and frontend:
   solid line as the midpoint of the two bounds), and marked assumed example lander inputs with
   `.pw-scenario`.
 
-## 7. Clarity pass, first batch (13 November)
+## 7. Clarity pass (13 November)
 
 From the clarity-pass plan, the part due before the video: Part A on the Missions list, Part B
 steps 1, 4 and 6, Part C for the sky view, and the model name off answers (Part F).
@@ -284,11 +284,40 @@ steps 1, 4 and 6, Part C for the sky view, and the model name off answers (Part 
   arrow keys, a sliding compass strip, "Face the Sun" and "Face Earth".
 - Answers read "AI answer · N numbers checked". The model and timing stay in the run log.
 
-What the marks show today: most planned missions have only Return worked out in their
-examples, because no site or date is assumed. Part B steps 2, 3 and 5 (assumed site and dates
-for Surface and Contact) are what fill them; they are not done. Also not done: the strip on
-Home cards and the mission page, payload icons, and Parts D, E, G, H and I.
+The rest of the plan, done the same day:
 
-Gates at the end: ruff, ruff format, mypy, 10 import contracts clean; 967 backend unit tests
-passed, 2 skipped; frontend type check clean, 520 tests passed. Integration and end-to-end
-were not run.
+- Part B 2, 3 and 5 (`core/scenario.py`: `default_site`, `default_landing`, `trip_precedent`).
+  A worked example assumes a landing spot (the provider's latest published target in the
+  mission's region, else the latest CLPS one there), a landing day (the record's year or month,
+  else five days after a published launch, else the first of the month after next; a first day
+  that has passed moves to that too) and a trip (the one the same lander's or provider's last
+  flight flew, else the newest). Each says where it came from. A finished preset that skipped
+  a step these can now fill, or waited on its example trip, runs again at the next API start.
+  Dry run: all 15 planned missions can work out Launch, Trip, Surface, Contact and Return.
+- Part A, the rest: the same marks on Home's project cards and missions to explore, the legend
+  under Your projects, and "Worked example" on a mission's step bar where only an example answers.
+- Part D: each checked number carries the margin and unit its lookup gave (`guards.margin_of`).
+  Answers show durations as tiles with their margin (or "no margin given"), shares as a bar,
+  and "How this answer was made" in three steps (Looked up, Checked, Written) with Technical
+  details closed. The field says "Ask about IM-2"; page questions stay above it.
+- Part E: a kind mark on every tile (worked out, published, entered, assumed; `KindMark.tsx`);
+  "About this number" titles the panel a tile's label opens (kept inline, not a sheet); the page
+  foot is one closed "Sources, method and marks" row with both legends.
+- Parts G and H: three doors and "How it works" on Home; "IM-2, step 4 of 6: Surface. Next:
+  Contact." on each step; a sun and contact ring on each site row; Compare's measures as buttons
+  at every width ("Order by"); "Start from a file" on Missions.
+- Part F: `src/test/words.test.ts` fails the build on a long dash, a model or vendor name, or a
+  banned word in any on-screen string. 27 sentences over 20 words were split or cut. Strings
+  built with `${...}` were not scanned for length.
+
+Not done: payload icons (the icon set has none for instrument types), a pulse on Play, a hint
+for chart values on tap, one Report button in the same place on every page, and the five
+first-time tasks timed by a cold-start agent. "About this number" is the inline panel, not a sheet.
+
+To see it all: restart `run.py`. The API queues the presets again at start, and the workers then
+work them out with the new rules (about a minute each).
+
+Gates at the end: ruff, ruff format, mypy, 10 import contracts clean; 972 backend unit tests
+passed, 2 skipped; frontend type check clean, 525 tests passed. Every main page checked at 375
+and 1440 wide: no sideways scroll. Integration and end-to-end were not run; the end-to-end demo
+was updated for the new answer words.
