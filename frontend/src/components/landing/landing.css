@@ -1,0 +1,349 @@
+/*
+ * The front page's films, their text, and the four drawings' one movement.
+ * Everything here moves with transform and opacity only, on the app's own
+ * curves and durations (globals.css: --ease-*, --pw-dur-*), and each rule that
+ * moves is applied only when the page has decided motion is allowed (a
+ * data attribute set in code); the floor in globals.css stops the rest.
+ */
+
+/* ---- A film stage ---------------------------------------------------------
+   Always a dark band (the component carries data-theme="dark"), so the words
+   on it keep the dark theme's contrast on either page theme. */
+.pw-film {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--color-canvas);
+  /* The shade behind text: the canvas at 80 percent. A derived value, used by every shade below. */
+  --pw-shade: color-mix(in srgb, var(--color-canvas) 80%, transparent);
+}
+/* A film that did not load: no band of its own, so the Moon behind the page shows, as it always did. */
+.pw-film[data-film='off'] {
+  background: transparent;
+}
+.pw-film-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* The clips keep their subject low and to the right; the text sits left. */
+  object-position: 62% 50%;
+}
+.pw-film[data-film='off'] .pw-film-frame {
+  display: none;
+}
+/* The picture: never larger than 1.25 times its own width (FilmFrame sets the size in code), centred in the
+   stage, and where it does not reach a stage edge that edge fades into the canvas over 8 percent of the
+   picture's own size (--pw-fx and --pw-fy are 8% on an edge that fades and 0% on one that does not).
+   Mask only, no filter and no transform, so the picture and the text over it stay on whole pixels. */
+.pw-film-frame {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  isolation: isolate;
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0, #000 var(--pw-fx, 0%), #000 calc(100% - var(--pw-fx, 0%)), transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 var(--pw-fy, 0%), #000 calc(100% - var(--pw-fy, 0%)), transparent 100%);
+  mask-image:
+    linear-gradient(to right, transparent 0, #000 var(--pw-fx, 0%), #000 calc(100% - var(--pw-fx, 0%)), transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 var(--pw-fy, 0%), #000 calc(100% - var(--pw-fy, 0%)), transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+/* A fine, still grain over the picture only (it is inside the frame, under the shade, the cards and the
+   captions): grey noise around mid-grey (scripts/landing-grain.mjs), blended by overlay, about 5 percent.
+   It hides the softness and the compression of the clips. It does not move. */
+.pw-film-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url('/landing/grain.png');
+  background-size: 128px 128px;
+  mix-blend-mode: overlay;
+  opacity: 0.05;
+}
+.pw-film-shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, var(--pw-shade) 0%, var(--pw-shade) 22%, transparent 58%);
+}
+.pw-film[data-film='off'] .pw-film-shade {
+  display: none;
+}
+/* The closing film's words sit low and in the middle: its shade rises from the bottom. */
+.pw-film-shade-low {
+  background: linear-gradient(0deg, var(--pw-shade) 0%, var(--pw-shade) 18%, transparent 70%);
+}
+@media (max-width: 47.99rem) {
+  /* A phone's text spans the width, so the shade does too. */
+  .pw-film-shade {
+    background: color-mix(in srgb, var(--color-canvas) 58%, transparent);
+  }
+}
+
+/* ---- A pinned stage, driven by scroll ------------------------------------- */
+.pw-scrub {
+  position: relative;
+  height: 250dvh;
+}
+.pw-scrub-pin {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--color-canvas);
+}
+.pw-scrub-pin[data-film='off'] {
+  background: transparent;
+}
+
+/* The card's beats share one place, so the card keeps its shape whichever shows. */
+.pw-beats {
+  display: grid;
+}
+.pw-beat {
+  grid-area: 1 / 1;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition:
+    opacity var(--pw-dur-quick) var(--ease-leave),
+    transform var(--pw-dur-quick) var(--ease-leave);
+}
+.pw-scrub-pin[data-beat='0'] .pw-beat[data-i='0'],
+.pw-scrub-pin[data-beat='1'] .pw-beat[data-i='1'],
+.pw-scrub-pin[data-beat='2'] .pw-beat[data-i='2'] {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition:
+    opacity var(--pw-dur-base) var(--ease-settle) var(--pw-dur-quick),
+    transform var(--pw-dur-base) var(--ease-settle) var(--pw-dur-quick);
+}
+
+/* ---- The closing film's captions -------------------------------------------
+   On their own plate (the inset surface at about 85 percent, the card radius),
+   one line at a time, cross-fading. */
+.pw-caption-plate {
+  background: color-mix(in srgb, var(--color-inset) 85%, transparent);
+  border-radius: var(--radius-card);
+  transition: opacity var(--pw-dur-base) var(--ease-settle);
+}
+.pw-caption-plate[data-caption='none'] {
+  opacity: 0;
+  transition: opacity var(--pw-dur-quick) var(--ease-leave);
+}
+.pw-captions {
+  display: grid;
+}
+.pw-caption {
+  grid-area: 1 / 1;
+  opacity: 0;
+  transition: opacity var(--pw-dur-quick) var(--ease-leave);
+}
+.pw-caption-plate[data-caption='0'] .pw-caption[data-i='0'],
+.pw-caption-plate[data-caption='1'] .pw-caption[data-i='1'],
+.pw-caption-plate[data-caption='2'] .pw-caption[data-i='2'] {
+  opacity: 1;
+  transition: opacity var(--pw-dur-base) var(--ease-settle) var(--pw-dur-quick);
+}
+
+/* ---- The sound control ------------------------------------------------------ */
+.pw-sound {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 30;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity var(--pw-dur-base) var(--ease-leave),
+    transform var(--pw-dur-base) var(--ease-leave),
+    visibility 0s linear var(--pw-dur-base);
+}
+.pw-sound[data-shown='true'] {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--pw-dur-base) var(--ease-settle),
+    transform var(--pw-dur-base) var(--ease-settle),
+    visibility 0s;
+}
+
+/* ---- The four drawings' one movement ----------------------------------------
+   The page sets data-art="armed" on a drawing while its card is out of view and
+   "play" while it is in view; neither is set when motion is off, so a drawing
+   with reduced motion is exactly the drawing it always was. Each moving part
+   starts where the rule below puts it and ends where the drawing has always
+   shown it, so the pose at rest is the unchanged drawing. All of it is
+   transform and opacity, 1.2 to 1.9 s in all, and it never loops.
+   Durations are sums of the app's own: a sweep is --pw-dur-arrive plus
+   --pw-dur-slow (1380 ms); a step is --pw-dur-slow (560 ms). */
+.pw-art {
+  --pw-art-sweep: calc(var(--pw-dur-arrive) + var(--pw-dur-slow));
+}
+.pw-art svg * {
+  /* Origins in the drawing's own units, not each shape's box. */
+  transform-box: view-box;
+}
+
+/* 1. The Sun never climbs: at the equator it goes up and over, at the pole it slides along the ground. */
+.pw-art[data-art='armed'] .pw-a-sun-eq {
+  transform: translate(-64px, 62px);
+}
+.pw-art[data-art='armed'] .pw-a-sun-pole {
+  transform: translate(-132px, 0);
+}
+.pw-art[data-art='play'] .pw-a-sun-eq {
+  animation: pw-a-sun-eq var(--pw-art-sweep) var(--ease-move) both;
+}
+.pw-art[data-art='play'] .pw-a-sun-pole {
+  animation: pw-a-sun-pole var(--pw-art-sweep) var(--ease-move) both;
+}
+@keyframes pw-a-sun-eq {
+  from {
+    transform: translate(-64px, 62px);
+  }
+  33% {
+    transform: translate(-55px, 30px);
+  }
+  66% {
+    transform: translate(-32px, 7px);
+  }
+}
+@keyframes pw-a-sun-pole {
+  from {
+    transform: translate(-132px, 0);
+  }
+  25% {
+    transform: translate(-113px, -7px);
+  }
+  50% {
+    transform: translate(-66px, -10px);
+  }
+  75% {
+    transform: translate(-19px, -7px);
+  }
+}
+
+/* 2. A hill switches off the Sun: the Sun lowers, the peak's shadow reaches the lander, "in shadow" appears. */
+.pw-art[data-art='armed'] .pw-a-ridge-sun {
+  transform: translate(-20px, -34px);
+}
+.pw-art[data-art='armed'] .pw-a-ridge-wedge {
+  transform-origin: 206px 70px;
+  transform: scale(0.001);
+}
+.pw-art[data-art='armed'] .pw-a-ridge-ground {
+  transform-origin: 256px 156px;
+  transform: scaleX(0.001);
+}
+.pw-art[data-art='armed'] .pw-a-ridge-label {
+  opacity: 0;
+}
+.pw-art[data-art='play'] .pw-a-ridge-sun {
+  animation: pw-a-from-sun var(--pw-art-sweep) var(--ease-move) both;
+}
+.pw-art[data-art='play'] .pw-a-ridge-wedge {
+  transform-origin: 206px 70px;
+  animation: pw-a-grow var(--pw-dur-arrive) var(--ease-settle) var(--pw-dur-slow) both;
+}
+.pw-art[data-art='play'] .pw-a-ridge-ground {
+  transform-origin: 256px 156px;
+  animation: pw-a-grow-x var(--pw-dur-slow) var(--ease-settle) calc(var(--pw-dur-slow) + var(--pw-dur-base)) both;
+}
+.pw-art[data-art='play'] .pw-a-ridge-label {
+  animation: pw-a-fade var(--pw-dur-base) var(--ease-settle) calc(var(--pw-dur-arrive) + var(--pw-dur-slow)) both;
+}
+@keyframes pw-a-from-sun {
+  from {
+    transform: translate(-20px, -34px);
+  }
+}
+@keyframes pw-a-grow {
+  from {
+    transform: scale(0.001);
+  }
+}
+@keyframes pw-a-grow-x {
+  from {
+    transform: scaleX(0.001);
+  }
+}
+@keyframes pw-a-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* 3. Earth is low in the sky too: it bobs a little; the clear line holds, the line over the hill gets its cross. */
+.pw-art[data-art='armed'] .pw-a-earth-cross {
+  opacity: 0;
+  transform-origin: 246px 106px;
+  transform: scale(0.4);
+}
+.pw-art[data-art='play'] .pw-a-earth {
+  animation: pw-a-bob var(--pw-art-sweep) var(--ease-move) both;
+}
+.pw-art[data-art='play'] .pw-a-earth-cross {
+  transform-origin: 246px 106px;
+  animation: pw-a-cross var(--pw-dur-lift) var(--ease-settle) var(--pw-art-sweep) both;
+}
+@keyframes pw-a-bob {
+  30% {
+    transform: translateY(-9px);
+  }
+  65% {
+    transform: translateY(6px);
+  }
+}
+@keyframes pw-a-cross {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+/* 4. The ice is in the dark, the power is in the light: the light climbs the right-hand slope; the crater floor never changes. */
+.pw-art[data-art='armed'] .pw-a-ice-light,
+.pw-art[data-art='armed'] .pw-a-ice-edge {
+  transform-origin: 232px 150px;
+  transform: scaleY(0.001);
+}
+.pw-art[data-art='armed'] .pw-a-ice-sun {
+  transform: translateY(26px);
+}
+.pw-art[data-art='armed'] .pw-a-ice-label {
+  opacity: 0;
+}
+.pw-art[data-art='play'] .pw-a-ice-light,
+.pw-art[data-art='play'] .pw-a-ice-edge {
+  transform-origin: 232px 150px;
+  animation: pw-a-climb var(--pw-art-sweep) var(--ease-move) both;
+}
+.pw-art[data-art='play'] .pw-a-ice-sun {
+  animation: pw-a-rise var(--pw-art-sweep) var(--ease-move) both;
+}
+.pw-art[data-art='play'] .pw-a-ice-label {
+  animation: pw-a-fade var(--pw-dur-base) var(--ease-settle) var(--pw-art-sweep) both;
+}
+@keyframes pw-a-climb {
+  from {
+    transform: scaleY(0.001);
+  }
+}
+@keyframes pw-a-rise {
+  from {
+    transform: translateY(26px);
+  }
+}
+
+@media print {
+  .pw-sound {
+    display: none;
+  }
+}

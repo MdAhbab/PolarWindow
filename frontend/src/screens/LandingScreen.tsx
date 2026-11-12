@@ -1,84 +1,49 @@
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useLocation } from 'react-router-dom'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { Icon } from '../components/Icon'
 import { BrandLogo, BrandName } from '../components/Brand'
-import { SunPathArt, RidgeArt, EarthArt, IceArt } from '../landing/Illustrations'
 import { createMoonScene, type MoonScene, type SceneState } from '../landing/moonScene'
 import { readPrefs } from '../lib/prefs'
-import { SignInFailed, useSession } from '../lib/session'
-import { useMissions, useSites } from '../lib/api/queries'
 import { DATA_MODE, snapshotTileUrl } from '../lib/api/snapshot'
 import { API_BASE } from '../lib/api/client'
+import { Counts } from '../components/landing/HeroCounts'
+import { EnterButton } from '../components/landing/Enter'
+import { FeatureGroup } from '../components/landing/FeatureGroup'
+import { CloseStage, LightStage } from '../components/landing/FilmStage'
+import { BEATS } from '../components/landing/film'
+import { IdeaCard } from '../components/landing/IdeaCard'
+import { IDEAS } from '../components/landing/ideas'
+import { Margins } from '../components/landing/Margins'
+import { ScrubStage } from '../components/landing/ScrubStage'
+import { SoundToggle } from '../components/landing/SoundToggle'
+import { useFilmEnv } from '../components/landing/useFilmEnv'
+import '../components/landing/landing.css'
 
 gsap.registerPlugin(ScrollTrigger)
 
 /**
  * The front page: what the product is for, in four ideas, and one button in.
  *
- * Scrolling turns the Moon to its south pole, sends the Sun around the
- * horizon, brings Earth up low, and closes in on the real terrain. The pointer
- * tilts it a little. None of that carries information the text does not: the
- * canvas is decoration, hidden from assistive technology, and with reduced
- * motion (or without WebGL) the page is the same words with still drawings.
+ * Scrolling turns the Moon to its south pole. After the hero, three films take
+ * over the middle of the page: one that plays by itself, and two that scroll
+ * drives (components/landing); the Moon returns as a crescent for what the
+ * product does, and a last film plays under the way in. The pointer tilts the
+ * Moon a little. None of that carries information the text does not: the
+ * canvas and the films are decoration, hidden from assistive technology, and
+ * with reduced motion (or without WebGL, or without the film files) the page is
+ * the same words with still drawings.
  *
  * No number appears here unless the API sent it: the two counts are the
- * mission list's and the site list's own, and are left out if they don't load.
+ * mission list's and the site list's own, and the three figures under the idea
+ * cards are the service's own, each with its margin and its tag; all are left
+ * out if they don't load.
  */
 
 // The first picture: a waxing gibbous Moon, lit from the right of the viewer, the craters sharp along its terminator.
 const START: SceneState = { tilt: -0.3, spin: 0.6, distance: 4.4, sunAz: 0.15, earth: 0, shift: 0.5 }
-
-const IDEAS = [
-  {
-    id: 'sun',
-    title: 'The Sun never climbs',
-    body: 'Near the Moon’s south pole the Sun doesn’t rise overhead. It circles along the horizon all month, so its light always arrives sideways.',
-    Art: SunPathArt,
-  },
-  {
-    id: 'ridge',
-    title: 'So a hill can switch off the Sun',
-    body: 'Light that low is easy to block. A ridge kilometres away can put a lander in shadow for days, and it has to survive on its batteries until the Sun returns.',
-    Art: RidgeArt,
-  },
-  {
-    id: 'earth',
-    title: 'Earth is low in the sky too',
-    body: 'Radio needs a clear line to Earth. From the pole, Earth hangs near the horizon and bobs up and down, so hills cut off contact for stretches of time.',
-    Art: EarthArt,
-  },
-  {
-    id: 'ice',
-    title: 'The ice is in the dark. The power is in the light.',
-    body: 'Water ice survives only in crater floors the Sun never reaches. Solar power works only where it does. Missions land on the edge between them, so the exact spot matters.',
-    Art: IceArt,
-  },
-]
-
-const FEATURES = [
-  {
-    icon: 'pin' as const,
-    title: 'Missions',
-    body: 'Every NASA CLPS delivery, flown and planned, with its landing spot, dates, what it carries and where each fact comes from.',
-  },
-  {
-    icon: 'clocks' as const,
-    title: 'Sunlight and contact',
-    body: 'For any site and dates: hours of sunlight, hours in contact with Earth, the longest night and the longest time without contact.',
-  },
-  {
-    icon: 'compare' as const,
-    title: 'Compare',
-    body: 'Rank candidate sites by one measure at a time. The page never merges them into one score.',
-  },
-  {
-    icon: 'gap' as const,
-    title: 'Plan',
-    body: 'Every stretch without contact, longest first, what the lander must handle alone, and a spreadsheet to share.',
-  },
-]
+// The pole, which the hero's scroll turns the Moon to; the films cover the Moon from here until the product is shown.
+const POLE = { tilt: -1.25, spin: 0, distance: 3.6, sunAz: 2.6, shift: 0.45 }
 
 function useReducedMotionPref(): boolean {
   const [reduced] = useState(() => {
@@ -90,6 +55,7 @@ function useReducedMotionPref(): boolean {
 
 export default function LandingScreen() {
   const reduced = useReducedMotionPref()
+  const film = useFilmEnv()
   const rootRef = useRef<HTMLDivElement>(null)
   const canvasWrapRef = useRef<HTMLDivElement>(null)
   const sceneRef = useRef<MoonScene | null>(null)
@@ -110,6 +76,10 @@ export default function LandingScreen() {
   const onGround = earthrise && webgl
   const flightRef = useRef<HTMLDivElement>(null)
   const heroRef = useRef<HTMLDivElement>(null)
+  // What the Moon returns for: the idea about ice, what the product does, and how it is measured.
+  const crescentRef = useRef<HTMLDivElement>(null)
+  // The three films, which cover the whole window from the first to the last: the Moon is not drawn behind them.
+  const whyRef = useRef<HTMLDivElement>(null)
 
   // The Moon, and what scrolling and the pointer do to it.
   useEffect(() => {
@@ -156,23 +126,32 @@ export default function LandingScreen() {
 
     scene.setAutoSpin(true)
     scene.start()
+    let covered = false
     const ctx = gsap.context(() => {
       const s = scene.state
-      const tl = gsap.timeline({
+      // Hero -> the Sun never climbs: turn to the south pole. It takes the scroll it always took (about
+      // 1.15 screens, 1.36 on the light page with its flight out from the ground), whatever the page
+      // after it grows to; the films come next and cover the Moon.
+      gsap
+        .timeline({
+          defaults: { ease: 'none' },
+          scrollTrigger: {
+            trigger: root,
+            start: 'top top',
+            end: () => `+=${Math.round(window.innerHeight * (earthrise ? 1.36 : 1.15))}`,
+            scrub: 0.8,
+            invalidateOnRefresh: true,
+          },
+        })
+        .to(s, POLE)
+      // Back for the product: from the pole out to a crescent as the section after the films comes up,
+      // then a slow drift. One move out, once; the Moon does not zoom in and out between.
+      const back = gsap.timeline({
         defaults: { ease: 'none' },
-        scrollTrigger: { trigger: root, start: 'top top', end: 'bottom bottom', scrub: 0.8 },
+        scrollTrigger: { trigger: crescentRef.current, start: 'top bottom', end: 'bottom bottom', scrub: 0.8 },
       })
-      // Hero -> the Sun never climbs: turn to the south pole.
-      tl.to(s, { tilt: -1.25, spin: 0, distance: 3.6, sunAz: 2.6, shift: 0.45 })
-      // -> a hill switches off the Sun: the pole head-on, the Sun circling it.
-      tl.to(s, { tilt: -1.52, distance: 2.5, sunAz: 4.8 })
-      // -> Earth is low: step back and let Earth rise over the horizon.
-      tl.to(s, { tilt: -1.3, distance: 4.0, earth: 1, sunAz: 5.8 })
-      // -> ice in the dark: close in on the real terrain.
-      tl.to(s, { tilt: -1.57, distance: 1.55, earth: 0, sunAz: 7.4 })
-      // -> what you can do, and the way in: back out.
-      tl.to(s, { tilt: -0.6, distance: 4.4, sunAz: 8.6, shift: 0.5 })
-      tl.to(s, { tilt: -0.4, distance: 4.8, sunAz: 9.6 })
+      back.fromTo(s, { ...POLE }, { tilt: -0.6, distance: 4.4, sunAz: 8.6, shift: 0.5, immediateRender: false })
+      back.fromTo(s, { tilt: -0.6, distance: 4.4, sunAz: 8.6, shift: 0.5 }, { tilt: -0.5, distance: 4.6, sunAz: 9.0, immediateRender: false })
 
       // Light: off the ground and out to the whole Moon over the hero and a
       // stretch of open sky after it, the sky clearing to the page at the end.
@@ -196,6 +175,18 @@ export default function LandingScreen() {
           onUpdate: (st) => root.style.setProperty('--pw-hero', String(1 - st.progress)),
         })
       }
+
+      // Under the films nothing of the Moon shows, so it is not drawn (the films seek and decode on the same thread).
+      ScrollTrigger.create({
+        trigger: whyRef.current,
+        start: 'top top',
+        end: 'bottom bottom',
+        onToggle: (self) => {
+          covered = self.isActive
+          if (covered) scene.stop()
+          else if (!document.hidden) scene.start()
+        },
+      })
 
       ScrollTrigger.create({
         trigger: root,
@@ -223,7 +214,7 @@ export default function LandingScreen() {
       scene.setPointer((e.clientX / window.innerWidth) * 2 - 1, (e.clientY / window.innerHeight) * 2 - 1)
     }
     window.addEventListener('pointermove', onPointer)
-    const onVisibility = () => (document.hidden ? scene.stop() : scene.start())
+    const onVisibility = () => (document.hidden || covered ? scene.stop() : scene.start())
     document.addEventListener('visibilitychange', onVisibility)
 
     return () => {
@@ -241,6 +232,8 @@ export default function LandingScreen() {
   useEffect(() => {
     if (hash) document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' })
   }, [hash, reduced])
+
+  const animate = !film.reduced
 
   return (
     <div
@@ -273,7 +266,11 @@ export default function LandingScreen() {
 
       {/* The dashboard's island, so the front page and the dashboard read as one product. */}
       <header className="pointer-events-none sticky top-0 z-20 px-3 pt-3 sm:px-4">
-        <div className="pw-island pointer-events-auto mx-auto flex w-fit max-w-full items-center gap-3 rounded-pill py-1.5 pr-1.5 pl-4 sm:gap-6">
+        {/* Over the films the island has no blur behind it (nothing blurs a film): its glass colour is opaque enough alone. */}
+        <div
+          className="pw-island pointer-events-auto mx-auto flex w-fit max-w-full items-center gap-3 rounded-pill py-1.5 pr-1.5 pl-4 sm:gap-6"
+          style={{ backdropFilter: 'none', WebkitBackdropFilter: 'none' }}
+        >
           <span className="flex h-12 items-center">
             <BrandName />
           </span>
@@ -320,62 +317,65 @@ export default function LandingScreen() {
         {onGround && <div aria-hidden="true" className="h-[120vh]" />}
         </div>
 
-        <div id="why" className="scroll-mt-20">
-          <Section>
-            <h2 data-reveal className="pw-display max-w-xl text-[32px] leading-[1.06] sm:text-[44px]">
-              Why the south pole is hard
-            </h2>
-          </Section>
-          {IDEAS.map((idea, i) => (
-            <Section key={idea.id} className="min-h-[65vh] justify-center">
-              <article data-reveal className="pw-card flex max-w-lg flex-col gap-4 p-6 sm:p-8">
-                <p className="pw-eyebrow">
-                  {i + 1} of {IDEAS.length}
-                </p>
-                <h3 className="pw-display text-[26px] leading-[1.12] sm:text-[30px]">{idea.title}</h3>
-                <p className="text-lede leading-7 text-ink-2 text-pretty">{idea.body}</p>
-                <figure className="flex flex-col gap-2 border-t border-line pt-4">
-                  <idea.Art />
-                  <figcaption className="text-caption leading-caption text-ink-2">Drawing, not to scale.</figcaption>
-                </figure>
-              </article>
-            </Section>
-          ))}
+        {/* The three films that explain the pole: one that plays by itself, two that scroll drives. */}
+        <div ref={whyRef} id="why" className="scroll-mt-20">
+          <LightStage idea={IDEAS[0]} total={IDEAS.length} autoplay={film.autoplay} small={film.size === 'small'} animate={animate} />
+          <ScrubStage
+            idea={IDEAS[1]}
+            index={1}
+            total={IDEAS.length}
+            film="shadow"
+            beats={BEATS.shadow}
+            pinned={film.scrub}
+            small={film.size === 'small'}
+            animate={animate}
+          />
+          <ScrubStage
+            idea={IDEAS[2]}
+            index={2}
+            total={IDEAS.length}
+            film="earth"
+            beats={BEATS.earth}
+            pinned={film.scrub}
+            small={film.size === 'small'}
+            animate={animate}
+          />
         </div>
 
-        <Section>
-          <div className="flex max-w-3xl flex-col gap-8">
-            <h2 data-reveal className="pw-display text-[32px] leading-[1.06] sm:text-[44px]">
-              What you can do
-            </h2>
-            <ul className="grid gap-5 sm:grid-cols-2">
-              {FEATURES.map((f, i) => (
-                <FeatureCard key={f.title} {...f} index={i} reduced={reduced} />
-              ))}
-            </ul>
-          </div>
-        </Section>
-
-        <Section>
-          <div data-reveal className="pw-card flex max-w-xl flex-col gap-4 p-6 sm:p-8">
-            <h2 className="pw-display text-[26px] leading-[1.12] sm:text-[30px]">Measured, with the margins shown</h2>
-            <p className="text-lede leading-7 text-ink-2 text-pretty">
-              The numbers come from NASA’s laser-altimeter map of the pole (LOLA) and the computed positions of the Sun
-              and Earth (SPICE). Each one shows how far it could be off. The AI helpers can only use these numbers, and
-              every answer is checked against them.
-            </p>
-          </div>
-        </Section>
-
-        <Section className="min-h-[70vh] justify-center">
-          <div data-reveal className="flex max-w-xl flex-col gap-7">
-            <h2 className="pw-display text-[36px] leading-[1.04] sm:text-[56px]">Open the dashboard</h2>
-            <div>
-              <EnterButton />
+        {/* The Moon comes back as a crescent behind the rest of the page. */}
+        <div ref={crescentRef}>
+          <Section className="min-h-[65vh] justify-center">
+            <div data-reveal className="flex w-full max-w-lg">
+              <IdeaCard idea={IDEAS[3]} index={3} total={IDEAS.length} variant="stacked" animate={animate} />
             </div>
-          </div>
-        </Section>
+          </Section>
+
+          <Section>
+            <div className="flex max-w-5xl flex-col gap-8">
+              <h2 data-reveal className="pw-display text-[32px] leading-[1.06] sm:text-[44px]">
+                What you can do
+              </h2>
+              <FeatureGroup animate={animate} />
+            </div>
+          </Section>
+
+          <Section>
+            <div data-reveal className="pw-card flex max-w-xl flex-col gap-4 p-6 sm:p-8">
+              <h2 className="pw-display text-[26px] leading-[1.12] sm:text-[30px]">Measured, with the margins shown</h2>
+              <p className="text-lede leading-7 text-ink-2 text-pretty">
+                The numbers come from NASA’s laser-altimeter map of the pole (LOLA) and the computed positions of the Sun
+                and Earth (SPICE). Each one shows how far it could be off. The AI helpers can only use these numbers, and
+                every answer is checked against them.
+              </p>
+              <Margins />
+            </div>
+          </Section>
+        </div>
+
+        <CloseStage autoplay={film.autoplay} phone={film.phone} small={film.size === 'small'} />
       </main>
+
+      <SoundToggle />
 
       {/* On the page's own ground, so its small print never sits over the Moon. */}
       <footer className="relative z-10 flex flex-col gap-6 border-t border-line bg-canvas px-4 py-10 lg:px-8">
@@ -387,7 +387,7 @@ export default function LandingScreen() {
             ESO/S. Brunier
           </a>{' '}
           (CC BY 4.0). These are pictures: sizes and distances are not to scale, and the Sun is placed to light them,
-          not where it stands on any date.
+          not where it stands on any date. Illustration, generated. Not mission footage.
         </p>
       </footer>
     </div>
@@ -396,141 +396,4 @@ export default function LandingScreen() {
 
 function Section({ children, className = '' }: { children: ReactNode; className?: string }) {
   return <section className={`flex flex-col px-4 py-24 lg:px-8 lg:py-36 ${className}`}>{children}</section>
-}
-
-/** The two counts, from the API's own lists; nothing when they don't load. */
-function Counts() {
-  const missions = useMissions({})
-  const sites = useSites({ kind: 'all' })
-  const m = missions.data?.total
-  const c = sites.data?.items.filter((i) => i.site.kind === 'candidate').length
-  if (m === undefined || !c) return null
-  return (
-    <dl className="flex flex-wrap gap-10">
-      <div className="flex flex-col-reverse">
-        <dt className="text-small font-medium text-ink-2">CLPS missions</dt>
-        <dd className="pw-figure text-[34px] leading-[38px]">{m}</dd>
-      </div>
-      <div className="flex flex-col-reverse">
-        <dt className="text-small font-medium text-ink-2">candidate landing sites</dt>
-        <dd className="pw-figure text-[34px] leading-[38px]">{c}</dd>
-      </div>
-    </dl>
-  )
-}
-
-function FeatureCard({
-  icon,
-  title,
-  body,
-  index,
-  reduced,
-}: {
-  icon: Parameters<typeof Icon>[0]['name']
-  title: string
-  body: string
-  index: number
-  reduced: boolean
-}) {
-  const ref = useRef<HTMLLIElement>(null)
-  const toX = useRef<((v: number) => void) | null>(null)
-  const toY = useRef<((v: number) => void) | null>(null)
-
-  useLayoutEffect(() => {
-    const el = ref.current
-    if (!el || reduced) return
-    gsap.set(el, { transformPerspective: 700 })
-    toX.current = gsap.quickTo(el, 'rotateX', { duration: 0.3, ease: 'power2.out' })
-    toY.current = gsap.quickTo(el, 'rotateY', { duration: 0.3, ease: 'power2.out' })
-    return () => {
-      gsap.killTweensOf(el)
-      toX.current = null
-      toY.current = null
-    }
-  }, [reduced])
-
-  // A slight lean toward the pointer, as a hint that the cards are live.
-  const onMove = (e: ReactPointerEvent<HTMLLIElement>) => {
-    if (reduced || !ref.current || !toX.current || !toY.current) return
-    const r = ref.current.getBoundingClientRect()
-    const x = (e.clientX - r.left) / r.width - 0.5
-    const y = (e.clientY - r.top) / r.height - 0.5
-    toY.current(x * 6)
-    toX.current(-y * 6)
-  }
-  const onLeave = () => {
-    if (reduced || !toX.current || !toY.current) return
-    toX.current(0)
-    toY.current(0)
-  }
-  return (
-    <li
-      ref={ref}
-      onPointerMove={onMove}
-      onPointerLeave={onLeave}
-      data-reveal
-      data-reveal-i={index}
-      className="pw-card flex flex-col gap-3 p-6"
-    >
-      <span className="flex size-11 items-center justify-center rounded-pill bg-inset text-ink-2" aria-hidden="true">
-        <Icon name={icon} size={22} />
-      </span>
-      <h3 className="pt-1 text-title-lg font-semibold tracking-title">{title}</h3>
-      <p className="text-body leading-6 text-ink-2">{body}</p>
-    </li>
-  )
-}
-
-/** Signs in (one click, no password) and opens the page the visitor asked for. */
-function EnterButton({ compact = false }: { compact?: boolean }) {
-  const session = useSession((s) => s.session)
-  const signIn = useSession((s) => s.signIn)
-  const navigate = useNavigate()
-  const { search } = useLocation()
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const next = (() => {
-    const n = new URLSearchParams(search).get('next')
-    return n && n.startsWith('/') && !n.startsWith('//') ? n : '/home'
-  })()
-  const signedIn = Boolean(session && session.expiresAt > Date.now())
-
-  const go = async () => {
-    setError(null)
-    if (signedIn) return navigate(next)
-    setBusy(true)
-    try {
-      await signIn()
-      navigate(next)
-    } catch (e) {
-      setError(e instanceof SignInFailed ? e.message : 'Signing in did not work. Try again in a moment.')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <span className="inline-flex flex-col gap-2">
-      <button
-        type="button"
-        onClick={() => void go()}
-        disabled={busy}
-        className={`pw-press group inline-flex h-12 items-center justify-center gap-2 rounded-pill bg-sun-fill font-semibold whitespace-nowrap text-on-sun hover:bg-sun-soft disabled:bg-inset disabled:text-ink-3 ${
-          compact ? 'pr-1.5 pl-4 text-body' : 'pr-2 pl-6 text-control'
-        }`}
-      >
-        {busy ? 'Signing in…' : signedIn ? 'Go to the dashboard' : compact ? 'Open dashboard' : 'Open the dashboard'}
-        {!busy && (
-          <span className={`pw-orb ml-1 ${compact ? 'size-9' : ''}`} aria-hidden="true">
-            <Icon name="arrow" size={15} strokeWidth={2} />
-          </span>
-        )}
-      </button>
-      {error && (
-        <span role="alert" className="text-small text-ink">
-          {error}
-        </span>
-      )}
-    </span>
-  )
 }
