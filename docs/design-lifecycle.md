@@ -138,7 +138,7 @@ added.
 
 **Status:** built to this plan on branch `featured` · **Date:** 2026-09-27
 **Builds on:** `docs/lifecycle-api.md` (the contract), `docs/conventions.md`
-(invariants 1–12, Words), `docs/design-handoff.md` (tokens, states),
+(invariants 1–12, Words, the four states), `docs/design-visual-refresh.md` (tokens),
 ADR-2, 7, 9, 14, 16, 17.
 
 The product gains six sections per mission: **Ready · Launch · Trip · Landing ·

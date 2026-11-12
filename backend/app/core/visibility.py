@@ -19,9 +19,9 @@ in a direction, which is indistinguishable from terrain. Building the local
 east/north/up basis as explicit unit vectors and projecting onto it has no such
 term and is exact at the pole itself.
 
-This mirrors ``frontend/src/lib/geometry/ephemeris.ts::lookAngles``, which made
-the same choice for the same reason. The two implementations are cross-checked
-in ``tests/unit/test_visibility.py``.
+This mirrors the frontend's former ``lookAngles`` (since removed), which made
+the same choice for the same reason. Its numbers are kept as a frozen second
+opinion in ``tests/unit/test_visibility.py``.
 """
 
 from __future__ import annotations

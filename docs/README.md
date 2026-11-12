@@ -18,3 +18,11 @@ Index of project documentation, its scope, and intended audience.
 | [adr/README.md](adr/README.md) | Index of Architecture Decision Records (ADR-0001 to ADR-0024). | Engineers, architects |
 | [design-lifecycle.md](design-lifecycle.md) | Lifecycle view layout, interaction patterns, and frontend state specifications. | Frontend developers, UI designers |
 | [design-visual-refresh.md](design-visual-refresh.md) | Visual refresh: audit of the current look, the direction, tokens, components, screens, motion, owner decisions and build slices. | Frontend developers, UI designers, the owner |
+| [handoff.md](handoff.md) | How the product is put together, the rules that do not bend, how to run and check it, and where a review should look hardest. | Anyone picking the project up |
+| [experience-plan.md](experience-plan.md) | The experience release: Ask, projects, scenarios, presets and the dashboard as a journey, with the wire contract. | Frontend and backend engineers |
+| [design-audit-2026-11-12.md](design-audit-2026-11-12.md) | The November 2026 design audit: what was found on every route and where each finding is fixed. | Frontend developers, UI designers, the owner |
+| [design-glossary.md](design-glossary.md) | The plain-words labels used on screen, with the technical term in brackets and the words that never appear. | Frontend developers, writers |
+| [validation-2026-10-01.md](validation-2026-10-01.md) | Dated audit: which validations passed as science and which only ran. | Reviewers |
+| [spenvis-manual-validation.md](spenvis-manual-validation.md) | How the radiation passages were compared with SPENVIS by hand, and the results. | Reviewers, radiation engineers |
+| [copernicus-marine.md](copernicus-marine.md) | How to download and import the Copernicus Marine wave subset the Return section can read. | Operators |
+| [openapi.json](openapi.json) | The generated API schema that `npm run codegen` turns into the frontend types. | Frontend engineers, API integrators |

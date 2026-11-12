@@ -3,8 +3,20 @@
 .env.local
 *.local
 
-# OS files
+# OS and editor files
 .DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*~
+
+# Logs and scratch copies
+*.log
+*.bak
+*.orig
+*.tmp
 
 # Local service state
 .local/

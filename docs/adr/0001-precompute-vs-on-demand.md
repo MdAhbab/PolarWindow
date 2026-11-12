@@ -12,7 +12,7 @@ magnitude in cost.
 
 **The horizon mask.** 1440 azimuth rays × ~600 distance samples each, every
 sample a bilinear read into a LOLA GeoTIFF. Roughly 900k terrain reads per site.
-Measured on the synthetic reference implementation in `frontend/src/lib/geometry/mask.ts`
+Measured on an early synthetic JavaScript reference implementation (since removed; the geometry runs only in the backend)
 the equivalent 360-ray version takes 30–50 ms in JS against an analytic height
 function; against a real raster with I/O and 4× the rays it is tens of seconds.
 It depends on **nothing but the site** — not the date, not the window.
