@@ -26,6 +26,7 @@ import { ProgrammeTimeline } from '../components/ProgrammeTimeline'
 import { AskPanel } from '../components/Agents'
 import { EmptyState, FarSide, LoadingPanel, ProblemPanel } from '../components/States'
 import { Button, Chip, Disclosure, Panel, Segmented, pillClass, useOpenRow } from '../components/ui'
+import { PayloadChips, PayloadIcon } from '../components/PayloadIcon'
 import { HAS_OPTIONS, MarkLegend, StepStrip, hasWhat, isHasFilter, type HasFilter } from '../components/StepStrip'
 import { useTransitionClick } from '../lib/viewTransition'
 import { Icon } from '../components/Icon'
@@ -289,6 +290,7 @@ export function MissionsScreen() {
             <span className="sr-only">Instruments carried, any of:</span>
             {INSTRUMENT_TYPES.map((t) => (
               <Chip key={t} tone="neutral" selected={types.includes(t)} onClick={() => toggleType(t)}>
+                <PayloadIcon type={t} />
                 {INSTRUMENT_LABEL[t]}
               </Chip>
             ))}
@@ -456,7 +458,6 @@ function MissionRow({
 }) {
   const d = missionDate(m)
   const go = useTransitionClick()
-  const kinds = m.payloadTypes.map((t) => INSTRUMENT_LABEL[t])
   return (
     // The row opens the mission; the step marks under it are links of their
     // own (a link may not hold links), so the two sit side by side in one row.
@@ -497,11 +498,7 @@ function MissionRow({
             Entered by {m.ownerName ?? 'the team'}
           </span>
         )}
-        <span className="text-caption leading-caption text-ink-3">
-          {kinds.length
-            ? [...kinds.slice(0, 3), ...(kinds.length > 3 ? [`${kinds.length - 3} more`] : [])].join(' · ')
-            : 'Payloads not published yet'}
-        </span>
+        <PayloadChips types={m.payloadTypes} />
       </Link>
       <StepStrip mission={m} />
     </div>
