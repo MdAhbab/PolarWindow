@@ -878,10 +878,14 @@ def deterministic_answer(
                 "What is the space weather now?",
             ],
         }
-    interpreted = "Read by simple rules (the written answer is unavailable): about " + (
-        "; ".join(dict.fromkeys(about)) + "."
+    subjects = [a for a in dict.fromkeys(about) if a and a.strip()]
+    interpreted = (
+        "Read by simple rules (the written answer is unavailable): about "
+        + "; ".join(subjects)
+        + "."
     )
-    if not _grounded(interpreted, pool):
+    # Nothing named (asked from Home, say): no "about ." with an empty subject.
+    if not subjects or not _grounded(interpreted, pool):
         interpreted = "Read by simple rules (the written answer is unavailable)."
     return {
         "status": "ok",
