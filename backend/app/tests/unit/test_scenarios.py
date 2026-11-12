@@ -764,6 +764,9 @@ def test_an_example_landing_day_says_where_it_came_from() -> None:
     today = date(2026, 11, 13)
     year = {"date": "2028-01-01", "precision": "year", "as_published": "2028"}
     assert core.default_landing(year, None, today).value == "2028-01-01"  # type: ignore[union-attr]
+    # A first day that has passed moves to the first of the month after next, and says so.
+    past = core.default_landing({"date": "2026-01-01", "as_published": "2026"}, None, today)
+    assert past is not None and past.value == "2027-01-01" and "has passed" in (past.note or "")
     launch = core.default_landing(None, {"date": "2027-01-01", "as_published": "2027"}, today)
     assert launch is not None and launch.value == "2027-01-06" and "5 days" in (launch.note or "")
     none = core.default_landing(None, None, today)

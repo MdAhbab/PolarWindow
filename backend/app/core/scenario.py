@@ -512,23 +512,41 @@ LAUNCH_TO_LANDING_DAYS = 5
 def default_landing(
     landing: Mapping[str, Any] | None, launch: Mapping[str, Any] | None, today: date
 ) -> Candidate | None:
-    """The landing day a worked example assumes when the record gives none to the day."""
+    """The landing day a worked example assumes when the record gives none to the day.
+
+    A day worked out from the record that has already passed (a mission still planned
+    for "2026" late in 2026) moves to the first day of the month after next, and says so.
+    """
+    soon = add_months(today, 2)
     if landing and landing.get("date"):
+        d = date.fromisoformat(str(landing["date"])[:10])
+        said = f"The record says '{landing.get('as_published')}'"
+        if d >= today:
+            return Candidate(
+                d.isoformat(), "Mission record", note=f"{said}; its first day is used."
+            )
         return Candidate(
-            str(landing["date"])[:10],
+            soon.isoformat(),
             "Mission record",
-            note=f"The record says '{landing.get('as_published')}'; its first day is used.",
+            note=f"{said}. Its first day has passed, so the example lands on the first day of "
+            "the month after next. An example date, not a plan.",
         )
     if launch and launch.get("date"):
         d = date.fromisoformat(str(launch["date"])[:10]) + timedelta(days=LAUNCH_TO_LANDING_DAYS)
+        said = (
+            f"Launch is published as '{launch.get('as_published')}'. Landing is assumed "
+            f"{LAUNCH_TO_LANDING_DAYS} days after its first day, as on a direct flight"
+        )
+        if d >= today:
+            return Candidate(d.isoformat(), "Mission record", note=f"{said}.")
         return Candidate(
-            d.isoformat(),
+            soon.isoformat(),
             "Mission record",
-            note=f"Launch is published as '{launch.get('as_published')}'. Landing is assumed "
-            f"{LAUNCH_TO_LANDING_DAYS} days after its first day, as on a direct flight.",
+            note=f"{said}, but that day has passed. The example lands on the first day of the "
+            "month after next. An example date, not a plan.",
         )
     return Candidate(
-        add_months(today, 2).isoformat(),
+        soon.isoformat(),
         "Worked example rule",
         note="No date is published. The example lands on the first day of the month after "
         "next, so its sunlight and contact can be shown. An example date, not a plan.",

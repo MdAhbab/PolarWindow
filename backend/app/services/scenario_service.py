@@ -687,7 +687,13 @@ async def rerun_if_more(
         if p.get("state") == "skipped"
         and (
             can_run(str(p["id"]), res)
-            or (p["id"] == "trip" and str(p.get("detail") or "").startswith(_NO_TRIP))
+            or (
+                p["id"] == "trip"
+                and (
+                    str(p.get("detail") or "").startswith(_NO_TRIP)
+                    or "still being worked out" in str(p.get("detail") or "")
+                )
+            )
         )
     ]
     if not more:
