@@ -35,7 +35,7 @@ Say it slowly and warmly. This is the last thing the judges hear.
 > For teams that build landers and instruments, the answer is now on one page.
 > For students and anyone curious, a real Moon mission is open in a web browser.
 > PolarWindow is open source, and live today.
-> We are [Team name]. Thank you.
+> We are Sagittarius A*. Thank you.
 
 ### Take B: your name (2 seconds)
 
@@ -546,7 +546,7 @@ Use the editor you know best (DaVinci Resolve, Premiere or CapCut all work).
    half of the screen (960 x 1080). The other half is the background colour with the figure centred,
    60 pixels of space around it. Make one version with the face on the left and one with the face on the
    right.
-2. **The name caption.** First name and role, for example "Wali · Research". Archivo semi-bold, 36 px,
+2. **The name caption.** First name and role, from the table in `submission-drafts.md` (for example "Wali · Backend and planning"). Archivo semi-bold, 36 px,
    on a dark rounded box at the bottom of the person's half. Shown for the first 4 seconds each person
    appears in their own part.
 3. **The title card** (2 seconds). Background colour, the PolarWindow logo, the team name large, and under
@@ -624,7 +624,7 @@ Rules while you build it:
   centre, at most two lines. During split frames the subtitles still go bottom centre, above the name
   caption.
 - Also keep the corrected `.srt` file. It is uploaded to YouTube with the video.
-- Fill in the team name wherever the file says `[Team name]`.
+- Fill in the team name wherever the file says `Sagittarius A*`.
 - **"Illustration, generated"**: IBM Plex Mono, 20 px, 70% white, at the bottom left of every film clip
   and at the bottom of every generated figure.
 - Labels on figures: Archivo, 28 to 32 px. Amber only for Sun labels, cyan only for Earth labels.
@@ -635,7 +635,7 @@ Rules while you build it:
 
 **Export**
 - MP4, H.264, 1920 x 1080, 30 frames per second, about 12 to 16 Mbps. Sound: AAC, 192 kbps, stereo.
-- File name: `PolarWindow_[Team name]_240s.mp4`
+- File name: `PolarWindow_SagittariusA_240s.mp4`
 
 **Check the exported file (not the timeline)**
 - [ ] The length is **3:52 or less**
@@ -650,7 +650,7 @@ Rules while you build it:
 
 **Upload**
 1. Send the first cut to the group at 2:30 PM. Fix what Ahbab lists. Final by 3:00 PM.
-2. Upload to YouTube. Title: `PolarWindow | NASA Space Apps Challenge 2026 | [Team name]`.
+2. Upload to YouTube. Title: `PolarWindow | NASA Space Apps Challenge 2026 | Sagittarius A*`.
    Visibility: **Unlisted** (anyone with the link can watch), unless the local lead asks for Public.
    "Made for kids": No.
 3. Description: copy it from `video-240s.md` ("YouTube description"). Fill in the team name, the names
@@ -679,7 +679,7 @@ Make it from the same material. It must be **under 30.0 seconds**. Aim for 29.
 - Subtitles: `video-30s.srt`, re-timed and burned in.
 - The six names must be readable for at least 4 seconds.
 - Same music, starting on the first frame, ending on the last word.
-- Export with the same settings. File name: `PolarWindow_[Team name]_30s.mp4`.
+- Export with the same settings. File name: `PolarWindow_SagittariusA_30s.mp4`.
 - Upload the same way. Send the link to Ahbab by Saturday 10:30 AM.
 
 ---

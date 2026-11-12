@@ -14,7 +14,7 @@ a lander in the dark for days.
 
 4
 00:00:14,737 --> 00:00:15,950
-We are [Team name].
+We are Sagittarius A*.
 
 5
 00:00:18,000 --> 00:00:19,500
@@ -109,7 +109,7 @@ with no contact.
 
 26
 00:01:34,182 --> 00:01:37,950
-Each one shows how far it could be off.
+Where a number could be off, it shows by how much.
 
 27
 00:01:38,000 --> 00:01:42,990
@@ -219,4 +219,4 @@ PolarWindow is open source, and live today.
 
 50
 00:03:41,143 --> 00:03:43,950
-We are [Team name]. Thank you.
+We are Sagittarius A*. Thank you.

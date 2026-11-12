@@ -77,7 +77,7 @@ Generated film on screen: 4 + 6 + 4 + 6 = 20 seconds. The limit the team set is 
 
 **Wali (0:00)**
 At the south pole of the Moon, the Sun never climbs high. It stays low, near the edge of the sky. So one
-hill can hide it, and leave a lander in the dark for days. We are [Team name].
+hill can hide it, and leave a lander in the dark for days. We are Sagittarius A*.
 
 **Names (0:18)**
 I'm Wali. I'm Ryan. I'm Ahbab. I'm Mehrab. I'm Tanjamul. I'm Mehedi.
@@ -98,7 +98,7 @@ mission follows the same six steps, from getting ready to coming home.
 
 **Ahbab, demo 2 (1:24)**
 On the surface, four numbers matter: hours of sunlight, hours in contact with Earth, the longest night,
-and the longest time with no contact. Each one shows how far it could be off.
+and the longest time with no contact. Where a number could be off, it shows by how much.
 
 **Ahbab, demo 3 (1:38)**
 Why? Because of the hills around the landing place. As the days play, the Sun and Earth move along that
@@ -130,7 +130,7 @@ from.
 **Mehedi (3:24)**
 For teams that build landers and instruments, the answer is now on one page. For students and anyone
 curious, a real Moon mission is open in a web browser. PolarWindow is open source, and live today. We are
-[Team name]. Thank you.
+Sagittarius A*. Thank you.
 
 About 470 words in 230 seconds: a calm, clear pace.
 
@@ -155,7 +155,7 @@ voices, fills in the team name, burns the subtitles in and uploads the file to Y
 ## YouTube description (paste)
 
 PolarWindow: a mission browser and planner for NASA's commercial Moon landings (CLPS). NASA Space Apps
-Challenge 2026, challenge: CLPS Lunar Mission Browser. Team [Team name]: Wali, Ryan, Ahbab, Mehrab, Tanjamul, Mehedi.
+Challenge 2026, challenge: CLPS Lunar Mission Browser. Team Sagittarius A*: Wali, Ryan, Ahbab, Mehrab, Tanjamul, Mehedi.
 Live: https://clpsspaceapps.ahbab.dev   Code: https://github.com/MdAhbab/PolarWindow
 Data: NASA LRO/LOLA, NASA JPL NAIF SPICE and the CLPS SPICE archive, NASA JPL Deep Space Network, NASA GSFC
 DONKI and OMNI, NASA GRAIL, NASA LRO Diviner; NOAA.

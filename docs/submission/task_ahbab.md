@@ -23,8 +23,8 @@ Then at 2:30 PM you watch Mehedi's cut and approve it (section 6).
 - [ ] Make the shared Drive folder `video/` with one folder per person: `wali`, `ryan`, `ahbab`, `mehrab`, `tanjamul`,
       `mehedi`, and `final`. Share it with everyone.
 - [ ] Send each person their task file.
-- [ ] Decide the **team name** and each person's **role** (two or three words, for example "Backend and
-      data"). Write them in the group chat. Mehedi needs them for the name captions.
+- [x] Team name and roles are decided: **Sagittarius A\***, roles in `submission-drafts.md` (the table
+      under "Team name"). Post them in the group chat. Mehedi needs them for the name captions.
 - [ ] Put the five new film clips for Mehedi in `video/ahbab/film/`. They are on your PC in the
       `Nasa Spaceapps` folder: `light.mp4`, `shadow.mp4`, `earth.mp4`, `rim.mp4`, `descent.mp4`.
       Tell him which tool made them.
@@ -75,7 +75,7 @@ Record the voice **first**, without the screen. Then you record the screen to ma
 **Demo 2, the four numbers (14 s)**
 > On the surface, four numbers matter:
 > hours of sunlight, hours in contact with Earth, the longest night, and the longest time with no contact.
-> Each one shows how far it could be off.
+> Where a number could be off, it shows by how much.
 
 **Demo 3, the skyline (14 s)**
 > Why? Because of the hills around the landing place.
@@ -101,7 +101,7 @@ File names: `ahbab_voice_demo1_1.wav` and so on (or `.m4a`).
 
 Say these a little faster. One file, three times.
 
-> We are [Team name]. This is PolarWindow.
+> We are Sagittarius A*. This is PolarWindow.
 > Pick a landing place and dates.
 > See sunlight, contact with Earth and the longest night, each with how far it could be off.
 > Follow every mission through six steps.
@@ -115,16 +115,18 @@ Say these a little faster. One file, three times.
 ### Set up once
 
 **The app**
-- Start the app fresh: `python run.py --skip-install` in `polarwindow/`. Open `http://127.0.0.1:5173`.
-  After a fresh start, wait about 20 minutes before recording. The app works out the worked examples for
-  the planned missions in the background (about a minute each). Until then some step marks are hollow.
+- The app is already running and every worked example is worked out. Open `http://127.0.0.1:5173`.
+  The round counter at the top (beside Ask) must show nothing being worked out. If it shows a number,
+  wait until it clears. (If the app is not running: `python run.py --skip-install` in `polarwindow/`, then
+  wait about 20 minutes.)
 - The screens changed on 13 November. If a label on your screen differs a little from this file, follow
   the screen.
-- Sign in with the front page's demo button. Use the name "Demo".
-- Home shows three ways in and exactly two projects: Aurora Scout 1 and Ridge Surveyor.
+- On the front page press **Go to the dashboard**. If a guide box opens at the bottom, press
+  **Skip the tour**.
+- Home shows three ways in and exactly two projects: Malapert Pathfinder and Ridge Surveyor.
 - Dark theme (the round button at the top right).
-- **Open every page in the list below once before you record.** The first visit works things out. The
-  second visit is instant. Nothing should load on camera.
+- If a note such as "Scenario worked out for ..." shows at the bottom right, close it (x) before you record.
+- **Open every page in the list below once before you record.** Nothing should load on camera.
 
 **The browser**
 - Chrome, one tab, full screen (F11), zoom 100% (Ctrl+0). Screen set to 1920 x 1080.
@@ -153,38 +155,42 @@ Do them in this order. "Hold" means do not touch the mouse.
 | Second | What you do |
 |---|---|
 | 0 to 3 | Start on **Missions**. The list, the legend for the step marks (solid, striped, hollow) and the map of the pole are in view. Hold. |
-| 3 to 6 | Scroll the list down slowly, about five rows, so flown and planned missions pass by with their six marks. Stop. |
-| 6 to 8 | Move to one mission that has flown and click it. (Use IM-2: it is the one with a full record at the pole.) |
-| 8 to 14 | The mission page opens with the six steps on the curve from Earth to the Moon. **Hold for a full 5 seconds.** |
+| 3 to 7 | Scroll the list down steadily. The planned missions pass with their striped marks. Stop when the **Flown** group is in view, with IM-2 on screen. |
+| 7 to 9 | Click **IM-2** (it has the full record at the pole). |
+| 9 to 14 | The mission page opens with the six steps on the curve from Earth to the Moon. **Hold for a full 5 seconds.** |
 
 **Shot 2, the four numbers (voice: Demo 2, 14 s)** file: `ahbab_screen_2.mp4`
 
 | Second | What you do |
 |---|---|
-| 0 to 2 | Start on the same mission page. Click step 4, **Surface**. |
-| 2 to 9 | The four numbers are in view. Hold. Do not scroll. (Mehedi zooms in on them.) |
-| 9 to 11 | Click the label of one number. The "About this number" sheet opens. |
+| 0 to 2 | Start on **Sites**, then **Site**, with Connecting Ridge chosen (the name at the top left). |
+| 2 to 9 | The four numbers are in view: 574 h, 430 h, 122 ±17.1 h, 278 ±5.3 h. Hold. Do not scroll. (Mehedi zooms in on them.) |
+| 9 to 11 | Click the label **Longest night**. The "About this number" sheet opens on the right. |
 | 11 to 14 | Hold. Do not close it on camera. |
+
+Why Site and not IM-2's Surface step: IM-2 landed in daylight and the Sun never set, so its numbers have
+no margin to show. Connecting Ridge over a whole lunar day shows the margins the voice talks about.
 
 **Shot 3, the skyline (voice: Demo 3, 14 s)** file: `ahbab_screen_3.mp4`
 
 | Second | What you do |
 |---|---|
-| 0 to 2 | Start on **Sites**, then **Site**, with Connecting Ridge chosen. The four numbers and the date bar are in view. |
+| 0 to 2 | Start on the same Site page (reload it so the sheet is closed). The four numbers and the date bar are in view. |
 | 2 to 3 | Click **Play** on the date bar. |
-| 3 to 9 | Hold while the days play and the numbers and the rings change. Park the mouse. |
+| 3 to 9 | Hold while the days play: the day counter runs and the clock rings below turn. Park the mouse. |
 | 9 to 14 | Scroll down slowly to the sky view ("Standing at the site, looking out"). Press **Face Earth**. The hills turn until Earth is in the middle. Hold. |
 
 **Shot 4, compare (voice: Demo 4, 14 s)** file: `ahbab_screen_4.mp4`
 
 | Second | What you do |
 |---|---|
-| 0 to 4 | Start on **Compare** with three sites: Connecting Ridge, Malapert massif, Faustini rim. "Order by" is on "Time in sunlight". Hold. |
-| 4 to 6 | Click **Longest night** in "Order by". The cards change order. |
-| 6 to 10 | Hold. |
-| 10 to 14 | Scroll down slowly to the sentence under the cards (it says which nights are past the battery limit and which is within the margin). Hold. |
+| 0 to 4 | Start on **Compare** with three sites: Connecting Ridge, Malapert massif, Faustini rim. "Order by" is on **Sunlight**: the cards say 1st, 2nd, 3rd. Hold. |
+| 4 to 6 | Click **Contact** in "Order by". The cards slide into a new order: Malapert massif moves to 1st. |
+| 6 to 8 | Click **Longest night**. Every card now says "Too close to call": the margins overlap or a night is cut short by the dates. |
+| 8 to 10 | Hold. |
+| 10 to 14 | Scroll down slowly to the sentence under the cards ("1st place is too close to call. 2 of 3 sites have a longest night past the 120 h battery limit"). Hold. |
 
-Check first: the page must say "1st", "2nd", "3rd". It must not say "best" anywhere.
+Before recording: open Compare and click **Sunlight**, so the shot starts there. The page remembers the last order.
 
 **Shot 5, your own mission and a worked example (voice: Demo 5, 16 s)** two files: `ahbab_screen_5a.mp4`, `ahbab_screen_5b.mp4`
 
@@ -192,9 +198,11 @@ Check first: the page must say "1st", "2nd", "3rd". It must not say "best" anywh
 
 | Second | What you do |
 |---|---|
-| 0 to 2 | Start on **New project** with the empty form. Have a File Explorer window ready beside the browser, showing `polarwindow/docs/submission/demo-files/nobile-prospector-brief.md`. (For this shot only, the browser is not full screen: make it fill the left three quarters of the screen.) |
-| 2 to 4 | Drag the file onto the drop area. |
-| 4 to 7 | The form fills in by itself. Hold. Do **not** press Save. |
+| 0 to 2 | Start on **New project**. Type `Demo` in **Your name** before you start recording (without a name, a dropped file only waits). Have a File Explorer window ready beside the browser, showing `polarwindow/docs/submission/demo-files/nobile-prospector-brief.md`. (For this shot only, the browser is not full screen: make it fill the left three quarters of the screen.) |
+| 2 to 4 | Drag the file onto the drop area ("Drop a mission file here"). |
+| 4 to 7 | Three steps tick (Sending the file, Reading the file, Filling the form), then the form fills in by itself. It can take 10 to 30 seconds: keep recording, Mehedi cuts the wait. Hold. Do **not** press Save. |
+
+If the form stays mostly empty, the AI service was busy: reload the page and drop the file again.
 
 5b, the worked example (9 s):
 
@@ -212,11 +220,12 @@ Before recording, copy this question: `How long is the longest night at Connecti
 |---|---|
 | 0 to 2 | Start on the Site page for Connecting Ridge. Press the `/` key. Ask opens. |
 | 2 to 4 | Paste the question (Ctrl+V). Press Enter. |
-| 4 to 9 | The answer arrives. Hold. (If it takes longer, keep recording. Mehedi cuts the wait.) |
+| 4 to 9 | The answer arrives (5 to 20 seconds; keep recording, Mehedi cuts the wait). It says "AI answer · N numbers checked" and shows the numbers as tiles. Hold. |
 | 9 to 11 | Click **How this answer was made**. |
 | 11 to 16 | The three steps (Looked up, Checked, Written) are in view. Hold. |
 
-Ask the same question once before recording, so the second answer is fast.
+If the answer instead says "Summary from measurements (no AI)", the AI service was busy. Press
+**Start over** and ask again. Use only a take that says "AI answer".
 
 ### After recording
 

@@ -15,7 +15,7 @@ Say it slowly. Stop for a short breath at each full stop.
 > At the south pole of the Moon, the Sun never climbs high.
 > It stays low, near the edge of the sky.
 > So one hill can hide it, and leave a lander in the dark for days.
-> We are [Team name].
+> We are Sagittarius A*.
 
 Notes:
 - For the first two lines the screen shows a film clip of the Moon, with your voice over it. For the last

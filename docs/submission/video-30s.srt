@@ -5,7 +5,7 @@ the Sun and cut a lander off from Earth.
 
 2
 00:00:05,000 --> 00:00:08,950
-We are [Team name]. This is PolarWindow.
+We are Sagittarius A*. This is PolarWindow.
 
 3
 00:00:09,000 --> 00:00:12,450

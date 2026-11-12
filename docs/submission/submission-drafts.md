@@ -14,6 +14,17 @@ Files in this folder:
 | `task_mehedi.md` | Mehedi's words, the film clips, the twelve figure prompts and the full edit |
 | `demo-files/` | Example mission briefs to drop into New project during the demo |
 
+Team name: **Sagittarius A\***. In file names, write `SagittariusA` (a `*` is not allowed there).
+
+| Member | Role on the Members tab | Name caption (two or three words) |
+|---|---|---|
+| Md Ahbab Hamid Khan | Frontend, backend, planning, content, deliverables and deployment | Ahbab · Build and deploy |
+| Wali | Backend help and planning | Wali · Backend and planning |
+| Tanjamul | Backend and frontend help | Tanjamul · Backend and frontend |
+| Ryan | Planning and user survey | Ryan · Planning and survey |
+| Mehedi | Deliverables and planning | Mehedi · Deliverables |
+| Mehrab | Advised on design | Mehrab · Design advice |
+
 Team: Wali, Ryan, Ahbab, Mehrab, Tanjamul, Mehedi. Speaking order in the long video: Wali (hook), Ryan
 (problem), Ahbab (solution and demo), Mehrab (NASA data), Tanjamul (why to trust it), Mehedi (close and
 final edit).
