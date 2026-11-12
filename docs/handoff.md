@@ -556,9 +556,9 @@ changes DNS, opens a firewall port or replaces a database.
 ### 8.8 The submission
 
 `docs/submission/` holds the plans. `submission-drafts.md` lists the files. The team is Wali, Ryan, Ahbab,
-Mehrab and Mehedi; each has a `task_<name>.md` with the words to say and how to record. Still to fill in:
+Mehrab, Tanjamul and Mehedi; each has a `task_<name>.md` with the words to say and how to record. Still to fill in:
 the team name, each role, the music credit, the exact video tool named in the Use of AI table, the video
-links. After the final gates, put the true test counts in `submission-drafts.md` and in Mehrab's line if
+links. After the final gates, put the true test counts in `submission-drafts.md` and in Tanjamul's line if
 the total falls under 1,400.
 
 ### 8.9 Waiting on the owner

@@ -234,8 +234,8 @@ When a person speaks on camera, they fill one half of the screen. The other half
 | F9 Six steps | Ahbab | 1:04 to 1:10 |
 | F4 The NASA data | Mehrab | 2:38 to 2:56 |
 | F10 The skyline around a landing place | Mehrab | 2:56 to 3:08 |
-| F5 Checked against real flights | Mehrab | 3:14 to 3:19 |
-| F11 Where each number comes from | Mehrab | 3:19 to 3:24 |
+| F5 Checked against real flights | Tanjamul | 3:14 to 3:19 |
+| F11 Where each number comes from | Tanjamul | 3:19 to 3:24 |
 | F6 Who it is for | Mehedi | 3:24 to 3:34 |
 | F12 In the light, in contact | Mehedi | 3:34 to 3:44 |
 
@@ -551,12 +551,13 @@ Use the editor you know best (DaVinci Resolve, Premiere or CapCut all work).
    appears in their own part.
 3. **The title card** (2 seconds). Background colour, the PolarWindow logo, the team name large, and under
    it: "Challenge: CLPS Lunar Mission Browser".
-4. **The name strip** (10 seconds). The screen is split into five tall strips, each 384 pixels wide. Each
+4. **The name strip** (10 seconds). The screen is split into six tall strips, each 320 pixels wide. Each
    strip shows one person's "I'm ..." clip, cropped to their face, with their name and role at the bottom.
-   The strips appear one at a time, left to right, every 2 seconds: Wali, Ryan, Ahbab, Mehrab, Mehedi.
+   The strips appear one at a time, left to right, every 1.6 seconds: Wali, Ryan, Ahbab, Mehrab, Tanjamul,
+   Mehedi.
    Each strip stays on screen once it has appeared. This way every name is readable for a long time.
 5. **The end card** (6 seconds). The film clip, darkened, with: the logo, "PolarWindow",
-   `clpsspaceapps.ahbab.dev`, `github.com/MdAhbab/PolarWindow`, the team name, and all five names in one
+   `clpsspaceapps.ahbab.dev`, `github.com/MdAhbab/PolarWindow`, the team name, and all six names in one
    line.
 
 ---
@@ -569,7 +570,7 @@ Use the editor you know best (DaVinci Resolve, Premiere or CapCut all work).
 | 2 | 0:04 to 0:10 | 6 | Film: the hill's shadow reaches the lander, full screen | Wali, line 2 |
 | 3 | 0:10 to 0:16 | 6 | Split frame: Wali on the left, figure F1 on the right. Name caption. | Wali, lines 3 and 4 |
 | 4 | 0:16 to 0:18 | 2 | Title card | Music only |
-| 5 | 0:18 to 0:28 | 10 | Name strip, five people | "I'm Wali." "I'm Ryan." "I'm Ahbab." "I'm Mehrab." "I'm Mehedi." |
+| 5 | 0:18 to 0:28 | 10 | Name strip, six people | "I'm Wali." "I'm Ryan." "I'm Ahbab." "I'm Mehrab." "I'm Tanjamul." "I'm Mehedi." |
 | 6 | 0:28 to 0:32 | 4 | Film: lander with Earth low in the sky, full screen | Ryan, Take A, line 1 (voice only) |
 | 7 | 0:32 to 0:39 | 7 | Split frame: Ryan on the right. On the left, figure F7, and under it the words "CLPS: NASA's commercial Moon deliveries" and "Our challenge: CLPS Lunar Mission Browser". Name caption. | Ryan, line 2 |
 | 8 | 0:39 to 0:43 | 4 | Ryan on the right, figure F2 on the left | Ryan, line 3 |
@@ -582,7 +583,7 @@ Use the editor you know best (DaVinci Resolve, Premiere or CapCut all work).
 | 15 | 2:06 to 2:22 | 16 | Screen shot 5a (7 s), then 5b (9 s). Label: "5 · Your own mission" | Demo 5 |
 | 16 | 2:22 to 2:38 | 16 | Screen shot 6. Cut out any waiting for the answer. Label: "6 · Ask" | Demo 6 |
 | 17 | 2:38 to 3:08 | 30 | Split frame: Mehrab on the right. On the left, figure F4 (18 s) with the data names appearing one by one as he says them, then figure F10 (12 s). Name caption. | Mehrab, Take A |
-| 18 | 3:08 to 3:24 | 16 | Mehrab on the right. On the left: the checking table from `report.pdf`, moving up slowly (6 s), then figure F5 with the words "1,400+ automatic tests" (5 s), then figure F11 (5 s) | Mehrab, Take B |
+| 18 | 3:08 to 3:24 | 16 | Split frame: Tanjamul on the left. Name caption. On the right: the checking table from `report.pdf`, moving up slowly (6 s), then figure F5 with the words "1,400+ automatic tests" (5 s), then figure F11 (5 s) | Tanjamul, Take A |
 | 19 | 3:24 to 3:44 | 20 | Split frame: Mehedi on the left. On the right, figure F6 (10 s), then figure F12 (10 s). Name caption. | Mehedi, Take A |
 | 20 | 3:44 to 3:50 | 6 | End card over the darkened film. Hold the last 4 seconds still. | Music rises, then fades out by 3:50 |
 
@@ -603,7 +604,7 @@ Rules while you build it:
 
 1. Line up each face clip with its separate sound file, using the clap. Use the separate sound if it is
    cleaner than the phone's.
-2. On every voice clip: a light noise cleaner, then set the loudness so all five voices sound equally
+2. On every voice clip: a light noise cleaner, then set the loudness so all six voices sound equally
    loud. The loudest moments should reach about -3 dB and never touch 0.
 3. Cut out breaths, clicks and "um" between sentences. Leave about a third of a second between sentences.
 4. **Music:** one calm track with no singing, from the YouTube Audio Library (free to use). Write down its
@@ -638,7 +639,7 @@ Rules while you build it:
 
 **Check the exported file (not the timeline)**
 - [ ] The length is **3:52 or less**
-- [ ] Team name and all five names are on screen and spoken
+- [ ] Team name and all six names are on screen and spoken
 - [ ] "CLPS Lunar Mission Browser" is on screen
 - [ ] Every NASA data name in Mehrab's part can be read
 - [ ] Subtitles on every spoken line, with no spelling mistakes
@@ -668,7 +669,7 @@ Make it from the same material. It must be **under 30.0 seconds**. Aim for 29.
 | # | Time | Picture | Sound |
 |---|---|---|---|
 | 1 | 0:00 to 0:05 | Film: the hill's shadow reaches the lander | Wali, Take C |
-| 2 | 0:05 to 0:09 | The name strip with all five names already showing, the team name above, "Challenge: CLPS Lunar Mission Browser" below | Ahbab, short take, line 1 |
+| 2 | 0:05 to 0:09 | The name strip with all six names already showing, the team name above, "Challenge: CLPS Lunar Mission Browser" below | Ahbab, short take, line 1 |
 | 3 | 0:09 to 0:13 | Screen shot 2: the four numbers, zoomed | line 2 |
 | 4 | 0:13 to 0:17 | Screen shot 3: the days playing | line 3 |
 | 5 | 0:17 to 0:21 | Screen shot 1: the six steps on the curve | line 4 |
@@ -676,7 +677,7 @@ Make it from the same material. It must be **under 30.0 seconds**. Aim for 29.
 | 7 | 0:27 to 0:29 | End card | line 6 |
 
 - Subtitles: `video-30s.srt`, re-timed and burned in.
-- The five names must be readable for at least 4 seconds.
+- The six names must be readable for at least 4 seconds.
 - Same music, starting on the first frame, ending on the last word.
 - Export with the same settings. File name: `PolarWindow_[Team name]_30s.mp4`.
 - Upload the same way. Send the link to Ahbab by Saturday 10:30 AM.

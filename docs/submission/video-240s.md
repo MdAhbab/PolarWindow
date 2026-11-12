@@ -1,7 +1,7 @@
 # Video 2: the 240-second local judging video (cut to 3:50)
 
 This is the master plan. Each person's own words and recording steps are in their task file:
-`task_wali.md`, `task_ryan.md`, `task_ahbab.md`, `task_mehrab.md`, `task_mehedi.md`.
+`task_wali.md`, `task_ryan.md`, `task_ahbab.md`, `task_mehrab.md`, `task_tanjamul.md`, `task_mehedi.md`.
 Mehedi's file holds the full edit, the film clips and the twelve figure prompts.
 
 ## Deadlines (Friday 13 November, Dhaka time)
@@ -9,7 +9,7 @@ Mehedi's file holds the full edit, the film clips and the twelve figure prompts.
 | Time | What |
 |---|---|
 | 9:30 AM | Ahbab: Drive folder shared, team name and roles decided, film clips and report in the folder |
-| 10:30 AM | Wali, Ryan, Mehrab, Mehedi: face recordings in the folder |
+| 10:30 AM | Wali, Ryan, Mehrab, Tanjamul, Mehedi: face recordings in the folder |
 | 11:30 AM | Ahbab: face, demo voice and six screen recordings in the folder |
 | 2:30 PM | Mehedi: first cut to the group |
 | 3:00 PM | Final cut approved |
@@ -30,11 +30,12 @@ every generated or third-party asset.
 | Order | Who | Part | Time | Seconds |
 |---|---|---|---|---|
 | 1 | Wali | The hook | 0:00 to 0:16 | 16 |
-| | all five | Title card and names | 0:16 to 0:28 | 12 |
+| | all six | Title card and names | 0:16 to 0:28 | 12 |
 | 2 | Ryan | The problem and the challenge | 0:28 to 0:58 | 30 |
 | 3 | Ahbab | The solution, then the live demo in six shots | 0:58 to 2:38 | 100 |
-| 4 | Mehrab | The NASA data, and why to trust it | 2:38 to 3:24 | 46 |
-| 5 | Mehedi | Who it helps, and the close | 3:24 to 3:50 | 26 |
+| 4 | Mehrab | The NASA data | 2:38 to 3:08 | 30 |
+| 5 | Tanjamul | Why to trust it | 3:08 to 3:24 | 16 |
+| 6 | Mehedi | Who it helps, and the close | 3:24 to 3:50 | 26 |
 
 ## How the score sheet maps to the timeline
 
@@ -42,9 +43,9 @@ every generated or third-party asset.
 |---|---|
 | Impact (20) | Ryan's problem, Mehedi's close |
 | Creativity (20) | The hook, the six steps, "no score and no winner", stripes for assumed values |
-| Validity (20) | The live demo, Mehrab's "can you trust it" |
+| Validity (20) | The live demo, Tanjamul's "can you trust it" |
 | Relevance (20) | The challenge named by Ryan and on the title card; the NASA data at the core |
-| Presentation (20) | Five clear voices, one look, subtitles, figures beside each speaker |
+| Presentation (20) | Six clear voices, one look, subtitles, figures beside each speaker |
 | Teamwork, user experience, NASA data usage (5 each) | Every member speaks; the demo needs no explaining; the data list |
 
 ## The timeline
@@ -55,7 +56,7 @@ every generated or third-party asset.
 | 2 | 0:04 to 0:10 | Film: a hill's shadow reaches the lander | Wali |
 | 3 | 0:10 to 0:16 | Wali on camera, figure F1 beside him | Wali |
 | 4 | 0:16 to 0:18 | Title card: team name, "Challenge: CLPS Lunar Mission Browser" | music |
-| 5 | 0:18 to 0:28 | Name strip: five faces, names and roles | "I'm Wali." and so on |
+| 5 | 0:18 to 0:28 | Name strip: six faces, names and roles | "I'm Wali." and so on |
 | 6 | 0:28 to 0:32 | Film: a lander with Earth low in the sky | Ryan |
 | 7 | 0:32 to 0:58 | Ryan on camera, figures F7, F2, F8 and the question as words | Ryan |
 | 8 | 0:58 to 1:10 | Ahbab on camera, figures F3 and F9 | Ahbab |
@@ -66,7 +67,7 @@ every generated or third-party asset.
 | 13 | 2:06 to 2:22 | Demo 5: a document dropped in; a planned mission's worked example | Ahbab |
 | 14 | 2:22 to 2:38 | Demo 6: a question asked, and how the answer was made | Ahbab |
 | 15 | 2:38 to 3:08 | Mehrab on camera, figures F4 and F10, the data names one by one | Mehrab |
-| 16 | 3:08 to 3:24 | Mehrab on camera, the report's checking table, figures F5 and F11 | Mehrab |
+| 16 | 3:08 to 3:24 | Tanjamul on camera, the report's checking table, figures F5 and F11 | Tanjamul |
 | 17 | 3:24 to 3:44 | Mehedi on camera, figures F6 and F12 | Mehedi |
 | 18 | 3:44 to 3:50 | End card over a darkened film clip | music |
 
@@ -79,7 +80,7 @@ At the south pole of the Moon, the Sun never climbs high. It stays low, near the
 hill can hide it, and leave a lander in the dark for days. We are [Team name].
 
 **Names (0:18)**
-I'm Wali. I'm Ryan. I'm Ahbab. I'm Mehrab. I'm Mehedi.
+I'm Wali. I'm Ryan. I'm Ahbab. I'm Mehrab. I'm Tanjamul. I'm Mehedi.
 
 **Ryan (0:28)**
 NASA pays private companies to carry its instruments to the Moon. The programme is called CLPS, and our
@@ -121,7 +122,7 @@ of the ground around each landing place. NASA's SPICE data gives the positions o
 each spacecraft. The Deep Space Network data says when a dish on Earth can listen. We also use NASA data
 for space weather, the Moon's gravity and ground temperature.
 
-**Mehrab (3:08)**
+**Tanjamul (3:08)**
 Can you trust it? We checked our results against missions that have already flown, using NASA's records of
 their real paths. Over fourteen hundred automatic tests guard the code. Every number says where it came
 from.
@@ -154,7 +155,7 @@ voices, fills in the team name, burns the subtitles in and uploads the file to Y
 ## YouTube description (paste)
 
 PolarWindow: a mission browser and planner for NASA's commercial Moon landings (CLPS). NASA Space Apps
-Challenge 2026, challenge: CLPS Lunar Mission Browser. Team [Team name]: Wali, Ryan, Ahbab, Mehrab, Mehedi.
+Challenge 2026, challenge: CLPS Lunar Mission Browser. Team [Team name]: Wali, Ryan, Ahbab, Mehrab, Tanjamul, Mehedi.
 Live: https://clpsspaceapps.ahbab.dev   Code: https://github.com/MdAhbab/PolarWindow
 Data: NASA LRO/LOLA, NASA JPL NAIF SPICE and the CLPS SPICE archive, NASA JPL Deep Space Network, NASA GSFC
 DONKI and OMNI, NASA GRAIL, NASA LRO Diviner; NOAA.

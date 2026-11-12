@@ -1,9 +1,10 @@
-# Task for Mehrab: the NASA data, and why to trust it
+# Task for Mehrab: the NASA data
 
-You come after Ahbab's demo. Your job is to say which NASA data the app uses and how we checked it. The
-judges give points for this part, and the rules say the NASA data must be **said out loud**.
+You come after Ahbab's demo. Your job is to say which NASA data the app uses. The judges give
+points for this part, and the rules say the NASA data must be **said out loud**. Tanjamul comes after you
+and says how we checked it.
 
-- **Your time in the video:** 2:38 to 3:24, and one name line at 0:24.
+- **Your time in the video:** 2:38 to 3:08, and one name line at 0:23.
 - **Send your files by:** Friday 13 November, 10:30 AM, to the team's shared Drive folder.
 - **Who edits:** Mehedi. Ask him if anything here is unclear.
 
@@ -25,17 +26,7 @@ Notes:
 - While you speak, the exact names of the data sets appear beside you, one at a time: LOLA (LRO), SPICE,
   DSN, DONKI, GRAIL, Diviner. You do not need to say those short names.
 
-### Take B: why to trust it (16 seconds)
-
-> Can you trust it?
-> We checked our results against missions that have already flown, using NASA's records of their real paths.
-> Over fourteen hundred automatic tests guard the code.
-> Every number says where it came from.
-
-Notes:
-- Ask "Can you trust it?" as a real question, then pause for one second.
-
-### Take C: your name (2 seconds)
+### Take B: your name (2 seconds)
 
 > I'm Mehrab.
 
@@ -81,8 +72,7 @@ Look at the camera, small smile, then hold still for one second after you speak.
 Name the files like this and put them in the Drive folder `video/mehrab/`:
 
 - `mehrab_A_data_1.mp4`, `mehrab_A_data_2.mp4`, `mehrab_A_data_3.mp4`
-- `mehrab_B_trust_1.mp4` (and 2, 3)
-- `mehrab_C_name_1.mp4` (and 2, 3)
+- `mehrab_B_name_1.mp4` (and 2, 3)
 - If you used a second phone for sound: the sound files with the same names.
 
 ## Before you send, check

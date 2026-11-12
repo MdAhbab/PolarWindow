@@ -17,202 +17,206 @@ a lander in the dark for days.
 We are [Team name].
 
 5
-00:00:18,000 --> 00:00:19,950
+00:00:18,000 --> 00:00:19,500
 I'm Wali.
 
 6
-00:00:20,000 --> 00:00:21,950
+00:00:19,600 --> 00:00:21,100
 I'm Ryan.
 
 7
-00:00:22,000 --> 00:00:23,950
+00:00:21,200 --> 00:00:22,700
 I'm Ahbab.
 
 8
-00:00:24,000 --> 00:00:25,950
+00:00:22,800 --> 00:00:24,300
 I'm Mehrab.
 
 9
-00:00:26,000 --> 00:00:27,950
-I'm Mehedi.
+00:00:24,400 --> 00:00:25,900
+I'm Tanjamul.
 
 10
+00:00:26,000 --> 00:00:27,500
+I'm Mehedi.
+
+11
 00:00:28,000 --> 00:00:33,106
 NASA pays private companies to carry
 its instruments to the Moon.
 
-11
+12
 00:00:33,156 --> 00:00:40,606
 The programme is called CLPS, and our challenge
 is to build a browser for these missions.
 
-12
+13
 00:00:40,656 --> 00:00:45,762
 The facts are public, but they sit
 in many different places.
 
-13
+14
 00:00:45,812 --> 00:00:49,981
 A team planning a landing asks one thing first:
 
-14
+15
 00:00:50,031 --> 00:00:54,669
 can my lander work at this place, on these dates?
 
-15
+16
 00:00:54,719 --> 00:00:57,950
 Finding out takes experts, and many days.
 
-16
+17
 00:00:58,000 --> 00:00:59,605
 So we built PolarWindow.
 
-17
+18
 00:00:59,655 --> 00:01:02,502
 It puts every mission in one place.
 
-18
+19
 00:01:02,552 --> 00:01:09,950
 And for any landing place and dates, it works out
 sunlight and contact with Earth, hour by hour.
 
-19
+20
 00:01:10,000 --> 00:01:14,466
 Here is every mission in the programme,
 flown and planned.
 
-20
+21
 00:01:14,516 --> 00:01:18,079
 Each fact links to where it came from.
 
-21
+22
 00:01:18,129 --> 00:01:23,950
 Each mission follows the same six steps,
 from getting ready to coming home.
 
-22
+23
 00:01:24,000 --> 00:01:26,495
 On the surface, four numbers matter:
 
-23
+24
 00:01:26,545 --> 00:01:29,889
 hours of sunlight, hours in contact with Earth,
 
-24
+25
 00:01:29,939 --> 00:01:34,132
 the longest night, and the longest time
 with no contact.
 
-25
+26
 00:01:34,182 --> 00:01:37,950
 Each one shows how far it could be off.
 
-26
+27
 00:01:38,000 --> 00:01:42,990
 Why? Because of the hills
 around the landing place.
 
-27
+28
 00:01:43,040 --> 00:01:51,950
 As the days play, the Sun and Earth move
 along that skyline, and the numbers follow.
 
-28
+29
 00:01:52,000 --> 00:01:58,017
 You can put landing places side by side,
 one number at a time.
 
-29
+30
 00:01:58,067 --> 00:02:02,683
 If two are too close to call, it says so.
 
-30
+31
 00:02:02,733 --> 00:02:05,950
 There is no score and no winner.
 
-31
+32
 00:02:06,000 --> 00:02:11,283
 A team can add its own mission
 by dropping in a short document.
 
-32
+33
 00:02:11,333 --> 00:02:16,206
 A planned mission with no dates yet
 still gets a worked example.
 
-33
+34
 00:02:16,256 --> 00:02:21,950
 Anything assumed is marked with stripes,
 so no one takes it for a fact.
 
-34
+35
 00:02:22,000 --> 00:02:25,283
 Or just ask a question.
 
-35
+36
 00:02:25,333 --> 00:02:32,617
 The assistant can only say numbers
 that the app worked out,
 
-36
+37
 00:02:32,667 --> 00:02:37,950
 and it shows how it got each one.
 
-37
+38
 00:02:38,000 --> 00:02:40,719
 PolarWindow runs on NASA open data.
 
-38
+39
 00:02:40,769 --> 00:02:49,027
 Laser height maps from the Lunar Reconnaissance Orbiter
 give the shape of the ground around each landing place.
 
-39
+40
 00:02:49,077 --> 00:02:55,488
 NASA's SPICE data gives the positions of the Sun,
 the Earth and each spacecraft.
 
-40
+41
 00:02:55,538 --> 00:03:01,488
 The Deep Space Network data says
 when a dish on Earth can listen.
 
-41
+42
 00:03:01,538 --> 00:03:07,950
 We also use NASA data for space weather,
 the Moon's gravity and ground temperature.
 
-42
+43
 00:03:08,000 --> 00:03:09,728
 Can you trust it?
 
-43
+44
 00:03:09,778 --> 00:03:17,283
 We checked our results against missions that have
 already flown, using NASA's records of their real paths.
 
-44
+45
 00:03:17,333 --> 00:03:20,839
 Over fourteen hundred automatic tests guard the code.
 
-45
+46
 00:03:20,889 --> 00:03:23,950
 Every number says where it came from.
 
-46
+47
 00:03:24,000 --> 00:03:30,617
 For teams that build landers and instruments,
 the answer is now on one page.
 
-47
+48
 00:03:30,667 --> 00:03:37,760
 For students and anyone curious, a real Moon mission
 is open in a web browser.
 
-48
+49
 00:03:37,810 --> 00:03:41,093
 PolarWindow is open source, and live today.
 
-49
+50
 00:03:41,143 --> 00:03:43,950
 We are [Team name]. Thank you.

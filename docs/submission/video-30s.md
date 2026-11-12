@@ -16,7 +16,7 @@ Wali's Take C (`task_wali.md`) and Ahbab's short take (`task_ahbab.md`).
 | # | Time | On screen | Voice |
 |---|---|---|---|
 | 1 | 0:00 to 0:05 | Film: a hill's shadow reaches the lander. Small caption: "Illustration, generated" | Wali: At the Moon's south pole, one hill can switch off the Sun and cut a lander off from Earth. |
-| 2 | 0:05 to 0:09 | The name strip with all five faces and names showing, the team name above, "Challenge: CLPS Lunar Mission Browser" below | Ahbab: We are [Team name]. This is PolarWindow. |
+| 2 | 0:05 to 0:09 | The name strip with all six faces and names showing, the team name above, "Challenge: CLPS Lunar Mission Browser" below | Ahbab: We are [Team name]. This is PolarWindow. |
 | 3 | 0:09 to 0:13 | Screen shot 2: the four numbers, zoomed | Pick a landing place and dates. |
 | 4 | 0:13 to 0:17 | Screen shot 3: the days playing | See sunlight, contact with Earth and the longest night, each with how far it could be off. |
 | 5 | 0:17 to 0:21 | Screen shot 1: the six steps on the curve | Follow every mission through six steps. |
@@ -26,7 +26,7 @@ Wali's Take C (`task_wali.md`) and Ahbab's short take (`task_ahbab.md`).
 ## Direction
 
 - Every cut is a plain cut on a word. No effects.
-- The five names must be readable for at least 4 seconds, in large type. Keep a thin strip of the names
+- The six names must be readable for at least 4 seconds, in large type. Keep a thin strip of the names
   along the bottom through shot 3 if 4 seconds is too short.
 - Shot 4's line is the longest. If the voice runs past 0:17, let it run over shot 5's picture.
 - Music: the same track as the long video, from the first frame to the last word.
@@ -35,7 +35,7 @@ Wali's Take C (`task_wali.md`) and Ahbab's short take (`task_ahbab.md`).
 ## Before uploading
 
 - [ ] 29 seconds or less
-- [ ] Team name and all five names on screen
+- [ ] Team name and all six names on screen
 - [ ] The challenge named on screen
 - [ ] The product shown working in at least three shots
 - [ ] NASA data spoken

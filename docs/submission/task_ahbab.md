@@ -20,7 +20,7 @@ Then at 2:30 PM you watch Mehedi's cut and approve it (section 6).
 
 ## 1. Before 9:30 AM: things only you can do
 
-- [ ] Make the shared Drive folder `video/` with one folder per person: `wali`, `ryan`, `ahbab`, `mehrab`,
+- [ ] Make the shared Drive folder `video/` with one folder per person: `wali`, `ryan`, `ahbab`, `mehrab`, `tanjamul`,
       `mehedi`, and `final`. Share it with everyone.
 - [ ] Send each person their task file.
 - [ ] Decide the **team name** and each person's **role** (two or three words, for example "Backend and
@@ -29,7 +29,7 @@ Then at 2:30 PM you watch Mehedi's cut and approve it (section 6).
       `Nasa Spaceapps` folder: `light.mp4`, `shadow.mp4`, `earth.mp4`, `rim.mp4`, `descent.mp4`.
       Tell him which tool made them.
 - [ ] Put the report in `video/ahbab/`: `polarwindow/docs/report/report.pdf` (Mehedi shows its checking
-      table in Mehrab's part).
+      table in Tanjamul's part).
 - [ ] Put the logo files in `video/ahbab/brand/` (from `polarwindow/frontend/src/assets/brand/`).
 
 ---
@@ -240,7 +240,7 @@ By **11:30 AM**, in `video/ahbab/`:
 Watch it twice, once with sound off. Check:
 
 - [ ] Under 3 minutes 55 seconds
-- [ ] The team name and all five names are on screen and spoken
+- [ ] The team name and all six names are on screen and spoken
 - [ ] The challenge name is on screen: CLPS Lunar Mission Browser
 - [ ] Every NASA data name in Mehrab's part can be read and heard
 - [ ] No number is spoken that is not on the screen at that moment

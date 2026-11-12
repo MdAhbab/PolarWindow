@@ -9,13 +9,14 @@ Files in this folder:
 |---|---|
 | `video-240s.md`, `video-240s.srt` | The long video: master plan, whole script, subtitles |
 | `video-30s.md`, `video-30s.srt` | The short video: plan and subtitles |
-| `task_wali.md`, `task_ryan.md`, `task_mehrab.md` | Each speaker's words and how to record |
+| `task_wali.md`, `task_ryan.md`, `task_mehrab.md`, `task_tanjamul.md` | Each speaker's words and how to record |
 | `task_ahbab.md` | Ahbab's words, the demo voice and the six screen recordings |
 | `task_mehedi.md` | Mehedi's words, the film clips, the twelve figure prompts and the full edit |
 | `demo-files/` | Example mission briefs to drop into New project during the demo |
 
-Team: Wali, Ryan, Ahbab, Mehrab, Mehedi. Speaking order in the long video: Wali (hook), Ryan (problem),
-Ahbab (solution and demo), Mehrab (NASA data and trust), Mehedi (close and final edit).
+Team: Wali, Ryan, Ahbab, Mehrab, Tanjamul, Mehedi. Speaking order in the long video: Wali (hook), Ryan
+(problem), Ahbab (solution and demo), Mehrab (NASA data), Tanjamul (why to trust it), Mehedi (close and
+final edit).
 
 Deadlines (Asia/Dhaka), from the Participants Guide:
 
@@ -120,7 +121,7 @@ The bibliography of `docs/report/report.pdf` (`docs/report/ref.bib`) and the dat
 
 ### Before pressing Submit
 
-- [ ] All five members on the Members tab with photo and role; team photo added
+- [ ] All six members on the Members tab with photo and role; team photo added
 - [ ] Challenge named: CLPS Lunar Mission Browser
 - [ ] 30-second video link opens in a private window; so do the GitHub link and the live link
 - [ ] Use of AI, NASA data sources and References filled in
