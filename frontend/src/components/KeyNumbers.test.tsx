@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import '../test/dialog'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
@@ -145,14 +146,14 @@ describe('KeyNumberRow', () => {
 
   it('says what a number means, and its professional name, only when its label is pressed', () => {
     render(<KeyNumberRow metrics={real()} />)
-    const means = screen.getByText(/so the lander can radio home directly/)
-    expect(means.closest('p')?.hidden).toBe(true)
+    expect(screen.queryByText(/so the lander can radio home directly/)).toBeNull()
     const button = screen.getByRole('button', { name: /Time in contact with Earth/ })
     expect(button.getAttribute('aria-expanded')).toBe('false')
     fireEvent.click(button)
     expect(button.getAttribute('aria-expanded')).toBe('true')
-    expect(means.closest('p')?.hidden).toBe(false)
-    expect(screen.getByText('Also called Direct-to-Earth (DTE) contact.')).toBeTruthy()
+    const sheet = screen.getByRole('dialog', { name: 'About this number' })
+    expect(sheet.textContent).toMatch(/so the lander can radio home directly/)
+    expect(sheet.textContent).toContain('Also called Direct-to-Earth (DTE) contact.')
   })
 
   it('says plainly when there is no night and no blackout: no ±, no margin arithmetic', () => {

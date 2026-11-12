@@ -1,7 +1,7 @@
-import { useId, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useMotionClass } from '../hooks/useMotion'
 import { Skeleton } from './States'
-import { useOpenRow } from './ui'
+import { Sheet } from './Sheet'
 import { bound, hoursSpoken, percent, plusMinus, termLabel } from '../lib/format'
 import {
   againstLimitLead,
@@ -124,8 +124,6 @@ export function KeyNumberTile({
   // and under reduced motion it is simply replaced.
   const settle = useMotionClass('pw-number-in')
   const [explained, setExplained] = useState(false)
-  const explainRow = useOpenRow(explained)
-  const explainId = useId()
   // One sentence with the value, its unit and its margin: the ± sits in a
   // separate element, so reading the visuals aloud announced "±17.1" with no unit.
   const said =
@@ -181,14 +179,14 @@ export function KeyNumberTile({
         {explains ? (
           <button
             type="button"
+            aria-haspopup="dialog"
             aria-expanded={explained}
-            aria-controls={explainId}
-            onClick={() => setExplained((v) => !v)}
+            onClick={() => setExplained(true)}
             className="-my-3 -mr-2 flex min-h-11 grow cursor-pointer items-start justify-between gap-2 py-3 pr-2 text-left hover:text-ink"
           >
             <span>{label}</span>
             <Icon name="info" size={14} strokeWidth={2} className="mt-px shrink-0 opacity-70" />
-            <span className="sr-only">{explained ? ', hide what this means' : ', what this means'}</span>
+            <span className="sr-only">, about this number</span>
           </button>
         ) : (
           <span>{label}</span>
@@ -270,16 +268,42 @@ export function KeyNumberTile({
       ) : inRow ? (
         <div />
       ) : null}
-      {explains && (
-        // "What this means" opens by its height and closes the same way (rule 3).
-        <div ref={explainRow.ref} hidden={explainRow.hidden} className="pw-open-row">
-          <p id={explainId} hidden={explainRow.hidden} className="border-t border-line pt-2 text-small leading-5 text-ink-2">
-            <span className="block pb-1 font-semibold text-ink">About this number</span>
-            {means}
-            {also && <span className="block pt-1 text-ink-3">Also called {also}.</span>}
-            {source && <span className="block pt-1 text-ink-3">{source}</span>}
-          </p>
-        </div>
+      {explains && explained && (
+        // Everything about the number in one sheet, out of the way of the tile; only while open,
+        // so the page holds each label once.
+        <Sheet open={explained} onClose={() => setExplained(false)} title="About this number">
+          <div className="flex flex-col gap-5 p-5 md:p-6">
+            <div className="flex flex-col gap-1">
+              <h3 className="text-control font-semibold text-ink">{label}</h3>
+              {shown && (
+                <p className="font-mono text-title text-ink tnum">
+                  {display ?? `${bound(open)}${Math.round(value)}`} {margin ?? (toleranceH !== undefined ? plusMinus(toleranceH) : '')} {unit}
+                </p>
+              )}
+              {numberKind && <KindMark kind={numberKind} />}
+            </div>
+            {means && (
+              <section className="flex flex-col gap-1">
+                <h4 className="text-small font-semibold text-ink">What it means</h4>
+                <p className="text-small leading-5 text-ink-2">{means}</p>
+                {also && <p className="text-small leading-5 text-ink-3">Also called {also}.</p>}
+              </section>
+            )}
+            {source && (
+              <section className="flex flex-col gap-1">
+                <h4 className="text-small font-semibold text-ink">Where it came from</h4>
+                <p className="text-small leading-5 text-ink-2">{source}</p>
+              </section>
+            )}
+            {(footnote || age) && (
+              <section className="flex flex-col gap-1">
+                <h4 className="text-small font-semibold text-ink">What to know</h4>
+                {footnote && <p className="text-small leading-5 text-ink-2">{footnote}</p>}
+                {age && <p className="text-small leading-5 text-ink-2">{age}</p>}
+              </section>
+            )}
+          </div>
+        </Sheet>
       )}
     </div>
   )

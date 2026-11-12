@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
+import '../../test/dialog'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, renderHook, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, renderHook, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { renderApp } from '../../test/render'
@@ -128,9 +129,9 @@ describe('QuantityTile: every margin form, and missing', () => {
       <QuantityTile term="boosterWaves" q={q({ value: 2.5, unit: 'm', provenance: 'entered', source: 'A. Rahman', no_margin_reason: 'A limit.' })} age="as of 40 min ago" inRow={false} />,
     )
     expect(screen.getByText('as of 40 min ago')).toBeTruthy()
-    const explain = screen.getByText(/Entered by A. Rahman/).closest('p') as HTMLElement
-    expect(explain.hidden).toBe(true)
-    screen.getByRole('button', { name: /Waves at the booster landing zone/ }).click()
+    expect(screen.queryByText(/Entered by A. Rahman/)).toBeNull()
+    act(() => screen.getByRole('button', { name: /Waves at the booster landing zone/ }).click())
+    expect(screen.getByRole('dialog', { name: 'About this number' }).textContent).toMatch(/Entered by A. Rahman/)
   })
 })
 
