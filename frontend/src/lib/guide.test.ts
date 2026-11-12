@@ -9,9 +9,9 @@ async function fresh() {
 beforeEach(() => localStorage.clear())
 
 describe('guide', () => {
-  it('opens on the first visit, at the first step', async () => {
+  it('never opens by itself: closed on the first visit, at the first step', async () => {
     const g = await fresh()
-    expect(g.useGuide.getState()).toMatchObject({ open: true, step: 0 })
+    expect(g.useGuide.getState()).toMatchObject({ open: false, step: 0 })
   })
 
   it('introduces each feature once: no two steps point at the same thing', async () => {
@@ -29,7 +29,7 @@ describe('guide', () => {
 
   it('stays short, and introduces the six mission steps in one step', async () => {
     const { GUIDE_STEPS } = await fresh()
-    expect(GUIDE_STEPS.length).toBeLessThanOrEqual(5)
+    expect(GUIDE_STEPS).toHaveLength(3)
     const journey = GUIDE_STEPS.filter((s) => s.target === 'journey')
     expect(journey).toHaveLength(1)
     expect(journey[0].path).toMatch(/^\/missions\/[^/]+\/(ready|launch|trip|contact|return)$/)
@@ -38,10 +38,10 @@ describe('guide', () => {
 
   it('remembers where it was left, and that it was closed', async () => {
     let g = await fresh()
-    g.useGuide.getState().go(3)
+    g.useGuide.getState().go(2)
     g.useGuide.getState().setOpen(false)
     g = await fresh()
-    expect(g.useGuide.getState()).toMatchObject({ open: false, step: 3 })
+    expect(g.useGuide.getState()).toMatchObject({ open: false, step: 2 })
   })
 
   it('keeps a step inside the list, and starts over when storage is unreadable', async () => {
@@ -50,16 +50,13 @@ describe('guide', () => {
     expect(g.useGuide.getState().step).toBe(g.GUIDE_STEPS.length - 1)
     localStorage.setItem('pw-guide', '{broken')
     g = await fresh()
-    expect(g.useGuide.getState()).toMatchObject({ open: true, step: 0 })
+    expect(g.useGuide.getState()).toMatchObject({ open: false, step: 0 })
   })
 
-  it('uses the glossary names: Landing sites for the site area, the team for the Settings group', async () => {
+  it('uses the glossary name Landing sites for the site area', async () => {
     const { GUIDE_STEPS } = await fresh()
     const map = GUIDE_STEPS.find((s) => s.id === 'map')!
     expect(map.body).toMatch(/^Landing sites holds the candidate sites near the pole/)
     expect(map.body).not.toMatch(/spots/)
-    const settings = GUIDE_STEPS.find((s) => s.id === 'settings')!
-    expect(settings.title).toBe('Settings and the team')
-    expect(settings.body).toMatch(/^Settings holds the team, its parameters/)
   })
 })

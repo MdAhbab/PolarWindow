@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 
 /**
- * The guide bar's steps: one per major feature, each introduced once. The
+ * The guide bar's three steps: one per major feature, each introduced once. It is
+ * optional and never opens by itself; Guide in the header's menu opens it. The
  * analysis pages come first, on the default dates (one lunar day); a mission's
  * page comes last, because opening one moves the dates to its time on the
  * surface, and the pages before it would then show only a few hours.
@@ -40,21 +41,7 @@ export const GUIDE_STEPS: GuideStep[] = [
     path: '/missions/im-2/trip',
     target: 'journey',
     title: 'Follow a mission from start to finish',
-    body: 'Each mission has six steps, from getting ready to coming home. Every step answers one question the same way. A sentence comes first, then up to four numbers, one chart, and rows you open.',
-  },
-  {
-    id: 'mission',
-    path: '/missions/im-2/surface',
-    target: 'sun-earth',
-    title: 'See the Sun and Earth at a landing spot',
-    body: 'The longest night decides how big the battery must be. Press the name of any number to see what it means and where it comes from. Listen reads the page out loud.',
-  },
-  {
-    id: 'settings',
-    path: '/missions/im-2/surface',
-    target: 'settings',
-    title: 'Settings and the team',
-    body: 'Settings holds the team, its parameters and risk scale, where the live data comes from, the theme and motion. Press Guide at the top any time to see this tour again.',
+    body: 'Each mission has six steps, from getting ready to coming home. Every step answers one question the same way. Press the name of any number to see what it means and where it comes from.',
   },
 ]
 
@@ -70,10 +57,10 @@ function read(): Stored {
     const raw = typeof localStorage === 'undefined' ? null : localStorage.getItem(KEY)
     const v = raw ? (JSON.parse(raw) as Partial<Stored>) : {}
     const step = typeof v.step === 'number' && v.step >= 0 && v.step < GUIDE_STEPS.length ? v.step : 0
-    // Open on the first visit to the dashboard; after that, as it was left.
-    return { open: v.open !== false, step }
+    // Closed until the person opens it (ruling L-5); after that, as it was left.
+    return { open: v.open === true, step }
   } catch {
-    return { open: true, step: 0 }
+    return { open: false, step: 0 }
   }
 }
 
@@ -81,7 +68,7 @@ function write(v: Stored): void {
   try {
     localStorage.setItem(KEY, JSON.stringify(v))
   } catch {
-    /* storage refused: the guide opens again next visit */
+    /* storage refused: the guide starts closed next visit */
   }
 }
 

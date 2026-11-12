@@ -2,10 +2,10 @@ import { expect, test } from '@playwright/test'
 import { expectNoSeriousAxe, openRow, returningVisitor, watchConsole } from './helpers'
 
 /**
- * The video's path (report-work demo script, beats 1–8), end to end, with
+ * The video's path (report-work demo script, beats 1 to 8), end to end, with
  * axe on every screen it visits and no console errors or warnings.
  */
-test('front page: one click signs in and the guide opens on the first feature', async ({ page }) => {
+test('front page: one click signs in, and the guide opens only when asked', async ({ page }) => {
   const problems = watchConsole(page)
   await page.goto('/')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Plan a landing where the Sun barely rises')
@@ -16,10 +16,13 @@ test('front page: one click signs in and the guide opens on the first feature', 
   await expect(page.getByRole('heading', { name: 'The Sun never climbs' })).toBeVisible()
 
   await page.getByRole('button', { name: 'Go to the dashboard' }).first().click()
-  // Signing in opens Home; the guide's first step is about Missions, one press away.
+  // Signing in opens Home with no guide; Guide in the header's menu opens it on its first step.
   await expect(page).toHaveURL(/\/home$/)
   const guide = page.getByRole('region', { name: 'Guide' })
-  await expect(guide).toContainText('1 of 5')
+  await expect(guide).toHaveCount(0)
+  await page.getByRole('button', { name: 'Guide and settings' }).click()
+  await page.getByRole('menuitem', { name: /^Guide\b/ }).click()
+  await expect(guide).toContainText('1 of 3')
   await expect(guide).toContainText('Find a CLPS mission')
   await guide.getByRole('button', { name: 'Take me there' }).click()
   await expect(page).toHaveURL(/\/missions$/)
