@@ -11,6 +11,7 @@ import { useActiveScenario } from '../scenario/store'
 import { Icon, type IconName } from '../Icon'
 import { Skeleton } from '../States'
 import { CountUp } from '../ui'
+import { MarkIcon, useStepMarks } from '../MarkIcon'
 
 /**
  * The six steps, in the order a mission lives them. `slug` is the address;
@@ -211,6 +212,7 @@ export function JourneyBar({
   const reached = progress?.reached ?? -1
   const draw = useMotionClass('pw-journey-draw')
   const scenario = useOpenScenario(missionId)
+  const marks = useStepMarks(missionId)
   return (
     <nav aria-label="Mission sections" data-guide="journey" className={`flex flex-col gap-2 ${draw}`}>
       <ol className={`grid grid-cols-3 gap-x-1.5 min-[360px]:gap-x-3 gap-y-4 md:grid-cols-6 md:gap-x-4 ${progress?.now ? 'md:pt-9' : ''}`}>
@@ -237,7 +239,16 @@ export function JourneyBar({
                 <Node n={i + 1} behind={behind} open={active} />
                 <span className="flex min-w-0 flex-col gap-0.5 pt-1 md:pt-0">
                   <span className={`text-body leading-5 ${active ? 'font-semibold' : 'font-medium'}`}>{s.name}</span>
-                  <StateLine status={st} loading={loading} className={active ? 'text-ink-2' : 'text-ink-3'} />
+                  {marks.get(s.id)?.mark === 'example' ? (
+                    // The record has nothing here, but a worked example does: the list's hatched mark.
+                    <span className={`flex min-w-0 items-center gap-1.5 text-caption leading-caption ${active ? 'text-ink-2' : 'text-ink-3'}`}>
+                      <MarkIcon kind="example" />
+                      <span className="truncate">Worked example</span>
+                      <span className="sr-only">.</span>
+                    </span>
+                  ) : (
+                    <StateLine status={st} loading={loading} className={active ? 'text-ink-2' : 'text-ink-3'} />
+                  )}
                 </span>
                 {progress?.now && i === reached && (
                   // Clear of the open step's ring, which reaches 6 px above the disc.

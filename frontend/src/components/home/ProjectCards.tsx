@@ -9,6 +9,7 @@ import { Skeleton } from '../States'
 import { pillClass } from '../ui'
 import { STATE_WORDS } from '../lifecycle/JourneyBar'
 import { countdownWords, journeySteps } from './model'
+import { StepStrip } from '../StepStrip'
 
 /**
  * A project's six steps as a small strip: each step's state as a glyph and
@@ -105,7 +106,14 @@ export function ProjectCard({
           <span className="text-ink-3">No dated event ahead</span>
         )}
       </p>
-      <JourneyStrip statuses={statuses} loading={loading} />
+      {project.steps?.length ? (
+        // Above the card's own link, so each mark opens its step.
+        <div className="relative z-[1]">
+          <StepStrip mission={project} />
+        </div>
+      ) : (
+        <JourneyStrip statuses={statuses} loading={loading} />
+      )}
       {waiting > 0 && (
         <p className="text-small font-semibold text-ink">
           {waiting} {waiting === 1 ? 'step waits' : 'steps wait'} on you
@@ -171,7 +179,7 @@ export function ProjectsEmpty({ explore, offline }: { explore: Mission[]; offlin
         {explore.length ? (
           <ul className="pw-card pw-card-quiet pw-rows flex flex-col">
             {explore.map((m) => (
-              <li key={m.id} className="pw-row">
+              <li key={m.id} className="pw-row flex flex-col">
                 <Link
                   to={`/missions/${encodeURIComponent(m.id)}`}
                   className="flex min-h-14 items-center gap-3 px-4 py-3 text-ink no-underline hover:bg-inset"
@@ -184,6 +192,9 @@ export function ProjectsEmpty({ explore, offline }: { explore: Mission[]; offlin
                   </span>
                   <Icon name="chevron" size={16} strokeWidth={2} className="shrink-0 -rotate-90 text-ink-3" />
                 </Link>
+                <div className="px-3 pb-2">
+                  <StepStrip mission={m} />
+                </div>
               </li>
             ))}
           </ul>
