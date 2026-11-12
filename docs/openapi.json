@@ -11358,6 +11358,14 @@
             ],
             "title": "Owner Name",
             "description": "Who entered a project; null for a catalogue record."
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/StepMark"
+            },
+            "type": "array",
+            "title": "Steps",
+            "description": "The six steps in journey order, each with what answers it. Lists only."
           }
         },
         "additionalProperties": false,
@@ -11608,6 +11616,14 @@
             ],
             "title": "Owner Name",
             "description": "Who entered a project; null for a catalogue record."
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/StepMark"
+            },
+            "type": "array",
+            "title": "Steps",
+            "description": "The six steps in journey order, each with what answers it. Lists only."
           },
           "outcome_note": {
             "type": "string",
@@ -18180,6 +18196,52 @@
           "source_urls"
         ],
         "title": "StationFigures"
+      },
+      "StepMark": {
+        "properties": {
+          "section": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "launch",
+              "trip",
+              "landing",
+              "contact",
+              "return"
+            ],
+            "title": "Section"
+          },
+          "mark": {
+            "type": "string",
+            "enum": [
+              "record",
+              "example",
+              "input",
+              "none"
+            ],
+            "title": "Mark",
+            "description": "`record`: the mission's own record answers the step. `example`: only a worked example from assumed values does. `input`: nothing does yet. `none`: the step does not apply."
+          },
+          "scenario_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scenario Id",
+            "description": "For `example`: the first worked example that answers it."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "section",
+          "mark"
+        ],
+        "title": "StepMark"
       },
       "StretchOut": {
         "properties": {

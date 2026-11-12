@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import ENGINE_VERSION
 from app.db.repositories.missions import MissionRecord, MissionRepository
+from app.db.repositories.scenarios import ScenarioRepository
 from app.db.repositories.sites import MaskRepository
 from app.services import lifecycle, mission_service, ready_service
 from app.services.mission_service import MissionNotFound
@@ -196,6 +197,45 @@ async def sections_for(session: AsyncSession, m: MissionRecord) -> dict[str, Any
             computed_at=datetime.now(UTC),
         ),
     }
+
+
+async def step_marks(session: AsyncSession, m: MissionRecord) -> list[dict[str, Any]]:
+    """What each of the six steps has, for the mission list: one mark per step.
+
+    ``record``: the mission's own record answers it (published, flown or entered).
+    ``example``: only a worked example (a preset scenario) answers it, from assumed
+    values; ``scenario_id`` names the first one that does. ``input``: nothing does yet.
+    ``none``: the step does not apply (a cancelled delivery).
+    """
+    states = {s["section"]: s["state"] for s in (await sections_for(session, m))["data"]}
+    presets = sorted(
+        (
+            r
+            for r in await ScenarioRepository(session).for_mission(m.id)
+            if r.preset and r.status == "done"
+        ),
+        key=lambda r: r.created_at,
+    )
+    out = []
+    for section in ("ready", "launch", "trip", "landing", "contact", "return"):
+        state = states.get(section, "no_data")
+        example = None
+        if state in ("available", "computing"):
+            mark = "record"
+        elif state == "not_applicable":
+            mark = "none"
+        else:
+            example = next(
+                (
+                    r.id
+                    for r in presets
+                    if any(p.get("id") == section and p.get("state") == "done" for p in r.phases)
+                ),
+                None,
+            )
+            mark = "input" if example is None else "example"
+        out.append({"section": section, "mark": mark, "scenario_id": example})
+    return out
 
 
 async def _trip(session: AsyncSession, m: MissionRecord) -> dict[str, Any]:

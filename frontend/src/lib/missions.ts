@@ -146,7 +146,7 @@ export function missionDate(m: Mission): { which: 'landing' | 'launch'; date: Pu
 
 export function missionDateWords(m: Mission): string {
   const d = missionDate(m)
-  if (!d) return 'landing date unconfirmed'
+  if (!d) return 'landing date not published yet'
   const verb =
     d.which === 'landing'
       ? m.status === 'planned' || m.status === 'in_transit'
@@ -167,15 +167,15 @@ export function missionDateWords(m: Mission): string {
 export function missionAccessibleName(m: Mission): string {
   const parts = [
     m.name,
-    m.provider ?? 'provider unconfirmed',
+    m.provider ?? 'provider not published yet',
     missionDateWords(m),
     STATUS_LABEL[m.status],
     m.payloadTypes.length
       ? `carries ${m.payloadTypes.map((t) => INSTRUMENT_LABEL[t].toLowerCase()).join(', ')}`
-      : 'payloads unconfirmed',
+      : 'payloads not published yet',
   ]
   if (m.origin === 'project') parts.push(m.ownerName ? `your project, entered by ${m.ownerName}` : 'your project')
-  if (m.unconfirmedFields.length) parts.push('some details unconfirmed')
+  if (m.unconfirmedFields.length) parts.push('some details not published yet')
   return parts.join(', ')
 }
 

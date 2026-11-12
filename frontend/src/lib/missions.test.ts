@@ -59,8 +59,8 @@ describe('mission list words', () => {
   })
 
   it('says a missing provider is unconfirmed rather than leaving a gap', () => {
-    expect(missionAccessibleName(mission('cs-8'))).toMatch(/provider unconfirmed/)
-    expect(missionAccessibleName(mission('cs-8'))).toMatch(/some details unconfirmed$/)
+    expect(missionAccessibleName(mission('cs-8'))).toMatch(/provider not published yet/)
+    expect(missionAccessibleName(mission('cs-8'))).toMatch(/some details not published yet$/)
   })
 
   it('places a mission lost before landing at its launch', () => {

@@ -25,7 +25,8 @@ import { PolarMap, POLAR_MAP_EDGE_LAT, type MissionPin } from '../components/Pol
 import { ProgrammeTimeline } from '../components/ProgrammeTimeline'
 import { AskPanel } from '../components/Agents'
 import { EmptyState, FarSide, LoadingPanel, ProblemPanel } from '../components/States'
-import { Button, Chip, Disclosure, Panel, Segmented, Unconfirmed, pillClass, useOpenRow } from '../components/ui'
+import { Button, Chip, Disclosure, Panel, Segmented, pillClass, useOpenRow } from '../components/ui'
+import { HAS_OPTIONS, MarkLegend, StepStrip, hasWhat, isHasFilter, type HasFilter } from '../components/StepStrip'
 import { useTransitionClick } from '../lib/viewTransition'
 import { Icon } from '../components/Icon'
 import { Select } from '../components/Select'
@@ -54,6 +55,8 @@ export function MissionsScreen() {
   const statusParam = params.get('status')
   const status: StatusFilter = statusParam === 'flown' || statusParam === 'upcoming' ? statusParam : 'all'
   const provider = params.get('provider') ?? ''
+  const hasParam = params.get('has')
+  const has: HasFilter = isHasFilter(hasParam) ? hasParam : 'all'
   const [last, setLast] = useState<LastFilter | null>(null)
   const [showTypes, setShowTypes] = useState(types.length > 0)
   const typesRow = useOpenRow(showTypes)
@@ -82,7 +85,7 @@ export function MissionsScreen() {
   const rowRefs = useRef(new Map<string, HTMLAnchorElement>())
   const insetRef = useRef<HTMLDivElement>(null)
 
-  const shown = useMemo(() => list.data?.items ?? [], [list.data])
+  const shown = useMemo(() => (list.data?.items ?? []).filter((m) => hasWhat(m, has)), [list.data, has])
   const highlight = useMemo(() => new Set([...(hover ?? []), ...picked]), [hover, picked])
 
   const update = (mutate: (p: URLSearchParams) => void, lastFilter: LastFilter | null) => {
@@ -110,7 +113,8 @@ export function MissionsScreen() {
       (p) => (provider === name ? p.delete('provider') : p.set('provider', name)),
       provider === name ? null : { kind: 'provider' },
     )
-  const clearAll = () => update((p) => ['type', 'status', 'provider'].forEach((k) => p.delete(k)), null)
+  const setHas = (h: HasFilter) => update((p) => (h === 'all' ? p.delete('has') : p.set('has', h)), null)
+  const clearAll = () => update((p) => ['type', 'status', 'provider', 'has'].forEach((k) => p.delete(k)), null)
 
   const providers = useMemo(
     () =>
@@ -148,9 +152,10 @@ export function MissionsScreen() {
     types.length ? `carries any of ${types.map((t) => INSTRUMENT_LABEL[t]).join(', ')}` : null,
     status !== 'all' ? `status ${STATUS_OPTIONS.find((o) => o.value === status)?.label}` : null,
     provider ? `provider ${provider}` : null,
+    has !== 'all' ? `steps: ${HAS_OPTIONS.find((o) => o.value === has)?.label.toLowerCase()}` : null,
   ].filter(Boolean)
 
-  const total = list.data?.total
+  const total = list.data ? (has === 'all' ? list.data.total : shown.length) : undefined
   const all = everything.data?.total
   const count =
     total === undefined ? 'Loading missions' : all === undefined ? `${total} missions` : `${total} of ${all} missions`
@@ -201,7 +206,7 @@ export function MissionsScreen() {
     onBlur: () => setHover(null),
   })
 
-  const activeFilters = types.length + (provider ? 1 : 0) + (status !== 'all' ? 1 : 0)
+  const activeFilters = types.length + (provider ? 1 : 0) + (status !== 'all' ? 1 : 0) + (has !== 'all' ? 1 : 0)
 
   return (
     <div className="flex grow flex-col">
@@ -239,6 +244,7 @@ export function MissionsScreen() {
       >
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <Segmented label="Status" options={STATUS_OPTIONS} value={status} onChange={setStatus} />
+          <Segmented label="What the steps have" options={HAS_OPTIONS} value={has} onChange={setHas} />
           <Button
             onClick={() => setShowTypes((v) => !v)}
             expanded={showTypes}
@@ -297,6 +303,7 @@ export function MissionsScreen() {
           <h2 id="missions-list-h" className="sr-only">
             Missions
           </h2>
+          <MarkLegend className="px-1" />
           {list.isPending ? (
             <LoadingPanel done={0} total={1} title="Loading NASA's commercial Moon landings (CLPS)" unit="lists" />
           ) : list.error && !list.data ? (
@@ -445,47 +452,55 @@ function MissionRow({
 }) {
   const d = missionDate(m)
   const go = useTransitionClick()
+  const kinds = m.payloadTypes.map((t) => INSTRUMENT_LABEL[t])
   return (
-    <Link
-      ref={rowRef}
-      to={`/missions/${m.id}`}
-      aria-label={missionAccessibleName(m)}
-      // The name moves into the mission's header as its page opens (rule 5).
-      onClick={go(`/missions/${m.id}`, undefined, 'pw-mission-name')}
+    // The row opens the mission; the step marks under it are links of their
+    // own (a link may not hold links), so the two sit side by side in one row.
+    <div
       {...handlers}
-      className={`group flex flex-col gap-1 border-b border-line px-4 py-3.5 no-underline transition-colors duration-[var(--pw-dur-quick)] focus-visible:-outline-offset-2 sm:px-5 ${
+      className={`group flex flex-col gap-1.5 border-b border-line px-4 py-3 transition-colors duration-[var(--pw-dur-quick)] sm:px-5 ${
         highlighted ? 'bg-inset' : 'hover:bg-inset'
       }`}
     >
-      <span className="flex items-baseline justify-between gap-3">
-        <span data-pw-carry="" className="text-control font-semibold text-ink transition-transform duration-[var(--pw-dur-lift)] ease-[var(--ease-settle)] group-hover:translate-x-0.5">{m.name}</span>
-        <span className="shrink-0 text-small text-ink-2" title={STATUS_LABEL[m.status]}>
-          <span aria-hidden="true">{STATUS_GLYPH[m.status]} </span>
-          {STATUS_LABEL[m.status]}
+      <Link
+        ref={rowRef}
+        to={`/missions/${m.id}`}
+        aria-label={missionAccessibleName(m)}
+        // The name moves into the mission's header as its page opens (rule 5).
+        onClick={go(`/missions/${m.id}`, undefined, 'pw-mission-name')}
+        className="flex flex-col gap-1 py-0.5 no-underline"
+      >
+        <span className="flex items-baseline justify-between gap-3">
+          <span data-pw-carry="" className="text-control font-semibold text-ink transition-transform duration-[var(--pw-dur-lift)] ease-[var(--ease-settle)] group-hover:translate-x-0.5">{m.name}</span>
+          <span className="shrink-0 text-small text-ink-2" title={STATUS_LABEL[m.status]}>
+            <span aria-hidden="true">{STATUS_GLYPH[m.status]} </span>
+            {STATUS_LABEL[m.status]}
+          </span>
         </span>
-      </span>
-      <span className="text-small leading-5 text-ink-2">
-        {m.provider ?? <Unconfirmed />} ·{' '}
-        {d ? (
-          <>
-            {d.which === 'landing' ? 'landing' : 'launch'}{' '}
-            <span title={publishedTitle(d.date)}>{publishedWords(d.date)}</span>
-          </>
-        ) : (
-          <>
-            landing date <Unconfirmed />
-          </>
+        <span className="text-small leading-5 text-ink-2">
+          {m.provider ?? 'Provider not published yet'} ·{' '}
+          {d ? (
+            <>
+              {d.which === 'landing' ? 'landing' : 'launch'}{' '}
+              <span title={publishedTitle(d.date)}>{publishedWords(d.date)}</span>
+            </>
+          ) : (
+            'landing date not published yet'
+          )}
+        </span>
+        {m.origin === 'project' && (
+          <span className="text-caption leading-caption text-ink-2">
+            Entered by {m.ownerName ?? 'the team'}
+          </span>
         )}
-      </span>
-      {m.origin === 'project' && (
-        <span className="text-caption leading-caption text-ink-2">
-          Entered by {m.ownerName ?? 'the team'}
+        <span className="text-caption leading-caption text-ink-3">
+          {kinds.length
+            ? [...kinds.slice(0, 3), ...(kinds.length > 3 ? [`${kinds.length - 3} more`] : [])].join(' · ')
+            : 'Payloads not published yet'}
         </span>
-      )}
-      <span className="text-caption leading-caption text-ink-3">
-        {m.payloadTypes.length ? m.payloadTypes.map((t) => INSTRUMENT_LABEL[t]).join(' · ') : 'Payloads unconfirmed'}
-      </span>
-    </Link>
+      </Link>
+      <StepStrip mission={m} />
+    </div>
   )
 }
 

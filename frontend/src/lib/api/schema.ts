@@ -3715,6 +3715,11 @@ export interface components {
              * @description Who entered a project; null for a catalogue record.
              */
             owner_name?: string | null;
+            /**
+             * Steps
+             * @description The six steps in journey order, each with what answers it. Lists only.
+             */
+            steps?: components["schemas"]["StepMark"][];
         };
         /** MissionDetail */
         MissionDetail: {
@@ -3775,6 +3780,11 @@ export interface components {
              * @description Who entered a project; null for a catalogue record.
              */
             owner_name?: string | null;
+            /**
+             * Steps
+             * @description The six steps in journey order, each with what answers it. Lists only.
+             */
+            steps?: components["schemas"]["StepMark"][];
             /** Outcome Note */
             outcome_note: string;
             end_of_mission: components["schemas"]["PublishedDate"] | null;
@@ -5922,6 +5932,25 @@ export interface components {
             module: string;
             /** Source Urls */
             source_urls: string[];
+        };
+        /** StepMark */
+        StepMark: {
+            /**
+             * Section
+             * @enum {string}
+             */
+            section: "ready" | "launch" | "trip" | "landing" | "contact" | "return";
+            /**
+             * Mark
+             * @description `record`: the mission's own record answers the step. `example`: only a worked example from assumed values does. `input`: nothing does yet. `none`: the step does not apply.
+             * @enum {string}
+             */
+            mark: "record" | "example" | "input" | "none";
+            /**
+             * Scenario Id
+             * @description For `example`: the first worked example that answers it.
+             */
+            scenario_id?: string | null;
         };
         /** StretchOut */
         StretchOut: {

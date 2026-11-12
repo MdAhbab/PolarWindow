@@ -43,7 +43,7 @@ describe('the mission list', () => {
       name: /^IM-2, Intuitive Machines, landed 6 March 2025, 17:30 UTC, Partly successful, carries volatiles, technology demonstration, laser retroreflector/,
     })
     expect(im2.getAttribute('href')).toBe('/missions/im-2')
-    expect(screen.getByRole('link', { name: /^CS-8, provider unconfirmed, landing date unconfirmed, Planned/ })).toBeTruthy()
+    expect(screen.getByRole('link', { name: /^CS-8, provider not published yet, landing date not published yet, Planned/ })).toBeTruthy()
     const count = screen.getByText((_, el) => el?.getAttribute('aria-live') === 'polite' && /missions$/.test(el.textContent ?? ''))
     expect(count.textContent).toBe('Showing 4 of 4 missions')
   })

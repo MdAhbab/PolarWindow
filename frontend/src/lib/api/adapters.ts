@@ -492,6 +492,16 @@ export interface MissionSummary {
   terrainModelled: boolean
 }
 
+export type StepMarkKind = NonNullable<MissionBriefDTO['steps']>[number]['mark']
+
+/** What answers one of a mission's six steps, for the mission list. */
+export interface StepMark {
+  section: NonNullable<MissionBriefDTO['steps']>[number]['section']
+  mark: StepMarkKind
+  /** For a worked example: the first preset scenario that answers the step. */
+  scenarioId: string | null
+}
+
 export interface Mission {
   id: string
   name: string
@@ -518,6 +528,8 @@ export interface Mission {
   origin?: 'catalogue' | 'project'
   /** Who entered a project. */
   ownerName?: string | null
+  /** The six steps in journey order and what answers each; empty from a service without them. */
+  steps?: StepMark[]
 }
 
 export interface Payload {
@@ -625,6 +637,7 @@ export function adaptMission(dto: MissionBriefDTO): Mission {
     unconfirmedFields: dto.unconfirmed_fields,
     dataVersion: dto.data_version,
     ...originOf(dto),
+    steps: (dto.steps ?? []).map((s) => ({ section: s.section, mark: s.mark, scenarioId: s.scenario_id ?? null })),
   }
 }
 

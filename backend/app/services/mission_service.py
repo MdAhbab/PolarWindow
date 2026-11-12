@@ -249,13 +249,17 @@ async def list_missions(
 
 
 async def briefs(session: AsyncSession, missions: list[MissionRecord]) -> list[dict[str, Any]]:
-    """The list rows for these missions, in the order given."""
+    """The list rows for these missions, in the order given, each with its six step marks."""
+    from app.services import sections_service  # it imports this module
+
     sites = await _sites(session, [m.site_id for m in missions if m.site_id])
     items = []
     for m in missions:
         site = sites.get(m.site_id) if m.site_id else None
         window = surface_window(m)
-        items.append(_brief(m, site, window, await _summary(session, m, window, site)))
+        row = _brief(m, site, window, await _summary(session, m, window, site))
+        row["steps"] = await sections_service.step_marks(session, m)
+        items.append(row)
     return items
 
 

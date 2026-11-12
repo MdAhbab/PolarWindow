@@ -86,6 +86,18 @@ class MissionSummary(_Model):
     terrain_modelled: bool
 
 
+class StepMark(_Model):
+    section: Literal["ready", "launch", "trip", "landing", "contact", "return"]
+    mark: Literal["record", "example", "input", "none"] = Field(
+        description="`record`: the mission's own record answers the step. `example`: only a "
+        "worked example from assumed values does. `input`: nothing does yet. `none`: the step "
+        "does not apply."
+    )
+    scenario_id: str | None = Field(
+        default=None, description="For `example`: the first worked example that answers it."
+    )
+
+
 class MissionBrief(_Model):
     id: str
     name: str
@@ -120,6 +132,10 @@ class MissionBrief(_Model):
     )
     owner_name: str | None = Field(
         default=None, description="Who entered a project; null for a catalogue record."
+    )
+    steps: list[StepMark] = Field(
+        default_factory=list,
+        description="The six steps in journey order, each with what answers it. Lists only.",
     )
 
 
