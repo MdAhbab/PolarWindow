@@ -863,7 +863,9 @@ def deterministic_answer(
         *compared,
         *(site + mission if site_first else mission + site),
     ]
-    sentences = [s for s in sentences if _grounded(s, pool)][:4]
+    # The same tool can run twice in one answer (fetched ahead, then asked for again):
+    # its sentences are told once.
+    sentences = [s for s in dict.fromkeys(sentences) if _grounded(s, pool)][:4]
     if not sentences:
         return {
             "status": "insufficient_data",

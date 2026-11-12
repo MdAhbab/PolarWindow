@@ -11,6 +11,16 @@ const asSent = (v: unknown): string => (typeof v === 'number' ? String(v) : Stri
 
 const UNIT_WORDS = { h: 'h', s: 's' } as const
 
+/**
+ * A tile's label: the figure's own name, as on the pages ("Longest night"), without where it
+ * sat in the tool's result or the unit the tile already shows.
+ */
+function tileWords(field: string): string {
+  const leaf = field.split('.').pop()?.replace(/\[\d+\]/g, '') ?? field
+  const words = fieldWords(leaf).replace(/ \((hours|seconds|minutes|percent)\)$/, '')
+  return words.charAt(0).toUpperCase() + words.slice(1)
+}
+
 /** Sun or Earth, from the field a number came from, for the tile's mark and bar colour. */
 function bodyOf(field: string): 'sun' | 'earth' | null {
   if (/sun|sunlit|dark/.test(field)) return 'sun'
@@ -28,6 +38,8 @@ export function AnswerTiles({ items, href, onLeave }: { items: ProvenanceItemDTO
   const seen = new Set<string>()
   const tiles = items.filter((p) => {
     const key = `${p.field}|${p.value}`
+    // A margin is not a figure of its own: it shows on its figure's tile and in the sentence.
+    if (/_tolerance_(h|s|min)$/.test(p.field)) return false
     if (seen.has(key) || !(p.unit || /_fraction_up$/.test(p.field))) return false
     seen.add(key)
     return true
@@ -42,7 +54,7 @@ export function AnswerTiles({ items, href, onLeave }: { items: ProvenanceItemDTO
           <>
             <span className="flex items-center gap-1.5 text-caption leading-caption text-ink-3">
               {body && <Icon name={body} size={13} strokeWidth={2} className={body === 'sun' ? 'text-sun' : 'text-earth'} />}
-              <span className="min-w-0 truncate">{fieldWords(p.field)}</span>
+              <span className="min-w-0 truncate">{tileWords(p.field)}</span>
             </span>
             <span className="font-mono text-control font-semibold text-ink tnum">
               {share ? `${Math.round(p.value * 100)}%` : `${asSent(p.value)} ${p.unit ? UNIT_WORDS[p.unit] : ''}`}

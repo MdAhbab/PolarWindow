@@ -38,6 +38,22 @@ describe('AnswerTiles', () => {
     expect(tiles[0].getAttribute('href')).toBe('/missions/im-2/surface')
   })
 
+  it('names a tile by its figure alone and gives a margin no tile of its own', () => {
+    renderApp(
+      <AnswerTiles
+        items={[
+          item('reference_summary.longest_dark_h', 122, { margin: 17.1, unit: 'h' }),
+          item('sunlit_tolerance_h', 17.1, { margin: null, unit: 'h' }),
+        ]}
+      />,
+    )
+    const tiles = screen.getAllByRole('listitem')
+    expect(tiles).toHaveLength(1)
+    expect(tiles[0].textContent).toContain('Longest night')
+    expect(tiles[0].textContent).not.toMatch(/reference summary|\(hours\)/)
+    expect(tiles[0].textContent).toContain('± 17.1 h')
+  })
+
   it('draws nothing when the answer has no durations or shares', () => {
     const { container } = renderApp(<AnswerTiles items={[item('count', 3)]} />)
     expect(container.querySelector('ul')).toBeNull()

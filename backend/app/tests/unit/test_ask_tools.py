@@ -624,6 +624,37 @@ async def test_get_scenario_reads_one_step_and_writes_nothing(
     assert bad.error and "invalid arguments" in bad.error
 
 
+def test_a_figure_cited_from_the_coarse_summary_takes_its_margin_from_the_dates() -> None:
+    from app.agents import base
+
+    results: list[dict[str, Any]] = [
+        {"seq": 1, "tool": "get_site", "result": {"reference_summary": {"longest_dark_h": 122.4}}},
+        {
+            "seq": 2,
+            "tool": "get_metrics",
+            "result": {"longest_dark_h": 122.4, "longest_dark_tolerance_h": 17.1},
+        },
+    ]
+    cited = guards.Citation(
+        claim="122 h",
+        value=122.0,
+        tool="get_site",
+        call_seq=1,
+        field="reference_summary.longest_dark_h",
+    )
+    c = base._citation(cited, results)
+    assert (c["tool"], c["call_seq"], c["field"]) == ("get_metrics", 2, "longest_dark_h")
+    assert (c["margin"], c["unit"]) == (17.1, "h")
+    # A figure no result gives a margin for keeps its own citation.
+    alone = base._citation(
+        guards.Citation(
+            claim="40 h", value=40.0, tool="get_site", call_seq=1, field="x.longest_blackout_h"
+        ),
+        results,
+    )
+    assert (alone["field"], alone["margin"]) == ("x.longest_blackout_h", None)
+
+
 def test_ask_can_call_the_scenario_and_windows_tools() -> None:
     assert {"get_scenario", "get_windows", "list_scenario_options"} <= set(chatter.CHAT_TOOLS)
     assert set(chatter.CHAT_TOOLS) <= tools.TOOL_NAMES

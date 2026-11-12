@@ -956,14 +956,58 @@ async def run_agent(
         )
 
 
+def _leaves(node: Any, path: str = "") -> Iterator[tuple[str, Any]]:
+    """Every leaf of a tool result with its path, written as citations write them."""
+    if isinstance(node, dict):
+        for k, v in node.items():
+            yield from _leaves(v, f"{path}.{k}" if path else str(k))
+    elif isinstance(node, list):
+        for i, v in enumerate(node):
+            yield from _leaves(v, f"{path}[{i}]")
+    else:
+        yield path, node
+
+
+def _with_margin(
+    c: guards.Citation, tool_results: list[dict[str, Any]]
+) -> tuple[str, str, int, float] | None:
+    """The same figure where a result gives its margin, as (tool, field, seq, margin).
+
+    A site's coarse summary and its numbers for the dates can hold the same figure under the
+    same name (``longest_dark_h``); only the second says how far it could be off. Which field a
+    citation names does not change what the guard accepted: the value is the same.
+    """
+    leaf = re.split(r"[.\]]", c.field)[-1]
+    for t in tool_results:
+        seq = t.get("seq")
+        if not isinstance(seq, int):
+            continue
+        for path, v in _leaves(t.get("result")):
+            if path == c.field or re.split(r"[.\]]", path)[-1] != leaf:
+                continue
+            if not isinstance(v, int | float) or isinstance(v, bool):
+                continue
+            if round(float(v), 1) != round(c.value, 1) and round(float(v)) != c.value:
+                continue
+            margin, _unit = guards.margin_of(path, tool_results, seq)
+            if margin is not None:
+                return str(t.get("tool") or c.tool), path, seq, margin
+    return None
+
+
 def _citation(c: guards.Citation, tool_results: list[dict[str, Any]]) -> dict[str, Any]:
     margin, unit = guards.margin_of(c.field, tool_results, c.call_seq)
+    tool, field, seq = c.tool, c.field, c.call_seq
+    if margin is None and unit is not None:
+        better = _with_margin(c, tool_results)
+        if better is not None:
+            tool, field, seq, margin = better
     return {
         "claim": c.claim,
         "value": c.value,
-        "tool": c.tool,
-        "call_seq": c.call_seq,
-        "field": c.field,
+        "tool": tool,
+        "call_seq": seq,
+        "field": field,
         "margin": margin,
         "unit": unit,
     }
