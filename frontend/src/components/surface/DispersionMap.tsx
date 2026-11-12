@@ -19,7 +19,7 @@ export function slopeBin(deg: number): number {
 export function binLabel(i: number): string {
   const lo = SLOPE_BINS[i]
   const hi = SLOPE_BINS[i + 1]
-  return hi === undefined ? `${lo}° and over` : `${lo}–${hi}°`
+  return hi === undefined ? `${lo}° and over` : `${lo} to ${hi}°`
 }
 
 const fillFor = (i: number) => `color-mix(in oklab, var(--color-ink) ${MIX[i]}%, var(--color-panel))`

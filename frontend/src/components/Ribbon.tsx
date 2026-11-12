@@ -1,7 +1,14 @@
 import type { Arc } from '../lib/types'
-import { hoursWithUnit } from '../lib/format'
+import { hoursWithUnit, shortDate } from '../lib/format'
 import { crossingBands } from '../lib/bands'
+import { nightAgainstLimit } from '../lib/geometry/metrics'
 import { useReducedMotion } from '../hooks/useMotion'
+
+/** An arc's margin as the screens state it: none for a grazing edge or an arc whose ends are both the dates' own. */
+function arcMargin(a: Arc): number | undefined {
+  if (a.grazing || (a.startToleranceH === undefined && a.endToleranceH === undefined)) return undefined
+  return a.toleranceH
+}
 
 /**
  * One body's window as a bar. Solid where it is above the local skyline,
@@ -10,7 +17,7 @@ import { useReducedMotion } from '../hooks/useMotion'
  */
 export function Ribbon({
   arcs,
-  windowStartH,
+  windowStartIso,
   windowHours,
   tone,
   height = 26,
@@ -20,12 +27,22 @@ export function Ribbon({
   ariaLabel,
 }: {
   arcs: Arc[]
-  windowStartH: number
+  /**
+   * Not read: the adapter always sets it to 0 (hours from the dates' own
+   * start), so it cannot date anything (R1b). Kept so existing callers build.
+   */
+  windowStartH?: number
+  /** The dates' opening instant, ISO UTC (`metrics.windowStartIso`): the screen-reader sentence dates the bar from it. */
+  windowStartIso?: string
   windowHours: number
   tone: 'sun' | 'earth'
   height?: number
   cursorH?: number
-  /** Gaps longer than this are hatched in the alert hue. Omit for no limit. */
+  /**
+   * The battery limit, hours: the longest gap past it by more than its own
+   * margin is hatched in the alert hue. Within the margin is not over, so it
+   * stays the plain hatch. Omit for no limit.
+   */
   alertOverH?: number
   showLabels?: boolean
   ariaLabel?: string
@@ -37,8 +54,13 @@ export function Ribbon({
     alertOverH === undefined
       ? undefined
       : arcs
-          .filter((a) => !a.up && a.hours > alertOverH)
+          .filter(
+            (a) =>
+              !a.up &&
+              nightAgainstLimit({ h: a.hours, open: Boolean(a.openStart || a.openEnd), marginH: arcMargin(a) }, alertOverH).kind === 'past',
+          )
           .reduce<Arc | undefined>((b, a) => (!b || a.hours > b.hours ? a : b), undefined)
+  const startMs = windowStartIso ? Date.parse(windowStartIso) : NaN
 
   return (
     <div
@@ -61,7 +83,7 @@ export function Ribbon({
               a.hours,
               0,
               a.openStart || a.openEnd,
-            )}${a.openStart ? ' · began before the window' : ''}${a.openEnd ? ' · continues after it' : ''}`}
+            )}${a.openStart ? ' · began before these dates' : ''}${a.openEnd ? ' · continues after them' : ''}`}
           >
             {showLabels && !a.up && w > 4 && (
               <span className="flex h-full items-center justify-center text-tag font-semibold text-ink">
@@ -93,8 +115,11 @@ export function Ribbon({
           aria-hidden="true"
         />
       )}
+      {/* Dated from the dates' own start (R1b); without it, only the length is said, never a date from the model epoch. */}
       <span className="sr-only">
-        These dates start at hour {Math.round(windowStartH)} and last {Math.round(windowHours)} hours.
+        {Number.isFinite(startMs)
+          ? `These dates run from ${shortDate(startMs)} to ${shortDate(startMs + windowHours * 3_600_000)}, ${Math.round(windowHours)} hours.`
+          : `These dates last ${Math.round(windowHours)} hours.`}
       </span>
     </div>
   )

@@ -114,12 +114,27 @@ function LaunchBody({ data, meta, missionId }: { data: LaunchCalendarDTO; meta: 
   )
 }
 
-/** The opportunity a page opens on: the one nearest the published launch time, else the first. */
-function firstChoice(cal: LaunchCalendarDTO): OpportunityDTO {
+/**
+ * The next opportunity: the first not yet past at `nowMs`. The calendar's
+ * default dates start at 00:00 UTC today and its answer is kept for the day,
+ * so its first opportunities are often already past (V53).
+ */
+export function nextOpportunity(cal: LaunchCalendarDTO, nowMs: number): OpportunityDTO | undefined {
+  return [...cal.opportunities].sort((a, b) => (a.t0.value ?? 0) - (b.t0.value ?? 0)).find((x) => (x.t0.value ?? 0) * 1000 > nowMs)
+}
+
+/**
+ * The opportunity a page opens on, from the same "next" the headline names
+ * (V53): the one nearest the published launch time, else the next; among the
+ * ones not yet past while any are, so the tile never opens on a past one.
+ */
+export function openingChoice(cal: LaunchCalendarDTO, nowMs: number): OpportunityDTO {
   const sorted = [...cal.opportunities].sort((a, b) => (a.t0.value ?? 0) - (b.t0.value ?? 0))
+  const next = nextOpportunity(cal, nowMs)
+  const ahead = next ? sorted.filter((x) => (x.t0.value ?? 0) >= (next.t0.value ?? 0)) : sorted
   const pub = cal.published_t0?.value
-  if (pub == null) return sorted[0]
-  return sorted.reduce((best, o) => (Math.abs((o.t0.value ?? 0) - pub) < Math.abs((best.t0.value ?? 0) - pub) ? o : best), sorted[0])
+  if (pub == null) return ahead[0]
+  return ahead.reduce((near, o) => (Math.abs((o.t0.value ?? 0) - pub) < Math.abs((near.t0.value ?? 0) - pub) ? o : near), ahead[0])
 }
 
 /** A flown mission's calendar is its one launch, worked out again or as published. */
@@ -140,11 +155,12 @@ function sunBandWords(rule: LaunchCalendarDTO['landing_rule']): string {
 function LaunchAnswer({ cal, meta, missionId }: { cal: LaunchCalendarDTO; meta: LifecycleMetaDTO; missionId: string }) {
   const [params, setParams] = useSearchParams()
   const [chosen, setChosen] = useState<string | null>(null)
-  const o = cal.opportunities.find((x) => x.id === chosen) ?? firstChoice(cal)
+  // One clock for the headline's "next" and the opportunity the tiles open on (V53).
+  const [now] = useState(() => Date.now())
+  const o = cal.opportunities.find((x) => x.id === chosen) ?? openingChoice(cal, now)
   const flown = isFlown(cal)
   const sorted = [...cal.opportunities].sort((a, b) => (a.t0.value ?? 0) - (b.t0.value ?? 0))
-  const now = Date.now()
-  const next = sorted.find((x) => (x.t0.value ?? 0) * 1000 > now)
+  const next = nextOpportunity(cal, now)
   const pads = [...new Set(cal.opportunities.map((x) => x.pad_name))]
   const fromMs = cal.start ? Date.parse(cal.start) : (sorted[0].t0.value ?? 0) * 1000
   const toMs = cal.end ? Date.parse(cal.end) : (sorted[sorted.length - 1].t0.value ?? 0) * 1000

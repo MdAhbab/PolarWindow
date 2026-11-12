@@ -88,7 +88,7 @@ describe('QuantityTile: every margin form, and missing', () => {
 
   it('a range, with the caller’s "if it flies as planned"', () => {
     render(<QuantityTile term="viaRelay" q={q({ value: null, lo: 12, hi: 31 })} note="if it flies as planned" scale={100} inRow={false} />)
-    expect(screen.getByText('12–31')).toBeTruthy()
+    expect(screen.getByText('12-31')).toBeTruthy()
     expect(screen.getByText('if it flies as planned')).toBeTruthy()
     expect(screen.getByText('12 to 31 hours')).toBeTruthy()
   })
@@ -262,7 +262,7 @@ describe('readiness, risks and limits', () => {
     const none = q({ value: null, unit: 'm/s', provenance: 'entered', missing_reason: 'Not published by the launch provider.' })
     render(<LimitTable rows={[{ id: 'w', label: 'Wind', value: q({ value: 9.5, unit: 'm/s', pm: 2.1 }), limit: none }]} />)
     const cells = screen.getAllByRole('cell').map((c) => c.textContent)
-    expect(cells).toEqual(['9.5 ±2.1 m/s', 'none entered', '—', '—'])
+    expect(cells).toEqual(['9.5 ±2.1 m/s', 'none entered', 'not entered', 'not checked'])
   })
 
   it('return: the zone with its size only when published, and the sea in one sentence', () => {
@@ -382,7 +382,7 @@ describe('the charts’ arrays, shared with their tables', () => {
     const text = document.body.textContent ?? ''
     expect(text).toContain('a budget: 88.7 m/s in 99 of 100 runs')
     expect(text).toContain('In 1,000 runs of the flight as planned')
-    expect(text).toContain('(80–94.7 m/s, allowing for the number of runs)')
+    expect(text).toContain('(80 to 94.7 m/s, allowing for the number of runs)')
     expect(text).toContain('Every run passed close to the Moon.')
     const table = screen.getByRole('table')
     // Three corrections and their total, each at 95 and at 99 of 100 runs.
@@ -871,17 +871,17 @@ describe('Contact through a relay', () => {
 
   it('the relay is a range with its launch status beside it; waits that count it say so', () => {
     expect(contactAnswer(contact)).toBe(
-      'A ground station can hear it for 159.0 ±0.5 h over these dates. Through Lunar Pathfinder (not launched) it could reach Earth for 60–95 h, if it flies as planned; ' +
-        'that adds 1.5–4 h to direct contact. The longest time without contact is 1.0 ±0.1 h directly, or 0.4–1 h with the relay, if it flies as planned.',
+      'A ground station can hear it for 159.0 ±0.5 h over these dates. Through Lunar Pathfinder (not launched) it could reach Earth for 60 to 95 h, if it flies as planned; ' +
+        'that adds 1.5 to 4 h to direct contact. The longest time without contact is 1.0 ±0.1 h directly, or 0.4 to 1 h with the relay, if it flies as planned.',
     )
     const [r] = relayList(contact)
     expect(r.state?.words).toBe('Not launched')
     expect(r.launch).toMatch(/^To fly on Firefly's Blue Ghost Mission 2/)
-    expect(numberWords(contact.numbers.either_h, 'if the relay flies as planned')).toBe('166–168 h, if the relay flies as planned')
+    expect(numberWords(contact.numbers.either_h, 'if the relay flies as planned')).toBe('166 to 168 h, if the relay flies as planned')
     // Its orbit: published figures and assumed ranges say which they are.
     expect(orbitWords(r.orbit!.apoapsis_km)).toBe('7,332 km, published')
-    expect(orbitWords(r.orbit!.inclination_deg)).toBe('46.8–54.9°, assumed')
-    expect(plannedWords(r)).toBe('1.5–4 h somewhere in these dates, if it flies as planned')
+    expect(orbitWords(r.orbit!.inclination_deg)).toBe('46.8 to 54.9°, assumed')
+    expect(plannedWords(r)).toBe('1.5 to 4 h somewhere in these dates, if it flies as planned')
     // Orbiters: their passes in words, and a trajectory that stops early says so.
     const [lro, danuri] = contact.orbiters!
     expect(orbiterWords({ ...lro, pass_count: 0, passes: [], in_view_h: { ...lro.in_view_h, value: null, pm: null, missing_reason: 'No trajectory is recorded for these dates.' } })).toBe(
@@ -922,14 +922,14 @@ describe('Rover and lander line of sight', () => {
       ['uncertain', 75, 75],
       ['blocked', 100, 125],
     ])
-    expect(rayWords(v.sight[27], v.ranges_m)).toBe('In sight 25–275 m; uncertain 300 m; blocked 325–425 m; in sight 450–500 m')
+    expect(rayWords(v.sight[27], v.ranges_m)).toBe('In sight 25 to 275 m; uncertain 300 m; blocked 325 to 425 m; in sight 450 to 500 m')
     expect(bearingWords(270)).toBe('270° (west)')
     expect(bearingWords(10)).toBe('10°')
   })
 
   it('the answer first: the share over the ground or the drive, the longest stretch or why not, and a site the terrain map does not cover', () => {
     expect(roverSentence(rover, 'Yaoki')).toBe(
-      'Within 500 m of the lander, 18–26% of the ground is out of its sight; the radio path is not clear over 25–33%. No drive is published for Yaoki, so no stretch of it can be measured.',
+      'Within 500 m of the lander, 18 to 26% of the ground is out of its sight; the radio path is not clear over 25 to 33%. No drive is published for Yaoki, so no stretch of it can be measured.',
     )
     const drive = {
       ...rover,
@@ -995,7 +995,7 @@ describe('trip answer and key', () => {
   it('says a run of numbered burns once, and keeps a lone burn by its name', async () => {
     const { burnKeys } = await import('./TripStrip')
     expect(burnKeys(['Correction 1', 'Correction 2', 'Correction 3', 'Lunar orbit insertion'])).toEqual([
-      { marks: '1–3', label: 'Corrections' },
+      { marks: '1 to 3', label: 'Corrections' },
       { marks: '4', label: 'Lunar orbit insertion' },
     ])
     expect(burnKeys(['Correction 1', 'Entering lunar orbit', 'Correction 2'])).toEqual([

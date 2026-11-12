@@ -148,7 +148,7 @@ function IllumRow({ layer }: { layer: IlluminationLayerDTO }) {
   const lo = layer.p10.value
   const hi = layer.p90.value
   const asPct = layer.unit.includes('fraction') || layer.p50.unit === '1'
-  const f = (v: number | null) => (v === null ? '—' : asPct ? `${pct(v)} %` : num(v))
+  const f = (v: number | null) => (v === null ? 'not worked out' : asPct ? `${pct(v)} %` : num(v))
   return (
     <div className="flex min-w-0 flex-col gap-1 border-t border-line pt-3">
       <dt className="text-caption leading-caption text-ink-2 first-letter:uppercase">{layer.name}</dt>

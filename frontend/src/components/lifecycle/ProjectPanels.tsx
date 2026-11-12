@@ -309,7 +309,7 @@ export function RiskScalePanel({ enabled }: { enabled: boolean }) {
                     <td className="py-1.5 pr-2 text-ink-2">{l.words}</td>
                     {scale.consequence.map((c) => (
                       <td key={c.category} className="py-1.5 pr-2 text-ink-2">
-                        {c.levels.find((x) => x.level === l.level)?.words ?? '—'}
+                        {c.levels.find((x) => x.level === l.level)?.words ?? 'not entered'}
                       </td>
                     ))}
                   </tr>

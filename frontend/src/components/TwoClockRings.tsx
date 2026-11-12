@@ -286,7 +286,7 @@ function Gauge({ x, label, sample, tone }: { x: number; label: string; sample?: 
         fontSize="12"
         fontWeight="600"
       >
-        {label} {sample ? degrees(el, 1) : '—'}
+        {label} {sample ? degrees(el, 1) : 'none'}
       </text>
       <text
         x={x}

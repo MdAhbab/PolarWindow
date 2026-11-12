@@ -1,4 +1,6 @@
 import { spanWords } from './format'
+import { andList, limitSpoken, nightAgainstLimit, type AgainstLimit, type BatteryLimit } from './geometry/metrics'
+import type { RankLabel } from './rank'
 
 /**
  * The words the summary speaker says, built only from numbers the API returned.
@@ -13,8 +15,10 @@ import { spanWords } from './format'
  *    bloat this feature exists to remove.
  *  - A window-censored figure is spoken as "at least", never "about".
  *  - An untimeable edge is said in words, never given a fake ±.
- *  - No verdict the API does not support. The only threshold is the survival
- *    limit, and it is named as the limit it is.
+ *  - No verdict the API does not support. The only threshold is the battery
+ *    limit, and it is named as the limit it is: the one the team entered, or
+ *    120 hours said to be assumed. A night within its margin of the limit is
+ *    said to be, never called over or inside.
  *  - ~90 words: about 35 seconds at a normal speaking rate.
  */
 
@@ -31,12 +35,14 @@ export interface SummaryInput {
   nightOpen: boolean
   nightToleranceH: number
   nightGrazing: boolean
+  /** The night's margin for the comparison with the limit, as the tile shows it (`nightMargin`); none when it cannot be stated. */
+  nightMarginH?: number
   silenceH: number
   silenceOpen: boolean
   silenceToleranceH: number
   silenceGrazing: boolean
   worstCompoundH: number
-  survivalLimitH: number
+  batteryLimit: BatteryLimit
   coverage: number
   /** False outside 80°S: the skyline is a smooth sphere, so the figures are upper bounds on light. */
   terrainModelled?: boolean
@@ -84,7 +90,6 @@ export function buildSiteSummary(s: SummaryInput): Summary {
   // No gap at all is a measurement too, and says so plainly rather than as
   // "about 0 hours, 120 hours inside the limit".
   const noNight = s.nightH <= 0 && !s.nightOpen
-  const over = s.nightH - s.survivalLimitH
   if (noNight) {
     out.push('The Sun did not set on these dates.')
   } else {
@@ -92,14 +97,21 @@ export function buildSiteSummary(s: SummaryInput): Summary {
     if (s.nightOpen) night += ' These dates cut it short, so the real night is longer.'
     if (s.nightGrazing) night += ' Its start and end cannot be timed precisely.'
     out.push(night)
-    if (over > 0) {
-      out.push(
-        `That is ${s.nightOpen ? 'at least ' : ''}${round(over)} hours over the ${s.survivalLimitH} hour battery limit.`,
-      )
-    } else if (s.nightOpen) {
-      out.push(`It may run past the ${s.survivalLimitH} hour battery limit.`)
-    } else {
-      out.push(`That is ${round(-over)} hours inside the ${s.survivalLimitH} hour battery limit.`)
+    const limit = limitSpoken(s.batteryLimit)
+    const a = nightAgainstLimit({ h: s.nightH, open: s.nightOpen, marginH: s.nightMarginH }, s.batteryLimit.h)
+    switch (a.kind) {
+      case 'past':
+        out.push(`That is ${a.atLeast ? 'at least ' : ''}${round(a.byH)} hours past ${limit}.`)
+        break
+      case 'within-margin':
+        out.push(`That is within the margin of ${limit}.`)
+        break
+      case 'cut-short':
+        out.push(`It may run past ${limit}.`)
+        break
+      case 'inside':
+        out.push(`That is ${round(a.byH)} hours inside ${limit}.`)
+        break
     }
   }
 
@@ -135,21 +147,24 @@ export function buildSiteSummary(s: SummaryInput): Summary {
 
 export interface ComparisonSite {
   name: string
-  /** What the ranking lets this site be called (lib/rank.ts). */
-  label: { kind: 'best' | 'joint' | 'place' | 'over' | 'unranked'; text: string; title?: string }
+  /** What the order lets this site's place be called (lib/rank.ts). */
+  label: Pick<RankLabel, 'kind' | 'text' | 'title' | 'why'>
   /** The ranked value, hours, as the API gave it. */
   valueH: number
   /** The ranked value is a lower bound: the window cut it short. */
   open: boolean
-  overLimit: boolean
+  /** Where its longest night stands against the battery limit, with the night's margin. */
+  against: AgainstLimit['kind']
 }
 
 export interface ComparisonInput {
   /** The ranking metric's plain name: "Longest night". */
   rankedBy: string
+  /** Which end is 1st: "shortest first", "most first" (lib/rank.ts `firstEnd`). */
+  firstEnd: string
   windowStartIso?: string
   windowHours: number
-  survivalLimitH: number
+  batteryLimit: BatteryLimit
   /** In the server's order. */
   sites: ComparisonSite[]
 }
@@ -157,45 +172,44 @@ export interface ComparisonInput {
 /**
  * The comparison, spoken. Bound-aware in the same way as the screen: a value
  * the window cut short is "at least", a site whose place cannot be stated is
- * said to be unrankable with the range it could fall in, and "best" is only
- * ever said where the screen says it.
+ * said to be too close to call with the reason and the places it could take,
+ * and a place is a place ("1st"), never a verdict.
  */
 export function buildComparisonSummary(c: ComparisonInput): Summary {
   const out: string[] = []
   const when = startDate(c.windowStartIso)
   out.push(
-    `Comparing ${c.sites.length} sites over ${spanWords(c.windowHours)}${when ? ` from ${when}` : ''}, by ${c.rankedBy.toLowerCase()}.`,
+    `Comparing ${c.sites.length} sites over ${spanWords(c.windowHours)}${when ? ` from ${when}` : ''}, in order of ${c.rankedBy.toLowerCase()}, ${c.firstEnd}.`,
   )
   for (const s of c.sites) {
     const value = `${s.open ? 'at least' : 'about'} ${round(s.valueH)} hours`
     let place: string
     switch (s.label.kind) {
-      case 'best':
-        place = 'is best'
-        break
       case 'joint':
         place = `is ${s.label.text}, tied with a site the data cannot separate it from`
         break
-      case 'over':
-        place = 'is first, but over the battery limit'
-        break
+      case 'first':
       case 'place':
         place = `is ${s.label.text}`
         break
       case 'unranked':
-        place = `can't be ranked${s.open ? ', because the chosen dates cut its value short' : ''}${
-          s.label.title ? `; it ${s.label.title}` : ''
-        }`
+        // The card's "too close to call", said with its reason and the places it could take.
+        place = `can't be ranked${s.label.why ? `, because ${s.label.why}` : ''}${s.label.title ? `; it ${s.label.title}` : ''}`
         break
     }
     out.push(`${s.name} ${place}: ${value}.`)
   }
-  const over = c.sites.filter((s) => s.overLimit)
-  if (over.length) {
+  const limit = limitSpoken(c.batteryLimit)
+  const past = c.sites.filter((s) => s.against === 'past')
+  const close = c.sites.filter((s) => s.against === 'within-margin')
+  if (past.length) {
+    out.push(`On these dates, ${andList(past.map((s) => s.name))} ${past.length === 1 ? 'has a night' : 'have nights'} past ${limit}.`)
+  }
+  if (close.length) {
     out.push(
-      `${over.map((s) => s.name).join(' and ')} ${over.length === 1 ? 'has a night' : 'have nights'} over the ${
-        c.survivalLimitH
-      } hour battery limit on these dates.`,
+      `${andList(close.map((s) => s.name))} ${close.length === 1 ? 'has a longest night' : 'have longest nights'} within the margin of ${
+        past.length ? 'the limit' : limit
+      }.`,
     )
   }
   out.push('These are planning estimates, not official values.')

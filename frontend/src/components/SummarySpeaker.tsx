@@ -2,7 +2,8 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import type { SiteView } from '../lib/api/queries'
 import { hasSite, siteById } from '../lib/sites'
-import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
+import { nightMargin } from '../lib/geometry/metrics'
+import { useBatteryLimit } from '../lib/api/lifecycleQueries'
 import { buildSiteSummary, type Summary } from '../lib/summaryScript'
 import { Icon } from './Icon'
 
@@ -26,9 +27,13 @@ import { Icon } from './Icon'
 export function SummarySpeaker({ view }: { view: SiteView }) {
   const m = view.data?.metrics
   const meta = view.data?.meta
+  // The team's entered limit, or 120 h said to be assumed (R2); nothing is
+  // said until the parameters answer.
+  const limit = useBatteryLimit()
   const summary = useMemo(() => {
-    if (!m || !hasSite(m.siteId)) return null
+    if (!m || !hasSite(m.siteId) || limit.pending) return null
     const site = siteById(m.siteId)
+    const terrainModelled = meta?.uncertainty.terrainModelled ?? true
     return buildSiteSummary({
       siteName: site.name,
       latDeg: site.latDeg,
@@ -42,17 +47,18 @@ export function SummarySpeaker({ view }: { view: SiteView }) {
       nightOpen: Boolean(m.sun.longestDownOpen),
       nightToleranceH: m.sun.longestDownToleranceH,
       nightGrazing: Boolean(m.sun.longestDownArc?.grazing),
+      nightMarginH: nightMargin(m, terrainModelled),
       silenceH: m.earth.longestDownH,
       silenceOpen: Boolean(m.earth.longestDownOpen),
       silenceToleranceH: m.earth.longestDownToleranceH,
       silenceGrazing: Boolean(m.earth.longestDownArc?.grazing),
       worstCompoundH: m.worstCompoundH,
-      survivalLimitH: SURVIVAL_LIMIT_H,
+      batteryLimit: limit,
       coverage: meta?.uncertainty.coverage ?? 1,
-      terrainModelled: meta?.uncertainty.terrainModelled ?? true,
+      terrainModelled,
     })
-  }, [m, meta])
-  return <Speaker summary={summary} what="this site" resetKey={`${m?.siteId}|${m?.windowStartIso}`} />
+  }, [m, meta, limit])
+  return <Speaker summary={summary} what="this site" resetKey={`${m?.siteId}|${m?.windowStartIso}|${limit.h}`} />
 }
 
 /**

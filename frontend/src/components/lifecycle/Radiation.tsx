@@ -151,7 +151,7 @@ export function RadiationRow({ r, note }: { r: RadiationDTO | null; note: string
         </div>
       )}
       <details className="group flex flex-col gap-2">
-        <summary className="cursor-pointer text-small font-semibold text-ink">How each was worked out</summary>
+        <summary className="min-h-11 cursor-pointer py-3 text-small font-semibold text-ink">How each was worked out</summary>
         <dl className="mt-2 flex flex-col gap-2 text-small leading-5">
           {[
             ...rows.filter((m) => m.how).map((m) => ({ label: m.label, how: m.how as string })),

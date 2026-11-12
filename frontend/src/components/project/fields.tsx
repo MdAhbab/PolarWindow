@@ -114,7 +114,8 @@ export function FieldShell({
         {required && <span className="font-normal text-ink-3"> (required)</span>}
       </label>
       {source && <SourceMark source={source} panelId={srcId} />}
-      <div className="basis-full">
+      {/* min-w-0: a long chosen name must shorten inside its box, not push the page sideways. */}
+      <div className="basis-full min-w-0">
         {children({
           id,
           'aria-describedby': [hintId, errId].filter(Boolean).join(' ') || undefined,

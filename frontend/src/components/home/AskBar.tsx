@@ -1,6 +1,21 @@
-import { useId, useState } from 'react'
+import { useId, useState, useSyncExternalStore } from 'react'
 import { Icon } from '../Icon'
 import { useAsk } from '../ask/store'
+
+/** Under 400 px the field's room runs out before the full placeholder does (it was cut mid-word at 390). */
+const NARROW = '(max-width: 399px)'
+function useNarrow(): boolean {
+  return useSyncExternalStore(
+    (notify) => {
+      if (typeof matchMedia === 'undefined') return () => {}
+      const mq = matchMedia(NARROW)
+      mq.addEventListener('change', notify)
+      return () => mq.removeEventListener('change', notify)
+    },
+    () => typeof matchMedia !== 'undefined' && matchMedia(NARROW).matches,
+    () => false,
+  )
+}
 
 /**
  * Ask, front and centre: a question typed here, or a suggestion pressed,
@@ -11,6 +26,7 @@ export function AskBar({ suggestions }: { suggestions: string[] }) {
   const [text, setText] = useState('')
   const open = useAsk((s) => s.open)
   const id = useId()
+  const narrow = useNarrow()
   const send = (t: string) => {
     open(t)
     setText('')
@@ -34,7 +50,7 @@ export function AskBar({ suggestions }: { suggestions: string[] }) {
           id={id}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Ask about a mission, a site or a date"
+          placeholder={narrow ? 'Ask about a mission or site' : 'Ask about a mission, a site or a date'}
           autoComplete="off"
           className="h-12 min-w-0 grow bg-transparent text-lede text-ink placeholder:text-ink-3 focus-visible:outline-none"
         />

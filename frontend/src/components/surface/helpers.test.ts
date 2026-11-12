@@ -52,7 +52,7 @@ describe('margin formatting', () => {
     expect(none.margin).toBe('no margin was entered')
     expect(none.marginIsReason).toBe(true)
     const missing = quantityWords(q({ value: null, missing_reason: 'the battery never empties in these dates' }))
-    expect(missing.value).toBe('—')
+    expect(missing.value).toBe('not available')
     expect(missing.margin).toBe('the battery never empties in these dates')
   })
   it('marks a lower bound cut short by the dates', () => {
@@ -61,16 +61,16 @@ describe('margin formatting', () => {
   it('formats numbers by size', () => {
     expect(num(1234.5)).toBe('1,235')
     expect(num(-0.25)).toBe('−0.250')
-    expect(num(Number.NaN)).toBe('—')
+    expect(num(Number.NaN)).toBe('not available')
   })
 })
 
 describe('share wording', () => {
   it('says the count and its interval', () => {
-    expect(shareWords({ k: 354, n: 1000, lo: 0.3243, hi: 0.3845 })).toBe('354 of 1000 points (32–38 %)')
+    expect(shareWords({ k: 354, n: 1000, lo: 0.3243, hi: 0.3845 })).toBe('354 of 1000 points (32 to 38 %)')
   })
   it('keeps one decimal for small shares so a small upper end is not rounded away', () => {
-    expect(shareWords({ k: 0, n: 1000, lo: 0, hi: 0.00368 })).toBe('0 of 1000 points (0–0.4 %)')
+    expect(shareWords({ k: 0, n: 1000, lo: 0, hi: 0.00368 })).toBe('0 of 1000 points (0 to 0.4 %)')
     expect(pct(0.0654)).toBe('6.5')
   })
 })

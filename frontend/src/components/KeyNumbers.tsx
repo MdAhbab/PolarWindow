@@ -3,7 +3,22 @@ import { useMotionClass } from '../hooks/useMotion'
 import { Skeleton } from './States'
 import { useOpenRow } from './ui'
 import { bound, hoursSpoken, percent, plusMinus, termLabel } from '../lib/format'
-import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
+import {
+  againstLimitLead,
+  andList,
+  hoursWithMargin,
+  limitHours,
+  limitWords,
+  longestNight,
+  nightAgainstLimit,
+  tallyAgainstLimit,
+  type AgainstLimit,
+  type BatteryLimit,
+  type Night,
+} from '../lib/geometry/metrics'
+import { useBatteryLimit } from '../lib/api/lifecycleQueries'
+import { useMission } from '../lib/store'
+import { useSettingsTab } from '../lib/settingsTab'
 import type { Arc, SiteMetrics } from '../lib/types'
 import { Icon } from './Icon'
 
@@ -73,7 +88,8 @@ export function KeyNumberTile({
   state?: TileState
   toleranceH?: number
   fraction?: number
-  footnote?: string
+  /** A short line under the bar: words, or words with the limit's phrase and its link (R2). */
+  footnote?: ReactNode
   size?: 'lg' | 'md' | 'sm'
   icon?: Parameters<typeof Icon>[0]['name']
   /** The window cut this stretch short: show a lower bound (≥), not ≈. */
@@ -265,6 +281,139 @@ export function KeyNumberTile({
 
 const clampPct = (f: number) => Math.max(0, Math.min(100, f * 100))
 
+/**
+ * The battery limit as a phrase in a sentence (R2): "the 96 h battery limit
+ * your team entered", or, with none entered, "the 120 h battery limit
+ * (assumed)" with the scenario hatch on the assumed words, so it is told
+ * apart from a published or entered figure without colour, and in print.
+ */
+export function LimitPhrase({ limit }: { limit: BatteryLimit }) {
+  if (limit.basis === 'entered') return <>{limitWords(limit)}</>
+  return (
+    <>
+      the{' '}
+      <span className="pw-scenario rounded-sm px-1 box-decoration-clone" title={limit.why}>
+        {limitHours(limit.h)}{' '}h battery limit (assumed)
+      </span>
+    </>
+  )
+}
+
+/**
+ * "Enter yours": opens Settings on Parameters, where the team enters its
+ * battery limit. Shown only beside an assumed limit; hidden in print.
+ */
+export function EnterLimit({ limit, className = '' }: { limit: BatteryLimit; className?: string }) {
+  const setSettingsOpen = useMission((s) => s.setSettingsOpen)
+  if (limit.basis === 'entered' || limit.pending) return null
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        useSettingsTab.getState().setTab('parameters')
+        setSettingsOpen(true)
+      }}
+      className={`font-semibold text-ink underline underline-offset-2 hover:text-ink-2 print:hidden ${className}`}
+    >
+      Enter yours<span className="sr-only">: your team’s battery limit, in Settings</span>
+    </button>
+  )
+}
+
+/**
+ * One night against the limit, in words, with the night's margin: "56 ±2.3 h
+ * inside the …", "within the margin of the …", "at least 168 h past the …".
+ * `capital` starts it with a capital letter, for a line of its own.
+ */
+export function AgainstLimitWords({ a, limit, capital = false }: { a: AgainstLimit; limit: BatteryLimit; capital?: boolean }) {
+  const lead = againstLimitLead(a)
+  if (lead === null) return null
+  return (
+    <>
+      {capital ? lead.charAt(0).toUpperCase() + lead.slice(1) : lead}
+      <LimitPhrase limit={limit} />
+    </>
+  )
+}
+
+/** One compared site, for `LimitTally`. */
+export interface TallySite {
+  name: string
+  night: Night
+  against: AgainstLimit
+}
+
+/**
+ * The compared sites against the battery limit, counted and named, with no
+ * verdict (R6): "2 of 3 sites have a longest night past the 120 h battery
+ * limit (assumed) on these dates: A and B. The longest night at C is within
+ * the margin of the limit." The limit's phrase is given once; later
+ * sentences say "the limit". With `figures`, each name carries its night and
+ * margin (the Report, which has no cards to read them from).
+ */
+export function LimitTally({ sites, limit, figures = false }: { sites: TallySite[]; limit: BatteryLimit; figures?: boolean }) {
+  const t = tallyAgainstLimit(sites, (s) => s.against)
+  const n = sites.length
+  let named = false
+  const phrase = (): ReactNode => {
+    if (named) return 'the limit'
+    named = true
+    return <LimitPhrase limit={limit} />
+  }
+  const one = (s: TallySite) =>
+    figures ? `${s.name} (${s.night.open ? 'at least ' : ''}${hoursWithMargin(s.night.h, s.night.marginH)})` : s.name
+  const list = (xs: TallySite[]) => andList(xs.map(one))
+  const nightAt = (xs: TallySite[]) => (xs.length === 1 ? 'The longest night at' : 'The longest nights at')
+  const isAre = (xs: TallySite[]) => (xs.length === 1 ? 'is' : 'are')
+  const out: ReactNode[] = []
+  if (t.past.length) {
+    out.push(
+      t.past.length === n ? (
+        <span key="past">
+          All {n} sites have a longest night past {phrase()} on these dates{figures ? `: ${list(t.past)}` : ''}.
+        </span>
+      ) : (
+        <span key="past">
+          {t.past.length} of {n} sites {t.past.length === 1 ? 'has' : 'have'} a longest night past {phrase()} on these dates:{' '}
+          {list(t.past)}.
+        </span>
+      ),
+    )
+  }
+  if (t.withinMargin.length) {
+    out.push(
+      <span key="within">
+        {nightAt(t.withinMargin)} {list(t.withinMargin)} {isAre(t.withinMargin)} within the margin of {phrase()}.
+      </span>,
+    )
+  }
+  if (t.cutShort.length) {
+    out.push(
+      <span key="cut">
+        {nightAt(t.cutShort)} {list(t.cutShort)} {isAre(t.cutShort)} cut short by these dates, so{' '}
+        {t.cutShort.length === 1 ? 'it' : 'they'} may run past {phrase()}.
+      </span>,
+    )
+  }
+  if (t.inside.length) {
+    out.push(
+      t.inside.length === n ? (
+        <span key="inside">
+          All {n} sites have a longest night inside {phrase()} on these dates{figures ? `: ${list(t.inside)}` : ''}.
+        </span>
+      ) : (
+        <span key="inside">
+          {nightAt(t.inside)} {list(t.inside)} {isAre(t.inside)} inside {phrase()}.
+        </span>
+      ),
+    )
+  }
+  if (t.noNight.length) {
+    out.push(<span key="none">The Sun did not set at {andList(t.noNight.map((s) => s.name))} on these dates.</span>)
+  }
+  return <>{out.flatMap((node, i) => (i ? [' ', node] : [node]))}</>
+}
+
 /** The gap has at least one edge that is a real crossing, so its ± means something. */
 function hasTimedEdge(arc: Arc | undefined): boolean {
   return Boolean(arc && (arc.startToleranceH !== undefined || arc.endToleranceH !== undefined))
@@ -315,9 +464,15 @@ export function KeyNumberRow({
   const rfGrazing = rfArc?.grazing
   const rfOpen = Boolean(metrics?.earth.longestDownOpen)
   const rfTol = hasTimedEdge(rfArc) && !uncertain ? metrics?.earth.longestDownToleranceH : undefined
-  // A lower bound over the limit is certainly over it; a lower bound under the
-  // limit is not certainly under it -- the night continues past the window.
-  const overLimit = dark > SURVIVAL_LIMIT_H
+  // R2: the team's entered limit, or 120 h said to be assumed. The night is
+  // compared with it using the night's own margin: past it or inside it only
+  // by more than the margin, "within the margin" otherwise. A lower bound
+  // under the limit is not certainly under it: the night continues past the
+  // dates.
+  const limit = useBatteryLimit()
+  // The same margin the tile prints (none when grazing or uncertain).
+  const against: AgainstLimit | undefined = metrics ? nightAgainstLimit(longestNight(metrics, !uncertain), limit.h) : undefined
+  const overLimit = !limit.pending && against?.kind === 'past'
   const noNight = Boolean(metrics) && !darkArc
   const noBlackout = Boolean(metrics) && !rfArc
 
@@ -368,17 +523,24 @@ export function KeyNumberRow({
         state={computing ? 'computing' : darkGrazing ? 'uncertain' : ready}
         toleranceH={darkGrazing ? undefined : darkTol}
         open={darkOpen}
-        fraction={dark / SURVIVAL_LIMIT_H}
+        fraction={dark / limit.h}
         footnote={
           computing
             ? undefined
             : noNight
               ? 'The Sun did not set on these dates'
-              : overLimit
-                ? `${darkOpen ? 'at least ' : ''}${Math.round(dark - SURVIVAL_LIMIT_H)} h over the ${SURVIVAL_LIMIT_H} h battery limit`
-                : darkOpen
-                  ? `these dates cut this night short; it may run past the ${SURVIVAL_LIMIT_H} h battery limit`
-                  : `${Math.round(SURVIVAL_LIMIT_H - dark)} h inside the ${SURVIVAL_LIMIT_H} h battery limit`
+              : limit.pending || !against
+                ? undefined
+                : (
+                    <>
+                      <AgainstLimitWords a={against} limit={limit} />
+                      {limit.basis === 'assumed' && (
+                        <>
+                          . <EnterLimit limit={limit} />
+                        </>
+                      )}
+                    </>
+                  )
         }
       />
       <KeyNumberTile

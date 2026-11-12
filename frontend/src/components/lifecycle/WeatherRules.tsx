@@ -155,7 +155,7 @@ function OtherCell({ row }: { row: RuleRowDTO }) {
     lines.push({ key: 'observed', lead: w.lead, text: w.detail, strong: row.observed.state === 'seen' })
   }
   if (row.climatology) lines.push({ key: 'climatology', lead: climatologyWords(row), text: row.climatology.source })
-  if (!lines.length) return <span className="text-small text-ink-3">—</span>
+  if (!lines.length) return <span className="text-small text-ink-3">none</span>
   return (
     <ul className="flex flex-col gap-2">
       {lines.map((l) => (

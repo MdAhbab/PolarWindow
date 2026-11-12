@@ -1,16 +1,19 @@
 import { Children, cloneElement, Fragment, isValidElement, type ReactNode } from 'react'
 import type { QuantityDTO } from '../../lib/api/lifecycle'
 import { hostWords, isUrl, provenanceWords, quantityView, unitWords } from '../../lib/lifecycle/quantity'
-import { termLabel } from '../../lib/format'
+import { bind, termLabel } from '../../lib/format'
 import { KeyNumberTile, type Tone } from '../KeyNumbers'
 
 /**
  * A lifecycle key number: `KeyNumberTile` fed a `Quantity` (ADR-9).
  *
  * Every margin form draws the same way everywhere: ± beside the figure, a
- * range as "12–31" with the bar hatched between its ends, a factor as ×/÷, a
+ * range as "12-31" with the bar hatched between its ends, a factor as ×/÷, a
  * lower bound with ≥. A number without a margin says why under it; a missing
- * number is a dash and the reason. Where it comes from opens from the label.
+ * number says "none" or "not entered" and the reason. Where it comes from
+ * opens from the label. The figure, its margin and its unit are one unbreakable
+ * run (non-breaking spaces from `quantity.ts`), so a line never ends between a
+ * number and the margin it carries.
  */
 /** The tile's lines as one footnote: a line that runs into the next ends with a full stop. */
 function sentences(lines: string[]): string {
@@ -78,15 +81,15 @@ export function QuantityTile({
       tone={tone}
       value={v.value ?? 0}
       display={display}
-      above={v.figureAbove}
-      margin={joined && v.margin?.startsWith('±') ? `${v.margin}${v.unit}` : v.margin}
+      above={v.figureAbove ? bind(v.figureAbove) : undefined}
+      margin={bind(joined && v.margin?.startsWith('±') ? `${v.margin}${v.unit}` : (v.margin ?? ''))  || undefined}
       unit={unit}
       state={v.kind === 'missing' ? 'blank' : 'ready'}
       open={v.open}
       fraction={fraction}
       range={range}
       bar={Boolean(scale) && v.kind !== 'time' && v.kind !== 'missing'}
-      footnote={lines.length ? sentences(lines as string[]) : undefined}
+      footnote={lines.length ? bind(sentences(lines as string[])) : undefined}
       spoken={v.spoken}
       age={age}
       source={<SourceLine provenance={q.provenance} source={q.source} />}

@@ -12,7 +12,7 @@ const NUMBERS: { key: Exclude<keyof Now, 'xray_class' | 'xray_missing_reason' | 
   { key: 'proton_10mev_pfu', label: 'Protons above 10 MeV', words: 'protons above 10 MeV at' },
   { key: 'proton_100mev_pfu', label: 'Protons above 100 MeV', words: 'above 100 MeV at' },
   { key: 'solar_wind_km_s', label: 'Solar wind speed', words: 'solar wind at' },
-  { key: 'bz_nt', label: 'Magnetic field from the Sun, north–south (Bz)', words: 'Bz' },
+  { key: 'bz_nt', label: 'Magnetic field from the Sun, north to south (Bz)', words: 'Bz' },
 ]
 
 const shown = (q: QuantityDTO) => q.value !== null
@@ -206,14 +206,17 @@ export function SpaceWeatherRow() {
             <p className="text-small leading-5 text-ink-2">{outlookSentence(sw.outlook) ?? 'NOAA’s outlook gives no numbers.'}</p>
             {sw.outlook.text && (
               <details>
-                <summary className="cursor-pointer text-small font-semibold text-ink">NOAA’s forecast as issued</summary>
-                <pre
-                  tabIndex={0}
-                  role="region"
-                  aria-label="NOAA’s three-day forecast as issued"
-                  className="mt-2 max-h-80 overflow-auto rounded-control bg-inset p-3 font-mono text-caption leading-5 whitespace-pre-wrap text-ink">
-                  {sw.outlook.text}
-                </pre>
+                <summary className="min-h-11 cursor-pointer py-3 text-small font-semibold text-ink">NOAA’s forecast as issued</summary>
+                {/* In a box of its own: a row's direct children take no min-height (globals.css), and a scrolling region wants a 44 px target. */}
+                <div className="mt-2">
+                  <pre
+                    tabIndex={0}
+                    role="region"
+                    aria-label="NOAA’s three-day forecast as issued"
+                    className="max-h-80 min-h-11 overflow-auto rounded-control bg-inset p-3 font-mono text-caption leading-5 whitespace-pre-wrap text-ink">
+                    {sw.outlook.text}
+                  </pre>
+                </div>
               </details>
             )}
           </div>

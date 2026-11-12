@@ -224,14 +224,17 @@ or a download ("Radio power (EIRP, dBW)"). Keep to these:
 | id | what | duration | easing | fallback |
 |----|------|----------|--------|----------|
 | M1 | terminator sweep (`PolarMap` + `DateSlider`) | 708 h in 14 s | **linear, never eased** | play disabled, ± 6 h step buttons |
-| M2 | ring fill (`TwoClockRings`) | 600 ms | `cubic-bezier(.16,1,.3,1)` | mask fully open in one frame |
-| M3 | compare re-order (`CompareScreen`) | 460 ms | `cubic-bezier(.2,.8,.2,1)` | instant, plus a live-region sentence |
+| M2 | ring fill (`TwoClockRings`) | slow, 560 ms (`--pw-dur-slow`) | settle (`--ease-settle`) | mask fully open in one frame |
+| M3 | compare re-order (`CompareScreen`) | sheet, 420 ms (`--pw-dur-sheet`) | move (`--ease-move`) | instant, plus a live-region sentence |
 | M4 | number roll (`useCountUp`) | 600 ms | same as M2 | value set directly |
 | M5 | horizon reveal (`HorizonProfile`) | 900 ms | same as M2 | paths drawn complete |
-| M6 | uncertainty band (`.breathe`) | 8 s loop | linear | static at 0.34 opacity |
+| M6 | uncertainty band (`.breathe`) | none: it no longer loops | none | static at 0.34 opacity |
 
 M1 is linear because it represents a real rate. Easing a physical motion tells
-the viewer something untrue about it.
+the viewer something untrue about it. The tokens above are in
+`frontend/src/styles/globals.css`; the grammar they belong to (one duration,
+curve and origin per kind of motion) is the "Motion grammar" section of
+`docs/design-visual-refresh.md`.
 
 ---
 

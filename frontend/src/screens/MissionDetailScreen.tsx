@@ -324,7 +324,7 @@ function OutcomeNote({ note }: { note: string }) {
           type="button"
           aria-expanded={more}
           onClick={() => setMore((v) => !v)}
-          className="min-h-8 text-small font-semibold text-ink hover:underline"
+          className="min-h-11 text-small font-semibold text-ink hover:underline"
         >
           {more ? 'Show less' : 'Show more'}
         </button>
@@ -494,7 +494,7 @@ function SurfaceWindowLine({ mission: m, site }: { mission: MissionDetail; site:
   const sw = m.surfaceWindow
   const s = sw.startIso ? Date.parse(sw.startIso) : null
   const e = sw.endIso ? Date.parse(sw.endIso) : null
-  const range = s !== null && e !== null ? `${dateTimeWords(s)} – ${dateTimeWords(e)}` : null
+  const range = s !== null && e !== null ? `${dateTimeWords(s)} to ${dateTimeWords(e)}` : null
   let line: string
   switch (sw.basis) {
     case 'published':

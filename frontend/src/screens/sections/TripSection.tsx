@@ -200,9 +200,9 @@ function figure(q: QuantityDTO): string {
   return q.value === null ? quantityText(q) : `${formatValue(q.value)} ${q.unit}`
 }
 
-/** "16.5–19.9 m/s", when the quantity carries a range beside its value. */
+/** "16.5 to 19.9 m/s", when the quantity carries a range beside its value. */
 function spread(q: QuantityDTO): string | null {
-  return q.lo === null || q.hi === null ? null : `${formatValue(q.lo)}–${formatValue(q.hi)} ${q.unit}`
+  return q.lo === null || q.hi === null ? null : `${formatValue(q.lo)} to ${formatValue(q.hi)} ${q.unit}`
 }
 
 /**

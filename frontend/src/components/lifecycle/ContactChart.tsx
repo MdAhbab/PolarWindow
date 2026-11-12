@@ -311,7 +311,7 @@ export function ContactTable({ contact, rows }: { contact: ContactDTO; rows: Con
                   {s.open_start || s.open_end ? '≥' : ''}
                   {formatValue((b - a) / HOUR)} h
                 </td>
-                <td className={cell}>{booked ? 'Booked' : '—'}</td>
+                <td className={cell}>{booked ? 'Booked' : 'Not booked'}</td>
               </tr>
             ))}
           {rows.flatMap((r) =>
@@ -323,7 +323,7 @@ export function ContactTable({ contact, rows }: { contact: ContactDTO; rows: Con
                 <td className={cell}>{dateTimeWords(g.start)}</td>
                 <td className={cell}>{dateTimeWords(g.end)}</td>
                 <td className={`${cell} font-mono text-ink`}>{formatValue((g.end - g.start) / HOUR)} h</td>
-                <td className={cell}>—</td>
+                <td className={cell}>none</td>
               </tr>
             )),
           )}
@@ -337,7 +337,7 @@ export function ContactTable({ contact, rows }: { contact: ContactDTO; rows: Con
                 <td className={cell} colSpan={3}>
                   {plannedWords(contact.relays.find((x) => x.id === r.relayId))}
                 </td>
-                <td className={cell}>—</td>
+                <td className={cell}>none</td>
               </tr>
             ))}
         </tbody>

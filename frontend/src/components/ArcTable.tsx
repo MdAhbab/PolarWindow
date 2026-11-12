@@ -78,7 +78,7 @@ export function ArcTable({ metrics, body }: { metrics: SiteMetrics; body?: 'sun'
                 </td>
                 <td className="px-4 py-2.5 text-small text-ink-2">
                   {a.up
-                    ? '—'
+                    ? 'none'
                     : a.blockedByElDeg !== undefined && a.blockedByElDeg > TERRAIN_BLOCKER_MIN_EL_DEG
                       ? `terrain at ${bearing(a.blockedByBearingDeg ?? 0)}, ${degrees(a.blockedByElDeg, 2)}`
                       : 'below the horizon'}

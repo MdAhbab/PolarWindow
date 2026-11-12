@@ -37,7 +37,7 @@ export function rayWords(states: SightState[], ranges: number[]): string {
   return rayRuns(states, ranges)
     .map((r, i) => {
       const w = SIGHT_WORDS[r.state].words
-      const span = r.from === r.to ? `${formatValue(r.from)} m` : `${formatValue(r.from)}–${formatValue(r.to)} m`
+      const span = r.from === r.to ? `${formatValue(r.from)} m` : `${formatValue(r.from)} to ${formatValue(r.to)} m`
       return `${i ? w.toLowerCase() : w} ${span}`
     })
     .join('; ')

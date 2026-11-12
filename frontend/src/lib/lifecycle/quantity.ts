@@ -105,7 +105,7 @@ function decimalsFor(margin: number): number {
  * large or very small numbers ("4.1 × 10⁹").
  */
 export function formatValue(v: number, margin?: number | null): string {
-  if (!Number.isFinite(v)) return '—'
+  if (!Number.isFinite(v)) return 'not available'
   const a = Math.abs(v)
   if (a !== 0 && (a >= 1e6 || a < 1e-3)) {
     const exp = Math.floor(Math.log10(a))
@@ -130,7 +130,7 @@ function trim(s: string): string {
   return s.includes('.') ? s.replace(/\.?0+$/, '') : s
 }
 
-/** "±4 min", "±30 s", "±3 days": a time margin in the unit that reads best. */
+/** "±4 min", "±30 s", "±3 days": a time margin in the unit that reads best (the figure and its unit never part). */
 export function durationMargin(seconds: number): string {
   const s = Math.abs(seconds)
   if (s < 60) return `±${Math.round(s)} s`
@@ -187,7 +187,7 @@ function timeView(q: QuantityDTO): QuantityView {
       value: q.value,
       lo,
       hi,
-      figure: coarse ? `${dayMonth(lo * 1000)}–${dayMonth(hi * 1000)}` : `${clock(lo)}–${clock(hi)}`,
+      figure: coarse ? `${dayMonth(lo * 1000)}-${dayMonth(hi * 1000)}` : `${clock(lo)}-${clock(hi)}`,
       figureAbove: coarse ? String(new Date(lo * 1000).getUTCFullYear()) : `${shortDate(lo * 1000)} · UTC`,
       sentence: coarse
         ? `${shortDate(lo * 1000)} to ${shortDate(hi * 1000)}`
@@ -213,8 +213,8 @@ function timeView(q: QuantityDTO): QuantityView {
       value: v,
       lo: v - q.pm,
       hi: v + q.pm,
-      figure: mon(lo) === mon(hi) && y1 === y2 ? mon(lo) : `${mon(lo)}–${mon(hi)}`,
-      figureAbove: y1 === y2 ? String(y1) : `${y1}–${y2}`,
+      figure: mon(lo) === mon(hi) && y1 === y2 ? mon(lo) : `${mon(lo)}-${mon(hi)}`,
+      figureAbove: y1 === y2 ? String(y1) : `${y1} to ${y2}`,
       sentence: `between ${monthWords(lo)} and ${monthWords(hi)}`,
       spoken: `between ${monthWords(lo)} and ${monthWords(hi)}`,
     }
@@ -244,7 +244,7 @@ export function quantityView(q: QuantityDTO): QuantityView {
     const reason = q.missing_reason ?? 'no value was given'
     return {
       kind: 'missing',
-      figure: '—',
+      figure: q.provenance === 'entered' ? 'not entered' : 'none',
       unit: u.short,
       value: null,
       open: false,
@@ -286,12 +286,12 @@ export function quantityView(q: QuantityDTO): QuantityView {
     const lo = q.lo as number
     const hi = q.hi as number
     const same = formatValue(lo) === formatValue(hi)
-    const figure = same ? `${bound}${formatValue(lo)}` : `${bound}${formatValue(lo)}–${formatValue(hi)}`
+    const figure = same ? `${bound}${formatValue(lo)}` : `${bound}${formatValue(lo)}-${formatValue(hi)}`
     return {
       ...common,
       kind: 'range',
       figure,
-      sentence: line(figure),
+      sentence: line(same ? figure : `${bound}${formatValue(lo)} to ${formatValue(hi)}`),
       value: q.value,
       lo,
       hi,

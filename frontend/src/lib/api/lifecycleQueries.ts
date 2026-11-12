@@ -11,11 +11,12 @@
  * Section queries wait for `/sections` to settle, because its `meta.engines`
  * goes into their keys (ADR-13). If `/sections` fails they run anyway.
  */
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, api, type SectionResult } from './client'
 import { keys, setLifecycleEngines } from './queries'
-import type { AuditEntryDTO, JobRefDTO, SectionDTO, SectionId, SectionStatusDTO } from './lifecycle'
+import type { AuditEntryDTO, JobRefDTO, ParameterDTO, SectionDTO, SectionId, SectionStatusDTO } from './lifecycle'
+import { ASSUMED_LIMIT, limitHours, type BatteryLimit } from '../geometry/metrics'
 
 const MINUTE = 60_000
 
@@ -247,6 +248,42 @@ export function useParameters(enabled: boolean) {
     retry: retryServerErrors,
     queryFn: ({ signal }) => api.parameters(signal),
   })
+}
+
+/**
+ * The battery limit from the team's parameters: the `battery_limit_h` they
+ * entered, or the assumed 120 h, marked assumed, when none is entered, when
+ * the service does not offer parameters, or when they cannot be read.
+ */
+export function batteryLimitFrom(params: ParameterDTO[] | undefined, failed = false): BatteryLimit {
+  const p = params?.find((x) => x.id === 'battery_limit_h')
+  const v = p?.value.value
+  if (p && typeof v === 'number' && Number.isFinite(v) && v > 0) {
+    return { h: v, basis: 'entered', by: p.changed_by ?? p.value.source ?? undefined }
+  }
+  const h = `${limitHours(ASSUMED_LIMIT.h)} h`
+  if (p?.value.missing_reason) return { ...ASSUMED_LIMIT, why: `${p.value.missing_reason} Until then ${h} is assumed.` }
+  if (failed) return { ...ASSUMED_LIMIT, why: `The team’s parameters could not be read, so ${h} is assumed.` }
+  return ASSUMED_LIMIT
+}
+
+/**
+ * The battery limit every site page compares a night with (R2). Shares
+ * Settings' parameters query, so a value entered there reaches every page as
+ * soon as it is saved. `pending` until the parameters answer, so no page says
+ * "assumed" a moment before it knows.
+ */
+export function useBatteryLimit(): BatteryLimit {
+  const q = useQuery({
+    queryKey: keys.parameters(),
+    staleTime: MINUTE,
+    retry: retryServerErrors,
+    queryFn: ({ signal }) => api.parameters(signal),
+  })
+  const params = q.data?.parameters
+  const failed = Boolean(q.error)
+  const pending = q.isPending && !failed
+  return useMemo(() => (pending ? { ...ASSUMED_LIMIT, pending: true } : batteryLimitFrom(params, failed)), [params, failed, pending])
 }
 
 /**

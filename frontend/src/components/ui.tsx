@@ -20,7 +20,8 @@ const VARIANTS = {
     'bg-ink text-canvas hover:bg-ink-2 active:brightness-90 disabled:bg-inset disabled:text-ink-3',
   secondary:
     'border border-line-strong bg-tray text-ink hover:bg-inset hover:border-ink-3 disabled:border-line disabled:text-ink-3',
-  ghost: 'text-ink-2 hover:bg-inset hover:text-ink disabled:text-line-strong',
+  // A hairline, so a quiet button still reads as a control and not as plain text beside its neighbours.
+  ghost: 'border border-line text-ink-2 hover:border-line-strong hover:bg-inset hover:text-ink disabled:text-line-strong',
 }
 
 /**
@@ -545,7 +546,7 @@ export function SearchField({
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="min-w-0 grow bg-transparent text-body outline-none placeholder:text-ink-3"
+        className="h-full min-w-0 grow bg-transparent text-body outline-none placeholder:text-ink-3"
       />
     </div>
   )
@@ -602,6 +603,12 @@ export function Segmented<T extends string>({
  * A panel that scrolls sideways when its content is wider than the screen: a
  * named region that takes focus, so a keyboard user can scroll it with the
  * arrow keys (WCAG 2.1.1). Content with its own controls does not need one.
+ *
+ * While there is more to reach, the edge it can be scrolled towards fades
+ * (a mask, so no colour of its own) and the words "Scrolls sideways" stand
+ * under it, so a table cut at the screen's edge is not taken for a whole one.
+ * The fade steps aside while the region has the keyboard's focus, so the
+ * focus ring is whole.
  */
 export function ScrollRegion({
   label,
@@ -612,10 +619,53 @@ export function ScrollRegion({
   children: ReactNode
   className?: string
 }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [more, setMore] = useState({ before: false, after: false })
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const measure = () => {
+      const room = el.scrollWidth - el.clientWidth
+      const before = room > 1 && el.scrollLeft > 1
+      const after = room > 1 && el.scrollLeft < room - 1
+      setMore((m) => (m.before === before && m.after === after ? m : { before, after }))
+    }
+    measure()
+    el.addEventListener('scroll', measure, { passive: true })
+    if (typeof ResizeObserver === 'undefined') return () => el.removeEventListener('scroll', measure)
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    if (el.firstElementChild) ro.observe(el.firstElementChild)
+    return () => {
+      el.removeEventListener('scroll', measure)
+      ro.disconnect()
+    }
+  }, [])
+  const fade = more.before || more.after
+  // Opaque in the middle, clear at an edge with more beyond it (only the shape of a mask counts, not its colour).
+  const edge = '2.5rem'
+  const solid = 'var(--color-ink)'
+  const mask = fade
+    ? `linear-gradient(to right, ${more.before ? 'transparent' : solid}, ${solid} ${more.before ? edge : '0%'}, ${solid} calc(100% - ${more.after ? edge : '0px'}), ${more.after ? 'transparent' : solid})`
+    : undefined
   return (
-    <div role="region" aria-label={label} tabIndex={0} className={`relative overflow-x-auto ${className}`}>
-      {children}
-    </div>
+    <>
+      <div
+        ref={ref}
+        role="region"
+        aria-label={label}
+        tabIndex={0}
+        style={mask ? ({ '--pw-scroll-fade': mask } as React.CSSProperties) : undefined}
+        className={`relative overflow-x-auto [mask-image:var(--pw-scroll-fade,none)] focus-visible:[mask-image:none] ${className}`}
+      >
+        {children}
+      </div>
+      {fade && (
+        <p aria-hidden="true" className="text-caption leading-caption text-ink-3">
+          Scrolls sideways
+        </p>
+      )}
+    </>
   )
 }
 

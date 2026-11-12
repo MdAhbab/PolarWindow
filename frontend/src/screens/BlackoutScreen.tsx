@@ -8,7 +8,9 @@ import { SiteTitle } from '../components/SitePicker'
 import { LoadingPanel, ProblemPanel, UncertaintyNote } from '../components/States'
 import { Button, Eyebrow, Panel, ScrollRegion } from '../components/ui'
 import { Icon } from '../components/Icon'
-import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
+import { AgainstLimitWords, EnterLimit, LimitPhrase } from '../components/KeyNumbers'
+import { useBatteryLimit } from '../lib/api/lifecycleQueries'
+import { hoursWithMargin, longestNight, nightAgainstLimit } from '../lib/geometry/metrics'
 import { arcsCsv, download, spiceWindows } from '../lib/export'
 import { bound, hoursWithUnit, humanStamp, msFromModelH, spanWords } from '../lib/format'
 
@@ -21,8 +23,10 @@ export function BlackoutScreen() {
   const metrics = view.data?.metrics
   const packet = view.data?.autonomy
   const site = siteById(siteId)
+  // R2: the team's entered battery limit, or 120 h said to be assumed.
+  const limit = useBatteryLimit()
 
-  if (!metrics || !packet || view.error) {
+  if (!metrics || !packet || view.error || limit.pending) {
     return (
       <div className="pw-page flex grow flex-col gap-6 pt-6 pb-8 lg:pt-8">
         <div className="max-w-2xl">
@@ -45,6 +49,9 @@ export function BlackoutScreen() {
   const stamp = (metrics.windowStartIso ?? 'window').slice(0, 10)
   const blackouts = metrics.earth.arcs.filter((a) => !a.up).sort((a, b) => b.hours - a.hours)
   const nights = metrics.sun.arcs.filter((a) => !a.up).length
+  const night = longestNight(metrics, terrainModelled)
+  const against = nightAgainstLimit(night, limit.h)
+  const past = against.kind === 'past'
   const worstCompound = metrics.compound.reduce(
     (b, c) => (!b || c.hours > b.hours ? c : b),
     undefined as (typeof metrics.compound)[number] | undefined,
@@ -75,7 +82,7 @@ export function BlackoutScreen() {
         <Panel as="section" className="flex min-w-0 flex-col gap-3 p-4 sm:p-5 lg:col-span-8">
           <h2 className="text-title leading-6 font-semibold tracking-title text-ink">These dates, hour by hour</h2>
           <ScrollRegion label="Hour-by-hour timeline, scrolls sideways" className="pb-1">
-            <BlackoutTimeline metrics={metrics} cursorH={cursorH} className="pw-draw min-w-[860px]" />
+            <BlackoutTimeline metrics={metrics} cursorH={cursorH} limitH={limit.h} className="pw-draw min-w-[860px]" />
           </ScrollRegion>
         </Panel>
 
@@ -122,7 +129,7 @@ export function BlackoutScreen() {
               value="per payload"
             />
             <PacketRow
-              alert={metrics.sun.longestDownH > SURVIVAL_LIMIT_H}
+              alert={past}
               title="Battery for the night"
               detail={
                 packet.compoundInsideDark
@@ -145,11 +152,32 @@ export function BlackoutScreen() {
           </div>
 
           <div className="mt-auto flex flex-col gap-2.5 border-t border-line p-5 sm:p-6">
-            {metrics.sun.longestDownH > SURVIVAL_LIMIT_H && (
-              <p className="flex items-start gap-2 text-small leading-5 text-alert">
-                <Icon name="alert" size={16} strokeWidth={2.2} className="mt-0.5 shrink-0" />
-                The night alone is {Math.round(metrics.sun.longestDownH - SURVIVAL_LIMIT_H)} h past the{' '}
-                {SURVIVAL_LIMIT_H} h battery limit, whatever the plan for working alone.
+            {/* The longest night against the battery limit, with its margin:
+                magenta only past it by more than the margin (R2). */}
+            {against.kind !== 'no-night' && (
+              <p className={`flex items-start gap-2 text-small leading-5 ${past ? 'text-alert' : 'text-ink-2'}`}>
+                <Icon
+                  name={past ? 'alert' : against.kind === 'within-margin' ? 'uncertain' : 'info'}
+                  size={16}
+                  strokeWidth={2.2}
+                  className="mt-0.5 shrink-0"
+                />
+                <span>
+                  The longest night, {night.open ? 'at least ' : ''}
+                  {hoursWithMargin(night.h, night.marginH)},{' '}
+                  {against.kind === 'cut-short' ? (
+                    <>
+                      may run past <LimitPhrase limit={limit} />: these dates cut it short
+                    </>
+                  ) : (
+                    <>
+                      is <AgainstLimitWords a={against} limit={limit} />
+                      {past ? ', whatever the plan for working alone' : ''}
+                    </>
+                  )}
+                  .{' '}
+                  <EnterLimit limit={limit} />
+                </span>
               </p>
             )}
             <Button

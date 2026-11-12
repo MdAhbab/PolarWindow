@@ -207,7 +207,7 @@ function Blockers({ metrics, failed }: { metrics: SiteMetrics | undefined; faile
           )}
         </p>
       </div>
-      <Link to="/skyline" className="self-start text-small font-semibold">
+      <Link to="/skyline" className="inline-flex min-h-11 items-center self-start text-small font-semibold">
         See it on the skyline →
       </Link>
     </>

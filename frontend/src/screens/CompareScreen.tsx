@@ -7,7 +7,9 @@ import { useMission } from '../lib/store'
 import { getSites, hasSite, siteById } from '../lib/sites'
 import { useMissions } from '../lib/api/queries'
 import type { CompareItemDTO } from '../lib/api/client'
-import { rankLabel, type RankLabel } from '../lib/rank'
+import { firstEnd, ordinal, rankLabel, type RankLabel } from '../lib/rank'
+import { useBatteryLimit } from '../lib/api/lifecycleQueries'
+import { AgainstLimitWords, EnterLimit, LimitPhrase, LimitTally } from '../components/KeyNumbers'
 import { DateSlider } from '../components/DateSlider'
 import { Ribbon } from '../components/Ribbon'
 import { LoadingPanel, ProblemPanel } from '../components/States'
@@ -19,8 +21,15 @@ import { PageHeader } from '../components/Page'
 import { Icon } from '../components/Icon'
 import { Select } from '../components/Select'
 import { useReducedMotion } from '../hooks/useMotion'
-import { metricValue, SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
-import { bound, hoursWithUnit, termLabel } from '../lib/format'
+import {
+  longestNight,
+  metricValue,
+  nightAgainstLimit,
+  type AgainstLimit,
+  type BatteryLimit,
+  type Night,
+} from '../lib/geometry/metrics'
+import { bound, plusMinus, termLabel } from '../lib/format'
 import type { MetricKey, SiteMetrics } from '../lib/types'
 
 const GAP = 24
@@ -130,7 +139,10 @@ export function CompareScreen() {
   const [colH, setColH] = useState(560)
   const cards = useRef(new Map<string, HTMLDivElement>())
 
-  const ready = compareIds.every((id) => metrics[id])
+  // R2: the team's entered battery limit, or 120 h said to be assumed. The
+  // cards wait for it, so none says "assumed" a moment before it knows.
+  const limit = useBatteryLimit()
+  const ready = compareIds.every((id) => metrics[id]) && !limit.pending
 
   useLayoutEffect(() => {
     if (!ref.current || !wide || !ready) return
@@ -180,14 +192,13 @@ export function CompareScreen() {
     }
   }, [ranking.data, compareIds])
 
-  // U11: what each site may be called, from the server's rank, range and
-  // flags. "best" only for a definite first place that is neither cut short
-  // nor over the survival limit.
+  // U11: what each site's place may be called, from the server's rank, range
+  // and flags: "1st", "joint 2nd", or "too close to call" with why. A place
+  // in the order by one number, never a verdict on the site (R5).
   const code = (id: string) => (hasSite(id) ? siteById(id).code : id)
   const labels: Record<string, RankLabel | undefined> = {}
   for (const id of compareIds) {
     const it = items[id]
-    const m = metrics[id]
     labels[id] = it
       ? rankLabel({
           rank: it.rank,
@@ -195,10 +206,21 @@ export function CompareScreen() {
           tied: it.tied,
           censored: it.censored,
           grazing: it.grazing,
-          overLimit: m ? m.sun.longestDownH > SURVIVAL_LIMIT_H : false,
           incomparableWith: it.incomparable_with.map(code),
+          places: ranking.data?.items.length,
+          metric: rankBy,
         })
       : undefined
+  }
+  const metricName = termLabel(rankBy).label.toLowerCase()
+  const orderOf = `order of ${metricName}, ${firstEnd(rankBy)}`
+  // Each site's longest night against the limit, with the night's margin (R2).
+  const nights: Record<string, Night> = {}
+  const against: Record<string, AgainstLimit> = {}
+  for (const id of compareIds) {
+    if (!metrics[id]) continue
+    nights[id] = longestNight(metrics[id], hasSite(id) ? siteById(id).terrainModelled : true)
+    against[id] = nightAgainstLimit(nights[id], limit.h)
   }
 
   const orderLabel = order
@@ -228,9 +250,10 @@ export function CompareScreen() {
   const spoken = ranking.data
     ? buildComparisonSummary({
         rankedBy: termLabel(rankBy).label,
+        firstEnd: firstEnd(rankBy),
         windowStartIso: w.start,
         windowHours: metrics[order[0]].windowHours,
-        survivalLimitH: SURVIVAL_LIMIT_H,
+        batteryLimit: limit,
         sites: order.flatMap((id) => {
           const label = labels[id]
           return label
@@ -240,7 +263,7 @@ export function CompareScreen() {
                   label,
                   valueH: metricValue(metrics[id], rankBy),
                   open: isOpen(metrics[id], rankBy),
-                  overLimit: metrics[id].sun.longestDownH > SURVIVAL_LIMIT_H,
+                  against: against[id].kind,
                 },
               ]
             : []
@@ -248,10 +271,9 @@ export function CompareScreen() {
       })
     : null
 
-  const best = order[0]
-  const bestLabel = labels[best]
-  const leads = bestLabel?.kind === 'best' || (bestLabel?.kind === 'joint' && items[best]?.rank === 1)
-  const disqualified = order.filter((id) => metrics[id].sun.longestDownH > SURVIVAL_LIMIT_H)
+  const first = order[0]
+  const firstLabel = labels[first]
+  const sharing = firstLabel?.kind === 'joint' && items[first]?.rank === 1 ? [first, ...(tiedWith[first] ?? [])] : []
   const unavailable = ranking.data?.unavailable ?? []
 
   return (
@@ -259,7 +281,7 @@ export function CompareScreen() {
       <PageHeader
         compact
         title="Compare sites"
-        lede="The same dates at each site, side by side. Nothing is combined into a score: rank by one number at a time."
+        lede="The same dates at each site, side by side, put in order by one number at a time. Nothing is added up into one figure."
       />
       <DateSlider />
       <div className="flex flex-wrap items-end gap-x-6 gap-y-4">
@@ -285,7 +307,7 @@ export function CompareScreen() {
       </div>
 
       <p aria-live="polite" className="sr-only">
-        Now ranked by {termLabel(rankBy).label}: {orderLabel}.{tieSentence ? ` ${tieSentence}.` : ''}
+        Now in {orderOf}: {orderLabel}.{tieSentence ? ` ${tieSentence}.` : ''}
       </p>
 
       {(seeded || unavailable.length > 0 || ranking.error) && (
@@ -302,8 +324,8 @@ export function CompareScreen() {
           ))}
           {ranking.error ? (
             <p>
-              The ranking did not load ({(ranking.error as { title?: string }).title ?? 'request failed'}), so the
-              columns are in the order you chose them and none is called best.
+              The order did not load ({(ranking.error as { title?: string }).title ?? 'request failed'}), so the
+              columns are in the order you chose them, with no places given.
             </p>
           ) : null}
         </div>
@@ -336,6 +358,10 @@ export function CompareScreen() {
                     metrics={metrics[id]}
                     cursorH={cursorH}
                     rankBy={rankBy}
+                    night={nights[id]}
+                    against={against[id]}
+                    limit={limit}
+                    rankedBy={ranking.data?.rank_by}
                   />
                 </div>
               )
@@ -352,37 +378,43 @@ export function CompareScreen() {
                 metrics={metrics[id]}
                 cursorH={cursorH}
                 rankBy={rankBy}
+                night={nights[id]}
+                against={against[id]}
+                limit={limit}
+                rankedBy={ranking.data?.rank_by}
               />
             ))}
           </div>
         )}
       </div>
 
+      {/* The order, by which number and which end is 1st, then the nights
+          against the battery limit, counted. No verdict (R5, R6); site names
+          in the body colour, never the alert one (V129). */}
       <footer className="pw-card pw-card-quiet px-5 py-4 sm:px-6">
         <p className="max-w-4xl text-lede leading-7 text-ink">
-          {!leads ? (
-            <>No clear leader on {termLabel(rankBy).label.toLowerCase()}{bestLabel ? '' : ' yet'}.</>
-          ) : tiedWith[best]?.length ? (
+          {ranking.error ? (
+            <>No order by {metricName}: it did not load.</>
+          ) : !firstLabel ? (
+            <>The order by {metricName} has not arrived yet.</>
+          ) : sharing.length > 1 ? (
             <>
-              <strong>{[best, ...tiedWith[best]].map((id) => siteById(id).name).join(' and ')}</strong> share the lead on{' '}
-              {termLabel(rankBy).label.toLowerCase()}.
+              In {orderOf}, <strong>{sharing.map((id) => siteById(id).name).join(' and ')}</strong> are joint 1st: the
+              data cannot separate them.
+            </>
+          ) : firstLabel.kind === 'first' ? (
+            <>
+              In {orderOf}, <strong>{siteById(first).name}</strong> is 1st.
             </>
           ) : (
-            <>
-              <strong>{siteById(best).name}</strong> leads on {termLabel(rankBy).label.toLowerCase()}.
-            </>
+            <>In {orderOf}, 1st place is too close to call.</>
           )}{' '}
-          {disqualified.length > 0 ? (
-            <>
-              <span className="text-alert">
-                {disqualified.map((id) => siteById(id).name).join(', ').replace(/, ([^,]*)$/, ' and $1')}{' '}
-                {disqualified.length > 1 ? 'run' : 'runs'} past the {SURVIVAL_LIMIT_H} h battery limit
-              </span>{' '}
-              on these dates; other months can change that.
-            </>
-          ) : (
-            'Every site here stays inside the battery limit, so the choice comes down to what the payload needs.'
-          )}
+          <LimitTally
+            sites={order.map((id) => ({ name: siteById(id).name, night: nights[id], against: against[id] }))}
+            limit={limit}
+          />{' '}
+          {order.some((id) => against[id].kind !== 'inside' && against[id].kind !== 'no-night') && 'Other months can change that. '}
+          <EnterLimit limit={limit} />
         </p>
       </footer>
 
@@ -398,24 +430,40 @@ function CompareCard({
   metrics,
   cursorH,
   rankBy,
+  night,
+  against,
+  limit,
+  rankedBy,
 }: {
+  /** The number the server's order on screen is by (`rank_by`), as the API spells it. */
+  rankedBy: string | undefined
   siteId: string
   /** The server's ranking of this site; undefined until it arrives. */
   item: CompareItemDTO | undefined
-  /** What the site may be called (U11); undefined until the ranking arrives. */
+  /** What the site's place may be called (U11); undefined until the ranking arrives. */
   label: RankLabel | undefined
   metrics: SiteMetrics
   cursorH: number
   rankBy: MetricKey
+  /** Its longest night, with the margin the comparison uses. */
+  night: Night
+  /** Where that night stands against the battery limit (R2). */
+  against: AgainstLimit
+  limit: BatteryLimit
 }) {
   const site = siteById(siteId)
-  const over = metrics.sun.longestDownH > SURVIVAL_LIMIT_H
+  // Magenta means past the limit by more than the night's margin, nothing else.
+  const over = against.kind === 'past'
   const rank = item?.rank ?? null
-  const leading = label?.kind === 'best' || (label?.kind === 'joint' && rank === 1)
+  const metricName = termLabel(rankBy).label.toLowerCase()
   const [why, setWhy] = useState(false)
   const whyRow = useOpenRow(why)
   const whyId = useId()
-  const margin = SURVIVAL_LIMIT_H - metrics.sun.longestDownH
+  // The ranked figure's own margin, as the server ordered it (none when an
+  // edge cannot be timed), and only from the order for this number: while a
+  // new order loads the previous one is still on screen.
+  const heroMarginH =
+    item?.uncertainty_s != null && item.uncertainty_s > 0 && rankedBy === API_METRIC[rankBy] ? item.uncertainty_s / 3600 : undefined
   const cells = [
     ['sunHours', 'Time in sunlight', metrics.sun.upHours, false, 'text-sun', 'Time in sunlight'],
     ['earthHours', 'Time in contact with Earth', metrics.earth.upHours, false, 'text-earth', 'Time in contact with Earth'],
@@ -432,13 +480,15 @@ function CompareCard({
           className={`inline-flex size-8 shrink-0 items-center justify-center rounded-pill font-mono text-body font-semibold ${
             rank === null
               ? 'border border-dashed border-uncertain text-uncertain'
-              : leading
+              : rank === 1
                 ? 'bg-ink text-canvas'
                 : 'bg-inset text-ink shadow-[inset_0_0_0_1px_var(--color-line-strong)]'
           }`}
-          aria-label={rank === null ? 'No place stated' : `Rank ${rank}`}
+          role="img"
+          aria-label={rank === null ? 'No place stated' : `${ordinal(rank)} by ${metricName}`}
         >
-          {rank ?? '–'}
+          {/* No place: the dashed ring alone, no dash standing in for a number. */}
+          {rank ?? ''}
         </span>
         <div className="flex min-w-0 flex-col gap-0.5">
           <h2 className="text-title leading-6 font-semibold">
@@ -468,7 +518,8 @@ function CompareCard({
               </>
             ) : (
               <div className="text-small font-semibold text-ink-2">
-                {label.kind === 'joint' ? `${label.text}: the data can’t separate them` : label.text}
+                {label.text} by {metricName}
+                {label.kind === 'joint' ? ': the data can’t separate them' : ''}
               </div>
             ))}
         </div>
@@ -488,6 +539,11 @@ function CompareCard({
           <dd className={`pw-figure text-[44px] leading-[46px] xl:text-[52px] xl:leading-[54px] ${hero[4]}`}>
             {bound(hero[3])}
             {Math.round(hero[2])}
+            {heroMarginH !== undefined && (
+              <span className="ml-1.5 text-title font-normal tracking-normal text-uncertain tnum [font-stretch:100%] sm:text-subhead">
+                {plusMinus(heroMarginH)}
+              </span>
+            )}
             <span className="ml-1.5 text-large font-normal tracking-normal text-ink-2 [font-stretch:100%]">h</span>
           </dd>
         </dl>
@@ -513,18 +569,18 @@ function CompareCard({
           <span className="text-caption font-semibold text-sun">Sunlight over these dates</span>
           <Ribbon
             arcs={metrics.sun.arcs}
-            windowStartH={metrics.windowStartH}
+            windowStartIso={metrics.windowStartIso}
             windowHours={metrics.windowHours}
             tone="sun"
             cursorH={cursorH}
-            alertOverH={SURVIVAL_LIMIT_H}
+            alertOverH={limit.h}
           />
         </div>
         <div className="flex flex-col gap-1.5">
           <span className="text-caption font-semibold text-earth">Contact with Earth over these dates</span>
           <Ribbon
             arcs={metrics.earth.arcs}
-            windowStartH={metrics.windowStartH}
+            windowStartIso={metrics.windowStartIso}
             windowHours={metrics.windowHours}
             tone="earth"
             cursorH={cursorH}
@@ -533,13 +589,26 @@ function CompareCard({
       </div>
 
       <div className="mt-auto flex flex-col gap-1 border-t border-line p-4 sm:px-5">
+        {/* The longest night against the battery limit, with its margin (R2):
+            magenta only past it by more than the margin. */}
         <p className={`flex items-start gap-1.5 text-small font-semibold ${over ? 'text-alert' : 'text-ink'}`}>
-          {over && <Icon name="alert" size={14} strokeWidth={2.2} className="mt-0.5 shrink-0" />}
-          {over
-            ? `${metrics.sun.longestDownOpen ? 'At least ' : ''}${Math.round(-margin)} h past the ${SURVIVAL_LIMIT_H} h battery limit`
-            : metrics.sun.longestDownOpen
-              ? `At most ${hoursWithUnit(margin)} inside the battery limit: these dates cut the night short`
-              : `${hoursWithUnit(margin)} inside the ${SURVIVAL_LIMIT_H} h battery limit`}
+          {over ? (
+            <Icon name="alert" size={14} strokeWidth={2.2} className="mt-0.5 shrink-0" />
+          ) : against.kind === 'within-margin' ? (
+            <Icon name="uncertain" size={14} strokeWidth={2.2} className="mt-0.5 shrink-0 text-uncertain" />
+          ) : null}
+          <span>
+            {against.kind === 'no-night' ? (
+              'The Sun did not set on these dates'
+            ) : against.kind === 'cut-short' ? (
+              <>
+                These dates cut the night short at {bound(night.open)}
+                {Math.round(night.h)} h; it may run past <LimitPhrase limit={limit} />
+              </>
+            ) : (
+              <AgainstLimitWords a={against} limit={limit} capital />
+            )}
+          </span>
         </p>
         <p className="text-small leading-5 text-ink-2">{site.note}</p>
       </div>

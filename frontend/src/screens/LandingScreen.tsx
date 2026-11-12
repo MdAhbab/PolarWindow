@@ -266,10 +266,10 @@ export default function LandingScreen() {
 
       {/* The dashboard's island, so the front page and the dashboard read as one product. */}
       <header className="pointer-events-none sticky top-0 z-20 px-3 pt-3 sm:px-4">
-        {/* Over the films the island has no blur behind it (nothing blurs a film): its glass colour is opaque enough alone. */}
+        {/* Over the films the island has no blur behind it (nothing blurs a film), so it is solid: the glass colour let the words scrolling under it show through. */}
         <div
           className="pw-island pointer-events-auto mx-auto flex w-fit max-w-full items-center gap-3 rounded-pill py-1.5 pr-1.5 pl-4 sm:gap-6"
-          style={{ backdropFilter: 'none', WebkitBackdropFilter: 'none' }}
+          style={{ backdropFilter: 'none', WebkitBackdropFilter: 'none', background: 'var(--color-raised)' }}
         >
           <span className="flex h-12 items-center">
             <BrandName />

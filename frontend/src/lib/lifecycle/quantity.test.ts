@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { QuantityDTO } from '../api/lifecycle'
-import { ageWords, durationMargin, formatValue, quantityText, quantityView, shareView } from './quantity'
+import { TIME_UNIT, ageWords, durationMargin, formatValue, quantityText, quantityView, shareView } from './quantity'
 
 const q = (over: Partial<QuantityDTO>): QuantityDTO => ({
   value: 12,
@@ -39,9 +39,9 @@ describe('quantityView: every margin form draws one way', () => {
     expect(quantityText(q({ value: 1.2, pm: 0.02 }))).toBe('1.20 ±0.02 h')
   })
 
-  it('a range: "12–31 h", said as "12 to 31 hours", even with no single value', () => {
+  it('a range: "12-31 h" (a hyphen, to fit the tile), written as "12 to 31 h" in a sentence and said as "12 to 31 hours", even with no single value', () => {
     const v = quantityView(q({ value: null, lo: 12, hi: 31 }))
-    expect(v).toMatchObject({ kind: 'range', figure: '12–31', lo: 12, hi: 31 })
+    expect(v).toMatchObject({ kind: 'range', figure: '12-31', lo: 12, hi: 31 })
     expect(v.spoken).toBe('12 to 31 hours')
     expect(v.missingReason).toBeUndefined()
   })
@@ -71,11 +71,22 @@ describe('quantityView: every margin form draws one way', () => {
     expect(quantityText(q({ value: 4.1, unit: 'deg', pm: 0.3 }))).toBe('4.1° ±0.3°')
   })
 
-  it('missing: a dash and the reason, never a zero', () => {
+  it('missing: the word "none" (or "not entered" for a number the team types) and the reason, never a zero or a dash', () => {
     const v = quantityView(q({ value: null, missing_reason: 'No trajectory yet' }))
-    expect(v).toMatchObject({ kind: 'missing', figure: '—', missingReason: 'No trajectory yet' })
+    expect(v).toMatchObject({ kind: 'missing', figure: 'none', missingReason: 'No trajectory yet' })
     expect(v.spoken).toBe('Not available: No trajectory yet')
     expect(quantityText(q({ value: null, missing_reason: 'x' }))).toBe('not available')
+  })
+
+  it('a number the team types and has not typed says "not entered"; no long dash is ever drawn', () => {
+    expect(quantityView(q({ value: null, provenance: 'entered', missing_reason: 'Not entered yet' })).figure).toBe('not entered')
+    for (const v of [
+      quantityView(q({ value: null })),
+      quantityView(q({ value: 1, lo: 0.5, hi: 2, pm: null, unit: 'h' })),
+      quantityView(q({ value: 1735689600, unit: TIME_UNIT, pm: 30 * 86400 })),
+    ]) {
+      expect(JSON.stringify(v)).not.toMatch(/[–—]/)
+    }
   })
 
   it('a time known to the minute: the clock time, the date above it, the margin in minutes', () => {
@@ -95,7 +106,7 @@ describe('quantityView: every margin form draws one way', () => {
   it('a date known only to months: the span of months, never a made-up day', () => {
     const t = Date.UTC(2026, 6, 2) / 1000
     const v = quantityView(q({ value: t, unit: 's since epoch', pm: 180 * 86400 }))
-    expect(v).toMatchObject({ figure: 'Jan–Dec', figureAbove: '2026' })
+    expect(v).toMatchObject({ figure: 'Jan-Dec', figureAbove: '2026' })
     expect(v.margin).toBeUndefined()
     expect(v.sentence).toBe('between January 2026 and December 2026')
   })

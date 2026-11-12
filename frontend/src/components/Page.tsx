@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { useTransitionClick } from '../lib/viewTransition'
+import { bindNode } from '../lib/bindNode'
 import { Link } from 'react-router-dom'
 
 export interface Crumb {
@@ -25,7 +26,7 @@ export function Breadcrumbs({ items }: { items: Crumb[] }) {
                 <Link
                   to={c.to}
                   onClick={go(c.to)}
-                  className="-mx-1 inline-flex min-h-8 items-center rounded-control px-1 font-medium text-ink-2 underline decoration-line-strong underline-offset-[3px] hover:text-ink hover:decoration-current"
+                  className="-mx-1 inline-flex min-h-11 min-w-11 items-center rounded-control px-1 font-medium sm:min-h-8 sm:min-w-0 text-ink-2 underline decoration-line-strong underline-offset-[3px] hover:text-ink hover:decoration-current"
                 >
                   {c.label}
                 </Link>
@@ -35,7 +36,7 @@ export function Breadcrumbs({ items }: { items: Crumb[] }) {
                 </span>
               )}
               {!last && (
-                <span aria-hidden="true" className="text-line-strong">
+                <span aria-hidden="true" className="text-ink-3">
                   /
                 </span>
               )}
@@ -100,7 +101,7 @@ export function PageHeader({
             )}
             {titleExtra && <span className="font-normal tracking-heading text-ink-2 [font-stretch:100%]"> {titleExtra}</span>}
           </h1>
-          {lede && <p className={`max-w-3xl text-ink-2 ${compact ? 'text-body leading-6' : 'text-lede leading-7'}`}>{lede}</p>}
+          {lede && <p className={`max-w-3xl text-ink-2 ${compact ? 'text-body leading-6' : 'text-lede leading-7'}`}>{bindNode(lede)}</p>}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>

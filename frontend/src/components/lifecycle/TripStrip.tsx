@@ -371,7 +371,7 @@ export function burnKeys(names: string[]): { marks: string; label: string }[] {
   return out.map((r) =>
     r.first === r.last
       ? { marks: String(r.first), label: r.name }
-      : { marks: `${r.first}–${r.last}`, label: /s$/.test(r.base) ? r.base : `${r.base}s` },
+      : { marks: `${r.first} to ${r.last}`, label: /s$/.test(r.base) ? r.base : `${r.base}s` },
   )
 }
 
@@ -416,7 +416,7 @@ export function TripTable({ trip, stretches }: { trip: TripDTO; stretches: TripS
                       Burn: {b.name}
                     </th>
                     <td className={cell}>{dateTimeWords(Date.parse(b.t))}</td>
-                    <td className={cell}>—</td>
+                    <td className={cell}>none</td>
                     <td className={`${cell} text-right font-mono tnum text-ink`}>{quantityText(b.dv_m_s)}</td>
                   </tr>
                 ),

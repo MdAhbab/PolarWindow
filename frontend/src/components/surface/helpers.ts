@@ -42,7 +42,7 @@ export function niceDomain(values: number[], count = 4): [number, number] {
 
 /** A number in a sensible number of digits, with a true minus sign. */
 export function num(v: number, digits?: number): string {
-  if (!Number.isFinite(v)) return '—'
+  if (!Number.isFinite(v)) return 'not available'
   const a = Math.abs(v)
   const d = digits ?? (a >= 100 ? 0 : a >= 10 ? 1 : a >= 1 ? 2 : a === 0 ? 0 : 3)
   const s = v.toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d })
@@ -90,7 +90,7 @@ export function quantityWords(raw: QuantityDTO, digits?: number): QuantityWords 
   const q = scaled(raw)
   const unit = unitWord(q.unit)
   if (q.value === null || q.value === undefined) {
-    return { value: '—', unit, margin: q.missing_reason ?? 'not worked out', marginIsReason: true, provenance: q.provenance }
+    return { value: 'not available', unit, margin: q.missing_reason ?? 'not worked out', marginIsReason: true, provenance: q.provenance }
   }
   const value = `${q.open ? 'at least ' : ''}${num(q.value, digits)}`
   let margin: string
@@ -125,9 +125,9 @@ export interface ShareDTO {
   checked?: boolean
 }
 
-/** "354 of 1000 points (32–38 %)": the count, then its exact 95 % interval. */
+/** "354 of 1000 points (32 to 38 %)": the count, then its exact 95 % interval. */
 export function shareWords(s: ShareDTO): string {
-  return `${s.k} of ${s.n} points (${pct(s.lo)}–${pct(s.hi)} %)`
+  return `${s.k} of ${s.n} points (${pct(s.lo)} to ${pct(s.hi)} %)`
 }
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']

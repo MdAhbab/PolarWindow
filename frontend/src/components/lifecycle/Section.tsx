@@ -6,6 +6,7 @@ import { STATE_WORDS } from './JourneyBar'
 import type { SectionView } from '../../lib/api/lifecycleQueries'
 import { useMission } from '../../lib/store'
 import { dateTimeWords } from '../../lib/format'
+import { bindNode } from '../../lib/bindNode'
 import { ageWords, hostWords } from '../../lib/lifecycle/quantity'
 import { Icon, type IconName } from '../Icon'
 import { ProblemPanel, ProgressTrack, Skeleton, UncertaintyNote } from '../States'
@@ -140,8 +141,8 @@ export function Answer({ children, meta, extra }: { children: ReactNode; meta?: 
     <div className={`${UNDER_QUESTION} flex flex-col gap-3 ${arrive}`}>
       {/* The answer, and at most a line more that qualifies it: one block for the guide and the tests. */}
       <div data-guide="section-answer" className="flex flex-col gap-3">
-        <p className={ANSWER_TEXT}>{children}</p>
-        {extra && <p className="max-w-3xl text-lede leading-7 text-ink-2">{extra}</p>}
+        <p className={ANSWER_TEXT}>{bindNode(children)}</p>
+        {extra && <p className="max-w-3xl text-lede leading-7 text-ink-2">{bindNode(extra)}</p>}
       </div>
       {meta && !Number.isNaN(at) && <AnswerAge at={at} />}
       {meta?.stale && (
@@ -335,7 +336,7 @@ export function ChartPanel({
         <h3 id={`${id}-h`} className="text-title leading-6 font-semibold tracking-title text-ink">
           {title}
         </h3>
-        <Button size="sm" variant="ghost" className="-ml-4 sm:-mr-3 sm:ml-0" onClick={toggle} expanded={showTable} controls={`${id}-table`} title="Or press T">
+        <Button size="sm" variant="ghost" onClick={toggle} expanded={showTable} controls={`${id}-table`} title="Or press T">
           <Icon name="table" size={16} strokeWidth={1.7} />
           {showTable ? 'Hide the table' : 'Read the chart as a table'}
         </Button>
@@ -422,9 +423,9 @@ export function SourcesRow({ meta, children }: { meta: LifecycleMetaDTO; childre
             const issued = s.issued_at ? Date.parse(s.issued_at) : null
             return (
               // One record can be cited at several pages, so the name alone is not a key.
-              <li key={`${s.name}-${s.snapshot_id ?? ''}-${s.url ?? i}`} className="flex flex-col gap-0.5 text-body leading-5">
+              <li key={`${i}-${s.name}-${s.snapshot_id ?? ''}`} className="flex flex-col gap-0.5 text-body leading-5">
                 {s.url ? (
-                  <a href={s.url} target="_blank" rel="noreferrer">
+                  <a href={s.url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center self-start">
                     {s.name}
                   </a>
                 ) : (

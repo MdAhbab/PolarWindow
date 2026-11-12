@@ -1409,7 +1409,11 @@ dialog.pw-sheet-out::backdrop {
   animation: var(--pw-glow-path) var(--pw-glow-cycle) ease-in-out infinite;
   animation-delay: calc(var(--pw-glow-at, 0) * -1s);
 }
-.pw-glow[data-paused] .pw-glow-field {
+/* data-slow: the page could not keep up when measured once after load
+   (lib/frameBudget.ts; a machine with no graphics acceleration). The fields
+   stay where they are, still. */
+.pw-glow[data-paused] .pw-glow-field,
+.pw-glow[data-slow] .pw-glow-field {
   animation-play-state: paused;
 }
 /* Reduced motion, decided in code (AmbientGlow.tsx): each field rests. */

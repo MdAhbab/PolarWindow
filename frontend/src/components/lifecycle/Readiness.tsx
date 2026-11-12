@@ -149,7 +149,7 @@ function Evidence({ url, name }: { url: string | null; name: string }) {
   if (!url)
     return (
       <span className="text-small text-ink-3">
-        <span aria-hidden="true">—</span>
+        <span aria-hidden="true">none</span>
         <span className="sr-only">No evidence linked</span>
       </span>
     )
@@ -393,7 +393,7 @@ export function RiskTable({ risks, onChange }: { risks: RiskDTO[]; onChange?: (r
   const head = 'px-3 py-2.5 text-tag font-semibold tracking-caps-md text-ink-3 uppercase'
   const rating = (r: RiskDTO, c: RiskCategory) => {
     const x = r.ratings.find((y) => y.category === c)
-    return x ? `L ${x.likelihood} · C ${x.consequence}` : '—'
+    return x ? `L ${x.likelihood} · C ${x.consequence}` : 'not rated'
   }
   return (
     <ScrollRegion label="Risk table, scrolls sideways" className="border border-line">
@@ -555,7 +555,7 @@ export function LandingHistoryTable({ history }: { history: LandingHistoryDTO })
                     <span aria-hidden="true">{o.glyph} </span>
                     {o.words}
                   </td>
-                  <td className={cell}>{a.cause ?? '—'}</td>
+                  <td className={cell}>{a.cause ?? 'not given'}</td>
                   <td className={cell}>
                     {a.source_url ? (
                       <a href={a.source_url} target="_blank" rel="noreferrer">

@@ -17,6 +17,40 @@ export const AT_LEAST = '≥'
 
 export const bound = (open?: boolean): string => (open ? AT_LEAST : '')
 
+/**
+ * A non-breaking space. A figure never parts from its unit or its margin, a
+ * date never breaks inside itself, and a clock time never parts from "UTC":
+ * a line may end between two of these, never in the middle of one.
+ */
+export const NBSP = '\u00A0'
+
+const MONTH_NAMES =
+  'January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec'
+
+/**
+ * Text written elsewhere (an answer from the service, a sentence the page
+ * composed) with its figures held together: a number and its unit or margin,
+ * a day with its month and year, a time with "UTC", a coordinate with its
+ * hemisphere. Only plain spaces between those parts change; nothing is added
+ * or taken away, so a search, a copy and a reading aloud say the same words.
+ */
+export function bind(text: string): string {
+  return (
+    text
+      // "12 Nov 2026", "6 March 2025": the day, the month and the year stay together.
+      .replace(new RegExp(`\\b(\\d{1,2}) (${MONTH_NAMES})( \\d{4})?\\b`, 'g'), (_, d, m, y) => `${d}${NBSP}${m}${y ? NBSP + y.trim() : ''}`)
+      // "07:00 UTC", "00:16:30 UTC".
+      .replace(/(\d{1,2}:\d{2}(?::\d{2})?) (UTC)\b/g, `$1${NBSP}$2`)
+      // "UTC ±15 s", "00:16 UTC ±15 s": the margin stays with the time it belongs to.
+      .replace(/(UTC) (±)/g, `$1${NBSP}$2`)
+      // "±15 s", "422.6 ±0.5 h", "12 h": a figure, its margin and its unit.
+      .replace(/(\d) (±)/g, `$1${NBSP}$2`)
+      .replace(/(\d) (h|min|s|km|m|m\/s|km\/s|days?|hours?|minutes?|seconds?|dB|W|Wh|kg|%)(?![\w/])/g, `$1${NBSP}$2`)
+      // "89.45 S", "137.3 W": a coordinate never leaves its hemisphere letter alone on a line.
+      .replace(/(\d(?:\.\d+)?)°? ([NSEW])\b(?![-\w])/g, `$1${NBSP}$2`)
+  )
+}
+
 export function hours(v: number, digits = 0, open?: boolean): string {
   return `${bound(open)}${v.toFixed(digits)}`
 }
