@@ -87,6 +87,13 @@ export async function goClient(page: Page, path: string) {
   }, path)
 }
 
+/**
+ * A pattern for words on the page. The app joins a figure to its unit or margin, a day to its month and a time
+ * to "UTC" with a no-break space (`bind` in src/lib/format.ts). A string expectation folds that into a plain
+ * space; a pattern does not, so every space in it also matches the no-break one.
+ */
+export const spaced = (re: RegExp) => new RegExp(re.source.replace(/ /g, '\\s'), re.flags)
+
 /** Open a closed row (a `<details>`) by the words on it. */
 export async function openRow(page: Page, title: string | RegExp) {
   const summary = page.locator('summary', { hasText: title }).first()

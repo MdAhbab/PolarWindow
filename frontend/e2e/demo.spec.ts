@@ -95,7 +95,8 @@ test('demo path: volatiles → IM-2 → shift the date → compare → ask → r
   await expect(page).toHaveURL(/type=volatiles/)
   await expect(count).toHaveText(`Showing 5 of ${all} missions`)
   const list = page.getByRole('region', { name: 'Missions' }).or(page.locator('section[aria-labelledby="missions-list-h"]'))
-  await expect(list.getByRole('link')).toHaveCount(5)
+  // One row per mission; each row also holds six step marks, which are links of their own.
+  await expect(list.locator('ul:not([aria-label]) > li')).toHaveCount(5)
   await expectNoSeriousAxe(page, '/missions?type=volatiles')
 
   // Beat 3: IM-2, named from the data.

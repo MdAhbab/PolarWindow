@@ -7,6 +7,7 @@ a designed trip once its launch time is known (the launch calendar, D1/D2).
 
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime
 from typing import Any
 
@@ -18,7 +19,7 @@ from app.core import gcr, oem, spice
 from app.data import catalogues, registry
 from app.db.repositories.missions import MissionRecord, MissionRepository
 from app.db.repositories.sites import MaskRepository
-from app.services import ascent, job_service, launch_service, lifecycle
+from app.services import ascent, job_service, launch_service, lifecycle, radiation
 from app.services.mission_service import MissionNotFound
 
 KIND = "trip"
@@ -136,7 +137,33 @@ async def trip_for(session: AsyncSession, m: MissionRecord) -> tuple[int, dict[s
     if ans.assessment is None:
         assert ans.job is not None
         return 202, ans.job
-    return 200, ans.assessment.result
+    return 200, _current_words(ans.assessment.result)
+
+
+_SEP_COUNTED = re.compile(r"^(No|One|\d+) solar particle events? crossed NOAA")
+
+
+def _current_words(result: dict[str, Any]) -> dict[str, Any]:
+    """A stored trip in today's words where a sentence is rebuilt from what was stored.
+
+    The particle-event sentence is made from the number of events alone, so an answer worked
+    out before its wording changed is served with the current sentence (the events listed
+    beside it are the ones it counts). A sentence that says why no events could be read is
+    left as it was.
+    """
+    data = result.get("data") if isinstance(result, dict) else None
+    if not isinstance(data, dict):
+        return result
+    rad = data.get("radiation")
+    if not isinstance(rad, dict) or not isinstance(rad.get("sep_events"), list):
+        return result
+    note = rad.get("sep_note")
+    if not isinstance(note, str) or not _SEP_COUNTED.match(note):
+        return result
+    fresh = radiation.sep_note(len(rad["sep_events"]))
+    if fresh == note:
+        return result
+    return {**result, "data": {**data, "radiation": {**rad, "sep_note": fresh}}}
 
 
 class NoExport(LookupError):
