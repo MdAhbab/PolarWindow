@@ -162,7 +162,7 @@ export function BlackoutScreen() {
             <details className="group">
               <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-small font-semibold text-ink-2 hover:text-ink [&::-webkit-details-marker]:hidden">
                 More formats
-                <Icon name="chevron" size={16} strokeWidth={2} className="text-ink-3 transition-transform group-open:rotate-180" />
+                <Icon name="chevron" size={16} strokeWidth={2} className="pw-turn text-ink-3 group-open:rotate-180" />
               </summary>
               <div className="flex flex-col gap-2 pt-1">
                 <Button onClick={() => download(`${site.id}-${stamp}-windows.txt`, spiceWindows(exportSite))}>
@@ -277,7 +277,7 @@ function PacketRow({
         </span>
         <span className={`grow text-body font-semibold ${alert ? 'text-alert' : ''}`}>{title}</span>
         <span className={`shrink-0 text-small tnum ${alert ? 'text-alert' : 'text-ink'}`}>{value}</span>
-        <Icon name="chevron" size={14} strokeWidth={2} className="shrink-0 text-ink-3 transition-transform group-open:rotate-180" />
+        <Icon name="chevron" size={14} strokeWidth={2} className="pw-turn shrink-0 text-ink-3 group-open:rotate-180" />
       </summary>
       <p className="pw-disclosure-body pr-5 pb-3 pl-[3.75rem] text-small leading-5 text-ink-2 sm:pr-6 sm:pl-[4.25rem]">{detail}</p>
     </details>

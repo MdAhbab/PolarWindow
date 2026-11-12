@@ -1,6 +1,6 @@
-import { lazy, Suspense, useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type React from 'react'
-import { useTransitionClick } from '../lib/viewTransition'
+import { routeDrawn, useTransitionClick } from '../lib/viewTransition'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
 import { useMission } from '../lib/store'
@@ -17,7 +17,10 @@ import { useArrivals } from '../hooks/useArrivals'
 import { Icon } from './Icon'
 import { BrandName } from './Brand'
 import { useProvenance } from '../lib/useProvenance'
-import { SampleDataBadge, SvgDefs } from './ui'
+import { Hold, SampleDataBadge, SvgDefs } from './ui'
+import { Indicator } from './ui/Indicator'
+import { AmbientGlow } from './AmbientGlow'
+import { leave } from '../lib/motion'
 import { ConnectionBanner, ErrorBoundary, useOnline } from './States'
 import { Toaster } from './Toast'
 import { RunLogDrawer } from './RunLog'
@@ -139,9 +142,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (settingsOpen) settingsLoaded.current = true
   const go = useTransitionClick()
   const saved = provenance === 'snapshot'
+  // A page change waits for this before the browser takes its picture of the new page (lib/viewTransition.ts).
+  const { key: locationKey } = useLocation()
+  useLayoutEffect(() => routeDrawn(), [locationKey])
+  // The three rows of choices in the shell, each with one sliding indicator (rule 2).
+  const view = VIEWS.find((n) => n.match(pathname))?.to ?? null
+  const sitePage = SITE_PAGES.find((n) => pathname === n.to || pathname.startsWith(`${n.to}/`))?.to ?? null
 
   return (
     <div className="flex min-h-full flex-col text-ink">
+      {/* The faint, slow glow behind every page in the app (not the front page). */}
+      <AmbientGlow />
       <SvgDefs />
       <a
         href="#pw-main"
@@ -155,7 +166,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           reach as the page scrolls under it; the space around it lets clicks
           through to the page. */}
       <header className="pointer-events-none sticky top-0 z-40 px-3 pt-3 sm:px-4">
-        <div className="pw-island pointer-events-auto mx-auto flex w-fit max-w-full items-center gap-1 rounded-pill py-1.5 pr-1.5 pl-1.5 min-[360px]:pl-3 sm:pl-4">
+        {/* Named for page changes, so it holds still over the content as a page changes (rule 5). */}
+        <div
+          style={{ viewTransitionName: 'pw-island' }}
+          className="pw-island pointer-events-auto mx-auto flex w-fit max-w-full items-center gap-1 rounded-pill py-1.5 pr-1.5 pl-1.5 min-[360px]:pl-3 sm:pl-4"
+        >
           <NavLink
             to="/home"
             onClick={go('/home')}
@@ -165,7 +180,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <BrandName />
           </NavLink>
 
-          <nav aria-label="Views" className="hidden h-12 items-stretch gap-1 lg:flex">
+          <nav aria-label="Views" className="pw-ind-host hidden h-12 items-stretch gap-1 lg:flex">
             {VIEWS.map((n) => {
               const on = n.match(pathname)
               return (
@@ -174,15 +189,19 @@ export function AppShell({ children }: { children: ReactNode }) {
                   to={n.to}
                   onClick={go(n.to)}
                   aria-current={on ? 'page' : undefined}
+                  data-pw-item={n.to}
+                  data-pw-on={on || undefined}
                   className={`pw-press inline-flex shrink-0 items-center gap-2 rounded-pill px-4 text-body whitespace-nowrap no-underline ${
-                    on ? 'bg-inset font-semibold text-ink' : 'font-medium text-ink-2 hover:bg-inset hover:text-ink'
+                    on ? 'font-semibold text-ink' : 'font-medium text-ink-2 hover:bg-inset hover:text-ink'
                   }`}
                 >
-                  {on && <span aria-hidden="true" className="size-1.5 rounded-pill bg-ink" />}
-                  {n.label}
+                  {/* Room for the dot, which the indicator draws and carries. */}
+                  {on && <span aria-hidden="true" className="size-1.5 shrink-0" />}
+                  <Hold text={n.label} />
                 </NavLink>
               )
             })}
+            <Indicator selected={view} tone="inset" mark={16} />
           </nav>
 
           <span aria-hidden="true" className="mx-1 hidden h-6 w-px bg-line-strong lg:block" />
@@ -248,25 +267,29 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="pw-page pt-5 sm:pt-6">
           <nav
             aria-label="Landing sites"
-            className="flex w-full max-w-full overflow-x-auto rounded-pill border border-line-strong bg-tray sm:w-fit"
+            className="pw-ind-host flex w-full max-w-full overflow-x-auto rounded-pill border border-line-strong bg-tray sm:w-fit"
           >
             {SITE_PAGES.map((n) => (
               <NavLink
                 key={n.to}
                 to={n.to}
                 onClick={go(n.to)}
+                data-pw-item={n.to}
+                data-pw-on={sitePage === n.to || undefined}
                 className={({ isActive }) =>
-                  // The chosen page is a pill set 4 px inside its target: a clear border with the fill kept inside it.
+                  // The chosen page is a pill set 4 px inside its target: a clear border with the
+                  // fill kept inside it. The pill is the row's one indicator; it slides (rule 2).
                   `pw-press inline-flex h-[46px] min-w-0 grow basis-0 items-center justify-center rounded-pill border-4 border-transparent bg-clip-padding px-3 text-body whitespace-nowrap no-underline sm:grow-0 sm:basis-auto sm:px-4 ${
                     isActive
-                      ? 'bg-ink font-semibold text-canvas'
+                      ? 'font-semibold text-ink'
                       : 'font-medium text-ink-2 hover:text-ink'
                   }`
                 }
               >
-                {n.label}
+                <Hold text={n.label} />
               </NavLink>
             ))}
+            <Indicator selected={sitePage} inset={4} />
           </nav>
         </div>
       )}
@@ -313,8 +336,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           words: amber means sunlight. */}
       <nav
         aria-label="Views"
-        className="pw-island fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex w-[min(24rem,calc(100%-1.5rem))] -translate-x-1/2 gap-1 rounded-pill p-1.5 lg:hidden"
+        style={{ viewTransitionName: 'pw-bar' }}
+        className="pw-island pw-ind-host fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex w-[min(24rem,calc(100%-1.5rem))] -translate-x-1/2 gap-1 rounded-pill p-1.5 lg:hidden"
       >
+        {/* Each item is one `data-pw-item`: a fourth (Ask) joins the indicator as it is. */}
         {VIEWS.map((n) => {
           const on = n.match(pathname)
           return (
@@ -323,8 +348,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               to={n.to}
               onClick={go(n.to)}
               aria-current={on ? 'page' : undefined}
+              data-pw-item={n.to}
+              data-pw-on={on || undefined}
               className={`pw-press flex h-12 min-w-0 grow basis-0 items-center justify-center gap-1.5 rounded-pill px-2 text-body no-underline min-[400px]:gap-2 min-[400px]:px-3 ${
-                on ? 'bg-ink font-semibold text-canvas' : 'font-medium text-ink-2 hover:text-ink'
+                on ? 'font-semibold text-ink' : 'font-medium text-ink-2 hover:text-ink'
               }`}
             >
               <Icon name={n.icon} size={19} strokeWidth={on ? 2 : 1.7} />
@@ -332,6 +359,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </NavLink>
           )
         })}
+        <Indicator selected={view} />
       </nav>
 
       <GuideBar />
@@ -367,14 +395,22 @@ function ShellMenu({
   const buttonRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const id = useId()
-  const drop = useMotionClass('pw-menu-drop')
+  // The menu grows out of its button and leaves the same way, in half the time (rule 1).
+  const pop = useMotionClass('pw-pop')
+  const reduced = useReducedMotion()
+  const close = () => {
+    leave(menuRef.current, 'pw-pop-out', reduced)
+    setOpen(false)
+  }
+  const closeRef = useRef(close)
+  closeRef.current = close
 
   useEffect(() => {
     if (!open) return
     menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus()
     const away = (e: PointerEvent) => {
       const t = e.target as Node
-      if (!menuRef.current?.contains(t) && !buttonRef.current?.contains(t)) setOpen(false)
+      if (!menuRef.current?.contains(t) && !buttonRef.current?.contains(t)) closeRef.current()
     }
     document.addEventListener('pointerdown', away)
     return () => document.removeEventListener('pointerdown', away)
@@ -393,14 +429,14 @@ function ShellMenu({
       list[e.key === 'Home' ? 0 : list.length - 1]?.focus()
     } else if (e.key === 'Escape') {
       e.preventDefault()
-      setOpen(false)
+      close()
       buttonRef.current?.focus()
     } else if (e.key === 'Tab') {
-      setOpen(false)
+      close()
     }
   }
   const choose = (run: () => void) => {
-    setOpen(false)
+    close()
     // Settings is a dialog: it returns focus to what had it, so the button holds focus first.
     buttonRef.current?.focus()
     run()
@@ -417,7 +453,7 @@ function ShellMenu({
         aria-expanded={open}
         aria-controls={open ? id : undefined}
         data-guide="settings"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => (open ? close() : setOpen(true))}
         onKeyDown={(e) => {
           if (e.key === 'ArrowDown' && !open) {
             e.preventDefault()
@@ -435,7 +471,10 @@ function ShellMenu({
           role="menu"
           aria-label="Guide and settings"
           onKeyDown={onMenuKey}
-          className={`absolute top-[calc(100%+10px)] right-0 z-50 flex w-64 flex-col rounded-card border border-line-strong bg-raised p-1.5 text-ink shadow-overlay ${drop}`}
+          data-origin="top"
+          // Its button sits at the menu's right end: it grows from that button's centre.
+          style={{ ['--pw-origin-x' as string]: 'calc(100% - 24px)' }}
+          className={`absolute top-[calc(100%+10px)] right-0 z-50 flex w-64 flex-col rounded-card border border-line-strong bg-raised p-1.5 text-ink shadow-overlay ${pop}`}
         >
           <button type="button" role="menuitem" onClick={() => choose(onGuide)} className="pw-menu-option text-left hover:bg-inset focus-visible:bg-inset">
             <Icon name="info" size={18} strokeWidth={1.8} className="shrink-0" />

@@ -1,5 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Icon } from './Icon'
+import { useMotionClass, useReducedMotion } from '../hooks/useMotion'
+import { leave } from '../lib/motion'
 
 export interface Choice<T extends string = string> {
   value: T
@@ -30,8 +32,8 @@ const LOOKS = {
   /** A form field (the project manager's forms). */
   field:
     'h-12 w-full rounded-control border border-field bg-panel pr-3 pl-3.5 text-body text-ink hover:border-ink-3 aria-expanded:border-focus aria-invalid:border-alert',
-  /** A control on a page, beside the pills. */
-  pill: 'h-12 rounded-pill border border-line-strong bg-tray pr-4 pl-5 text-control text-ink hover:border-ink-3 aria-expanded:border-ink-3',
+  /** A control on a page, beside the pills (and pressed as they are). */
+  pill: 'pw-press h-12 rounded-pill border border-line-strong bg-tray pr-4 pl-5 text-control text-ink hover:border-ink-3 aria-expanded:border-ink-3',
   /** No box of its own: the caller draws it. */
   bare: '',
 } as const
@@ -83,6 +85,9 @@ export function Select<T extends string = string>({
 
   const chosen = options.findIndex((o) => o.value === value)
   const current = chosen >= 0 ? options[chosen] : undefined
+  // The list grows out of its button and leaves the same way, in half the time (rule 1).
+  const pop = useMotionClass('pw-pop')
+  const reduced = useReducedMotion()
 
   const show = (at?: number) => {
     if (disabled || options.length === 0) return
@@ -92,7 +97,10 @@ export function Select<T extends string = string>({
     setActive(at ?? Math.max(0, chosen))
     setOpen(true)
   }
-  const close = () => setOpen(false)
+  const close = () => {
+    leave(listRef.current, 'pw-pop-out', reduced)
+    setOpen(false)
+  }
   const choose = (i: number) => {
     const o = options[i]
     close()
@@ -125,9 +133,13 @@ export function Select<T extends string = string>({
       const up = below < Math.min(want, 180) && above > below
       list.style.maxHeight = `${Math.max(96, Math.min(340, up ? above : below))}px`
       list.style.minWidth = `${Math.min(r.width, vw - 16)}px`
-      list.style.left = `${Math.max(8, Math.min(r.left, vw - list.offsetWidth - 8))}px`
+      const left = Math.max(8, Math.min(r.left, vw - list.offsetWidth - 8))
+      list.style.left = `${left}px`
       list.style.top = up ? 'auto' : `${r.bottom + 6}px`
       list.style.bottom = up ? `${vh - r.top + 6}px` : 'auto'
+      // It grows from the button's facing edge, at the button's centre.
+      list.dataset.origin = up ? 'bottom' : 'top'
+      list.style.setProperty('--pw-origin-x', `${Math.round(r.left + r.width / 2 - left)}px`)
     }
     place()
     const onScroll = (e: Event) => {
@@ -288,7 +300,7 @@ export function Select<T extends string = string>({
           name="chevron"
           size={chevron}
           strokeWidth={2.2}
-          className={`shrink-0 text-ink-3 transition-transform duration-[var(--pw-dur-quick)] ${open ? 'rotate-180' : ''}`}
+          className={`pw-turn pw-turn-quick shrink-0 text-ink-3 ${open ? 'rotate-180' : ''}`}
         />
       </button>
       {open && (
@@ -298,7 +310,7 @@ export function Select<T extends string = string>({
           role="listbox"
           aria-label={listName || 'Options'}
           popover={TOP_LAYER ? 'manual' : undefined}
-          className="pw-menu"
+          className={`pw-menu ${pop}`}
           // Pressing in the list must not take focus off the button.
           onMouseDown={(e) => e.preventDefault()}
         >

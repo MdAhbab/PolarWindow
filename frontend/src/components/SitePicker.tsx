@@ -17,7 +17,7 @@ export function SiteTitle({ prefix = '' }: { prefix?: string }) {
   const targets = sites.filter((s) => s.kind === 'mission_target')
   const name = siteById(siteId).name
   return (
-    <div className="flex min-w-0 items-baseline gap-2">
+    <div data-pw-arrive="pw-site-name" className="flex min-w-0 items-baseline gap-2">
       <h1 className="sr-only">
         {prefix}
         {name}
@@ -42,7 +42,9 @@ export function SiteTitle({ prefix = '' }: { prefix?: string }) {
         ]}
         chevron={20}
         className="-ml-2 h-12 gap-3 rounded-control pr-3 pl-2 hover:bg-inset aria-expanded:bg-inset"
-        labelClassName="pw-display text-[26px] leading-[30px] text-ink sm:text-[30px] sm:leading-[34px]"
+        // The name from the Map's chosen-site card grows into this title (rule 5), and it
+        // holds its place between the site's own pages.
+        labelClassName="pw-display text-[26px] leading-[30px] text-ink [view-transition-name:pw-site-name] sm:text-[30px] sm:leading-[34px]"
       />
     </div>
   )

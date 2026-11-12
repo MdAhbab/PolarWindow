@@ -109,7 +109,7 @@ export function DispersionPanel({ siteId, siteName }: { siteId: string; siteName
         ))}
       </div>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <Button variant="primary" arrow disabled={!body || q.isFetching} onClick={() => setAsked(body)}>
+        <Button variant="primary" arrow room={['Work it out', 'Working it out…']} disabled={!body || q.isFetching} onClick={() => setAsked(body)}>
           {q.isFetching ? 'Working it out…' : 'Work it out'}
         </Button>
         <p className="text-caption leading-caption text-ink-3">

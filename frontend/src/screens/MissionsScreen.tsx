@@ -25,7 +25,8 @@ import { PolarMap, POLAR_MAP_EDGE_LAT, type MissionPin } from '../components/Pol
 import { ProgrammeTimeline } from '../components/ProgrammeTimeline'
 import { AskPanel } from '../components/Agents'
 import { EmptyState, FarSide, LoadingPanel, ProblemPanel } from '../components/States'
-import { Button, Chip, Disclosure, Panel, Segmented, Unconfirmed, pillClass } from '../components/ui'
+import { Button, Chip, Disclosure, Panel, Segmented, Unconfirmed, pillClass, useOpenRow } from '../components/ui'
+import { useTransitionClick } from '../lib/viewTransition'
 import { Icon } from '../components/Icon'
 import { Select } from '../components/Select'
 
@@ -55,6 +56,7 @@ export function MissionsScreen() {
   const provider = params.get('provider') ?? ''
   const [last, setLast] = useState<LastFilter | null>(null)
   const [showTypes, setShowTypes] = useState(types.length > 0)
+  const typesRow = useOpenRow(showTypes)
   const [mapView, setMapView] = useState<'pole' | 'moon'>('pole')
   const filterId = useId()
 
@@ -243,7 +245,7 @@ export function MissionsScreen() {
             controls={`${filterId}-types`}
           >
             Instruments{types.length ? ` · ${types.length}` : ''}
-            <Icon name="chevron" size={16} strokeWidth={2} className={`transition-transform ${showTypes ? 'rotate-180' : ''}`} />
+            <Icon name="chevron" size={16} strokeWidth={2} className={`pw-turn ${showTypes ? 'rotate-180' : ''}`} />
           </Button>
           {providers.length > 0 && (
             <>
@@ -267,17 +269,20 @@ export function MissionsScreen() {
             </Button>
           )}
         </div>
-        <div
-          id={`${filterId}-types`}
-          hidden={!showTypes}
-          className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0"
-        >
-          <span className="sr-only">Instruments carried, any of:</span>
-          {INSTRUMENT_TYPES.map((t) => (
-            <Chip key={t} tone="neutral" selected={types.includes(t)} onClick={() => toggleType(t)}>
-              {INSTRUMENT_LABEL[t]}
-            </Chip>
-          ))}
+        {/* The row of instruments opens by its height, pushing the page down (rule 3). */}
+        <div ref={typesRow.ref} hidden={typesRow.hidden} className="pw-open-row">
+          <div
+            id={`${filterId}-types`}
+            hidden={typesRow.hidden}
+            className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0"
+          >
+            <span className="sr-only">Instruments carried, any of:</span>
+            {INSTRUMENT_TYPES.map((t) => (
+              <Chip key={t} tone="neutral" selected={types.includes(t)} onClick={() => toggleType(t)}>
+                {INSTRUMENT_LABEL[t]}
+              </Chip>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -439,18 +444,21 @@ function MissionRow({
   onBlur: () => void
 }) {
   const d = missionDate(m)
+  const go = useTransitionClick()
   return (
     <Link
       ref={rowRef}
       to={`/missions/${m.id}`}
       aria-label={missionAccessibleName(m)}
+      // The name moves into the mission's header as its page opens (rule 5).
+      onClick={go(`/missions/${m.id}`, undefined, 'pw-mission-name')}
       {...handlers}
       className={`group flex flex-col gap-1 border-b border-line px-4 py-3.5 no-underline transition-colors duration-[var(--pw-dur-quick)] focus-visible:-outline-offset-2 sm:px-5 ${
         highlighted ? 'bg-inset' : 'hover:bg-inset'
       }`}
     >
       <span className="flex items-baseline justify-between gap-3">
-        <span className="text-control font-semibold text-ink transition-transform duration-[var(--pw-dur-lift)] ease-[var(--ease-settle)] group-hover:translate-x-0.5">{m.name}</span>
+        <span data-pw-carry="" className="text-control font-semibold text-ink transition-transform duration-[var(--pw-dur-lift)] ease-[var(--ease-settle)] group-hover:translate-x-0.5">{m.name}</span>
         <span className="shrink-0 text-small text-ink-2" title={STATUS_LABEL[m.status]}>
           <span aria-hidden="true">{STATUS_GLYPH[m.status]} </span>
           {STATUS_LABEL[m.status]}

@@ -124,7 +124,7 @@ function StateLine({ status, loading, className = '' }: { status?: SectionStatus
 function Node({ n, behind, open }: { n: number; behind: boolean; open: boolean }) {
   return (
     <span
-      className={`relative z-[1] flex size-8 shrink-0 items-center justify-center rounded-pill font-mono text-caption font-medium shadow-[0_0_0_4px_var(--color-canvas)] transition-colors duration-[var(--pw-dur-base)] ${
+      className={`relative z-[1] flex size-8 shrink-0 items-center justify-center rounded-pill font-mono text-caption font-medium shadow-[0_0_0_4px_var(--color-canvas)] ${
         behind ? 'bg-ink text-canvas' : 'border-2 border-line-strong bg-canvas text-ink-2'
       }`}
     >
@@ -230,7 +230,7 @@ export function JourneyBar({
                 to={href}
                 onClick={go(href)}
                 aria-current={active ? 'page' : undefined}
-                className={`group relative flex min-h-12 w-full min-w-0 items-start gap-1.5 min-[360px]:gap-2.5 rounded-control no-underline md:flex-col md:gap-2 ${
+                className={`pw-press group relative flex min-h-12 w-full min-w-0 items-start gap-1.5 min-[360px]:gap-2.5 rounded-control no-underline md:flex-col md:gap-2 ${
                   active ? 'text-ink' : 'text-ink-2 hover:text-ink'
                 }`}
               >
@@ -469,7 +469,7 @@ export function JourneyPath({
                   <Link
                     to={href}
                     onClick={go(href)}
-                    className="-mx-2 -my-1.5 flex w-[calc(100%+1rem)] min-w-0 flex-col gap-1.5 rounded-control px-2 py-1.5 no-underline transition-colors duration-[var(--pw-dur-quick)] hover:bg-tray"
+                    className="-mx-2 -my-1.5 flex w-[calc(100%+1rem)] min-w-0 flex-col gap-1.5 pw-press rounded-control px-2 py-1.5 no-underline hover:bg-tray"
                   >
                     <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <span className="font-mono text-body text-ink-3">{i + 1}</span>{' '}

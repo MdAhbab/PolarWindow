@@ -921,3 +921,111 @@ plan, what was measured, and what was left out.
 - A higher-zoom relief on dense screens: the map draws 1,024 source pixels
   across a picture that can be 1,400 device pixels wide. The pyramid has
   the next zoom; it is about 4 MB of tiles, so it was left out.
+
+---
+
+## Motion grammar (M1, November 2026)
+
+One way of moving, the same on every page, so a control behaves the same
+wherever it is met. It changes only how things move; nothing looks different
+at rest. Everything below lives in `frontend/src/styles/globals.css` and the
+shared parts; a later change uses these classes and adds no timing of its own
+(`src/lib/motion.test.tsx` fails the build otherwise).
+
+### The five rules
+
+1. **Things come from where they were asked for.** A menu, a list or a
+   popover grows out of the control that opened it: from that control's
+   facing edge and its centre, .96 to 1 with opacity, and it leaves in half
+   the time on the leave curve. A sheet or the Ask dock slides from the edge
+   it lives on. Nothing fades in from nowhere.
+2. **One thing moves; two things do not swap.** Where a choice changes (tabs,
+   the Map, Site, Compare and Plan tabs, every segmented control and the
+   theme switch, the header navigation, the phone's bottom bar), one pill
+   slides and resizes from the old choice to the new. The words in an ink
+   pill are drawn over the row in the canvas colour, so a name is readable at
+   every frame. The same happens when the arrow keys move a tab, and across a
+   page change.
+3. **A control keeps its place while its content changes.** A button that
+   goes from "Work it out" to "Working it out…" keeps the width of its widest
+   label, and the new label settles into place. A label that turns bold when
+   chosen keeps its bold width. A row that opens (every `<details>`, every
+   "what this means", every row opened by a button) grows by its height
+   track, pushing the page down; it closes the same way. Its chevron turns
+   with it.
+4. **Every press answers the same way.** Every button, pill, chip, card-link
+   and tab scales to .98 on press, quick, on the settle curve. A card that is
+   a link lifts on hover on the lift time. Focus rings never move.
+5. **A page change carries what stays.** The content cross-fades as before
+   (`pw-content`). A mission's name moves from its card or row into the
+   mission's header (`pw-mission-name`), a site's name from the Map into the
+   site's title (`pw-site-name`), and the open step's ring moves to the step
+   pressed (`pw-step-mark`). The island and the phone's bar hold still above
+   the changing page (`pw-island`, `pw-bar`).
+
+Words never fade to say that something changed; they change at once, or they
+move. Nothing moves by itself or loops, except a result on its way, a job's
+progress and the ambient glow.
+
+### One table of timings
+
+| Kind | Duration | Curve | Class or place |
+|---|---|---|---|
+| Press | quick, 160 ms | settle | `pw-press`, `.pw-card-link:active` |
+| Hover lift | lift, 320 ms | settle | `pw-card-link`, `pw-orb` |
+| Small surface opens | quick, 160 ms | settle | `pw-pop` (+ `data-origin`, `--pw-origin-x`) |
+| Small surface closes | quick-out, 80 ms | leave | `pw-pop-out` (a copy, `lib/motion.ts` `leave`) |
+| Indicator slides | base, 240 ms | move | `components/ui/Indicator.tsx` (`pw-ind*`) |
+| Row opens / closes | base, 240 ms | settle / leave | `details`, `pw-open-row` (`useOpenRow`), `pw-turn` |
+| Label or value changes in place | base, 240 ms | settle | `pw-swap` (`SwapLabel`, Button `room`), `pw-hold`, `pw-number-in` |
+| Sheet, dock in / out | sheet 420 ms / sheet-out 210 ms | move / leave | `pw-sheet-in`, `pw-dock-in`, `pw-dock-out`, `pw-dock` |
+| Page content | 160 ms out, 240 ms in | leave / settle | `pw-content` (as before) |
+| Shared names across a page change | base, 240 ms | move | `pw-mission-name`, `pw-site-name`, `pw-step-mark` |
+| A result arrives | slow, 560 ms | settle | `pw-arrive`, `pw-chart-reveal`, `pw-ring-in`, toasts |
+
+`--pw-dur-quick-out` and `--pw-dur-sheet-out` are halves of the existing
+durations. A bare Tailwind `transition-*` takes quick and settle
+(`--default-transition-duration`, `--default-transition-timing-function`).
+Kept on purpose, each with its comment: the journey line drawing itself
+(420 ms a segment, 960 ms the arc), the arrival staggers, the loading breath
+(1.6 s), a job's progress (1.4 s), and the glow.
+
+### Reduced motion
+
+Under the operating system's setting or the app's own, nothing moves: the
+floor at the end of globals.css sets every duration to zero, with its own
+lines for what `*` cannot reach (the rows' content box, the glow, the view
+transitions), and each class is also left off in code (`useMotionClass`,
+`useReducedMotion`): no copy leaves, no row waits to close, the glow rests.
+
+### The ambient glow
+
+One fixed layer behind every page in the app (`components/AmbientGlow.tsx`,
+rendered once by the shell), never on the front page: three very wide, soft
+fields of the Sun's amber, Earth's cyan and the brand blue of the logo's
+crescent, each drifting on its own loop (89, 107 and 73 s) and breathing a
+little in size. Transform only, each field on its own layer, no blur or
+filter; cards, panels and fields stay solid over it. Peak strength 6 % in the
+dark theme (the blue 4 %) and 2 % in the light one, the most that keeps every
+text colour on the canvas at AA with 0.3 to spare where all three meet. It is
+the one thing that loops by itself; it rests under reduced motion, pauses in
+a hidden tab, and is gone in print, forced colours and high contrast.
+
+### Using the grammar
+
+- **A button whose words change:** give `Button` the other labels in `room`
+  (`room={['Work it out', 'Working it out…']}`).
+- **A new row of choices (tabs, a segmented control, a fourth item in the
+  phone's bar):** the row carries `pw-ind-host`, each item `data-pw-item` and
+  the chosen one `data-pw-on`, the chosen item draws no ground of its own, and
+  `<Indicator selected={key} />` is the row's last child (`inset={4}` for a
+  pill set inside a 4 px clear border, `tone="inset"` for a quiet pill under
+  the words). The shared `Tabs` and `Segmented` already do this.
+- **A menu or popover:** add `pw-pop` (with `useMotionClass`) and
+  `data-origin`, set `--pw-origin-x` to the trigger's centre, and close it
+  through `leave(el, 'pw-pop-out', reduced)` before unmounting.
+- **A row opened by a button:** wrap the body in a `pw-open-row` box driven
+  by `useOpenRow(open)`; a `<details>` needs nothing.
+- **A link to a page whose title shows the thing pressed:** pass the name as
+  the third argument of `useTransitionClick` and mark the destination with
+  `data-pw-arrive` and the same `view-transition-name`.

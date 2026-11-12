@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { create } from 'zustand'
 import { useMotionClass } from '../hooks/useMotion'
+import { useLeaveCopy } from '../lib/motion'
 import { Icon } from './Icon'
 
 export interface Toast {
@@ -54,12 +55,16 @@ const STAY_MS = 8000
 function ToastItem({ t }: { t: Toast }) {
   const dismiss = useToasts((s) => s.dismiss)
   const arrive = useMotionClass('pw-toast-in')
+  // Dismissed, it drops back the way it came (a copy does; the list changes at once).
+  const item = useRef<HTMLLIElement>(null)
+  useLeaveCopy(item, 'pw-toast-out')
   useEffect(() => {
     const h = window.setTimeout(() => dismiss(t.id), t.action ? STAY_MS * 1.5 : STAY_MS)
     return () => window.clearTimeout(h)
   }, [t.id, t.action, dismiss])
   return (
     <li
+      ref={item}
       className={`pw-card pw-card-raised pointer-events-auto flex w-full items-start gap-3 py-2 pr-2 pl-4 [--pw-elev:var(--shadow-overlay)] sm:w-[380px] ${
         t.tone === 'problem' ? 'pw-card-alert' : ''
       } ${arrive}`}

@@ -15,7 +15,7 @@ test('front page: one click signs in and the guide opens on the first feature', 
   await expect(page).toHaveURL(/\/#why$/)
   await expect(page.getByRole('heading', { name: 'The Sun never climbs' })).toBeVisible()
 
-  await page.getByRole('button', { name: 'Open the dashboard' }).first().click()
+  await page.getByRole('button', { name: 'Go to the dashboard' }).first().click()
   // Signing in opens Home; the guide's first step is about Missions, one press away.
   await expect(page).toHaveURL(/\/home$/)
   const guide = page.getByRole('region', { name: 'Guide' })
@@ -48,7 +48,7 @@ test('front page: one click signs in and the guide opens on the first feature', 
 test('a deep link without a session goes to the front page, then on to the page asked for', async ({ page }) => {
   await page.goto('/missions/im-2')
   await expect(page).toHaveURL(/\/\?next=%2Fmissions%2Fim-2$/)
-  await page.getByRole('button', { name: 'Open the dashboard' }).first().click()
+  await page.getByRole('button', { name: 'Go to the dashboard' }).first().click()
   await expect(page).toHaveURL(/\/missions\/im-2$/)
   await expect(page.getByRole('heading', { level: 1 })).toContainText('IM-2')
 })

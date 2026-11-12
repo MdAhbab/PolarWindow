@@ -1,7 +1,9 @@
 import type React from 'react'
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { Icon } from './Icon'
-import { easeOut, useReducedMotion } from '../hooks/useMotion'
+import { Indicator } from './ui/Indicator'
+import { easeOut, useMotionClass, useReducedMotion } from '../hooks/useMotion'
+import { durationMs } from '../lib/motion'
 
 /* Every control here is a real button, anchor or input with a label, so Tab
    reaches it and a screen reader has something to announce. Minimum target
@@ -29,6 +31,42 @@ export function pillClass(variant: 'primary' | 'secondary' | 'ghost' = 'secondar
   return `${BASE} h-12 text-control no-underline ${arrow ? 'pl-5 pr-2' : 'px-5'} ${VARIANTS[variant]}`
 }
 
+/**
+ * A label that keeps the width of its bold self (rule 3 of the motion
+ * grammar), so a choice that turns bold when chosen moves nothing beside it.
+ * The bold copy is generated content in a hidden, unannounced box.
+ */
+export function Hold({ text }: { text: string }) {
+  return (
+    <span className="pw-hold" data-pw-label="">
+      <span>{text}</span>
+      <span aria-hidden="true" className="pw-hold-wide" data-text={text} />
+    </span>
+  )
+}
+
+/**
+ * A button's label that can change ("Work it out", "Working it out…") in a box
+ * as wide as the widest of them (`room`: the others, up to two), so the button
+ * keeps its place (rule 3). The new label settles into place at once, readable
+ * at every frame. The others are generated content in a hidden, unannounced
+ * box: the button's name is only the label in use.
+ */
+export function SwapLabel({ label, room }: { label: string; room: string[] }) {
+  const first = useRef(label)
+  const changed = useRef(false)
+  if (label !== first.current) changed.current = true
+  const settle = useMotionClass('pw-swap-in')
+  return (
+    <span className="pw-swap">
+      <span key={label} className={changed.current ? settle : undefined}>
+        {label}
+      </span>
+      <span aria-hidden="true" className="pw-swap-room" data-a={room[0] ?? ''} data-b={room[1] ?? ''} />
+    </span>
+  )
+}
+
 /** The arrow in its own circle, at the end of a primary pill. */
 export function PillArrow() {
   return (
@@ -52,10 +90,13 @@ export function Button({
   describedBy,
   buttonRef,
   arrow = false,
+  room,
 }: {
   children: ReactNode
   /** A trailing arrow in its own circle: for the one button that takes the person onward. */
   arrow?: boolean
+  /** The other labels this button can show (a string label only): it keeps the widest one's width (SwapLabel). */
+  room?: string[]
   variant?: 'primary' | 'secondary' | 'ghost'
   size?: 'md' | 'sm'
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void
@@ -83,7 +124,7 @@ export function Button({
       aria-describedby={describedBy}
       className={`${BASE} ${VARIANTS[variant]} ${sizes[size]} ${className}`}
     >
-      {children}
+      {room && typeof children === 'string' ? <SwapLabel label={children} room={room} /> : children}
       {arrow && <PillArrow />}
     </button>
   )
@@ -241,7 +282,7 @@ export function Disclosure({
           <span>{title}</span>
           {meta && <span className="text-small font-normal text-ink-3">{meta}</span>}
         </span>
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-pill bg-inset text-ink-2 transition-[transform,background-color] duration-[var(--pw-dur-base)] ease-[var(--ease-settle)] group-open:rotate-180 group-hover:bg-line-strong" aria-hidden="true">
+        <span className="pw-turn flex size-8 shrink-0 items-center justify-center rounded-pill bg-inset text-ink-2 group-open:rotate-180 group-hover:bg-line-strong" aria-hidden="true">
           <Icon name="chevron" size={15} strokeWidth={2} />
         </span>
       </summary>
@@ -315,38 +356,35 @@ export function Eyebrow({
   )
 }
 
-/** A duration token from globals.css, in milliseconds (`fallback` where there is no layout). */
-function durationMs(token: string, fallback: number): number {
-  if (typeof document === 'undefined' || typeof getComputedStyle === 'undefined') return fallback
-  const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(token))
-  return Number.isFinite(v) && v > 0 ? v : fallback
-}
-
 /**
  * A whole number that counts up to its value once, when it first appears, on
  * the settle curve over the arrival duration (`--pw-dur-arrive`). Assistive
  * technology reads only the value itself, never a number on the way to it;
  * the digits keep their width (tabular) so nothing beside them moves. After
  * the first count a new value is shown at once, and under reduced motion
- * there is no count at all.
+ * there is no count at all. The count writes to its own text node, not to
+ * React state (no frame loop re-renders anything).
  */
 export function CountUp({ value, className = '' }: { value: number; className?: string }) {
   const reduced = useReducedMotion()
-  const [shown, setShown] = useState(() => (reduced ? value : 0))
+  const digits = useRef<HTMLSpanElement>(null)
   const settled = useRef(false)
-  useEffect(() => {
+  useLayoutEffect(() => {
+    const node = digits.current?.firstChild
     const plain = reduced || !Number.isFinite(value) || value <= 0 || typeof requestAnimationFrame === 'undefined'
+    if (!(node instanceof Text)) return
     if (settled.current || plain) {
       settled.current = true
-      setShown(value)
+      node.nodeValue = String(value)
       return
     }
     const ms = durationMs('--pw-dur-arrive', 820)
     const t0 = performance.now()
     let raf = 0
+    node.nodeValue = '0'
     const tick = (now: number) => {
       const k = easeOut(Math.min(1, (now - t0) / ms))
-      setShown(Math.round(value * k))
+      node.nodeValue = String(Math.round(value * k))
       if (k < 1) raf = requestAnimationFrame(tick)
       else settled.current = true
     }
@@ -355,12 +393,52 @@ export function CountUp({ value, className = '' }: { value: number; className?: 
   }, [value, reduced])
   return (
     <span className={`tnum ${className}`}>
-      <span aria-hidden="true" className="inline-block text-right" style={{ minWidth: `${String(value).length}ch` }}>
-        {shown}
+      <span ref={digits} aria-hidden="true" className="inline-block text-right" style={{ minWidth: `${String(value).length}ch` }}>
+        {String(value)}
       </span>
       <span className="sr-only">{value}</span>
     </span>
   )
+}
+
+/**
+ * A row opened by a button (rule 3), for bodies that are not a `<details>`:
+ * the body sits in a `.pw-open-row` box that grows from nothing to its
+ * content, pushing what is below, and closes the same way on the leave curve.
+ * Put `ref` on that box and `hidden` on it (and on the body, where a caller
+ * reads the body's own `hidden`): `hidden` turns true only once the row has
+ * closed, and false at once on opening. The first open state is drawn
+ * without motion. Under reduced motion it opens and closes at once.
+ */
+export function useOpenRow<T extends HTMLElement = HTMLDivElement>(open: boolean) {
+  const ref = useRef<T>(null)
+  const reduced = useReducedMotion()
+  const [shown, setShown] = useState(open)
+  const mounted = useRef(false)
+  if (open && !shown) setShown(true)
+  useLayoutEffect(() => {
+    const el = ref.current
+    const first = !mounted.current
+    mounted.current = true
+    if (!el) return
+    if (open) {
+      if (!el.hasAttribute('data-open')) {
+        // From a drawn, closed box: read its closed height first, so the change is a transition.
+        if (!first && !reduced) void getComputedStyle(el).gridTemplateRows
+        el.setAttribute('data-open', '')
+      }
+      return
+    }
+    el.removeAttribute('data-open')
+    if (!shown) return
+    if (reduced || first) {
+      setShown(false)
+      return
+    }
+    const t = window.setTimeout(() => setShown(false), durationMs('--pw-dur-base', 240))
+    return () => window.clearTimeout(t)
+  }, [open, shown, reduced])
+  return { ref, hidden: !shown }
 }
 
 /**
@@ -490,11 +568,12 @@ export function Segmented<T extends string>({
     // Scrolls sideways rather than clipping a segment at 320 px (WCAG 1.4.10).
     // Each segment is a full 48 px target; the chosen one is drawn as a pill
     // inset inside it (a clear 4 px border, the fill kept inside it), so the
-    // target never shrinks to the drawing.
+    // target never shrinks to the drawing. The pill is one indicator that
+    // slides to the segment chosen (rule 2).
     <div
       role="group"
       aria-label={label}
-      className="inline-flex w-fit max-w-full overflow-x-auto rounded-pill border border-line-strong bg-tray"
+      className="pw-ind-host inline-flex w-fit max-w-full overflow-x-auto rounded-pill border border-line-strong bg-tray"
     >
       {options.map((o) => {
         const on = value === o.value
@@ -503,15 +582,18 @@ export function Segmented<T extends string>({
             key={o.value}
             type="button"
             aria-pressed={on}
+            data-pw-item={o.value}
+            data-pw-on={on || undefined}
             onClick={() => onChange(o.value)}
-            className={`pw-press h-[46px] shrink-0 rounded-pill border-4 border-transparent bg-clip-padding px-3 text-small font-semibold whitespace-nowrap first:pl-4 last:pr-4 ${
-              on ? 'bg-ink text-canvas' : 'text-ink-2 hover:text-ink'
+            className={`pw-press h-[46px] shrink-0 rounded-pill border-4 border-transparent bg-clip-padding px-3 text-small font-semibold whitespace-nowrap first-of-type:pl-4 last-of-type:pr-4 ${
+              on ? 'text-ink' : 'text-ink-2 hover:text-ink'
             }`}
           >
             {o.label}
           </button>
         )
       })}
+      <Indicator selected={value} inset={4} />
     </div>
   )
 }
@@ -603,7 +685,12 @@ export function Tabs<T extends string>({
     document.getElementById(`${baseId}-${tabs[next].id}`)?.focus()
   }
   return (
-    <div role="tablist" aria-label={label} onKeyDown={move} className={`flex overflow-x-auto md:flex-col md:overflow-visible ${className}`}>
+    <div
+      role="tablist"
+      aria-label={label}
+      onKeyDown={move}
+      className={`pw-ind-host flex overflow-x-auto md:flex-col md:overflow-visible ${className}`}
+    >
       {tabs.map((t) => {
         const on = t.id === value
         return (
@@ -615,18 +702,22 @@ export function Tabs<T extends string>({
             aria-selected={on}
             aria-controls={`${baseId}-panel`}
             tabIndex={on ? 0 : -1}
+            data-pw-item={t.id}
+            data-pw-on={on || undefined}
             onClick={() => onChange(t.id)}
             // A pill, the chosen one in ink: the same language as the page's other switches.
-            // The change of tab is at once, not a fade: for a moment mid-fade the name
-            // would sit on a ground it cannot be read against.
-            className={`flex h-12 shrink-0 items-center rounded-pill border-4 border-transparent bg-clip-padding px-4 text-body whitespace-nowrap ${
-              on ? 'bg-ink font-semibold text-canvas' : 'font-medium text-ink-2 hover:bg-inset hover:text-ink'
+            // The ink is one indicator that slides to the tab chosen (rule 2), and the
+            // name is drawn over it in the canvas colour at every frame, so it is never
+            // on a ground it cannot be read against. Each name keeps its bold width.
+            className={`pw-press flex h-12 shrink-0 items-center rounded-pill border-4 border-transparent bg-clip-padding px-4 text-body whitespace-nowrap ${
+              on ? 'font-semibold text-ink' : 'font-medium text-ink-2 hover:bg-inset hover:text-ink'
             }`}
           >
-            {t.label}
+            <Hold text={t.label} />
           </button>
         )
       })}
+      <Indicator selected={value} inset={4} />
     </div>
   )
 }

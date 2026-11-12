@@ -118,7 +118,8 @@ export function LaunchCalendar({
                   const close = o.window_close ? (Date.parse(o.window_close) - r.day) / DAY : null
                   const pm = o.t0.pm !== null ? o.t0.pm / 86400 : 0
                   // Kept inside the track: a mark near midnight hangs inward.
-                  const anchor = f < 0.08 ? 'translateX(0)' : f > 0.92 ? 'translateX(-100%)' : 'translateX(-50%)'
+                  // On `translate`, so the press (a `transform`, rule 4) still answers.
+                  const anchor = f < 0.08 ? '0' : f > 0.92 ? '-100%' : '-50%'
                   return (
                     <div key={o.id}>
                       {open !== null && close !== null && (
@@ -143,7 +144,7 @@ export function LaunchCalendar({
                         className={`pw-press absolute top-1 h-12 rounded-pill border px-3 font-mono text-small font-semibold whitespace-nowrap ${
                           on ? 'border-ink bg-ink text-canvas' : 'border-line-strong bg-panel text-ink hover:bg-inset'
                         }`}
-                        style={{ left: `${f * 100}%`, transform: anchor }}
+                        style={{ left: `${f * 100}%`, translate: anchor }}
                       >
                         {clockWords(o.t0.value ?? 0).replace(' UTC', '')}
                         {pads.size > 1 ? ` · ${padShort(o.pad_name)}` : ''}

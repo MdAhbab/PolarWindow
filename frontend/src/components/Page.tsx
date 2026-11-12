@@ -60,8 +60,15 @@ export function PageHeader({
   actions,
   children,
   compact = false,
+  carry,
 }: {
   crumbs?: Crumb[]
+  /**
+   * A view-transition name for the title (rule 5 of the motion grammar): the
+   * same name on the thing pressed to come here makes it move and grow into
+   * this title as the page changes (`pw-mission-name` on a mission's page).
+   */
+  carry?: string
   /** A step back in size, for a page whose hero is below the header (a step's answer). */
   compact?: boolean
   title: ReactNode
@@ -84,7 +91,13 @@ export function PageHeader({
                 : 'text-[32px] leading-[34px] sm:text-[44px] sm:leading-[46px] lg:text-[52px] lg:leading-[54px]'
             }`}
           >
-            {title}
+            {carry ? (
+              <span data-pw-arrive={carry} style={{ viewTransitionName: carry }}>
+                {title}
+              </span>
+            ) : (
+              title
+            )}
             {titleExtra && <span className="font-normal tracking-heading text-ink-2 [font-stretch:100%]"> {titleExtra}</span>}
           </h1>
           {lede && <p className={`max-w-3xl text-ink-2 ${compact ? 'text-body leading-6' : 'text-lede leading-7'}`}>{lede}</p>}

@@ -10,7 +10,7 @@ import { ageWords, hostWords } from '../../lib/lifecycle/quantity'
 import { Icon, type IconName } from '../Icon'
 import { ProblemPanel, ProgressTrack, Skeleton, UncertaintyNote } from '../States'
 import { useMotionClass } from '../../hooks/useMotion'
-import { Button, Disclosure, Panel, RowGroup } from '../ui'
+import { Button, Disclosure, Panel, RowGroup, useOpenRow } from '../ui'
 import { NumberRow } from './QuantityTile'
 import { KeyNumberTile } from '../KeyNumbers'
 import { termLabel } from '../../lib/format'
@@ -327,7 +327,8 @@ export function ChartPanel({
   const toggle = useMission((s) => s.toggleTable)
   const id = useId()
   const reveal = useMotionClass('pw-chart-reveal')
-  const drop = useMotionClass('pw-arrive')
+  // The table opens under the chart by its height, pushing the page down (rule 3).
+  const tableRow = useOpenRow(showTable)
   return (
     <Panel as="section" guide={guide} className="flex min-w-0 flex-col gap-5 p-4 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
@@ -341,8 +342,10 @@ export function ChartPanel({
       </div>
       <div className={`min-w-0 ${reveal}`}>{chart}</div>
       {legend}
-      <div id={`${id}-table`} hidden={!showTable} className={showTable ? drop : ''}>
-        {showTable && table}
+      <div ref={tableRow.ref} hidden={tableRow.hidden} className="pw-open-row">
+        <div id={`${id}-table`} hidden={tableRow.hidden}>
+          {!tableRow.hidden && table}
+        </div>
       </div>
     </Panel>
   )

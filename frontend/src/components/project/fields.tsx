@@ -3,6 +3,8 @@ import type React from 'react'
 import { TextArea, TextInput } from '../lifecycle/Forms'
 import { Icon } from '../Icon'
 import { Select } from '../Select'
+import { useOpenRow } from '../ui'
+import { Indicator } from '../ui/Indicator'
 import type { DateField, GroupKey, Provenance } from './formModel'
 
 /**
@@ -22,6 +24,7 @@ function SourceMark({ source, panelId }: { source: NonNullable<Source>; panelId:
   const [hover, setHover] = useState(false)
   const [focus, setFocus] = useState(false)
   const open = pinned || hover || focus
+  const row = useOpenRow<HTMLSpanElement>(open)
   const { field, filename } = source
   const worked = field.confidence === 'inferred'
   const where = field.page !== null ? `page ${field.page}` : null
@@ -46,12 +49,14 @@ function SourceMark({ source, panelId }: { source: NonNullable<Source>; panelId:
         <Icon name={worked ? 'info' : 'check'} size={13} strokeWidth={2.2} />
         {worked ? 'Worked out' : 'From the file'}
       </button>
+      {/* Opens by its height and closes the same way (rule 3). */}
+      <span ref={row.ref} hidden={row.hidden} className="pw-open-row basis-full">
       <span
         id={panelId}
         role="group"
         aria-label={worked ? 'How this was worked out' : 'Where the file says this'}
-        hidden={!open}
-        className="basis-full rounded-control border border-line bg-inset px-3 py-2 text-caption leading-caption text-ink-2"
+        hidden={row.hidden}
+        className="rounded-control border border-line bg-inset px-3 py-2 text-caption leading-caption text-ink-2"
       >
         {worked ? (
           <>
@@ -75,6 +80,7 @@ function SourceMark({ source, panelId }: { source: NonNullable<Source>; panelId:
           {filename}
           {where ? `, ${where}` : ''}
         </span>
+      </span>
       </span>
     </span>
   )
@@ -276,7 +282,7 @@ export function DateRow({
         <div
           role="group"
           aria-labelledby={pid}
-          className="inline-flex w-fit max-w-full overflow-x-auto rounded-pill border border-line-strong bg-tray"
+          className="pw-ind-host inline-flex w-fit max-w-full overflow-x-auto rounded-pill border border-line-strong bg-tray"
         >
           {PRECISIONS.map((o) => {
             const on = value.precision === o.value
@@ -285,15 +291,19 @@ export function DateRow({
                 key={o.value}
                 type="button"
                 aria-pressed={on}
+                data-pw-item={o.value}
+                data-pw-on={on || undefined}
                 onClick={() => onChange({ ...value, precision: o.value })}
                 className={`pw-press h-[44px] shrink-0 rounded-pill border-4 border-transparent bg-clip-padding px-3 text-small font-semibold whitespace-nowrap ${
-                  on ? 'bg-ink text-canvas' : 'text-ink-2 hover:text-ink'
+                  on ? 'text-ink' : 'text-ink-2 hover:text-ink'
                 }`}
               >
                 {o.label}
               </button>
             )
           })}
+          {/* The chosen one's pill slides to the one chosen (rule 2). */}
+          <Indicator selected={value.precision} inset={4} />
         </div>
       </div>
     </div>

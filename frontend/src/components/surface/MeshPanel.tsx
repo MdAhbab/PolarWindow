@@ -407,7 +407,7 @@ export function MeshPanel({
       </Disclosure>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <Button variant="primary" arrow disabled={hasErrors || q.isFetching || !startIso || !endIso} onClick={() => setAsked(body)}>
+        <Button variant="primary" arrow room={['Work it out', 'Working it out…']} disabled={hasErrors || q.isFetching || !startIso || !endIso} onClick={() => setAsked(body)}>
           {q.isFetching ? 'Working it out…' : 'Work it out'}
         </Button>
         <p className="text-caption leading-caption text-ink-3">

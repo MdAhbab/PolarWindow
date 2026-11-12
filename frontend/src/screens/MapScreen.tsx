@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { RidgeArt } from '../landing/Illustrations'
 import { Link } from 'react-router-dom'
+import { useTransitionClick } from '../lib/viewTransition'
 import { useShallow } from 'zustand/react/shallow'
 import { useSiteMetricsMap } from '../lib/useMetricsMap'
 import { useMission } from '../lib/store'
@@ -111,6 +112,7 @@ export function MapScreen() {
     })
   }, [showMissions, missions.data, siteId])
   const missionsHere = (missions.data?.items ?? []).filter((m) => m.siteId === siteId)
+  const go = useTransitionClick()
 
   const filtersOn = (minSun > 0 ? 1 : 0) + (Number.isFinite(maxDark) ? 1 : 0) + (nearPsr ? 1 : 0) + (showMissions ? 1 : 0)
 
@@ -279,7 +281,8 @@ export function MapScreen() {
                 <Eyebrow>Chosen site</Eyebrow>
                 <div className="text-heading leading-7 font-semibold tracking-heading">
                   <span className="mr-2 font-mono text-body font-normal text-ink-3">{site.code}</span>
-                  {site.name}
+                  {/* Grows into the site page's title when that page is opened from here (rule 5). */}
+                  <span data-pw-carry="pw-site-name">{site.name}</span>
                 </div>
                 <div className="font-mono text-caption text-ink-3">{coords(site.latDeg, site.lonDeg)}</div>
               </div>
@@ -297,7 +300,7 @@ export function MapScreen() {
                     ))}
                   </p>
                 )}
-                <Link to="/site" className={pillClass('primary', true)}>
+                <Link to="/site" onClick={go('/site', undefined, 'pw-site-name')} className={pillClass('primary', true)}>
                   Open the site page
                   <PillArrow />
                 </Link>

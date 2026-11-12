@@ -252,6 +252,7 @@ function BuilderForm({
           <Button
             variant="primary"
             arrow
+            room={['Work it out', 'Starting…']}
             onClick={() => void work()}
             disabled={missing.length > 0 || start.isPending || writer.offline}
             describedBy={missing.length ? whyId : undefined}

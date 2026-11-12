@@ -14,6 +14,7 @@ import { Sheet } from '../Sheet'
 import { ProgressTrack, UncertaintyNote } from '../States'
 import { guardCopy, statusLine } from '../Agents'
 import { pillClass } from '../ui'
+import { useLeaveCopy } from '../../lib/motion'
 import { MAX_TEXT, answerText, contextWords, historyFor, suggestionsFor, useAsk, type AskTurn } from './store'
 import { announcement, answerActions, answerFollowUps, answeredByRules, isSignedOut, type RuleReason } from './answer'
 
@@ -164,6 +165,9 @@ export function AskDock() {
 function DockPanel({ onClose, children }: { onClose: () => void; children: ReactNode }) {
   const titleId = useId()
   const slide = useMotionClass('pw-dock-in')
+  // Closed, it goes back to its edge in half the time (a copy does; the dock itself is gone at once).
+  const panel = useRef<HTMLElement>(null)
+  useLeaveCopy(panel, 'pw-dock-out')
   // Whatever had focus as it opened: the Ask button, the field on Home, a link on the page.
   const [opener] = useState(() =>
     typeof document !== 'undefined' && document.activeElement instanceof HTMLElement ? document.activeElement : null,
@@ -180,6 +184,7 @@ function DockPanel({ onClose, children }: { onClose: () => void; children: React
   )
   return (
     <aside
+      ref={panel}
       id={ASK_DOCK_ID}
       aria-labelledby={titleId}
       onKeyDown={(e) => {
@@ -657,7 +662,7 @@ function HowItGotThis({ r }: { r: ChatResponseDTO }) {
           name="chevron"
           size={16}
           strokeWidth={2}
-          className="shrink-0 text-ink-3 transition-transform duration-[var(--pw-dur-base)] group-open:rotate-180"
+          className="pw-turn shrink-0 text-ink-3 group-open:rotate-180"
         />
       </summary>
       <div className="pw-disclosure-body flex flex-col gap-4 pt-1 pb-2">

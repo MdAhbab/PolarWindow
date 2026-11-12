@@ -1,6 +1,7 @@
 import { useId, useState, type ReactNode } from 'react'
 import { useMotionClass } from '../hooks/useMotion'
 import { Skeleton } from './States'
+import { useOpenRow } from './ui'
 import { bound, hoursSpoken, percent, plusMinus, termLabel } from '../lib/format'
 import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
 import type { Arc, SiteMetrics } from '../lib/types'
@@ -103,6 +104,7 @@ export function KeyNumberTile({
   // and under reduced motion it is simply replaced.
   const settle = useMotionClass('pw-number-in')
   const [explained, setExplained] = useState(false)
+  const explainRow = useOpenRow(explained)
   const explainId = useId()
   // One sentence with the value, its unit and its margin: the ± sits in a
   // separate element, so reading the visuals aloud announced "±17.1" with no unit.
@@ -248,11 +250,14 @@ export function KeyNumberTile({
         <div />
       ) : null}
       {explains && (
-        <p id={explainId} hidden={!explained} className="border-t border-line pt-2 text-small leading-5 text-ink-2">
-          {means}
-          {also && <span className="block pt-1 text-ink-3">Also called {also}.</span>}
-          {source && <span className="block pt-1 text-ink-3">{source}</span>}
-        </p>
+        // "What this means" opens by its height and closes the same way (rule 3).
+        <div ref={explainRow.ref} hidden={explainRow.hidden} className="pw-open-row">
+          <p id={explainId} hidden={explainRow.hidden} className="border-t border-line pt-2 text-small leading-5 text-ink-2">
+            {means}
+            {also && <span className="block pt-1 text-ink-3">Also called {also}.</span>}
+            {source && <span className="block pt-1 text-ink-3">{source}</span>}
+          </p>
+        </div>
       )}
     </div>
   )

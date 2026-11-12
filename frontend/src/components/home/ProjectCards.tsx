@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useTransitionClick } from '../../lib/viewTransition'
 import type { Mission } from '../../lib/api/adapters'
 import type { SectionStatusDTO } from '../../lib/api/lifecycle'
 import { nextEvent } from '../../lib/api/home'
@@ -70,12 +71,19 @@ export function ProjectCard({
 }) {
   const ev = nextEvent(project, now)
   const waiting = statuses?.filter((s) => s.state === 'needs_input' || s.state === 'no_data').length ?? 0
+  const go = useTransitionClick()
+  const to = `/missions/${encodeURIComponent(project.id)}`
   return (
     <li className="pw-card pw-card-link relative flex min-w-0 flex-col gap-4 p-4 has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-[7px] has-[a:focus-visible]:outline-focus sm:p-5">
       <div className="flex min-w-0 flex-col gap-1">
         <h3 className="pw-display truncate text-subhead leading-7 text-ink">
           {/* The whole card is the link: the name is its words, the rest is read after. */}
-          <Link to={`/missions/${encodeURIComponent(project.id)}`} className="no-underline after:absolute after:inset-0 after:rounded-card focus-visible:outline-none">
+          {/* The name moves into the mission's header as its page opens (rule 5). */}
+          <Link
+            to={to}
+            onClick={go(to, undefined, 'pw-mission-name')}
+            className="no-underline after:absolute after:inset-0 after:rounded-card focus-visible:outline-none"
+          >
             {project.name}
           </Link>
         </h3>

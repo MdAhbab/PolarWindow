@@ -150,6 +150,30 @@
   --ease-settle: cubic-bezier(0.16, 1, 0.3, 1); /* things arriving: M2, M4, M5, reveals */
   --ease-move: cubic-bezier(0.2, 0.8, 0.2, 1); /* things moving across: M3, sheets, view changes */
   --ease-leave: cubic-bezier(0.4, 0, 1, 1); /* things going away */
+
+  /* The motion grammar (M1, docs/design-visual-refresh.md "Motion grammar").
+     Derived, not new: a bare Tailwind `transition-*` utility takes the press
+     duration and the settle curve, so no control falls back to Tailwind's own
+     150 ms and its own curve. */
+  --default-transition-duration: var(--pw-dur-quick);
+  --default-transition-timing-function: var(--ease-settle);
+  /* Leaving takes half the time it took to come (rule 1, sheets as before). */
+  --pw-dur-quick-out: calc(var(--pw-dur-quick) / 2); /* a menu, list or toast going away: 80 ms */
+  --pw-dur-sheet-out: calc(var(--pw-dur-sheet) / 2); /* a sheet or dock going away: 210 ms */
+
+  /* The ambient glow behind the app's pages (AmbientGlow.tsx, L-12). The
+     brand blue is the crescent of the logo mark (assets/brand/mark-on-dark.png,
+     sampled #0163f6); it exists nowhere else in the tokens. Each field's peak
+     is the token colour mixed into transparent: 6 % in the dark theme (the
+     blue 4 %: it is the most saturated of the three and read first on the
+     dark ground), 2 % in the light one (set in the light block). At these
+     strengths every text colour on the canvas keeps AA with at least 0.3 to
+     spare, even with all three fields at their peak in one place (M1 report,
+     contrast table). Magenta is left out: it means over the limit. */
+  --color-brand: #0163f6;
+  --color-ambient-sun: color-mix(in oklab, var(--color-sun-fill) 6%, transparent);
+  --color-ambient-earth: color-mix(in oklab, var(--color-earth-fill) 6%, transparent);
+  --color-ambient-brand: color-mix(in oklab, var(--color-brand) 4%, transparent);
 }
 
 :root {
@@ -219,6 +243,13 @@
   --shadow-overlay: 0 32px 80px -20px rgba(20, 23, 26, 0.3), 0 8px 20px -8px rgba(20, 23, 26, 0.1);
   --shadow-glow-sun: 0 0 64px -12px rgba(180, 118, 31, 0.3);
   --color-glow-sun: rgba(180, 118, 31, 0.32);
+
+  /* The ambient glow at 2 % on paper (see @theme): at 4 % the third grey
+     (ink-3, 5.15:1 on paper) fell to 4.49:1 where the fields overlap; at 2 %
+     its worst is 4.81:1. */
+  --color-ambient-sun: color-mix(in oklab, var(--color-sun-fill) 2%, transparent);
+  --color-ambient-earth: color-mix(in oklab, var(--color-earth-fill) 2%, transparent);
+  --color-ambient-brand: color-mix(in oklab, var(--color-brand) 2%, transparent);
 }
 
 /* A dark band inside a light page: the light theme's Earthrise hero. The dark
@@ -364,7 +395,7 @@
     text-decoration-color: var(--color-line-strong);
     text-decoration-thickness: 1px;
     text-underline-offset: 3px;
-    transition: text-decoration-color var(--pw-dur-quick);
+    transition: text-decoration-color var(--pw-dur-quick) var(--ease-settle);
   }
   a:not([class]):hover {
     text-decoration-color: currentColor;
@@ -442,8 +473,11 @@
     --pw-rim: var(--color-line-strong);
     transform: translateY(-2px);
   }
+  /* The press is every control's press (rule 4): .98, quick, settle. Letting go
+     returns on the lift above. */
   .pw-card-link:active {
-    transform: translateY(0) scale(0.995);
+    transform: scale(0.98);
+    transition-duration: var(--pw-dur-quick);
   }
   .pw-card-link:focus-visible {
     outline-offset: 7px;
@@ -510,7 +544,8 @@
   }
 
   /* The answer docked under the island once it has scrolled away (Section.tsx).
-     It slides down from behind the island and back up; never a fade. */
+     It slides down from behind the island and back up; never a fade. A dock:
+     in on the sheet's time and curve, out in half with the leave curve. */
   .pw-dock {
     position: fixed;
     top: 80px;
@@ -522,14 +557,14 @@
     visibility: hidden;
     transform: translateY(-120%);
     transition:
-      transform var(--pw-dur-base) var(--ease-settle),
-      visibility 0s linear var(--pw-dur-base);
+      transform var(--pw-dur-sheet-out) var(--ease-leave),
+      visibility 0s linear var(--pw-dur-sheet-out);
   }
   .pw-dock.is-docked {
     visibility: visible;
     transform: none;
     transition:
-      transform var(--pw-dur-lift) var(--ease-settle),
+      transform var(--pw-dur-sheet) var(--ease-move),
       visibility 0s;
   }
   @media print {
@@ -636,13 +671,15 @@
   }
 
   /* ---- Controls ---------------------------------------------------------- */
-  /* Press: every pill control gives a little under the finger. */
+  /* Press (rule 4): every button, pill, chip, card-link and tab gives a little
+     under the finger, the same .98 on the same quick settle everywhere. Its
+     ground eases with it; its words change colour at once (words never fade
+     to say something changed). */
   .pw-press {
     transition:
-      background-color var(--pw-dur-quick),
-      border-color var(--pw-dur-quick),
-      color var(--pw-dur-quick),
-      box-shadow var(--pw-dur-quick),
+      background-color var(--pw-dur-quick) var(--ease-settle),
+      border-color var(--pw-dur-quick) var(--ease-settle),
+      box-shadow var(--pw-dur-quick) var(--ease-settle),
       transform var(--pw-dur-quick) var(--ease-settle);
   }
   .pw-press:active:not(:disabled) {
@@ -687,7 +724,6 @@
     background: var(--color-raised);
     color: var(--color-ink);
     box-shadow: var(--shadow-overlay);
-    animation: pw-menu-in var(--pw-dur-quick) var(--ease-settle) both;
   }
   .pw-menu-option {
     display: flex;
@@ -802,9 +838,11 @@
   }
 
   /* M6 — uncertainty band. Barely visible by design.
-     If you notice it, it is wrong. */
+     If you notice it, it is wrong. It no longer breathes (M1): nothing in the
+     app loops except a result on its way, a job's progress and the ambient
+     glow, so it rests where its breath was centred, the reduced-motion value. */
   .breathe {
-    animation: pw-breathe 8s linear infinite alternate;
+    opacity: 0.34;
   }
 }
 
@@ -822,17 +860,20 @@
   animation: pw-sheet-in var(--pw-dur-sheet) var(--ease-move);
 }
 .pw-sheet-out {
-  animation: pw-sheet-out calc(var(--pw-dur-sheet) / 2) var(--ease-leave) forwards;
+  animation: pw-sheet-out var(--pw-dur-sheet-out) var(--ease-leave) forwards;
 }
+/* The backdrop keeps the sheet's own time and curve, so the two are one move. */
 dialog.pw-sheet-in::backdrop {
-  animation: pw-fade-in var(--pw-dur-base) linear;
+  animation: pw-fade-in var(--pw-dur-sheet) var(--ease-move);
 }
 dialog.pw-sheet-out::backdrop {
-  animation: pw-fade-out calc(var(--pw-dur-sheet) / 2) linear forwards;
+  animation: pw-fade-out var(--pw-dur-sheet-out) var(--ease-leave) forwards;
 }
 
 /* Something that has just arrived: a section's answer after its skeleton, a
-   page's content. A short rise, fully readable from the first frame. */
+   page's content. A short rise, fully readable from the first frame. The
+   60 ms steps below are the arrival stagger (one beat per item, as in
+   docs/design-visual-refresh.md), not durations. */
 .pw-arrive {
   animation: pw-arrive var(--pw-dur-slow) var(--ease-settle) both;
 }
@@ -865,9 +906,10 @@ dialog.pw-sheet-out::backdrop {
   transform-origin: left center;
   animation: pw-grow-x var(--pw-dur-slow) var(--ease-settle) calc(var(--pw-delay, 0ms) + 120ms) backwards;
 }
-/* The pins on the pole map drop into place one after another as the map arrives. */
+/* The pins on the pole map drop into place one after another as the map
+   arrives: a result arriving (slow, settle), 35 ms apart after the map. */
 .pw-rise .pw-pin {
-  animation: pw-pin-drop 520ms var(--ease-settle) calc(var(--pw-delay, 0ms) + 240ms + var(--pw-pin-i, 0) * 35ms) backwards;
+  animation: pw-pin-drop var(--pw-dur-slow) var(--ease-settle) calc(var(--pw-delay, 0ms) + 240ms + var(--pw-pin-i, 0) * 35ms) backwards;
 }
 @keyframes pw-pin-drop {
   from {
@@ -886,7 +928,10 @@ dialog.pw-sheet-out::backdrop {
 }
 
 /* The journey drawing itself as a page opens: the line behind the mission
-   grows from the first step to where it got to, a segment at a time. */
+   grows from the first step to where it got to, a segment at a time. It keeps
+   its own timing (motion-spec: the journey line may): each segment is a
+   distance travelled, not a control answering, so it is paced as a line being
+   drawn, 150 ms apart. */
 .pw-journey-draw [data-journey-segment='behind'] {
   animation: var(--pw-seg, pw-seg-y) 420ms var(--ease-move) calc(200ms + var(--pw-i, 0) * 150ms) backwards;
 }
@@ -920,7 +965,8 @@ dialog.pw-sheet-out::backdrop {
    (`--pw-at` down the page, `--pw-at-lg` along the arc, which is drawn when
    the journey itself is 56rem wide: a container query, as in JourneyPath).
    The stop marks carry no words, so they may grow; the words beside them
-   never move. */
+   never move. The path keeps its own 960 ms: the whole way from Earth to the
+   Moon, the one line drawn at the pace of a journey (motion-spec). */
 .pw-path-draw {
   animation: pw-path-draw 960ms var(--ease-move) 120ms backwards;
 }
@@ -954,20 +1000,16 @@ dialog.pw-sheet-out::backdrop {
   }
 }
 
-/* A disclosure's body as it opens. Closing is instant: it removes, never hides. */
-details[open] > .pw-disclosure-body {
-  animation: pw-drop var(--pw-dur-base) var(--ease-settle);
-}
-
 /* A chart drawing in: the marks grow from their baseline (left for time). */
 .pw-chart-reveal {
   animation: pw-grow-x var(--pw-dur-slow) var(--ease-settle) both;
   transform-origin: left center;
 }
 
-/* M2: the two rings turning into place around their centre. */
+/* M2: the two rings turning into place around their centre: a result
+   arriving (slow, settle; was 600 ms). */
 .pw-ring-in {
-  animation: pw-ring-in 600ms var(--ease-settle) both;
+  animation: pw-ring-in var(--pw-dur-slow) var(--ease-settle) both;
 }
 @keyframes pw-ring-in {
   from {
@@ -980,21 +1022,36 @@ details[open] > .pw-disclosure-body {
   animation: pw-number-in var(--pw-dur-base) var(--ease-settle);
 }
 
-/* A skeleton breathing: opacity only, slow, and static under reduced motion. */
+/* A skeleton breathing: opacity only, slow, and static under reduced motion.
+   One of the loops allowed (a result on its way). 1.6 s and ease-in-out are a
+   breath's period and shape, not a transition: slower than anything that
+   answers a person, so it never reads as a change. */
 .pw-skeleton {
   background: var(--color-inset);
   animation: pw-pulse 1.6s ease-in-out infinite alternate;
 }
 
 /* Working it out (202) with no progress figure yet: a short band sliding
-   along the track. With a figure, the bar is scaled to it instead. */
+   along the track. With a figure, the bar is scaled to it instead. A job's
+   progress, so it may loop; 1.4 s is one pass of the band along the track. */
 .pw-indeterminate {
   animation: pw-slide 1.4s var(--ease-move) infinite;
 }
 
-/* A toast arriving from below and leaving the same way. */
+/* A toast arriving from below: it reports a result, so it arrives as one
+   (slow, settle). Dismissed, it drops back the way it came in half the time
+   (Toast.tsx leaves a copy that does this, so the list itself changes at once). */
 .pw-toast-in {
-  animation: pw-toast-in var(--pw-dur-base) var(--ease-settle);
+  animation: pw-toast-in var(--pw-dur-slow) var(--ease-settle);
+}
+.pw-toast-out {
+  animation: pw-toast-out var(--pw-dur-quick-out) var(--ease-leave) forwards;
+}
+@keyframes pw-toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(12px);
+  }
 }
 
 /* The shell's activity ring: its arc grows to the progress on the settle
@@ -1003,6 +1060,10 @@ details[open] > .pw-disclosure-body {
 .pw-ring-fill {
   transition: stroke-dashoffset var(--pw-dur-slow) var(--ease-settle);
 }
+/* A job's progress: one turn per 1.4 s, the band's own pace; linear, since a
+   turning mark has no start or end to ease into. The arc above is the one
+   transition here that is not transform or opacity: an arc cannot grow by
+   transform, and it is a 20 px ring. */
 .pw-ring-spin {
   animation: pw-spin 1.4s linear infinite;
 }
@@ -1010,11 +1071,6 @@ details[open] > .pw-disclosure-body {
   to {
     transform: rotate(360deg);
   }
-}
-
-/* The shell's Guide and Settings menu dropping open. */
-.pw-menu-drop {
-  animation: pw-menu-in var(--pw-dur-quick) var(--ease-settle) both;
 }
 
 @keyframes pw-sheet-in {
@@ -1033,12 +1089,6 @@ details[open] > .pw-disclosure-body {
     transform: translateX(100%);
   }
 }
-@keyframes pw-menu-in {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-}
 @keyframes pw-fade-in {
   from {
     opacity: 0;
@@ -1052,11 +1102,6 @@ details[open] > .pw-disclosure-body {
 @keyframes pw-arrive {
   from {
     transform: translateY(6px);
-  }
-}
-@keyframes pw-drop {
-  from {
-    transform: translateY(-4px);
   }
 }
 @keyframes pw-grow-x {
@@ -1090,12 +1135,356 @@ details[open] > .pw-disclosure-body {
     transform: translateY(12px);
   }
 }
-@keyframes pw-breathe {
+
+/* ------------------------------------------------------------------
+   The motion grammar (M1). Five rules, one table of timings, one class per
+   kind (docs/design-visual-refresh.md, "Motion grammar"). Every class has its
+   reduced-motion branch: applied only when motion is on (decided in code)
+   where that matters, and stopped by the floor at the end of this file.
+   ------------------------------------------------------------------ */
+
+/* Rule 1: a menu, list or popover grows out of the control that opened it:
+   from the trigger's edge (data-origin top, or bottom when it opens upward)
+   and the trigger's centre (--pw-origin-x), .96 to 1 with opacity, quick on
+   settle. It leaves in half the time on the leave curve (the copy left by
+   lib/motion.ts `leave`, so the list itself closes at once). */
+.pw-pop,
+.pw-pop-out {
+  transform-origin: var(--pw-origin-x, 50%) 0;
+}
+:is(.pw-pop, .pw-pop-out)[data-origin='bottom'] {
+  transform-origin: var(--pw-origin-x, 50%) 100%;
+}
+.pw-pop {
+  animation: pw-pop-in var(--pw-dur-quick) var(--ease-settle) both;
+}
+.pw-pop-out {
+  animation: pw-pop-out var(--pw-dur-quick-out) var(--ease-leave) forwards;
+}
+@keyframes pw-pop-in {
   from {
-    opacity: 0.3;
+    opacity: 0;
+    transform: scale(0.96);
   }
+}
+@keyframes pw-pop-out {
   to {
-    opacity: 0.38;
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+/* The Ask dock going back to the edge it came from (a copy, as above). */
+.pw-dock-out {
+  animation: pw-dock-out var(--pw-dur-sheet-out) var(--ease-leave) forwards;
+}
+@keyframes pw-dock-out {
+  to {
+    transform: translateX(calc(100% + 24px));
+  }
+}
+
+/* Rule 2: one thing moves (components/ui/Indicator.tsx). The chosen item of a
+   row of choices is ONE pill that slides and resizes from the old choice to
+   the new: tabs, the site tabs, segmented controls (the theme switch among
+   them), the header navigation and the phone's bottom bar. Transform only:
+   four boxes clip it, each pinned to one corner and moved by translate alone,
+   so the pill is never scaled and its ends are round at every frame; the
+   ground inside is moved back by as much, so the ink, and the copy of the
+   words drawn in it, stay over the items. An ink pill draws that copy over the
+   row in the canvas colour (generated content, so no word is in the page
+   twice); a quiet pill (`inset`) sits under the words, which read on both
+   grounds. Pressing the chosen item presses the pill with it. */
+/* In the components layer, so a row's own `fixed` or `sticky` (the phone's
+   bar) still wins: any position but static frames the pill. */
+@layer components {
+  .pw-ind-host {
+    position: relative;
+    isolation: isolate;
+  }
+}
+.pw-ind {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  overflow: clip;
+  pointer-events: none;
+  transform-origin: var(--pw-ind-ox, 50%) var(--pw-ind-oy, 50%);
+  transition: transform var(--pw-dur-quick) var(--ease-settle);
+}
+.pw-ind[data-tone='inset'] {
+  z-index: -1;
+}
+.pw-ind-box,
+.pw-ind-fill,
+.pw-ind-mark {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.pw-ind-box,
+.pw-ind-fill {
+  transition: transform var(--pw-dur-base) var(--ease-move);
+}
+.pw-ind-box {
+  overflow: clip;
+}
+.pw-ind[data-still] :is(.pw-ind-box, .pw-ind-fill) {
+  transition: none;
+}
+.pw-ind-box[data-c='tl'] {
+  border-top-left-radius: var(--pw-ind-r);
+}
+.pw-ind-box[data-c='br'] {
+  border-bottom-right-radius: var(--pw-ind-r);
+}
+.pw-ind-box[data-c='tr'] {
+  border-top-right-radius: var(--pw-ind-r);
+}
+.pw-ind-box[data-c='bl'] {
+  border-bottom-left-radius: var(--pw-ind-r);
+}
+.pw-ind-fill {
+  background: var(--color-ink);
+}
+.pw-ind[data-tone='inset'] .pw-ind-fill {
+  background: var(--color-inset);
+}
+/* The quiet pill's dot (the header navigation): it travels with the pill. */
+.pw-ind-mark {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-ink);
+}
+.pw-ind-copy {
+  position: absolute;
+  margin: 0;
+  color: var(--color-canvas) !important;
+  background: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+}
+.pw-ind-copy * {
+  color: inherit !important;
+  transition: none !important;
+}
+.pw-ind-t::before {
+  content: attr(data-t);
+}
+.pw-ind-host:has(> [data-pw-on]:active) > .pw-ind {
+  transform: scale(0.98);
+}
+
+/* Rule 3: a control keeps its box while its words change. `.pw-hold` keeps a
+   label as wide as its bold self, so choosing it moves nothing beside it;
+   `.pw-swap` keeps a button as wide as its widest label ("Work it out",
+   "Working it out…"), the label in use settling into place as it changes,
+   at once and readable at every frame (no cross-fade: words never fade). */
+.pw-hold,
+.pw-swap {
+  display: inline-grid;
+  justify-items: center;
+}
+.pw-hold > *,
+.pw-swap > * {
+  grid-area: 1 / 1;
+}
+.pw-hold-wide::before {
+  content: attr(data-text);
+  font-weight: 600;
+  visibility: hidden;
+}
+.pw-swap-room {
+  display: inline-grid;
+  visibility: hidden;
+}
+.pw-swap-room::before,
+.pw-swap-room::after {
+  grid-area: 1 / 1;
+}
+.pw-swap-room::before {
+  content: attr(data-a);
+}
+.pw-swap-room::after {
+  content: attr(data-b);
+}
+.pw-swap-in {
+  animation: pw-number-in var(--pw-dur-base) var(--ease-settle);
+}
+
+/* Rule 3: a row opens by its height track, from nothing to its content
+   (`grid-template-rows`, no measuring), the content below pushed along with
+   it; closing mirrors it on the leave curve. Every `<details>` in the app does
+   this through its content box; a row opened by a button wraps its body in
+   `.pw-open-row` (useOpenRow in ui.tsx). Up and down the row is cut to its
+   height; 4 px of room each way (padding taken back by the margin) keeps a
+   focus ring at its edge whole. */
+:where(details)::details-content {
+  display: grid;
+  grid-template-rows: minmax(0, 0fr);
+  overflow: visible clip;
+  padding-block: 4px;
+  margin-block: -4px;
+  transition:
+    grid-template-rows var(--pw-dur-base) var(--ease-leave),
+    content-visibility var(--pw-dur-base) var(--ease-leave) allow-discrete;
+}
+:where(details[open])::details-content {
+  grid-template-rows: minmax(0, 1fr);
+  transition-timing-function: var(--ease-settle);
+}
+:where(details) > :not(summary),
+.pw-open-row > * {
+  min-height: 0;
+}
+.pw-open-row {
+  display: grid;
+  grid-template-rows: minmax(0, 0fr);
+  overflow: visible clip;
+  padding-block: 4px;
+  margin-block: -4px;
+  transition: grid-template-rows var(--pw-dur-base) var(--ease-leave);
+}
+.pw-open-row[data-open] {
+  grid-template-rows: minmax(0, 1fr);
+  transition-timing-function: var(--ease-settle);
+}
+/* The chevron of a row (or of a list's button) turns with it. */
+.pw-turn {
+  transition:
+    rotate var(--pw-turn-dur, var(--pw-dur-base)) var(--ease-leave),
+    transform var(--pw-turn-dur, var(--pw-dur-base)) var(--ease-leave),
+    background-color var(--pw-dur-quick) var(--ease-settle);
+}
+:is(details[open] > summary, [aria-expanded='true']) .pw-turn {
+  transition-timing-function: var(--ease-settle);
+}
+/* A list's chevron turns with the list, on its quick time. */
+.pw-turn-quick {
+  --pw-turn-dur: var(--pw-dur-quick);
+}
+
+/* The ambient glow (components/AmbientGlow.tsx; L-12). One fixed layer behind
+   every page in the app, over the canvas and under everything else: three
+   wide, soft fields of colour (the Sun's amber, Earth's cyan, the brand blue),
+   each drifting on its own slow closed path and breathing a little in size,
+   89, 107 and 73 s a cycle, so the whole never visibly repeats. It is the one
+   thing that moves by itself and loops besides a result on its way and a job's
+   progress, because the owner asked for it by name. Transform only, each field
+   on its own layer; no blur, no filter. Cards, panels, sheets and fields keep
+   their solid grounds over it. Still under reduced motion (in a resting place),
+   gone in print, forced colours and high contrast, paused while the tab is
+   hidden (data-paused). */
+.pw-glow {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+}
+.pw-glow-field {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--pw-glow-d);
+  height: var(--pw-glow-d);
+  margin: calc(var(--pw-glow-d) / -2) 0 0 calc(var(--pw-glow-d) / -2);
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    var(--pw-glow-c),
+    color-mix(in oklab, var(--pw-glow-c) 45%, transparent) 55%,
+    transparent
+  );
+  transform: var(--pw-glow-rest);
+  will-change: transform;
+  /* Eased in and out between its four waypoints, so it never turns a corner;
+     a quarter cycle is 18 to 27 s, far too slow to read as a gesture. */
+  animation: var(--pw-glow-path) var(--pw-glow-cycle) ease-in-out infinite;
+  animation-delay: calc(var(--pw-glow-at, 0) * -1s);
+}
+.pw-glow[data-paused] .pw-glow-field {
+  animation-play-state: paused;
+}
+/* Reduced motion, decided in code (AmbientGlow.tsx): each field rests. */
+.pw-glow[data-still] .pw-glow-field {
+  animation: none;
+}
+.pw-glow-sun {
+  --pw-glow-c: var(--color-ambient-sun);
+  --pw-glow-d: 100vmax;
+  --pw-glow-rest: translate3d(30vw, -32vh, 0) scale(1);
+  --pw-glow-path: pw-glow-sun;
+  --pw-glow-cycle: 89s;
+}
+.pw-glow-earth {
+  --pw-glow-c: var(--color-ambient-earth);
+  --pw-glow-d: 90vmax;
+  --pw-glow-rest: translate3d(-30vw, 34vh, 0) scale(1);
+  --pw-glow-path: pw-glow-earth;
+  --pw-glow-cycle: 107s;
+}
+.pw-glow-brand {
+  --pw-glow-c: var(--color-ambient-brand);
+  --pw-glow-d: 110vmax;
+  --pw-glow-rest: translate3d(-24vw, -30vh, 0) scale(1);
+  --pw-glow-path: pw-glow-brand;
+  --pw-glow-cycle: 73s;
+}
+@keyframes pw-glow-sun {
+  0%,
+  100% {
+    transform: translate3d(30vw, -32vh, 0) scale(1);
+  }
+  25% {
+    transform: translate3d(18vw, -20vh, 0) scale(1.06);
+  }
+  50% {
+    transform: translate3d(6vw, -30vh, 0) scale(0.97);
+  }
+  75% {
+    transform: translate3d(22vw, -40vh, 0) scale(1.04);
+  }
+}
+@keyframes pw-glow-earth {
+  0%,
+  100% {
+    transform: translate3d(-30vw, 34vh, 0) scale(1);
+  }
+  25% {
+    transform: translate3d(-12vw, 40vh, 0) scale(0.96);
+  }
+  50% {
+    transform: translate3d(4vw, 26vh, 0) scale(1.05);
+  }
+  75% {
+    transform: translate3d(-18vw, 20vh, 0) scale(1.02);
+  }
+}
+@keyframes pw-glow-brand {
+  0%,
+  100% {
+    transform: translate3d(-24vw, -30vh, 0) scale(1);
+  }
+  25% {
+    transform: translate3d(-34vw, -12vh, 0) scale(1.04);
+  }
+  50% {
+    transform: translate3d(-14vw, 2vh, 0) scale(0.96);
+  }
+  75% {
+    transform: translate3d(-6vw, -22vh, 0) scale(1.03);
+  }
+}
+@media print, (forced-colors: active), (prefers-contrast: more) {
+  .pw-glow {
+    display: none;
   }
 }
 
@@ -1122,6 +1511,50 @@ details[open] > .pw-disclosure-body {
   animation-duration: var(--pw-dur-base);
   animation-timing-function: var(--ease-move);
 }
+/* The shell's floating parts (the island, the phone's bar) hold still over a
+   page change, drawn live and above the content as it changes, so the page
+   never passes over them. The bar's indicator slides inside its live picture. */
+::view-transition-group(pw-island),
+::view-transition-group(pw-bar),
+::view-transition-new(pw-island),
+::view-transition-new(pw-bar) {
+  animation: none;
+}
+::view-transition-old(pw-island),
+::view-transition-old(pw-bar) {
+  animation: none;
+  opacity: 0;
+}
+/* Rule 5: the thing pressed becomes the thing arrived at. A mission's name
+   from its card or row to the mission's header (pw-mission-name), a site's
+   name from the Map to the site's own title (pw-site-name): the name moves and
+   grows from where it was to where it is, on the indicator's time and curve.
+   Only its new rendering is drawn, scaled from the old box, so no word fades.
+   Where one end has no such name (the page was reached some other way), the
+   name comes and goes as the content around it does. */
+::view-transition-group(pw-mission-name),
+::view-transition-group(pw-site-name) {
+  animation-duration: var(--pw-dur-base);
+  animation-timing-function: var(--ease-move);
+}
+::view-transition-old(pw-mission-name),
+::view-transition-old(pw-site-name) {
+  animation: none;
+  opacity: 0;
+}
+::view-transition-new(pw-mission-name),
+::view-transition-new(pw-site-name) {
+  animation: none;
+}
+::view-transition-old(pw-mission-name):only-child,
+::view-transition-old(pw-site-name):only-child {
+  opacity: 1;
+  animation: pw-fade-out var(--pw-dur-quick) var(--ease-leave) both;
+}
+::view-transition-new(pw-mission-name):only-child,
+::view-transition-new(pw-site-name):only-child {
+  animation: pw-arrive var(--pw-dur-base) var(--ease-settle) both;
+}
 
 /* The blanket rule is the floor, not the answer — each animation also
    branches in code, because M1 must lose its play affordance and M3 must
@@ -1142,6 +1575,14 @@ details[open] > .pw-disclosure-body {
   ::view-transition-new(*) {
     animation: none !important;
   }
+  /* The glow rests where it lies; a row's box (its own rule: `*` does not
+     reach a pseudo-element, and an unknown one would void the list above). */
+  .pw-glow-field {
+    animation: none;
+  }
+  :where(details)::details-content {
+    transition-duration: 0s !important;
+  }
 }
 
 :root[data-motion='reduced'] *,
@@ -1155,4 +1596,10 @@ details[open] > .pw-disclosure-body {
 :root[data-motion='reduced'] ::view-transition-old(*),
 :root[data-motion='reduced'] ::view-transition-new(*) {
   animation: none !important;
+}
+:root[data-motion='reduced'] .pw-glow-field {
+  animation: none;
+}
+:root[data-motion='reduced'] :where(details)::details-content {
+  transition-duration: 0s !important;
 }

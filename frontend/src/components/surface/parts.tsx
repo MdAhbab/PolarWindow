@@ -6,6 +6,7 @@ import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { ProvenanceWord, QuantityDTO } from '../../lib/api/surface.types'
 import { quantityWords } from './helpers'
 import { Icon } from '../Icon'
+import { useOpenRow } from '../ui'
 
 const PROV_TITLE: Record<ProvenanceWord, string> = {
   computed: 'Worked out by this service from the data and the figures given',
@@ -85,6 +86,7 @@ export function ToolSection({
   guide?: string
 }) {
   const [open, setOpen] = useState(false)
+  const row = useOpenRow(open)
   const id = useId()
   return (
     <section data-guide={guide} aria-labelledby={`${id}-h`} className="pw-card pw-card-quiet flex min-w-0 flex-col">
@@ -102,14 +104,17 @@ export function ToolSection({
           </span>
           <span
             aria-hidden="true"
-            className={`flex size-8 shrink-0 items-center justify-center rounded-pill bg-inset text-ink-2 transition-transform duration-[var(--pw-dur-base)] ${open ? 'rotate-180' : ''}`}
+            className={`pw-turn flex size-8 shrink-0 items-center justify-center rounded-pill bg-inset text-ink-2 ${open ? 'rotate-180' : ''}`}
           >
             <Icon name="chevron" size={15} strokeWidth={2} />
           </span>
         </button>
       </h2>
-      <div id={`${id}-body`} hidden={!open} className="flex min-w-0 flex-col gap-5 px-4 pt-1 pb-5 sm:px-5">
-        {open && children}
+      {/* Opens by its height and closes the same way (rule 3); its content stays until it has closed. */}
+      <div ref={row.ref} hidden={row.hidden} className="pw-open-row">
+        <div id={`${id}-body`} hidden={row.hidden} className="flex min-w-0 flex-col gap-5 px-4 pt-1 pb-5 sm:px-5">
+          {!row.hidden && children}
+        </div>
       </div>
     </section>
   )

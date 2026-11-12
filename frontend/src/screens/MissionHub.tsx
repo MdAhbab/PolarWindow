@@ -115,6 +115,8 @@ export function MissionHub() {
             : [{ label: 'Missions', to: '/missions' }, { label: m.name }]
         }
         title={m.name}
+        // A mission's name pressed on a card or a row grows into this title (rule 5).
+        carry="pw-mission-name"
         compact={Boolean(step)}
         titleExtra={m.vehicleName ? `· ${m.vehicleName}` : undefined}
         lede={

@@ -376,7 +376,7 @@ export function AgentCard({
           <span>
             {statusLine(r)} · {(r.provenance ?? []).length} numbers, each checked against the measurements
           </span>
-          <Icon name="chevron" size={16} strokeWidth={2} className="shrink-0 text-ink-3 transition-transform group-open:rotate-180" />
+          <Icon name="chevron" size={16} strokeWidth={2} className="pw-turn shrink-0 text-ink-3 group-open:rotate-180" />
         </summary>
         <div className="flex flex-col gap-3 pt-2">
           <NumbersUsed items={r.provenance ?? []} />

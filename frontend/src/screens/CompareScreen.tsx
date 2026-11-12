@@ -14,7 +14,7 @@ import { LoadingPanel, ProblemPanel } from '../components/States'
 import { AdvisePanel } from '../components/Agents'
 import { Speaker } from '../components/SummarySpeaker'
 import { buildComparisonSummary } from '../lib/summaryScript'
-import { Eyebrow, Panel, Segmented } from '../components/ui'
+import { Eyebrow, Panel, Segmented, useOpenRow } from '../components/ui'
 import { PageHeader } from '../components/Page'
 import { Icon } from '../components/Icon'
 import { Select } from '../components/Select'
@@ -325,7 +325,8 @@ export function CompareScreen() {
                   style={{
                     width: colW,
                     transform: `translateX(${position * (colW + GAP)}px)`,
-                    transition: reduced ? 'none' : 'transform 460ms cubic-bezier(.2,.8,.2,1)',
+                    // M3: a column crossing the table moves as far as a sheet does, on the move curve.
+                    transition: reduced ? 'none' : 'transform var(--pw-dur-sheet) var(--ease-move)',
                   }}
                 >
                   <CompareCard
@@ -412,6 +413,7 @@ function CompareCard({
   const rank = item?.rank ?? null
   const leading = label?.kind === 'best' || (label?.kind === 'joint' && rank === 1)
   const [why, setWhy] = useState(false)
+  const whyRow = useOpenRow(why)
   const whyId = useId()
   const margin = SURVIVAL_LIMIT_H - metrics.sun.longestDownH
   const cells = [
@@ -456,10 +458,13 @@ function CompareCard({
                   Too close to call
                   <Icon name="info" size={14} strokeWidth={2} />
                 </button>
-                <p id={whyId} hidden={!why} className="text-caption leading-caption text-ink-2">
-                  {label.why ? `Because ${label.why}` : 'No place can be stated'}
-                  {label.title ? `; it ${label.title}.` : '.'}
-                </p>
+                {/* Opens by its height and closes the same way (rule 3). */}
+                <div ref={whyRow.ref} hidden={whyRow.hidden} className="pw-open-row">
+                  <p id={whyId} hidden={whyRow.hidden} className="text-caption leading-caption text-ink-2">
+                    {label.why ? `Because ${label.why}` : 'No place can be stated'}
+                    {label.title ? `; it ${label.title}.` : '.'}
+                  </p>
+                </div>
               </>
             ) : (
               <div className="text-small font-semibold text-ink-2">
