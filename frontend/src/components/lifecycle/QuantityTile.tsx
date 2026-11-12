@@ -93,6 +93,7 @@ export function QuantityTile({
       spoken={v.spoken}
       age={age}
       source={<SourceLine provenance={q.provenance} source={q.source} />}
+      numberKind={q.provenance}
     />
   )
 }

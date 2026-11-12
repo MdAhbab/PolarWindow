@@ -604,10 +604,12 @@ export function MeshResult({ data, request, stale = false }: { data: MeshRespons
           ))}
         </ul>
       </Disclosure>
-      <p className="font-mono text-micro text-ink-3">
-        Worked out {utcWords(Date.parse(data.meta.computed_at), true)} UTC, engine {data.meta.engine_version}. One point every{' '}
-        {num(data.step_s / 60, 0)} minutes.
-      </p>
+      <Disclosure title="Sources and method">
+        <p className="font-mono text-micro text-ink-3">
+          Worked out {utcWords(Date.parse(data.meta.computed_at), true)} UTC, engine {data.meta.engine_version}. One point every{' '}
+          {num(data.step_s / 60, 0)} minutes.
+        </p>
+      </Disclosure>
     </section>
   )
 }

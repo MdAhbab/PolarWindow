@@ -26,7 +26,8 @@ import { Toaster } from './Toast'
 import { RunLogDrawer } from './RunLog'
 import { GuideBar } from './GuideBar'
 import { useGuide } from '../lib/guide'
-import { ESTIMATES, isoDateWords } from '../lib/format'
+import { isoDateWords } from '../lib/format'
+import { SourcesAndMethod } from './KindMark'
 import { snapshotCapturedAt } from '../lib/api/snapshot'
 
 /** Settings loads the first time it is opened, not with every page. */
@@ -312,9 +313,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           <ErrorBoundary resetKey={pathname}>{children}</ErrorBoundary>
         </div>
         {/* U13: one line per screen instead of "≈" before every value. */}
-        <p className="pw-page mt-auto pt-10 pb-6 text-caption leading-caption text-ink-3">
-          <span className="block border-t border-line pt-5">{ESTIMATES}</span>
-        </p>
+        <div className="pw-page mt-auto pt-10 pb-6 text-caption leading-caption text-ink-3">
+          <div className="border-t border-line pt-3">
+            <SourcesAndMethod />
+          </div>
+        </div>
       </main>
 
       {/* On a phone Ask floats over the bottom bar, on the thumb's side. */}

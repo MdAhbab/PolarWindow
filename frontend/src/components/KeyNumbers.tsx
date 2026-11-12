@@ -21,6 +21,7 @@ import { useMission } from '../lib/store'
 import { useSettingsTab } from '../lib/settingsTab'
 import type { Arc, SiteMetrics } from '../lib/types'
 import { Icon } from './Icon'
+import { KindMark, type NumberKind } from './KindMark'
 
 export type Tone = 'sun' | 'earth' | 'neutral' | 'alert'
 export type TileState = 'ready' | 'computing' | 'uncertain' | 'blank'
@@ -70,6 +71,7 @@ export function KeyNumberTile({
   bar = true,
   source,
   age,
+  numberKind,
 }: {
   label: string
   /**
@@ -113,6 +115,8 @@ export function KeyNumberTile({
   source?: ReactNode
   /** How old a live number is (invariant 11), always on screen. */
   age?: string
+  /** Where the number comes from, as a small mark and one word on the tile. */
+  numberKind?: NumberKind
 }) {
   const shown = state === 'ready' || state === 'uncertain'
   // M4: the figure is always the real value. When it changes it settles into
@@ -257,8 +261,9 @@ export function KeyNumberTile({
         <div />
       ) : null}
 
-      {footnote || age ? (
+      {footnote || age || (numberKind && shown) ? (
         <div className="flex flex-col gap-0.5 text-caption text-ink-3">
+          {numberKind && shown && <KindMark kind={numberKind} />}
           {footnote && <span>{footnote}</span>}
           {age && <span className="text-ink-2">{age}</span>}
         </div>
@@ -269,6 +274,7 @@ export function KeyNumberTile({
         // "What this means" opens by its height and closes the same way (rule 3).
         <div ref={explainRow.ref} hidden={explainRow.hidden} className="pw-open-row">
           <p id={explainId} hidden={explainRow.hidden} className="border-t border-line pt-2 text-small leading-5 text-ink-2">
+            <span className="block pb-1 font-semibold text-ink">About this number</span>
             {means}
             {also && <span className="block pt-1 text-ink-3">Also called {also}.</span>}
             {source && <span className="block pt-1 text-ink-3">{source}</span>}
@@ -487,6 +493,7 @@ export function KeyNumberRow({
   return (
     <div className={`grid gap-4 lg:gap-5 ${grid}`}>
       <KeyNumberTile
+        numberKind="computed"
         label={t.sun.label}
         means={t.sun.means}
         also={t.sun.also}
@@ -500,6 +507,7 @@ export function KeyNumberRow({
         footnote={metrics ? `${percent(sunFrac)} of the time` : 'measuring the skyline'}
       />
       <KeyNumberTile
+        numberKind="computed"
         label={t.earth.label}
         means={t.earth.means}
         also={t.earth.also}
@@ -513,6 +521,7 @@ export function KeyNumberRow({
         footnote={metrics ? `${percent(earthFrac)} of the time` : undefined}
       />
       <KeyNumberTile
+        numberKind="computed"
         label={t.dark.label}
         means={t.dark.means}
         also={t.dark.also}
@@ -544,6 +553,7 @@ export function KeyNumberRow({
         }
       />
       <KeyNumberTile
+        numberKind="computed"
         label={t.rf.label}
         means={t.rf.means}
         also={t.rf.also}
