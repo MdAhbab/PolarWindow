@@ -263,3 +263,32 @@ Checked and fixed across backend and frontend:
   bolometric maximum surface temperatures (a bounding range, never a weather forecast, with the
   solid line as the midpoint of the two bounds), and marked assumed example lander inputs with
   `.pw-scenario`.
+
+## 7. Clarity pass, first batch (13 November)
+
+From the clarity-pass plan, the part due before the video: Part A on the Missions list, Part B
+steps 1, 4 and 6, Part C for the sky view, and the model name off answers (Part F).
+
+- `GET /missions` rows carry `steps`: six `{section, mark, scenario_id}` in journey order. `mark`
+  is `record`, `example` (only a done preset scenario answers it; `scenario_id` is the first),
+  `input` or `none` (`sections_service.step_marks`). The running API must be restarted to send it.
+- The Missions list draws them as solid, hatched and hollow marks with one legend and a filter
+  (`components/StepStrip.tsx`). Each mark opens its step, in the worked example when hatched.
+- A step marked `example` opens on that worked example (`ScenarioGate`). "Show only what is
+  published" keeps the reader on the record for the session (`useActiveScenario.recordOnly`).
+- A step the defaults cannot fill ends with "Choose the landing spot and landing date", which
+  opens the builder. No more "would still not be enough".
+- Fixed: a worked example's Contact step failed with "no running event loop" (progress reported
+  from a worker thread). Presets with a failed step re-run on the next API start.
+- The sky view (`scenes/DomeCard.tsx`): a quarter turn on first view, a drag pill, edge arrows and
+  arrow keys, a sliding compass strip, "Face the Sun" and "Face Earth".
+- Answers read "AI answer · N numbers checked". The model and timing stay in the run log.
+
+What the marks show today: most planned missions have only Return worked out in their
+examples, because no site or date is assumed. Part B steps 2, 3 and 5 (assumed site and dates
+for Surface and Contact) are what fill them; they are not done. Also not done: the strip on
+Home cards and the mission page, payload icons, and Parts D, E, G, H and I.
+
+Gates at the end: ruff, ruff format, mypy, 10 import contracts clean; 967 backend unit tests
+passed, 2 skipped; frontend type check clean, 520 tests passed. Integration and end-to-end
+were not run.
