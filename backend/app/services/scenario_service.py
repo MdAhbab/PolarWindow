@@ -180,7 +180,9 @@ async def defaults(
     pad = core.default_pad(vehicle_id, m.provider, m.lander, rows, pads)
     if pad:
         out["pad_id"] = pad
-    site = core.default_site(m.id, m.provider, m.region, await target_rows(session))
+    site = core.default_site(
+        m.id, m.provider, m.region, await target_rows(session), named=m.target_name
+    )
     if site:
         out["site_id"] = site
     landing = core.default_landing(m.landing, m.launch, today)

@@ -480,7 +480,11 @@ REGION_WORDS = {"south_polar": "south-polar", "nearside": "near-side", "farside"
 
 
 def default_site(
-    mission_id: str, provider: str | None, region: str | None, rows: Sequence[TargetRow]
+    mission_id: str,
+    provider: str | None,
+    region: str | None,
+    rows: Sequence[TargetRow],
+    named: str | None = None,
 ) -> Candidate | None:
     """The landing spot a worked example assumes when none is published.
 
@@ -497,10 +501,13 @@ def default_site(
     where = REGION_WORDS[want]
     whose = "this provider's" if own else "the CLPS list's"
     place = pick.target_name or pick.site_id
+    # A record that names a target without a single point says so first: the example is
+    # somewhere else, and must not read as the published target.
+    first = f"The record names {named} but gives no single point. " if named else ""
     return Candidate(
         pick.site_id,
         f"As {pick.name}, a published target",
-        note=f"{place}, the target of {pick.name}: {whose} latest {where} target. "
+        note=f"{first}{place}, the target of {pick.name}: {whose} latest {where} target. "
         "An example spot, not a plan.",
     )
 

@@ -758,6 +758,10 @@ def test_an_example_site_keeps_a_published_region_and_never_makes_one_up() -> No
     assert near is not None and near.value == "site-d"
     assert core.default_site("bg-2", "Firefly", "farside", TARGETS) is None
     assert core.default_site("im-4", "IM", "south_polar", TARGETS[1:2]) is None  # not itself
+    named = core.default_site("bg-3", "Firefly", "nearside", TARGETS, named="Gruithuisen Domes")
+    assert named is not None and (named.note or "").startswith(
+        "The record names Gruithuisen Domes but gives no single point."
+    )
 
 
 def test_an_example_landing_day_says_where_it_came_from() -> None:
