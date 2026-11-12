@@ -5,6 +5,7 @@ import { useReducedMotion } from '../hooks/useMotion'
 import { humanStampH, msFromModelH, shortDate, spanWords } from '../lib/format'
 import { SYNODIC_HOURS } from '../lib/store'
 import { Icon } from './Icon'
+import { durationMs } from '../lib/motion'
 
 /**
  * M1's driver.
@@ -32,6 +33,25 @@ export function DateSlider({ compact = false }: { compact?: boolean }) {
     })),
   )
   const reduced = useReducedMotion()
+  const playButton = useRef<HTMLButtonElement>(null)
+  // Play is easy to miss: on the first visit it glows out twice, gently, and never again.
+  useEffect(() => {
+    const el = playButton.current
+    if (reduced || !el || typeof el.animate !== 'function') return
+    try {
+      if (localStorage.getItem('pw-play-shown')) return
+      localStorage.setItem('pw-play-shown', '1')
+    } catch {
+      return
+    }
+    el.animate(
+      [
+        { boxShadow: '0 0 0 0 color-mix(in srgb, var(--color-ink) 35%, transparent)' },
+        { boxShadow: '0 0 0 10px color-mix(in srgb, var(--color-ink) 0%, transparent)' },
+      ],
+      { duration: durationMs('--pw-dur-arrive', 820), iterations: 2, delay: durationMs('--pw-dur-slow', 560) },
+    )
+  }, [reduced])
   const raf = useRef(0)
   const last = useRef(0)
 
@@ -141,6 +161,7 @@ export function DateSlider({ compact = false }: { compact?: boolean }) {
     >
       <div className="flex items-center gap-3 sm:contents">
         <button
+          ref={playButton}
           type="button"
           aria-label={playing ? 'Pause' : 'Play through the dates'}
           onClick={() => setPlaying(!playing)}

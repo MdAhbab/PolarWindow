@@ -34,6 +34,8 @@ export function EnergyCharts({
 }) {
   const [ref, W] = useWidth<HTMLDivElement>()
   const [cursor, setCursor] = useState<number | null>(null)
+  // Values show on a tap as well as on hover; the hint goes once someone has tried it.
+  const [tried, setTried] = useState(false)
   const s = data.series
   const n = s.t_s.length
   const startMs = Date.parse(data.start ?? s.t_utc[0] ?? '')
@@ -69,6 +71,7 @@ export function EnergyCharts({
     setCursor(best)
   }
   const onPointer = (e: PointerEvent<SVGRectElement>) => {
+    setTried(true)
     const box = (e.currentTarget.ownerSVGElement as SVGSVGElement).getBoundingClientRect()
     pick(e.clientX - box.left)
   }
@@ -168,6 +171,7 @@ export function EnergyCharts({
           />
         </svg>
       </div>
+      {!tried && <p className="text-caption leading-caption text-ink-3">Tap or point at the chart to read its values.</p>}
       <Legend warmUnknown={warmUnknown} />
     </div>
   )

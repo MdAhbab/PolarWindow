@@ -4,6 +4,7 @@ import { useFocusedView } from '../lib/mission'
 import { siteById } from '../lib/sites'
 import { BlackoutTimeline } from '../components/BlackoutTimeline'
 import { DateSlider } from '../components/DateSlider'
+import { ReportButton } from '../components/ReportButton'
 import { SiteTitle } from '../components/SitePicker'
 import { LoadingPanel, ProblemPanel, UncertaintyNote } from '../components/States'
 import { Button, Eyebrow, Panel, ScrollRegion } from '../components/ui'
@@ -59,6 +60,7 @@ export function BlackoutScreen() {
 
   return (
     <div className="pw-page flex grow flex-col gap-6 pt-6 pb-8 lg:gap-8 lg:pt-8">
+      <div className="flex flex-wrap items-start justify-between gap-3">
       <header className="flex min-w-0 flex-col gap-1.5">
         <Eyebrow>Plan for time without contact</Eyebrow>
         <SiteTitle />
@@ -67,6 +69,8 @@ export function BlackoutScreen() {
           {nights === 1 ? 'night' : 'nights'} in {spanWords(metrics.windowHours)}
         </p>
       </header>
+      <ReportButton />
+      </div>
       <DateSlider />
       {!terrainModelled && (
         <UncertaintyNote>

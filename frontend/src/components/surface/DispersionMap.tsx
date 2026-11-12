@@ -139,7 +139,7 @@ export function DispersionMap({ h, limitDeg }: { h: HeatmapDTO; limitDeg: number
           ? hv === null || hv === undefined
             ? 'This cell: no slope (unknown)'
             : `This cell: ${num(hv, 1)}° over ${h.baseline_m} m`
-          : <span className="font-sans text-ink-3">Point at the map to read one cell&apos;s slope.</span>}
+          : <span className="font-sans text-ink-3">Tap or point at the map to read one cell&apos;s slope.</span>}
       </p>
       <figcaption className="flex flex-col gap-2">
         <span className="text-caption leading-caption text-ink-2">Slope over {h.baseline_m} m, degrees</span>

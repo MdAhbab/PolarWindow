@@ -20,6 +20,7 @@ import { Eyebrow, Panel, Segmented, useOpenRow } from '../components/ui'
 import { PageHeader } from '../components/Page'
 import { Icon } from '../components/Icon'
 import { Select } from '../components/Select'
+import { ReportButton } from '../components/ReportButton'
 import { useReducedMotion } from '../hooks/useMotion'
 import {
   longestNight,
@@ -283,6 +284,7 @@ export function CompareScreen() {
         compact
         title="Compare sites"
         lede="The same dates at each site, side by side, put in order by one number at a time. Nothing is added up into one figure."
+        actions={<ReportButton />}
       />
       <DateSlider />
       <div className="flex flex-wrap items-end gap-x-6 gap-y-4">

@@ -6,6 +6,7 @@ import { useFocusedMetrics, useFocusedView } from '../lib/mission'
 import { Sources } from '../components/Sources'
 import { siteById } from '../lib/sites'
 import { DateSlider } from '../components/DateSlider'
+import { ReportButton } from '../components/ReportButton'
 import { SiteTitle } from '../components/SitePicker'
 import { TERRAIN_BLOCKER_MIN_EL_DEG, TwoClockRings } from '../components/TwoClockRings'
 import { KeyNumberRow } from '../components/KeyNumbers'
@@ -53,12 +54,15 @@ export function TwoClockScreen() {
 
   return (
     <div className="pw-page flex grow flex-col gap-6 pt-6 pb-8 lg:gap-8 lg:pt-8">
-      <header className="flex min-w-0 flex-col gap-1.5">
-        <SiteTitle />
-        <span className="font-mono text-caption text-ink-3">
-          {coords(site.latDeg, site.lonDeg)} · {site.elevM !== null ? `height ${site.elevM.toLocaleString()} m` : 'height not known'}
-        </span>
-      </header>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <header className="flex min-w-0 flex-col gap-1.5">
+          <SiteTitle />
+          <span className="font-mono text-caption text-ink-3">
+            {coords(site.latDeg, site.lonDeg)} · {site.elevM !== null ? `height ${site.elevM.toLocaleString()} m` : 'height not known'}
+          </span>
+        </header>
+        <ReportButton />
+      </div>
       <DateSlider />
 
       <section aria-labelledby={questionId} className="flex min-w-0 flex-col gap-7 lg:gap-8">
@@ -132,9 +136,6 @@ export function TwoClockScreen() {
           </Link>
           <Link to="/skyline" className={pillClass('secondary')}>
             See the skyline
-          </Link>
-          <Link to="/report" className={pillClass('ghost')}>
-            Printable report
           </Link>
         </nav>
       </section>
