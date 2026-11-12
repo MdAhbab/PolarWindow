@@ -1,0 +1,9 @@
+Example brief for a demonstration. Not a real mission.
+
+Mission brief: Haworth Ice Scout
+Provider: Intuitive Machines. Lander: Nova-C.
+Launch vehicle: Falcon 9 from LC-39A, Kennedy Space Center.
+Planned launch: 2 February 2029. Landing planned for 9 February 2029.
+Landing site: Haworth rim, north wall.
+Surface operations: 7 days.
+Payloads: a laser retroreflector (0.3 kg) and a near-infrared spectrometer (3.6 kg).

@@ -1,0 +1,9 @@
+Example brief for a demonstration. Not a real mission.
+
+Mission brief: Malapert Pathfinder
+Provider: Firefly Aerospace. Lander: Blue Ghost.
+Launch vehicle: Falcon 9 from LC-39A, Kennedy Space Center.
+Planned launch: 9 October 2028. Landing planned for 24 November 2028.
+Landing site: Malapert massif.
+Surface operations: 12 days.
+Payloads: a radio relay test package (6.5 kg) and a thermal camera (2.1 kg).

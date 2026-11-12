@@ -1,0 +1,9 @@
+Example brief for a demonstration. Not a real mission.
+
+Mission brief: Ridge Surveyor
+Provider: Intuitive Machines. Lander: Nova-C.
+Launch vehicle: Falcon 9 from LC-39A, Kennedy Space Center.
+Planned launch: 5 September 2028. Landing planned for 12 September 2028.
+Landing site: Connecting Ridge.
+Surface operations: 10 days.
+Payloads: a seismometer (5.0 kg) and a dust sensor (1.2 kg).
