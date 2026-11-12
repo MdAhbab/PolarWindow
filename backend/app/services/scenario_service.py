@@ -212,7 +212,13 @@ async def defaults(
     return out
 
 
-def _launch_window(chosen: dict[str, Any], today: date) -> dict[str, Candidate]:
+#: Days after an assumed landing day that a worked example's launch search runs to.
+EXAMPLE_LANDING_SPAN_DAYS = 60
+
+
+def _launch_window(
+    chosen: dict[str, Any], today: date, landing_assumed: bool = False
+) -> dict[str, Candidate]:
     if "launch_from" in chosen and "launch_to" in chosen:
         return {}
     landing = chosen.get("landing_date")
@@ -225,6 +231,16 @@ def _launch_window(chosen: dict[str, Any], today: date) -> dict[str, Candidate]:
         b = date.fromisoformat(str(chosen["launch_to"])[:10])
         a = b - timedelta(days=90)
         note = "90 days before the last day, as the launch page does."
+        src = "Launch calendar"
+    elif landing is not None and landing_assumed:
+        # Only an example day: a few days around it often hold no landing the Sun rule allows.
+        d = date.fromisoformat(str(landing)[:10])
+        a = d - timedelta(days=LAUNCH_LEAD_DAYS[0])
+        b = d + timedelta(days=EXAMPLE_LANDING_SPAN_DAYS)
+        note = (
+            f"The landing day is only an example, so launches from {LAUNCH_LEAD_DAYS[0]} days "
+            f"before it to {EXAMPLE_LANDING_SPAN_DAYS} days after are looked at."
+        )
         src = "Launch calendar"
     elif landing is not None:
         d = date.fromisoformat(str(landing)[:10])
@@ -277,7 +293,8 @@ async def resolve_all(
         settle(fid, dflt)
     for fid in ("launch_from", "launch_to"):
         settle(fid, {})  # only what was said or fetched; the rest follows from these
-    window = _launch_window(chosen, today)
+    landing = out.get("landing_date")
+    window = _launch_window(chosen, today, landing is not None and landing.basis == "default")
     for fid in ("launch_from", "launch_to"):
         if fid not in out:
             settle(fid, window)
@@ -677,26 +694,28 @@ _NO_TRIP = "No trip has been worked out"
 async def rerun_if_more(
     session: AsyncSession, m: MissionRecord, rec: ScenarioRecord, name: str
 ) -> bool:
-    """Run a finished preset again when today's defaults can work out a step it skipped."""
+    """Run a finished preset again when its defaults changed, or a skipped step can now run.
+
+    A step skipped for a missing value that a default now supplies, an example trip that was
+    still being worked out, or a default value that is not the one stored (the rules for
+    examples changed) each count. A step skipped by the calculation itself does not, so a
+    preset whose Sun rule allows no landing is not run again at every start.
+    """
     if not rec.preset or rec.status != "done":
         return False
     res = await resolve_all(session, m, rec.given)
-    more = [
-        p["id"]
-        for p in rec.phases
-        if p.get("state") == "skipped"
-        and (
-            can_run(str(p["id"]), res)
-            or (
-                p["id"] == "trip"
-                and (
-                    str(p.get("detail") or "").startswith(_NO_TRIP)
-                    or "still being worked out" in str(p.get("detail") or "")
-                )
-            )
-        )
-    ]
-    if not more:
+    stored = {a.get("field"): a.get("value") for a in rec.assumptions}
+    changed = any(r.basis == "default" and stored.get(r.field) != r.value for r in res)
+
+    def more(p: dict[str, Any]) -> bool:
+        detail = str(p.get("detail") or "")
+        if p.get("state") != "skipped":
+            return False
+        if p["id"] == "trip":
+            return detail.startswith(_NO_TRIP) or "still being worked out" in detail
+        return detail.startswith("Needs ") and can_run(str(p["id"]), res)
+
+    if not changed and not any(more(p) for p in rec.phases):
         return False
     await ScenarioRepository(session).requeue(rec.id, core.phases(rec.sections), name=name)
     await enqueue(session, m, rec, None, fresh=True)

@@ -170,7 +170,7 @@ def world(monkeypatch: pytest.MonkeyPatch) -> World:
 
         async def set_job(self, sid: str, job_id: int) -> None: ...
 
-        async def requeue(self, sid: str, _phases: Any = None) -> None:
+        async def requeue(self, sid: str, _phases: Any = None, name: str | None = None) -> None:
             w.requeued.append(sid)
             w.scenarios[sid] = replace(w.scenarios[sid], status="queued", phases=[])
 
@@ -781,3 +781,47 @@ def test_an_example_trip_is_a_named_flight_of_the_same_provider_first() -> None:
     assert core.trip_precedent("Firefly", None, rows).mission_id == "bg-1"  # type: ignore[union-attr]
     assert core.trip_precedent("Voyager", None, rows).mission_id == "im-2"  # type: ignore[union-attr]
     assert core.trip_precedent(None, None, []) is None
+
+
+def test_an_assumed_landing_day_widens_the_launch_search() -> None:
+    chosen = {"landing_date": "2027-01-01"}
+    tight = scenario_service._launch_window(chosen, TODAY)
+    assert (tight["launch_from"].value, tight["launch_to"].value) == ("2026-12-22", "2026-12-30")
+    wide = scenario_service._launch_window(chosen, TODAY, landing_assumed=True)
+    assert (wide["launch_from"].value, wide["launch_to"].value) == ("2026-12-22", "2027-03-02")
+    assert "only an example" in (wide["launch_from"].note or "")
+
+
+async def test_a_done_preset_runs_again_only_when_its_defaults_changed_or_a_step_can_run(
+    world: World,
+) -> None:
+    m = mission(site_id="s", lifecycle={"vehicle_id": "falcon-9", "pad_id": "ksc-lc-39a"})
+    world.missions[m.id] = m
+    now = [
+        scenario_service.assumption_dict(r, NAMES)
+        for r in await scenario_service.resolve_all(None, m, {})  # type: ignore[arg-type]
+    ]
+
+    def done(detail: str, assumptions: list[dict[str, Any]]) -> ScenarioRecord:
+        phase = {"id": "launch", "state": "skipped", "detail": detail}
+        rec = scenario_row(
+            id="sc-p",
+            mission_id=m.id,
+            preset=True,
+            status="done",
+            phases=[phase],
+            assumptions=assumptions,
+        )
+        world.scenarios[rec.id] = rec
+        return rec
+
+    async def rerun(rec: ScenarioRecord) -> bool:
+        return await scenario_service.rerun_if_more(None, m, rec, "name")  # type: ignore[arg-type]
+
+    # Skipped by the calculation itself, with the same defaults: not again.
+    assert not await rerun(done("The landing rule allows no landing time in these dates.", now))
+    # Skipped for a value a default now supplies: again.
+    assert await rerun(done("Needs landing spot, which nothing supplies.", now))
+    # The rules for a default changed since it ran: again.
+    older = [a for a in now if a["field"] != "launch_to"]
+    assert await rerun(done("The landing rule allows no landing time in these dates.", older))
