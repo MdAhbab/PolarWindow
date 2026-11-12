@@ -39,7 +39,7 @@ const idle = { isIdle: false, isPending: false, isError: false, error: null, can
 describe('AgentCard', () => {
   it('ok: the answer as text, the numbers used, and the way to the run log', () => {
     renderApp(<AgentCard kind="explain" agent={{ ...idle, data: answer({}) }} />)
-    expect(screen.getByText(/^AI answer · gemini-3\.8-flash · 3\.2 s · \d+ numbers, each checked/)).toBeTruthy()
+    expect(screen.getByText(/^AI answer · \d+ numbers? checked$/)).toBeTruthy()
     expect(screen.getByText('Connecting Ridge is sunlit for 574.4 hours.')).toBeTruthy()
     const cell = screen.getByText('Site numbers · time in sunlight (seconds)')
     expect(cell.closest('tr')?.textContent).toContain('574.4')

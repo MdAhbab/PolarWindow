@@ -57,17 +57,18 @@ const NO_MODEL_COPY =
 const notConfigured = (r: AgentDTO): boolean =>
   (r.meta as { agents_configured?: unknown } | undefined)?.agents_configured === false
 
-function modelOf(r: AgentDTO): string {
-  const m = (r.meta as { model?: unknown } | undefined)?.model
-  return typeof m === 'string' && m ? m : 'model not reported'
-}
+const checkedWords = (n: number): string => `${n} ${n === 1 ? 'number' : 'numbers'} checked`
 
-/** Who wrote the answer, shown with the numbers it used. */
+/**
+ * Who wrote the answer and how many of its numbers were checked. The model's
+ * name and the time it took stay in the run log, not on the answer.
+ */
 export function statusLine(r: AgentDTO): string {
-  if (r.status === 'ok') return `AI answer · ${modelOf(r)} · ${(r.latency_ms / 1000).toFixed(1)} s`
-  if (r.status === 'insufficient_data') return `AI answer · ${modelOf(r)} · not enough data`
-  if (r.run_status === 'guard_rejected') return 'Summary from measurements (AI answer replaced)'
-  return 'Summary from measurements (no AI)'
+  const checked = checkedWords((r.provenance ?? []).length)
+  if (r.status === 'ok') return `AI answer · ${checked}`
+  if (r.status === 'insufficient_data') return 'AI answer · not enough data'
+  if (r.run_status === 'guard_rejected') return `Summary from measurements (AI answer replaced) · ${checked}`
+  return `Summary from measurements (no AI) · ${checked}`
 }
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null)
@@ -374,7 +375,7 @@ export function AgentCard({
       <details className="group border-t border-line pt-3">
         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-small text-ink-2 hover:text-ink [&::-webkit-details-marker]:hidden">
           <span>
-            {statusLine(r)} · {(r.provenance ?? []).length} numbers, each checked against the measurements
+            {statusLine(r)}
           </span>
           <Icon name="chevron" size={16} strokeWidth={2} className="pw-turn shrink-0 text-ink-3 group-open:rotate-180" />
         </summary>

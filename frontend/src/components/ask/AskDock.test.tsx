@@ -75,7 +75,7 @@ describe('the Ask dock', () => {
     // A link out of the app is never offered.
     expect(screen.queryByText('Not ours')).toBeNull()
     expect(screen.getByText('How the AI got this')).toBeTruthy()
-    expect(dock.textContent).toContain('AI answer · light-model · 1.4 s')
+    expect(dock.textContent).toMatch(/AI answer · \d+ numbers? checked/)
     expect(dock.textContent).toContain('Read as: About IM-3, Launch.')
     expect(screen.queryByText('Answered from rules, not a model')).toBeNull()
     expect(screen.getByRole('status').textContent).toContain('Answer: The first launch window opens')
