@@ -34,7 +34,7 @@ interface Agent {
 }
 
 const GUARD_COPY =
-  "The AI's answer included a number we couldn't trace to a measurement, so we replaced it with a summary built from the measurements."
+  "The AI's answer included a number we couldn't trace to a measurement. So we replaced it with a summary built from the measurements."
 
 /**
  * Why the answer was replaced, from the guards that fired: a number that

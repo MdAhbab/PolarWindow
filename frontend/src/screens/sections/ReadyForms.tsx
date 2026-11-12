@@ -220,7 +220,7 @@ export function RiskSheet({
       open={open}
       onClose={onClose}
       title={risk ? `Change: ${risk.title}` : 'Add a risk'}
-      intro={`Rated on ${scale?.name ?? 'the programme’s scale'}. Likelihood and consequence are kept apart for each category and never combined into a score.`}
+      intro={`Rated on ${scale?.name ?? 'the programme’s scale'}. Likelihood and consequence are kept apart for each category and never combined into one number.`}
       saving={write.isPending}
       error={write.error}
       onSave={async () => {

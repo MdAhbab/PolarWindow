@@ -257,7 +257,7 @@ export const TERM: Record<string, { label: string; means: string; also?: string 
 Object.assign(TERM, {
   itemsReady: {
     label: 'Items ready',
-    means: 'Items that have reached the last step, ready, out of every item entered for this mission. A count, not a score.',
+    means: 'Items that have reached the last step, ready, out of every item entered for this mission. A count, not a rating.',
   },
   blocked: {
     label: 'Blocked',

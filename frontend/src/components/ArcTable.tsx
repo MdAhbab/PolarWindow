@@ -29,8 +29,7 @@ export function ArcTable({ metrics, body }: { metrics: SiteMetrics; body?: 'sun'
       <ScrollRegion label="Arc table, scrolls sideways" className="border border-line">
         <table className="w-full min-w-[720px] border-collapse text-left">
           <caption className="sr-only">
-            Arc list for this site: each stretch above or below the local skyline, with its start, end,
-            length, timing uncertainty and, where relevant, the terrain doing the blocking.
+            Arc list for this site. Each stretch above or below the skyline has its start, end, length and timing margin. Where terrain blocks, it is named.
           </caption>
           <thead>
             <tr className="bg-inset">
@@ -89,10 +88,7 @@ export function ArcTable({ metrics, body }: { metrics: SiteMetrics; body?: 'sun'
         </table>
       </ScrollRegion>
       <p className="text-caption leading-5 text-ink-3">
-        “Grazing” is not a rounding failure. It means the Sun or Earth crosses the skyline so shallowly
-        that the moment it crosses can’t be known at the terrain map’s accuracy: a real finding, and one
-        the picture alone would hide. “Before” and “after” mark a stretch the chosen dates cut short: it
-        had already started, or was still going, so the real one is longer.
+        “Grazing” is not a rounding failure. It means the Sun or Earth crosses the skyline so shallowly that the terrain map cannot time it. That is a real finding, and the picture alone would hide it. “Before” and “after” mark a stretch the dates cut short. It had already started or was still going, so the real one is longer.
       </p>
     </div>
   )

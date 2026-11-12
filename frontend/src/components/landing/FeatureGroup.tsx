@@ -16,7 +16,7 @@ const SMALL = [
   {
     title: 'Sunlight and contact at a site',
     asks: 'How much sun, and how much contact with Earth, does one place get?',
-    body: 'For any site and dates: hours of sunlight, hours in contact with Earth, the longest night and the longest time without contact.',
+    body: 'For any site and dates: hours of sunlight and of contact with Earth. Also the longest night and the longest time without contact.',
     link: 'Open a site',
     to: '/site',
     span: 'lg:col-span-3',
@@ -24,7 +24,7 @@ const SMALL = [
   {
     title: 'Compare sites, one measure at a time',
     asks: 'How do the sites line up on one measure?',
-    body: 'Sites are ordered by one measure at a time. The page never merges them into one score.',
+    body: 'Sites are ordered by one measure at a time. The page never merges them into one number.',
     link: 'Compare sites',
     to: '/compare',
     span: 'lg:col-span-2',

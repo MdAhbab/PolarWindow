@@ -149,7 +149,7 @@ export function MeshMap({ nodes, links }: { nodes: MeshMapNode[]; links: MeshLin
       </svg>
       <figcaption className="text-caption leading-caption text-ink-3">
         Solid: line of sight clear. Dashed: uncertain at the terrain model&apos;s height error. Blocked links are not drawn.
-        {changed && ' A link whose state changed during the dates is drawn in the state it held longest; the table lists each stretch.'}
+        {changed && ' A link whose state changed is drawn in the state it held longest. The table lists each stretch.'}
       </figcaption>
     </figure>
   )

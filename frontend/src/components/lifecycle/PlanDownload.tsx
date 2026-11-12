@@ -69,7 +69,7 @@ export function PlanDownload({ missionId, start, end, relays }: { missionId: str
       )}
       <Field
         label="Data rate for the networking software plan (ION), bits per second"
-        hint="The lander’s data rate is not published, so give the one you plan for, for example 2,000,000 for 2 megabits per second. The spreadsheet does not need one."
+        hint="The lander’s data rate is not published. Give the one you plan for, for example 2,000,000 for 2 megabits per second. The spreadsheet does not need one."
         error={rate.trim() && bps === null ? 'Give a number above zero.' : undefined}
       >
         {(p) => <TextInput {...p} inputMode="decimal" autoComplete="off" value={rate} onChange={(e) => setRate(e.target.value)} />}

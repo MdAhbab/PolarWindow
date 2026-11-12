@@ -36,7 +36,7 @@ export const IDEAS: readonly Idea[] = [
   {
     id: 'ridge',
     title: 'So a hill can switch off the Sun',
-    body: 'Light that low is easy to block. A ridge kilometres away can put a lander in shadow for days, and it has to survive on its batteries until the Sun returns.',
+    body: 'Light that low is easy to block. A ridge kilometres away can put a lander in shadow for days. It has to survive on its batteries until the Sun returns.',
     Art: RidgeArt,
     example: 'night',
     beats: {
@@ -48,7 +48,7 @@ export const IDEAS: readonly Idea[] = [
   {
     id: 'earth',
     title: 'Earth is low in the sky too',
-    body: 'Radio needs a clear line to Earth. From the pole, Earth hangs near the horizon and bobs up and down, so hills cut off contact for stretches of time.',
+    body: 'Radio needs a clear line to Earth. From the pole, Earth hangs near the horizon and bobs up and down. Hills cut off contact for stretches of time.',
     Art: EarthArt,
     example: 'contact',
     beats: {

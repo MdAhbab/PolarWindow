@@ -188,8 +188,7 @@ export function LinkBudgetRow({ contact }: { contact: ContactBudgetDTO }) {
         <BudgetBody b={b} contact={contact} />
       ) : (
         <p className="text-caption leading-caption text-ink-3">
-          Entering the lander&apos;s radio power (EIRP), a frequency from 8,200 to 8,600 MHz (X-band) and the signal needed per bit (Eb/N0) in the
-          project&apos;s radio figures works out the radio link: data rates and margins per pass appear here.
+          Enter radio power (EIRP), an X-band frequency and the signal per bit (Eb/N0) in the project&apos;s radio figures. Data rates and margins per pass then appear here.
         </p>
       )}
     </Disclosure>

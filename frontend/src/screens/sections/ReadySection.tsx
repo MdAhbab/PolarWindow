@@ -94,7 +94,7 @@ function ReadyAnswer({
         <StatePanel
           icon={needsInput ? 'pencil' : 'ring'}
           title="No readiness items entered yet"
-          detail="Readiness is entered by the project team: the lander, each payload and rover, the launch vehicle and range, ground-station bookings, relay agreements, the operations team and the licences, each moved on with a date and evidence."
+          detail="Readiness is entered by the project team, item by item, each with a date and evidence. Items include the lander, payloads, rovers, launch, ground stations, relays, the team and licences."
           stillWorks="Every other step, and the landing history and lessons below, work without it."
           action={addButton}
         />

@@ -121,7 +121,7 @@ export function ProjectForm({
             <TextField label="Spare signal kept in hand (link margin, dB)" value={form.margin} onChange={(v) => onChange({ margin: v })} error={errors.margin} source={rsrc('margin')} inputMode="decimal" hint="Optional. From 0 to 30." />
           </div>
           <p className="max-w-2xl text-small leading-5 text-ink-2">
-            Contact can work out the radio link once it has three of these: radio power (EIRP), a frequency from 8200 to 8600 MHz (X-band) and the signal needed per bit (Eb/N0). Without all three, Contact does not work out the radio link and names what is missing. Figures you type here are shown as <ProvTag p="entered" />.
+            Contact can work out the radio link once it has three of these. They are radio power (EIRP), an X-band frequency (8200 to 8600 MHz) and the signal per bit (Eb/N0). Without all three, Contact does not work out the radio link and names what is missing. Figures you type here are shown as <ProvTag p="entered" />.
           </p>
         </Disclosure>
       </Group>

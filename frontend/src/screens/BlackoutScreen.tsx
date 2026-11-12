@@ -92,8 +92,7 @@ export function BlackoutScreen() {
             <h2 className="text-heading leading-7 font-semibold tracking-heading">What the lander must handle on its own</h2>
             {noCompound && (
               <p className="text-small leading-5 text-ink-2">
-                Sunlight and contact with Earth are never lost together on these dates, so nothing has to run alone;
-                the battery still has to last the longest night.
+                Sunlight and contact with Earth are never lost together on these dates, so nothing has to run alone. The battery still has to last the longest night.
               </p>
             )}
           </div>
@@ -134,14 +133,14 @@ export function BlackoutScreen() {
               detail={
                 packet.compoundInsideDark
                   ? `The longest time without contact falls inside a night, and the battery has to last the longest night either way: ${hoursWithUnit(packet.survivalNeededH, 0, packet.survivalOpen)}.`
-                  : `No time without contact overlaps a night badly enough to matter, but the battery still has to last the longest night: ${hoursWithUnit(packet.survivalNeededH, 0, packet.survivalOpen)}.`
+                  : `No time without contact overlaps a night badly enough to matter. The battery still has to last the longest night: ${hoursWithUnit(packet.survivalNeededH, 0, packet.survivalOpen)}.`
               }
               value={hoursWithUnit(packet.survivalNeededH, 0, packet.survivalOpen)}
             />
             <PacketRow
               done
               title="Handling faults"
-              detail={`Rules that put the lander in a safe state for ${hoursWithUnit(packet.requiredAutonomyH)} without help from Earth, and a way to recover that does not need it.`}
+              detail={`Rules that put the lander in a safe state for ${hoursWithUnit(packet.requiredAutonomyH)} without help from Earth. Also, a way to recover that does not need Earth.`}
               value="rules"
             />
             <PacketRow

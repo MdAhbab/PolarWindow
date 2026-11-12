@@ -207,7 +207,7 @@ export function KeyNumberTile({
           <span className="w-full text-small font-medium text-ink-2">{above}</span>
         )}
         {state === 'blank' ? (
-          <span className={`pw-figure text-line-strong ${numberClass}`}>—</span>
+          <span className={`pw-figure text-line-strong ${numberClass}`}>-</span>
         ) : state === 'computing' ? (
           <span className={`inline-flex items-center ${numberClass}`}>
             <Skeleton className="h-[0.8em] w-24" />

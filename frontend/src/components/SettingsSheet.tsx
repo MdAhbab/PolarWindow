@@ -102,7 +102,7 @@ function AppearanceTab({ onGuide }: { onGuide: () => void }) {
   const navigate = useNavigate()
   return (
     <>
-      <Setting label="Theme" note="Both pass contrast checks. Light is best for printing and projectors.">
+      <Setting label="Theme" note="Both pass contrast checks. Light suits printing and projectors.">
         <Segmented
           label="Appearance"
           value={s.theme}

@@ -156,8 +156,7 @@ export function IntakeSummary({ readings }: { readings: IntakeDTO[] }) {
                 </>
               ) : (
                 <>
-                  No AI model is set up, so this file was read by rules: only dates, names and coordinates were looked
-                  for. Everything else is left for you to fill in.
+                  No AI model is set up, so this file was read by rules. Only dates, names and coordinates were looked for. Everything else is left for you to fill in.
                 </>
               )}
             </p>

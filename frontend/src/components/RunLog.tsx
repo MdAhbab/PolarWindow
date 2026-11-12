@@ -24,8 +24,7 @@ export function RunLogDrawer() {
     <Sheet open={open} onClose={closeRunLog} title="AI activity log" wide>
       <div className="flex flex-col gap-4 p-5">
         <p className="text-small leading-5 text-ink-2">
-          Every time the AI answered: which data it looked up, and whether any number in its answer failed
-          the check against that data.
+          Every time the AI answered: which data it looked up. And whether any number in its answer failed the check against that data.
         </p>
         {runs.isPending ? (
           <p role="status" className="text-caption text-ink-3">

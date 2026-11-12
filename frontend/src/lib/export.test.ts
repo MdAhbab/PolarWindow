@@ -139,14 +139,14 @@ describe('spiceWindows', () => {
 })
 
 describe('comparisonCsv', () => {
-  it('reports the four numbers side by side and no composite score', () => {
+  it('reports the four numbers side by side and no combined number', () => {
     const csv = comparisonCsv([{ site, rank: 1 }], 'dark gap')
     const header = body(csv)[0].split(',')
     for (const col of ['sunlight_h', 'earth_contact_h', 'longest_dark_h', 'longest_blackout_h']) {
       expect(header).toContain(col)
     }
     expect(header.join(' ')).not.toMatch(/score|rating|index/)
-    expect(csv).toContain('No composite score')
+    expect(csv).toContain('No combined number')
   })
 
   it('keeps a tie a tie rather than inventing an order', () => {

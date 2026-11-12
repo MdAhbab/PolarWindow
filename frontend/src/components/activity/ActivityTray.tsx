@@ -95,7 +95,7 @@ export function ActivityList({ live, feed, onNavigate }: { live: boolean; feed: 
       <Note
         icon="clocks"
         title="Nothing is being worked out"
-        detail="Launch opportunities, a trip, contact, a new landing spot’s skyline and scenarios appear here while they are worked out, and for 15 minutes after. The other pages stay free to use meanwhile."
+        detail="Work in progress shows here: launch opportunities, a trip, contact, a new skyline and scenarios. Each stays 15 minutes after it is done. The other pages stay free to use meanwhile."
       />
     )
   }

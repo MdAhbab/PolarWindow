@@ -242,7 +242,7 @@ function HowSure({
             </>
           )}
           {meta.uncertainty.partialCoverage && meta.uncertainty.terrainModelled
-            ? ` Terrain covers only ${(meta.uncertainty.coverage * 100).toFixed(0)}% of the directions around this site; the rest assume flat ground, so these numbers are likely too hopeful.`
+            ? ` Terrain covers only ${(meta.uncertainty.coverage * 100).toFixed(0)}% of the directions around this site; the rest assume flat ground, so real terrain could only block more.`
             : ''}
         </p>
       )}

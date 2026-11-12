@@ -300,7 +300,7 @@ export function PolarMap({
     hiddenSites > 0 ? `; ${hiddenSites} more lie outside this close-up` : ''
   }. ${
     sun
-      ? 'The shaded region is where the Sun is below a flat horizon at this moment; the shadows of ridges and craters are not included, and the shadows in the photograph are from the days it was taken.'
+      ? 'The shaded region is where the Sun is below a flat horizon at this moment. Shadows of ridges and craters are not included. The photograph’s shadows are from the days it was taken.'
       : 'The Sun position is still loading, so no shadow is drawn.'
   }`
 

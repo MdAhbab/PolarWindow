@@ -82,7 +82,7 @@ export function PathCard({ trip, missionId }: { trip: TripDTO; missionId: string
           props={props}
           onFail={() => setFailed(true)}
           fallback={<div className="aspect-[4/3] w-full rounded-control bg-inset sm:aspect-[21/9]" />}
-          caption="The flown path as NASA reconstructed it, seen from Earth at true distance; Earth and the Moon are drawn three times their size, the Moon where the trip ends. Amber is sunlight, grey is shadow, the dots are burns, and a gap in the reconstruction is left empty. The laps round the Moon show as a wavy line because the Moon was moving. Scroll to move the lander along the path."
+          caption="The flown path as NASA reconstructed it, seen from Earth at true distance. Earth and the Moon are drawn three times their size, the Moon where the trip ends. Amber is sunlight, grey is shadow, the dots are burns, and a gap in the reconstruction is left empty. The laps round the Moon show as a wavy line because the Moon was moving. Scroll to move the lander along the path."
         />
       </div>
     </Panel>

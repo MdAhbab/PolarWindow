@@ -32,14 +32,14 @@ export function SurfaceTools({
       <ToolSection
         guide="surface-dispersion"
         title="Landing area and slope"
-        lede="How steep the ground is where a lander might come down, for a landing area (ellipse) and lander you type in."
+        lede="How steep the ground is where a lander might come down. Type in a landing area (ellipse) and a lander."
       >
         <DispersionPanel key={siteId} siteId={siteId} siteName={siteName} />
       </ToolSection>
       <ToolSection
         guide="surface-mesh"
         title="Rovers relaying for each other"
-        lede="How long a lander and up to five rovers go without a path to Earth, alone and passing each other's data on."
+        lede="How long a lander and up to five rovers go without a path to Earth. Alone, and when they pass each other's data on."
       >
         <MeshPanel key={siteId} siteId={siteId} siteName={siteName} startIso={iso(startMs)} endIso={iso(endMs)} />
       </ToolSection>

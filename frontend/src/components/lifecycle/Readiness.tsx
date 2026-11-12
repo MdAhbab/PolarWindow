@@ -380,9 +380,9 @@ export function RiskGrid({ risks, scale }: { risks: RiskDTO[]; scale: RiskScaleD
         ))}
       </div>
       <p className="text-caption leading-caption text-ink-3">
-        Up: likelihood, 1 {lWords(1)?.toLowerCase() ?? 'least likely'} to 5 {lWords(5)?.toLowerCase() ?? 'most likely'}. Along:
+        Up: likelihood, 1 {lWords(1)?.toLowerCase() ?? 'lowest'} to 5 {lWords(5)?.toLowerCase() ?? 'highest'}. Along:
         consequence, 1 {cWords(1)?.toLowerCase() ?? 'least'} to 5 {cWords(5)?.toLowerCase() ?? 'most'}. The two are never
-        multiplied into a score.
+        multiplied into one number.
       </p>
     </div>
   )

@@ -209,7 +209,7 @@ export function comparisonCsv(rows: CompareRow[], rankedBy: string): string {
   return (
     [
       `# POLAR WINDOW comparison, ranked by ${rankedBy}. Tied sites share a rank: the data cannot order them.`,
-      '# No composite score: the four numbers are reported side by side on purpose.',
+      '# No combined number: the four numbers are reported side by side on purpose.',
       '# *_open = the window, not the geometry, bounds that stretch; the figure is a lower bound.',
       row(header),
       ...lines,

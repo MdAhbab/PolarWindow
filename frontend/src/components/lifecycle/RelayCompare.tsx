@@ -35,8 +35,7 @@ export function RelayCompare({ own, applied, onApply }: { own: string[]; applied
   return (
     <Disclosure title="Compare a relay" meta={applied.length ? applied.map(name).join(', ') : 'none added'} defaultOpen={applied.length > 0}>
       <p className="text-body text-ink-2">
-        Add a relay that is planned but is not part of this mission’s plan, to see what it would add for this lander. Its orbit is published only in part, so what it adds is a range,
-        and only if it flies as planned. Up to three at a time.
+        Add a planned relay that is not in this mission’s plan. See what it would add for this lander. Its orbit is published only in part. So what it adds is a range, and only if it flies as planned. Up to three at a time.
       </p>
       {list.isPending ? (
         <p className="text-small text-ink-3">Loading the relays…</p>
