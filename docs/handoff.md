@@ -310,14 +310,32 @@ The rest of the plan, done the same day:
   banned word in any on-screen string. 27 sentences over 20 words were split or cut. Strings
   built with `${...}` were not scanned for length.
 
-Not done: payload icons (the icon set has none for instrument types), a pulse on Play, a hint
-for chart values on tap, one Report button in the same place on every page, and the five
-first-time tasks timed by a cold-start agent. "About this number" is the inline panel, not a sheet.
+Then the items left from the first list:
+
+- Payload kinds are small icon chips on mission rows and on the instrument filter
+  (`PayloadIcon.tsx`). Play glows out twice on the first visit only. The energy chart says values
+  show on a tap. Site, Compare and Plan have one Report button at the top right of the title.
+- A tile's label opens an "About this number" sheet (value, margin, kind, meaning, source, what to
+  know). Tests open it through `src/test/dialog.ts`, since jsdom has no `showModal`.
+- When the example landing day is only assumed, the launch search runs from 10 days before it to
+  60 after. A done preset re-runs only when a default it used changed, a step skipped for a
+  missing value can now run, or its example trip was still being worked out.
+- An example spot says first when the record names a target with no single point (Blue Ghost 3,
+  Gruithuisen Domes).
+- The words test also reads multi-line JSX text and template strings. The LCROSS site note now
+  says "most closely studied"; the database keeps the old words until the sites are ingested again.
+- The five first-time tasks from Home, counted by hand in the browser: IM-2's longest night 2 taps;
+  Blue Ghost 3 on the surface 2 taps (3 while its examples are still queued); face Earth 3 taps
+  (Check a landing site, Site, Face Earth); compare two sites 2 taps; ask and see how the answer
+  was made 2 taps. No wrong turns. Not yet tried with a person who has never seen the app.
+
+Some planned missions may keep a hollow Launch: a few months of searching can still hold no
+landing the Sun rule allows at the assumed spot. That is the calculation's answer, said on the step.
 
 To see it all: restart `run.py`. The API queues the presets again at start, and the workers then
 work them out with the new rules (about a minute each).
 
-Gates at the end: ruff, ruff format, mypy, 10 import contracts clean; 972 backend unit tests
-passed, 2 skipped; frontend type check clean, 525 tests passed. Every main page checked at 375
+Gates at the end: ruff, ruff format, mypy, 10 import contracts clean; 974 backend unit tests
+passed, 2 skipped; frontend type check clean, 526 tests passed. Every main page checked at 375
 and 1440 wide: no sideways scroll. Integration and end-to-end were not run; the end-to-end demo
 was updated for the new answer words.
