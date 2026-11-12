@@ -450,17 +450,17 @@ async def run(ctx: JobContext) -> HandlerResult:
         ],
         parts=[
             (
-                "Terrain skyline",
+                "Hills around the lander (skyline)",
                 "Earth's rise and set at the lander carry the skyline's timing "
                 "margin; the ± on each number is those edges in quadrature.",
             ),
             (
-                "Station masks",
+                "What each dish can see over (station masks)",
                 "DSN masks are published to a tenth of a degree without a "
                 "tolerance; edges they set carry no margin here.",
             ),
             (
-                "DSN schedule",
+                "Dish bookings (DSN schedule)",
                 "When a station can hear, not whether it is booked: the DSN's "
                 "load is not modelled. Booked passes entered by the team are listed.",
             ),

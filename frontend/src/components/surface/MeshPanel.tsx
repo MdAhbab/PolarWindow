@@ -90,11 +90,11 @@ const SETTINGS: SettingDef[] = [
   { group: 'radio', key: 'tx_power_w', label: 'Transmit power for its own traffic', unit: 'W', scale: 1, def: RADIO_DEFAULT.tx_power_w },
   { group: 'radio', key: 'forwarding_tx_power_w', label: 'Transmit power when helping', unit: 'W', scale: 1, def: RADIO_DEFAULT.forwarding_tx_power_w },
   { group: 'radio', key: 'tx_efficiency', label: 'Transmitter efficiency', unit: '%', scale: 0.01, def: RADIO_DEFAULT.tx_efficiency },
-  { group: 'radio', key: 'antenna_gain_dbi', label: 'Antenna gain, each end', unit: 'dBi', scale: 1, def: RADIO_DEFAULT.antenna_gain_dbi },
+  { group: 'radio', key: 'antenna_gain_dbi', label: 'Antenna focus, each end (gain)', unit: 'dBi', scale: 1, def: RADIO_DEFAULT.antenna_gain_dbi },
   { group: 'radio', key: 'bandwidth_hz', label: 'Bandwidth', unit: 'MHz', scale: 1e6, def: RADIO_DEFAULT.bandwidth_hz },
-  { group: 'radio', key: 'noise_figure_db', label: 'Receiver noise figure', unit: 'dB', scale: 1, def: RADIO_DEFAULT.noise_figure_db },
-  { group: 'radio', key: 'snr_threshold_db', label: 'Link closes at or above', unit: 'dB SNR', scale: 1, def: RADIO_DEFAULT.snr_threshold_db },
-  { group: 'radio', key: 'eps_r', label: 'Ground permittivity', unit: 'relative', scale: 1, def: RADIO_DEFAULT.eps_r },
+  { group: 'radio', key: 'noise_figure_db', label: "Receiver's own noise (noise figure)", unit: 'dB', scale: 1, def: RADIO_DEFAULT.noise_figure_db },
+  { group: 'radio', key: 'snr_threshold_db', label: 'Link works at or above (signal-to-noise, SNR)', unit: 'dB', scale: 1, def: RADIO_DEFAULT.snr_threshold_db },
+  { group: 'radio', key: 'eps_r', label: 'How the ground reflects radio (permittivity)', unit: 'relative', scale: 1, def: RADIO_DEFAULT.eps_r },
   { group: 'guard', key: 'soc_cutoff_fraction', label: 'A helper stops below this charge', unit: '%', scale: 0.01, def: GUARD_DEFAULT.soc_cutoff_fraction },
   {
     group: 'guard',
@@ -316,12 +316,12 @@ export function MeshPanel({
               {field(rowKey(r, 'battery_capacity_wh'), 'Battery', 'Wh', shownDefault(r.d.battery_capacity_wh, 1))}
               {field(rowKey(r, 'initial_soc_fraction'), 'Charge at the start', '%', shownDefault(r.d.initial_soc_fraction, 0.01))}
               {field(rowKey(r, 'own_traffic_bps'), 'Own traffic', 'kbps', shownDefault(r.d.own_traffic_bps, 1000))}
-              {field(rowKey(r, 'uplink_kbps'), 'Earth uplink rate', 'kbps', shownDefault(r.d.earth_uplink_bps, 1000), {
+              {field(rowKey(r, 'uplink_kbps'), 'Data rate to Earth', 'kbps', shownDefault(r.d.earth_uplink_bps, 1000), {
                 hasDefault: r.d.earth_uplink_bps !== undefined,
                 placeholder: 'none',
                 hint: 'empty: no direct Earth link',
               })}
-              {field(rowKey(r, 'uplink_w'), 'Earth uplink power', 'W', shownDefault(r.d.earth_uplink_power_w, 1), {
+              {field(rowKey(r, 'uplink_w'), 'Radio power to Earth', 'W', shownDefault(r.d.earth_uplink_power_w, 1), {
                 hasDefault: r.d.earth_uplink_power_w !== undefined,
                 placeholder: 'none',
                 hint: 'empty: no direct Earth link',
@@ -533,16 +533,16 @@ export function MeshResult({ data, request, stale = false }: { data: MeshRespons
                   Distance
                 </th>
                 <th scope="col" className="px-3 py-2 font-semibold">
-                  Line of sight
+                  Straight line clear (line of sight)
                 </th>
                 <th scope="col" className="px-3 py-2 font-semibold">
-                  Fresnel zone
+                  Room for the radio wave (Fresnel zone)
                 </th>
                 <th scope="col" className="px-3 py-2 font-semibold">
                   Path loss
                 </th>
                 <th scope="col" className="px-3 py-2 font-semibold">
-                  SNR
+                  Signal-to-noise (SNR)
                 </th>
                 <th scope="col" className="px-3 py-2 font-semibold">
                   Usable
@@ -632,7 +632,7 @@ function HelperCost({ h, name, hours }: { h: MeshHelperDTO; name: string; hours:
         <QuantityCell label="Energy spent forwarding" q={h.energy_spent_wh} digits={1} />
         <QuantityCell label="Forwarded" q={h.forwarded_mb} digits={1} />
         <QuantityCell label="Dropped" q={h.dropped_mb} digits={1} />
-        <QuantityCell label="Lowest state of charge" q={asPercent(h.minimum_state_of_charge)} digits={0} />
+        <QuantityCell label="Lowest battery charge" q={asPercent(h.minimum_state_of_charge)} digits={0} />
       </dl>
       <p className="text-small leading-5 text-ink-2">
         {h.refusals.length === 0 ? 'Refusals: none.' : `Refusals: ${h.refusals.length}.`}

@@ -8,6 +8,7 @@ import { useSnapshotActive } from '../../lib/api/snapshot'
 import { useWindowParams } from '../../lib/mission'
 import { useMission as useStore } from '../../lib/store'
 import { hasSite } from '../../lib/sites'
+import { stationName } from '../../lib/stationNames'
 import { dateTimeWords, msFromModelH, windowLine } from '../../lib/format'
 import { ageWords, formatValue, quantityText, quantityView } from '../../lib/lifecycle/quantity'
 import { NumberRow, QuantityTile } from '../../components/lifecycle/QuantityTile'
@@ -420,7 +421,7 @@ function BookingsRow({ contact, missionId }: { contact: ContactDTO; missionId: s
   const [err, setErr] = useState<string | undefined>()
   const history = useHistory('booking', open ? missionId : null)
   const write = useLifecycleWrite((b: Parameters<typeof api.bookPass>[1]) => api.bookPass(missionId, b))
-  const name = (id: string) => contact.nodes.find((n) => n.id === id)?.name ?? id
+  const name = (id: string) => stationName(contact.nodes.find((n) => n.id === id)?.name ?? id)
   return (
     <Disclosure title="Booked ground-station passes" meta={String(contact.bookings.length)}>
       {contact.bookings.length ? (
@@ -470,7 +471,7 @@ function BookingsRow({ contact, missionId }: { contact: ContactDTO; missionId: s
         }}
       >
         <Field label="Ground station">
-          {(p) => <Select {...p} value={station} onChange={(v) => setStation(v)} options={stations.map((s) => ({ value: s.id, label: s.name }))} />}
+          {(p) => <Select {...p} value={station} onChange={(v) => setStation(v)} options={stations.map((s) => ({ value: s.id, label: stationName(s.name) }))} />}
         </Field>
         <Field label="Start (UTC)" error={err}>
           {(p) => <TextInput {...p} type="datetime-local" value={startAt} onChange={(e) => setStartAt(e.target.value)} />}
@@ -501,7 +502,7 @@ function RoverRow({ mission: m }: { mission: MissionDetail }) {
   if (!m.rovers.length) return null
   const rover = m.rovers.find((r) => r.id === roverId) ?? m.rovers[0]
   return (
-    <Disclosure title="Rover and lander line of sight" meta={m.rovers.map((r) => r.name).join(', ')} onOpen={() => setOpen(true)}>
+    <Disclosure title="Can the rover and lander see each other? (line of sight)" meta={m.rovers.map((r) => r.name).join(', ')} onOpen={() => setOpen(true)}>
       {m.rovers.length > 1 && (
         <Field label="Rover">
           {(p) => <Select {...p} value={rover.id} onChange={(v) => setRoverId(v)} options={m.rovers.map((r) => ({ value: r.id, label: r.name }))} />}

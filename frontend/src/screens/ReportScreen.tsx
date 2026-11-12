@@ -108,7 +108,7 @@ export function ReportScreen() {
               )
             }
           >
-            Download as CSV
+            Download as a spreadsheet (CSV)
           </Button>
               <Button variant="primary" onClick={() => window.print()}>
                 Print or save as PDF
@@ -141,7 +141,7 @@ export function ReportScreen() {
             </h2>
             <p className="text-lede leading-6 text-ink-2">
               {shortDate(msFromModelH(windowStartH))} → {shortDate(msFromModelH(windowStartH + windowHours))} · battery limit{' '}
-              {SURVIVAL_LIMIT_H} h of continuous darkness
+              {SURVIVAL_LIMIT_H} h of continuous night
             </p>
           </div>
           {/* From /healthz, like the badge in the header -- never a typed-in

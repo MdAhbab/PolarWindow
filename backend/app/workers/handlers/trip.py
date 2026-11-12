@@ -434,16 +434,16 @@ async def run(ctx: JobContext) -> HandlerResult:
                 "dose ±30 %; confirm in SPENVIS, OLTARIS or CREME-MC.",
             ),
             (
-                "Reconstructed trajectory",
+                "The path as flown (reconstructed)",
                 "NASA's reconstruction as archived; its own accuracy " "is not published with it.",
             ),
             (
-                "Shadow edges",
+                "When shadow starts and ends",
                 "Spherical Earth and Moon; the ± on sunlight and the longest shadow "
                 "is the change when Earth's shadow is made 2 % larger for its atmosphere.",
             ),
             (
-                "Line of sight only",
+                "Straight line to Earth only (no radio link worked out)",
                 "A station 'can see' the spacecraft when it is above the "
                 "station's mask; antenna pointing and bookings are not modelled.",
             ),

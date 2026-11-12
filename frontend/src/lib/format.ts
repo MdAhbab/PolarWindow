@@ -261,7 +261,7 @@ Object.assign(TERM, {
     means: 'Hours of the trip with the Sun not hidden by Earth or the Moon: the time the solar panels can charge.',
   },
   tripHeard: {
-    label: 'Time a ground station can hear it',
+    label: 'Time a ground station can hear the lander',
     means: 'Hours of the trip when at least one ground station has the spacecraft above its own horizon.',
     also: 'ground-station coverage',
   },

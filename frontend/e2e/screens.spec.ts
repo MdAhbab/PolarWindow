@@ -68,7 +68,7 @@ for (const theme of ['dark', 'light'] as const) {
     await page.getByRole('menuitem', { name: /^Settings\b/ }).click()
     const sheet = page.getByRole('dialog', { name: 'Settings' })
     // Each group of Settings, every row in it open, axe on each.
-    for (const tab of ['Project', 'Risk scale', 'Data sources', 'Appearance', 'Offline copy']) {
+    for (const tab of ['Team', 'Risk scale', 'Data sources', 'Appearance', 'Offline copy']) {
       await sheet.getByRole('tab', { name: tab }).click()
       for (const s of await sheet.getByRole('tabpanel').locator('summary').all()) await s.click()
       await expectNoSeriousAxe(page, `settings, ${tab}, every row open (${theme})`)
@@ -195,7 +195,7 @@ test('settings on a phone: every project row and a parameter form fit, with no s
   await page.getByRole('menuitem', { name: /^Settings\b/ }).click()
   const sheet = page.getByRole('dialog', { name: 'Settings' })
   // Every group: its rows open, nothing wider than the phone.
-  for (const tab of ['Project', 'Risk scale', 'Data sources', 'Appearance', 'Offline copy']) {
+  for (const tab of ['Team', 'Risk scale', 'Data sources', 'Appearance', 'Offline copy']) {
     await sheet.getByRole('tab', { name: tab }).click()
     for (const s of await sheet.getByRole('tabpanel').locator('summary').all()) await s.click()
     expect(await sheet.evaluate((el) => el.scrollWidth - el.clientWidth), `settings, ${tab}, scrolls sideways at 375 px`).toBeLessThanOrEqual(0)

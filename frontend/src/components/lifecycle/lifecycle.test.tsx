@@ -718,7 +718,7 @@ describe('Space weather now', () => {
   const meta = spaceWeatherFixture.meta
   it('says the readings in one line', () => {
     expect(spaceWeatherSentence(sw, meta)).toBe(
-      'Now: Kp 1, protons above 10 MeV at 0.23 pfu, X-ray flares class B4.7, solar wind at 456 km/s; 2 alerts in the last 24 hours.',
+      'Now: Magnetic storm level 1 of 9 (Kp), protons above 10 MeV at 0.23 pfu, X-ray flares class B4.7, solar wind at 456 km/s; 2 alerts in the last 24 hours.',
     )
   })
   it('leaves out a reading with no recent value from the line, and its own line in the list says why', async () => {
@@ -769,7 +769,7 @@ describe('Space weather now', () => {
   })
   it('gives NOAA’s outlook as issued, or why not', () => {
     expect(outlookSentence(sw.outlook)).toBe(
-      'NOAA’s outlook for Sep 26-Sep 28 2026, issued 26 September 2026, 12:30 UTC: a 1%, 1% and 1% chance of a radiation storm (S1 or greater), day by day; the largest Kp expected is 4.',
+      'NOAA’s outlook for Sep 26-Sep 28 2026, issued 26 September 2026, 12:30 UTC: a 1%, 1% and 1% chance of a radiation storm (S1 or greater), day by day; the largest magnetic storm level expected is 4 of 9 (Kp).',
     )
     expect(outlookSentence({ ...sw.outlook, missing_reason: 'Too old.' })).toBe('Too old.')
   })
@@ -957,13 +957,16 @@ describe('Rover and lander line of sight', () => {
       expect(screen.getByText(words)).toBeTruthy()
     }
     // The switch asks for the radio path's tiles.
-    fireEvent.click(screen.getByRole('button', { name: 'Radio path' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Room for the radio wave (Fresnel zone)' }))
     expect(Array.from(screen.getByTestId('site-tile-map').querySelectorAll('image')).some((i) => /\?layer=radio$/.test(i.getAttribute('href') ?? ''))).toBe(true)
-    // What the radio path needs beyond the line of sight is said in plain words, above the map and over the table, never by its term.
+    // What the radio path needs beyond the line of sight is said in plain words, above the map and over the table; its term only ever follows the plain words, in brackets.
     expect(screen.getByText('Where the radio path is clear too: the ground must also stay out of the space around the line of sight that the radio signal needs, so less of the ground is clear.')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Read the chart as a table' }))
-    expect(screen.getByRole('columnheader', { name: 'Radio path (the space around the line of sight that the radio signal needs)' })).toBeTruthy()
-    expect(document.body.textContent).not.toMatch(/Fresnel/i)
+    expect(screen.getByRole('columnheader', { name: 'Room for the radio wave (Fresnel zone)' })).toBeTruthy()
+    expect(screen.getByRole('columnheader', { name: 'Straight line clear (line of sight)' })).toBeTruthy()
+    // The term is never alone: every "Fresnel" follows "Room for the radio wave (".
+    const body = document.body.textContent ?? ''
+    expect(body.match(/Fresnel/gi)?.length).toBe(body.match(/Room for the radio wave \(Fresnel zone\)/g)?.length)
     unmount()
 
     render(<ViewshedPanel v={v} roverName="Yaoki" tile={null} at={null} />)

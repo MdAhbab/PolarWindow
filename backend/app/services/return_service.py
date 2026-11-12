@@ -189,7 +189,7 @@ async def _droneship_sea(session: AsyncSession, m: MissionRecord) -> dict[str, A
     how = (
         f"One forecast (GFS-Wave, run of {values['run'][:16].replace('T', ' ')} UTC) for "
         f"{valid:%d %b %H:%M} UTC, at its grid point {d_km:.0f} km from the zone; wind at 10 m. "
-        "Whether this booster lands on a droneship is not published."
+        "Whether this booster lands on a ship at sea (droneship) is not published."
     )
 
     def one(key: str, unit: str) -> dict[str, Any]:
@@ -264,7 +264,7 @@ def _flown_summary(names: dict[str, str]) -> str:
             where = (
                 z.name
                 if z.kind == "booster_land"
-                else f"a droneship {z.downrange_km:.0f} km downrange"
+                else f"a ship at sea (droneship) {z.downrange_km:.0f} km downrange"
             )
             parts.append(f"{names.get(mid, mid)} on {where}")
     return "; ".join(parts)
@@ -294,7 +294,7 @@ def _booster(
             f"The booster came back to {z.name}."
             if land
             else f"The booster landed on {z.name}, {z.downrange_km:.0f} km downrange; the "
-            "droneship’s position is not published."
+            "ship’s position is not published."
         )
         landing = "land" if land else "droneship"
     else:
@@ -306,8 +306,9 @@ def _booster(
         zone = None
         if how == "droneship_or_land":
             note = (
-                f"{v.name} boosters land on a droneship or back at the Cape, decided for each "
-                f"launch and not yet published for this one. On the flown CLPS launches: "
+                f"{v.name} boosters land on a ship at sea (droneship) or back at the Cape, "
+                f"decided for each launch and not yet published for this one. "
+                f"On the flown CLPS launches: "
                 f"{_flown_summary(names)}."
             )
         elif how is None:
@@ -317,12 +318,13 @@ def _booster(
     sea_missing = (
         past
         if flown
-        else "No droneship zone is worked out for this mission: no launch opportunity to "
-        "come is stored."
+        else "No landing zone at sea (droneship) is worked out for this mission: no launch "
+        "opportunity to come is stored."
     )
     wave = None if landing == "land" else lifecycle.missing("m", sea_missing)
     wind = lifecycle.missing(
-        "m/s", past if flown else "No droneship zone is worked out for this mission."
+        "m/s",
+        past if flown else "No landing zone at sea (droneship) is worked out for this mission.",
     )
     if sea is not None and not flown and landing not in ("land", "expended"):
         lat, lon = sea["zone"]
@@ -474,7 +476,7 @@ async def recovery_for(session: AsyncSession, m: MissionRecord) -> dict[str, Any
             sources=sources,
             parts=[
                 (
-                    "Recovery limits",
+                    "Sea limits for the recovery ship",
                     "Launch providers do not publish their sea and wind limits for booster "
                     "recovery; only limits the team enters are shown.",
                 )

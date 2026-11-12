@@ -171,7 +171,7 @@ export function LaunchTable({ opportunities }: { opportunities: OpportunityDTO[]
         <caption className="sr-only">Every launch opportunity in these dates, and the landing each one gives.</caption>
         <thead>
           <tr className="bg-inset">
-            {['Day', 'Launch time', 'Pad', 'Kind', 'Flight time', 'Landing', 'Sun height', 'Sunlight after', 'Earth up', 'Weather'].map((h) => (
+            {['Day', 'Launch time', 'Pad', 'Kind', 'Flight time', 'Landing', 'Sun height', 'Sunlight after', 'Earth above the skyline', 'Weather'].map((h) => (
               <th key={h} scope="col" className={head}>
                 {h}
               </th>

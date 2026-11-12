@@ -112,16 +112,16 @@ export function ProjectForm({
         )}
         <Disclosure title="Radio figures" meta="optional" defaultOpen={radioSeen}>
           <div className={TWO_COLUMNS}>
-            <TextField label="EIRP (dBW)" value={form.eirp} onChange={(v) => onChange({ eirp: v })} error={errors.eirp} source={rsrc('eirp')} inputMode="decimal" hint="Optional. From −20 to 100." />
-            <TextField label="EIRP tolerance (dB)" value={form.eirpTol} onChange={(v) => onChange({ eirpTol: v })} error={errors.eirpTol} source={rsrc('eirpTol')} inputMode="decimal" hint="Optional. From 0 to 30." />
-            <TextField label="Ground station G/T (dB/K)" value={form.gt} onChange={(v) => onChange({ gt: v })} error={errors.gt} source={rsrc('gt')} inputMode="decimal" hint="Optional. From −60 to 80." />
-            <TextField label="Downlink frequency (MHz)" value={form.frequency} onChange={(v) => onChange({ frequency: v })} error={errors.frequency} source={rsrc('frequency')} inputMode="decimal" hint="Optional. Above 0, up to 300000." />
+            <TextField label="Radio power (EIRP, dBW)" value={form.eirp} onChange={(v) => onChange({ eirp: v })} error={errors.eirp} source={rsrc('eirp')} inputMode="decimal" hint="Optional. From −20 to 100." />
+            <TextField label="Margin on radio power (EIRP ±, dB)" value={form.eirpTol} onChange={(v) => onChange({ eirpTol: v })} error={errors.eirpTol} source={rsrc('eirpTol')} inputMode="decimal" hint="Optional. From 0 to 30." />
+            <TextField label="Ground dish sensitivity (G/T, dB/K)" value={form.gt} onChange={(v) => onChange({ gt: v })} error={errors.gt} source={rsrc('gt')} inputMode="decimal" hint="Optional. From −60 to 80." />
+            <TextField label="Radio frequency, lander to Earth (downlink, MHz)" value={form.frequency} onChange={(v) => onChange({ frequency: v })} error={errors.frequency} source={rsrc('frequency')} inputMode="decimal" hint="Optional. Above 0, up to 300000." />
             <TextField label="Data rates (kbps, comma-separated)" value={form.dataRates} onChange={(v) => onChange({ dataRates: v })} error={errors.dataRates} source={rsrc('dataRates')} hint="Optional. Up to 20 rates, each above 0." className="sm:col-span-2" />
-            <TextField label="Required Eb/N0 (dB)" value={form.ebn0} onChange={(v) => onChange({ ebn0: v })} error={errors.ebn0} source={rsrc('ebn0')} inputMode="decimal" hint="Optional. From −10 to 40." />
-            <TextField label="Required margin (dB)" value={form.margin} onChange={(v) => onChange({ margin: v })} error={errors.margin} source={rsrc('margin')} inputMode="decimal" hint="Optional. From 0 to 30." />
+            <TextField label="Signal needed per bit (Eb/N0, dB)" value={form.ebn0} onChange={(v) => onChange({ ebn0: v })} error={errors.ebn0} source={rsrc('ebn0')} inputMode="decimal" hint="Optional. From −10 to 40." />
+            <TextField label="Spare signal kept in hand (link margin, dB)" value={form.margin} onChange={(v) => onChange({ margin: v })} error={errors.margin} source={rsrc('margin')} inputMode="decimal" hint="Optional. From 0 to 30." />
           </div>
           <p className="max-w-2xl text-small leading-5 text-ink-2">
-            The downlink budget on the Contact step needs three of these: the EIRP, an X-band downlink frequency (8200 to 8600 MHz) and the required Eb/N0. Without all three, Contact shows line of sight only and names what is missing. Figures you type here are shown as <ProvTag p="entered" />.
+            Contact can work out the radio link once it has three of these: radio power (EIRP), a frequency from 8200 to 8600 MHz (X-band) and the signal needed per bit (Eb/N0). Without all three, Contact does not work out the radio link and names what is missing. Figures you type here are shown as <ProvTag p="entered" />.
           </p>
         </Disclosure>
       </Group>

@@ -94,7 +94,7 @@ export function EnergyCharts({
         ref={ref}
         tabIndex={0}
         role="group"
-        aria-label="Power, battery charge and bus temperature over the dates. Use the left and right arrow keys to read a moment; Shift moves ten steps."
+        aria-label="Power, battery charge and temperature inside the lander (bus) over the dates. Use the left and right arrow keys to read a moment; Shift moves ten steps."
         onKeyDown={onKey}
         className="min-w-0 rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-focus)]"
       >
@@ -123,7 +123,7 @@ export function EnergyCharts({
 
           {/* 3. Bus temperature, its range, both thresholds and the crossing */}
           <text x={L} y={top(2) - 8} fill="var(--color-ink-2)" {...TITLE_TEXT}>
-            BUS TEMPERATURE, °C
+            INSIDE THE LANDER (BUS), °C
           </text>
           <path d={bandPath(xs, s.t_bus_c.lo.map((v) => (v === null ? null : yT(v))), hiOr(s.t_bus_c.hi, s.t_bus_c.value).map((v) => (v === null ? null : yT(v))))} fill="url(#pw-uncertain)" />
           <path d={bandPath(xs, s.t_bus_c.lo.map((v) => (v === null ? null : yT(v))), hiOr(s.t_bus_c.hi, s.t_bus_c.value).map((v) => (v === null ? null : yT(v))))} fill="var(--color-uncertain)" opacity={0.14} />
@@ -266,7 +266,7 @@ function Readout({ data, i, startMs }: { data: EnergyResponseDTO; i: number | nu
           <span className="text-ink">{utcWords(s.t_utc[i] ? Date.parse(s.t_utc[i] as string) : startMs + s.t_s[i] * 1000, true)} UTC</span>
           {' · '}Sun {s.lit[i] >= 0.5 ? 'up' : 'below the skyline'}
           {' · '}power {num(s.p_gen_w[i], 0)} W{' · '}charge {range(s.soc_wh, 'Wh', 0)}
-          {' · '}bus {range(s.t_bus_c, '°C', 0)}
+          {' · '}inside the lander (bus) {range(s.t_bus_c, '°C', 0)}
         </>
       )}
     </p>
@@ -315,7 +315,7 @@ function chartSummary(d: EnergyResponseDTO, op: number | null, surv: number | nu
       ? `The battery empties about ${Math.round(k.battery_empty_at.value)} hours in.`
       : 'The battery does not empty in these dates.',
   )
-  if (k.lowest_bus_temperature.value !== null) parts.push(`The bus is coldest at about ${Math.round(k.lowest_bus_temperature.value)} °C.`)
+  if (k.lowest_bus_temperature.value !== null) parts.push(`Inside the lander (bus) it is coldest at about ${Math.round(k.lowest_bus_temperature.value)} °C.`)
   if (op !== null) parts.push(`Operational minimum ${op} °C.`)
   if (surv !== null)
     parts.push(

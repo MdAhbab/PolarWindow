@@ -415,10 +415,10 @@ function CompareCard({
   const whyId = useId()
   const margin = SURVIVAL_LIMIT_H - metrics.sun.longestDownH
   const cells = [
-    ['sunHours', 'Time in sunlight', metrics.sun.upHours, false, 'text-sun', 'Sunlight'],
-    ['earthHours', 'Time in contact with Earth', metrics.earth.upHours, false, 'text-earth', 'Contact'],
+    ['sunHours', 'Time in sunlight', metrics.sun.upHours, false, 'text-sun', 'Time in sunlight'],
+    ['earthHours', 'Time in contact with Earth', metrics.earth.upHours, false, 'text-earth', 'Time in contact with Earth'],
     ['longestDark', 'Longest night', metrics.sun.longestDownH, Boolean(metrics.sun.longestDownOpen), over ? 'text-alert' : 'text-ink', 'Longest night'],
-    ['longestBlackout', 'Longest time without contact', metrics.earth.longestDownH, Boolean(metrics.earth.longestDownOpen), 'text-ink', 'Without contact'],
+    ['longestBlackout', 'Longest time without contact', metrics.earth.longestDownH, Boolean(metrics.earth.longestDownOpen), 'text-ink', 'Longest without contact'],
   ] as const
   const hero = cells.find(([key]) => key === rankBy)!
   const rest = cells.filter(([key]) => key !== rankBy)

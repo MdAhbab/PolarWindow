@@ -13,7 +13,7 @@ type Key = 'semi_major_m' | 'semi_minor_m' | 'azimuth_deg' | 'footprint_diameter
 
 const FIELDS: { group: string; items: { key: Key; label: string; unit: string }[] }[] = [
   {
-    group: 'Landing ellipse (3 sigma)',
+    group: 'Where it could come down (landing ellipse, 3-sigma)',
     items: [
       { key: 'semi_major_m', label: 'Half-length (semi-major)', unit: 'm' },
       { key: 'semi_minor_m', label: 'Half-width (semi-minor)', unit: 'm' },

@@ -85,7 +85,7 @@ function LaunchBody({ data, meta, missionId }: { data: LaunchCalendarDTO; meta: 
         icon="ring"
         title="No launch to show yet"
         detail={data.none_reason}
-        stillWorks="Surface, Contact and the other steps do not depend on the launch and work as usual."
+        stillWorks="Contact works as usual. Trip and Return wait for a launch time."
         action={scenario ? undefined : <ScenarioEntry missionId={missionId} section="launch" />}
       />
       <Rows about={<SourcesRow meta={meta} />} />
@@ -188,7 +188,7 @@ function LaunchAnswer({ cal, meta, missionId }: { cal: LaunchCalendarDTO; meta: 
           <QuantityTile term="launchTime" q={o.t0} />
           <QuantityTile term="flightTime" q={o.transfer.flight_days} note={o.transfer.type === 'phasing_loops' ? 'With loops around Earth first' : 'Direct to the Moon'} />
           <QuantityTile term="sunAtLanding" q={o.landing.sun_elevation_deg} tone="sun" icon="sun" note={sunBandWords(cal.landing_rule)} />
-          <QuantityTile term="sunlightAfterLanding" q={o.landing.sunlight_after_h} tone="sun" note={o.landing.earth_up ? 'Earth in view at landing' : 'Earth not in view at landing'} />
+          <QuantityTile term="sunlightAfterLanding" q={o.landing.sunlight_after_h} tone="sun" note={o.landing.earth_up ? 'Earth above the skyline at landing' : 'Earth not above the skyline at landing'} />
         </NumberRow>
       </div>
       <ChartPanel
@@ -377,7 +377,7 @@ function FlightRow({ o, flown }: { o: OpportunityDTO; flown: boolean }) {
             </span>
           )}
         </dd>
-        <dt className="text-ink-3">Earth in view at landing</dt>
+        <dt className="text-ink-3">Earth above the skyline at landing</dt>
         <dd className="text-ink">{o.landing.earth_up ? 'Yes' : 'No'}</dd>
       </dl>
     </Disclosure>

@@ -15,7 +15,7 @@ import { Sheet } from './Sheet'
 import { Button, Segmented, Tabs } from './ui'
 
 const TABS: { id: SettingsTab; label: string }[] = [
-  { id: 'project', label: 'Project' },
+  { id: 'project', label: 'Team' },
   { id: 'parameters', label: 'Parameters' },
   { id: 'risk', label: 'Risk scale' },
   { id: 'sources', label: 'Data sources' },
@@ -217,12 +217,12 @@ function ProjectTab({ open, live, onSignedOut }: { open: boolean; live: boolean;
       {live && <People />}
       {!live ? (
         <p className="text-body leading-6 text-ink-2">
-          This copy runs from saved answers, so the project controls need the live service.
+          This copy runs from saved answers, so the team controls need the live service.
         </p>
       ) : q.isPending ? (
         <div className="flex flex-col gap-3" aria-busy="true">
           <span className="sr-only" role="status">
-            Loading the project settings
+            Loading the team settings
           </span>
           <Skeleton className="h-5 w-40" />
           <Skeleton className="h-12 w-48" />

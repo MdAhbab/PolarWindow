@@ -171,7 +171,9 @@ data layer; services import no FastAPI; `spiceypy` is reachable only through
 One name for each idea, in plain English, everywhere it appears. No coined
 terms on screen; a technical term is spelled out where it appears. The
 professional name of a key number is shown only when its label is pressed
-("Also called …"). Keep to these:
+("Also called …"). A word in the "Not" column is never used alone and never first;
+the term may follow the plain words in brackets, as on an input label, a table header
+or a download ("Radio power (EIRP, dBW)"). Keep to these:
 
 | Say | Not |
 |---|---|
@@ -208,7 +210,7 @@ professional name of a key number is shown only when its label is pressed
 | checked against observations | verified, ground-truthed |
 | could see the lander | orbiter pass, relay pass (for active orbiters overhead) |
 | what the rover or lander can see (line of sight) | viewshed, rover LOS |
-| the space around the line of sight that the radio signal needs | first Fresnel zone, Fresnel zone clearance, RF clearance |
+| room for the radio wave (Fresnel zone) | first Fresnel zone, Fresnel zone clearance, RF clearance |
 | NOAA’s forecast model re-run for past years | reforecast, hindcast |
 | how much better than the past-years rate its calls were | Brier skill, Brier skill score, BSS |
 | how close its wind speeds came | CRPS, CRPS skill, Continuous Ranked Probability Score |

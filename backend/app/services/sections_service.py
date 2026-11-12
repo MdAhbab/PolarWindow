@@ -228,7 +228,7 @@ async def _contact(session: AsyncSession, m: MissionRecord) -> dict[str, Any]:
     return _status(
         "contact",
         "available",
-        "When the Deep Space Network can hear the lander.",
+        "When NASA's deep-space dishes (Deep Space Network) can hear the lander.",
         job[1] if job else None,
     )
 

@@ -1,4 +1,5 @@
 import type { ContactBudgetDTO, LinkBudgetDTO, PassPointDTO, QuantityDTO, RateMarginDTO } from '../../lib/api/surface.types'
+import { stationName } from '../../lib/stationNames'
 import { Disclosure } from '../ui'
 import { num, quantityWords, utcWords } from './helpers'
 import { ProvTag } from './parts'
@@ -62,7 +63,7 @@ function PointRow({ title, p }: { title: string; p: PassPointDTO }) {
 
 /** What the budget ran on, then each station's passes: the rate at the mask edge and at the peak, and the margin at every stated rate. */
 function BudgetBody({ b, contact }: { b: LinkBudgetDTO; contact: ContactBudgetDTO }) {
-  const name = (id: string) => contact.nodes.find((n) => n.id === id)?.name ?? id
+  const name = (id: string) => stationName(contact.nodes.find((n) => n.id === id)?.name ?? id)
   const isStation = (id: string) => contact.nodes.find((n) => n.id === id)?.kind === 'station'
   const budgeted = contact.links.filter((l) => l.passes && l.passes.length > 0 && (isStation(l.to) || isStation(l.from)))
   return (
@@ -70,12 +71,12 @@ function BudgetBody({ b, contact }: { b: LinkBudgetDTO; contact: ContactBudgetDT
       <p className="text-small leading-5 text-ink-2">{b.method}</p>
       <dl className="grid grid-cols-1 gap-x-5 gap-y-2 min-[420px]:grid-cols-2 lg:grid-cols-3">
         <div className="flex min-w-0 flex-col gap-0.5 border-t border-line pt-2.5">
-          <dt className="text-caption leading-caption text-ink-2">Band</dt>
+          <dt className="text-caption leading-caption text-ink-2">Radio band</dt>
           <dd className="font-mono text-body text-ink">{b.band}</dd>
         </div>
         <Figure label="Frequency" q={b.frequency_mhz} />
-        <Figure label="Lander EIRP" q={b.eirp_dbw} digits={1} />
-        <Figure label="Required Eb/N0" q={b.required_ebn0_db} digits={1} />
+        <Figure label="Lander radio power (EIRP)" q={b.eirp_dbw} digits={1} />
+        <Figure label="Signal needed per bit (Eb/N0)" q={b.required_ebn0_db} digits={1} />
         <Figure label="Margin kept over it" q={b.required_margin_db} digits={1} />
         <div className="flex min-w-0 flex-col gap-0.5 border-t border-line pt-2.5">
           <dt className="text-caption leading-caption text-ink-2">Stated data rates</dt>
@@ -179,16 +180,16 @@ export function LinkBudgetRow({ contact }: { contact: ContactBudgetDTO }) {
   if (!b && !contact.link_budget_note) return null
   return (
     <Disclosure
-      title="Downlink budget"
-      meta={b ? `${b.band}, EIRP ${quantityWords(b.eirp_dbw, 1).value} dBW` : 'line of sight only'}
+      title="Radio link to Earth (downlink budget)"
+      meta={b ? `${b.band}, radio power (EIRP) ${quantityWords(b.eirp_dbw, 1).value} dBW` : 'not worked out: needs radio figures'}
     >
       {contact.link_budget_note && <p className="text-body leading-6 text-ink-2">{contact.link_budget_note}</p>}
       {b ? (
         <BudgetBody b={b} contact={contact} />
       ) : (
         <p className="text-caption leading-caption text-ink-3">
-          Stating the lander&apos;s EIRP, an X-band downlink frequency (8,200 to 8,600 MHz) and the required Eb/N0 in the project&apos;s radio figures
-          turns the budget on: data rates and margins per pass appear here.
+          Entering the lander&apos;s radio power (EIRP), a frequency from 8,200 to 8,600 MHz (X-band) and the signal needed per bit (Eb/N0) in the
+          project&apos;s radio figures works out the radio link: data rates and margins per pass appear here.
         </p>
       )}
     </Disclosure>

@@ -820,7 +820,7 @@ async def run(ctx: JobContext) -> HandlerResult:
         ],
         parts=[
             (
-                "Launch instant",
+                "Launch time",
                 "A flown launch is worked out again from where it left Earth for the Moon "
                 "and the vehicle's other flights (within seconds); a designed one climbs in "
                 "the direction the vehicle's direct lunar flights climbed, which put IM-1 "

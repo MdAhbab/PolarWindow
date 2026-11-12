@@ -102,7 +102,7 @@ export class ApiError extends Error {
     this.detail = (p.detail as string) ?? 'The request could not be completed.'
     this.stillWorks =
       (ui.still_works as string) ??
-      'Other sites and windows are unaffected.'
+      'Other sites and dates are unaffected.'
     this.retryable = Boolean(ui.retryable ?? status >= 500)
     this.action = (ui.action as string) ?? null
     this.problem = typeof p.title === 'string'

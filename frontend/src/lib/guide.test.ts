@@ -52,4 +52,14 @@ describe('guide', () => {
     g = await fresh()
     expect(g.useGuide.getState()).toMatchObject({ open: true, step: 0 })
   })
+
+  it('uses the glossary names: Landing sites for the site area, the team for the Settings group', async () => {
+    const { GUIDE_STEPS } = await fresh()
+    const map = GUIDE_STEPS.find((s) => s.id === 'map')!
+    expect(map.body).toMatch(/^Landing sites holds the candidate sites near the pole/)
+    expect(map.body).not.toMatch(/spots/)
+    const settings = GUIDE_STEPS.find((s) => s.id === 'settings')!
+    expect(settings.title).toBe('Settings and the team')
+    expect(settings.body).toMatch(/^Settings holds the team, its parameters/)
+  })
 })

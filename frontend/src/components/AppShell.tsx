@@ -58,7 +58,7 @@ const SITE_PATHS = ['/map', '/site', '/compare', '/plan', '/skyline', '/report']
 const TITLES: Record<string, string> = {
   '/home': 'Home',
   '/projects/new': 'New project',
-  '/missions': 'CLPS missions',
+  '/missions': 'Commercial Moon landings (CLPS)',
   '/map': 'Map',
   '/site': 'Site',
   '/compare': 'Compare',
@@ -247,7 +247,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         // still while the page under it changes.
         <div className="pw-page pt-5 sm:pt-6">
           <nav
-            aria-label="Landing site pages"
+            aria-label="Landing sites"
             className="flex w-full max-w-full overflow-x-auto rounded-pill border border-line-strong bg-tray sm:w-fit"
           >
             {SITE_PAGES.map((n) => (
@@ -448,7 +448,7 @@ function ShellMenu({
             <Icon name="settings" size={18} strokeWidth={1.8} className="shrink-0" />
             <span className="flex flex-col">
               <span className="font-semibold text-ink">Settings</span>
-              <span className="text-caption leading-caption text-ink-3">Project, data sources, appearance</span>
+              <span className="text-caption leading-caption text-ink-3">Team, data sources, appearance</span>
             </span>
           </button>
         </div>

@@ -118,7 +118,7 @@ test('launch (contract fixtures): choosing an opportunity sets the four numbers;
   await expect(opp).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('main')).toContainText('Numbers for the opportunity on 28 February 2025, 01:56 UTC')
   await page.locator('summary', { hasText: 'Weather rules for this opportunity' }).click()
-  const rules = page.getByRole('table').filter({ hasText: 'model runs that break it' })
+  const rules = page.getByRole('table').filter({ hasText: 'forecast runs that break it' })
   await expect(rules).toContainText('3 of 31 model runs')
   await expect(rules).toContainText('Models disagree')
   await expect(rules).toContainText('not yet checked against observations')
@@ -158,7 +158,7 @@ test('launch weather (contract fixtures): a rule whose shares were checked again
   const summary = page.locator('summary', { hasText: 'Weather rules for this opportunity' })
   await expect(summary).toContainText('6 rules; models disagree on 1; 1 checked against observations')
   await summary.click()
-  const rules = page.getByRole('table').filter({ hasText: 'model runs that break it' })
+  const rules = page.getByRole('table').filter({ hasText: 'forecast runs that break it' })
   await expect(rules.getByRole('row').filter({ hasText: 'Sustained wind at 162 ft' })).toContainText('A forecast model can answer this · checked against observations')
   await expect(rules.getByRole('row').filter({ hasText: 'No precipitation at the pad' })).toContainText('not yet checked against observations')
   await expectNoSeriousAxe(page, 'launch weather with a checked rule (dark)')
@@ -353,15 +353,15 @@ test('space weather now (contract fixtures): the readings in a sentence, each wi
   await page.goto('/missions/im-2/launch')
   const summary = page.locator('summary', { hasText: 'Space weather now' })
   const row = page.locator('details').filter({ has: summary })
-  await expect(summary).toContainText('Kp 1, 2 alerts')
+  await expect(summary).toContainText('magnetic storm level 1 of 9 (Kp), 2 alerts')
   await summary.click()
-  await expect(row).toContainText('Now: Kp 1, protons above 10 MeV at 0.23 pfu, X-ray flares class B4.7, solar wind at 456 km/s; 2 alerts in the last 24 hours.')
+  await expect(row).toContainText('Now: Magnetic storm level 1 of 9 (Kp), protons above 10 MeV at 0.23 pfu, X-ray flares class B4.7, solar wind at 456 km/s; 2 alerts in the last 24 hours.')
   // Each reading says how old it is.
   for (const label of ['Geomagnetic activity (Kp, 0 to 9)', 'Protons above 100 MeV', 'Magnetic field from the Sun, north–south (Bz)', 'X-ray flares (class)']) {
     await expect(row.locator('dt', { hasText: label }).locator('xpath=following-sibling::dd[1]')).toContainText(/ · as of .+ ago$/)
   }
   await expect(row).toContainText('ALERT: Electron 2MeV Integral Flux exceeded 1,000pfu')
-  await expect(row).toContainText('NOAA’s outlook for Sep 26-Sep 28 2026, issued 26 September 2026, 12:30 UTC: a 1%, 1% and 1% chance of a radiation storm (S1 or greater), day by day; the largest Kp expected is 4.')
+  await expect(row).toContainText('NOAA’s outlook for Sep 26-Sep 28 2026, issued 26 September 2026, 12:30 UTC: a 1%, 1% and 1% chance of a radiation storm (S1 or greater), day by day; the largest magnetic storm level expected is 4 of 9 (Kp).')
   await row.locator('summary', { hasText: 'NOAA’s forecast as issued' }).click()
   await expect(row.locator('pre')).toContainText(':Product: 3-Day Forecast')
   // DONKI: the three newest of each kind, each with its record.
@@ -474,12 +474,12 @@ test('compare a relay (contract fixtures): tick one, ask again, and the answer, 
   // The plan: the ION file needs a data rate; a relay's contacts are listed only when asked.
   await openRow(page, 'Download the contact plan')
   const plan = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Download the contact plan' }) })
-  await expect(plan.getByRole('button', { name: 'Contact plan for ION (DTN)' })).toBeDisabled()
-  await expect(plan.getByRole('link', { name: 'Spreadsheet (CSV)' })).not.toHaveAttribute('href', /relay=/)
-  await plan.getByLabel('Data rate for the ION plan, bits per second').fill('2,000,000')
-  await expect(plan.getByRole('link', { name: 'Contact plan for ION (DTN)' })).toHaveAttribute('href', /format=ion&start=.*&end=.*&rate_bps=2000000$/)
+  await expect(plan.getByRole('button', { name: 'Contact plan for networking software (ION, DTN)' })).toBeDisabled()
+  await expect(plan.getByRole('link', { name: 'Download as a spreadsheet (CSV)' })).not.toHaveAttribute('href', /relay=/)
+  await plan.getByLabel('Data rate for the networking software plan (ION), bits per second').fill('2,000,000')
+  await expect(plan.getByRole('link', { name: 'Contact plan for networking software (ION, DTN)' })).toHaveAttribute('href', /format=ion&start=.*&end=.*&rate_bps=2000000$/)
   await plan.getByRole('checkbox', { name: /^Include the contacts of the planned relays: / }).check()
-  await expect(plan.getByRole('link', { name: 'Spreadsheet (CSV)' })).toHaveAttribute('href', /format=csv&.*&relay=pathfinder&relay=altus-1$/)
+  await expect(plan.getByRole('link', { name: 'Download as a spreadsheet (CSV)' })).toHaveAttribute('href', /format=csv&.*&relay=pathfinder&relay=altus-1$/)
   await expectNoSeriousAxe(page, 'contact with the compare row and the plan row open (dark)')
   // Take it out again: the answer without it (already worked out, so not asked for again) is back.
   await compare().getByRole('checkbox', { name: /^Altus-1 data-relay satellite/ }).uncheck()
@@ -509,7 +509,7 @@ test('rover line of sight (contract fixtures): the answer first, the map in thre
     await route.fulfill({ status: 200, contentType: 'image/png', body: ONE_PIXEL_PNG })
   })
   await page.goto('/missions/im-2/contact')
-  const summary = page.locator('summary', { hasText: 'Rover and lander line of sight' })
+  const summary = page.locator('summary', { hasText: 'Can the rover and lander see each other?' })
   await expect(summary).toContainText('Yaoki')
   await summary.click()
   const row = page.getByTestId('rover-sight')
@@ -527,15 +527,15 @@ test('rover line of sight (contract fixtures): the answer first, the map in thre
   await row.locator('summary', { hasText: 'Antennas, radio and terrain' }).click()
   await expect(row.locator('dt', { hasText: 'Radio frequency' }).locator('xpath=following-sibling::dd[1]')).toContainText('2,400 MHz, assumed')
   await expect(row).toContainText('LDEM_83S_5M: a height every 5 m, each good to ±0.5 m')
-  await row.getByRole('button', { name: 'Radio path' }).click()
-  await expect(row.getByRole('button', { name: 'Radio path' })).toHaveAttribute('aria-pressed', 'true')
+  await row.getByRole('button', { name: 'Room for the radio wave (Fresnel zone)' }).click()
+  await expect(row.getByRole('button', { name: 'Room for the radio wave (Fresnel zone)' })).toHaveAttribute('aria-pressed', 'true')
   await expect(row.getByRole('img', { name: /^Radio path between Yaoki and the lander/ })).toBeVisible()
   await expect.poll(() => [...layers].sort().join(',')).toBe('radio,sight,terrain')
   // What the radio path needs beyond the line of sight, in plain words.
   await expect(row).toContainText('the ground must also stay out of the space around the line of sight that the radio signal needs')
   // The table twin, from the same rays: both the line of sight and the radio path.
   await row.getByRole('button', { name: 'Read the chart as a table' }).click()
-  await expect(row.getByRole('columnheader', { name: 'Radio path (the space around the line of sight that the radio signal needs)' })).toBeVisible()
+  await expect(row.getByRole('columnheader', { name: 'Room for the radio wave (Fresnel zone)' })).toBeVisible()
   const ray = row.getByRole('row', { name: /^100°/ })
   await expect(ray).toContainText('In sight 25–125 m; uncertain 150–175 m; blocked 200–500 m')
   await expect(ray).toContainText('In sight 25–100 m; uncertain 125–150 m; blocked 175–500 m')
@@ -544,7 +544,7 @@ test('rover line of sight (contract fixtures): the answer first, the map in thre
   await page.evaluate(() => localStorage.setItem('pw-prefs', JSON.stringify({ theme: 'light', motion: 'full', shortcuts: true })))
   await page.setViewportSize({ width: 375, height: 812 })
   await page.reload()
-  await page.locator('summary', { hasText: 'Rover and lander line of sight' }).click()
+  await page.locator('summary', { hasText: 'Can the rover and lander see each other?' }).click()
   await expect(page.getByTestId('rover-sight').getByRole('img')).toBeVisible()
   await expectNoSeriousAxe(page, 'rover line of sight open (light, 375 px)')
   expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the rover row scrolls sideways at 375 px').toBeLessThanOrEqual(375)
@@ -555,7 +555,7 @@ test('rover line of sight (contract fixtures): tiles that do not load say so, an
   await serveLifecycleFixtures(context)
   await context.route(/localhost:8000\/api\/v1\/tiles\/viewshed\//, (route) => route.fulfill({ status: 404, contentType: 'application/json', body: '{"detail":"no-viewshed"}' }))
   await page.goto('/missions/im-2/contact')
-  await page.locator('summary', { hasText: 'Rover and lander line of sight' }).click()
+  await page.locator('summary', { hasText: 'Can the rover and lander see each other?' }).click()
   const row = page.getByTestId('rover-sight')
   await expect(row.getByRole('status')).toHaveText('The map layer did not load, so nothing is drawn over the terrain. The table has the same answer.')
   await row.getByRole('button', { name: 'Read the chart as a table' }).click()
@@ -576,7 +576,7 @@ test('rover line of sight (contract fixtures): other values are asked for as typ
     return route.fallback()
   })
   await page.goto('/missions/im-2/contact')
-  await page.locator('summary', { hasText: 'Rover and lander line of sight' }).click()
+  await page.locator('summary', { hasText: 'Can the rover and lander see each other?' }).click()
   const row = page.getByTestId('rover-sight')
   const antennas = row.locator('details').filter({ has: page.locator('summary', { hasText: 'Antennas, radio and terrain' }) })
   await antennas.locator('summary').click()
@@ -618,7 +618,7 @@ test('rover line of sight (contract fixtures): other values are asked for as typ
   await page.evaluate(() => localStorage.setItem('pw-prefs', JSON.stringify({ theme: 'light', motion: 'full', shortcuts: true })))
   await page.setViewportSize({ width: 375, height: 812 })
   await page.reload()
-  await page.locator('summary', { hasText: 'Rover and lander line of sight' }).click()
+  await page.locator('summary', { hasText: 'Can the rover and lander see each other?' }).click()
   await page.locator('summary', { hasText: 'Antennas, radio and terrain' }).click()
   await expect(page.getByTestId('rover-inputs')).toBeVisible()
   await expectNoSeriousAxe(page, 'rover values form open (light, 375 px)')
@@ -629,7 +629,7 @@ test('rover line of sight (contract fixtures): a site outside the terrain map sa
   await returningVisitor(context)
   await serveLifecycleFixtures(context, { swap: { 'rover.json': 'rover-unresolvable.json' } })
   await page.goto('/missions/im-2/contact')
-  await page.locator('summary', { hasText: 'Rover and lander line of sight' }).click()
+  await page.locator('summary', { hasText: 'Can the rover and lander see each other?' }).click()
   const row = page.getByTestId('rover-sight')
   await expect(row).toContainText('Cannot be said here. Reiner Gamma is outside the polar terrain map (south of 80°S)')
   await expect(row.getByRole('img')).toHaveCount(0)
@@ -804,7 +804,7 @@ test('settings (contract fixtures): data sources with their age, the risk scale,
   await expect(sheet).toContainText('120 h → 96 h')
   await expect(sheet).toContainText('Set to 120 h')
   // People is part of Project, shown open there.
-  await sheet.getByRole('tab', { name: 'Project' }).click()
+  await sheet.getByRole('tab', { name: 'Team' }).click()
   await expect(sheet.getByRole('heading', { name: 'People' })).toBeVisible()
   await expect(sheet.getByLabel('Your name').first()).toBeVisible()
   await expectNoSeriousAxe(page, 'settings with the project rows open')
@@ -874,7 +874,7 @@ test('trip and contact (live API): the flown trip with its gaps in the data, and
   await expect(main).toContainText(/covers the trip in \d+ separate stretches, so the file has \d+ blocks/)
   const [csv] = await Promise.all([
     page.waitForEvent('download'),
-    page.getByRole('link', { name: 'Spreadsheet (CSV)' }).click(),
+    page.getByRole('link', { name: 'Download as a spreadsheet (CSV)' }).click(),
   ])
   expect(csv.suggestedFilename()).toBe('im-1-trip.csv')
   const oemLink = page.getByRole('link', { name: 'CCSDS orbit file (OEM)' })
@@ -1113,7 +1113,7 @@ test('launch weather (live API): the forecasts for a launch a few hours ahead, e
   await page.goto('/missions/im-2/launch')
   await expect(page.locator('[data-guide="section-answer"]')).toContainText('It launched on', { timeout: 90_000 })
   await openRow(page, 'Weather rules for this launch')
-  const rules = page.getByRole('table').filter({ hasText: 'model runs that break it' })
+  const rules = page.getByRole('table').filter({ hasText: 'forecast runs that break it' })
   for (const f of forecasts) {
     if (f.note) await expect(rules).toContainText(f.note)
     await expect(rules).toContainText(f.system === 'NWS' ? 'National Weather Service (NWS) forecast:' : 'High-Resolution Rapid Refresh (HRRR) forecast:')
@@ -1171,7 +1171,7 @@ test('return (live API): where each flown booster came down, and a planned one n
   await page.goto('/missions/im-2/return')
   await expect(answer).toContainText('A Shortfall of Gravitas', { timeout: 30_000 })
   await expect(answer).toContainText('700 km downrange')
-  await expect(row('Booster landing zone').locator('summary')).toContainText('droneship, position not published')
+  await expect(row('Booster landing zone').locator('summary')).toContainText('on a ship at sea (droneship), position not published')
 
   // Griffin-1 has not flown: the vehicle's practice and the flown landings, and the sea (GFS-Wave) where a
   // droneship would wait for the next opportunity, drawn with no limit beside it.
@@ -1259,18 +1259,18 @@ test('radiation and space weather (live API): Blue Ghost’s screening with its 
   await page.goto('/missions/blue-ghost-m1/trip')
   await expect(page.locator('[data-guide="section-answer"]')).toContainText('The trip takes', { timeout: 90_000 })
   const rad = row('Radiation on the way')
-  await expect(rad.locator('summary').first()).toContainText('screening only')
+  await expect(rad.locator('summary').first()).toContainText('a first look, not a design figure')
   await openRow(page, 'Radiation on the way')
   await expect(rad).toContainText(/At least [\d.]+ ×\/÷2 h in the radiation belts over \d+ passes\. Cosmic rays give [\d.]+ ±[\d.]+ mGy a day on the way and [\d.]+ ±[\d.]+ mGy a day at the landing spot, before any shielding\./)
   await expect(rad).toContainText('Screening only:')
   await expect(rad).toContainText('Confirm in SPENVIS, OLTARIS or CREME-MC')
-  await expect(rad).toContainText(/Electrons above 1 MeV, whole trip≥[\d.]+ × 10¹⁰ ×\/÷2 per cm²/)
+  await expect(rad).toContainText(/Fast electrons \(above 1 MeV\), whole trip≥[\d.]+ × 10¹⁰ ×\/÷2 per cm²/)
   // Its site has a terrain model (SLDEM2015): the open sky is measured from its skyline, not assumed flat.
   const dd = (label: string) => rad.locator('dl').first().locator('dt', { hasText: label }).locator('xpath=following-sibling::dd[1]')
   await expect(dd('Cosmic-ray dose at the landing spot')).toHaveText(/^[\d.]+ ±[\d.]+ mGy a day \(\d+% of the sky open\)$/)
   await expect(rad).not.toContainText('The elevation model does not cover this landing site')
   // The one solar particle event during the trip, in the singular, with its record.
-  await expect(rad).toContainText("One solar particle event crossed NOAA's threshold (10 pfu above 10 MeV at GOES) during the trip, from NASA DONKI; its fluence is not worked out.")
+  await expect(rad).toContainText("One solar particle event crossed NOAA's storm threshold (10 pfu of protons above 10 MeV, measured by its GOES satellites) during the trip, from NASA's space weather log (DONKI); the total amount of particles it delivered (fluence) is not worked out.")
   await expect(rad).toContainText('25 February 2025, 00:20 UTC')
   await expect(rad.getByRole('link', { name: 'NASA DONKI record' })).toHaveAttribute('href', /DONKI\/view\/SEP/)
   // Three past large events for comparison, each with its measurements.
@@ -1291,8 +1291,8 @@ test('radiation and space weather (live API): Blue Ghost’s screening with its 
   await expect(im1.locator('p').first()).toHaveText(new RegExp(`^${why.replace(/[.()]/g, '\\$&')} Cosmic rays give [\\d.]+ ±[\\d.]+ mGy a day on the way and [\\d.]+ ±[\\d.]+ mGy a day at the landing spot, before any shielding\\.$`))
   const im1dd = (label: string) => im1.locator('dl').first().locator('dt', { hasText: label }).locator('xpath=following-sibling::dd[1]')
   await expect(im1dd('Time in the radiation belts')).toHaveText(why)
-  await expect(im1dd('Electrons above 1 MeV, whole trip')).toHaveText('Not counted, as above')
-  await expect(im1dd('Protons above 10 MeV in the belts, whole trip')).toHaveText('Not counted, as above')
+  await expect(im1dd('Fast electrons (above 1 MeV), whole trip')).toHaveText('Not counted, as above')
+  await expect(im1dd('Fast protons (above 10 MeV) in the belts, whole trip')).toHaveText('Not counted, as above')
   await expect(im1).not.toContainText('≥0')
   await expect(im1).not.toContainText(/\b0 ×\/÷2/)
 
@@ -1314,7 +1314,7 @@ test('radiation and space weather (live API): Blue Ghost’s screening with its 
   // The feeds worker records SWPC every few minutes, so each reading is shown with its age. A reading with no recent value (Kp has been
   // missing at times) is left out of the line and gives its reason in the list, so the line and the list must say the same.
   const line = sw.getByText(/^Now: /)
-  const item = 'Kp [\\d.]+|[Pp]rotons above 10 MeV at [\\d.]+ pfu|[Ss]olar wind at [\\d.]+ km\\/s|X-ray flares class [ABCMX][\\d.]+'
+  const item = '[Mm]agnetic storm level [\\d.]+ of 9 \\(Kp\\)|[Pp]rotons above 10 MeV at [\\d.]+ pfu|[Ss]olar wind at [\\d.]+ km\\/s|X-ray flares class [ABCMX][\\d.]+'
   await expect(line).toHaveText(
     new RegExp(
       `^Now: (?:${item})(?:, (?:${item})){0,3}; (no alerts in the last 24 hours|\\d+ alerts? in the last 24 hours|SWPC’s alerts of the last 24 hours are not shown here)\\.$`,
@@ -1325,7 +1325,7 @@ test('radiation and space weather (live API): Blue Ghost’s screening with its 
   const reading = (label: string) => sw.locator('dt', { hasText: label }).locator('xpath=following-sibling::dd[1]')
   const valueWithAge = /^-?[\w.]+ (pfu |km\/s |nT )?· as of (just now|\d+ min ago|\d+ h ago)$/
   for (const [label, words] of [
-    ['Geomagnetic activity (Kp, 0 to 9)', /Kp [\d.]+/],
+    ['Geomagnetic activity (Kp, 0 to 9)', /[Mm]agnetic storm level [\d.]+ of 9 \(Kp\)/],
     ['Protons above 10 MeV', /[Pp]rotons above 10 MeV at [\d.]+ pfu/],
     ['Solar wind speed', /[Ss]olar wind at [\d.]+ km\/s/],
     ['X-ray flares (class)', /X-ray flares class [ABCMX][\d.]+/],
@@ -1357,7 +1357,7 @@ test('radiation and space weather (live API): Blue Ghost’s screening with its 
   if (cmes > 3) await expect(sw.locator('h5', { hasText: 'Clouds thrown off the Sun' })).toContainText(`· 3 newest of ${cmes}`)
   // NOAA's outlook as numbers, and the forecast word for word.
   await expect(sw).toContainText(
-    /NOAA’s outlook for .+, issued .+ UTC: a \d+%, \d+% and \d+% chance of a radiation storm \(S1 or greater\), day by day; the largest Kp expected is [\d.]+\./,
+    /NOAA’s outlook for .+, issued .+ UTC: a \d+%, \d+% and \d+% chance of a radiation storm \(S1 or greater\), day by day; the largest magnetic storm level expected is [\d.]+ of 9 \(Kp\)\./,
   )
   await sw.locator('summary', { hasText: 'NOAA’s forecast as issued' }).click()
   await expect(sw.getByRole('region', { name: 'NOAA’s three-day forecast as issued' })).toContainText(':Product: 3-Day Forecast')
@@ -1393,7 +1393,7 @@ test('compare a relay (live API): Lunar Pathfinder added at IM-2’s landing spo
   // The plan lists the relay's contacts only when asked, and says they are planned.
   await openRow(page, 'Download the contact plan')
   const plan = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Download the contact plan' }) })
-  const csvLink = plan.getByRole('link', { name: 'Spreadsheet (CSV)' })
+  const csvLink = plan.getByRole('link', { name: 'Download as a spreadsheet (CSV)' })
   const direct = await request.get((await csvLink.getAttribute('href')) as string)
   expect(direct.status()).toBe(200)
   expect(await direct.text()).not.toContain('planned relay')
@@ -1403,8 +1403,8 @@ test('compare a relay (live API): Lunar Pathfinder added at IM-2’s landing spo
   const csv = await withRelay.text()
   expect(csv.split(/\r?\n/)[0]).toBe('from,to,start_utc,end_utc,hours,basis')
   expect(csv).toMatch(/lander,lunar-pathfinder,.*planned relay; node [\d.]+ deg, phase [\d.]+ deg, one of 5184 placements/)
-  await plan.getByLabel('Data rate for the ION plan, bits per second').fill('2,000,000')
-  const ion = await request.get((await plan.getByRole('link', { name: 'Contact plan for ION (DTN)' }).getAttribute('href')) as string)
+  await plan.getByLabel('Data rate for the networking software plan (ION), bits per second').fill('2,000,000')
+  const ion = await request.get((await plan.getByRole('link', { name: 'Contact plan for networking software (ION, DTN)' }).getAttribute('href')) as string)
   expect(ion.status()).toBe(200)
   const text = await ion.text()
   expect(text).toContain('# PLANNED relay Lunar Pathfinder')
@@ -1420,7 +1420,7 @@ test('rover line of sight (live API): other values are worked out again, 300 m o
   test.setTimeout(300_000)
   await returningVisitor(context)
   await page.goto('/missions/im-2/contact')
-  await page.locator('summary', { hasText: 'Rover and lander line of sight' }).click()
+  await page.locator('summary', { hasText: 'Can the rover and lander see each other?' }).click()
   const yaoki = page.getByTestId('rover-sight')
   await expect(yaoki.locator('p').first()).toContainText(/^Within 500 m of the lander, /, { timeout: 180_000 })
   const antennas = yaoki.locator('details').filter({ has: page.locator('summary', { hasText: 'Antennas, radio and terrain' }) })
@@ -1482,7 +1482,7 @@ test('relays, orbiters and rovers (live API): IM-3’s planned relay as a range,
   await expect(orbiters).toContainText('Not known: No JPL Horizons trajectory is recorded for these dates')
   await expect(orbiters).not.toContainText('No pass over these dates')
   // Its rovers are off the polar terrain map, and it says so.
-  const rover = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Rover and lander line of sight' }) })
+  const rover = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Can the rover and lander see each other?' }) })
   await rover.locator('summary').click()
   await expect(rover.getByTestId('rover-sight')).toContainText(/^\? Cannot be said here\. .*outside the polar terrain model/, { timeout: 60_000 })
   await expect(rover.getByLabel('Rover')).toBeVisible()
@@ -1495,7 +1495,7 @@ test('relays, orbiters and rovers (live API): IM-3’s planned relay as a range,
   await expect(passes).toContainText(/Lunar Reconnaissance Orbiter · NASA\d+ passes over these dates, [\d.]+ ±[\d.]+ h in view in all/)
   await page.getByRole('button', { name: 'Read the chart as a table' }).first().click()
   await expect(page.locator('main').getByRole('table').first()).toContainText('Lunar Reconnaissance Orbiter could see the lander (not a relay)')
-  await page.locator('summary', { hasText: 'Rover and lander line of sight' }).click()
+  await page.locator('summary', { hasText: 'Can the rover and lander see each other?' }).click()
   const yaoki = page.getByTestId('rover-sight')
   await expect(yaoki.locator('p').first()).toContainText(
     /^Within 500 m of the lander, [\d.]+–[\d.]+% of the ground is out of its sight; the radio path is not clear over [\d.]+–[\d.]+%\. No drive is published for Yaoki/,
@@ -1521,7 +1521,7 @@ test('relays, orbiters and rovers (live API): IM-3’s planned relay as a range,
   await page.setViewportSize({ width: 375, height: 812 })
   await page.reload()
   await openRow(page, 'Orbiters that could see the lander')
-  await page.locator('summary', { hasText: 'Rover and lander line of sight' }).click()
+  await page.locator('summary', { hasText: 'Can the rover and lander see each other?' }).click()
   await expect(page.getByTestId('rover-sight').getByRole('img')).toBeVisible({ timeout: 60_000 })
   await expectNoSeriousAxe(page, 'IM-2 contact with orbiters and Yaoki open (light, 375 px)')
   expect(await page.evaluate(() => document.documentElement.scrollWidth), 'IM-2 contact scrolls sideways at 375 px').toBeLessThanOrEqual(375)

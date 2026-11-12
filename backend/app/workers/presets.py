@@ -46,9 +46,9 @@ async def variants(
         bits.append(core.display("vehicle_id", veh.value, nm))
     if pad:
         bits.append("from " + core.display("pad_id", pad.value, nm))
-    head = " ".join(bits) if bits else "named defaults"
+    head = " ".join(bits) if bits else "none stated"
     tail = f", landing {core.display('landing_date', land.value, nm)}" if land else ""
-    out.append((f"Named defaults: {head}{tail}", {}))
+    out.append((f"Defaults from past flights: {head}{tail}", {}))
 
     rows = await scenario_service.flight_rows(session, m.id)
     nxt = core.next_precedent(
@@ -60,7 +60,7 @@ async def variants(
             f"{core.display('vehicle_id', nxt.vehicle_id, nm)} from "
             f"{core.display('pad_id', nxt.pad_id, nm)}, as {nxt.name}"
         )
-        out.append((f"Next precedent: {label}", given))
+        out.append((f"As the next flight of this lander: {label}", given))
 
     if land is not None:
         first = date.fromisoformat(str(land.value)[:10]).replace(day=1)

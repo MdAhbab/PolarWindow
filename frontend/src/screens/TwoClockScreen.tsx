@@ -63,7 +63,7 @@ export function TwoClockScreen() {
 
       <section aria-labelledby={questionId} className="flex min-w-0 flex-col gap-7 lg:gap-8">
         <h2 id={questionId} className="pw-eyebrow">
-          What does this spot get over these dates?
+          What does this site get over these dates?
         </h2>
         {metrics && !view.error ? (
           <div className={`${UNDER_QUESTION} flex flex-col gap-3 ${arrive}`}>

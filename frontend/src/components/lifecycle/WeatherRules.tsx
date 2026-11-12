@@ -4,9 +4,9 @@ import { Icon } from '../Icon'
 import { ScrollRegion } from '../ui'
 
 export const SYSTEMS: { id: ModelSystem; name: string; runsNote: string }[] = [
-  { id: 'GEFS', name: 'NOAA GEFS', runsNote: 'US ensemble' },
-  { id: 'ECMWF-ENS', name: 'ECMWF ENS', runsNote: 'European ensemble' },
-  { id: 'AIFS-ENS', name: 'ECMWF AIFS', runsNote: 'European machine-learning ensemble' },
+  { id: 'GEFS', name: 'NOAA GEFS', runsNote: 'US forecast runs' },
+  { id: 'ECMWF-ENS', name: 'ECMWF ENS', runsNote: 'European forecast runs' },
+  { id: 'AIFS-ENS', name: 'ECMWF AIFS', runsNote: 'European AI forecast runs' },
 ]
 
 /** A single forecast, named as people know it, with its acronym spelled out where it first appears. */
@@ -197,8 +197,8 @@ export function WeatherRuleTable({ rules }: { rules: RuleRowDTO[] }) {
                 </th>
                 {SYSTEMS.map((s) => (
                   <th key={s.id} scope="col" className={head}>
-                    {s.name}
-                    <span className="block font-normal tracking-normal normal-case">model runs that break it</span>
+                    {s.runsNote} that break it
+                    <span className="block font-normal tracking-normal normal-case">({s.name})</span>
                   </th>
                 ))}
                 <th scope="col" className={head}>
@@ -238,7 +238,10 @@ export function WeatherRuleTable({ rules }: { rules: RuleRowDTO[] }) {
               <dl className="grid grid-cols-[max-content_1fr] items-start gap-x-4 gap-y-2">
                 {SYSTEMS.map((s) => (
                   <div key={s.id} className="contents">
-                    <dt className="text-caption font-semibold text-ink-3">{s.name}</dt>
+                    <dt className="text-caption font-semibold text-ink-3">
+                      {s.runsNote}
+                      <span className="block font-normal">({s.name})</span>
+                    </dt>
                     <dd>
                       <SystemCell row={r} system={s.id} proxy={r.class === 'proxy'} />
                     </dd>

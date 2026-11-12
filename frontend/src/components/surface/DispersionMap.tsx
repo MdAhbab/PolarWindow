@@ -162,7 +162,7 @@ export function DispersionMap({ h, limitDeg }: { h: HeatmapDTO; limitDeg: number
             <svg aria-hidden="true" className="h-3 w-5">
               <ellipse cx="10" cy="6" rx="8" ry="4.5" fill="none" stroke="var(--color-ink)" strokeWidth="2" />
             </svg>
-            Landing ellipse (3 sigma)
+            Where it could come down (landing ellipse, 3-sigma)
           </li>
           <li className="flex items-center gap-1.5">
             <svg aria-hidden="true" className="size-3">

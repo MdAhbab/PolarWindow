@@ -221,7 +221,7 @@ async function main() {
       await visit(page, `/missions/${m.id}/${step}`)
       await answered(page, `/missions/${m.id}/${step}`)
       // The rover row asks only when opened: open it, so the copy holds its answer too.
-      const rover = page.locator('main summary', { hasText: 'Rover and lander line of sight' })
+      const rover = page.locator('main summary', { hasText: 'Can the rover and lander see each other?' })
       if (step === 'contact' && (await rover.count())) {
         await rover.first().click()
         try {

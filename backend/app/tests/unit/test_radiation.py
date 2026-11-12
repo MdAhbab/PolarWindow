@@ -122,9 +122,10 @@ def test_belts_not_in_the_reconstruction_are_missing_not_zero() -> None:
 def test_solar_particle_events_in_words() -> None:
     assert radiation.sep_note(0).startswith("No solar particle event crossed")
     one = radiation.sep_note(1)
-    assert one.startswith("One solar particle event crossed") and "its fluence" in one
+    assert one.startswith("One solar particle event crossed") and "it delivered (fluence)" in one
+    assert "10 pfu of protons above 10 MeV" in one and "(DONKI)" in one
     two = radiation.sep_note(2)
-    assert two.startswith("2 solar particle events crossed") and "their fluence" in two
+    assert two.startswith("2 solar particle events crossed") and "each delivered (fluence)" in two
 
 
 def test_the_surface_note_says_why_there_is_no_or_an_assumed_surface_dose() -> None:

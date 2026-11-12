@@ -1,6 +1,7 @@
 import type { ContactDTO, LinkDTO, NodeDTO, RelayLaunchStatus, RelayRowDTO } from '../../lib/api/lifecycle'
 import { dateTimeWords, shortDate } from '../../lib/format'
 import { formatValue, quantityText } from '../../lib/lifecycle/quantity'
+import { stationName } from '../../lib/stationNames'
 import { ScrollRegion } from '../ui'
 
 const HOUR = 3_600_000
@@ -273,7 +274,7 @@ export function axisTicks(start: number, end: number): { at: number; label: stri
 export function ContactTable({ contact, rows }: { contact: ContactDTO; rows: ContactRow[] }) {
   const cell = 'px-3 py-2 text-small text-ink-2 whitespace-nowrap'
   const head = 'px-3 py-2.5 text-tag font-semibold tracking-caps-md text-ink-3 uppercase'
-  const name = (id: string) => contact.nodes.find((n) => n.id === id)?.name ?? id
+  const name = (id: string) => stationName(contact.nodes.find((n) => n.id === id)?.name ?? id)
   const passes = rows.flatMap((r) =>
     r.links.flatMap((l) =>
       l.stretches.map((s) => {

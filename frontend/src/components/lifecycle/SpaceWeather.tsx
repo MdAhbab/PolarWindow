@@ -7,8 +7,8 @@ import { Disclosure } from '../ui'
 
 type Now = SpaceWeatherDTO['now']
 
-const NUMBERS: { key: Exclude<keyof Now, 'xray_class' | 'xray_missing_reason' | 'alerts' | 'alerts_missing_reason'>; label: string; words: string }[] = [
-  { key: 'kp', label: 'Geomagnetic activity (Kp, 0 to 9)', words: 'Kp' },
+const NUMBERS: { key: Exclude<keyof Now, 'xray_class' | 'xray_missing_reason' | 'alerts' | 'alerts_missing_reason'>; label: string; words: string; after?: string }[] = [
+  { key: 'kp', label: 'Geomagnetic activity (Kp, 0 to 9)', words: 'magnetic storm level', after: ' of 9 (Kp)' },
   { key: 'proton_10mev_pfu', label: 'Protons above 10 MeV', words: 'protons above 10 MeV at' },
   { key: 'proton_100mev_pfu', label: 'Protons above 100 MeV', words: 'above 100 MeV at' },
   { key: 'solar_wind_km_s', label: 'Solar wind speed', words: 'solar wind at' },
@@ -26,7 +26,7 @@ function alertWords(now: Now): string {
 /** The answer: the readings shown now in one line, or why none is. */
 export function spaceWeatherSentence(sw: SpaceWeatherDTO, meta: Pick<LifecycleMetaDTO, 'computed_at' | 'stale'>): string {
   const parts = NUMBERS.filter((n) => n.key !== 'proton_100mev_pfu' && n.key !== 'bz_nt' && shown(sw.now[n.key])).map(
-    (n) => `${n.words} ${quantityText(sw.now[n.key])}`,
+    (n) => `${n.words} ${quantityText(sw.now[n.key])}${n.after ?? ''}`,
   )
   if (sw.now.xray_class) parts.splice(Math.min(2, parts.length), 0, `X-ray flares class ${sw.now.xray_class}`)
   if (!parts.length) {
@@ -48,7 +48,7 @@ export function outlookSentence(o: SpaceWeatherDTO['outlook']): string | null {
     const listed = pct.length > 1 ? `${pct.slice(0, -1).join(', ')} and ${pct[pct.length - 1]}` : pct[0]
     parts.push(`a ${listed} chance of a radiation storm (S1 or greater)${pct.length > 1 ? ', day by day' : ''}`)
   }
-  if (o.kp_max_expected !== null) parts.push(`the largest Kp expected is ${formatValue(o.kp_max_expected)}`)
+  if (o.kp_max_expected !== null) parts.push(`the largest magnetic storm level expected is ${formatValue(o.kp_max_expected)} of 9 (Kp)`)
   if (!parts.length) return null
   const when = [o.days ? `for ${o.days}` : null, o.issued ? `issued ${dateTimeWords(Date.parse(o.issued))}` : null].filter(Boolean).join(', ')
   return `NOAA’s outlook${when ? ` ${when}` : ''}: ${parts.join('; ')}.`
@@ -166,7 +166,7 @@ export function SpaceWeatherRow() {
   const kp = sw?.now.kp
   const summary = !sw
     ? undefined
-    : `${kp && shown(kp) ? `Kp ${quantityText(kp)}` : 'no current reading'}${
+    : `${kp && shown(kp) ? `magnetic storm level ${quantityText(kp)} of 9 (Kp)` : 'no current reading'}${
         sw.now.alerts.length ? `, ${sw.now.alerts.length} alert${sw.now.alerts.length === 1 ? '' : 's'}` : ''
       }`
   return (

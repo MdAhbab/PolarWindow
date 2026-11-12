@@ -390,7 +390,7 @@ def default_vehicle(
             who = "the same lander" if lander and r.lander == lander else "the same provider"
             return Candidate(
                 r.vehicle_id,
-                f"Precedent: {r.name}",
+                f"As {r.name}, a past flight",
                 note=f"{r.name}, the last flown mission of {who}, launched on this vehicle.",
             )
     return _most_used([r.vehicle_id for r in rows], "vehicle", len(rows))
@@ -410,7 +410,7 @@ def default_pad(
     for r in precedents(provider, lander, on_vehicle):
         return Candidate(
             r.pad_id,
-            f"Precedent: {r.name}",
+            f"As {r.name}, a past flight",
             note=f"{r.name} launched on this vehicle from this pad.",
         )
     c = _most_used([r.pad_id for r in on_vehicle], "pad for this vehicle", len(on_vehicle))
@@ -644,6 +644,17 @@ SECTION_LABELS: dict[str, str] = {
     "contact": "Contact",
     "return": "Return",
 }
+
+
+_FEATURE_CENTRE = " (feature centre)"
+
+
+def site_words(name: str) -> str:
+    """A site's name as people read it: the catalogue's "Reiner Gamma (feature centre)" is
+    "Centre of Reiner Gamma, not a landing point"; any other name is shown as it is."""
+    if name.endswith(_FEATURE_CENTRE):
+        return f"Centre of {name[: -len(_FEATURE_CENTRE)]}, not a landing point"
+    return name
 
 
 def display(field_id: str, value: Any, names: Mapping[str, Mapping[str, str]]) -> str:

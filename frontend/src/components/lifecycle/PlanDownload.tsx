@@ -48,7 +48,7 @@ export function PlanDownload({ missionId, start, end, relays }: { missionId: str
   const unusable = relays.filter((r) => !listable(r))
   const asked = withRelays ? usable.map((r) => r.id) : undefined
   return (
-    <Disclosure title="Download the contact plan" meta="ION, spreadsheet">
+    <Disclosure title="Download the contact plan" meta="for delay-tolerant networking software (ION), spreadsheet">
       {relays.length > 0 && (
         <div className="flex flex-col gap-1">
           {usable.length > 0 && (
@@ -68,7 +68,7 @@ export function PlanDownload({ missionId, start, end, relays }: { missionId: str
         </div>
       )}
       <Field
-        label="Data rate for the ION plan, bits per second"
+        label="Data rate for the networking software plan (ION), bits per second"
         hint="The lander’s data rate is not published, so give the one you plan for, for example 2,000,000 for 2 megabits per second. The spreadsheet does not need one."
         error={rate.trim() && bps === null ? 'Give a number above zero.' : undefined}
       >
@@ -78,17 +78,17 @@ export function PlanDownload({ missionId, start, end, relays }: { missionId: str
         <li>
           {bps !== null ? (
             <a className={LINK} href={planUrl(missionId, 'ion', start, end, { rateBps: bps, relays: asked })} download>
-              Contact plan for ION (DTN)
+              Contact plan for networking software (ION, DTN)
             </a>
           ) : (
             <button type="button" disabled className={`${LINK} cursor-not-allowed opacity-60 hover:bg-transparent`}>
-              Contact plan for ION (DTN)
+              Contact plan for networking software (ION, DTN)
             </button>
           )}
         </li>
         <li>
           <a className={LINK} href={planUrl(missionId, 'csv', start, end, { relays: asked })} download>
-            Spreadsheet (CSV)
+            Download as a spreadsheet (CSV)
           </a>
         </li>
       </ul>

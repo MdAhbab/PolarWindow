@@ -31,7 +31,7 @@ const HOUR = 3_600_000
 /** The formats `GET /missions/{id}/trip/export` serves (SPICE SPK is not served). */
 const TRIP_EXPORTS = [
   ['oem', 'CCSDS orbit file (OEM)'],
-  ['csv', 'Spreadsheet (CSV)'],
+  ['csv', 'Download as a spreadsheet (CSV)'],
 ] as const
 
 /**

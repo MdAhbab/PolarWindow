@@ -119,7 +119,7 @@ export function HorizonScreen() {
                   {Math.round(worst.hours)}
                 </span>
                 <span className="text-body text-ink-2">
-                  h of darkness{metrics.sun.longestDownOpen ? ', cut short by the last date' : ''}
+                  h of night{metrics.sun.longestDownOpen ? ', cut short by the last date' : ''}
                 </span>
               </div>
             ) : (

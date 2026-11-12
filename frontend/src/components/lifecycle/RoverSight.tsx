@@ -141,11 +141,10 @@ export function ViewshedTable({ v }: { v: ViewshedDTO }) {
               Direction
             </th>
             <th scope="col" className={head}>
-              Line of sight
+              Straight line clear (line of sight)
             </th>
             <th scope="col" className={head}>
-              Radio path{' '}
-              <span className="mt-0.5 block text-small font-normal tracking-normal text-ink-3 normal-case">({RADIO_ROOM})</span>
+              Room for the radio wave (Fresnel zone)
             </th>
           </tr>
         </thead>
@@ -187,7 +186,7 @@ export function ViewshedPanel({
   const onTerrain = Boolean(tile && at && !offline)
   return (
     <ChartPanel
-      title={`${LAYER_WORDS[layer]}, ${roverName} and the lander`}
+      title={`${LAYER_WORDS[layer]} between ${roverName} and the lander`}
       chart={
         <div className="flex flex-col gap-3">
           <Segmented

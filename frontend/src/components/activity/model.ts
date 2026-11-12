@@ -59,7 +59,7 @@ export const KIND_WORDS: Record<ActivityItemDTO['kind'], string> = {
   trip: 'Trip',
   contact: 'Contact',
   rover: 'Rover line of sight',
-  site_build: 'Skyline for a new spot',
+  site_build: 'Skyline for a new landing spot',
   scenario: 'Scenario',
 }
 

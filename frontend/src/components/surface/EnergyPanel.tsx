@@ -55,7 +55,7 @@ const GROUPS: { title: string; fields: FieldDef[] }[] = [
       { key: 'initial_soc_fraction', label: 'Charge at the start', unit: '0–1' },
       { key: 'avionics_w', label: 'Avionics', unit: 'W' },
       { key: 'payload_w', label: 'Payload', unit: 'W' },
-      { key: 'load_dissipation_fraction', label: 'Share of load that heats the bus', unit: '0–1' },
+      { key: 'load_dissipation_fraction', label: 'Share of load that heats the lander body (bus)', unit: '0–1' },
       { key: 'heater_power_w', label: 'Heater power', unit: 'W' },
       { key: 'heater_setpoint_c', label: 'Heater comes on below', unit: '°C' },
     ],
@@ -63,14 +63,14 @@ const GROUPS: { title: string; fields: FieldDef[] }[] = [
   {
     title: 'Thermal',
     fields: [
-      { key: 'initial_bus_temp_c', label: 'Bus at the start', unit: '°C' },
+      { key: 'initial_bus_temp_c', label: 'Inside the lander (bus) at the start', unit: '°C' },
       { key: 'operational_min_c', label: 'Operational minimum', unit: '°C' },
       { key: 'survival_min_c', label: 'Survival minimum', unit: '°C' },
       { key: 'heat_capacity_j_per_k', label: 'Heat capacity', unit: 'J/K' },
-      { key: 'bus_absorptivity', label: 'Bus absorptivity', unit: '0–1' },
-      { key: 'bus_emissivity', label: 'Bus emissivity', unit: '0–1' },
-      { key: 'bus_side_area_m2', label: 'Bus side area (Sun low)', unit: 'm²' },
-      { key: 'bus_top_area_m2', label: 'Bus top area (Sun high)', unit: 'm²' },
+      { key: 'bus_absorptivity', label: 'Lander body (bus) absorptivity', unit: '0–1' },
+      { key: 'bus_emissivity', label: 'Lander body (bus) emissivity', unit: '0–1' },
+      { key: 'bus_side_area_m2', label: 'Lander body (bus) side area (Sun low)', unit: 'm²' },
+      { key: 'bus_top_area_m2', label: 'Lander body (bus) top area (Sun high)', unit: 'm²' },
       { key: 'base_area_m2', label: 'Base area', unit: 'm²' },
       { key: 'radiator_area_m2', label: 'Radiator area', unit: 'm²' },
       { key: 'radiator_emissivity', label: 'Radiator emissivity', unit: '0–1' },
@@ -320,7 +320,7 @@ export function EnergyResult({ data, stale = false }: { data: EnergyResponseDTO;
         <QuantityCell label="Energy generated" q={k.energy_generated} digits={1} />
         <QuantityCell label="Lowest battery charge" q={k.lowest_soc} digits={0} />
         <QuantityCell label="Battery empties, hours after the start" q={k.battery_empty_at} digits={1} note={when(k.battery_empty_at.value_utc)} />
-        <QuantityCell label="Lowest bus temperature" q={k.lowest_bus_temperature} digits={0} />
+        <QuantityCell label="Coldest inside the lander (bus)" q={k.lowest_bus_temperature} digits={0} />
         <QuantityCell label="Hours below the operational minimum" q={k.hours_below_operational} digits={1} />
         <QuantityCell
           label="Below the survival minimum, hours after the start"

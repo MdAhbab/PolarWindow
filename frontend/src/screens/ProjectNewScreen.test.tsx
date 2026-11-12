@@ -175,10 +175,10 @@ describe('adding a project', () => {
 describe('the radio figures in the form', () => {
   it('is closed by default, takes optional figures, and sends only what was typed', async () => {
     const { container } = shell()
-    const eirp = (await screen.findByLabelText('EIRP (dBW)')) as HTMLInputElement
+    const eirp = (await screen.findByLabelText('Radio power (EIRP, dBW)')) as HTMLInputElement
     expect(eirp.closest('details')!.hasAttribute('open')).toBe(false)
-    expect(screen.getByText(/The downlink budget on the Contact step needs three of these/)).toBeTruthy()
-    expect(screen.getAllByLabelText(/Ground station G\/T \(dB\/K\)|Downlink frequency \(MHz\)|Required Eb\/N0 \(dB\)|Required margin \(dB\)|EIRP tolerance \(dB\)|Data rates \(kbps/).length).toBe(6)
+    expect(screen.getByText(/Contact can work out the radio link once it has three of these/)).toBeTruthy()
+    expect(screen.getAllByLabelText(/Ground dish sensitivity \(G\/T, dB\/K\)|Radio frequency, lander to Earth \(downlink, MHz\)|Signal needed per bit \(Eb\/N0, dB\)|Spare signal kept in hand \(link margin, dB\)|Margin on radio power \(EIRP ±, dB\)|Data rates \(kbps/).length).toBe(6)
     expect(eirp.value).toBe('')
     fireEvent.change(screen.getByLabelText(/Mission name/), { target: { value: 'Aurora 1' } })
     fireEvent.change(eirp, { target: { value: '12.5' } })
@@ -207,12 +207,12 @@ describe('the radio figures in the form', () => {
       </Routes>,
       { route: '/projects/mine-1/edit' },
     )
-    const eirp = (await screen.findByLabelText('EIRP (dBW)')) as HTMLInputElement
+    const eirp = (await screen.findByLabelText('Radio power (EIRP, dBW)')) as HTMLInputElement
     expect(eirp.value).toBe('12.5')
-    expect((screen.getByLabelText('Downlink frequency (MHz)') as HTMLInputElement).value).toBe('2250')
+    expect((screen.getByLabelText('Radio frequency, lander to Earth (downlink, MHz)') as HTMLInputElement).value).toBe('2250')
     expect((screen.getByLabelText(/Data rates/) as HTMLInputElement).value).toBe('2, 64')
-    expect((screen.getByLabelText('Required margin (dB)') as HTMLInputElement).value).toBe('3')
-    expect((screen.getByLabelText('Ground station G/T (dB/K)') as HTMLInputElement).value).toBe('')
+    expect((screen.getByLabelText('Spare signal kept in hand (link margin, dB)') as HTMLInputElement).value).toBe('3')
+    expect((screen.getByLabelText('Ground dish sensitivity (G/T, dB/K)') as HTMLInputElement).value).toBe('')
     expect(eirp.closest('details')!.hasAttribute('open')).toBe(true)
     fireEvent.change(eirp, { target: { value: '14' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
@@ -228,7 +228,7 @@ describe('the radio figures in the form', () => {
       </Routes>,
       { route: '/projects/mine-2/edit' },
     )
-    expect(((await screen.findByLabelText('EIRP (dBW)')) as HTMLInputElement).value).toBe('12.5')
+    expect(((await screen.findByLabelText('Radio power (EIRP, dBW)')) as HTMLInputElement).value).toBe('12.5')
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
     expect(await screen.findByText('hub')).toBeTruthy()
     expect(posts[0].body.lifecycle).toEqual({

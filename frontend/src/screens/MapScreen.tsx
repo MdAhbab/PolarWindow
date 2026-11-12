@@ -118,8 +118,8 @@ export function MapScreen() {
     <div className="pw-page flex grow flex-col gap-6 pt-6 pb-8 lg:gap-8 lg:pt-8">
       <PageHeader
         compact
-        title="Candidate landing sites"
-        lede="Spots near the south pole, measured for sunlight and contact with Earth. Choose one on the map or in the list."
+        title="Landing sites"
+        lede="Sites near the south pole, measured for sunlight and contact with Earth. Choose one on the map or in the list."
       />
       <DateSlider />
 

@@ -33,7 +33,7 @@ export const GUIDE_STEPS: GuideStep[] = [
     path: '/map',
     target: 'map',
     title: 'Choose a site on the map',
-    body: 'Landing sites holds the candidate spots near the pole: the map, one site in detail, sites side by side, and a plan for time without contact. Numbers are never added into one score.',
+    body: 'Landing sites holds the candidate sites near the pole: the map, one site in detail, sites side by side, and a plan for time without contact. Numbers are never added into one score.',
   },
   {
     id: 'journey',
@@ -53,8 +53,8 @@ export const GUIDE_STEPS: GuideStep[] = [
     id: 'settings',
     path: '/missions/im-2/surface',
     target: 'settings',
-    title: 'Settings and the project',
-    body: 'Settings holds the project, its parameters and risk scale, where the live data comes from, the theme and motion. Press Guide at the top any time to see this tour again.',
+    title: 'Settings and the team',
+    body: 'Settings holds the team, its parameters and risk scale, where the live data comes from, the theme and motion. Press Guide at the top any time to see this tour again.',
   },
 ]
 

@@ -80,7 +80,7 @@ def landing_rule(
 
     parts = ["The Sun must be above the skyline and rising at landing, and the Earth up."]
     if lo is None and hi is None:
-        parts.append("No Sun-height band has been entered (Settings, Project).")
+        parts.append("No Sun-height band has been entered (Settings, Parameters).")
     if days is not None:
         parts.append(f"The Sun must then stay up at least {days:g} days.")
     else:

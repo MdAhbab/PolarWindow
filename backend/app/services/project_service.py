@@ -27,6 +27,7 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import ENGINE_VERSION, engine_closure, get_settings
+from app.core.scenario import site_words
 from app.data import catalogues
 from app.data.ingest_missions import (
     NESTED_NULLABLE,
@@ -523,7 +524,7 @@ async def options(session: AsyncSession) -> dict[str, Any]:
     site_opts = [
         {
             "value": x.id,
-            "label": x.name,
+            "label": site_words(x.name),
             "hint": coordinate_name(x.lat_deg, x.lon_deg),
             "lat_deg": x.lat_deg,
             "lon_deg": x.lon_deg,

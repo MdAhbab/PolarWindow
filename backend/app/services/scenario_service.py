@@ -74,7 +74,7 @@ async def names(session: AsyncSession) -> dict[str, dict[str, str]]:
         "vehicles": {r.id: r.name for r in catalogues.load("vehicles").records},
         "pads": {r.id: r.name for r in catalogues.load("launch_sites").records},
         "relays": {r.id: r.name for r in catalogues.load("relays").records if r.role == "relay"},
-        "sites": {s.id: s.name for s in sites},
+        "sites": {s.id: core.site_words(s.name) for s in sites},
     }
 
 

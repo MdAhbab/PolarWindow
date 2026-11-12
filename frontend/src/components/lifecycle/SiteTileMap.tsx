@@ -4,14 +4,21 @@ import type { ViewshedDTO } from '../../lib/api/lifecycle'
 import { formatValue } from '../../lib/lifecycle/quantity'
 import { cellEdges, siteFrame, tilesFor, zoomFor, type SightLayer } from '../../lib/lifecycle/tileMap'
 
+/** The two layers, plain words first and the term in brackets: the switch and the panel title. */
 export const LAYER_WORDS: Record<SightLayer, string> = {
+  sight: 'Straight line clear (line of sight)',
+  radio: 'Room for the radio wave (Fresnel zone)',
+}
+
+/** The same two layers as a noun for a map's accessible name, which reads as a sentence ("Line of sight between ..."). */
+const LAYER_NOUN: Record<SightLayer, string> = {
   sight: 'Line of sight',
   radio: 'Radio path',
 }
 
 /** The words that say what a map shows, for its accessible name. */
 export function mapLabel(v: ViewshedDTO, layer: SightLayer, roverName: string): string {
-  return `${LAYER_WORDS[layer]} between ${roverName} and the lander, out to ${formatValue(v.ranges_m[v.ranges_m.length - 1])} m in ${v.bearings_deg.length} directions, north up. The table lists each direction.`
+  return `${LAYER_NOUN[layer]} between ${roverName} and the lander, out to ${formatValue(v.ranges_m[v.ranges_m.length - 1])} m in ${v.bearings_deg.length} directions, north up. The table lists each direction.`
 }
 
 /**

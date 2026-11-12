@@ -207,7 +207,7 @@ export function MissionsScreen() {
         <p className="pw-eyebrow">NASA Commercial Lunar Payload Services</p>
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
           <h1 className="pw-display text-[36px] leading-[38px] sm:text-[48px] sm:leading-[50px] lg:text-[56px] lg:leading-[58px]">
-            CLPS missions
+            NASA&apos;s commercial Moon landings (CLPS)
           </h1>
           <div className="flex flex-wrap items-center gap-3">
             <p
@@ -224,7 +224,7 @@ export function MissionsScreen() {
           </div>
         </div>
         <p className="max-w-3xl text-lede leading-7 text-ink-2">
-          Every NASA CLPS delivery to the Moon, flown and planned. Open one to follow it from getting ready to coming
+          Every delivery to the Moon in the program, flown and planned. Open one to follow it from getting ready to coming
           home.
         </p>
       </header>
@@ -293,7 +293,7 @@ export function MissionsScreen() {
             Missions
           </h2>
           {list.isPending ? (
-            <LoadingPanel done={0} total={1} title="Loading CLPS missions" unit="lists" />
+            <LoadingPanel done={0} total={1} title="Loading NASA's commercial Moon landings (CLPS)" unit="lists" />
           ) : list.error && !list.data ? (
             <ProblemPanel error={list.error} fallbackTitle="Cannot load the missions" onRetry={() => void list.refetch()} />
           ) : shown.length === 0 ? (

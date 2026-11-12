@@ -25,7 +25,7 @@ type Booster = NonNullable<ReturnDTO['booster']>
 
 /** The booster landing zone's row, when its position is not published. */
 const NO_ZONE: Record<Booster['landing'], string> = {
-  droneship: 'droneship, position not published',
+  droneship: 'on a ship at sea (droneship), position not published',
   land: 'position not published',
   expended: 'not recovered',
   unknown: 'not published yet',
@@ -269,7 +269,7 @@ export function CapsuleCheckRow({ check: k }: { check: CapsuleModelCheckDTO }) {
   const [long, wide] = k.ellipse_99_km
   const limit = capsuleLimitWords(k)
   const rows: [string, string][] = [
-    ['The case', k.case],
+    ['The landing it was checked against', k.case],
     // Always served now; a saved copy recorded before the field existed has none, and then the line is left out, not left empty.
     ...(k.atmosphere ? ([['The air the modelled fall went through', k.atmosphere]] as [string, string][]) : []),
     ['From the real landing point', `${km(k.distance_km)}${lo != null && hi != null ? ` (${formatValue(lo)} to ${km(hi)} over the published drag range)` : ''}`],
@@ -302,7 +302,7 @@ export function CapsuleCheckRow({ check: k }: { check: CapsuleModelCheckDTO }) {
           ))}
           {k.sources.length > 0 && (
             <div>
-              <dt className="font-semibold text-ink-2">Where the entry state and the landing are from</dt>
+              <dt className="font-semibold text-ink-2">Where the capsule’s speed and position at entry, and its landing, are from</dt>
               <dd className="text-ink-2">
                 <ul className="flex flex-col gap-1 break-words [overflow-wrap:anywhere]">
                   {k.sources.map((s) =>

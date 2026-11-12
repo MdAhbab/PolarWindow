@@ -25,14 +25,14 @@ export function SurfaceTools({
       <ToolSection
         guide="surface-energy"
         title="Power and temperature for a lander"
-        lede="Battery charge and bus temperature through these dates, for a lander you describe."
+        lede="Battery charge and temperature inside the lander's body (bus) through these dates, for a lander you describe."
       >
         <EnergyPanel key={siteId} siteId={siteId} siteName={siteName} startIso={iso(startMs)} endIso={iso(endMs)} />
       </ToolSection>
       <ToolSection
         guide="surface-dispersion"
-        title="Landing ellipse and slope"
-        lede="How steep the ground is where a lander might come down, for an ellipse and lander you type in."
+        title="Landing area and slope"
+        lede="How steep the ground is where a lander might come down, for a landing area (ellipse) and lander you type in."
       >
         <DispersionPanel key={siteId} siteId={siteId} siteName={siteName} />
       </ToolSection>

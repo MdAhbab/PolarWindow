@@ -214,8 +214,9 @@ def _scenarios() -> list[dict[str, Any]]:
         f = float(e["fluence_gt10_cm2"])  # type: ignore[arg-type]
         peak = e.get("peak_gt10_pfu")
         words = (
-            f"{e['source']}, {e['start']} to {e['end']} UTC; peak {float(peak):,.0f} pfu above "  # type: ignore[arg-type]
-            f"10 MeV (NOAA's list: {float(e['swpc_list_peak_pfu']):,.0f})."  # type: ignore[arg-type]
+            f"{e['source']}, {e['start']} to {e['end']} UTC; peak {float(peak):,.0f} pfu "  # type: ignore[arg-type]
+            "(proton flux units) of fast protons above 10 MeV "
+            f"(NOAA's list: {float(e['swpc_list_peak_pfu']):,.0f})."  # type: ignore[arg-type]
             if peak is not None
             else f"{e['source']}."
         )
@@ -294,13 +295,16 @@ def belt_numbers(tr: dict[str, Any], r0_km: float, why_maps: str, before: str) -
 def sep_note(n: int) -> str:
     if n == 0:
         return (
-            "No solar particle event crossed NOAA's threshold (10 pfu above 10 MeV at GOES) "
-            "during the trip (NASA DONKI)."
+            "No solar particle event crossed NOAA's storm threshold (10 pfu of protons above "
+            "10 MeV, measured by its GOES satellites) during the trip (NASA's space weather "
+            "log, DONKI)."
         )
     events = "One solar particle event" if n == 1 else f"{n} solar particle events"
     return (
-        f"{events} crossed NOAA's threshold (10 pfu above 10 MeV at GOES) during the trip, "
-        f"from NASA DONKI; {'its' if n == 1 else 'their'} fluence is not worked out."
+        f"{events} crossed NOAA's storm threshold (10 pfu of protons above 10 MeV, measured by "
+        f"its GOES satellites) during the trip, from NASA's space weather log (DONKI); the "
+        f"total amount of particles {'it' if n == 1 else 'each'} delivered (fluence) is not "
+        "worked out."
     )
 
 

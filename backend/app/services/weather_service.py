@@ -622,7 +622,7 @@ async def launch_weather(
         sources=sources,
         parts=[
             (
-                "Ensemble shares",
+                "Share of forecast runs (ensemble)",
                 "k of N runs break the rule at the forecast step nearest the launch (within "
                 "3 hours); the ± is the exact 95 % interval for that many runs.",
             ),

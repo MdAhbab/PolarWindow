@@ -32,7 +32,7 @@ describe('the mission list', () => {
   it('loading: a progress panel in the list column, not a spinner', () => {
     stubApi(() => 'pending')
     renderApp(<MissionsScreen />, { route: '/missions' })
-    expect(screen.getByText('Loading CLPS missions')).toBeTruthy()
+    expect(screen.getByText("Loading NASA's commercial Moon landings (CLPS)")).toBeTruthy()
     expect(screen.getByRole('progressbar')).toBeTruthy()
   })
 
@@ -67,6 +67,6 @@ describe('the mission list', () => {
     renderApp(<MissionsScreen />, { route: '/missions' })
     expect(await screen.findByText('The mission table is not loaded')).toBeTruthy()
     expect(screen.getByText('Sites and their numbers are unaffected.')).toBeTruthy()
-    await waitFor(() => expect(screen.queryByText('Loading CLPS missions')).toBeNull())
+    await waitFor(() => expect(screen.queryByText("Loading NASA's commercial Moon landings (CLPS)")).toBeNull())
   })
 })

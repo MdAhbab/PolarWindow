@@ -47,7 +47,7 @@ describe('EnergyPanel', () => {
 describe('EnergyResult', () => {
   it('shows each key quantity with its margin and provenance, the charts, the ground basis and what is not modelled', () => {
     renderApp(<EnergyResult data={data} />)
-    expect(screen.getByText('Lowest bus temperature')).toBeTruthy()
+    expect(screen.getByText('Coldest inside the lander (bus)')).toBeTruthy()
     expect(screen.getByText('range −107 to −101')).toBeTruthy()
     expect(screen.getAllByText('computed').length).toBeGreaterThanOrEqual(6)
     expect(screen.getByRole('img', { name: /battery empties about 576 hours in/i })).toBeTruthy()

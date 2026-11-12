@@ -27,7 +27,7 @@ export function BlackoutScreen() {
       <div className="pw-page flex grow flex-col gap-6 pt-6 pb-8 lg:pt-8">
         <div className="max-w-2xl">
           {view.error ? (
-            <ProblemPanel error={view.error} fallbackTitle="Cannot plan this window" onRetry={view.refetch} />
+            <ProblemPanel error={view.error} fallbackTitle="Cannot plan these dates" onRetry={view.refetch} />
           ) : (
             <LoadingPanel done={0} total={1} />
           )}
@@ -166,7 +166,7 @@ export function BlackoutScreen() {
               </summary>
               <div className="flex flex-col gap-2 pt-1">
                 <Button onClick={() => download(`${site.id}-${stamp}-windows.txt`, spiceWindows(exportSite))}>
-                  Download for SPICE (engineers)
+                  Download for NASA’s navigation toolkit (SPICE)
                 </Button>
                 <p className="text-caption leading-caption text-ink-3">
                   Each sunlit, in-contact and dark-and-silent stretch in UTC, ready for NASA’s SPICE toolkit.

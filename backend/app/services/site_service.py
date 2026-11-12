@@ -489,20 +489,21 @@ def set_meta(
     # "LOLA_LDEM_80S_20M + LOLA_LDEM_80S_20M + LDEM_80S_80M" (C6).
     products = sorted({part.strip() for r in recs for part in r.dem_product.split(" + ")})
     notes = [
-        "Summaries are computed over the reference window at a "
-        f"{s.default_step_s} s step, not over any window you have selected.",
+        "Summaries are computed over the default dates at a "
+        f"{s.default_step_s} s step, not over any dates you have selected.",
         "A site with no summary has not been surveyed yet; it is shown without "
         "numbers rather than with zeros.",
     ]
     if filtered:
         notes.append(
-            "Metric filters were applied against the reference window. A site that "
-            "passes here may fail for the window you are actually planning."
+            "Metric filters were applied against the default dates. A site that "
+            "passes here may fail for the dates you are actually planning."
         )
     if open_cut:
         notes.append(
-            "Where a summary marks its longest night or blackout as open, the reference "
-            "window ended that stretch, not the geometry: the figure is a lower bound."
+            "Where the dates cut the longest night or the longest time without contact "
+            "short, the dates ended that stretch, not the geometry: the figure is a lower "
+            "bound."
         )
     if grazing:
         notes.append(
@@ -510,7 +511,7 @@ def set_meta(
             "its edges do not."
         )
     notes.append(
-        "Edge timing is not summarised across sites; it is reported per window by "
+        "Edge timing is not summarised across sites; it is reported for the chosen dates by "
         "/timeline, /windows and /metrics."
     )
     return {

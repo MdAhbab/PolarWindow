@@ -228,7 +228,7 @@ def world(monkeypatch: pytest.MonkeyPatch) -> World:
 
 PUB = Candidate("falcon-9", "Mission record")
 LIVE = Candidate("falcon-heavy", "Launch Library 2", "https://ll.example/", "2026-11-11T00:00:00Z")
-DEFAULT = Candidate("vulcan-centaur", "Precedent: IM-2")
+DEFAULT = Candidate("vulcan-centaur", "As IM-2, a past flight")
 
 
 def test_you_beat_published_live_and_default() -> None:
@@ -252,7 +252,18 @@ def test_live_beats_default_and_keeps_where_and_when() -> None:
 
 def test_default_is_last_and_names_its_precedent() -> None:
     r = core.resolve("vehicle_id", given={}, published=None, live=None, default=DEFAULT)
-    assert r is not None and r.basis == "default" and r.source == "Precedent: IM-2"
+    assert r is not None and r.basis == "default" and r.source == "As IM-2, a past flight"
+
+
+def test_a_feature_centre_site_reads_as_the_centre_not_a_landing_point() -> None:
+    assert core.site_words("Reiner Gamma (feature centre)") == (
+        "Centre of Reiner Gamma, not a landing point"
+    )
+    assert core.site_words("Connecting Ridge") == "Connecting Ridge"
+    names = {"sites": {"feature-reiner-gamma": core.site_words("Reiner Gamma (feature centre)")}}
+    assert core.display("site_id", "feature-reiner-gamma", names) == (
+        "Centre of Reiner Gamma, not a landing point"
+    )
 
 
 def test_an_empty_value_falls_through_to_the_next_basis() -> None:
@@ -524,8 +535,8 @@ async def test_preset_variants_are_defaults_then_next_precedent_then_a_month_lat
     world.missions["old"] = flown("old", "2024-02-22", "falcon-heavy", "ccsfs-slc-40")
     out = await presets.variants(None, m, NAMES)
     assert [n.split(":")[0] for n, _ in out] == [
-        "Named defaults",
-        "Next precedent",
+        "Defaults from past flights",
+        "As the next flight of this lander",
         "A month later",
     ]
     assert out[0][1] == {}

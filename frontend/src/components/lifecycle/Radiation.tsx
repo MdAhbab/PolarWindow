@@ -54,8 +54,8 @@ function measures(r: RadiationDTO): { label: string; figure: string; how: string
       figure: `${screeningFigure(r.belt_hours)}${r.belt_hours.value ? `, ${r.belt_passes} pass${r.belt_passes === 1 ? '' : 'es'}` : ''}`,
       how: r.belt_hours.source,
     },
-    { label: 'Electrons above 1 MeV, whole trip', figure: belt(r.electron_fluence_gt1mev), how: r.electron_fluence_gt1mev.source },
-    { label: 'Protons above 10 MeV in the belts, whole trip', figure: belt(r.fluence_gt10mev), how: r.fluence_gt10mev.source },
+    { label: 'Fast electrons (above 1 MeV), whole trip', figure: belt(r.electron_fluence_gt1mev), how: r.electron_fluence_gt1mev.source },
+    { label: 'Fast protons (above 10 MeV) in the belts, whole trip', figure: belt(r.fluence_gt10mev), how: r.fluence_gt10mev.source },
     { label: 'Cosmic-ray dose on the way', figure: screeningFigure(r.gcr_dose_mgy_day), how: r.gcr_dose_mgy_day.source },
   ]
   if (r.surface) {
@@ -89,7 +89,7 @@ export function RadiationRow({ r, note }: { r: RadiationDTO | null; note: string
   const num = `${cell} text-right font-mono tnum whitespace-nowrap text-ink`
   const head = 'px-3 py-2.5 text-tag font-semibold tracking-caps-md text-ink-3 uppercase align-bottom'
   return (
-    <Disclosure title="Radiation on the way" meta="screening only">
+    <Disclosure title="Radiation on the way" meta="a first look, not a design figure">
       <p className="text-body leading-6 text-ink">{radiationSentence(r)}</p>
       <p className="text-small leading-5 text-ink-2">
         {r.screening_note}
@@ -129,8 +129,8 @@ export function RadiationRow({ r, note }: { r: RadiationDTO | null; note: string
               <thead>
                 <tr className="bg-inset">
                   <th scope="col" className={head}>Event</th>
-                  <th scope="col" className={`${head} text-right`}>Protons above 10 MeV, per cm²</th>
-                  <th scope="col" className={`${head} text-right`}>Above 30 MeV, per cm²</th>
+                  <th scope="col" className={`${head} text-right`}>Fast protons per cm² (above 10 MeV)</th>
+                  <th scope="col" className={`${head} text-right`}>Fast protons per cm² (above 30 MeV)</th>
                 </tr>
               </thead>
               <tbody>

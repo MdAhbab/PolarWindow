@@ -74,7 +74,7 @@ export function ArcTable({ metrics, body }: { metrics: SiteMetrics; body?: 'sun'
                   {a.hours.toFixed(1)}
                 </td>
                 <td className="px-4 py-2.5 text-right font-mono text-small text-uncertain tnum">
-                  {a.grazing ? 'grazing' : plusMinus(a.toleranceH, 2)}
+                  {a.grazing ? 'skims the skyline: time unsure (grazing)' : plusMinus(a.toleranceH, 2)}
                 </td>
                 <td className="px-4 py-2.5 text-small text-ink-2">
                   {a.up
