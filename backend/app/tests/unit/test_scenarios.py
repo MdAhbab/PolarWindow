@@ -829,3 +829,11 @@ async def test_a_done_preset_runs_again_only_when_its_defaults_changed_or_a_step
     # The rules for a default changed since it ran: again.
     older = [a for a in now if a["field"] != "launch_to"]
     assert await rerun(done("The landing rule allows no landing time in these dates.", older))
+
+
+async def test_the_default_stay_fits_inside_one_lunar_daylight(world: World) -> None:
+    m = mission()
+    world.missions[m.id] = m
+    by = {r.field: r for r in await scenario_service.resolve_all(None, m, {}, today=TODAY)}  # type: ignore[arg-type]
+    # Longer than a daylight period, the launch rule (sunlight for the whole stay) never holds.
+    assert by["surface_days"].value == 14.5

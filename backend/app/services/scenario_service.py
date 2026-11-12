@@ -16,6 +16,7 @@ no basis is a gap, left out and said, never guessed.
 from __future__ import annotations
 
 import dataclasses
+import math
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
@@ -188,11 +189,13 @@ async def defaults(
     landing = core.default_landing(m.landing, m.launch, today)
     if landing:
         out["landing_date"] = landing
+    # Rounded down, not to the nearest half day: 15 days is longer than any daylight away
+    # from the pole, so the launch step's rule (sunlight for the whole stay) never held.
     out["surface_days"] = Candidate(
-        mission_service.LUNAR_DAYLIGHT_S / 86400.0,
+        math.floor(mission_service.LUNAR_DAYLIGHT_S / 86400.0 * 2) / 2,
         "Surface window rule",
         note="One lunar daylight period (14.8 days), the span used when the duration is not "
-        "published; rounded to the nearest half day.",
+        "published, rounded down to the half day so a landing at sunrise can fit it.",
     )
     out["transfer_type"] = Candidate(
         "direct",
