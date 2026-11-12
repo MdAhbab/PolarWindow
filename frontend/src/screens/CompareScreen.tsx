@@ -214,7 +214,7 @@ export function CompareScreen() {
         })
       : undefined
   }
-  const metricName = termLabel(rankBy).label.toLowerCase()
+  const metricName = termLabel(rankBy).label.replace(/^./, (c) => c.toLowerCase()) // keeps "Earth"
   const orderOf = `order of ${metricName}, ${firstEnd(rankBy)}`
   // Each site's longest night against the limit, with the night's margin (R2).
   const nights: Record<string, Night> = {}
@@ -446,7 +446,7 @@ function CompareCard({
   // Magenta means past the limit by more than the night's margin, nothing else.
   const over = against.kind === 'past'
   const rank = item?.rank ?? null
-  const metricName = termLabel(rankBy).label.toLowerCase()
+  const metricName = termLabel(rankBy).label.replace(/^./, (c) => c.toLowerCase()) // keeps "Earth"
   const [why, setWhy] = useState(false)
   const whyRow = useOpenRow(why)
   const whyId = useId()

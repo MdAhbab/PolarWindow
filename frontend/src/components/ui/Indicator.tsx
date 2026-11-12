@@ -68,6 +68,11 @@ export function Indicator({
       drawn.current = ''
       return
     }
+    // The pill sits inside the row, so it counts in the row's scroll size. Fold it before measuring,
+    // or a row that narrowed (fonts arriving) keeps the old width and shows a scroll bar.
+    const was = [el.style.width, el.style.height]
+    el.style.width = '0px'
+    el.style.height = '0px'
     const W = h.scrollWidth
     const H = h.scrollHeight
     const L = on.offsetLeft + k
@@ -75,7 +80,10 @@ export function Indicator({
     const R = on.offsetLeft + on.offsetWidth - k
     const B = on.offsetTop + on.offsetHeight - k
     const at = `${key}:${L},${T},${R},${B},${W},${H}`
-    if (at === drawn.current) return
+    if (at === drawn.current) {
+      ;[el.style.width, el.style.height] = was
+      return
+    }
     const first = drawn.current === ''
     const still = !animate || first || state.current.reduced
     drawn.current = at

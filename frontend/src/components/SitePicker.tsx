@@ -41,7 +41,9 @@ export function SiteTitle({ prefix = '' }: { prefix?: string }) {
           ...targets.map((s) => ({ value: s.id, label: s.name, group: 'Mission landing spots' })),
         ]}
         chevron={20}
-        className="-ml-2 h-12 gap-3 rounded-control pr-3 pl-2 hover:bg-inset aria-expanded:bg-inset"
+        // A relative shift, not a negative margin: a margin shrinks the title's room by 8 px
+        // and cut long names ("Connecting Rid…") even on a wide screen.
+        className="relative -left-2 h-12 gap-3 rounded-control pr-3 pl-2 hover:bg-inset aria-expanded:bg-inset"
         // The name from the Map's chosen-site card grows into this title (rule 5), and it
         // holds its place between the site's own pages.
         labelClassName="pw-display text-[26px] leading-[30px] text-ink [view-transition-name:pw-site-name] sm:text-[30px] sm:leading-[34px]"
