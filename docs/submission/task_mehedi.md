@@ -3,7 +3,7 @@
 You have three jobs:
 
 1. Say the closing words on camera (section 1).
-2. Make the film clips and the figures (sections 2 and 3).
+2. Pick the film clips and make the twelve figures (sections 2 and 3).
 3. Put the whole video together, export it and upload it (sections 4 to 8).
 
 - **Your time in the video:** 3:24 to 3:50, and one name line at 0:26.
@@ -14,7 +14,7 @@ You have three jobs:
 
 | Time | What |
 |---|---|
-| 8:30 to 10:30 | Record your own part. Make the film clips and figures. Build the project, the title card, the name strip, the data list and the end card. |
+| 8:30 to 10:30 | Record your own part. Check the five film clips and make the twelve figures. Build the project, the title card, the name strip, the data list and the end card. |
 | 10:30 | Everyone's face recordings are in the Drive folder. Pick the best take of each. |
 | 11:30 | Ahbab's voice and screen recordings arrive. |
 | 11:30 to 1:30 | Put everything on the timeline (section 5). |
@@ -66,33 +66,39 @@ At most **25 seconds** of generated film in the whole video. This plan uses **20
 | 0:28 to 0:32 | A lander on the Moon with Earth low in the sky | 4 |
 | 3:44 to 3:50 | Behind the end card | 6 |
 
-### Use what we already have first
+### Use the five new clips
 
-Four finished clips already exist. They are sharp and they match the app's front page. Ahbab puts them in
-`video/ahbab/film/`:
+Ahbab made five new clips on 13 November. They are full HD (1920 x 1080, 24 frames per second), with no
+black bars, so they fit the project as they are. He puts them in `video/ahbab/film/`:
 
-| File | Use it for | Note |
-|---|---|---|
-| `light-2560.mp4` | 0:00 to 0:04 | The Sun's glow has faint rings. Use the part where they show least. |
-| `shadow-2560.mp4` | 0:04 to 0:10 | Use only the **first 4 seconds** of the clip, slowed a little to fill 6. After 4 seconds one solar panel on the lander disappears. |
-| `earth-2560.mp4` | 0:28 to 0:32 | |
-| `rim-descent-2560.blend.mp4` | 3:44 to 3:50 | Darken it to about 50% so the end card's words are easy to read. |
+| File | Length | What it shows | Use it for |
+|---|---|---|---|
+| `light.mp4` | 12 s | The Sun sitting low over the cratered pole, long shadows | 0:00 to 0:04 |
+| `shadow.mp4` | 12 s | A lander on the ground; a hill's shadow crosses it | 0:04 to 0:10 |
+| `earth.mp4` | 10 s | A lander with Earth sinking behind a hill | 0:28 to 0:32 |
+| `rim.mp4` | 12 s | A low flight over rocks toward a crater rim; Earth shows at the end | spare |
+| `descent.mp4` | 15 s | Coming down from above toward the craters | 3:44 to 3:50, darkened |
 
-Only make new clips if one of these does not fit. If you do, use the prompts below.
+- Watch each clip once before you cut it. Pick the part where nothing changes shape and nothing flickers.
+- For `shadow.mp4`, use the part where the shadow reaches the lander. That is the point of the hook.
+- For the end card, darken `descent.mp4` to about 50% so the words on top are easy to read.
+- Mute the sound of every clip. We use our own music.
+- These clips are not the ones on the app's front page yet. That does not matter for the video.
+
+Only make a new clip if one of these does not fit. If you do, use the prompts below.
 
 ### Which tool: Veo 3 or Gemini Omni?
 
-- Use **the same tool that made the four clips above** (Gemini), so new clips look like the old ones. A
-  video where two clips look different feels cheap.
-- If you want to compare: run **prompt 2** once in each tool. Keep the tool where (a) the lander's parts
-  stay the same from the first frame to the last, (b) the edge of the shadow is sharp and moves smoothly,
-  and (c) the ground does not ripple or melt. That test tells you more than any review.
-- Ask for 16:9, the highest quality, 8 seconds. Turn the sound off or mute it in the edit. We use our own
-  music.
+- Use **the same tool that made the five clips above** (ask Ahbab which one), so a new clip looks like the
+  others. A video where two clips look different feels cheap.
+- If you want to compare the two tools yourself: run **prompt 2** once in each. Keep the tool where (a) the
+  lander's parts stay the same from the first frame to the last, (b) the edge of the shadow is sharp and
+  moves smoothly, and (c) the ground does not ripple or melt. That test tells you more than any review.
+- Ask for 16:9, the highest quality, 8 seconds, no sound.
 - Make each prompt two or three times and keep the best. Throw away any clip with text, flags, people,
   a second Sun, or parts that change shape.
 
-### Prompt 1: low Sun over the pole (to replace `light`)
+### Prompt 1: low Sun over the pole
 
 ```
 A slow, wide, cinematic shot of the south pole of the Moon, filmed as if by a real camera on a small
@@ -122,7 +128,7 @@ Sun. Do not make the picture look like a cartoon, a painting or a video game.
 Length 8 seconds, 16:9 wide screen, 24 frames per second, highest quality, no sound.
 ```
 
-### Prompt 2: a hill's shadow reaches the lander (to replace `shadow`)
+### Prompt 2: a hill's shadow reaches the lander
 
 ```
 A realistic, cinematic shot on the surface of the Moon near its south pole, filmed as if by a real camera
@@ -155,7 +161,7 @@ change the lander's design during the shot. Do not make it look like a cartoon, 
 Length 8 seconds, 16:9 wide screen, 24 frames per second, highest quality, no sound.
 ```
 
-### Prompt 3: the lander at rest, Earth low in the sky (to replace `earth`, or for the end card)
+### Prompt 3: the lander at rest, Earth low in the sky
 
 ```
 A calm, realistic, cinematic wide shot on the surface of the Moon near its south pole, filmed as if by a
@@ -199,91 +205,325 @@ Bottom left, small, for as long as the clip is on screen: **Illustration, genera
 
 ## 3. The figures (PNG pictures beside the speakers)
 
-When a person speaks on camera, they fill one half of the screen. The other half shows a figure. Each
-figure is one PNG, **960 x 1080** (tall), on the app's dark background.
+When a person speaks on camera, they fill one half of the screen. The other half shows a figure. There are
+**twelve** figures. Each prompt below is complete by itself: copy one prompt, paste it, and generate.
 
-### Rules
+### How to make them
 
-- **No words and no numbers inside a generated picture.** Picture tools spell badly. You add every label
-  yourself in the editor.
-- Use the same style block (below) in every prompt, so the figures look like one set.
-- Make each one two or three times and keep the cleanest.
-- If the tool gives a square picture, place it on a 960 x 1080 background of colour `#07090B`.
-- Where a real screen from the app shows the idea, use the real screen and not a drawing. Real is better.
+- Use the image tool in the Gemini app (the same family as the film clips), at the highest quality.
+- Each prompt asks for a **square** picture. In the editor, place it in the middle of the empty half
+  (960 x 1080) on the background colour `#07090B`. The picture's own background is the same colour, so the
+  edge does not show.
+- **No words and no numbers inside a generated picture.** Picture tools spell badly. Every prompt says so.
+  You add the labels yourself in the editor. The labels to add are listed under each prompt.
+- Make each one two or three times and keep the cleanest. All twelve must look like one set: same line
+  weight, same dark background, same three colours.
+- Where a real screen from the app shows the idea better, use the real screen. Real is better than drawn.
 - If a figure still looks wrong after three tries, tell Ahbab. An exact diagram can be drawn for you.
 - Every generated figure carries the small caption **Illustration, generated** at its bottom edge.
 
-### Style block (paste at the end of every figure prompt)
+### Where each figure goes
+
+| Figure | Speaker | Time |
+|---|---|---|
+| F1 The low Sun and the hill | Wali | 0:10 to 0:16 |
+| F7 Deliveries to the Moon | Ryan | 0:32 to 0:39 |
+| F2 Facts in many places | Ryan | 0:39 to 0:43 |
+| F8 A place and its dates | Ryan | 0:43 to 0:58 |
+| F3 One page | Ahbab | 0:58 to 1:04 |
+| F9 Six steps | Ahbab | 1:04 to 1:10 |
+| F4 The NASA data | Mehrab | 2:38 to 2:56 |
+| F10 The skyline around a landing place | Mehrab | 2:56 to 3:08 |
+| F5 Checked against real flights | Mehrab | 3:14 to 3:19 |
+| F11 Where each number comes from | Mehrab | 3:19 to 3:24 |
+| F6 Who it is for | Mehedi | 3:24 to 3:34 |
+| F12 In the light, in contact | Mehedi | 3:34 to 3:44 |
+
+### F1. The low Sun and the hill
 
 ```
-Style: a clean, flat, simple diagram, like a figure in a modern science magazine. Thin, even white lines
-on a very dark, almost black background (colour #07090B). Soft grey (#8A949E) for the ground and for
-neutral parts. Warm amber (#F2A33C) only for the Sun and sunlight. Cyan (#4FC6E0) only for the Earth and
-for radio links to Earth. No other colours. No gradients except a soft glow around the Sun. Lots of empty
-space. Centred. Tall picture, 8:9. No text, no letters, no numbers, no labels, no logos, no people, no
-flags, no borders, no watermark. Not a photograph, not 3D, not a cartoon.
-```
+Draw a clean, flat, simple diagram, like a figure in a modern science magazine. Square picture. The
+background is one flat, very dark, almost black colour (#07090B) with nothing else in it.
 
-### The six figures
+The picture is a side view of a small part of the Moon's surface. The ground is a thin, gently curved
+soft grey line (#8A949E) running across the lower third of the picture. On the far left, a small warm
+amber circle (#F2A33C) with a soft amber glow sits just above the ground line, very low. This is the Sun.
+In the middle of the picture, one soft grey hill with a rounded top stands up from the ground line. Thin,
+straight amber lines go from the Sun toward the right, level with the ground, and stop when they reach
+the hill. Behind the hill, on the right side, a long wedge of ground is drawn darker than the rest, in
+shadow. Inside that shadow sits a tiny, simple robot lander with a boxy body and four thin legs, drawn in
+thin white lines.
 
-**F1, the low Sun and the hill** (Wali, 0:10 to 0:16)
-```
-A side view of a small part of the Moon's surface. The ground is a gently curved grey line. On the left, a
-small amber Sun sits just above the ground line, very low. In the middle, one grey hill stands up from the
-ground. Thin amber rays go from the Sun toward the right and stop at the hill. Behind the hill, on the
-right, a long dark wedge of shadow lies on the ground. Inside the shadow sits a tiny, simple lander with
-four legs, drawn in thin white lines.
+Use thin, even lines of one weight. Use only white, soft grey and warm amber on the dark background. No
+other colours. No gradients except the soft glow around the Sun. Leave a lot of empty dark space around
+the drawing.
+
+No text, no letters, no numbers, no labels, no arrows with words, no logos, no people, no flags, no stars,
+no border, no frame and no watermark. Not a photograph, not 3D and not a cartoon.
 ```
 Labels to add in the editor: "Sun, always low" · "hill" · "days of dark"
 
-**F2, facts in many places** (Ryan, 0:39 to 0:43)
+### F2. Facts in many places
+
 ```
-Six small, simple icons scattered far apart with no order, each inside its own thin white rounded square,
-each tilted a little differently: a folded paper map with hills, a curved orbit path around a small circle,
-a dish antenna, a sheet of paper with lines, a small rocket, and a calendar page. Thin broken dotted lines
-start between some of them but do not connect. The icons do not touch each other.
+Draw a clean, flat, simple diagram, like a figure in a modern science magazine. Square picture. The
+background is one flat, very dark, almost black colour (#07090B) with nothing else in it.
+
+Show six small, simple line icons scattered far apart across the picture, in no order. Each icon sits
+inside its own thin white rounded square, and each square is tilted a little, each by a different amount.
+The six icons are: a folded paper map with small hills on it; a curved orbit path going around a small
+circle; a dish antenna pointing up; a sheet of paper with a few plain horizontal lines; a small rocket;
+and a calendar page with a plain grid. The squares do not touch each other. Between some of them, short
+dotted soft grey lines (#8A949E) start in one square's direction and stop in empty space before reaching
+another, to show that nothing is joined up.
+
+Use thin, even white lines of one weight for the icons and the squares. Use soft grey only for the dotted
+lines. No other colours at all. No gradients and no shadows. Leave a lot of empty dark space.
+
+No text, no letters, no numbers, no labels, no logos, no people, no flags, no border, no frame and no
+watermark. The lines on the paper and the grid on the calendar are plain strokes, not writing. Not a
+photograph, not 3D and not a cartoon.
 ```
 Labels to add: none. Ryan's words explain it.
 
-**F3, one page** (Ahbab, 0:58 to 1:10)
+### F3. One page
+
 ```
-One large, thin white outline of a web browser window, centred. Inside it, neatly lined up in a grid of
-two rows of three, the same six small icons: a folded paper map with hills, a curved orbit path around a
-small circle, a dish antenna, a sheet of paper with lines, a small rocket, and a calendar page. Under the
-grid, inside the window, a horizontal bar split into amber and dark parts, and below it a second bar split
-into cyan and dark parts.
+Draw a clean, flat, simple diagram, like a figure in a modern science magazine. Square picture. The
+background is one flat, very dark, almost black colour (#07090B) with nothing else in it.
+
+In the centre, draw one large web browser window as a thin white outline with rounded corners and a plain
+bar across its top with three tiny circles at the left end. Inside the window, neatly lined up in a tidy
+grid of two rows of three, draw six small, simple line icons: a folded paper map with small hills on it;
+a curved orbit path going around a small circle; a dish antenna pointing up; a sheet of paper with a few
+plain horizontal lines; a small rocket; and a calendar page with a plain grid. Under the grid, still
+inside the window, draw two long horizontal bars, one above the other. The upper bar is split into a few
+pieces that are warm amber (#F2A33C) and a few pieces that are dark with thin diagonal stripes. The lower
+bar is split the same way, with cyan (#4FC6E0) pieces and dark striped pieces.
+
+Use thin, even white lines of one weight. Use warm amber only in the upper bar and cyan only in the lower
+bar. No other colours. No gradients and no shadows. Everything is tidy, level and evenly spaced. Leave
+empty dark space around the window.
+
+No text, no letters, no numbers, no labels, no web address, no logos, no people, no border around the
+picture and no watermark. Not a photograph, not 3D and not a cartoon.
 ```
 Labels to add: "Sunlight" beside the amber bar, "Contact with Earth" beside the cyan bar.
 
-**F4, the NASA data** (Mehrab, 2:38 to 3:08)
+### F4. The NASA data
+
 ```
-Three flat layers stacked one above another, seen from a slight angle, like sheets of glass with space
-between them. The bottom layer shows grey ground with craters and hills as thin contour lines. The middle
-layer shows a small amber Sun, a small cyan Earth and thin curved white paths around a small grey Moon. The
-top layer shows a large dish antenna with a thin cyan line going up from it. Thin vertical dotted lines
-join the three layers at their corners.
+Draw a clean, flat, simple diagram, like a figure in a modern science magazine. Square picture. The
+background is one flat, very dark, almost black colour (#07090B) with nothing else in it.
+
+Show three flat, thin layers stacked one above another with clear space between them, seen from a slight
+angle from above, like three sheets of glass floating in a column. Each sheet is a thin white outline in
+the shape of a slanted rectangle. On the bottom sheet, draw ground: craters and hills as thin soft grey
+(#8A949E) contour lines, like a height map. On the middle sheet, draw a small soft grey Moon in the
+centre, a small warm amber Sun (#F2A33C) on one side, a small cyan Earth (#4FC6E0) on the other side, and
+two thin white curved paths going around the Moon. On the top sheet, draw one large dish antenna in thin
+white lines, with a single thin cyan line going straight up from its centre. Thin vertical dotted soft
+grey lines join the corners of the three sheets, so they read as one stack.
+
+Use thin, even lines of one weight. Use only white, soft grey, warm amber for the Sun and cyan for the
+Earth and the line from the dish. No other colours. No gradients except a soft glow around the Sun. Leave
+empty dark space on the left and right.
+
+No text, no letters, no numbers, no labels, no logos, no people, no flags, no border, no frame and no
+watermark. Not a photograph, not a realistic 3D render and not a cartoon.
 ```
-Labels to add (appear one by one as Mehrab speaks): "LOLA (LRO): the ground" · "SPICE: Sun, Earth,
+Labels to add (they appear one by one as Mehrab speaks): "LOLA (LRO): the ground" · "SPICE: Sun, Earth,
 spacecraft" · "Deep Space Network: the dishes" · then smaller: "DONKI · GRAIL · Diviner"
 
-**F5, checked against real flights** (Mehrab, 3:08 to 3:24)
+### F5. Checked against real flights
+
 ```
-A small cyan Earth at the bottom left and a small grey Moon at the top right. Two long, smooth curved paths
-go from the Earth to the Moon, almost exactly on top of each other: one is a solid white line and the
-other is a dashed amber line that follows it very closely. At the Moon end, a tiny simple lander with four
-legs.
+Draw a clean, flat, simple diagram, like a figure in a modern science magazine. Square picture. The
+background is one flat, very dark, almost black colour (#07090B) with nothing else in it.
+
+At the bottom left, draw a small cyan circle (#4FC6E0) for the Earth. At the top right, draw a small soft
+grey circle (#8A949E) for the Moon. Two long, smooth, curved paths go from the Earth to the Moon, bending
+gently like a stretched letter S. The two paths lie almost exactly on top of each other: one is a solid
+thin white line, and the other is a dashed warm amber line (#F2A33C) that follows the white line very
+closely, drifting a hair away from it in one or two places and then coming back. Where the paths reach
+the Moon, draw a tiny, simple robot lander with a boxy body and four thin legs, in thin white lines,
+standing on the Moon's edge.
+
+Use thin, even lines of one weight. Use only white, soft grey, cyan for the Earth and warm amber for the
+dashed path. No other colours. No gradients and no shadows. Leave a lot of empty dark space.
+
+No text, no letters, no numbers, no labels, no arrows with words, no logos, no people, no flags, no stars,
+no border, no frame and no watermark. Not a photograph, not 3D and not a cartoon.
 ```
 Labels to add: "what flew (NASA record)" on the solid line, "what we worked out" on the dashed line.
-For half of this part, show the real checking table from `report.pdf` in place of this figure.
 
-**F6, who it is for** (Mehedi, 3:24 to 3:44)
+### F6. Who it is for
+
 ```
-On the left, a tiny simple lander with four legs standing on a short grey ground line. On the right, a
-simple open laptop drawn in thin white lines, with a small map of hills on its screen. A thin cyan line
-arcs from the lander up and over to the laptop. Above the laptop, two more smaller laptops and a phone,
-each joined to the first by a thin white line, like a small tree.
+Draw a clean, flat, simple diagram, like a figure in a modern science magazine. Square picture. The
+background is one flat, very dark, almost black colour (#07090B) with nothing else in it.
+
+On the lower left, draw a tiny, simple robot lander with a boxy body and four thin legs, in thin white
+lines, standing on a short soft grey ground line (#8A949E). On the right, draw a simple open laptop in
+thin white lines, with a small map of hills as a few soft grey curved lines on its screen. A single thin
+cyan line (#4FC6E0) rises from the lander, arcs over the middle of the picture and comes down to the
+laptop. Above and beside the laptop, draw two smaller open laptops and one phone, each a simple thin
+white outline with a plain empty screen. Each of them is joined to the first laptop by one thin white
+line, so the four devices look like a small branching tree.
+
+Use thin, even lines of one weight. Use only white, soft grey and cyan. No other colours. No gradients and
+no shadows. Leave a lot of empty dark space.
+
+No text, no letters, no numbers, no labels, no logos, no brand shapes on the devices, no people, no faces,
+no flags, no border, no frame and no watermark. Not a photograph, not 3D and not a cartoon.
 ```
 Labels to add: "lander teams" · "students" · "anyone with a browser"
+
+### F7. Deliveries to the Moon
+
+```
+Draw a clean, flat, simple diagram, like a figure in a modern science magazine. Square picture. The
+background is one flat, very dark, almost black colour (#07090B) with nothing else in it.
+
+At the bottom left, draw a small cyan circle (#4FC6E0) for the Earth. At the top right, draw a larger
+soft grey circle (#8A949E) for the Moon, with three or four small crater rings on it. One long, smooth,
+thin white curved path goes from the Earth up to the Moon. About one third of the way along the path,
+draw a small, simple rocket in thin white lines, pointing along the path. At the Moon end of the path,
+standing on the Moon's edge, draw a small, simple robot lander with a boxy body and four thin legs, in
+thin white lines. On top of the lander draw three small plain boxes of slightly different sizes, like
+parcels being carried, each a thin white outline.
+
+Use thin, even lines of one weight. Use only white, soft grey and cyan for the Earth. No other colours.
+No gradients and no shadows. Leave a lot of empty dark space.
+
+No text, no letters, no numbers, no labels, no logos, no markings on the rocket or the boxes, no people,
+no flags, no flames drawn in colour, no stars, no border, no frame and no watermark. Not a photograph,
+not 3D and not a cartoon.
+```
+Labels to add: "NASA's instruments" at the boxes · "a company's lander" at the lander
+
+### F8. A place and its dates
+
+```
+Draw a clean, flat, simple diagram, like a figure in a modern science magazine. Square picture. The
+background is one flat, very dark, almost black colour (#07090B) with nothing else in it.
+
+On the left, draw a round map of the Moon's south pole seen from straight above: a soft grey circle
+(#8A949E) with eight or ten small crater rings of different sizes inside it, and two thin soft grey
+circles inside it like the rings of a target, for the lines of latitude. On one crater rim, a little away
+from the centre, draw one clear map pin in thin white lines, standing upright. On the right, draw a
+simple calendar page in thin white lines: a rounded rectangle with a plain strip across the top and a
+plain grid of small empty squares below it. About ten of the squares in two neighbouring rows are filled
+with a soft grey tone to show a run of days. A single thin white dotted line joins the map pin to the
+calendar.
+
+Use thin, even lines of one weight. Use only white and soft grey. No other colours. No gradients and no
+shadows. Leave a lot of empty dark space.
+
+No text, no letters, no numbers, no dates written in the calendar, no labels, no logos, no people, no
+flags, no border, no frame and no watermark. The calendar's squares are empty or filled, with no writing
+in them. Not a photograph, not 3D and not a cartoon.
+```
+Labels to add: "this place" at the pin · "these dates" at the calendar
+
+### F9. Six steps
+
+```
+Draw a clean, flat, simple diagram, like a figure in a modern science magazine. Square picture. The
+background is one flat, very dark, almost black colour (#07090B) with nothing else in it.
+
+At the bottom left, draw a small cyan circle (#4FC6E0) for the Earth. At the top right, draw a soft grey
+circle (#8A949E) for the Moon. One long, smooth, thin white curved path rises from the Earth, sweeps
+across the picture and ends at the Moon. Along this path, evenly spaced from the Earth end to the Moon
+end, draw exactly six small round dots. Each dot is a thin white ring with a dark centre, all the same
+size. The fourth dot, which sits just where the path touches the Moon, is filled solid white and is
+slightly larger than the others. From the sixth dot, a short thin dotted white line curves back down
+toward the Earth.
+
+Use thin, even lines of one weight. Use only white, soft grey and cyan for the Earth. No other colours.
+No gradients and no shadows. Leave a lot of empty dark space.
+
+No text, no letters, no numbers on or near the dots, no labels, no icons inside the dots, no logos, no
+people, no rockets, no flags, no stars, no border, no frame and no watermark. Count the dots: there must
+be exactly six. Not a photograph, not 3D and not a cartoon.
+```
+Labels to add, one beside each dot in order: "Ready" · "Launch" · "Trip" · "Surface" · "Contact" · "Return"
+
+### F10. The skyline around a landing place
+
+```
+Draw a clean, flat, simple diagram, like a figure in a modern science magazine. Square picture. The
+background is one flat, very dark, almost black colour (#07090B) with nothing else in it.
+
+Across the lower half of the picture, draw a wide, jagged skyline of hills and crater rims as one thin
+white outline, like the edge of a mountain range seen from the ground. Fill the area below the outline
+with a slightly lighter dark grey, so the hills read as a solid shape. In the centre, at the bottom, draw
+a tiny, simple robot lander with a boxy body and four thin legs, in thin white lines, standing in front
+of the hills. Just above the skyline, draw a long, almost level, warm amber dotted line (#F2A33C) running
+from the left edge to the right edge, dipping behind the tallest hills in two places, with a small amber
+circle with a soft glow sitting on it. This is the Sun's low path. Higher up on the right side, draw a
+small cyan circle (#4FC6E0) with a small cyan dotted oval loop around it. This is the Earth and its small
+loop. The lowest part of the cyan loop just touches the top of one hill.
+
+Use thin, even lines of one weight. Use only white, dark grey, warm amber for the Sun and its path, and
+cyan for the Earth and its loop. No other colours. No gradients except the soft glow around the Sun. Leave
+empty dark space above.
+
+No text, no letters, no numbers, no labels, no compass letters, no logos, no people, no flags, no stars,
+no border, no frame and no watermark. Not a photograph, not 3D and not a cartoon.
+```
+Labels to add: "the Sun's path" · "Earth" · "the hills around the landing place"
+
+### F11. Where each number comes from
+
+```
+Draw a clean, flat, simple diagram, like a figure in a modern science magazine. Square picture. The
+background is one flat, very dark, almost black colour (#07090B) with nothing else in it.
+
+In the centre, draw one rounded card as a thin white outline. Inside the card, draw one short, thick
+white horizontal bar near the top, standing for a large number, and under it one thinner, shorter soft
+grey bar (#8A949E), standing for a small note. At the top right corner of the card, draw one small solid
+white square, like a tag. From the card, three thin white lines fan out to three small, simple line icons
+placed around it: at the upper left, a small satellite with two flat panels; at the upper right, a sheet
+of paper with a few plain horizontal lines; at the bottom, a small folded map with hills. Each line ends
+in a small white dot where it meets its icon.
+
+To the right of the card, slightly lower, draw a second, smaller rounded card of the same kind, but fill
+its whole inside with thin, even, diagonal white stripes, so it clearly looks different from the first
+card.
+
+Use thin, even lines of one weight. Use only white and soft grey. No other colours. No gradients and no
+shadows. Leave a lot of empty dark space.
+
+No text, no letters, no numbers, no digits inside the cards, no labels, no logos, no people, no border
+around the picture and no watermark. The bars are plain shapes, not writing. Not a photograph, not 3D and
+not a cartoon.
+```
+Labels to add: "every number names its source" under the first card · "stripes = assumed" under the second
+
+### F12. In the light, in contact
+
+```
+Draw a clean, flat, simple diagram, like a figure in a modern science magazine. Square picture. The
+background is one flat, very dark, almost black colour (#07090B) with nothing else in it.
+
+Across the bottom of the picture, draw the curved edge of the Moon as a thin soft grey line (#8A949E),
+with two small crater dips in it. In the middle, standing on the high ground between the two craters,
+draw a small, simple robot lander with a boxy body, four thin legs, two flat panels at its sides and a
+small dish on top, in thin white lines. On the left, low and close to the ground line, draw a small warm
+amber circle (#F2A33C) with a soft amber glow: the Sun. Three thin, straight amber lines go from the Sun
+to the lander and reach it, with nothing in the way. At the top right, draw a small cyan circle (#4FC6E0):
+the Earth. One thin, straight cyan line goes from the dish on the lander up to the Earth, with nothing in
+the way.
+
+Use thin, even lines of one weight. Use only white, soft grey, warm amber for the Sun and its rays, and
+cyan for the Earth and its line. No other colours. No gradients except the soft glow around the Sun. The
+picture should feel calm and open, with a lot of empty dark space above the lander.
+
+No text, no letters, no numbers, no labels, no logos, no people, no flags, no stars, no border, no frame
+and no watermark. Not a photograph, not 3D and not a cartoon.
+```
+Labels to add: "sunlight" on the amber lines · "contact with Earth" on the cyan line
 
 ---
 
@@ -331,19 +571,19 @@ Use the editor you know best (DaVinci Resolve, Premiere or CapCut all work).
 | 4 | 0:16 to 0:18 | 2 | Title card | Music only |
 | 5 | 0:18 to 0:28 | 10 | Name strip, five people | "I'm Wali." "I'm Ryan." "I'm Ahbab." "I'm Mehrab." "I'm Mehedi." |
 | 6 | 0:28 to 0:32 | 4 | Film: lander with Earth low in the sky, full screen | Ryan, Take A, line 1 (voice only) |
-| 7 | 0:32 to 0:39 | 7 | Split frame: Ryan on the right. On the left, words: "CLPS: NASA's commercial Moon deliveries" and under it "Our challenge: CLPS Lunar Mission Browser". Name caption. | Ryan, line 2 |
+| 7 | 0:32 to 0:39 | 7 | Split frame: Ryan on the right. On the left, figure F7, and under it the words "CLPS: NASA's commercial Moon deliveries" and "Our challenge: CLPS Lunar Mission Browser". Name caption. | Ryan, line 2 |
 | 8 | 0:39 to 0:43 | 4 | Ryan on the right, figure F2 on the left | Ryan, line 3 |
-| 9 | 0:43 to 0:58 | 15 | Ryan on the right. On the left, large words: "Can my lander work at this place, on these dates?" At 0:51 add under it, smaller: "Today: experts, and many days." | Ryan, lines 4 to 6 |
-| 10 | 0:58 to 1:10 | 12 | Split frame: Ahbab on the left, figure F3 on the right. Name caption. | Ahbab, Take A |
+| 9 | 0:43 to 0:58 | 15 | Ryan on the right. On the left, figure F8, and over its top the large words: "Can my lander work at this place, on these dates?" At 0:51 add under the figure, smaller: "Today: experts, and many days." | Ryan, lines 4 to 6 |
+| 10 | 0:58 to 1:10 | 12 | Split frame: Ahbab on the left. On the right, figure F3 (6 s), then figure F9 (6 s). Name caption. | Ahbab, Take A |
 | 11 | 1:10 to 1:24 | 14 | Screen shot 1, full screen. Small label, top left: "1 · Every mission" | Ahbab voice, Demo 1 |
 | 12 | 1:24 to 1:38 | 14 | Screen shot 2. Zoom slowly to 140% on the four numbers from second 3 to second 9. Label: "2 · Four numbers" | Demo 2 |
 | 13 | 1:38 to 1:52 | 14 | Screen shot 3. Label: "3 · The skyline" | Demo 3 |
 | 14 | 1:52 to 2:06 | 14 | Screen shot 4. Label: "4 · Compare, with no score" | Demo 4 |
 | 15 | 2:06 to 2:22 | 16 | Screen shot 5a (7 s), then 5b (9 s). Label: "5 · Your own mission" | Demo 5 |
 | 16 | 2:22 to 2:38 | 16 | Screen shot 6. Cut out any waiting for the answer. Label: "6 · Ask" | Demo 6 |
-| 17 | 2:38 to 3:08 | 30 | Split frame: Mehrab on the right, figure F4 on the left. The data names appear one by one as he says them. Name caption. | Mehrab, Take A |
-| 18 | 3:08 to 3:24 | 16 | Mehrab on the right. On the left: the checking table from `report.pdf`, moving up slowly (8 s), then figure F5 with the words "1,400+ automatic tests" (8 s) | Mehrab, Take B |
-| 19 | 3:24 to 3:44 | 20 | Split frame: Mehedi on the left, figure F6 on the right. Name caption. | Mehedi, Take A |
+| 17 | 2:38 to 3:08 | 30 | Split frame: Mehrab on the right. On the left, figure F4 (18 s) with the data names appearing one by one as he says them, then figure F10 (12 s). Name caption. | Mehrab, Take A |
+| 18 | 3:08 to 3:24 | 16 | Mehrab on the right. On the left: the checking table from `report.pdf`, moving up slowly (6 s), then figure F5 with the words "1,400+ automatic tests" (5 s), then figure F11 (5 s) | Mehrab, Take B |
+| 19 | 3:24 to 3:44 | 20 | Split frame: Mehedi on the left. On the right, figure F6 (10 s), then figure F12 (10 s). Name caption. | Mehedi, Take A |
 | 20 | 3:44 to 3:50 | 6 | End card over the darkened film. Hold the last 4 seconds still. | Music rises, then fades out by 3:50 |
 
 Rules while you build it:
@@ -432,7 +672,7 @@ Make it from the same material. It must be **under 30.0 seconds**. Aim for 29.
 | 3 | 0:09 to 0:13 | Screen shot 2: the four numbers, zoomed | line 2 |
 | 4 | 0:13 to 0:17 | Screen shot 3: the days playing | line 3 |
 | 5 | 0:17 to 0:21 | Screen shot 1: the six steps on the curve | line 4 |
-| 6 | 0:21 to 0:27 | Screen shot 6: the answer with "How the AI got this" open. Over it, three large labels, one per beat: "LOLA (LRO)", "SPICE", "Deep Space Network" | line 5 |
+| 6 | 0:21 to 0:27 | Screen shot 6: the answer with "How this answer was made" open. Over it, three large labels, one per beat: "LOLA (LRO)", "SPICE", "Deep Space Network" | line 5 |
 | 7 | 0:27 to 0:29 | End card | line 6 |
 
 - Subtitles: `video-30s.srt`, re-timed and burned in.

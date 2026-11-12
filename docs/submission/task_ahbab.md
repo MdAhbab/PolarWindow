@@ -25,9 +25,9 @@ Then at 2:30 PM you watch Mehedi's cut and approve it (section 6).
 - [ ] Send each person their task file.
 - [ ] Decide the **team name** and each person's **role** (two or three words, for example "Backend and
       data"). Write them in the group chat. Mehedi needs them for the name captions.
-- [ ] Put the four film clips for Mehedi in `video/ahbab/film/`. They are on your PC in
-      `polarwindow/.local/review/audit-2026-11-12/video/up/`:
-      `light-2560.mp4`, `shadow-2560.mp4`, `earth-2560.mp4`, `rim-descent-2560.blend.mp4`.
+- [ ] Put the five new film clips for Mehedi in `video/ahbab/film/`. They are on your PC in the
+      `Nasa Spaceapps` folder: `light.mp4`, `shadow.mp4`, `earth.mp4`, `rim.mp4`, `descent.mp4`.
+      Tell him which tool made them.
 - [ ] Put the report in `video/ahbab/`: `polarwindow/docs/report/report.pdf` (Mehedi shows its checking
       table in Mehrab's part).
 - [ ] Put the logo files in `video/ahbab/brand/` (from `polarwindow/frontend/src/assets/brand/`).
@@ -88,7 +88,7 @@ Record the voice **first**, without the screen. Then you record the screen to ma
 
 **Demo 5, your own mission (16 s)**
 > A team can add its own mission by dropping in a short document.
-> For a planned mission, it can try a what-if.
+> A planned mission with no dates yet still gets a worked example.
 > Anything assumed is marked with stripes, so no one takes it for a fact.
 
 **Demo 6, ask (16 s)**
@@ -115,9 +115,13 @@ Say these a little faster. One file, three times.
 ### Set up once
 
 **The app**
-- Start the app: `python run.py --skip-install` in `polarwindow/`. Open `http://127.0.0.1:5173`.
+- Start the app fresh: `python run.py --skip-install` in `polarwindow/`. Open `http://127.0.0.1:5173`.
+  After a fresh start, wait about 20 minutes before recording. The app works out the worked examples for
+  the planned missions in the background (about a minute each). Until then some step marks are hollow.
+- The screens changed on 13 November. If a label on your screen differs a little from this file, follow
+  the screen.
 - Sign in with the front page's demo button. Use the name "Demo".
-- Home must show exactly two projects: Aurora Scout 1 and Ridge Surveyor.
+- Home shows three ways in and exactly two projects: Aurora Scout 1 and Ridge Surveyor.
 - Dark theme (the round button at the top right).
 - **Open every page in the list below once before you record.** The first visit works things out. The
   second visit is instant. Nothing should load on camera.
@@ -148,8 +152,8 @@ Do them in this order. "Hold" means do not touch the mouse.
 
 | Second | What you do |
 |---|---|
-| 0 to 3 | Start on **Missions**. The list and the map of the pole are in view. Hold. |
-| 3 to 6 | Scroll the list down slowly, about five rows, so flown and planned missions pass by. Stop. |
+| 0 to 3 | Start on **Missions**. The list, the legend for the step marks (solid, striped, hollow) and the map of the pole are in view. Hold. |
+| 3 to 6 | Scroll the list down slowly, about five rows, so flown and planned missions pass by with their six marks. Stop. |
 | 6 to 8 | Move to one mission that has flown and click it. (Use IM-2: it is the one with a full record at the pole.) |
 | 8 to 14 | The mission page opens with the six steps on the curve from Earth to the Moon. **Hold for a full 5 seconds.** |
 
@@ -159,8 +163,8 @@ Do them in this order. "Hold" means do not touch the mouse.
 |---|---|
 | 0 to 2 | Start on the same mission page. Click step 4, **Surface**. |
 | 2 to 9 | The four numbers are in view. Hold. Do not scroll. (Mehedi zooms in on them.) |
-| 9 to 11 | Click the small label of one number to open what it means. |
-| 11 to 14 | Hold. |
+| 9 to 11 | Click the label of one number. The "About this number" sheet opens. |
+| 11 to 14 | Hold. Do not close it on camera. |
 
 **Shot 3, the skyline (voice: Demo 3, 14 s)** file: `ahbab_screen_3.mp4`
 
@@ -169,20 +173,20 @@ Do them in this order. "Hold" means do not touch the mouse.
 | 0 to 2 | Start on **Sites**, then **Site**, with Connecting Ridge chosen. The four numbers and the date bar are in view. |
 | 2 to 3 | Click **Play** on the date bar. |
 | 3 to 9 | Hold while the days play and the numbers and the rings change. Park the mouse. |
-| 9 to 14 | Scroll down slowly to "Standing at the site, looking out". Drag the view slowly to the left once, so the hills turn. Hold. |
+| 9 to 14 | Scroll down slowly to the sky view ("Standing at the site, looking out"). Press **Face Earth**. The hills turn until Earth is in the middle. Hold. |
 
 **Shot 4, compare (voice: Demo 4, 14 s)** file: `ahbab_screen_4.mp4`
 
 | Second | What you do |
 |---|---|
-| 0 to 4 | Start on **Compare** with three sites: Connecting Ridge, Malapert massif, Faustini rim. "Rank by" is on "Time in sunlight". Hold. |
-| 4 to 6 | Click **Longest night** in "Rank by". The cards change order. |
+| 0 to 4 | Start on **Compare** with three sites: Connecting Ridge, Malapert massif, Faustini rim. "Order by" is on "Time in sunlight". Hold. |
+| 4 to 6 | Click **Longest night** in "Order by". The cards change order. |
 | 6 to 10 | Hold. |
 | 10 to 14 | Scroll down slowly to the sentence under the cards (it says which nights are past the battery limit and which is within the margin). Hold. |
 
 Check first: the page must say "1st", "2nd", "3rd". It must not say "best" anywhere.
 
-**Shot 5, your own mission (voice: Demo 5, 16 s)** two files: `ahbab_screen_5a.mp4`, `ahbab_screen_5b.mp4`
+**Shot 5, your own mission and a worked example (voice: Demo 5, 16 s)** two files: `ahbab_screen_5a.mp4`, `ahbab_screen_5b.mp4`
 
 5a, the document (7 s):
 
@@ -192,13 +196,13 @@ Check first: the page must say "1st", "2nd", "3rd". It must not say "best" anywh
 | 2 to 4 | Drag the file onto the drop area. |
 | 4 to 7 | The form fills in by itself. Hold. Do **not** press Save. |
 
-5b, the what-if (9 s):
+5b, the worked example (9 s):
 
 | Second | What you do |
 |---|---|
-| 0 to 2 | Start on a **planned** mission's **Launch** step. (Use Griffin Mission 1. If its example is not ready, use IM-3. Open the what-if once before recording, so it is ready.) |
-| 2 to 4 | Click **What if…** and open the first ready-made example. |
-| 4 to 9 | The striped band appears with the assumed values. Hold. |
+| 0 to 2 | Start on **Missions**. Point at a planned mission whose marks are striped (a worked example). Any one will do. Open it once before recording, so it is ready. |
+| 2 to 4 | Click its striped **Surface** mark. |
+| 4 to 9 | The step opens on its worked example: the striped band says "Worked example" and lists the assumed values, each with where it came from. Hold. |
 
 **Shot 6, ask (voice: Demo 6, 16 s)** file: `ahbab_screen_6.mp4`
 
@@ -209,8 +213,8 @@ Before recording, copy this question: `How long is the longest night at Connecti
 | 0 to 2 | Start on the Site page for Connecting Ridge. Press the `/` key. Ask opens. |
 | 2 to 4 | Paste the question (Ctrl+V). Press Enter. |
 | 4 to 9 | The answer arrives. Hold. (If it takes longer, keep recording. Mehedi cuts the wait.) |
-| 9 to 11 | Click **How the AI got this**. |
-| 11 to 16 | The list of what it looked up is in view. Hold. |
+| 9 to 11 | Click **How this answer was made**. |
+| 11 to 16 | The three steps (Looked up, Checked, Written) are in view. Hold. |
 
 Ask the same question once before recording, so the second answer is fast.
 

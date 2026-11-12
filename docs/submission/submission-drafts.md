@@ -3,11 +3,25 @@
 Drafts for the NASA project page and the two videos. Fill every `[ ... ]`. Check every number against the
 running app or the report before it goes on the page: nothing here is a substitute for reading it off the screen.
 
+Files in this folder:
+
+| File | For |
+|---|---|
+| `video-240s.md`, `video-240s.srt` | The long video: master plan, whole script, subtitles |
+| `video-30s.md`, `video-30s.srt` | The short video: plan and subtitles |
+| `task_wali.md`, `task_ryan.md`, `task_mehrab.md` | Each speaker's words and how to record |
+| `task_ahbab.md` | Ahbab's words, the demo voice and the six screen recordings |
+| `task_mehedi.md` | Mehedi's words, the film clips, the twelve figure prompts and the full edit |
+| `demo-files/` | Example mission briefs to drop into New project during the demo |
+
+Team: Wali, Ryan, Ahbab, Mehrab, Mehedi. Speaking order in the long video: Wali (hook), Ryan (problem),
+Ahbab (solution and demo), Mehrab (NASA data and trust), Mehedi (close and final edit).
+
 Deadlines (Asia/Dhaka), from the Participants Guide:
 
 | What | Limit | Due | Where |
 |---|---|---|---|
-| Video 2, local judging | under 240 s (aim for 230) | Fri 13 Nov, 6:30 PM | YouTube link in the Google Form, file in the Local Lead's Drive folder |
+| Video 2, local judging | under 240 s (aim for 230) | Fri 13 Nov, 6:00 PM (the guide's table says 6:30 PM; the team works to 6:00). Team's own times: final cut 3:00 PM, uploaded 4:00 PM, form filled 5:00 PM | YouTube link in the Google Form, file in the Local Lead's Drive folder |
 | Video 3, global judging | under 30 s | Sat 14 Nov, 12:00 PM | YouTube or Vimeo, link in the Google Form and on the NASA project page |
 | NASA project page | every field, then Submit | Sat 14 Nov, close of the local event | spaceappschallenge.org |
 
@@ -54,8 +68,9 @@ shows what was worked out and what was not modelled, and the planner decides.
 - **Who benefits.** CLPS provider teams and payload teams choosing sites and dates; students and the public
   who want to follow a lunar delivery without a specialist's tools.
 - **Highlighted features.** Six steps for every mission on one line from Earth to the Moon; four numbers with
-  margins; compare sites one measure at a time, with ties shown as ties; what-if scenarios whose assumed values
-  are always marked; an assistant that may state only numbers its tools returned, with a log of how it got each
+  margins; marks on every mission that say what each step has (from the record, a worked example, or needs
+  input); a worked example for every planned mission, built from named past flights; compare sites one measure
+  at a time, with ties shown as ties; assumed values always marked with stripes; an assistant that may state only numbers its tools returned, with a log of how it got each
   one; a printable report and downloads for navigation software.
 - **What to know.** Screening-level models, stated as such. Assumed inputs are hatched on screen. Nothing is
   hidden behind a single score.
@@ -64,7 +79,7 @@ shows what was worked out and what was not modelled, and the planner decides.
 
 Python (FastAPI, SQLAlchemy, NumPy, SpiceyPy on NASA's SPICE toolkit), PostgreSQL, Redis; React, TypeScript,
 Vite, Tailwind CSS, three.js; Playwright and Vitest for tests; Docker Compose; Google Cloud for hosting.
-Test counts measured on `main` on 12 Nov: 966 backend unit tests, 463 frontend tests. [Add the integration and
+Test counts measured on `main` on 13 Nov: 974 backend unit tests, 526 frontend tests. [Add the integration and
 end-to-end counts from the final run.]
 
 ### Use of AI (every tool, with why and how)
@@ -72,8 +87,9 @@ end-to-end counts from the final run.]
 | Tool | Used for | How it is kept honest |
 |---|---|---|
 | Google Gemini, inside the app ("Ask") | Answering questions about missions and sites in plain words | The model can call only the app's own read-only tools; a guard rejects any answer containing a number or date that a tool did not return; "How the AI got this" shows every tool call. Without a key the app answers from fixed rules. |
-| Google Gemini video generation | Four short illustrative clips on the landing page (low Sun over the pole, a ridge shadowing a lander, Earth setting behind a hill, a crater rim) | Labelled on the page as "Illustration, generated. Not mission footage." Prompts: [paste the four prompts used]. No data or result comes from them. |
-| Real-ESRGAN | Upscaling those four clips from 720p for large screens | Picture quality only. |
+| Google Gemini video generation [name the exact tool and version used] | Five short illustrative clips, on the landing page and in the videos (low Sun over the pole, a hill's shadow crossing a lander, Earth setting behind a hill, a crater rim, a descent) | Labelled on the page and in the videos as "Illustration, generated". Prompts: [paste the prompts used]. No data or result comes from them. |
+| Google Gemini image generation | Twelve simple line figures shown beside the speakers in the video | Labelled "Illustration, generated". All words on them were added by hand. Prompts are in `task_mehedi.md`. No data or result comes from them. |
+| Real-ESRGAN | Upscaling the first set of clips from 720p for large screens [delete this row if the page no longer uses any upscaled clip] | Picture quality only. |
 | Claude Code (Anthropic) | Development help: code, tests, review, documentation drafts | Every change is covered by the test suite and the physical models are validated against flown missions (see the report). The team reviewed and owns the code. |
 
 [List anything else used: image tools, music, transcription.]
@@ -104,7 +120,7 @@ The bibliography of `docs/report/report.pdf` (`docs/report/ref.bib`) and the dat
 
 ### Before pressing Submit
 
-- [ ] Every member on the Members tab with photo and role; team photo added
+- [ ] All five members on the Members tab with photo and role; team photo added
 - [ ] Challenge named: CLPS Lunar Mission Browser
 - [ ] 30-second video link opens in a private window; so do the GitHub link and the live link
 - [ ] Use of AI, NASA data sources and References filled in
@@ -113,6 +129,6 @@ The bibliography of `docs/report/report.pdf` (`docs/report/ref.bib`) and the dat
 
 ## Video credits line (for both video descriptions)
 
-Landing-page film clips generated with Google Gemini and upscaled with Real-ESRGAN; illustration only, not
-mission footage. Music: [source]. Data: NASA LRO/LOLA, NASA JPL NAIF SPICE and the CLPS SPICE archive, NASA JPL
+Film clips and drawn figures generated with Google Gemini; illustration only, not mission footage.
+Music: [track and artist], YouTube Audio Library. Data: NASA LRO/LOLA, NASA JPL NAIF SPICE and the CLPS SPICE archive, NASA JPL
 Deep Space Network, NASA GSFC DONKI and OMNI, NASA GRAIL, NASA Diviner; NOAA.

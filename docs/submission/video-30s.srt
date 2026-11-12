@@ -1,31 +1,30 @@
 1
-00:00:00,200 --> 00:00:05,000
-At the Moon's south pole, one ridge can switch off the Sun
-and cut a lander off from Earth.
+00:00:00,000 --> 00:00:04,950
+At the Moon's south pole, one hill can switch off
+the Sun and cut a lander off from Earth.
 
 2
-00:00:05,000 --> 00:00:09,000
-We are [Team name]. This is PolarWindow,
-for the CLPS Lunar Mission Browser challenge.
+00:00:05,000 --> 00:00:08,950
+We are [Team name]. This is PolarWindow.
 
 3
-00:00:09,000 --> 00:00:13,000
-Pick a site and dates.
+00:00:09,000 --> 00:00:12,450
+Pick a landing place and dates.
 
 4
-00:00:13,000 --> 00:00:17,000
+00:00:12,500 --> 00:00:17,950
 See sunlight, contact with Earth and the longest night,
-each with its margin.
+each with how far it could be off.
 
 5
-00:00:17,000 --> 00:00:21,000
-Follow every CLPS mission through six steps.
+00:00:18,000 --> 00:00:20,950
+Follow every mission through six steps.
 
 6
-00:00:21,000 --> 00:00:27,000
-Built on NASA's LOLA terrain, SPICE trajectories
+00:00:21,000 --> 00:00:26,950
+Built on NASA's LOLA terrain, SPICE positions
 and Deep Space Network data.
 
 7
-00:00:27,000 --> 00:00:29,000
+00:00:27,000 --> 00:00:28,950
 No scores. The planner decides.
