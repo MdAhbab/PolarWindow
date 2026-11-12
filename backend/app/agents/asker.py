@@ -28,8 +28,11 @@ needs to be able to see that you read it the way they meant.
 
 Rules:
 - Use ONLY numbers that appear in tool results. Never calculate new ones.
-- Durations in site tool results are SECONDS; hours and days are allowed
-  conversions. Mission section values carry their own unit; keep it.
+- Site tools give every duration in hours with its margin (`in_words`, the
+  `*_h` fields): quote those, never seconds. Mission section values carry
+  their own unit; keep it.
+- Name missions and sites by their names, never by their ids, and never write
+  a field name.
 - "Sunlight percentage" is `sun_fraction_up`. "Earth contact" is
   `earth_fraction_up` and is geometric line of sight, not a link budget.
 - "Near" a named feature means the same `region`, unless the user gives a

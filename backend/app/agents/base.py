@@ -464,7 +464,9 @@ def _facts(tool_calls: list[tools.ToolCallLog]) -> tuple[list[str], str | None]:
         elif call.tool == "compare_sites":
             for item in r.get("items") or []:
                 if isinstance(item, dict):
-                    facts.extend(_metric_sentences(item, str(item.get("site_id"))))
+                    # The site's name, never its id (jargon 56).
+                    name = str(item.get("name") or names.get(str(item.get("site_id"))) or "a site")
+                    facts.extend(_metric_sentences(item, name))
         elif call.tool == "search_sites":
             found = [row.get("name") for row in r.get("sites") or [] if isinstance(row, dict)]
             if found:

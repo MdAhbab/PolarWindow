@@ -286,6 +286,7 @@ async def test_agents_declare_exactly_these_tools() -> None:
         "get_mission_section",
         "get_space_weather",
         "list_scenario_options",
+        "get_scenario",
     } == TOOL_NAMES
 
 

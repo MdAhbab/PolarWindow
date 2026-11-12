@@ -13,6 +13,7 @@ from fastapi.routing import APIRoute
 from pydantic import ValidationError
 
 from app.api.limits import AGENTS, COMPARE, SIGN_IN, WRITES, BodyLimit, RateLimit, allowance
+from app.api.v1.schemas.agents import ChatContext
 from app.api.v1.schemas.contact import BookingIn
 from app.api.v1.schemas.ready import ParameterIn, RiskIn, RiskLinks
 from app.api.v1.schemas.weather import LimitIn, OfficialForecastIn, SeaLimitsIn
@@ -86,6 +87,7 @@ def test_what_a_request_counts_against() -> None:
     assert allowance("OPTIONS", f"{P}/risks/1", P) is None
     assert allowance("POST", f"{P}/auth/demo", P) == SIGN_IN
     assert allowance("POST", f"{P}/agents/ask", P) == AGENTS
+    assert allowance("POST", f"{P}/agents/chat", P) == AGENTS
     assert allowance("POST", f"{P}/compare", P) == COMPARE
     assert allowance("POST", f"{P}/sites/x/energy", P) == "energy"
     assert allowance("POST", f"{P}/sites/x/dispersion", P) == "dispersion"
@@ -196,6 +198,30 @@ def test_text_and_lists_are_bounded() -> None:
         RiskIn(**base, scale_id="s", ratings=[rating] * 21)
     with pytest.raises(ValidationError):
         BookingIn(station="d" * 65, start="2026-01-01T00:00Z", end="2026-01-01T01:00Z")
+
+
+def test_the_chat_context_is_bounded() -> None:
+    """Ask's page context (O1): the compared sites, the order and a tile's figure, each
+    bounded, and nothing else (`extra="forbid"`)."""
+    ChatContext(
+        path="/compare",
+        compare_ids=["s"] * 8,
+        rank_by="longest_blackout_s",
+        figure_key="data.contact.heard_h[0].value",
+    )
+    for bad in (
+        {"compare_ids": ["s"] * 9},
+        {"compare_ids": ["s" * 161]},
+        {"compare_ids": [""]},
+        {"rank_by": "overall"},
+        {"figure_key": "f" * 65},
+        {"figure_key": "a b"},
+        {"figure_key": "<script>"},
+        {"path": "/" * 301},
+        {"site_ids": ["s"]},  # not a field
+    ):
+        with pytest.raises(ValidationError):
+            ChatContext(**{"path": "/x", **bad})
 
 
 def test_not_found_returns_problem_detail_with_ui() -> None:

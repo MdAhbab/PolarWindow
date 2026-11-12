@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -167,6 +167,10 @@ class ChatMessage(BaseModel):
     text: str = Field(min_length=1, max_length=2000)
 
 
+#: The four numbers Compare can order by (`app.core.metrics.METRIC_KEYS`).
+RankBy = Literal["sunlit_s", "earth_contact_s", "longest_dark_s", "longest_blackout_s"]
+
+
 class ChatContext(BaseModel):
     """Where the person is, so "this mission" and "these dates" mean something."""
 
@@ -176,9 +180,28 @@ class ChatContext(BaseModel):
     mission_id: str | None = Field(default=None, max_length=64)
     site_id: str | None = Field(default=None, max_length=160)
     section: Literal["ready", "launch", "trip", "landing", "contact", "return"] | None = None
-    scenario_id: str | None = Field(default=None, max_length=64)
+    scenario_id: str | None = Field(
+        default=None,
+        max_length=64,
+        description="The scenario open on the page: Ask then answers about it, not the record.",
+    )
     start: str | None = Field(default=None, max_length=40, description="ISO 8601 UTC.")
     end: str | None = Field(default=None, max_length=40, description="ISO 8601 UTC.")
+    compare_ids: list[Annotated[str, Field(min_length=1, max_length=160)]] | None = Field(
+        default=None,
+        max_length=8,
+        description="The sites compared on Compare and Report, in their order (at most eight).",
+    )
+    rank_by: RankBy | None = Field(
+        default=None, description="The one number Compare orders the sites by."
+    )
+    figure_key: str | None = Field(
+        default=None,
+        max_length=64,
+        pattern=r"^[A-Za-z0-9_.\[\]-]+$",
+        description='The API name of the figure asked about from its tile ("Ask about this '
+        "number\"), e.g. 'longest_dark'. Ask reads it from the tool that holds it.",
+    )
 
 
 class ChatRequest(BaseModel):

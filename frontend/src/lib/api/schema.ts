@@ -2097,7 +2097,10 @@ export interface components {
             site_id?: string | null;
             /** Section */
             section?: ("ready" | "launch" | "trip" | "landing" | "contact" | "return") | null;
-            /** Scenario Id */
+            /**
+             * Scenario Id
+             * @description The scenario open on the page: Ask then answers about it, not the record.
+             */
             scenario_id?: string | null;
             /**
              * Start
@@ -2109,6 +2112,21 @@ export interface components {
              * @description ISO 8601 UTC.
              */
             end?: string | null;
+            /**
+             * Compare Ids
+             * @description The sites compared on Compare and Report, in their order (at most eight).
+             */
+            compare_ids?: string[] | null;
+            /**
+             * Rank By
+             * @description The one number Compare orders the sites by.
+             */
+            rank_by?: ("sunlit_s" | "earth_contact_s" | "longest_dark_s" | "longest_blackout_s") | null;
+            /**
+             * Figure Key
+             * @description The API name of the figure asked about from its tile ("Ask about this number"), e.g. 'longest_dark'. Ask reads it from the tool that holds it.
+             */
+            figure_key?: string | null;
         };
         /** ChatMessage */
         ChatMessage: {
