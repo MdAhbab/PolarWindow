@@ -1045,6 +1045,37 @@ def check_grounding(output: dict[str, Any], tool_results: list[dict[str, Any]]) 
     return Verdict(ok=not violations, violations=violations, citations=citations)
 
 
+_PATH_PART = re.compile(r"([^.\[\]]+)|\[(\d+)\]")
+
+
+def margin_of(
+    field_path: str, tool_results: list[dict[str, Any]], seq: int
+) -> tuple[float | None, str | None]:
+    """``(margin, unit)`` the tool gave beside a cited number, for showing it as a tile.
+
+    A field ``x_h`` or ``x_s`` has its margin in ``x_tolerance_h`` or ``x_tolerance_s`` next
+    to it. ``(None, unit)`` when the tool gave none; ``(None, None)`` for other fields.
+    """
+    node: Any = next((t.get("result") for t in tool_results if t.get("seq") == seq), None)
+    parts = _PATH_PART.findall(field_path)
+    if not parts:
+        return None, None
+    for key, idx in parts[:-1]:
+        if isinstance(node, dict) and key:
+            node = node.get(key)
+        elif isinstance(node, list) and idx:
+            i = int(idx)
+            node = node[i] if i < len(node) else None
+        else:
+            return None, None
+    leaf = parts[-1][0]
+    unit = "h" if leaf.endswith("_h") else "s" if leaf.endswith("_s") else None
+    if unit is None or leaf.endswith(f"_tolerance_{unit}") or not isinstance(node, dict):
+        return None, unit
+    tol = node.get(f"{leaf[:-2]}_tolerance_{unit}")
+    return (float(tol) if isinstance(tol, int | float) else None), unit
+
+
 def check_refusal(output: dict[str, Any]) -> Verdict:
     """``insufficient_data`` must carry a reason; ``ok`` must carry content.
 

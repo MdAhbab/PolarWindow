@@ -43,7 +43,7 @@ describe('AgentCard', () => {
     expect(screen.getByText('Connecting Ridge is sunlit for 574.4 hours.')).toBeTruthy()
     const cell = screen.getByText('Site numbers · time in sunlight (seconds)')
     expect(cell.closest('tr')?.textContent).toContain('574.4')
-    fireEvent.click(screen.getByRole('button', { name: 'How the AI got this' }))
+    fireEvent.click(screen.getByRole('button', { name: 'How this answer was made' }))
     expect(useMission.getState().runLog).toEqual({ open: true, runId: 'run-1' })
   })
 
@@ -127,7 +127,7 @@ describe('AgentCard', () => {
   })
 })
 
-describe('How the AI got this: a guard in words', () => {
+describe('How this answer was made: a guard in words', () => {
   it('a verdict word is named, not the instruction written to the model', () => {
     expect(guardLine({ kind: 'verdict_word', detail: "'go for launch' in summary is a verdict. Do not judge the whole." })).toBe(
       'Rejected: “go for launch” judges the whole instead of saying what each number shows',

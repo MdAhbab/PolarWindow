@@ -167,8 +167,8 @@ test('demo path: volatiles → IM-2 → shift the date → compare → ask → r
   await askRow.getByRole('button', { name: 'Ask', exact: true }).click()
   // Without a model key the answer is built from the measurements; with one it is the model's, which takes seconds.
   await expect(page.getByText(/^(Summary from measurements \((no AI|AI answer replaced)\)|AI answer · )/)).toBeVisible({ timeout: 60_000 })
-  await openRow(page, /numbers, each checked/)
-  const how = page.getByRole('button', { name: 'How the AI got this' })
+  await openRow(page, /numbers? checked/)
+  const how = page.getByRole('button', { name: 'How this answer was made' })
   await how.click()
   const log = page.getByRole('dialog', { name: 'AI activity log' })
   await expect(log).toBeVisible()

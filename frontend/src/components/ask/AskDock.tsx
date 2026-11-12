@@ -7,7 +7,6 @@ import { useMission as useMissionQuery } from '../../lib/api/queries'
 import { useMission } from '../../lib/store'
 import { useWindowParams } from '../../lib/mission'
 import { hasSite, siteById } from '../../lib/sites'
-import { fieldWords, toolWords } from '../../lib/fieldWords'
 import { useMotionClass, useReducedMotion } from '../../hooks/useMotion'
 import { Icon, type IconName } from '../Icon'
 import { Sheet } from '../Sheet'
@@ -16,6 +15,7 @@ import { guardCopy, statusLine } from '../Agents'
 import { pillClass } from '../ui'
 import { useLeaveCopy } from '../../lib/motion'
 import { MAX_TEXT, answerText, contextWords, historyFor, suggestionsFor, useAsk, type AskTurn } from './store'
+import { AnswerTiles, HowThisWasMade } from './AnswerParts'
 import { announcement, answerActions, answerFollowUps, answeredByRules, isSignedOut, type RuleReason } from './answer'
 
 /** The dock's element on a wide screen, for the shell's Ask button (`aria-controls`). */
@@ -144,6 +144,7 @@ export function AskDock() {
     <DockBody
       open={isOpen}
       about={about}
+      subject={names.mission ?? names.site}
       scenario={Boolean(context.scenario_id)}
       suggestions={suggestionsFor(context, names)}
       draft={draft}
@@ -216,6 +217,7 @@ function DockPanel({ onClose, children }: { onClose: () => void; children: React
 function DockBody({
   open,
   about,
+  subject,
   scenario,
   suggestions,
   draft,
@@ -225,6 +227,8 @@ function DockBody({
 }: {
   open: boolean
   about: string | null
+  /** The mission or site open now, by name, for the field's words. */
+  subject: string | null
   scenario: boolean
   suggestions: string[]
   draft: string
@@ -325,6 +329,22 @@ function DockBody({
         {announcement(turns[turns.length - 1])}
       </p>
 
+      {LIVE_SERVICE && turns.length > 0 && !busy && !draft.trim() && suggestions.length > 0 && (
+        <ul aria-label="Questions about this page" className="flex shrink-0 gap-2 overflow-x-auto border-t border-line px-4 pt-3">
+          {suggestions.slice(0, 3).map((q) => (
+            <li key={q} className="shrink-0">
+              <button
+                type="button"
+                onClick={() => submit(q)}
+                className="pw-press inline-flex min-h-11 items-center rounded-pill border border-line-strong bg-tray px-3.5 py-1.5 text-small text-ink-2 hover:bg-inset hover:text-ink"
+              >
+                {q}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
       {LIVE_SERVICE && (
         <form
           onSubmit={(e) => {
@@ -344,7 +364,7 @@ function DockBody({
               maxLength={MAX_TEXT}
               value={draft}
               aria-describedby={hintId}
-              placeholder={about ? 'Ask about this page' : 'Ask about a mission, a site or a date'}
+              placeholder={subject ? `Ask about ${subject}` : 'Ask about a mission, a site or a date'}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
                 // Enter asks; Shift+Enter is a new line, as in every chat box.
@@ -582,6 +602,7 @@ function Answer({
   const words = answerText(r)
   return (
     <>
+      <p className="-mb-1.5 text-caption leading-caption text-ink-3">{statusLine({ ...r, result: null })}</p>
       {rules && (
         <UncertaintyNote title="Answered from rules, not a model">
           {rules === 'guard' ? guardCopy(r.guard_failures) : RULES_COPY[rules]}
@@ -633,92 +654,8 @@ function Answer({
           ))}
         </ul>
       )}
-      <HowItGotThis r={r} />
+      <AnswerTiles items={r.provenance ?? []} href={actions[0]?.href} onLeave={onLeave} />
+      <HowThisWasMade r={r} words={words} rules={Boolean(rules)} />
     </>
-  )
-}
-
-/** A number from the API, printed as sent: no rounding, no unit conversion. */
-const asSent = (v: unknown): string => (typeof v === 'number' ? String(v) : String(v ?? ''))
-
-/**
- * On every answer: who wrote it and how long it took (or that rules did),
- * how the question was read, each number with the sentence it is in and the
- * lookup it came from, what was looked up, and the run itself in the log.
- */
-function HowItGotThis({ r }: { r: ChatResponseDTO }) {
-  const openRunLog = useMission((s) => s.openRunLog)
-  const numbers = r.provenance ?? []
-  const calls = r.tool_calls ?? []
-  const read = r.result?.interpreted_as?.trim()
-  return (
-    <details className="group border-t border-line">
-      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 py-1.5 hover:text-ink [&::-webkit-details-marker]:hidden">
-        <span className="flex min-w-0 flex-col">
-          <span className="text-small font-semibold text-ink">How the AI got this</span>
-          <span className="text-caption leading-caption text-ink-3">{statusLine({ ...r, result: null })}</span>
-        </span>
-        <Icon
-          name="chevron"
-          size={16}
-          strokeWidth={2}
-          className="pw-turn shrink-0 text-ink-3 group-open:rotate-180"
-        />
-      </summary>
-      <div className="pw-disclosure-body flex flex-col gap-4 pt-1 pb-2">
-        {read && (
-          <p className="text-small leading-5 text-ink-2">
-            <span className="font-semibold text-ink">Read as: </span>
-            {read}
-          </p>
-        )}
-        <div className="flex flex-col gap-2">
-          <h4 className="text-small font-semibold text-ink">Numbers used</h4>
-          {numbers.length ? (
-            <ul className="flex flex-col gap-2.5">
-              {numbers.map((p, i) => (
-                <li key={i} className="flex flex-col gap-0.5 border-l-2 border-line-strong pl-2.5">
-                  <span className="font-mono text-small text-ink tnum">{asSent(p.value)}</span>
-                  <span className="text-caption leading-caption text-ink-2">…{p.claim}…</span>
-                  <span className="text-caption leading-caption text-ink-3">
-                    From {toolWords(p.tool)}, {fieldWords(p.field)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-small text-ink-2">This answer contains no numbers.</p>
-          )}
-        </div>
-        {calls.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <h4 className="text-small font-semibold text-ink">Looked up</h4>
-            <ul className="flex flex-col gap-1">
-              {calls.map((c) => (
-                <li key={c.seq} className="text-caption leading-caption text-ink-2">
-                  {toolWords(c.tool)}
-                  {c.error ? ': did not answer' : `, ${c.number_count} ${c.number_count === 1 ? 'number' : 'numbers'}`}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {r.run_id && (
-          <button
-            type="button"
-            onClick={(e) => {
-              // Focus the opener first: Safari does not focus a clicked button, and
-              // the drawer returns focus to whatever had it when it opened.
-              e.currentTarget.focus()
-              openRunLog(r.run_id ?? null)
-            }}
-            className="pw-press -ml-3 inline-flex h-11 items-center gap-2 self-start rounded-pill px-3 text-small font-semibold text-ink-2 hover:bg-inset hover:text-ink"
-          >
-            <Icon name="log" size={16} strokeWidth={1.8} />
-            Open this run in the log
-          </button>
-        )}
-      </div>
-    </details>
   )
 }

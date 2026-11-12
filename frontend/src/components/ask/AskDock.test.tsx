@@ -74,9 +74,9 @@ describe('the Ask dock', () => {
     expect(screen.getByRole('link', { name: 'Open IM-3 · Launch' }).getAttribute('href')).toBe('/missions/im-3/launch')
     // A link out of the app is never offered.
     expect(screen.queryByText('Not ours')).toBeNull()
-    expect(screen.getByText('How the AI got this')).toBeTruthy()
+    expect(screen.getByText('How this answer was made')).toBeTruthy()
     expect(dock.textContent).toMatch(/AI answer · \d+ numbers? checked/)
-    expect(dock.textContent).toContain('Read as: About IM-3, Launch.')
+    expect(dock.textContent).toContain('Question read as: About IM-3, Launch.')
     expect(screen.queryByText('Answered from rules, not a model')).toBeNull()
     expect(screen.getByRole('status').textContent).toContain('Answer: The first launch window opens')
 
@@ -99,7 +99,7 @@ describe('the Ask dock', () => {
     expect(await screen.findByText('Sign in to ask')).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Go to sign-in' }).getAttribute('href')).toBe('/')
     expect(screen.getByRole('status').textContent).toBe('Not answered: sign in to ask.')
-    expect(screen.queryByText('How the AI got this')).toBeNull()
+    expect(screen.queryByText('How this answer was made')).toBeNull()
   })
 
   it('closes on Esc and gives focus back to what opened it', () => {

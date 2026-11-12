@@ -327,7 +327,7 @@ export function AgentCard({
       className="self-start"
     >
       <Icon name="log" size={16} strokeWidth={1.8} />
-      How the AI got this
+      How this answer was made
     </Button>
   ) : null
 

@@ -4769,6 +4769,16 @@ export interface components {
             call_seq: number;
             /** Field */
             field: string;
+            /**
+             * Margin
+             * @description The ± the tool gave beside this number, in `unit`; null if none.
+             */
+            margin?: number | null;
+            /**
+             * Unit
+             * @description `h` or `s` for a duration; null for other numbers.
+             */
+            unit?: ("h" | "s") | null;
         };
         /** PublishedDate */
         PublishedDate: {

@@ -651,7 +651,7 @@ async def run_agent(
             status=status,
             result=result,
             reason=reason,
-            provenance=[_citation(c) for c in verdict.citations],
+            provenance=[_citation(c, tool_dicts_for_guard()) for c in verdict.citations],
             attempts=attempts,
         )
 
@@ -875,7 +875,7 @@ async def run_agent(
                                 ),
                                 result=payload,
                                 reason=payload.get("reason"),
-                                provenance=[_citation(c) for c in verdict.citations],
+                                provenance=[_citation(c, tool_dicts) for c in verdict.citations],
                                 attempts=attempt,
                             )
                         )
@@ -956,13 +956,16 @@ async def run_agent(
         )
 
 
-def _citation(c: guards.Citation) -> dict[str, Any]:
+def _citation(c: guards.Citation, tool_results: list[dict[str, Any]]) -> dict[str, Any]:
+    margin, unit = guards.margin_of(c.field, tool_results, c.call_seq)
     return {
         "claim": c.claim,
         "value": c.value,
         "tool": c.tool,
         "call_seq": c.call_seq,
         "field": c.field,
+        "margin": margin,
+        "unit": unit,
     }
 
 

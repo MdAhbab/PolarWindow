@@ -51,6 +51,12 @@ class ProvenanceItem(BaseModel):
     tool: str
     call_seq: int
     field: str
+    margin: float | None = Field(
+        default=None, description="The ± the tool gave beside this number, in `unit`; null if none."
+    )
+    unit: Literal["h", "s"] | None = Field(
+        default=None, description="`h` or `s` for a duration; null for other numbers."
+    )
 
 
 class ToolCallView(BaseModel):

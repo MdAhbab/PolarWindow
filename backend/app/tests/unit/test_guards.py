@@ -547,3 +547,11 @@ def test_adjacent_word_rule_keeps_legitimate_compound_and_clock_quotes() -> None
     ):
         verdict = guards.check_grounding({"status": "ok", "answer": answer}, tools)
         assert verdict.ok, f"{answer!r} failed: {[v.detail for v in verdict.violations]}"
+
+
+def test_a_cited_duration_carries_the_margin_the_tool_gave_beside_it() -> None:
+    results = [{"seq": 2, "result": {"items": [{"sunlit_h": 12.5, "sunlit_tolerance_h": 0.3}, {}]}}]
+    assert guards.margin_of("items[0].sunlit_h", results, 2) == (0.3, "h")
+    assert guards.margin_of("items[1].sunlit_h", results, 2) == (None, "h")  # no margin given
+    assert guards.margin_of("items[0].sun_fraction_up", results, 2) == (None, None)
+    assert guards.margin_of("items[0].sunlit_h", results, 9) == (None, None)  # another call

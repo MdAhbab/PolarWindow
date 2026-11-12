@@ -14871,6 +14871,34 @@
           "field": {
             "type": "string",
             "title": "Field"
+          },
+          "margin": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Margin",
+            "description": "The \u00b1 the tool gave beside this number, in `unit`; null if none."
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "h",
+                  "s"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit",
+            "description": "`h` or `s` for a duration; null for other numbers."
           }
         },
         "additionalProperties": false,
