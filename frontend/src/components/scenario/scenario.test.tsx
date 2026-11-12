@@ -21,6 +21,13 @@ import { ScenarioBand } from './ScenarioBand'
 import { ScenarioProgress } from './ScenarioProgress'
 import { useActiveScenario } from './store'
 import { contactAnswer } from '../../screens/sections/ContactSection'
+import { useMissions } from '../../lib/api/queries'
+
+// The mission list says which steps a worked example answers; no list unless a test sets one.
+vi.mock('../../lib/api/queries', async (load) => ({
+  ...(await load<typeof import('../../lib/api/queries')>()),
+  useMissions: vi.fn(() => ({ data: undefined })),
+}))
 
 const gaps = gapsFixture as unknown as ScenarioGapsDTO
 const done = doneFixture as unknown as ScenarioDTO
@@ -28,7 +35,8 @@ const done = doneFixture as unknown as ScenarioDTO
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
-  useActiveScenario.setState({ active: {} })
+  useActiveScenario.setState({ active: {}, recordOnly: {} })
+  vi.mocked(useMissions).mockReturnValue({ data: undefined } as never)
   useSession.setState({ session: null })
 })
 
@@ -139,8 +147,8 @@ describe('the answer', () => {
     expect(screen.getByRole('complementary', { name: 'Scenario' })).toBeTruthy()
     expect(screen.getByText(/Worked out from assumptions, not from the mission’s record/)).toBeTruthy()
     expect(screen.getByRole('heading', { level: 2 }).textContent).toMatch(/^Scenario · /)
-    expect(screen.getByRole('link', { name: 'Edit assumptions' }).getAttribute('href')).toContain('edit=sc-1')
-    expect(screen.getByRole('link', { name: 'Leave the scenario' }).getAttribute('href')).not.toContain('scenario=')
+    expect(screen.getByRole('link', { name: 'Change the assumed values' }).getAttribute('href')).toContain('edit=sc-1')
+    expect(screen.getByRole('link', { name: 'Show only what is published' }).getAttribute('href')).not.toContain('scenario=')
     expect(document.title.startsWith('Scenario:')).toBe(true)
   })
 
@@ -158,11 +166,22 @@ describe('the answer', () => {
     expect(await screen.findByText(/Contact was left out of this scenario/)).toBeTruthy()
   })
 
+  it('opens a step the record cannot answer on its worked example, until asked for the record only', async () => {
+    vi.mocked(useMissions).mockReturnValue({
+      data: { items: [{ id: 'im-3', steps: [{ section: 'contact', mark: 'example', scenarioId: 'sc-1' }] }] },
+    } as never)
+    gate('/missions/im-3/contact', done)
+    expect(await screen.findByTestId('answer')).toBeTruthy()
+    fireEvent.click(screen.getByRole('link', { name: 'Show only what is published' }))
+    await waitFor(() => expect(screen.getByText('the record')).toBeTruthy())
+    expect(useActiveScenario.getState().recordOnly['im-3']).toBe(true)
+  })
+
   it('restores the scenario when a link dropped it, and leaving clears it', async () => {
     useActiveScenario.getState().remember('im-3', 'sc-1')
     gate('/missions/im-3/contact', done)
     expect(await screen.findByTestId('answer')).toBeTruthy()
-    fireEvent.click(screen.getByRole('link', { name: 'Leave the scenario' }))
+    fireEvent.click(screen.getByRole('link', { name: 'Show only what is published' }))
     await waitFor(() => expect(screen.getByText('the record')).toBeTruthy())
     expect(useActiveScenario.getState().active['im-3']).toBeUndefined()
   })

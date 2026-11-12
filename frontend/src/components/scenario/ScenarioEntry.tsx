@@ -73,9 +73,17 @@ export function ScenarioEntry({ missionId, section }: { missionId: string; secti
           </p>
         </div>
       ) : (
-        <p className="max-w-3xl text-small leading-5 text-ink-2">
-          Assuming these would still not be enough to work this step out.
-        </p>
+        // No dead end: what the defaults cannot supply, the reader can choose.
+        <div className="flex flex-col items-start gap-2">
+          <p className="max-w-3xl text-small leading-5 text-ink-2">
+            Nothing published gives {missing.length === 1 ? 'this' : 'these'} yet. Choose{' '}
+            {missing.length === 1 ? 'it' : 'them'}, and this step is worked out as a scenario.
+          </p>
+          <Link to={to('new')} className={pillClass('primary', true)}>
+            Choose the {missing.map((m) => m.label.toLowerCase()).join(' and ') || 'assumed values'}
+            <PillArrow />
+          </Link>
+        </div>
       )}
       {can && presets.length > 0 && <PresetCards presets={presets} to={to} />}
     </div>

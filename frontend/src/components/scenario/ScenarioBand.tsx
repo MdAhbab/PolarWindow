@@ -17,17 +17,26 @@ const BTN =
  */
 export function ScenarioBand({ scenario }: { scenario: ScenarioDTO }) {
   const loc = useLocation()
-  const forget = useActiveScenario((s) => s.forget)
+  const showRecord = useActiveScenario((s) => s.showRecord)
   const others = useScenarios(scenario.mission_id).data?.items.filter((s) => s.id !== scenario.id) ?? []
+  // Once done, only the steps it did work out: a step it skipped is not "worked out".
+  const worked =
+    scenario.status === 'done'
+      ? scenario.sections.filter((sec) => scenario.phases.some((p) => p.id === sec && p.state === 'done'))
+      : scenario.sections
   const here = (id: string | null, extra: Record<string, string | null> = {}) => ({ pathname: loc.pathname, search: withScenario(loc.search, id, extra) })
   return (
     <aside aria-label="Scenario" className="pw-scenario -mt-2 flex min-w-0 flex-col gap-4 rounded-sheet border-2 border-dashed border-ink-3 bg-panel p-4 sm:p-5">
       <div className="flex flex-col gap-1">
-        <p className="text-tag font-semibold tracking-caps-md text-ink uppercase">Scenario{scenario.preset ? ' · ready-made' : ''}</p>
+        <p className="text-tag font-semibold tracking-caps-md text-ink uppercase">
+          {scenario.preset ? 'Worked example' : 'Scenario'}
+        </p>
         <h3 className="text-title leading-6 font-semibold text-ink">{scenario.name}</h3>
         <p className="max-w-3xl text-small leading-5 text-ink-2">
-          Worked out from assumptions, not from the mission’s record. Nothing here is written to the record.
-          {scenario.sections.length > 0 && <> Steps worked out: {stepsWords(scenario.sections)}.</>}
+          {scenario.preset
+            ? 'Worked example, based on past flights. Assumed values are hatched.'
+            : 'Worked out from assumptions, not from the mission’s record. Assumed values are hatched.'}
+          {worked.length > 0 && <> Steps worked out: {stepsWords(worked)}.</>}
         </p>
         {scenario.prompt && <p className="max-w-3xl text-small leading-5 text-ink-3">You asked: “{scenario.prompt}”</p>}
       </div>
@@ -36,10 +45,10 @@ export function ScenarioBand({ scenario }: { scenario: ScenarioDTO }) {
       </Disclosure>
       <div className="flex flex-wrap gap-3">
         <Link to={here('new', { edit: scenario.id })} className={BTN}>
-          Edit assumptions
+          Change the assumed values
         </Link>
-        <Link to={here(null, { edit: null })} onClick={() => forget(scenario.mission_id)} className={BTN}>
-          Leave the scenario
+        <Link to={here(null, { edit: null })} onClick={() => showRecord(scenario.mission_id)} className={BTN}>
+          Show only what is published
         </Link>
       </div>
       {others.length > 0 && (

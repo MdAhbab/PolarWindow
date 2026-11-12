@@ -4,6 +4,7 @@ import { ApiError } from '../../lib/api/client'
 import type { ScenarioResultsDTO, ScenarioSection } from '../../lib/api/experience.types'
 import type { SectionDTO } from '../../lib/api/lifecycle'
 import { useScenario } from '../../lib/api/scenarios'
+import { useMissions } from '../../lib/api/queries'
 import { SectionLayout, StatePanel, UNDER_QUESTION } from '../lifecycle/Section'
 import { ProblemPanel, Skeleton } from '../States'
 import { ScenarioContext } from './context'
@@ -14,10 +15,23 @@ import { useActiveScenario } from './store'
 import { STEP_NAME, withScenario } from './words'
 
 /**
+ * The worked example that answers this step when the record does not, as the
+ * mission list marks it (hatched), or null. Flown and cancelled missions have
+ * none, so they always open on their record.
+ */
+function useFirstExample(missionId: string, section: ScenarioSection): string | null {
+  const list = useMissions({})
+  const step = list.data?.items.find((m) => m.id === missionId)?.steps?.find((s) => s.section === section)
+  return step?.mark === 'example' ? step.scenarioId : null
+}
+
+/**
  * Between a step and the mission: with no `?scenario=` it draws the record;
  * `?scenario=new` the builder; `?scenario=<id>` that scenario, its progress
  * and then its answer in the step's own layout. If a link dropped the
- * parameter, the scenario the session was reading is put back.
+ * parameter, the scenario the session was reading is put back. A step the
+ * record cannot answer opens on its first worked example, unless the reader
+ * asked to see only what is published.
  */
 export function ScenarioGate<T>({
   missionId,
@@ -37,20 +51,23 @@ export function ScenarioGate<T>({
   const [params, setParams] = useSearchParams()
   const sc = params.get('scenario')
   const stored = useActiveScenario((s) => s.active[missionId])
-  const restore = !sc && stored
+  const recordOnly = useActiveScenario((s) => Boolean(s.recordOnly[missionId]))
+  const example = useFirstExample(missionId, section)
+  const target = sc ? null : (stored ?? (recordOnly ? null : example))
+  const restore = Boolean(target)
 
   useEffect(() => {
-    if (restore) {
+    if (target) {
       setParams(
         (cur) => {
           const n = new URLSearchParams(cur)
-          n.set('scenario', stored as string)
+          n.set('scenario', target)
           return n
         },
         { replace: true },
       )
     }
-  }, [restore, stored, setParams])
+  }, [target, setParams])
 
   if (restore) return null
   if (!sc) return <>{record}</>
@@ -109,7 +126,7 @@ function ScenarioStep<T>({
   const loc = useLocation()
   const q = useScenario(id)
   const remember = useActiveScenario((s) => s.remember)
-  const forget = useActiveScenario((s) => s.forget)
+  const showRecord = useActiveScenario((s) => s.showRecord)
   const s = q.data
   const done = s?.status === 'done'
   useEffect(() => {
@@ -127,7 +144,7 @@ function ScenarioStep<T>({
             title="That scenario is not there"
             detail="It may have been deleted, or the link is for another server."
             action={
-              <Link to={leave} onClick={() => forget(missionId)} className="inline-flex min-h-11 items-center text-body font-semibold underline">
+              <Link to={leave} onClick={() => showRecord(missionId)} className="inline-flex min-h-11 items-center text-body font-semibold underline">
                 Back to the record
               </Link>
             }
