@@ -121,8 +121,7 @@ Say these a little faster. One file, three times.
   wait about 20 minutes.)
 - The screens changed on 13 November. If a label on your screen differs a little from this file, follow
   the screen.
-- On the front page press **Go to the dashboard**. If a guide box opens at the bottom, press
-  **Skip the tour**.
+- On the front page press **Go to the dashboard**. (If a guide box is open at the bottom, close it with x.)
 - Home shows three ways in and exactly two projects: Malapert Pathfinder and Ridge Surveyor.
 - Dark theme (the round button at the top right).
 - If a note such as "Scenario worked out for ..." shows at the bottom right, close it (x) before you record.

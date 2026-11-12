@@ -84,7 +84,7 @@ function ReturnRecord({ mission: m }: { mission: MissionDetail }) {
       <SectionStates view={view} terms={TERMS} status={status} missionId={m.id}>
         {({ data, meta }) => <ReturnAnswer ret={data} meta={meta} missionId={m.id} status={status} />}
       </SectionStates>
-      {view.status === 'answer' && (view.section.data.booster || view.section.data.capsule?.applicable) && <WhatIfLink />}
+      {view.status === 'answer' && (view.section.data.booster || view.section.data.capsule?.applicable) && <WhatIfLink status={m.status} />}
     </SectionLayout>
   )
 }

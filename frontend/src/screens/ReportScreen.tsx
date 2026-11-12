@@ -73,7 +73,7 @@ export function ReportScreen() {
           tied: it.tied,
           censored: it.censored,
           grazing: it.grazing,
-          incomparableWith: it.incomparable_with.map((x) => siteById(x).code),
+          incomparableWith: it.incomparable_with.map((x) => siteById(x).name),
           places: items.length,
           metric: 'longestDark',
         })

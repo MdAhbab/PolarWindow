@@ -16,13 +16,15 @@ import { PageHeader } from '../components/Page'
 import { Icon } from '../components/Icon'
 import { ShareRing } from '../components/ShareRing'
 import { bound, coords, percent } from '../lib/format'
-import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
+import { limitWords } from '../lib/geometry/metrics'
+import { useBatteryLimit } from '../lib/api/lifecycleQueries'
 import { coordinateKindWords } from '../lib/missions'
 import type { Mission } from '../lib/api/adapters'
 import type { SiteMetrics } from '../lib/types'
 
 /** S1 — where you start: pick a site, see the terminator sweep across the pole. */
 export function MapScreen() {
+  const limit = useBatteryLimit()
   const { siteId, setSite, cursorH, windowStartH, compareIds } = useMission(
     useShallow((s) => ({
       compareIds: s.compareIds,
@@ -223,7 +225,7 @@ export function MapScreen() {
                         <>
                           <span className="text-sun">{percent(m.sun.fractionUp)}</span> sun ·{' '}
                           <span className="text-earth">{percent(m.earth.fractionUp)}</span> contact · night{' '}
-                          <span className={m.sun.longestDownH > SURVIVAL_LIMIT_H ? 'text-alert' : 'text-ink-2'}>
+                          <span className={m.sun.longestDownH > limit.h ? 'text-alert' : 'text-ink-2'}>
                             {bound(m.sun.longestDownOpen)}
                             {Math.round(m.sun.longestDownH)} h
                           </span>
@@ -329,8 +331,9 @@ export function MapScreen() {
  * the tiles, whose long labels wrapped onto four lines there.
  */
 function SiteNumbers({ metrics: m }: { metrics: SiteMetrics | undefined }) {
+  const limit = useBatteryLimit()
   if (!m) return <p className="px-5 py-4 text-small text-ink-3">Working out the numbers…</p>
-  const over = m.sun.longestDownH > SURVIVAL_LIMIT_H
+  const over = m.sun.longestDownH > limit.h
   const rows: { label: string; value: string; unit?: string; extra?: string; tone: string; alert?: boolean }[] = [
     { label: 'Time in sunlight', value: `${Math.round(m.sun.upHours)}`, unit: 'h', extra: percent(m.sun.fractionUp), tone: 'text-sun' },
     {
@@ -344,7 +347,7 @@ function SiteNumbers({ metrics: m }: { metrics: SiteMetrics | undefined }) {
       label: 'Longest night',
       value: m.sun.longestDownArc ? `${bound(m.sun.longestDownOpen)}${Math.round(m.sun.longestDownH)}` : 'none',
       unit: m.sun.longestDownArc ? 'h' : undefined,
-      extra: over ? `over the ${SURVIVAL_LIMIT_H} h battery limit` : undefined,
+      extra: over ? `over ${limitWords(limit)}` : undefined,
       tone: over ? 'text-alert' : 'text-ink',
       alert: over,
     },

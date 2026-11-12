@@ -66,7 +66,7 @@ function LaunchRecord({ mission: m }: { mission: MissionDetail }) {
       <SectionStates view={view} terms={TERMS} status={status} missionId={m.id}>
         {({ data, meta }) => <LaunchBody data={data} meta={meta} missionId={m.id} />}
       </SectionStates>
-      {status?.state === 'available' && !data_none(view) && <WhatIfLink />}
+      {status?.state === 'available' && !data_none(view) && <WhatIfLink status={m.status} />}
     </SectionLayout>
   )
 }

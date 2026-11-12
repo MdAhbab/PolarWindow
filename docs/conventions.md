@@ -226,8 +226,8 @@ or a download ("Radio power (EIRP, dBW)"). Keep to these:
 | M1 | terminator sweep (`PolarMap` + `DateSlider`) | 708 h in 14 s | **linear, never eased** | play disabled, ± 6 h step buttons |
 | M2 | ring fill (`TwoClockRings`) | slow, 560 ms (`--pw-dur-slow`) | settle (`--ease-settle`) | mask fully open in one frame |
 | M3 | compare re-order (`CompareScreen`) | sheet, 420 ms (`--pw-dur-sheet`) | move (`--ease-move`) | instant, plus a live-region sentence |
-| M4 | number roll (`useCountUp`) | 600 ms | same as M2 | value set directly |
-| M5 | horizon reveal (`HorizonProfile`) | 900 ms | same as M2 | paths drawn complete |
+| M4 | number roll (`CountUp` in `components/ui.tsx`), once, on first show | arrive, 820 ms (`--pw-dur-arrive`) | settle (`--ease-settle`) | value set directly |
+| M5 | horizon reveal (`HorizonProfile`, `.pw-chart-reveal`: grows from the left) | slow, 560 ms (`--pw-dur-slow`) | settle (`--ease-settle`) | paths drawn complete |
 | M6 | uncertainty band (`.breathe`) | none: it no longer loops | none | static at 0.34 opacity |
 
 M1 is linear because it represents a real rate. Easing a physical motion tells

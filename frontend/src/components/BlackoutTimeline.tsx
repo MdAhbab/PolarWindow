@@ -190,7 +190,7 @@ export function BlackoutTimeline({
       {metrics.earth.arcs
         .filter((a) => !a.up)
         .map((a, i) => (
-          <rect key={i} x={x(a.startH)} y="126" width={w(a.hours)} height={TRACK_H} fill={a === worstEarth ? 'url(#pw-alert)' : 'url(#pw-blocked)'} />
+          <rect key={i} x={x(a.startH)} y="126" width={w(a.hours)} height={TRACK_H} fill="url(#pw-blocked)" stroke={a === worstEarth ? 'var(--color-ink-2)' : undefined} strokeWidth={a === worstEarth ? 1.5 : undefined} />
         ))}
       {earthBands.map((b, i) => (
         <rect key={`eb${i}`} x={x(b.fromH)} y="126" width={w(b.toH - b.fromH)} height={TRACK_H} fill="url(#pw-uncertain)" {...bandProps} />

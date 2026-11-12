@@ -98,7 +98,7 @@ function ContactRecord({ mission: m }: { mission: MissionDetail }) {
           />
         )}
       </SectionStates>
-      {view.status === 'answer' && <WhatIfLink />}
+      {view.status === 'answer' && <WhatIfLink status={m.status} />}
     </SectionLayout>
   )
 }

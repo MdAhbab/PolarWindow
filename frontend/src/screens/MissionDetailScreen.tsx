@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useShallow } from 'zustand/react/shallow'
-import { useMission as useStore, windowFromInstants } from '../lib/store'
+import { DEFAULT_STEP_S, useMission as useStore, windowFromInstants } from '../lib/store'
 import { useWindowParams } from '../lib/mission'
 import { useSiteView } from '../lib/api/queries'
 import { latestAccessed, type MissionDetail, type MissionSource, type PublishedDate } from '../lib/api/adapters'
@@ -23,7 +23,7 @@ import { Sources } from '../components/Sources'
 import { ANSWER_TEXT, ChartPanel, Rows, SectionLayout, StatePanel, UNDER_QUESTION } from '../components/lifecycle/Section'
 import { SECTIONS } from '../components/lifecycle/JourneyBar'
 import { useMotionClass } from '../hooks/useMotion'
-import { SURVIVAL_LIMIT_H } from '../lib/geometry/metrics'
+import { useBatteryLimit } from '../lib/api/lifecycleQueries'
 import { DateSlider } from '../components/DateSlider'
 import { KeyNumberRow } from '../components/KeyNumbers'
 import { Ribbon } from '../components/Ribbon'
@@ -211,7 +211,13 @@ type LandingResult = NonNullable<ScenarioResultsDTO['landing']>['data']
  */
 function ScenarioSurface({ data: d, meta }: { data: LandingResult; meta: NonNullable<ScenarioResultsDTO['landing']>['meta'] }) {
   const arrive = useMotionClass('pw-arrive')
+  const limit = useBatteryLimit()
   const hours = (Date.parse(d.window_end) - Date.parse(d.window_start)) / 3_600_000
+  // The site's own numbers for the assumed spot and dates, at the step the scenario used, so they are the
+  // same answer with its margins and its day-by-day arcs. Until they arrive, the scenario's four totals.
+  const w = useMemo(() => ({ start: d.window_start, end: d.window_end, stepS: DEFAULT_STEP_S }), [d.window_start, d.window_end])
+  const view = useSiteView(d.site_id, w, false)
+  const real = view.data?.metrics
   const body = (body: 'sun' | 'earth', up_s: number, frac: number, dark_s: number, open: boolean) => ({
     body,
     arcs: [],
@@ -234,11 +240,12 @@ function ScenarioSurface({ data: d, meta }: { data: LandingResult; meta: NonNull
     worstCompoundH: 0,
     computeMs: 0,
   } as unknown as SiteMetrics
+  const shown = real ?? metrics
   return (
     <>
       <div className={`${UNDER_QUESTION} flex flex-col gap-3 ${arrive}`}>
         <p data-guide="section-answer" className={ANSWER_TEXT}>
-          {surfaceSentence(metrics)}
+          {surfaceSentence(shown)}
         </p>
         <p className="text-caption leading-caption text-ink-3">
           At {d.site_name}, {dateTimeWords(Date.parse(d.window_start))} to {dateTimeWords(Date.parse(d.window_end))}.
@@ -247,13 +254,31 @@ function ScenarioSurface({ data: d, meta }: { data: LandingResult; meta: NonNull
       {!d.terrain_modelled && (
         <UncertaintyNote>No terrain model covers this site, so this is worked out as if the ground were flat. Real hills could block more.</UncertaintyNote>
       )}
-      <KeyNumberRow metrics={metrics} uncertain={!d.terrain_modelled} />
+      <KeyNumberRow metrics={shown} uncertain={!d.terrain_modelled} />
+      {real && (
+        <ChartPanel
+          title="Sunlight and contact with Earth over the assumed dates"
+          chart={
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <span className="text-small font-semibold text-sun">Sunlight</span>
+                <Ribbon arcs={real.sun.arcs} windowStartH={real.windowStartH} windowHours={real.windowHours} tone="sun" alertOverH={limit.h} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-small font-semibold text-earth">Contact with Earth</span>
+                <Ribbon arcs={real.earth.arcs} windowStartH={real.windowStartH} windowHours={real.windowHours} tone="earth" />
+              </div>
+            </div>
+          }
+          table={<ArcTable metrics={real} />}
+        />
+      )}
       <Rows
         about={
           <Disclosure title="How this was worked out">
             <p className="text-body leading-6 text-ink-2">
-              The Sun and Earth are traced across the sky at the assumed spot for the assumed dates and counted up while above the skyline. These
-              are the four totals only; the day-by-day charts are worked out for the mission’s own target.
+              The Sun and Earth are traced across the sky at the assumed spot for the assumed dates and counted up while above the skyline. Each
+              time an edge is crossed carries a margin from the terrain map's height error.
             </p>
             <p className="text-caption leading-caption text-ink-3">Worked out {dateTimeWords(Date.parse(meta.computed_at))}.</p>
           </Disclosure>
@@ -271,7 +296,7 @@ function SurfaceRecord({ mission: m }: { mission: MissionDetail }) {
         {m.siteId && m.site && hasSite(m.siteId) ? (
           <>
             <TargetPanel mission={m} siteId={m.siteId} />
-            <WhatIfLink />
+            <WhatIfLink status={m.status} />
             <MissionSurfaceTools siteId={m.siteId} siteName={m.site.name} />
           </>
         ) : (
@@ -526,6 +551,7 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
   const navigate = useNavigate()
   const w = useWindowParams()
   const view = useSiteView(siteId, w, false)
+  const limit = useBatteryLimit()
   const { cursorH, setSite, windowStartH, windowHours } = useStore(
     useShallow((s) => ({ cursorH: s.cursorH, setSite: s.setSite, windowStartH: s.windowStartH, windowHours: s.windowHours })),
   )
@@ -610,7 +636,7 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
                   windowHours={metrics.windowHours}
                   tone="sun"
                   cursorH={cursorH}
-                  alertOverH={SURVIVAL_LIMIT_H}
+                  alertOverH={limit.h}
                 />
               </div>
               <div className="flex flex-col gap-1.5">

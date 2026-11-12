@@ -208,7 +208,7 @@ export function CompareScreen() {
           tied: it.tied,
           censored: it.censored,
           grazing: it.grazing,
-          incomparableWith: it.incomparable_with.map(code),
+          incomparableWith: it.incomparable_with.map((x) => (hasSite(x) ? siteById(x).name : x)),
           places: ranking.data?.items.length,
           metric: rankBy,
         })
@@ -229,7 +229,7 @@ export function CompareScreen() {
     .map((id) => `${code(id)}${labels[id] ? ` (${labels[id]!.text})` : ''}`)
     .join(' → ')
   const tieSentence = (ranking.data?.ties ?? [])
-    .map((g) => `${g.map((id) => siteById(id).code).join(' and ')} are tied: the data cannot tell them apart`)
+    .map((g) => `${g.map((id) => siteById(id).name).join(' and ')} are tied: the data cannot tell them apart`)
     .join('. ')
 
   if (!ready) {

@@ -56,7 +56,7 @@ function TripRecord({ mission: m }: { mission: MissionDetail }) {
       <SectionStates view={view} terms={TERMS} status={status} missionId={m.id}>
         {({ data, meta }) => <TripBody trip={data} meta={meta} missionId={m.id} />}
       </SectionStates>
-      {view.status === 'answer' && view.section.data.source !== 'none' && <WhatIfLink />}
+      {view.status === 'answer' && view.section.data.source !== 'none' && <WhatIfLink status={m.status} />}
     </SectionLayout>
   )
 }

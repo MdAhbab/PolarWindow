@@ -117,10 +117,11 @@ export function PresetCards({ presets, to }: { presets: ScenarioBriefDTO[]; to: 
 }
 
 /** On a step that has its answer: a quiet way into the same builder. */
-export function WhatIfLink() {
+export function WhatIfLink({ status }: { status: string }) {
   const offline = useSnapshotActive()
   const to = useScenarioTo()
-  if (offline) return null
+  // Scenarios are for missions still to fly: a flown mission's record is what happened.
+  if (offline || status !== 'planned') return null
   return (
     <p className="text-small text-ink-3">
       <Link to={to('new')} className="inline-flex min-h-11 items-center gap-1.5 text-ink-2 underline decoration-line-strong underline-offset-4 hover:text-ink">
