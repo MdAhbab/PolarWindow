@@ -381,13 +381,11 @@ export default function LandingScreen() {
       <footer className="relative z-10 flex flex-col gap-6 border-t border-line bg-canvas px-4 py-10 lg:px-8">
         <BrandLogo className="h-10 sm:h-12" />
         <p className="max-w-3xl text-caption leading-caption text-ink-3">
-          Not an official product of NASA or any space agency. The Moon is NASA’s LRO camera mosaic, with the LOLA
-          relief map at the south pole; Earth is NASA’s Blue Marble. Milky Way:{' '}
+          Not an official product of NASA or any space agency. The Moon is NASA’s LRO camera mosaic, with the LOLA relief map at the south pole. Earth is NASA’s Blue Marble. Milky Way:{' '}
           <a href="https://www.eso.org/public/images/eso0932a/" target="_blank" rel="noreferrer">
             ESO/S. Brunier
           </a>{' '}
-          (CC BY 4.0). These are pictures: sizes and distances are not to scale, and the Sun is placed to light them,
-          not where it stands on any date. Illustration, generated. Not mission footage.
+          (CC BY 4.0). These are pictures, not to scale. The Sun is placed to light them, not where it stands on any date. Illustration, generated. Not mission footage.
         </p>
       </footer>
     </div>

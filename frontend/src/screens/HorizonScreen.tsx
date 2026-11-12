@@ -133,8 +133,7 @@ export function HorizonScreen() {
             <Disclosure title="How sure is this?">
               <p className="text-small leading-5 text-ink-2">
                 The hatched band is how far off the skyline could be in each direction: the terrain map’s height error (
-                {view.meta ? `up to ±${view.meta.uncertainty.demVerticalErrorM} m` : 'a few metres'}) seen from that
-                ridge’s distance, wide for a near ridge and thin for a far one. Where the Sun’s path runs inside it, the
+                {view.meta ? `up to ±${view.meta.uncertainty.demVerticalErrorM} m` : 'a few metres'}) seen from that ridge’s distance. It is wide for a near ridge and thin for a far one. Where the Sun’s path runs inside it, the
                 {nightWords ? ` ${nightWords}` : ''} night is uncertain by{' '}
                 <span className="font-semibold text-ink">
                   {worst?.grazing ? 'more than can be timed' : edgeMargin(worst, terrainModelled)}

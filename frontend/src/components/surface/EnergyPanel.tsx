@@ -340,7 +340,7 @@ export function EnergyResult({ data, stale = false }: { data: EnergyResponseDTO;
             {g.dark_ground_k && <>: dark ground {kRange(g.dark_ground_k)}</>}
             {g.lit_ground_cap_k && <>, sunlit ground at most {kRange(g.lit_ground_cap_k)}</>}. Their spread is the band on the charts: a single-node
             thermal balance between two steady-state ground bounds (Diviner annual average and annual maximum), which is a bounding range, not a
-            weather forecast, and the solid curve is the midpoint of those two bounds, not a best estimate.{' '}
+            weather forecast, and the solid curve is the midpoint of those two bounds, not a prediction.{' '}
             {g.source && (
               <a href={g.source} target="_blank" rel="noreferrer" className="text-earth underline underline-offset-2">
                 Diviner data

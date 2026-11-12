@@ -295,7 +295,7 @@ SEEDS: Final[tuple[SiteSeed, ...]] = (
         outer_km=52.0,
         bearing_deg=180.0,
         sector_deg=120.0,
-        note="Rim of the LCROSS impact crater. The best-characterised volatiles in the region.",
+        note="Rim of the LCROSS impact crater. The most closely studied volatiles in the region.",
     ),
 )
 

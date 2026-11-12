@@ -545,7 +545,7 @@ def _run(
         "carried into the energy generated, not into the temperature or charge curves, and "
         "lander figures are taken as entered, with no margin of their own.",
         "The central curve is the midpoint of the cold and warm bounding ends. It is not a "
-        "prediction or a best estimate.",
+        "prediction, and no single value is more probable than another.",
     ]
     meta["uncertainty"] = unc
 

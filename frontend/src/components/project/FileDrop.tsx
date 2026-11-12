@@ -63,8 +63,7 @@ export function FileDrop({
       <p className="text-control font-semibold text-ink">Drop a mission file here</p>
       <p className="max-w-md text-small leading-5 text-ink-2">
         A project brief, a press kit or a table of dates.{' '}
-        {kinds ? `${kinds}, up to ${mb(options!.max_upload_bytes)}.` : 'The kinds it takes are loading.'} Drop more than one and
-        they fill the same form; a later file only fills what is still empty.
+        {kinds ? `${kinds}, up to ${mb(options!.max_upload_bytes)}.` : 'The kinds it takes are loading.'} Drop more than one and they fill the same form. A later file only fills what is still empty.
       </p>
       <input
         ref={input}

@@ -166,4 +166,4 @@ def test_no_field_is_a_score_or_verdict(monkeypatch: pytest.MonkeyPatch) -> None
     assert "Diviner" in out["ground"]["basis"]
     notes_text = " ".join(out["meta"]["uncertainty"]["notes"])
     assert "not a time-resolved thermal prediction" in notes_text
-    assert "not a prediction or a best estimate" in notes_text
+    assert "It is not a prediction" in notes_text

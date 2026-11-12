@@ -582,7 +582,7 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
           {terrainModelled && meta?.uncertainty.partialCoverage && (
             <UncertaintyNote>
               Terrain data covers only {Math.round(meta.uncertainty.coverage * 100)}% of the directions around this spot,
-              so these numbers are likely too hopeful.
+              so real terrain could only block more.
             </UncertaintyNote>
           )}
         </div>
@@ -636,8 +636,7 @@ function TargetPanel({ mission: m, siteId }: { mission: MissionDetail; siteId: s
               <p className="text-body leading-6 text-ink-2">
                 The skyline around {site.name} ({coords(site.latDeg, site.lonDeg)},{' '}
                 {site.elevM !== null ? `height ${site.elevM.toLocaleString()} m` : 'height not known'}) was measured
-                once from the terrain map. The Sun and Earth are traced across the sky for these dates and counted up
-                while above it; each time an edge is crossed carries a ± from the map’s height error.
+                once from the terrain map. The Sun and Earth are traced across the sky for these dates and counted while above it. Each time an edge is crossed carries a ± from the map’s height error.
               </p>
             </Disclosure>
             <Disclosure title="Sources" meta="terrain map, Sun and Earth positions">

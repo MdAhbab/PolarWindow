@@ -264,7 +264,7 @@ export function RiskScalePanel({ enabled }: { enabled: boolean }) {
       ) : (
         <>
           <p className="text-caption leading-caption text-ink-3">
-            Likelihood and consequence are rated separately for each category and never multiplied into a score.
+            Likelihood and consequence are rated separately for each category and never multiplied into one number.
             {scale.source_url && (
               <>
                 {' Source: '}

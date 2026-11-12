@@ -363,7 +363,7 @@ function LimitsRow({ ret, missionId }: { ret: ReturnDTO; missionId: string }) {
   return (
     <Disclosure title="Team limits" meta={who.length ? `entered by ${who.join(', ')}` : 'none entered'}>
       <p className="text-body leading-6 text-ink-2">
-        Launch providers do not publish their sea and wind limits for recovery, so the team enters the ones it is given.
+        Launch providers do not publish their sea and wind limits for recovery. The team enters the ones it is given.
         {b && ` Booster landing zone: ${limitsWords(b.limits, bWaves)}.`}
         {c && ` Splashdown zone: ${limitsWords(c.limits, true)}.`}
       </p>

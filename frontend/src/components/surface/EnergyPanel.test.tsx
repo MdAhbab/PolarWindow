@@ -54,7 +54,7 @@ describe('EnergyResult', () => {
     expect(screen.getByText(/operational minimum −20 °C/)).toBeTruthy()
     expect(screen.getByText(/Diviner, 22 triangles within 1,000 m/)).toBeTruthy()
     expect(screen.getByText(/not a weather forecast/)).toBeTruthy()
-    expect(screen.getByText(/midpoint of those two bounds, not a best estimate/)).toBeTruthy()
+    expect(screen.getByText(/midpoint of those two bounds, not a prediction/)).toBeTruthy()
     expect(screen.getByText('What this does not model')).toBeTruthy()
     expect(screen.getAllByText('assumed').length).toBeGreaterThan(20)
   })

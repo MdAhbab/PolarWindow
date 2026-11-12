@@ -32,7 +32,7 @@ describe('words on screen', () => {
       .forEach((line, i) => {
         for (const part of onScreen(line)) {
           const why = [
-            /[–—]/.test(part) && 'long dash',
+          /[–—]/.test(part) && 'long dash',
             MODEL.test(part) && 'model name',
             !line.includes('className') && BANNED.test(part) && `"${BANNED.exec(part)?.[0]}"`,
           ].filter(Boolean)
@@ -47,5 +47,27 @@ describe('words on screen', () => {
 
   it('has no long dash, model name or banned word', () => {
     expect(found).toEqual([])
+  })
+
+  it('has none in text that runs over lines or is built with ${...} either', () => {
+    const more: string[] = []
+    for (const [path, src] of Object.entries(files)) {
+      const text = withoutComments(src)
+      // JSX text between tags, and template strings, with each {...} taken out.
+      const parts = text.match(/`[^`]*`|>[^<>]*</g) ?? []
+      for (const raw of parts) {
+        let part = raw
+        for (let i = 0; i < 3; i++) part = part.replace(/\$?\{[^{}]*\}/g, ' ')
+        // Code that a comparison's < and > happen to wrap: not words on screen.
+        if (/=>|\bconst |\blet \w+ =|\breturn\b|className|\bfor \(|\bif \(/.test(part)) continue
+        const why = [
+          /[–—]/.test(part) && 'long dash',
+          MODEL.test(part) && 'model name',
+          BANNED.test(part) && `"${BANNED.exec(part)?.[0]}"`,
+        ].filter(Boolean)
+        if (why.length) more.push(`${path} ${why.join(', ')}: ${part.replace(/\s+/g, ' ').trim().slice(0, 80)}`)
+      }
+    }
+    expect(more).toEqual([])
   })
 })

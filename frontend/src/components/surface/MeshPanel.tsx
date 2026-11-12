@@ -493,10 +493,7 @@ export function MeshResult({ data, request, stale = false }: { data: MeshRespons
           {shortened === 0
             ? "On links certainly clear, the mesh shortened no node's longest stretch without a path to Earth."
             : `On links certainly clear, the mesh shortened the longest stretch for ${shortened} of ${data.nodes.length} nodes.`}{' '}
-          The elevation model&apos;s height error ({num(data.terrain.vertical_error_m, Number.isInteger(data.terrain.vertical_error_m) ? 0 : 1)} m) leaves most low links uncertain on real terrain, so the
-          certain gain is often nil, and the third figure is what it would be if those links held. A link is marked uncertain when its path passes
-          within the height error of a ridge, where the map cannot tell whether terrain blocks it; only certainly clear links carry traffic in the
-          main run and in the helper figures below.
+          The elevation model&apos;s height error ({num(data.terrain.vertical_error_m, Number.isInteger(data.terrain.vertical_error_m) ? 0 : 1)} m) leaves most low links uncertain on real terrain. So the certain gain is often nil. The third figure is what it would be if those links held. A link is uncertain when its path passes within the height error of a ridge. There the map cannot tell whether terrain blocks it. Only certainly clear links carry traffic in the main run and the helper figures below.
         </p>
         {basis && (
           <Disclosure title="What the third figure assumes">

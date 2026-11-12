@@ -182,7 +182,7 @@ function TripDownloads({ trip, missionId }: { trip: TripDTO; missionId: string }
       <p className="text-small leading-5 text-ink-2">
         The flown trajectory from NASA’s reconstruction, every 10 minutes, centred on Earth (EME2000 frame, km and km/s).
         {blocks > 1
-          ? ` The reconstruction covers the trip in ${blocks} separate stretches, so the file has ${blocks} blocks; nothing is filled in across the gaps.`
+          ? ` The reconstruction covers the trip in ${blocks} separate stretches, so the file has ${blocks} blocks. Nothing is filled in across the gaps.`
           : ''}
       </p>
       <ul className="flex flex-wrap gap-3">
@@ -267,7 +267,7 @@ export function CorrectionsRow({ c, note }: { c: TripDTO['corrections']; note: s
         In {formatValue(c.runs)} runs of the flight as planned with the errors below, the {c.burns.length} corrections
         together needed at most {figure(c.total_p95_m_s)} in 95 of 100 runs and at most {figure(c.total_p99_m_s)} in 99 of 100
         {interval ? ` (${interval}, allowing for the number of runs)` : ''}. Worked out linearly instead: {figure(c.linear_p99_m_s)} in 99 of
-        100. {c.missed ? `${c.missed} of the runs did not pass close to the Moon; they are counted, not dropped.` : 'Every run passed close to the Moon.'}{' '}
+        100. {c.missed ? `${c.missed} of the runs did not pass close to the Moon. They are counted, not dropped.` : 'Every run passed close to the Moon.'}{' '}
         On arrival it passes {figure(c.arrival_altitude_km)} above the Moon in the middle run
         {arrival ? `, and ${arrival} in 98 of 100` : ''}.
       </p>
