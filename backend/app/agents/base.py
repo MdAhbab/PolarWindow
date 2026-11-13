@@ -978,12 +978,16 @@ def _with_margin(
     citation names does not change what the guard accepted: the value is the same.
     """
     leaf = re.split(r"[.\]]", c.field)[-1]
+    # The guard also grounds hours against a field in seconds: the same figure then sits in
+    # the tool's own hours field, beside its margin.
+    stem = leaf[:-2] if leaf.endswith(("_h", "_s")) else None
+    leaves = {leaf} | ({f"{stem}_h"} if stem else set())
     for t in tool_results:
         seq = t.get("seq")
         if not isinstance(seq, int):
             continue
         for path, v in _leaves(t.get("result")):
-            if path == c.field or re.split(r"[.\]]", path)[-1] != leaf:
+            if path == c.field or re.split(r"[.\]]", path)[-1] not in leaves:
                 continue
             if not isinstance(v, int | float) or isinstance(v, bool):
                 continue
@@ -995,6 +999,16 @@ def _with_margin(
     return None
 
 
+def _value_at(field: str, tool_results: list[dict[str, Any]], seq: int) -> float | None:
+    """The number at ``field`` in the result of call ``seq``, or None."""
+    for t in tool_results:
+        if t.get("seq") == seq:
+            for path, v in _leaves(t.get("result")):
+                if path == field and isinstance(v, int | float) and not isinstance(v, bool):
+                    return float(v)
+    return None
+
+
 def _citation(c: guards.Citation, tool_results: list[dict[str, Any]]) -> dict[str, Any]:
     margin, unit = guards.margin_of(c.field, tool_results, c.call_seq)
     tool, field, seq = c.tool, c.field, c.call_seq
@@ -1002,6 +1016,13 @@ def _citation(c: guards.Citation, tool_results: list[dict[str, Any]]) -> dict[st
         better = _with_margin(c, tool_results)
         if better is not None:
             tool, field, seq, margin = better
+            unit = guards.margin_of(field, tool_results, seq)[1] or unit
+    if unit == "s":
+        raw = _value_at(field, tool_results, seq)
+        # The claim was grounded in hours against a field in seconds: the tile is in hours.
+        if raw is not None and abs(raw / 3600.0 - c.value) < abs(raw - c.value):
+            unit = "h"
+            margin = None if margin is None else margin / 3600.0
     return {
         "claim": c.claim,
         "value": c.value,

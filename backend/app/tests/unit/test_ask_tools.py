@@ -655,6 +655,53 @@ def test_a_figure_cited_from_the_coarse_summary_takes_its_margin_from_the_dates(
     assert (alone["field"], alone["margin"]) == ("x.longest_blackout_h", None)
 
 
+def test_an_hours_claim_cited_from_a_field_in_seconds_is_an_hours_tile_with_its_margin() -> None:
+    from app.agents import base
+
+    results: list[dict[str, Any]] = [
+        {
+            "seq": 2,
+            "tool": "search_sites",
+            "result": {"sites": [{}, {"summary": {"longest_dark_s": 437760.1}}]},
+        },
+        {
+            "seq": 4,
+            "tool": "get_metrics",
+            "result": {
+                "longest_dark_s": 437760.0,
+                "longest_dark_tolerance_s": 61560.0,
+                "longest_dark_h": 121.6,
+                "longest_dark_tolerance_h": 17.1,
+            },
+        },
+    ]
+    cited = guards.Citation(
+        claim="122 h",
+        value=122.0,
+        tool="search_sites",
+        call_seq=2,
+        field="sites[1].summary.longest_dark_s",
+    )
+    c = base._citation(cited, results)
+    assert (c["tool"], c["field"], c["margin"], c["unit"]) == (
+        "get_metrics",
+        "longest_dark_h",
+        17.1,
+        "h",
+    )
+    # With no result giving the margin, the tile is still in hours, and says it has none.
+    only = base._citation(cited, results[:1])
+    assert (only["unit"], only["margin"]) == ("h", None)
+    # A claim truly in seconds stays in seconds.
+    secs = base._citation(
+        guards.Citation(
+            claim="437760 s", value=437760.0, tool="get_metrics", call_seq=4, field="longest_dark_s"
+        ),
+        results,
+    )
+    assert (secs["unit"], secs["margin"]) == ("s", 61560.0)
+
+
 def test_ask_can_call_the_scenario_and_windows_tools() -> None:
     assert {"get_scenario", "get_windows", "list_scenario_options"} <= set(chatter.CHAT_TOOLS)
     assert set(chatter.CHAT_TOOLS) <= tools.TOOL_NAMES
