@@ -50,6 +50,7 @@ Say it slowly and warmly. This is the last thing the judges hear.
 - Quiet room: fan and air conditioner off, phone on flight mode. Plain dark top, no text.
 - Sound: earphone microphone, or a second phone 15 cm from your mouth. Clap once at the start.
 - Three recordings of each take. Two seconds of silence before and after.
+- Name them `mehedi_A_closing_1.mp4` (and 2, 3) and `mehedi_B_name_1.mp4` (and 2, 3), in `video/mehedi/`.
 
 ---
 
@@ -557,42 +558,69 @@ Use the editor you know best (DaVinci Resolve, Premiere or CapCut all work).
    Mehedi.
    Each strip stays on screen once it has appeared. This way every name is readable for a long time.
 5. **The end card** (6 seconds). The film clip, darkened, with: the logo, "PolarWindow",
-   `clpsspaceapps.ahbab.dev`, `github.com/MdAhbab/PolarWindow`, the team name, and all six names in one
+   `polarwindow.ahbab.tech`, `github.com/MdAhbab/PolarWindow`, the team name, and all six names in one
    line.
 
 ---
 
-## 5. The timeline, second by second
+## 5. The sequence: every file, in order
 
-| # | Time | Seconds | Picture | Sound |
+Build the timeline from this list, top to bottom.
+
+Tracks: **V1** the main picture, **V2** the figure, **V3** words (labels, name captions, "Illustration,
+generated"), **A1** voices, **A2** music. `_N` means the take you picked (1, 2 or 3). Subtitle cues are the
+numbered lines in `video-240s.srt`. Every film clip and screen recording is muted.
+
+**Where the files are** (the shared Drive folder `video/`):
+
+| Folder | Files |
+|---|---|
+| `video/wali/` | `wali_A_hook_N.mp4`, `wali_B_name_N.mp4` |
+| `video/ryan/` | `ryan_A_problem_N.mp4`, `ryan_B_name_N.mp4` |
+| `video/ahbab/` | `ahbab_A_solution_N.mp4`, `ahbab_B_name_N.mp4`, `ahbab_voice_demo1_N.wav` to `ahbab_voice_demo6_N.wav`, `ahbab_screen_1.mp4` to `ahbab_screen_6.mp4` (with `5a` and `5b`), `report.pdf` |
+| `video/ahbab/film/` | `light.mp4`, `shadow.mp4`, `earth.mp4`, `rim.mp4` (spare), `descent.mp4` |
+| `video/ahbab/brand/` | the logo files |
+| `video/mehrab/` | `mehrab_A_data_N.mp4`, `mehrab_B_name_N.mp4` |
+| `video/tanjamul/` | `tanjamul_A_trust_N.mp4`, `tanjamul_B_name_N.mp4` |
+| `video/mehedi/` | your own `mehedi_A_closing_N.mp4`, `mehedi_B_name_N.mp4`, and your figures `figures/F1.png` to `figures/F12.png` |
+
+**The sequence, in order:**
+
+| # | Time | V1: picture | V2 and V3: on top | A1: voice (subtitle cues) |
 |---|---|---|---|---|
-| 1 | 0:00 to 0:04 | 4 | Film: low Sun over the pole, full screen | Wali, Take A, line 1 (voice only). Music starts. |
-| 2 | 0:04 to 0:10 | 6 | Film: the hill's shadow reaches the lander, full screen | Wali, line 2 |
-| 3 | 0:10 to 0:16 | 6 | Split frame: Wali on the left, figure F1 on the right. Name caption. | Wali, lines 3 and 4 |
-| 4 | 0:16 to 0:18 | 2 | Title card | Music only |
-| 5 | 0:18 to 0:28 | 10 | Name strip, six people | "I'm Wali." "I'm Ryan." "I'm Ahbab." "I'm Mehrab." "I'm Tanjamul." "I'm Mehedi." |
-| 6 | 0:28 to 0:32 | 4 | Film: lander with Earth low in the sky, full screen | Ryan, Take A, line 1 (voice only) |
-| 7 | 0:32 to 0:39 | 7 | Split frame: Ryan on the right. On the left, figure F7, and under it the words "CLPS: NASA's commercial Moon deliveries" and "Our challenge: CLPS Lunar Mission Browser". Name caption. | Ryan, line 2 |
-| 8 | 0:39 to 0:43 | 4 | Ryan on the right, figure F2 on the left | Ryan, line 3 |
-| 9 | 0:43 to 0:58 | 15 | Ryan on the right. On the left, figure F8, and over its top the large words: "Can my lander work at this place, on these dates?" At 0:51 add under the figure, smaller: "Today: experts, and many days." | Ryan, lines 4 to 6 |
-| 10 | 0:58 to 1:10 | 12 | Split frame: Ahbab on the left. On the right, figure F3 (6 s), then figure F9 (6 s). Name caption. | Ahbab, Take A |
-| 11 | 1:10 to 1:24 | 14 | Screen shot 1, full screen. Small label, top left: "1 · Every mission" | Ahbab voice, Demo 1 |
-| 12 | 1:24 to 1:38 | 14 | Screen shot 2. Zoom slowly to 140% on the four numbers from second 3 to second 9. Label: "2 · Four numbers" | Demo 2 |
-| 13 | 1:38 to 1:52 | 14 | Screen shot 3. Label: "3 · The skyline" | Demo 3 |
-| 14 | 1:52 to 2:06 | 14 | Screen shot 4. Label: "4 · Compare, with no score" | Demo 4 |
-| 15 | 2:06 to 2:22 | 16 | Screen shot 5a (7 s), then 5b (9 s). Label: "5 · Your own mission" | Demo 5 |
-| 16 | 2:22 to 2:38 | 16 | Screen shot 6. Cut out any waiting for the answer. Label: "6 · Ask" | Demo 6 |
-| 17 | 2:38 to 3:08 | 30 | Split frame: Mehrab on the right. On the left, figure F4 (18 s) with the data names appearing one by one as he says them, then figure F10 (12 s). Name caption. | Mehrab, Take A |
-| 18 | 3:08 to 3:24 | 16 | Split frame: Tanjamul on the left. Name caption. On the right: the checking table from `report.pdf`, moving up slowly (6 s), then figure F5 with the words "1,400+ automatic tests" (5 s), then figure F11 (5 s) | Tanjamul, Take A |
-| 19 | 3:24 to 3:44 | 20 | Split frame: Mehedi on the left. On the right, figure F6 (10 s), then figure F12 (10 s). Name caption. | Mehedi, Take A |
-| 20 | 3:44 to 3:50 | 6 | End card over the darkened film. Hold the last 4 seconds still. | Music rises, then fades out by 3:50 |
+| 1 | 0:00 to 0:04 | `film/light.mp4`, 4 calm seconds, full screen | "Illustration, generated" | `wali_A_hook_N`, sound only (cue 1). Music starts on A2. |
+| 2 | 0:04 to 0:10 | `film/shadow.mp4`, the 6 seconds where the shadow reaches the lander | "Illustration, generated" | Wali (cue 2) |
+| 3 | 0:10 to 0:16 | `wali_A_hook_N`, face in the left half | `F1.png` in the right half. Name caption "Wali · Backend and planning" | Wali (cues 3, 4) |
+| 4 | 0:16 to 0:18 | Title card | Logo, "Sagittarius A*", "Challenge: CLPS Lunar Mission Browser" | Music only, louder |
+| 5 | 0:18 to 0:28 | Name strip: `wali_B_name_N`, `ryan_B_name_N`, `ahbab_B_name_N`, `mehrab_B_name_N`, `tanjamul_B_name_N`, `mehedi_B_name_N`, one more every 1.6 s | Each strip's name and role | Each "I'm ..." (cues 5 to 10) |
+| 6 | 0:28 to 0:32 | `film/earth.mp4`, 4 seconds, full screen | "Illustration, generated" | `ryan_A_problem_N`, sound only (cue 11) |
+| 7 | 0:32 to 0:39 | `ryan_A_problem_N`, face in the right half | `F7.png` in the left half, with "CLPS: NASA's commercial Moon deliveries" and "Our challenge: CLPS Lunar Mission Browser". Name caption "Ryan · Planning and survey" | Ryan (cue 12) |
+| 8 | 0:39 to 0:43 | Ryan, same clip | `F2.png` | Ryan (cue 13) |
+| 9 | 0:43 to 0:58 | Ryan, same clip | `F8.png`, with the large words "Can my lander work at this place, on these dates?"; from 0:51, smaller: "Today: experts, and many days." | Ryan (cues 14 to 16) |
+| 10 | 0:58 to 1:04 | `ahbab_A_solution_N`, face in the left half | `F3.png` in the right half. Name caption "Ahbab · Build and deploy" | Ahbab (cues 17, 18) |
+| 11 | 1:04 to 1:10 | Ahbab, same clip | `F9.png` | Ahbab (cue 19) |
+| 12 | 1:10 to 1:24 | `ahbab_screen_1.mp4`, full screen | Label top left: "1 · Every mission" | `ahbab_voice_demo1_N` (cues 20 to 22) |
+| 13 | 1:24 to 1:38 | `ahbab_screen_2.mp4`. Zoom slowly to 140% on the four numbers from 1:27 to 1:33 | "2 · Four numbers" | `ahbab_voice_demo2_N` (cues 23 to 26) |
+| 14 | 1:38 to 1:52 | `ahbab_screen_3.mp4` | "3 · The skyline" | `ahbab_voice_demo3_N` (cues 27, 28) |
+| 15 | 1:52 to 2:06 | `ahbab_screen_4.mp4` | "4 · Compare, with no score" | `ahbab_voice_demo4_N` (cues 29 to 31) |
+| 16 | 2:06 to 2:13 | `ahbab_screen_5a.mp4`, with the wait while the form fills cut out | "5 · Your own mission" | `ahbab_voice_demo5_N`, first sentence (cue 32) |
+| 17 | 2:13 to 2:22 | `ahbab_screen_5b.mp4` | The same label | `ahbab_voice_demo5_N`, the rest (cues 33, 34) |
+| 18 | 2:22 to 2:38 | `ahbab_screen_6.mp4`, with the wait for the answer cut out | "6 · Ask" | `ahbab_voice_demo6_N` (cues 35 to 37) |
+| 19 | 2:38 to 2:56 | `mehrab_A_data_N`, face in the right half | `F4.png` in the left half. As he says each one: "LOLA (LRO): the ground", "SPICE: Sun, Earth, spacecraft", "Deep Space Network: the dishes". Name caption "Mehrab · Design advice" | Mehrab (cues 38 to 41) |
+| 20 | 2:56 to 3:08 | Mehrab, same clip | `F10.png`, and with cue 42 the smaller line "DONKI · GRAIL · Diviner" | Mehrab (cue 42) |
+| 21 | 3:08 to 3:14 | `tanjamul_A_trust_N`, face in the left half | The checking table from `report.pdf`, moving up slowly. Name caption "Tanjamul · Backend and frontend" | Tanjamul (cues 43, 44) |
+| 22 | 3:14 to 3:19 | Tanjamul, same clip | `F5.png`, with "1,400+ automatic tests" | Tanjamul (cue 45) |
+| 23 | 3:19 to 3:24 | Tanjamul, same clip | `F11.png` | Tanjamul (cue 46) |
+| 24 | 3:24 to 3:34 | `mehedi_A_closing_N`, face in the left half | `F6.png` in the right half. Name caption "Mehedi · Deliverables" | Mehedi (cues 47, 48) |
+| 25 | 3:34 to 3:44 | Mehedi, same clip | `F12.png` | Mehedi (cues 49, 50) |
+| 26 | 3:44 to 3:50 | `film/descent.mp4`, darkened to 50% | End card: logo, "PolarWindow", `polarwindow.ahbab.tech`, `github.com/MdAhbab/PolarWindow`, "Sagittarius A*", the six names in one line. "Illustration, generated" | Music rises, then fades out by 3:50 |
 
 Rules while you build it:
 
 - Each person's words decide the cut, not the table. If someone speaks a little longer, take the time
   from the next silent gap. If the total goes over 3:52, shorten the name strip or the end card first.
   Never speed up a voice.
-- In the demo (rows 11 to 16), if the voice is shorter than the screen clip, cut the screen clip. If the
+- In the demo (rows 12 to 18), if the voice is shorter than the screen clip, cut the screen clip. If the
   voice is longer, hold the last frame of the screen.
 - When zooming on a screen recording, never go past 150%. It gets soft.
 - Blur anything personal that shows in a screen recording (an email address, a file path with a name).

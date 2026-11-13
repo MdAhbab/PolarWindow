@@ -56,7 +56,7 @@ Return), lets a team add its own mission and try what-ifs, and answers questions
 says where it came from and how far it could be off. The tool never gives a score or picks a "best" site: it
 shows what was worked out and what was not modelled, and the planner decides.
 
-- Live: https://clpsspaceapps.ahbab.dev
+- Live: https://polarwindow.ahbab.tech
 - Code: https://github.com/MdAhbab/PolarWindow
 - 240-second video: [YouTube link]
 - Report: `docs/report/report.pdf` in the repository

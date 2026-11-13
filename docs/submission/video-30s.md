@@ -21,7 +21,7 @@ Wali's Take C (`task_wali.md`) and Ahbab's short take (`task_ahbab.md`).
 | 4 | 0:13 to 0:17 | Screen shot 3: the days playing | See sunlight, contact with Earth and the longest night, each with how far it could be off. |
 | 5 | 0:17 to 0:21 | Screen shot 1: the six steps on the curve | Follow every mission through six steps. |
 | 6 | 0:21 to 0:27 | Screen shot 6: the answer with "How this answer was made" open. Three large labels, one per beat: "LOLA (LRO)", "SPICE", "Deep Space Network" | Built on NASA's LOLA terrain, SPICE positions and Deep Space Network data. |
-| 7 | 0:27 to 0:29 | End card: PolarWindow · clpsspaceapps.ahbab.dev · github.com/MdAhbab/PolarWindow | No scores. The planner decides. |
+| 7 | 0:27 to 0:29 | End card: PolarWindow · polarwindow.ahbab.tech · github.com/MdAhbab/PolarWindow | No scores. The planner decides. |
 
 ## Direction
 
