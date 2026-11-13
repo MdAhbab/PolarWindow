@@ -127,8 +127,10 @@ services:
       test: ['CMD', 'python', '-c', "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/healthz').status==200 else 1)"]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      retries: 12
+      # A 2 GB VM loads the SPICE kernels while the workers start and the presets are queued:
+      # the api took over two minutes there, and the web service waits on this check.
+      start_period: 180s
 
   compute:
     <<: *app
