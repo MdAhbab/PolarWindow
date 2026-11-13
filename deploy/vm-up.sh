@@ -27,8 +27,9 @@ if [ ! -f .env ]; then
   echo "No .env in $REPO. Make it from deploy/env.production.example first." >&2
   exit 1
 fi
-if grep -q 'CHANGE_ME' .env; then
-  echo ".env still has placeholders (grep -n CHANGE_ME .env). Fill them in first." >&2
+# Settings only: the file's own comments mention the word.
+if grep -qE '^[^#]*CHANGE_ME' .env; then
+  echo ".env still has placeholders (grep -nE '^[^#]*CHANGE_ME' .env). Fill them in first." >&2
   exit 1
 fi
 for want in 'PW_BIND_ADDR=127.0.0.1' 'PW_WEB_ADDR=127.0.0.1' 'PW_WEB_PORT=8080' \

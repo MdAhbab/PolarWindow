@@ -1,7 +1,9 @@
 # Deploying POLAR WINDOW on Google Cloud
 
 Target: `https://polarwindow.ahbab.tech` on one Compute Engine VM: `spaceapps`, project
-`ahbab-512109`, zone `us-central1-c`, e2-small (2 vCPU, 2 GB) with a 15 GB disk, Ubuntu 26.10,
+`ahbab-512109`, zone `us-central1-c`, e2-small (2 vCPU, 2 GB) with a 20 GB SSD (grown from 15 GB
+on 13 November, live: `gcloud compute disks resize`, then `growpart /dev/sda 1` and
+`resize2fs /dev/sda1`), Ubuntu 26.10,
 address 35.225.159.7. From the PC, `ssh ahbabssh` reaches it (an entry in `~/.ssh/config`
 using the key `gcloud compute ssh` registered). Written 13 November 2026.
 Every size and time below was measured on the owner's PC on 13 November unless it says
@@ -237,7 +239,7 @@ two `PW_AGENT_MODELS` lines over too.
 **Check** (prints no secret):
 
 ```bash
-grep -n CHANGE_ME .env                          # prints nothing
+grep -nE '^[^#]*CHANGE_ME' .env                # prints nothing (comments may mention it)
 grep -cE '^PW_(JWT_SECRET|DB_PASSWORD)=[0-9a-f]{48,}$' .env     # 2
 sudo docker compose config --format json \
   | jq -r '.services | to_entries[] | select(.value.ports) | .key + " " + (.value.ports | map((.host_ip // "ALL") + ":" + (.published|tostring) + "->" + (.target|tostring)) | join(","))'
