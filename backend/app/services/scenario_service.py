@@ -819,6 +819,26 @@ async def listing(session: AsyncSession, mission_id: str) -> dict[str, Any]:
     return {"items": [brief(await _sync(session, r)) for r in rows]}
 
 
+async def retire_stale_presets(
+    session: AsyncSession, mission_id: str, keep: list[dict[str, Any]]
+) -> list[str]:
+    """Remove this mission's finished presets that no current preset matches; their ids.
+
+    A preset is keyed by what it assumes. When a default moves (a corrected date rule, or an
+    example landing day that has passed), the preset built on the old value gets a new key, and
+    the old one would stay listed beside it with an answer to a question nobody now asks.
+    Only finished ones go: a preset still queued or running keeps its job.
+    """
+    want = [core.canonical(g) for g in keep]
+    repo = ScenarioRepository(session)
+    gone = []
+    for r in await repo.for_mission(mission_id):
+        if r.preset and r.status in ("done", "failed") and core.canonical(r.given) not in want:
+            await repo.delete(r.id)
+            gone.append(r.id)
+    return gone
+
+
 async def delete(session: AsyncSession, who: Claims, scenario_id: str) -> dict[str, Any]:
     repo = ScenarioRepository(session)
     rec = await repo.get(scenario_id)

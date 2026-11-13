@@ -10,7 +10,8 @@ its headers and its problem detail (``ui.still_works`` included):
   from (``POST /projects/intake``), which has its own ``max_upload_bytes``.
 - :class:`RateLimit` counts requests that are not reads, per client address,
   in a sliding minute, and answers 429 with ``Retry-After`` past the limit:
-  signing in, the AI assistant (each call spends model quota), the site
+  signing in, the AI assistant (each call spends model quota: Ask, reading a
+  dropped project file, and reading words into a scenario), the site
   comparison (computed on the request) and every other change each have their
   own allowance. Reads are never limited here.
 
@@ -123,13 +124,18 @@ MESH = "mesh"
 
 _WORDS = {
     SIGN_IN: ("sign-ins", "Signing in again in a minute will work."),
-    AGENTS: ("questions to the AI assistant", "Every number and section can still be read."),
+    AGENTS: ("requests to the AI assistant", "Every number and section can still be read."),
     COMPARE: ("site comparisons", "Each site's own numbers can still be read."),
     ENERGY: ("power and thermal runs", "Each site's own numbers can still be read."),
     DISPERSION: ("landing-ellipse runs", "Each site's own numbers can still be read."),
     MESH: ("mesh simulations", "Each site's own numbers can still be read."),
     WRITES: ("changes", "Nothing was changed by this request; everything can still be read."),
 }
+
+
+def _is_interpret(p: str) -> bool:
+    """``/missions/{id}/scenarios/interpret``: plain words read into assumptions by the model."""
+    return p.startswith("/missions/") and p.endswith("/scenarios/interpret")
 
 
 def allowance(method: str, path: str, prefix: str) -> str | None:
@@ -139,7 +145,10 @@ def allowance(method: str, path: str, prefix: str) -> str | None:
     p = path[len(prefix) :] if path.startswith(prefix) else path
     if p == "/auth/demo":
         return SIGN_IN
-    if p.startswith("/agents/"):
+    # Three routes call the AI model: Ask, the file a project is read from, and plain words
+    # read into a scenario's assumptions. They share the one allowance, so a visitor has
+    # one cap on model quota, not three.
+    if p.startswith("/agents/") or p == "/projects/intake" or _is_interpret(p):
         return AGENTS
     if p == "/compare":
         return COMPARE

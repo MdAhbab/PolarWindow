@@ -93,7 +93,8 @@ async def queue_presets(only: list[str] | None = None) -> int:
                 gaps = await scenario_service.gaps(s, m.id)
                 if not any(g["can_explore"] for g in gaps["gaps"]):
                     continue
-                for name, given in await variants(s, m, nm):
+                current = await variants(s, m, nm)
+                for name, given in current:
                     rec, created = await scenario_service.create(
                         s,
                         m,
@@ -107,6 +108,12 @@ async def queue_presets(only: list[str] | None = None) -> int:
                     queued += int(created)
                     if not created and await scenario_service.rerun_if_more(s, m, rec, name):
                         queued += 1
+                # A preset built on a default that has since moved is replaced, not kept.
+                gone = await scenario_service.retire_stale_presets(
+                    s, m.id, [given for _, given in current]
+                )
+                if gone:
+                    log.info("presets for %s no longer current, removed: %s", m.id, gone)
         except job_service.QueueFull:
             log.info("the queue is full; the remaining presets wait for the next start")
             break

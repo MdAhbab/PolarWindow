@@ -516,34 +516,123 @@ def default_site(
 LAUNCH_TO_LANDING_DAYS = 5
 
 
+#: How a qualified year ("late 2027", "Q3 2027", "second half of 2027") is told in a note.
+_START_OF_YEAR = "the start of the year"
+_MIDDLE_OF_YEAR = "the middle of the year"
+_LAST_QUARTER = "the start of its last quarter"
+_THAT_QUARTER = "the start of that quarter"
+_THAT_HALF = "the start of that half"
+
+_ORDINALS = {
+    "first": 1,
+    "1st": 1,
+    "second": 2,
+    "2nd": 2,
+    "third": 3,
+    "3rd": 3,
+    "fourth": 4,
+    "4th": 4,
+}
+
+
+def _qualified_start(words: str, at: date) -> tuple[date, str] | None:
+    """The first day of the part of the year that ``words`` name, and how a note says it.
+
+    The rule, named: a year with a qualifier starts on the first day of that part of it.
+    ``Qn YYYY`` is the first day of that quarter. ``first half`` and ``H1`` are 1 January;
+    ``second half`` and ``H2`` are 1 July. ``early YYYY`` is 1 January, ``mid YYYY`` is 1 July,
+    and ``late YYYY`` or ``end of YYYY`` is 1 October. When more than one part is named, a
+    quarter outranks a half, and a half outranks early, mid or late. Words that name no year
+    or another year than ``at``'s, or that name two parts, are not read: None, nothing guessed.
+    """
+    low = words.lower()
+    if {int(y) for y in re.findall(r"\b(20\d\d)\b", low)} != {at.year}:
+        return None
+    quarters = [(int(q) * 3 - 2, _THAT_QUARTER) for q in re.findall(r"\bq([1-4])\b", low)]
+    quarters += [
+        (_ORDINALS[o] * 3 - 2, _THAT_QUARTER)
+        for o in re.findall(r"\b(first|second|third|fourth|1st|2nd|3rd|4th)\s+quarter\b", low)
+    ]
+    halves = [
+        (int(a or b) * 6 - 5, _THAT_HALF) for a, b in re.findall(r"\bh([12])\b|\b([12])h\b", low)
+    ]
+    halves += [
+        (_ORDINALS[o] * 6 - 5, _THAT_HALF)
+        for o in re.findall(r"\b(first|second|1st|2nd)\s+half\b", low)
+    ]
+    parts: list[tuple[int, str]] = []
+    if re.search(r"\bearly\b", low):
+        parts.append((1, _START_OF_YEAR))
+    if re.search(r"\bmid(?:dle)?\b", low):
+        parts.append((7, _MIDDLE_OF_YEAR))
+    if re.search(r"\blate\b|\bend\s+of\b", low):
+        parts.append((10, _LAST_QUARTER))
+    for hits in (quarters, halves, parts):
+        if len({month for month, _ in hits}) == 1:
+            month, why = hits[0]
+            return date(at.year, month, 1), why
+        if hits:
+            return None
+    return None
+
+
+def _record_day(block: Mapping[str, Any]) -> tuple[date, str | None]:
+    """The day a record's date words start on, and how a note says it (None: a plain year or month).
+
+    Only words coarser than a month are read (see ``_qualified_start``); the stored date is
+    the first day of its year, so "late 2027" would otherwise read as 1 January.
+    """
+    d = date.fromisoformat(str(block["date"])[:10])
+    if block.get("precision") in (None, "year", "quarter"):
+        qualified = _qualified_start(str(block.get("as_published") or ""), d)
+        if qualified is not None:
+            return qualified
+    return d, None
+
+
+def _day_words(d: date) -> str:
+    return f"{d.day} {calendar.month_name[d.month]}"
+
+
 def default_landing(
     landing: Mapping[str, Any] | None, launch: Mapping[str, Any] | None, today: date
 ) -> Candidate | None:
     """The landing day a worked example assumes when the record gives none to the day.
 
-    A day worked out from the record that has already passed (a mission still planned
-    for "2026" late in 2026) moves to the first day of the month after next, and says so.
+    A year with a qualifier starts on the first day of that part of it: "late 2027" is
+    1 October 2027, not 1 January (``_qualified_start`` names the rule); a plain year or
+    month starts on its first day. A day worked out from the record that has already passed
+    (a mission still planned for "2026" late in 2026) moves to the first day of the month
+    after next, and says so.
     """
     soon = add_months(today, 2)
     if landing and landing.get("date"):
-        d = date.fromisoformat(str(landing["date"])[:10])
+        d, why = _record_day(landing)
         said = f"The record says '{landing.get('as_published')}'"
         if d >= today:
-            return Candidate(
-                d.isoformat(), "Mission record", note=f"{said}; its first day is used."
-            )
+            used = "its first day" if why is None else f"{_day_words(d)}, {why},"
+            return Candidate(d.isoformat(), "Mission record", note=f"{said}; {used} is used.")
+        lapsed = "Its first day has passed" if why is None else f"{_day_words(d)} has passed"
         return Candidate(
             soon.isoformat(),
             "Mission record",
-            note=f"{said}. Its first day has passed, so the example lands on the first day of "
+            note=f"{said}. {lapsed}, so the example lands on the first day of "
             "the month after next. An example date, not a plan.",
         )
     if launch and launch.get("date"):
-        d = date.fromisoformat(str(launch["date"])[:10]) + timedelta(days=LAUNCH_TO_LANDING_DAYS)
-        said = (
-            f"Launch is published as '{launch.get('as_published')}'. Landing is assumed "
-            f"{LAUNCH_TO_LANDING_DAYS} days after its first day, as on a direct flight"
-        )
+        first, why = _record_day(launch)
+        d = first + timedelta(days=LAUNCH_TO_LANDING_DAYS)
+        said = f"Launch is published as '{launch.get('as_published')}'"
+        if why is None:
+            said += (
+                f". Landing is assumed {LAUNCH_TO_LANDING_DAYS} days after its first day, "
+                "as on a direct flight"
+            )
+        else:
+            said += (
+                f"; {_day_words(first)}, {why}, is used. Landing is assumed "
+                f"{LAUNCH_TO_LANDING_DAYS} days later, as on a direct flight"
+            )
         if d >= today:
             return Candidate(d.isoformat(), "Mission record", note=f"{said}.")
         return Candidate(

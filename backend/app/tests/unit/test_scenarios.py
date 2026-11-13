@@ -6,9 +6,10 @@ No database, no network, no model: the repositories and the job queue are replac
 from __future__ import annotations
 
 import contextlib
+import re
 from collections.abc import AsyncIterator
 from dataclasses import replace
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 import pytest
@@ -449,6 +450,24 @@ async def test_nothing_runnable_is_refused_in_plain_words(world: World) -> None:
         )
 
 
+async def test_a_finished_preset_whose_default_moved_is_retired(world: World) -> None:
+    now = {"landing_date": "2027-11-01"}
+
+    def row(sid: str, **kw: Any) -> None:
+        world.scenarios[sid] = scenario_row(id=sid, **{"preset": True, "status": "done", **kw})
+
+    row("sc-old", given={"landing_date": "2027-02-01"})
+    row("sc-now", given=now)
+    row("sc-defaults", given={})
+    row("sc-running", status="running", given={"landing_date": "2026-12-01"})
+    row("sc-asked", preset=False, given={"landing_date": "2027-02-01"})
+    row("sc-elsewhere", mission_id="m2", given={"landing_date": "2027-02-01"})
+    gone = await scenario_service.retire_stale_presets(None, "m1", [{}, now])  # type: ignore[arg-type]
+    assert gone == ["sc-old"]
+    kept = {"sc-now", "sc-defaults", "sc-running", "sc-asked", "sc-elsewhere"}
+    assert set(world.scenarios) == kept
+
+
 async def test_a_preset_cannot_be_deleted(world: World) -> None:
     world.scenarios["sc-p"] = scenario_row(id="sc-p", preset=True)
     with pytest.raises(scenario_service.Refused):
@@ -775,6 +794,138 @@ def test_an_example_landing_day_says_where_it_came_from() -> None:
     assert launch is not None and launch.value == "2027-01-06" and "5 days" in (launch.note or "")
     none = core.default_landing(None, None, today)
     assert none is not None and none.value == "2027-01-01" and "not a plan" in (none.note or "")
+
+
+#: (words as published, precision, the day an example lands on, how the note says it).
+QUALIFIED_YEARS = [
+    ("early 2027", "year", "2027-01-01", "1 January, the start of the year"),
+    ("mid 2027", "year", "2027-07-01", "1 July, the middle of the year"),
+    ("mid-2027", "year", "2027-07-01", "1 July, the middle of the year"),
+    ("late 2027", "year", "2027-10-01", "1 October, the start of its last quarter"),
+    ("Late 2027", "year", "2027-10-01", "1 October, the start of its last quarter"),
+    ("end of 2027", "year", "2027-10-01", "1 October, the start of its last quarter"),
+    ("Q1 2027", "quarter", "2027-01-01", "1 January, the start of that quarter"),
+    ("Q2 2027", "quarter", "2027-04-01", "1 April, the start of that quarter"),
+    ("Q3 2027", "quarter", "2027-07-01", "1 July, the start of that quarter"),
+    ("Q4 2027", "quarter", "2027-10-01", "1 October, the start of that quarter"),
+    ("2027 Q4", "quarter", "2027-10-01", "1 October, the start of that quarter"),
+    ("third quarter of 2027", "quarter", "2027-07-01", "1 July, the start of that quarter"),
+    ("first half of 2027", "year", "2027-01-01", "1 January, the start of that half"),
+    ("H1 2027", "year", "2027-01-01", "1 January, the start of that half"),
+    ("second half of 2027", "year", "2027-07-01", "1 July, the start of that half"),
+    ("H2 2027", "year", "2027-07-01", "1 July, the start of that half"),
+    ("2H 2027", "year", "2027-07-01", "1 July, the start of that half"),
+    # A quarter outranks a half, and a half outranks early, mid or late.
+    ("late Q2 2027", "year", "2027-04-01", "1 April, the start of that quarter"),
+    ("late in H2 2027", "year", "2027-07-01", "1 July, the start of that half"),
+]
+
+
+@pytest.mark.parametrize(("words", "precision", "day", "how"), QUALIFIED_YEARS)
+def test_a_qualified_year_starts_on_the_first_day_of_that_part_of_it(
+    words: str, precision: str, day: str, how: str
+) -> None:
+    """ "late 2027" is not January: the record stores a year as 1 January, the words say more."""
+    today = date(2026, 11, 13)
+    stored = {"date": "2027-01-01", "precision": precision, "as_published": words}
+    got = core.default_landing(stored, None, today)
+    assert got is not None and got.value == day and got.source == "Mission record"
+    assert got.note == f"The record says '{words}'; {how}, is used."
+    # The same rule reads a launch published that way; landing follows by the direct-flight days.
+    launched = core.default_landing(None, stored, today)
+    later = date.fromisoformat(day) + timedelta(days=core.LAUNCH_TO_LANDING_DAYS)
+    assert launched is not None and launched.value == later.isoformat()
+    assert launched.note == (
+        f"Launch is published as '{words}'; {how}, is used. "
+        "Landing is assumed 5 days later, as on a direct flight."
+    )
+
+
+def test_a_plain_year_or_month_keeps_its_first_day_and_the_old_words() -> None:
+    today = date(2026, 11, 13)
+    year = core.default_landing(
+        {"date": "2027-01-01", "precision": "year", "as_published": "2027"}, None, today
+    )
+    assert year is not None and year.value == "2027-01-01"
+    assert year.note == "The record says '2027'; its first day is used."
+    # A year with words that name no part of it, and the placeholder note on the record.
+    held = "2027 (Launch Library 2, a placeholder year)"
+    placeholder = core.default_landing(
+        None, {"date": "2027-01-01", "precision": "year", "as_published": held}, today
+    )
+    assert placeholder is not None and placeholder.value == "2027-01-06"
+    assert placeholder.note == (
+        f"Launch is published as '{held}'. Landing is assumed 5 days after its first day, "
+        "as on a direct flight."
+    )
+    month = core.default_landing(
+        {"date": "2027-03-01", "precision": "month", "as_published": "March 2027"}, None, today
+    )
+    assert month is not None and month.value == "2027-03-01"
+    assert month.note == "The record says 'March 2027'; its first day is used."
+    # A qualifier on a month is not a qualified year: the month's own first day stays.
+    late = core.default_landing(
+        {"date": "2027-03-01", "precision": "month", "as_published": "late March 2027"}, None, today
+    )
+    assert late is not None and late.value == "2027-03-01"
+
+
+def test_words_that_name_no_one_part_of_the_year_are_not_read() -> None:
+    today = date(2026, 11, 13)
+    for words in ("early to late 2027", "Q1 or Q3 2027", "late 2028", "late 2027 or 2028", "late"):
+        stored = {"date": "2027-01-01", "precision": "year", "as_published": words}
+        got = core.default_landing(stored, None, today)
+        assert got is not None and got.value == "2027-01-01", words
+        assert got.note == f"The record says '{words}'; its first day is used.", words
+
+
+def test_a_qualified_day_that_has_passed_moves_to_the_month_after_next_and_says_so() -> None:
+    today = date(2026, 11, 13)
+    stored = {"date": "2026-01-01", "precision": "year", "as_published": "late 2026"}
+    got = core.default_landing(stored, None, today)
+    assert got is not None and got.value == "2027-01-01"
+    assert got.note == (
+        "The record says 'late 2026'. 1 October has passed, so the example lands on the "
+        "first day of the month after next. An example date, not a plan."
+    )
+    # The day itself still counts: it has not passed.
+    on_the_day = core.default_landing(stored, None, date(2026, 10, 1))
+    assert on_the_day is not None and on_the_day.value == "2026-10-01"
+    # A launch published that way: its first day plus the direct-flight days has passed too.
+    launched = core.default_landing(None, stored, today)
+    assert launched is not None and launched.value == "2027-01-01"
+    assert "1 October, the start of its last quarter, is used" in (launched.note or "")
+    assert "that day has passed" in (launched.note or "")
+
+
+def test_every_sentence_of_the_example_day_notes_is_short() -> None:
+    today = date(2026, 11, 13)
+    for words, precision, _day, _how in QUALIFIED_YEARS:
+        stored = {"date": "2027-01-01", "precision": precision, "as_published": words}
+        for got in (
+            core.default_landing(stored, None, today),
+            core.default_landing(None, stored, today),
+            core.default_landing(stored, None, date(2027, 11, 13)),
+            core.default_landing(None, stored, date(2027, 11, 13)),
+        ):
+            assert got is not None and got.note is not None and "—" not in got.note
+            for sentence in re.split(r"(?<=[.!?])\s+", got.note):
+                assert len(sentence.split()) < 20, sentence
+
+
+async def test_a_mission_planned_for_late_in_a_year_lands_its_example_in_october(
+    world: World,
+) -> None:
+    viper = mission(
+        landing={"date": "2027-01-01T00:00:00Z", "precision": "year", "as_published": "late 2027"}
+    )
+    res = await scenario_service.resolve_all(None, viper, {}, today=TODAY)  # type: ignore[arg-type]
+    land = {r.field: r for r in res}["landing_date"]
+    assert land.basis == "default" and land.value == "2027-10-01"
+    assert "late 2027" in str(land.note) and "1 October" in str(land.note)
+    # The launch search follows the example day: from before it to 60 days after.
+    by = {r.field: r for r in res}
+    assert by["launch_from"].value == "2027-09-21" and by["launch_to"].value == "2027-11-30"
 
 
 def test_an_example_trip_is_a_named_flight_of_the_same_provider_first() -> None:

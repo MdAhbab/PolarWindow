@@ -88,6 +88,13 @@ def test_what_a_request_counts_against() -> None:
     assert allowance("POST", f"{P}/auth/demo", P) == SIGN_IN
     assert allowance("POST", f"{P}/agents/ask", P) == AGENTS
     assert allowance("POST", f"{P}/agents/chat", P) == AGENTS
+    # The other two routes that call the AI model share Ask's allowance.
+    assert allowance("POST", f"{P}/projects/intake", P) == AGENTS
+    assert allowance("POST", f"{P}/missions/m/scenarios/interpret", P) == AGENTS
+    # Ordinary writes next to them stay ordinary writes.
+    assert allowance("POST", f"{P}/projects", P) == WRITES
+    assert allowance("POST", f"{P}/missions/m/scenarios", P) == WRITES
+    assert allowance("GET", f"{P}/projects/intake", P) is None
     assert allowance("POST", f"{P}/compare", P) == COMPARE
     assert allowance("POST", f"{P}/sites/x/energy", P) == "energy"
     assert allowance("POST", f"{P}/sites/x/dispersion", P) == "dispersion"
