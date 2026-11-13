@@ -208,6 +208,11 @@ that folder with `npm run snapshot` against a running API.
 
 ## 4. Deploying on one host
 
+**The public site** (`https://polarwindow.ahbab.tech`, one Google Compute Engine VM,
+nginx and a Let's Encrypt certificate on the host, results carried over from a PC) has
+its own step-by-step runbook: [`deploy-gcp.md`](deploy-gcp.md), with its files in
+`deploy/`. What follows is the general single-host setup it builds on.
+
 This is a single-node demo, not a production service. `docker compose up` runs
 the whole backend: Postgres, Redis, a `migrate` step (the database migrations),
 a `data` step (it fetches what `data/` lacks and builds the skylines), the API on

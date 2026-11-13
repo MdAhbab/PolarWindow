@@ -1,0 +1,10 @@
+# POLAR WINDOW: one health check (deploy/healthcheck.sh). Started by
+# polarwindow-health.timer. Install: docs/deploy-gcp.md, stage 10.
+# The repository is assumed at /opt/polarwindow.
+[Unit]
+Description=POLAR WINDOW health check
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash /opt/polarwindow/deploy/healthcheck.sh

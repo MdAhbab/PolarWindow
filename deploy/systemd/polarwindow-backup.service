@@ -1,0 +1,13 @@
+# POLAR WINDOW: one database backup (deploy/backup.sh). Started by
+# polarwindow-backup.timer. Install: docs/deploy-gcp.md, stage 10.
+# The repository is assumed at /opt/polarwindow.
+[Unit]
+Description=POLAR WINDOW database backup (pg_dump, 7 days kept)
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+# Days of daily dumps to keep (deploy/backup.sh).
+Environment=PW_BACKUP_KEEP_DAYS=7
+ExecStart=/usr/bin/bash /opt/polarwindow/deploy/backup.sh

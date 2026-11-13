@@ -535,7 +535,11 @@ def main() -> None:
     global DRY
     p = argparse.ArgumentParser(description="Run POLAR WINDOW on an Ubuntu server with Docker.",
                                 formatter_class=argparse.RawDescriptionHelpFormatter, epilog=__doc__)
-    p.add_argument("--port", type=int, default=80, help="Port the dashboard is served on (default 80).")
+    # A host with its own nginx in front (docs/deploy-gcp.md) keeps the dashboard on
+    # PW_WEB_PORT; without this, a plain run would try to take port 80 from that nginx.
+    env_port = read_env_keys().get("PW_WEB_PORT", "")
+    p.add_argument("--port", type=int, default=int(env_port) if env_port.isdigit() else 80,
+                   help="Port the dashboard is served on (default: PW_WEB_PORT in .env, else 80).")
     p.add_argument("--data-from", nargs="+", metavar="PATH",
                    help="Copy in data exported on another machine (`python3 run.py --export-data`): a folder or a .zip.")
     p.add_argument("--with-validation", action="store_true",

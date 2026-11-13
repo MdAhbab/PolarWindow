@@ -1,0 +1,12 @@
+# POLAR WINDOW: the daily database backup at 03:30 Dhaka time (21:30 UTC), when the
+# site is quietest. Persistent: a run missed while the VM was off happens at boot.
+[Unit]
+Description=Daily POLAR WINDOW database backup
+
+[Timer]
+OnCalendar=*-*-* 21:30:00 UTC
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

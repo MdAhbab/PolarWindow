@@ -17,7 +17,11 @@
 #
 # PW_BIND_ADDR is the address the database, the cache and the api are published on:
 # every interface by default, as before; 127.0.0.1 on a host open to the internet,
-# where only `web` should be reachable from outside.
+# where only `web` should be reachable from outside. PW_WEB_ADDR and PW_WEB_PORT do
+# the same for `web` (127.0.0.1 and 8080 behind an nginx on the host that holds the
+# TLS certificate; docs/deploy-gcp.md). PW_DB_PASSWORD is the database password; it
+# takes effect only when the pgdata volume is first created. All four default to what
+# they were before, and compose reads them from .env like the rest.
 #
 # Settings come from .env (copy .env.example), the same file make and run.py read.
 # Only the three that differ inside a container are set here. Docker Compose 2.24 or
@@ -30,7 +34,7 @@
 # `sudo chown -R 10001 data`.
 
 x-env: &env
-  PW_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/polar_window
+  PW_DATABASE_URL: postgresql+asyncpg://postgres:${PW_DB_PASSWORD:-postgres}@postgres:5432/polar_window
   PW_REDIS_URL: redis://redis:6379/0
   PW_DATA_DIR: /data
 
@@ -54,10 +58,12 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${PW_DB_PASSWORD:-postgres}
       POSTGRES_DB: polar_window
     ports: ['${PW_BIND_ADDR:-0.0.0.0}:5432:5432']
     volumes: ['pgdata:/var/lib/postgresql/data']
+    # Back after a reboot, like the services that need it.
+    restart: unless-stopped
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres -d polar_window']
       interval: 5s
@@ -69,6 +75,7 @@ services:
     # Cache only; nothing here is the source of truth, so no persistence.
     command: redis-server --save '' --appendonly no
     ports: ['${PW_BIND_ADDR:-0.0.0.0}:6379:6379']
+    restart: unless-stopped
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
@@ -149,7 +156,7 @@ services:
       args:
         VITE_API_BASE: /api/v1
     image: polar-window-web
-    ports: ['${PW_WEB_PORT:-80}:80']
+    ports: ['${PW_WEB_ADDR:-0.0.0.0}:${PW_WEB_PORT:-80}:80']
     depends_on:
       api: {condition: service_healthy}
     restart: unless-stopped
