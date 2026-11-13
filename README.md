@@ -114,11 +114,11 @@ what it did not model.
 ## Test it
 
 ```bash
-make test-fast     # backend unit tests (901 pass, 2 skipped on 12 November), no services, about 1 min
+make test-fast     # backend unit tests (1,005 pass, 2 skipped on 13 November), no services, about 1 min
 make lint          # ruff, mypy --strict, 10 layering contracts
-make test          # every backend test against real kernels, terrain and a test database, several minutes
-cd frontend && npm run check && npm test     # TypeScript, 400 unit and component tests
-cd frontend && npm run e2e                   # 61 browser tests with accessibility checks; needs the app running
+make test          # every backend test against real kernels, terrain and a test database (184 integration tests pass), about 16 min
+cd frontend && npm run check && npm test     # TypeScript, 546 unit and component tests
+cd frontend && npm run e2e                   # 62 browser tests with accessibility checks; needs the app running
 ```
 
 `make test` needs a seeded database (`python3 run.py` once, or `make seed`).

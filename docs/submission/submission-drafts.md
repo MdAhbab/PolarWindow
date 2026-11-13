@@ -91,8 +91,8 @@ shows what was worked out and what was not modelled, and the planner decides.
 
 Python (FastAPI, SQLAlchemy, NumPy, SpiceyPy on NASA's SPICE toolkit), PostgreSQL, Redis; React, TypeScript,
 Vite, Tailwind CSS, three.js; Playwright and Vitest for tests; Docker Compose; Google Cloud for hosting.
-Test counts measured on `main` on 13 Nov: 974 backend unit tests, 526 frontend tests. [Add the integration and
-end-to-end counts from the final run.]
+Test counts measured on `main` on 13 Nov, final run: 1,005 backend unit tests (2 skipped), 184 backend integration
+tests, 546 frontend unit and component tests, 62 browser tests. 1,797 in all, every one passing.
 
 ### Use of AI (every tool, with why and how)
 

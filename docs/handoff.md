@@ -1,6 +1,6 @@
 # Handoff
 
-State as of 2026-11-12. This file describes how the product is put together, the rules
+State as of 2026-11-13 (section 9 is the latest). This file describes how the product is put together, the rules
 that do not bend, how to run and check it, the shapes the frontend work needs, and where a
 review should look hardest. The plan for the experience work is `docs/experience-plan.md`.
 The wire contract between frontend and backend is `frontend/src/lib/api/experience.types.ts`;
@@ -569,3 +569,82 @@ the total falls under 1,400.
 - Aurora Scout 1's owner shows as "Test Manager": rename or leave.
 - `docs/paper/` (an older paper, linked from nowhere) and two unused logo files in `data/`: keep or remove.
 - Scenarios for cancelled missions: default is no.
+
+## 9. The final session (13 November)
+
+Everything in section 8 was worked through on 13 November; this is where it ended. The site is live.
+
+### Live site
+
+- `https://polarwindow.ahbab.tech`, on the Compute Engine VM `spaceapps` (project `ahbab-512109`, zone
+  `us-central1-c`): e2-small, 2 GB with 4 GB swap, a 20 GB SSD (grown live from 15 GB), Ubuntu 26.10.
+  The address 35.225.159.7 is reserved as the static address `polarwindow`. DNS is an A record for
+  `polarwindow` on `ahbab.tech`.
+- From the owner's PC: `ssh ahbabssh` (an entry in `~/.ssh/config`, using the key `gcloud compute ssh`
+  registered). The repository is at `/opt/polarwindow`.
+- The path is `docs/deploy-gcp.md`: the repository's compose stack, every port on 127.0.0.1, nginx on the
+  host with a Let's Encrypt certificate (renews on its timer; expiry mail goes to the owner), the PC's
+  database restored before the first start, the data streamed over SSH. A daily backup (7 kept) and a
+  5-minute health check run as systemd timers.
+- `.env` on the VM: fresh JWT secret and database password, the Gemini key and model order copied from
+  the PC through a pipe (never printed), `PW_NASA_API_KEY=DEMO_KEY` (30 requests an hour; a real key
+  lifts it).
+- To ship a change: `ssh ahbabssh`, then `cd /opt/polarwindow && git pull && sudo bash deploy/vm-up.sh`,
+  then `sudo bash deploy/vm-check.sh --site`. A backend image build takes about 17 minutes there and needs
+  about 5 GB free: run `sudo docker builder prune -af` first, and again after.
+- The backend image running now is the `602aa71` build with one more layer holding the `dbeaa22` code
+  (`FROM polar-window-backend:latest` plus `COPY app /app/app`), because no package, migration or
+  Dockerfile changed and the disk could not hold a second full build. While that stays true, the same
+  two lines ship backend code in a minute; after any change to `uv.lock`, `alembic/` or the Dockerfile,
+  do the full build.
+- The first image on the VM was patched in place with `libexpat1` (the Debian 13 base dropped it and the
+  api would not start). The Dockerfile now installs it (`602aa71`), so later builds do it themselves.
+
+### Fixed or built
+
+- End-to-end: the suite matches the clarity-pass words (`978addf`); a stored trip is served with today's
+  particle-event sentence.
+- Scenarios (`bccd942`): a record date with a qualifier lands the example on the first day of that part of
+  the year ("late 2027" is 1 October; early, mid, quarters and halves too). VIPER and the four Moon Base
+  2028 missions moved from 1 January. When presets are queued, a finished preset no current default
+  matches is removed, so an old "A month later" is not listed beside the new one.
+- Limits (`bccd942`): reading a dropped project file and reading words into a scenario count against the
+  AI assistant's allowance, as Ask does.
+- Ask (`e3ca9e3`): a figure the guard matched against a seconds field shows as hours, with the margin from
+  the tool's own hours field ("122 s, no margin given" from Home is now "122 ±17.1 h").
+- Screens (`dbeaa22`): a tile's figure, margin and unit stay on one line, the figure shrinking at narrow
+  widths; headlines and tiles round a figure the same way (whole hours: IM-2's Surface said "12.75 hours"
+  over a "13 h" tile); on a phone Ask is the bottom bar's fourth item, not a floating button; the map's
+  chosen-site numbers show their margins and use the same limit rule as Site ("within the margin of").
+- Front page films (`dbeaa22`): the size is picked from the screen only. Chrome's connection guess read a
+  fast line from Dhaka to the US server as "3g", so desktops got the 1280 px films stretched soft.
+- Deploy (`163e78f`): the api gets three minutes to start before its health check counts. On the 2 GB VM
+  it took over two minutes, compose never started `web`, and the site answered 502 for about 15 minutes
+  until `docker compose up -d web` was run by hand.
+- Deploy files: `docs/deploy-gcp.md`, `deploy/` (nginx sites, the env template, the PC export, VM setup,
+  start, check, backup and health scripts, systemd units).
+- Submission: Mehedi's edit sequences (file by file, both videos), the challenge renamed to Lunar Landing
+  Site Navigator, the live address everywhere, the README with the live site and the team.
+
+### Gates at the end
+
+Ruff, ruff format, mypy and the 10 import contracts clean. 1,005 backend unit tests passed (2 skipped);
+184 integration tests passed; frontend type check clean, 546 unit and component tests passed; 62 browser
+tests passed (two failed in the full run: the phone bar test, a real fault fixed by more room under the
+page, and a focus test hit by a hot reload mid-run; both pass on their own run). The recorded screens in
+`frontend/e2e/__screens__` were not retaken this session.
+
+### Still open
+
+- After the first named save of an official launch forecast, the mission page reloads once and the sheet
+  closes. The save itself works. The cause was not found: not the engine-version reset, not the mission's
+  data version. The end-to-end test now reloads before reading the history.
+- A cut-short night's tile shows a margin beside "≥" (Blue Ghost 1's Surface: "≥5 ±0.5 h"), while the
+  sentence rule says a lower bound has none.
+- 11 of 15 planned missions keep a hollow Launch: the 14.5-day stay finds no landing the Sun rule allows in
+  the search window. That is the calculation's answer, said on the step.
+- Not built: keeping unsaved project work on the browser's Back button, the chosen dates in the address,
+  loading skeletons that match the loaded height. `StageLine` was dropped: the step marks do its job.
+- `docs/report/**` is the owner's and still names the old challenge, "CLPS Lunar Mission Browser".
+- The Gemini quota has per-visitor limits only, and any one-click visitor can change Settings (including
+  turning the AI off for everyone).

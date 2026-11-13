@@ -194,7 +194,7 @@ About 470 words in 230 seconds: a calm, clear pace.
 | "six steps", "four numbers" | the app | |
 | "a planned mission with no dates yet still gets a worked example" | the striped marks on the Missions list | restart the app and wait for the examples to finish |
 | "missions that have already flown ... NASA's records of their real paths" | the report's validation section; the CLPS SPICE archive in `README.md` | |
-| "over fourteen hundred automatic tests" | 974 backend unit tests plus 526 frontend tests, both run on 13 Nov | rerun if the code changed |
+| "over fourteen hundred automatic tests" | 1,797 on 13 Nov: 1,005 backend unit, 184 integration, 546 frontend, 62 browser tests, all passing | rerun if the code changed |
 | the data names | the dataset table in `README.md` | |
 
 Do not say a number that is not on the screen at that moment.
