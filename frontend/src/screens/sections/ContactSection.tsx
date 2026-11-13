@@ -261,7 +261,8 @@ function ContactAnswer({
         <QuantityTile term="messageWait" q={n.longest_message_wait_min} note={relayNote(n.longest_message_wait_min, contact.direct_only?.longest_message_wait_min)} />
       </NumberRow>
       <ChartPanel
-        title={`Who can hear the lander, ${windowLine(start, hours)}`}
+        // The step's tiles and answer write hours with `formatValue` ("12.8 h"), so the window does too.
+        title={`Who can hear the lander, ${windowLine(start, hours, formatValue)}`}
         chart={<ContactChart contact={contact} rows={rows} start={start} end={end} />}
         legend={
           <Legend
@@ -396,7 +397,7 @@ function ContactAnswer({
         </Disclosure>
         {!scenario && <PlanDownload missionId={m.id} start={start} end={end} relays={contact.relays} />}
         {!scenario && m.siteId && hasSite(m.siteId) && (
-          <Disclosure title="Change the dates" meta={windowLine(msFromModelH(windowStartH), windowHours)}>
+          <Disclosure title="Change the dates" meta={windowLine(msFromModelH(windowStartH), windowHours, formatValue)}>
             <p className="text-small text-ink-2">The same dates as Landing: changing them here changes them there.</p>
             <WindowPicker
               siteId={m.siteId}

@@ -168,17 +168,16 @@ describe('how big a film is shown', () => {
     expect(filmNative('light', 'small').w).toBeLessThan(filmNative('light', 'large').w)
   })
 
-  it('fetches the small file on a phone, on a slow connection and where it would be enough', () => {
-    expect(filmSize(390, 3, false)).toBe('small')
-    expect(filmSize(1440, 2, true)).toBe('small')
-    expect(filmSize(1024, 1, false)).toBe('small')
-    expect(filmSize(1280, 1, false)).toBe('small')
-    expect(filmSize(1440, 1, false)).toBe('large')
-    expect(filmSize(1920, 1, false)).toBe('large')
-    expect(filmSize(1440, 2, false)).toBe('large')
+  it('fetches the small file on a phone and where it would be enough, and never for a guessed slow line', () => {
+    expect(filmSize(390, 3)).toBe('small')
+    expect(filmSize(1024, 1)).toBe('small')
+    expect(filmSize(1280, 1)).toBe('small')
+    expect(filmSize(1440, 1)).toBe('large')
+    expect(filmSize(1920, 1)).toBe('large')
+    expect(filmSize(1440, 2)).toBe('large')
     // Never below a tablet's width, however sharp the screen.
-    expect(filmSize(767, 4, false)).toBe('small')
-    expect(filmSize(1440, 0, false)).toBe('large')
+    expect(filmSize(767, 4)).toBe('small')
+    expect(filmSize(1440, 0)).toBe('large')
   })
 })
 

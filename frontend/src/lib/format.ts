@@ -59,9 +59,30 @@ export function hoursWithUnit(v: number, digits = 0, open?: boolean): string {
   return `${hours(v, digits, open)} h`
 }
 
+/**
+ * A key number's figure, the one way it is written: whole units. A tile and a
+ * sentence both come here, so "13 h" on a tile and "13 hours" in the headline
+ * above it are the same figure. Quarter hours ("12.75") would claim more than
+ * a margin of an hour or more allows, so they are not used for a figure.
+ */
+export function wholeFigure(v: number): string {
+  return String(Math.round(v))
+}
+
+/**
+ * A duration in hours as a headline writes it, from the same figure as the tile:
+ * "13 hours", "1 hour". A step whose tiles write their figures another way (the
+ * lifecycle steps, with `formatValue`) passes that writer as `figure`, so its
+ * headline and its tiles still agree.
+ */
+export function hoursPhrase(h: number, figure: (h: number) => string = wholeFigure): string {
+  const n = figure(h)
+  return `${n} ${n === '1' ? 'hour' : 'hours'}`
+}
+
 /** The same value, spoken: "about 122 hours", "at least 288 hours". */
 export function hoursSpoken(v: number, open?: boolean): string {
-  return `${open ? 'at least' : 'about'} ${Math.round(v)} hours`
+  return `${open ? 'at least' : 'about'} ${hoursPhrase(v)}`
 }
 
 /** A timing margin. Below what the digits can show it reads "±<0.1", never "±0.0". */
@@ -184,20 +205,22 @@ export function modelHFromMs(ms: number): number {
   return (ms - MODEL_EPOCH) / 3_600_000
 }
 
-/** A window's length in words: "30 days", "29.5 days", "13 hours". */
-export function spanWords(hours: number): string {
-  if (hours < 48) {
-    const h = Math.round(hours * 4) / 4
-    return `${h} ${h === 1 ? 'hour' : 'hours'}`
-  }
+/**
+ * A window's length in words: "30 days", "29.5 days", "13 hours". Under two
+ * days it is in whole hours, the figure the tiles show for the same stretch
+ * ("12.75 hours" over a tile reading "13 h" was one figure written two ways).
+ * `figure` is how the page's tiles write an hour count (see `hoursPhrase`).
+ */
+export function spanWords(hours: number, figure?: (h: number) => string): string {
+  if (hours < 48) return hoursPhrase(hours, figure)
   const days = hours / 24
   const shown = Math.abs(days - Math.round(days)) < 0.05 ? String(Math.round(days)) : days.toFixed(1)
   return `${shown} days`
 }
 
 /** "30 days from 14 Mar 2027" (§10.4). */
-export function windowLine(startMs: number, hours: number): string {
-  return `${spanWords(hours)} from ${shortDate(startMs)}`
+export function windowLine(startMs: number, hours: number, figure?: (h: number) => string): string {
+  return `${spanWords(hours, figure)} from ${shortDate(startMs)}`
 }
 
 /** A published date's precision, in words that say how much is known. */

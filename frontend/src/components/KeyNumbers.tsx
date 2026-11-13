@@ -1,8 +1,8 @@
-import { useState, type ReactNode } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import { useMotionClass } from '../hooks/useMotion'
 import { Skeleton } from './States'
 import { Sheet } from './Sheet'
-import { bound, hoursSpoken, percent, plusMinus, termLabel } from '../lib/format'
+import { bound, hoursSpoken, percent, plusMinus, termLabel, wholeFigure } from '../lib/format'
 import {
   againstLimitLead,
   andList,
@@ -37,6 +37,50 @@ const TONE_BAR: Record<Tone, string> = {
   earth: 'bg-earth-fill',
   neutral: 'bg-terrain-high',
   alert: 'bg-alert',
+}
+
+/**
+ * The figure and its margin stay on one line (the unit with them), however
+ * narrow the tile: when they would not fit, the figure is drawn smaller, down
+ * to `--pw-fmin`, instead of the margin dropping to a line of its own.
+ *
+ * The width each piece needs is estimated from its characters, in em of its
+ * own size (a digit in the tabular figure face is about 0.62 em, a point or a
+ * colon about a third of that), and set against the width of the row, which is
+ * a container, so a tile in a phone's 2 × 2 grid, in a rail or in a wide
+ * four-up row all come out right without a media query of their own. The
+ * estimates run a little wide, so a figure is never clipped; it may be drawn a
+ * point or two under its full size when it only just fits.
+ */
+const FIGURE_EM = 0.63
+const NARROW_EM = 0.34
+const MARGIN_EM = 0.55
+const UNIT_EM = 0.58
+const GAP_PX = 8
+
+const em = (n: number) => n.toFixed(3)
+
+function figureEm(figure: string): number {
+  let w = 0
+  for (const ch of figure) w += /[.,:\s ‐-―-]/.test(ch) ? NARROW_EM : FIGURE_EM
+  return Math.max(w, 0.5)
+}
+
+/** The inline size of a tile's figure: its full size, or less where it and its margin and unit would not fit. */
+export function fitFigure(figure: string, margin: string | undefined, unit: string): CSSProperties {
+  const marginEm = [...(margin ?? '')].length * MARGIN_EM
+  const unitEm = [...unit].length * UNIT_EM
+  // The gap before the margin and unit, the gap between the two, and 2 px of slack.
+  const gaps = (margin || unit ? GAP_PX : 0) + (margin && unit ? GAP_PX : 0) + 2
+  const fixed = `${em(marginEm)} * var(--pw-mpx) + ${em(unitEm)} * var(--pw-upx) + ${gaps}px`
+  return { fontSize: `clamp(var(--pw-fmin), calc((100cqw - (${fixed})) / ${em(figureEm(figure))}), var(--pw-fmax))` }
+}
+
+/** The figure's full size at each width, and the sizes of the margin and unit beside it, for `fitFigure`. */
+const FIT_VARS: Record<'lg' | 'md' | 'sm', string> = {
+  lg: '[--pw-fmax:34px] sm:[--pw-fmax:var(--text-figure-md)] lg:[--pw-fmax:var(--text-figure-tile)]',
+  md: '[--pw-fmax:34px] sm:[--pw-fmax:var(--text-figure-md)]',
+  sm: '[--pw-fmax:var(--text-figure)]',
 }
 
 /**
@@ -136,7 +180,7 @@ export function KeyNumberTile({
               ? ', timed to within a few minutes'
               : `, plus or minus ${toleranceH.toFixed(1)} hours`
         }${state === 'uncertain' ? ', uncertain' : ''}`
-      : `${bound(open) === '≥' ? 'at least' : 'about'} ${Math.round(value)} ${unit}`)
+      : `${bound(open) === '≥' ? 'at least' : 'about'} ${wholeFigure(value)} ${unit}`)
 
   const numberClass =
     size === 'lg'
@@ -146,6 +190,12 @@ export function KeyNumberTile({
       : size === 'md'
         ? 'text-[34px] leading-[36px] sm:text-figure-md sm:leading-figure-md'
         : 'text-figure leading-figure'
+
+  // What is drawn beside the figure, worked out here so its width can be set against the tile's.
+  const showsNumber = state !== 'blank' && state !== 'computing'
+  const figureText = display !== undefined ? display : `${bound(open)}${wholeFigure(value)}`
+  const marginText = !showsNumber ? undefined : margin !== undefined ? margin : toleranceH !== undefined ? plusMinus(toleranceH) : undefined
+  const fit = fitFigure(figureText, marginText, unit)
 
   const explains = Boolean(means || source)
   // A card (globals.css .pw-card). Over the limit, the core's edge is magenta
@@ -194,43 +244,35 @@ export function KeyNumberTile({
       </div>
 
       {(shown || (state === 'blank' && spoken)) && <span className="sr-only">{said}</span>}
-      {/* Wraps rather than overflows: at `sm` in the map's two-column rail the
-          value, its margin and the unit are wider than the tile. The margin and
-          the unit wrap together, so a bare "h" never lands on its own line. */}
+      {/* The figure, its margin and the unit share one line at every width: the
+          row is a container, and the figure is drawn smaller where all three
+          would not fit (`fitFigure`), so the margin never drops to a line of
+          its own, and nothing runs out of the tile at 375 px or in a rail. */}
       <div
-        className="flex flex-wrap items-baseline gap-x-2"
+        className={`@container [--pw-fmin:22px] [--pw-mpx:17px] [--pw-upx:17px] sm:[--pw-mpx:20px] sm:[--pw-upx:19px] ${FIT_VARS[size]}`}
         aria-hidden={shown || (state === 'blank' && spoken) ? 'true' : undefined}
       >
-        {above && state !== 'blank' && state !== 'computing' && (
-          <span className="w-full text-small font-medium text-ink-2">{above}</span>
-        )}
-        {state === 'blank' ? (
-          <span className={`pw-figure text-line-strong ${numberClass}`}>-</span>
-        ) : state === 'computing' ? (
-          <span className={`inline-flex items-center ${numberClass}`}>
-            <Skeleton className="h-[0.8em] w-24" />
-            <span className="sr-only">Loading</span>
-          </span>
-        ) : display !== undefined ? (
-          <span key={display} className={`pw-figure ${numberClass} ${TONE_TEXT[tone]} ${settle}`}>
-            {display}
-          </span>
-        ) : (
-          <span key={value} className={`pw-figure ${numberClass} ${TONE_TEXT[tone]} ${settle}`}>
-            {bound(open)}
-            {Math.round(value)}
-          </span>
-        )}
-        <span className="flex items-baseline gap-2">
-          {margin !== undefined && state !== 'blank' && state !== 'computing' ? (
-            <span className="text-title text-uncertain tnum sm:text-subhead">{margin}</span>
+        {above && showsNumber && <span className="block text-small font-medium text-ink-2">{above}</span>}
+        <div className="flex items-baseline gap-x-2">
+          {state === 'blank' ? (
+            <span className={`pw-figure text-line-strong ${numberClass}`}>-</span>
+          ) : state === 'computing' ? (
+            <span className={`inline-flex items-center ${numberClass}`}>
+              <Skeleton className="h-[0.8em] w-24" />
+              <span className="sr-only">Loading</span>
+            </span>
           ) : (
-            toleranceH !== undefined &&
-            state !== 'blank' &&
-            state !== 'computing' && <span className="text-title text-uncertain tnum sm:text-subhead">{plusMinus(toleranceH)}</span>
+            <span key={figureText} style={fit} className={`pw-figure ${numberClass} ${TONE_TEXT[tone]} ${settle}`}>
+              {figureText}
+            </span>
           )}
-          {unit && <span className="text-title text-ink-2 sm:text-large">{unit}</span>}
-        </span>
+          {(marginText !== undefined || unit) && (
+            <span className="flex min-w-0 items-baseline gap-2">
+              {marginText !== undefined && <span className="text-title text-uncertain tnum sm:text-subhead">{marginText}</span>}
+              {unit && <span className="text-title text-ink-2 sm:text-large">{unit}</span>}
+            </span>
+          )}
+        </div>
       </div>
 
       {bar ? (
@@ -277,7 +319,7 @@ export function KeyNumberTile({
               <h3 className="text-control font-semibold text-ink">{label}</h3>
               {shown && (
                 <p className="font-mono text-title text-ink tnum">
-                  {display ?? `${bound(open)}${Math.round(value)}`} {margin ?? (toleranceH !== undefined ? plusMinus(toleranceH) : '')} {unit}
+                  {figureText} {marginText ?? ''} {unit}
                 </p>
               )}
               {numberKind && <KindMark kind={numberKind} />}

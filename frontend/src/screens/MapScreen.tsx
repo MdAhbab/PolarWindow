@@ -15,8 +15,8 @@ import { Button, Chip, Disclosure, Eyebrow, Panel, PillArrow, SearchField, pillC
 import { PageHeader } from '../components/Page'
 import { Icon } from '../components/Icon'
 import { ShareRing } from '../components/ShareRing'
-import { bound, coords, percent } from '../lib/format'
-import { limitWords } from '../lib/geometry/metrics'
+import { bound, coords, percent, plusMinus } from '../lib/format'
+import { limitWords, longestNight, nightAgainstLimit, nightMargin } from '../lib/geometry/metrics'
 import { useBatteryLimit } from '../lib/api/lifecycleQueries'
 import { coordinateKindWords } from '../lib/missions'
 import type { Mission } from '../lib/api/adapters'
@@ -333,8 +333,13 @@ export function MapScreen() {
 function SiteNumbers({ metrics: m }: { metrics: SiteMetrics | undefined }) {
   const limit = useBatteryLimit()
   if (!m) return <p className="px-5 py-4 text-small text-ink-3">Working out the numbers…</p>
-  const over = m.sun.longestDownH > limit.h
-  const rows: { label: string; value: string; unit?: string; extra?: string; tone: string; alert?: boolean }[] = [
+  // The same rule as Site and Compare: magenta only past the limit by more than the margin.
+  const against = nightAgainstLimit(longestNight(m), limit.h)
+  const over = against.kind === 'past'
+  // A margin beside a figure the dates did not cut short, as on the tiles (a cut-short figure is a lower bound).
+  const margin = (w: SiteMetrics['sun'], h: number | undefined) => (w.longestDownArc && !w.longestDownOpen && h !== undefined ? plusMinus(h) : undefined)
+  const blackoutMargin = m.earth.longestDownArc && !m.earth.longestDownArc.grazing ? m.earth.longestDownToleranceH : undefined
+  const rows: { label: string; value: string; margin?: string; unit?: string; extra?: string; tone: string; alert?: boolean }[] = [
     { label: 'Time in sunlight', value: `${Math.round(m.sun.upHours)}`, unit: 'h', extra: percent(m.sun.fractionUp), tone: 'text-sun' },
     {
       label: 'Time in contact with Earth',
@@ -346,14 +351,16 @@ function SiteNumbers({ metrics: m }: { metrics: SiteMetrics | undefined }) {
     {
       label: 'Longest night',
       value: m.sun.longestDownArc ? `${bound(m.sun.longestDownOpen)}${Math.round(m.sun.longestDownH)}` : 'none',
+      margin: margin(m.sun, nightMargin(m)),
       unit: m.sun.longestDownArc ? 'h' : undefined,
-      extra: over ? `over ${limitWords(limit)}` : undefined,
+      extra: over ? `over ${limitWords(limit)}` : against.kind === 'within-margin' ? `within the margin of ${limitWords(limit)}` : undefined,
       tone: over ? 'text-alert' : 'text-ink',
       alert: over,
     },
     {
       label: 'Longest time without contact',
       value: m.earth.longestDownArc ? `${bound(m.earth.longestDownOpen)}${Math.round(m.earth.longestDownH)}` : 'none',
+      margin: margin(m.earth, blackoutMargin),
       unit: m.earth.longestDownArc ? 'h' : undefined,
       tone: 'text-ink',
     },
@@ -369,6 +376,7 @@ function SiteNumbers({ metrics: m }: { metrics: SiteMetrics | undefined }) {
           <dd className="flex flex-col">
             <span className={`pw-figure text-[26px] leading-7 ${r.tone}`}>
               {r.value}
+              {r.margin && <span className="ml-1 text-small font-normal tracking-normal text-uncertain tnum [font-stretch:100%]">{r.margin}</span>}
               {r.unit && <span className="ml-1 text-body font-normal tracking-normal text-ink-2 [font-stretch:100%]">{r.unit}</span>}
             </span>
             {r.extra && <span className={`text-caption leading-4 ${r.alert ? 'text-alert' : 'text-ink-3'}`}>{r.extra}</span>}

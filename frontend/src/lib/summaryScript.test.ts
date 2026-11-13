@@ -71,7 +71,7 @@ describe('buildSiteSummary', () => {
 
   it('says plainly when there was no night and no blackout', () => {
     const s = buildSiteSummary({ ...site, windowHours: 12.75, nightH: 0, silenceH: 0, worstCompoundH: 0 })
-    expect(s.text).toContain('Over 12.75 hours from 14 March 2027')
+    expect(s.text).toContain('Over 13 hours from 14 March 2027')
     expect(s.text).toContain('The Sun did not set on these dates.')
     expect(s.text).toContain('It stays in contact with Earth the whole time.')
     expect(s.text).not.toMatch(/about 0 hours|inside the 120 hour/)

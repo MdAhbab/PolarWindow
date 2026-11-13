@@ -50,6 +50,14 @@ const VIEWS = [
   { to: '/map', label: 'Sites', icon: 'layers' as const, match: (p: string) => SITE_PATHS.some((s) => p.startsWith(s)) },
 ]
 
+/**
+ * One item of the phone's bottom bar. Four share it (Home, Missions, Sites,
+ * Ask), so the icon sits over its word: "Missions" has room at 320 px, and
+ * each item is 48 px tall, over the 44 px a thumb needs.
+ */
+const BAR_ITEM =
+  'pw-press flex h-12 min-w-0 grow basis-0 flex-col items-center justify-center gap-0.5 rounded-pill px-1 text-small leading-4 no-underline'
+
 /** The landing-site pages, as tabs under the header while one is open. */
 const SITE_PAGES = [
   { to: '/map', label: 'Map' },
@@ -208,7 +216,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <span aria-hidden="true" className="mx-1 hidden h-6 w-px bg-line-strong lg:block" />
 
           <div className="flex items-center gap-1">
-            {/* Ask opens the dock; on a phone it is the button over the bottom bar. */}
+            {/* Ask opens the dock; below lg it is the fourth item of the bottom bar instead. */}
             <button
               type="button"
               onClick={toggleAsk}
@@ -295,14 +303,15 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      {/* Below lg the floating dock, and at every width the guide card when it
+      {/* Below lg the floating bottom bar (72 px from the screen's edge, the home
+          indicator's room included), and at every width the guide card when it
           is open, must never cover the last line. From lg the open Ask panel
           sits beside the page, which makes room for it rather than hiding
           under it. */}
       <main
         id="pw-main"
         tabIndex={-1}
-        className={`flex grow flex-col pb-[calc(9.5rem+env(safe-area-inset-bottom)+var(--pw-guide-h,0px))] outline-none lg:pb-[var(--pw-guide-h,0px)] ${
+        className={`flex grow flex-col pb-[calc(8rem+env(safe-area-inset-bottom)+var(--pw-guide-h,0px))] outline-none lg:pb-[var(--pw-guide-h,0px)] ${
           askOpen ? 'lg:pr-[25.5rem]' : ''
         }`}
       >
@@ -320,29 +329,15 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </main>
 
-      {/* On a phone Ask floats over the bottom bar, on the thumb's side. */}
-      <button
-        type="button"
-        onClick={toggleAsk}
-        aria-expanded={askOpen}
-        aria-keyshortcuts="/ Control+K Meta+K"
-        aria-label="Ask"
-        title="Ask"
-        className="pw-press fixed right-4 bottom-[calc(5.25rem+env(safe-area-inset-bottom)+var(--pw-guide-h,0px))] z-40 inline-flex size-14 items-center justify-center rounded-pill bg-ink text-canvas shadow-lift hover:bg-ink-2 lg:hidden"
-      >
-        {/* A round button, not a labelled one: it floats over the page's own words. */}
-        <Icon name="ask" size={22} strokeWidth={2} />
-      </button>
-
-      {/* On a phone the three views float at the bottom, in reach of a thumb and
-          clear of the home indicator. The open one is filled in ink, with bold
-          words: amber means sunlight. */}
+      {/* On a phone the three views and Ask float at the bottom, in reach of a
+          thumb and clear of the home indicator. The open view is filled in ink,
+          with bold words: amber means sunlight. */}
       <nav
         aria-label="Views"
         style={{ viewTransitionName: 'pw-bar' }}
         className="pw-island pw-ind-host fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex w-[min(24rem,calc(100%-1.5rem))] -translate-x-1/2 gap-1 rounded-pill p-1.5 lg:hidden"
       >
-        {/* Each item is one `data-pw-item`: a fourth (Ask) joins the indicator as it is. */}
+        {/* Each item is one `data-pw-item`, and the row's one indicator sits on the open view. */}
         {VIEWS.map((n) => {
           const on = n.match(pathname)
           return (
@@ -353,15 +348,27 @@ export function AppShell({ children }: { children: ReactNode }) {
               aria-current={on ? 'page' : undefined}
               data-pw-item={n.to}
               data-pw-on={on || undefined}
-              className={`pw-press flex h-12 min-w-0 grow basis-0 items-center justify-center gap-1.5 rounded-pill px-2 text-body no-underline min-[400px]:gap-2 min-[400px]:px-3 ${
-                on ? 'font-semibold text-ink' : 'font-medium text-ink-2 hover:text-ink'
-              }`}
+              className={`${BAR_ITEM} ${on ? 'font-semibold text-ink' : 'font-medium text-ink-2 hover:text-ink'}`}
             >
-              <Icon name={n.icon} size={19} strokeWidth={on ? 2 : 1.7} />
-              <span className="truncate">{n.label}</span>
+              <Icon name={n.icon} size={20} strokeWidth={on ? 2 : 1.7} />
+              <span className="max-w-full truncate">{n.label}</span>
             </NavLink>
           )
         })}
+        {/* Ask, the fourth item: a button that opens the same dock the header's does (a
+            sheet on a phone), looking like the three views but never the page's open one. */}
+        <button
+          type="button"
+          onClick={toggleAsk}
+          aria-haspopup="dialog"
+          aria-expanded={askOpen}
+          aria-keyshortcuts="/ Control+K Meta+K"
+          data-pw-item="ask"
+          className={`${BAR_ITEM} font-medium text-ink-2 hover:text-ink aria-expanded:font-semibold aria-expanded:text-ink`}
+        >
+          <Icon name="ask" size={20} strokeWidth={1.7} />
+          <span className="max-w-full truncate">Ask</span>
+        </button>
         <Indicator selected={view} />
       </nav>
 

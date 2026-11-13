@@ -3,7 +3,8 @@ import '../test/dialog'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { KeyNumberRow } from './KeyNumbers'
+import { KeyNumberRow, KeyNumberTile, fitFigure } from './KeyNumbers'
+import { surfaceSentence } from '../lib/siteSentence'
 import { adaptHorizon, adaptSite } from '../lib/api/adapters'
 import { api, type MetricsDTO, type WindowsDTO } from '../lib/api/client'
 import type { ParameterDTO } from '../lib/api/lifecycle'
@@ -187,5 +188,96 @@ describe('KeyNumberRow', () => {
     const night = tile(/^Longest night$/)
     expect(plain(night.textContent)).toContain('these dates cut this night short; it may run past the 120 h battery limit (assumed)')
     expect(night.textContent).not.toMatch(/inside/)
+  })
+})
+
+/** What `fitFigure` says about a figure, read back from the size it writes: the share of the row it needs, in em and px. */
+function fitNumbers(figure: string, margin: string | undefined, unit: string) {
+  const s = String(fitFigure(figure, margin, unit).fontSize)
+  const m = /calc\(\(100cqw - \(([\d.]+) \* var\(--pw-mpx\) \+ ([\d.]+) \* var\(--pw-upx\) \+ (\d+)px\)\) \/ ([\d.]+)\)/.exec(s)
+  if (!m) throw new Error(`not the expected size: ${s}`)
+  const [marginEm, unitEm, gapPx, figureEm] = m.slice(1).map(Number)
+  return { s, marginEm, unitEm, gapPx, figureEm }
+}
+
+describe('a tile keeps its figure, its margin and its unit together', () => {
+  it('draws them in one row that does not wrap, so the margin never drops to a line of its own', async () => {
+    await renderRow(<KeyNumberRow metrics={real()} />)
+    const night = tile(/^Longest night$/)
+    const figure = within(night).getByText('122')
+    const row = figure.parentElement as HTMLElement
+    expect(row.className).not.toMatch(/flex-wrap/)
+    expect(within(row).getByText('±17.1')).toBeTruthy()
+    expect(within(row).getByText('h')).toBeTruthy()
+    // The row is a container, so the figure can be sized against the tile's own width.
+    expect((row.parentElement as HTMLElement).className).toContain('@container')
+  })
+
+  it('sizes a figure against the width of its row, between a floor and its full size', () => {
+    const { s } = fitNumbers('122', '±17.1', 'h')
+    expect(s).toMatch(/^clamp\(var\(--pw-fmin\), calc\(.*100cqw.*\), var\(--pw-fmax\)\)$/)
+  })
+
+  /** The figure's size at a row width, as the browser works it out (`clamp(min, (w - fixed) / em, max)`). */
+  const sizeAt = (width: number, figure: string, margin: string | undefined, unit: string, max = 34, min = 22, margin_px = 17, unit_px = 17) => {
+    const f = fitNumbers(figure, margin, unit)
+    return Math.min(max, Math.max(min, (width - (f.marginEm * margin_px + f.unitEm * unit_px + f.gapPx)) / f.figureEm))
+  }
+
+  it('shrinks the figure as the tile narrows, and never below its floor', () => {
+    // The phone's 2 × 2 grid: a tile is 164 px at 375 and 171 px at 390, less 32 px of padding.
+    const at390 = sizeAt(139, '122', '±17.1', 'h')
+    const at375 = sizeAt(132, '122', '±17.1', 'h')
+    const at320 = sizeAt(104, '122', '±17.1', 'h')
+    expect(at390).toBeGreaterThan(at375)
+    expect(at375).toBeGreaterThan(at320)
+    expect(at375).toBeLessThan(34)
+    expect(at320).toBe(22)
+  })
+
+  it('leaves a short figure at full size where it already fits', () => {
+    expect(sizeAt(132, '574', undefined, 'h')).toBe(34)
+    expect(sizeAt(132, '13', undefined, 'h')).toBe(34)
+    // The same figure with a margin is wider, so it is drawn smaller, not wrapped.
+    expect(sizeAt(132, '122', '±17.1', 'h')).toBeLessThan(34)
+  })
+
+  it('makes room for a longer figure, a lower bound and a longer margin', () => {
+    const plain = fitNumbers('288', '±7.2', 'h')
+    const bound = fitNumbers('≥288', '±7.2', 'h')
+    expect(bound.figureEm).toBeGreaterThan(plain.figureEm)
+    expect(fitNumbers('288', '±17.1', 'h').marginEm).toBeGreaterThan(plain.marginEm)
+    // A point or a colon is narrower than a digit.
+    expect(fitNumbers('1.2', undefined, 's').figureEm).toBeLessThan(fitNumbers('122', undefined, 's').figureEm)
+    expect(fitNumbers('00:16', '±4 min', '').figureEm).toBeLessThan(fitNumbers('00016', '±4 min', '').figureEm)
+  })
+
+  it('counts no gap where there is no margin or unit to sit beside the figure', () => {
+    expect(fitNumbers('12', undefined, '').gapPx).toBe(2)
+    expect(fitNumbers('12', undefined, 'h').gapPx).toBe(10)
+    expect(fitNumbers('12', '±2', 'h').gapPx).toBe(18)
+  })
+
+  it('draws the margin and the unit of a written figure on the same row too', () => {
+    render(<KeyNumberTile label="Launch time" value={0} display="00:16" margin="±4 min" unit="" bar={false} />)
+    const figure = screen.getByText('00:16')
+    expect(within(figure.parentElement as HTMLElement).getByText('±4 min')).toBeTruthy()
+  })
+})
+
+describe('the headline and the tiles write a figure the same way', () => {
+  it('says a 12.75 hour window as 13 hours, as the tiles do (IM-2 Surface)', () => {
+    const m = allDay()
+    expect(surfaceSentence(m)).toBe('Over these 13 hours the Sun stays up and Earth stays in view the whole time.')
+    render(<KeyNumberRow metrics={m} />)
+    expect(within(tile(/^Time in sunlight$/)).getByText('13')).toBeTruthy()
+    expect(within(tile(/^Time in contact with Earth$/)).getByText('13')).toBeTruthy()
+    expect(document.body.textContent).not.toMatch(/12\.75/)
+  })
+
+  it('says the night as the tile does: whole hours, with a lower bound where the dates cut it short', () => {
+    const m = real()
+    expect(surfaceSentence(m)).toContain('the longest night is 122 hours.')
+    expect(surfaceSentence({ ...m, sun: { ...m.sun, longestDownOpen: true } })).toContain('the longest night is at least 122 hours.')
   })
 })

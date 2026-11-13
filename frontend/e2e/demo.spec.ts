@@ -189,6 +189,8 @@ test('beats 4 and 7: VIPER month strip and the far side', async ({ page, context
   await returningVisitor(context)
   const problems = watchConsole(page)
   await page.goto('/missions/blue-moon-mk1-viper/surface')
+  // A planned mission's step opens on its worked example; the record is one press away.
+  await page.getByRole('link', { name: 'Show only what is published' }).click({ timeout: 30_000 })
   await expect(page.locator('main')).toContainText('Landing known only to the year; choose a date below')
   await openRow(page, 'Change the dates')
   await expect(page.getByRole('option', { name: /^April 2027: sunlight 8 percent/ })).toBeVisible()

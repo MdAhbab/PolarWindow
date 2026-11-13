@@ -137,8 +137,9 @@ test('axe and the fixed tab bar on a phone', async ({ page, context }) => {
   ]) {
     await page.goto(r)
     await page.waitForLoadState('networkidle')
-    // Three views: home, the missions and the landing sites.
+    // Three views (home, the missions, the landing sites) as links, and Ask, the fourth item, as a button.
     await expect(tabs.getByRole('link')).toHaveCount(3)
+    await expect(tabs.getByRole('button', { name: 'Ask' })).toBeVisible()
     await expect(tabs).toHaveCSS('position', 'fixed')
     await expectNoSeriousAxe(page, `${r} at 375 px`)
     // Nothing runs off the side: no sideways scroll on a phone.
@@ -185,6 +186,33 @@ test('axe and the fixed tab bar on a phone', async ({ page, context }) => {
   expect(g!.y + g!.height).toBeLessThanOrEqual(t2!.y + 1)
   expect(f2!.y + f2!.height).toBeLessThanOrEqual(g!.y + 1)
   await expectNoSeriousAxe(page, '/compare at 375 px with the guide open')
+})
+
+test('on a phone Ask is the fourth item of the bottom bar, as tall as the others, and opens the Ask sheet', async ({ page, context }) => {
+  await returningVisitor(context)
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.goto('/home')
+  const bar = page.getByRole('navigation', { name: 'Views' }).last()
+  const items = bar.locator('[data-pw-item]')
+  await expect(items).toHaveCount(4)
+  await expect(items.last()).toHaveText('Ask')
+  // At least 44 px to press, and no taller or shorter than a view's link.
+  const boxes = await items.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height))
+  for (const h of boxes) expect(h).toBeGreaterThanOrEqual(44)
+  expect(new Set(boxes.map(Math.round)).size).toBe(1)
+  // No separate Ask button floats over the page: the bar's is the only one on a phone besides the page's own.
+  await expect(page.locator('button.fixed[aria-label="Ask"]')).toHaveCount(0)
+
+  const ask = bar.getByRole('button', { name: 'Ask' })
+  await ask.click()
+  const sheet = page.getByRole('dialog', { name: 'Ask' })
+  await expect(sheet).toBeVisible()
+  await expect(ask).toHaveAttribute('aria-expanded', 'true')
+  await page.keyboard.press('Escape')
+  await expect(sheet).toBeHidden()
+  // The shortcuts still open it.
+  await page.keyboard.press('Control+k')
+  await expect(sheet).toBeVisible()
 })
 
 test('settings on a phone: every project row and a parameter form fit, with no sideways scroll', async ({ page, context }) => {

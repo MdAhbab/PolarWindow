@@ -1226,18 +1226,26 @@ test('official launch forecast (live API, writes): a signed-in save is stored, s
   await sheet.getByLabel('Main concerns').fill('End-to-end check')
   await sheet.getByLabel('Link to the forecast PDF').fill('https://example.test/end-to-end-check.pdf')
   await sheet.getByRole('button', { name: 'Save' }).click()
-  await expect(sheet.getByText('Saved.')).toBeVisible()
-  // Its history lists the change.
-  await expect(sheet.getByText('Change history')).toBeVisible()
-  await expect(sheet.locator('li').first()).toContainText('End-to-end check')
-  await sheet.getByRole('button', { name: 'Close' }).last().click()
-  await expect(summary).toContainText(`${pct}%, entered by End-to-end check`)
+  // The first save signs in with the typed name, and the mission page then draws itself again, which closes the sheet
+  // a moment after "Saved." shows. So the toast is read from the page, not from the sheet, and the history is read
+  // from the sheet opened again below, not raced against the one that was open.
+  await expect(page.getByText('Saved.', { exact: true }).first()).toBeVisible()
+  // Shown in the row.
+  await expect(summary).toContainText(`${pct}%, entered by End-to-end check`, { timeout: 30_000 })
   // The weather answer carries the stored forecast.
   await page.reload()
   const again = page.locator('summary', { hasText: 'Official launch forecast' })
   await expect(again).toContainText(`${pct}%, entered by End-to-end check`, { timeout: 60_000 })
-  // Take it back: the forecast shown before the run is shown again, here and after a reload, and the history says so.
+  // Its history lists the change, newest first.
   await again.click()
+  await page.getByRole('button', { name: /^Enter (the official|a newer) forecast$/ }).click()
+  const listed = page.getByRole('dialog', { name: 'Official launch forecast' })
+  await expect(listed.getByText('Change history')).toBeVisible()
+  await expect(listed.locator('li').first()).toContainText(`Entered ${pct}%`)
+  await expect(listed.locator('li').first()).toContainText('End-to-end check')
+  await listed.getByRole('button', { name: 'Close' }).last().click()
+  await expect(listed).toBeHidden()
+  // Take it back: the forecast shown before the run is shown again, here and after a reload, and the history says so.
   await page.getByRole('button', { name: 'Take back this forecast' }).click()
   const back = page.getByRole('dialog', { name: 'Take back the official forecast' })
   await expect(back).toContainText(`This takes back the ${pct}% forecast entered by End-to-end check`)

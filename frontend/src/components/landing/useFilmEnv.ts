@@ -22,12 +22,6 @@ function saveDataOn(): boolean {
   return Boolean(c?.saveData)
 }
 
-/** A connection the browser calls 2G or 3G. */
-function slowConnection(): boolean {
-  const c = (navigator as Navigator & { connection?: { effectiveType?: string } }).connection
-  return Boolean(c?.effectiveType && /^(slow-2g|2g|3g)$/.test(c.effectiveType))
-}
-
 /**
  * What the visitor's device and settings allow the films to do: the system's
  * reduced-motion setting and the app's own both count, as does data saver, and
@@ -42,6 +36,6 @@ export function useFilmEnv(): FilmEnv & FilmMode & { size: FilmSize } {
     saveData: saveDataOn(),
   }
   // Which file to fetch is decided once, when the page opens: a window dragged wider later keeps the file it has.
-  const [size] = useState<FilmSize>(() => filmSize(window.innerWidth, window.devicePixelRatio, slowConnection()))
+  const [size] = useState<FilmSize>(() => filmSize(window.innerWidth, window.devicePixelRatio))
   return { ...env, ...filmMode(env), size }
 }

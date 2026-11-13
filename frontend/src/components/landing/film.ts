@@ -159,11 +159,13 @@ export function filmNative(name: FilmName, size: FilmSize): { w: number; h: numb
 }
 
 /**
- * Which size to fetch: the small one on a phone, on a slow connection, or where the window times the pixel
- * ratio is no more than a little over the small file's own width; otherwise the large one.
+ * Which size to fetch: the small one on a phone, or where the window times the pixel ratio is no more than a
+ * little over the small file's own width; otherwise the large one. The browser's guess at the connection
+ * ("3g") is not used: it is read from the round trip, so a fast line to a far server reads as slow and a
+ * desktop got the small file stretched soft. Data saver still turns the films into stills (`filmMode`).
  */
-export function filmSize(viewportW: number, pixelRatio: number, slow: boolean): FilmSize {
-  if (slow || viewportW < 768) return 'small'
+export function filmSize(viewportW: number, pixelRatio: number): FilmSize {
+  if (viewportW < 768) return 'small'
   return viewportW * (pixelRatio || 1) > 1.1 * FILM_WIDTH.small ? 'large' : 'small'
 }
 
