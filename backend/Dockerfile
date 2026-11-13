@@ -3,10 +3,13 @@
 # Python 3.12 to match requires-python in pyproject.toml.
 FROM python:3.12-slim
 
-# The OpenMP runtime, which numba's threading layer links against. The other system
-# libraries the compiled wheels expect (libstdc++, zlib) come with the base image.
+# The OpenMP runtime, which numba's threading layer links against, and expat, which
+# rasterio's GDAL links against (the Debian 13 slim image no longer ships it: without it
+# the api stops at start with "libexpat.so.1: cannot open shared object file"). The other
+# system libraries the compiled wheels expect (libstdc++, zlib) come with the base image.
 RUN apt-get update && apt-get install -y --no-install-recommends \
       libgomp1 \
+      libexpat1 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=ghcr.io/astral-sh/uv:0.5.11 /uv /usr/local/bin/uv
