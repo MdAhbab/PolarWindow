@@ -38,9 +38,9 @@ otherwise. The files this runbook uses are in `deploy/`.
 The owner does or confirms these before stage 2. Each one is **ASK THE OWNER FIRST**.
 
 - [x] A VM exists: `spaceapps`, e2-small, Ubuntu 26.10 x86_64, us-central1-c, 15 GB disk.
-- [ ] Its external address (35.225.159.7) is ephemeral: it can change if the VM is stopped.
-  Reserve it to keep it (`gcloud compute addresses create polarwindow --addresses 35.225.159.7
-  --region us-central1 --project ahbab-512109`).
+- [x] Its external address 35.225.159.7 is reserved as the static address `polarwindow`
+  (us-central1, 13 November: `gcloud compute addresses create polarwindow --addresses
+  35.225.159.7 --region us-central1 --project ahbab-512109`), so a stop and start keeps it.
 - [ ] DNS: an A record `polarwindow.ahbab.tech` points at that static IP. (Checked on the VM in stage 9.)
 - [ ] Firewall: TCP 80 and 443 are open to the VM from anywhere (on the VM page, "Allow HTTP traffic" and "Allow HTTPS traffic", which use the default `default-allow-http` and `default-allow-https` rules). Port 80 must stay open: certificate renewals use it.
 - [ ] SSH to the VM works.
