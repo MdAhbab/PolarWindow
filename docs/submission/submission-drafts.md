@@ -46,7 +46,7 @@ Credit every generated or third-party asset.
 ### High-Level Summary
 
 PolarWindow is a mission browser and planner for NASA's commercial Moon landings (CLPS), built for the challenge
-*CLPS Lunar Mission Browser*. It answers the question a lander team asks first: is this landing site, on these
+*Lunar Landing Site Navigator*. It answers the question a lander team asks first: is this landing site, on these
 dates, workable for my lander? Near the Moon's south pole the Sun and Earth stay close to the horizon, so one
 ridge can cut off power and contact for days. PolarWindow takes NASA's laser height map of the pole and NASA's
 navigation data, works out hour by hour when the Sun and Earth are above each site's own skyline, and shows four
@@ -133,7 +133,7 @@ The bibliography of `docs/report/report.pdf` (`docs/report/ref.bib`) and the dat
 ### Before pressing Submit
 
 - [ ] All six members on the Members tab with photo and role; team photo added
-- [ ] Challenge named: CLPS Lunar Mission Browser
+- [ ] Challenge named: Lunar Landing Site Navigator
 - [ ] 30-second video link opens in a private window; so do the GitHub link and the live link
 - [ ] Use of AI, NASA data sources and References filled in
 - [ ] English subtitles on both videos; generated clips credited in the description

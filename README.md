@@ -9,7 +9,9 @@
 POLAR WINDOW answers that for every NASA Commercial Lunar Payload Services (CLPS)
 mission and for candidate landing sites at the Moon's south pole, from NASA's own
 terrain and ephemeris data, with a margin on every number. Built for the NASA
-Space Apps Challenge, *CLPS Lunar Mission Browser*.
+Space Apps Challenge 2026, *Lunar Landing Site Navigator*, by team Sagittarius A*.
+
+**Live:** <https://polarwindow.ahbab.tech> (press *Go to the dashboard*; one click signs in, no account needed)
 
 At the south pole the Sun never climbs more than a few degrees, so one hill can
 switch it off for days, and Earth sits just as low. Four numbers decide a
@@ -56,7 +58,7 @@ See *On a server* below.
 
 | Step | Where | What it shows |
 |---|---|---|
-| 1 | The front page, then **Open the dashboard** | The four ideas on a 3D Moon drawn from LRO data; one click signs in. |
+| 1 | The front page, then **Go to the dashboard** | The four ideas on a 3D Moon drawn from LRO data; one click signs in. |
 | 2 | **Missions**, filter by *volatiles* | 20 CLPS deliveries, each field with its source; what is not published says so. |
 | 3 | **IM-2**, then **Surface** | The four numbers for the real landing spot, each with its ±, and the skyline that causes them. |
 | 4 | The dates, then **play** | The Sun and Earth move against the skyline; every number is recomputed by the backend. |
@@ -188,6 +190,12 @@ without running any. It serves plain HTTP: put a TLS proxy or a load balancer in
 front for HTTPS. Allow the port in the cloud provider's firewall. The stack is
 `docker-compose.yml` with the `web` profile; [docs/runbook.md](docs/runbook.md)
 has the details.
+
+The live site runs the same compose stack behind nginx with a Let's Encrypt
+certificate, with the results worked out ahead of time carried over as a
+database dump. [docs/deploy-gcp.md](docs/deploy-gcp.md) is that runbook, step
+by step, with a check and a rollback for each stage; its scripts are in
+[deploy/](deploy/).
 
 ## Known limits
 
@@ -356,6 +364,19 @@ Every number traces to a public source, listed in full in `docs/data-sources.md`
   source and an access date on every record in `data/missions.json`.
 - **Feature names and centres:** the IAU Gazetteer of Planetary Nomenclature
   (USGS Astrogeology) and the LPI Lunar South Pole Atlas.
+
+## Team
+
+Sagittarius A*, NASA Space Apps Challenge 2026.
+
+| Member | Role |
+|---|---|
+| Md Ahbab Hamid Khan | Frontend, backend, planning, content, deliverables and deployment |
+| Wali | Backend help and planning |
+| Ryan | Planning and user survey |
+| Tanjamul | Backend and frontend help |
+| Mehedi | Deliverables, planning and the video edit |
+| Mehrab | Design advice |
 
 ## License
 

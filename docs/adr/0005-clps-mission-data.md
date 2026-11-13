@@ -7,7 +7,7 @@
 
 ## Context
 
-The challenge is **CLPS Lunar Mission Browser**. From v2 on, the product starts
+The challenge is **Lunar Landing Site Navigator**. From v2 on, the product starts
 from CLPS missions: every delivery with its provider, lander, task order,
 target, dates, status, outcome and payload manifest. The mission table becomes
 the first thing a judge sees, so it is also the first thing an expert judge

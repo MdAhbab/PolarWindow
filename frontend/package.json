@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Landing site planning for the Moon's south pole. NASA Space Apps 2026 — CLPS Lunar Mission Browser.",
+  "description": "Landing site planning for the Moon's south pole. NASA Space Apps 2026: Lunar Landing Site Navigator.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

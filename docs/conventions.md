@@ -1,7 +1,7 @@
 # POLAR WINDOW — conventions and invariants
 
 Landing site planning for the Moon's south pole. NASA Space Apps 2026, challenge
-"CLPS Lunar Mission Browser".
+"Lunar Landing Site Navigator".
 
 **Two halves.** `backend/` is FastAPI + Postgres + Redis over SPICE and the LOLA
 polar DEM. `frontend/` is Vite + React 19 + TypeScript + Tailwind v4. Its look

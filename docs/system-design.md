@@ -479,7 +479,7 @@ point ADR-4's answer flips.
 
 ## 10. The CLPS scope (contract v2, 2026-09-23)
 
-The challenge is **CLPS Lunar Mission Browser**. Everything in §1–§9 answers
+The challenge is **Lunar Landing Site Navigator**. Everything in §1–§9 answers
 "what do Sun, Earth and terrain do at a south-pole site over a window". v2 puts
 **CLPS missions** in front of that engine. A mission is the entry point, and the
 engine judges its target and its dates. The 15 derived candidate sites become the

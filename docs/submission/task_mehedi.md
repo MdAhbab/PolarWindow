@@ -550,7 +550,7 @@ Use the editor you know best (DaVinci Resolve, Premiere or CapCut all work).
    on a dark rounded box at the bottom of the person's half. Shown for the first 4 seconds each person
    appears in their own part.
 3. **The title card** (2 seconds). Background colour, the PolarWindow logo, the team name large, and under
-   it: "Challenge: CLPS Lunar Mission Browser".
+   it: "Challenge: Lunar Landing Site Navigator".
 4. **The name strip** (10 seconds). The screen is split into six tall strips, each 320 pixels wide. Each
    strip shows one person's "I'm ..." clip, cropped to their face, with their name and role at the bottom.
    The strips appear one at a time, left to right, every 1.6 seconds: Wali, Ryan, Ahbab, Mehrab, Tanjamul,
@@ -590,10 +590,10 @@ numbered lines in `video-240s.srt`. Every film clip and screen recording is mute
 | 1 | 0:00 to 0:04 | `Mehedi_light.mp4`, 4 calm seconds, full screen | "Illustration, generated" | `wali_A_hook_N`, sound only (cue 1). Music starts on A2. |
 | 2 | 0:04 to 0:10 | `Mehedi_shadow.mp4`, the 6 seconds where the shadow reaches the lander | "Illustration, generated" | Wali (cue 2) |
 | 3 | 0:10 to 0:16 | `wali_A_hook_N`, face in the left half | `F1.png` in the right half. Name caption "Wali · Backend and planning" | Wali (cues 3, 4) |
-| 4 | 0:16 to 0:18 | Title card | Logo, "Sagittarius A*", "Challenge: CLPS Lunar Mission Browser" | Music only, louder |
+| 4 | 0:16 to 0:18 | Title card | Logo, "Sagittarius A*", "Challenge: Lunar Landing Site Navigator" | Music only, louder |
 | 5 | 0:18 to 0:28 | Name strip: `wali_B_name_N`, `ryan_B_name_N`, `ahbab_B_name_N`, `mehrab_B_name_N`, `tanjamul_B_name_N`, `mehedi_B_name_N`, one more every 1.6 s | Each strip's name and role | Each "I'm ..." (cues 5 to 10) |
 | 6 | 0:28 to 0:32 | `Mehedi_earth.mp4`, 4 seconds, full screen | "Illustration, generated" | `ryan_A_problem_N`, sound only (cue 11) |
-| 7 | 0:32 to 0:39 | `ryan_A_problem_N`, face in the right half | `F7.png` in the left half, with "CLPS: NASA's commercial Moon deliveries" and "Our challenge: CLPS Lunar Mission Browser". Name caption "Ryan · Planning and survey" | Ryan (cue 12) |
+| 7 | 0:32 to 0:39 | `ryan_A_problem_N`, face in the right half | `F7.png` in the left half, with "CLPS: NASA's commercial Moon deliveries" and "Our challenge: Lunar Landing Site Navigator". Name caption "Ryan · Planning and survey" | Ryan (cue 12) |
 | 8 | 0:39 to 0:43 | Ryan, same clip | `F2.png` | Ryan (cue 13) |
 | 9 | 0:43 to 0:58 | Ryan, same clip | `F8.png`, with the large words "Can my lander work at this place, on these dates?"; from 0:51, smaller: "Today: experts, and many days." | Ryan (cues 14 to 16) |
 | 10 | 0:58 to 1:04 | `ahbab_A_solution_N`, face in the left half | `F3.png` in the right half. Name caption "Ahbab · Build and deploy" | Ahbab (cues 17, 18) |
@@ -667,7 +667,7 @@ Rules while you build it:
 **Check the exported file (not the timeline)**
 - [ ] The length is **3:52 or less**
 - [ ] Team name and all six names are on screen and spoken
-- [ ] "CLPS Lunar Mission Browser" is on screen
+- [ ] "Lunar Landing Site Navigator" is on screen
 - [ ] Every NASA data name in Mehrab's part can be read
 - [ ] Subtitles on every spoken line, with no spelling mistakes
 - [ ] "Illustration, generated" on every film clip and generated figure
@@ -699,7 +699,7 @@ line by line. Subtitle cues are the numbered lines in `video-30s.srt`.
 | # | Time | V1: picture | V2 and V3: on top | A1: voice (subtitle cue) |
 |---|---|---|---|---|
 | 1 | 0:00 to 0:05 | `Mehedi_shadow.mp4`, the part where the shadow reaches the lander | "Illustration, generated" | `wali_C_short_N` (cue 1). Music starts on A2. |
-| 2 | 0:05 to 0:09 | The name strip from the long video, all six already showing | The team name above; "Challenge: CLPS Lunar Mission Browser" below | `ahbab_voice_short_N`, line 1 (cue 2) |
+| 2 | 0:05 to 0:09 | The name strip from the long video, all six already showing | The team name above; "Challenge: Lunar Landing Site Navigator" below | `ahbab_voice_short_N`, line 1 (cue 2) |
 | 3 | 0:09 to 0:13 | `ahbab_screen_2.mp4`, zoomed to 140% on the four numbers | A thin strip of the six names along the bottom, if they were on screen under 4 s | line 2 (cue 3) |
 | 4 | 0:13 to 0:17 | `ahbab_screen_3.mp4`, the days playing | | line 3 (cue 4). If it runs long, let it run over shot 5. |
 | 5 | 0:17 to 0:21 | `ahbab_screen_1.mp4`, the six steps on the curve (its last seconds) | | line 4 (cue 5) |

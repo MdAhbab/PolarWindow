@@ -16,7 +16,7 @@ Wali's Take C (`task_wali.md`) and Ahbab's short take (`task_ahbab.md`).
 | # | Time | On screen | Voice |
 |---|---|---|---|
 | 1 | 0:00 to 0:05 | Film (`Mehedi_shadow.mp4`): a hill's shadow reaches the lander. Small caption: "Illustration, generated" | Wali: At the Moon's south pole, one hill can switch off the Sun and cut a lander off from Earth. |
-| 2 | 0:05 to 0:09 | The name strip with all six faces and names showing, the team name above, "Challenge: CLPS Lunar Mission Browser" below | Ahbab: We are Sagittarius A*. This is PolarWindow. |
+| 2 | 0:05 to 0:09 | The name strip with all six faces and names showing, the team name above, "Challenge: Lunar Landing Site Navigator" below | Ahbab: We are Sagittarius A*. This is PolarWindow. |
 | 3 | 0:09 to 0:13 | Screen shot 2: the four numbers, zoomed | Pick a landing place and dates. |
 | 4 | 0:13 to 0:17 | Screen shot 3: the days playing | See sunlight, contact with Earth and the longest night, each with how far it could be off. |
 | 5 | 0:17 to 0:21 | Screen shot 1: the six steps on the curve | Follow every mission through six steps. |
@@ -33,7 +33,7 @@ line by line. Subtitle cues are the numbered lines in `video-30s.srt`.
 | # | Time | V1: picture | V2 and V3: on top | A1: voice (subtitle cue) |
 |---|---|---|---|---|
 | 1 | 0:00 to 0:05 | `Mehedi_shadow.mp4`, the part where the shadow reaches the lander | "Illustration, generated" | `wali_C_short_N` (cue 1). Music starts on A2. |
-| 2 | 0:05 to 0:09 | The name strip from the long video, all six already showing | The team name above; "Challenge: CLPS Lunar Mission Browser" below | `ahbab_voice_short_N`, line 1 (cue 2) |
+| 2 | 0:05 to 0:09 | The name strip from the long video, all six already showing | The team name above; "Challenge: Lunar Landing Site Navigator" below | `ahbab_voice_short_N`, line 1 (cue 2) |
 | 3 | 0:09 to 0:13 | `ahbab_screen_2.mp4`, zoomed to 140% on the four numbers | A thin strip of the six names along the bottom, if they were on screen under 4 s | line 2 (cue 3) |
 | 4 | 0:13 to 0:17 | `ahbab_screen_3.mp4`, the days playing | | line 3 (cue 4). If it runs long, let it run over shot 5. |
 | 5 | 0:17 to 0:21 | `ahbab_screen_1.mp4`, the six steps on the curve (its last seconds) | | line 4 (cue 5) |

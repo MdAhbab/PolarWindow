@@ -249,7 +249,7 @@ Watch it twice, once with sound off. Check:
 
 - [ ] Under 3 minutes 55 seconds
 - [ ] The team name and all six names are on screen and spoken
-- [ ] The challenge name is on screen: CLPS Lunar Mission Browser
+- [ ] The challenge name is on screen: Lunar Landing Site Navigator
 - [ ] Every NASA data name in Mehrab's part can be read and heard
 - [ ] No number is spoken that is not on the screen at that moment
 - [ ] The word "best" is nowhere

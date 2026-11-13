@@ -55,7 +55,7 @@ every generated or third-party asset.
 | 1 | 0:00 to 0:04 | Film: low Sun over the pole | Wali |
 | 2 | 0:04 to 0:10 | Film: a hill's shadow reaches the lander | Wali |
 | 3 | 0:10 to 0:16 | Wali on camera, figure F1 beside him | Wali |
-| 4 | 0:16 to 0:18 | Title card: team name, "Challenge: CLPS Lunar Mission Browser" | music |
+| 4 | 0:16 to 0:18 | Title card: team name, "Challenge: Lunar Landing Site Navigator" | music |
 | 5 | 0:18 to 0:28 | Name strip: six faces, names and roles | "I'm Wali." and so on |
 | 6 | 0:28 to 0:32 | Film: a lander with Earth low in the sky | Ryan |
 | 7 | 0:32 to 0:58 | Ryan on camera, figures F7, F2, F8 and the question as words | Ryan |
@@ -101,10 +101,10 @@ numbered lines in `video-240s.srt`. Every film clip and screen recording is mute
 | 1 | 0:00 to 0:04 | `Mehedi_light.mp4`, 4 calm seconds, full screen | "Illustration, generated" | `wali_A_hook_N`, sound only (cue 1). Music starts on A2. |
 | 2 | 0:04 to 0:10 | `Mehedi_shadow.mp4`, the 6 seconds where the shadow reaches the lander | "Illustration, generated" | Wali (cue 2) |
 | 3 | 0:10 to 0:16 | `wali_A_hook_N`, face in the left half | `F1.png` in the right half. Name caption "Wali · Backend and planning" | Wali (cues 3, 4) |
-| 4 | 0:16 to 0:18 | Title card | Logo, "Sagittarius A*", "Challenge: CLPS Lunar Mission Browser" | Music only, louder |
+| 4 | 0:16 to 0:18 | Title card | Logo, "Sagittarius A*", "Challenge: Lunar Landing Site Navigator" | Music only, louder |
 | 5 | 0:18 to 0:28 | Name strip: `wali_B_name_N`, `ryan_B_name_N`, `ahbab_B_name_N`, `mehrab_B_name_N`, `tanjamul_B_name_N`, `mehedi_B_name_N`, one more every 1.6 s | Each strip's name and role | Each "I'm ..." (cues 5 to 10) |
 | 6 | 0:28 to 0:32 | `Mehedi_earth.mp4`, 4 seconds, full screen | "Illustration, generated" | `ryan_A_problem_N`, sound only (cue 11) |
-| 7 | 0:32 to 0:39 | `ryan_A_problem_N`, face in the right half | `F7.png` in the left half, with "CLPS: NASA's commercial Moon deliveries" and "Our challenge: CLPS Lunar Mission Browser". Name caption "Ryan · Planning and survey" | Ryan (cue 12) |
+| 7 | 0:32 to 0:39 | `ryan_A_problem_N`, face in the right half | `F7.png` in the left half, with "CLPS: NASA's commercial Moon deliveries" and "Our challenge: Lunar Landing Site Navigator". Name caption "Ryan · Planning and survey" | Ryan (cue 12) |
 | 8 | 0:39 to 0:43 | Ryan, same clip | `F2.png` | Ryan (cue 13) |
 | 9 | 0:43 to 0:58 | Ryan, same clip | `F8.png`, with the large words "Can my lander work at this place, on these dates?"; from 0:51, smaller: "Today: experts, and many days." | Ryan (cues 14 to 16) |
 | 10 | 0:58 to 1:04 | `ahbab_A_solution_N`, face in the left half | `F3.png` in the right half. Name caption "Ahbab · Build and deploy" | Ahbab (cues 17, 18) |
@@ -207,7 +207,7 @@ voices, fills in the team name, burns the subtitles in and uploads the file to Y
 ## YouTube description (paste)
 
 PolarWindow: a mission browser and planner for NASA's commercial Moon landings (CLPS). NASA Space Apps
-Challenge 2026, challenge: CLPS Lunar Mission Browser. Team Sagittarius A*: Wali, Ryan, Ahbab, Mehrab, Tanjamul, Mehedi.
+Challenge 2026, challenge: Lunar Landing Site Navigator. Team Sagittarius A*: Wali, Ryan, Ahbab, Mehrab, Tanjamul, Mehedi.
 Live: https://polarwindow.ahbab.tech   Code: https://github.com/MdAhbab/PolarWindow
 Data: NASA LRO/LOLA, NASA JPL NAIF SPICE and the CLPS SPICE archive, NASA JPL Deep Space Network, NASA GSFC
 DONKI and OMNI, NASA GRAIL, NASA LRO Diviner; NOAA.
