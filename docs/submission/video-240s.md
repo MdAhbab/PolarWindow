@@ -88,7 +88,7 @@ numbered lines in `video-240s.srt`. Every film clip and screen recording is mute
 | `video/wali/` | `wali_A_hook_N.mp4`, `wali_B_name_N.mp4` |
 | `video/ryan/` | `ryan_A_problem_N.mp4`, `ryan_B_name_N.mp4` |
 | `video/ahbab/` | `ahbab_A_solution_N.mp4`, `ahbab_B_name_N.mp4`, `ahbab_voice_demo1_N.wav` to `ahbab_voice_demo6_N.wav`, `ahbab_screen_1.mp4` to `ahbab_screen_6.mp4` (with `5a` and `5b`), `report.pdf` |
-| `video/ahbab/film/` | `light.mp4`, `shadow.mp4`, `earth.mp4`, `rim.mp4` (spare), `descent.mp4` |
+| `video/ahbab/film/` | The film clips Ahbab made for this video: `Mehedi_light.mp4`, `Mehedi_shadow.mp4`, `Mehedi_earth.mp4`, `Mehedi_rim.mp4` (spare), `Mehedi_descent.mp4` |
 | `video/ahbab/brand/` | the logo files |
 | `video/mehrab/` | `mehrab_A_data_N.mp4`, `mehrab_B_name_N.mp4` |
 | `video/tanjamul/` | `tanjamul_A_trust_N.mp4`, `tanjamul_B_name_N.mp4` |
@@ -98,12 +98,12 @@ numbered lines in `video-240s.srt`. Every film clip and screen recording is mute
 
 | # | Time | V1: picture | V2 and V3: on top | A1: voice (subtitle cues) |
 |---|---|---|---|---|
-| 1 | 0:00 to 0:04 | `film/light.mp4`, 4 calm seconds, full screen | "Illustration, generated" | `wali_A_hook_N`, sound only (cue 1). Music starts on A2. |
-| 2 | 0:04 to 0:10 | `film/shadow.mp4`, the 6 seconds where the shadow reaches the lander | "Illustration, generated" | Wali (cue 2) |
+| 1 | 0:00 to 0:04 | `Mehedi_light.mp4`, 4 calm seconds, full screen | "Illustration, generated" | `wali_A_hook_N`, sound only (cue 1). Music starts on A2. |
+| 2 | 0:04 to 0:10 | `Mehedi_shadow.mp4`, the 6 seconds where the shadow reaches the lander | "Illustration, generated" | Wali (cue 2) |
 | 3 | 0:10 to 0:16 | `wali_A_hook_N`, face in the left half | `F1.png` in the right half. Name caption "Wali · Backend and planning" | Wali (cues 3, 4) |
 | 4 | 0:16 to 0:18 | Title card | Logo, "Sagittarius A*", "Challenge: CLPS Lunar Mission Browser" | Music only, louder |
 | 5 | 0:18 to 0:28 | Name strip: `wali_B_name_N`, `ryan_B_name_N`, `ahbab_B_name_N`, `mehrab_B_name_N`, `tanjamul_B_name_N`, `mehedi_B_name_N`, one more every 1.6 s | Each strip's name and role | Each "I'm ..." (cues 5 to 10) |
-| 6 | 0:28 to 0:32 | `film/earth.mp4`, 4 seconds, full screen | "Illustration, generated" | `ryan_A_problem_N`, sound only (cue 11) |
+| 6 | 0:28 to 0:32 | `Mehedi_earth.mp4`, 4 seconds, full screen | "Illustration, generated" | `ryan_A_problem_N`, sound only (cue 11) |
 | 7 | 0:32 to 0:39 | `ryan_A_problem_N`, face in the right half | `F7.png` in the left half, with "CLPS: NASA's commercial Moon deliveries" and "Our challenge: CLPS Lunar Mission Browser". Name caption "Ryan · Planning and survey" | Ryan (cue 12) |
 | 8 | 0:39 to 0:43 | Ryan, same clip | `F2.png` | Ryan (cue 13) |
 | 9 | 0:43 to 0:58 | Ryan, same clip | `F8.png`, with the large words "Can my lander work at this place, on these dates?"; from 0:51, smaller: "Today: experts, and many days." | Ryan (cues 14 to 16) |
@@ -123,7 +123,7 @@ numbered lines in `video-240s.srt`. Every film clip and screen recording is mute
 | 23 | 3:19 to 3:24 | Tanjamul, same clip | `F11.png` | Tanjamul (cue 46) |
 | 24 | 3:24 to 3:34 | `mehedi_A_closing_N`, face in the left half | `F6.png` in the right half. Name caption "Mehedi · Deliverables" | Mehedi (cues 47, 48) |
 | 25 | 3:34 to 3:44 | Mehedi, same clip | `F12.png` | Mehedi (cues 49, 50) |
-| 26 | 3:44 to 3:50 | `film/descent.mp4`, darkened to 50% | End card: logo, "PolarWindow", `polarwindow.ahbab.tech`, `github.com/MdAhbab/PolarWindow`, "Sagittarius A*", the six names in one line. "Illustration, generated" | Music rises, then fades out by 3:50 |
+| 26 | 3:44 to 3:50 | `Mehedi_descent.mp4`, darkened to 50% | End card: logo, "PolarWindow", `polarwindow.ahbab.tech`, `github.com/MdAhbab/PolarWindow`, "Sagittarius A*", the six names in one line. "Illustration, generated" | Music rises, then fades out by 3:50 |
 
 ## The whole script, in order
 

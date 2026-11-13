@@ -69,28 +69,27 @@ At most **25 seconds** of generated film in the whole video. This plan uses **20
 
 ### Use the five new clips
 
-Ahbab made five new clips on 13 November. They are full HD (1920 x 1080, 24 frames per second), with no
-black bars, so they fit the project as they are. He puts them in `video/ahbab/film/`:
+Ahbab made five clips for this video, separate from the app's own. Each name starts with `Mehedi_`.
+He puts them in `video/ahbab/film/`. Check each one's length and size when you import it.
 
-| File | Length | What it shows | Use it for |
-|---|---|---|---|
-| `light.mp4` | 12 s | The Sun sitting low over the cratered pole, long shadows | 0:00 to 0:04 |
-| `shadow.mp4` | 12 s | A lander on the ground; a hill's shadow crosses it | 0:04 to 0:10 |
-| `earth.mp4` | 10 s | A lander with Earth sinking behind a hill | 0:28 to 0:32 |
-| `rim.mp4` | 12 s | A low flight over rocks toward a crater rim; Earth shows at the end | spare |
-| `descent.mp4` | 15 s | Coming down from above toward the craters | 3:44 to 3:50, darkened |
+| File | What it shows | Use it for |
+|---|---|---|
+| `Mehedi_light.mp4` | The Sun sitting low over the cratered pole, long shadows | 0:00 to 0:04 |
+| `Mehedi_shadow.mp4` | A lander on the ground; a hill's shadow crosses it | 0:04 to 0:10, and the 30-second video's first shot |
+| `Mehedi_earth.mp4` | A lander with Earth sinking behind a hill | 0:28 to 0:32 |
+| `Mehedi_rim.mp4` | A low flight over rocks toward a crater rim; Earth shows at the end | spare |
+| `Mehedi_descent.mp4` | Coming down from above toward the craters | 3:44 to 3:50, darkened, behind the end card |
 
 - Watch each clip once before you cut it. Pick the part where nothing changes shape and nothing flickers.
-- For `shadow.mp4`, use the part where the shadow reaches the lander. That is the point of the hook.
-- For the end card, darken `descent.mp4` to about 50% so the words on top are easy to read.
+- For `Mehedi_shadow.mp4`, use the part where the shadow reaches the lander. That is the point of the hook.
+- For the end card, darken `Mehedi_descent.mp4` to about 50% so the words on top are easy to read.
 - Mute the sound of every clip. We use our own music.
-- These clips are not the ones on the app's front page yet. That does not matter for the video.
 
 Only make a new clip if one of these does not fit. If you do, use the prompts below.
 
 ### Which tool: Veo 3 or Gemini Omni?
 
-- Use **the same tool that made the five clips above** (ask Ahbab which one), so a new clip looks like the
+- Use **the same tool that made the five `Mehedi_` clips** (ask Ahbab which one), so a new clip looks like the
   others. A video where two clips look different feels cheap.
 - If you want to compare the two tools yourself: run **prompt 2** once in each. Keep the tool where (a) the
   lander's parts stay the same from the first frame to the last, (b) the edge of the shadow is sharp and
@@ -578,7 +577,7 @@ numbered lines in `video-240s.srt`. Every film clip and screen recording is mute
 | `video/wali/` | `wali_A_hook_N.mp4`, `wali_B_name_N.mp4` |
 | `video/ryan/` | `ryan_A_problem_N.mp4`, `ryan_B_name_N.mp4` |
 | `video/ahbab/` | `ahbab_A_solution_N.mp4`, `ahbab_B_name_N.mp4`, `ahbab_voice_demo1_N.wav` to `ahbab_voice_demo6_N.wav`, `ahbab_screen_1.mp4` to `ahbab_screen_6.mp4` (with `5a` and `5b`), `report.pdf` |
-| `video/ahbab/film/` | `light.mp4`, `shadow.mp4`, `earth.mp4`, `rim.mp4` (spare), `descent.mp4` |
+| `video/ahbab/film/` | The film clips Ahbab made for this video: `Mehedi_light.mp4`, `Mehedi_shadow.mp4`, `Mehedi_earth.mp4`, `Mehedi_rim.mp4` (spare), `Mehedi_descent.mp4` |
 | `video/ahbab/brand/` | the logo files |
 | `video/mehrab/` | `mehrab_A_data_N.mp4`, `mehrab_B_name_N.mp4` |
 | `video/tanjamul/` | `tanjamul_A_trust_N.mp4`, `tanjamul_B_name_N.mp4` |
@@ -588,12 +587,12 @@ numbered lines in `video-240s.srt`. Every film clip and screen recording is mute
 
 | # | Time | V1: picture | V2 and V3: on top | A1: voice (subtitle cues) |
 |---|---|---|---|---|
-| 1 | 0:00 to 0:04 | `film/light.mp4`, 4 calm seconds, full screen | "Illustration, generated" | `wali_A_hook_N`, sound only (cue 1). Music starts on A2. |
-| 2 | 0:04 to 0:10 | `film/shadow.mp4`, the 6 seconds where the shadow reaches the lander | "Illustration, generated" | Wali (cue 2) |
+| 1 | 0:00 to 0:04 | `Mehedi_light.mp4`, 4 calm seconds, full screen | "Illustration, generated" | `wali_A_hook_N`, sound only (cue 1). Music starts on A2. |
+| 2 | 0:04 to 0:10 | `Mehedi_shadow.mp4`, the 6 seconds where the shadow reaches the lander | "Illustration, generated" | Wali (cue 2) |
 | 3 | 0:10 to 0:16 | `wali_A_hook_N`, face in the left half | `F1.png` in the right half. Name caption "Wali · Backend and planning" | Wali (cues 3, 4) |
 | 4 | 0:16 to 0:18 | Title card | Logo, "Sagittarius A*", "Challenge: CLPS Lunar Mission Browser" | Music only, louder |
 | 5 | 0:18 to 0:28 | Name strip: `wali_B_name_N`, `ryan_B_name_N`, `ahbab_B_name_N`, `mehrab_B_name_N`, `tanjamul_B_name_N`, `mehedi_B_name_N`, one more every 1.6 s | Each strip's name and role | Each "I'm ..." (cues 5 to 10) |
-| 6 | 0:28 to 0:32 | `film/earth.mp4`, 4 seconds, full screen | "Illustration, generated" | `ryan_A_problem_N`, sound only (cue 11) |
+| 6 | 0:28 to 0:32 | `Mehedi_earth.mp4`, 4 seconds, full screen | "Illustration, generated" | `ryan_A_problem_N`, sound only (cue 11) |
 | 7 | 0:32 to 0:39 | `ryan_A_problem_N`, face in the right half | `F7.png` in the left half, with "CLPS: NASA's commercial Moon deliveries" and "Our challenge: CLPS Lunar Mission Browser". Name caption "Ryan · Planning and survey" | Ryan (cue 12) |
 | 8 | 0:39 to 0:43 | Ryan, same clip | `F2.png` | Ryan (cue 13) |
 | 9 | 0:43 to 0:58 | Ryan, same clip | `F8.png`, with the large words "Can my lander work at this place, on these dates?"; from 0:51, smaller: "Today: experts, and many days." | Ryan (cues 14 to 16) |
@@ -613,7 +612,7 @@ numbered lines in `video-240s.srt`. Every film clip and screen recording is mute
 | 23 | 3:19 to 3:24 | Tanjamul, same clip | `F11.png` | Tanjamul (cue 46) |
 | 24 | 3:24 to 3:34 | `mehedi_A_closing_N`, face in the left half | `F6.png` in the right half. Name caption "Mehedi · Deliverables" | Mehedi (cues 47, 48) |
 | 25 | 3:34 to 3:44 | Mehedi, same clip | `F12.png` | Mehedi (cues 49, 50) |
-| 26 | 3:44 to 3:50 | `film/descent.mp4`, darkened to 50% | End card: logo, "PolarWindow", `polarwindow.ahbab.tech`, `github.com/MdAhbab/PolarWindow`, "Sagittarius A*", the six names in one line. "Illustration, generated" | Music rises, then fades out by 3:50 |
+| 26 | 3:44 to 3:50 | `Mehedi_descent.mp4`, darkened to 50% | End card: logo, "PolarWindow", `polarwindow.ahbab.tech`, `github.com/MdAhbab/PolarWindow`, "Sagittarius A*", the six names in one line. "Illustration, generated" | Music rises, then fades out by 3:50 |
 
 Rules while you build it:
 
@@ -694,15 +693,18 @@ Rules while you build it:
 
 Make it from the same material. It must be **under 30.0 seconds**. Aim for 29.
 
-| # | Time | Picture | Sound |
-|---|---|---|---|
-| 1 | 0:00 to 0:05 | Film: the hill's shadow reaches the lander | Wali, Take C |
-| 2 | 0:05 to 0:09 | The name strip with all six names already showing, the team name above, "Challenge: CLPS Lunar Mission Browser" below | Ahbab, short take, line 1 |
-| 3 | 0:09 to 0:13 | Screen shot 2: the four numbers, zoomed | line 2 |
-| 4 | 0:13 to 0:17 | Screen shot 3: the days playing | line 3 |
-| 5 | 0:17 to 0:21 | Screen shot 1: the six steps on the curve | line 4 |
-| 6 | 0:21 to 0:27 | Screen shot 6: the answer with "How this answer was made" open. Over it, three large labels, one per beat: "LOLA (LRO)", "SPICE", "Deep Space Network" | line 5 |
-| 7 | 0:27 to 0:29 | End card | line 6 |
+Tracks as in section 5. `ahbab_voice_short_N.wav` is one file with all six of Ahbab's lines: cut it
+line by line. Subtitle cues are the numbered lines in `video-30s.srt`.
+
+| # | Time | V1: picture | V2 and V3: on top | A1: voice (subtitle cue) |
+|---|---|---|---|---|
+| 1 | 0:00 to 0:05 | `Mehedi_shadow.mp4`, the part where the shadow reaches the lander | "Illustration, generated" | `wali_C_short_N` (cue 1). Music starts on A2. |
+| 2 | 0:05 to 0:09 | The name strip from the long video, all six already showing | The team name above; "Challenge: CLPS Lunar Mission Browser" below | `ahbab_voice_short_N`, line 1 (cue 2) |
+| 3 | 0:09 to 0:13 | `ahbab_screen_2.mp4`, zoomed to 140% on the four numbers | A thin strip of the six names along the bottom, if they were on screen under 4 s | line 2 (cue 3) |
+| 4 | 0:13 to 0:17 | `ahbab_screen_3.mp4`, the days playing | | line 3 (cue 4). If it runs long, let it run over shot 5. |
+| 5 | 0:17 to 0:21 | `ahbab_screen_1.mp4`, the six steps on the curve (its last seconds) | | line 4 (cue 5) |
+| 6 | 0:21 to 0:27 | `ahbab_screen_6.mp4`, the answer with "How this answer was made" open | Three large labels, one per beat: "LOLA (LRO)", "SPICE", "Deep Space Network" | line 5 (cue 6) |
+| 7 | 0:27 to 0:29 | The end card from the long video, over `Mehedi_descent.mp4` darkened to 50% | "Illustration, generated" | line 6 (cue 7). Music ends on the last word. |
 
 - Subtitles: `video-30s.srt`, re-timed and burned in.
 - The six names must be readable for at least 4 seconds.
