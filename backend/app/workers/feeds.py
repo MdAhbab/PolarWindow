@@ -26,8 +26,10 @@ from app.feeds import scheduler, targets
 
 log = logging.getLogger("polar_window.feeds")
 
-#: Raw bodies older than this are dropped unless an answer of record used them.
-RAW_KEEP_DAYS = 30
+#: Raw bodies older than this are dropped unless an answer of record used them. Their
+#: parsed values stay. 30 days filled the VM's disk by 24 November (about 45 MB a day,
+#: and every nightly dump carried it all); 3 days keep about 150 MB.
+RAW_KEEP_DAYS = 3
 TICK_S = 30.0
 
 

@@ -645,12 +645,14 @@ sudo bash deploy/vm-check.sh --site
 - Logs: each container's log is capped at 5 x 10 MB (`/etc/docker/daemon.json`); Ubuntu rotates
   nginx's logs.
 - Disk growth: `feed_snapshots` grew 22 MB on 12 November (20 MB of raw bodies, 1.6 MB parsed) and
-  15 MB on 11 November (9.3 MB raw, 5.4 MB parsed), counted by fetch day on the PC. Raw bodies older
-  than 30 days are dropped (`backend/app/workers/feeds.py:30`, `:100-104`), so the database levels
-  off near 30 days of raw bodies (about 0.6 GB at 20 MB a day) plus the parsed rows (under 0.4 GB in
-  ten weeks at the rates above). The raw bodies do not compress, so a dump is close to the
-  database's size (60 MB for 73 MB on 13 November). Backups keep 7 days: up to about 7 GB near the
-  end of ten weeks at those rates. The health check writes a warning past 85 % disk use.
+  15 MB on 11 November (9.3 MB raw, 5.4 MB parsed), counted by fetch day on the PC. On the VM it
+  grew about 45 MB a day, most of it raw bodies from the solar wind and buoy feeds. With raw bodies
+  kept 30 days and 7 nightly dumps of about 0.65 GB each, the 20 GB disk filled on 24 November: the
+  database could not write and the site's sign-in failed. Raw bodies older than 3 days are now
+  dropped (`backend/app/workers/feeds.py:29-32`), their parsed values kept. The backups together stay
+  under 2 GB (`PW_BACKUP_MAX_MB`): the oldest dump goes first, the newest is always kept, and a run
+  that would leave under 512 MB free is skipped (`deploy/backup.sh`). The health check writes a
+  warning past 85 % disk use.
 - Health: the route is `/healthz` (also `/api/v1/healthz`; `/api/v1/health` is a 404). It answers
   200 for `ok` and `degraded`, 503 for `down` (`backend/app/services/health_service.py:53-58`). The
   timer restarts the api only when it does not answer at all three times in a row. For alerts by
@@ -668,9 +670,9 @@ sudo bash deploy/vm-check.sh --site
 - e2-standard-4 (4 vCPU, 16 GB) only if many new answers are asked for at once on judging days, with
   `--scale compute=2`; workers share the queue safely (`compute.py:4-8`).
 - Disk 40 GB balanced: data 2.7 GB, the bundle 2.8 GB until stage 10 deletes the tars, the
-  database up to about 1 GB, backups up to about 7 GB (see 8), container logs at most 0.3 GB, swap
+  database up to about 1 GB, backups at most 2 GB (see 8), container logs at most 0.3 GB, swap
   2 GB, plus Ubuntu, the images and the build cache (not measured; the backend's Python environment
-  is 706 MB on the PC). If `df -h /` passes 85 %, lower `PW_BACKUP_KEEP_DAYS` in the backup unit or
+  is 706 MB on the PC). If `df -h /` passes 85 %, lower `PW_BACKUP_MAX_MB` in the backup unit or
   prune the build cache (Updating later).
 
 ## Not checked from the PC

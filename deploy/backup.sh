@@ -9,16 +9,18 @@
 # older than KEEP_DAYS. Restore one with the commands in docs/deploy-gcp.md
 # ("Restore a backup").
 #
-# On 13 November the database was 73 MB and its dump 60 MB (measured on the PC). The
-# raw feed bodies do not compress, so dumps grow with the database (docs/deploy-gcp.md,
-# "Staying up"); 7 days are kept. Set PW_BACKUP_KEEP_DAYS to change that.
+# The raw feed bodies do not compress, so a dump is close to the database's size
+# (docs/deploy-gcp.md, "Staying up"). On 24 November the dumps filled the VM's 20 GB
+# disk and the site stopped. So the backups together stay under MAX_MB, the oldest
+# dump going first and the newest always kept, and a run without room is skipped.
 set -euo pipefail
 
 REPO="${PW_REPO:-$(cd "$(dirname "$0")/.." && pwd)}"
 DEST="${PW_BACKUP_DIR:-/var/backups/polarwindow}"
 KEEP_DAYS="${PW_BACKUP_KEEP_DAYS:-7}"
-
-#: Room left free after a dump, for the database, the feeds and the logs.
+#: Every file in DEST together, in MB.
+MAX_MB="${PW_BACKUP_MAX_MB:-2048}"
+#: Room left free on the disk after a dump, for the database, the feeds and the logs.
 RESERVE_MB="${PW_BACKUP_RESERVE_MB:-512}"
 
 cd "$REPO"
@@ -28,11 +30,29 @@ chmod 700 "$DEST"
 # A run that stopped part way leaves its .part behind: no backup, only lost room.
 find "$DEST" -maxdepth 1 -name 'polar_window-*.dump.part' -mmin +120 -delete
 
-# A dump needs about as much room as the last one. On 24 November a dump filled the
-# disk, and the database and the site stopped with it: refuse rather than fill it.
+total_mb() { du -sm "$DEST" | cut -f1; }
+# This script's dumps, oldest first. Other files (a dump brought from elsewhere) count
+# towards MAX_MB but are never deleted.
+dumps() {
+  find "$DEST" -maxdepth 1 -name 'polar_window-*.dump' -printf '%T@ %p\n' | sort -n | cut -d' ' -f2-
+}
+# Delete the oldest dumps until the backups and $1 MB more fit under MAX_MB.
+trim_to() {
+  local old
+  while (( $(total_mb) + $1 > MAX_MB )) && (( $(dumps | wc -l) > 1 )); do
+    old="$(dumps | sed -n 1p)"
+    rm -f -- "$old"
+    echo "backup: removed $old to stay under ${MAX_MB} MB"
+  done
+}
+
+# A new dump needs about as much room as the last one; a fifth more to be safe.
 last_bytes="$(find "$DEST" -maxdepth 1 -name 'polar_window-*.dump' -printf '%T@ %s\n' |
   sort -n | tail -1 | cut -d' ' -f2)"
-need_mb=$(( ${last_bytes:-0} * 12 / 10 / 1048576 + RESERVE_MB ))
+est_mb=$(( ${last_bytes:-0} * 12 / 10 / 1048576 ))
+trim_to "$est_mb"
+
+need_mb=$(( est_mb + RESERVE_MB ))
 free_mb=$(( $(df --output=avail -B1 "$DEST" | tail -1) / 1048576 ))
 if (( free_mb < need_mb )); then
   echo "backup: skipped, ${free_mb} MB free and ${need_mb} MB needed" \
@@ -53,4 +73,6 @@ chmod 600 "$out"
 echo "backup: $out ($(du -h "$out" | cut -f1))"
 
 find "$DEST" -maxdepth 1 -name 'polar_window-*.dump' -mtime +"$KEEP_DAYS" -print -delete
+trim_to 0
+echo "backup: $(total_mb) MB kept in $DEST"
 df -h "$DEST" | tail -1
