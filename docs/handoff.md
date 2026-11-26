@@ -674,3 +674,8 @@ The project was submitted for local judging on 13 November. On 24 November the V
   worker is now capped at one CPU with the lower claim (`docker-compose.yml`, `cpus` and `cpu_shares`;
   applied live with `docker update`). Activity answers in about 1 s, the missions list in 4 to 10 s.
   Postgres lost its table statistics in the crash on 25 November; `ANALYZE` was run (plans unchanged).
+- Two slow reads, found by profiling inside the api container (`c6063db`): the missions list took 4 to
+  6 s because each mission's step marks read every preset scenario whole and decoded its results; the
+  health check took 3 to 9 s because it read the newest row of all 57 feeds whole for two times. Both
+  now select only the columns they use. Inside the VM the missions list answers in 0.14 s and the
+  health check in under 0.1 s; from Dhaka they take about 1.4 s and 1.2 s, most of it the network.
