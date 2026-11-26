@@ -1,6 +1,6 @@
 # Handoff
 
-State as of 2026-11-13 (section 9 is the latest). This file describes how the product is put together, the rules
+State as of 2026-11-26 (section 10 is the latest). This file describes how the product is put together, the rules
 that do not bend, how to run and check it, the shapes the frontend work needs, and where a
 review should look hardest. The plan for the experience work is `docs/experience-plan.md`.
 The wire contract between frontend and backend is `frontend/src/lib/api/experience.types.ts`;
@@ -648,3 +648,29 @@ page, and a focus test hit by a hot reload mid-run; both pass on their own run).
 - `docs/report/**` is the owner's and still names the old challenge, "CLPS Lunar Mission Browser".
 - The Gemini quota has per-visitor limits only, and any one-click visitor can change Settings (including
   turning the AI off for everyone).
+
+## 10. The disk filled (26 November)
+
+The project was submitted for local judging on 13 November. On 24 November the VM's 20 GB disk filled.
+
+- Cause: the feeds stored about 45 MB of raw bodies a day (the solar wind and buoy feeds most), kept them
+  30 days, and each nightly dump carried them all; 7 dumps of up to 0.65 GB were kept. With the disk full
+  the database could not write: one-click sign-in failed and the compute worker stopped. Pages already
+  worked out still showed.
+- Fixed (`296906c`, `7e6b16d`): raw bodies are kept 3 days, their parsed values kept
+  (`backend/app/workers/feeds.py:29-32`). `deploy/backup.sh` removes stale partial dumps first, keeps
+  every backup together under 2 GB (`PW_BACKUP_MAX_MB`, the oldest dump first, the newest always kept),
+  skips a run that would leave under 512 MB free, and deletes its own partial dump when it stops.
+- On the VM, at the owner's word: every backup deleted and `polarwindow-backup.timer` disabled (the VM
+  is to be deleted within days); swap shrunk from 4 GB to 2 GB (0.4 GB was in use). The disk is at
+  about 70 %. The feeds change shipped as one more code layer on the backend image.
+- `DEMO_KEY` stays on purpose. With it, DONKI is read straight from NASA's CCMC service, which needs no
+  key. With a personal key the feed goes through api.nasa.gov, whose flare endpoint answered 404 on 14
+  November (CME and SEP worked).
+- Nothing on the VM was missing from GitHub: its checkout was clean and at the pushed commit.
+- Slow site after the fix: the first 3-day clean-up rewrote 20,511 rows, and a visitor's launch job for
+  the demo project Malapert Pathfinder held both CPUs. The api took 10 to 30 s, some calls timed out,
+  and the Activity list said "Cannot reach the service that does the calculations". The compute
+  worker is now capped at one CPU with the lower claim (`docker-compose.yml`, `cpus` and `cpu_shares`;
+  applied live with `docker update`). Activity answers in about 1 s, the missions list in 4 to 10 s.
+  Postgres lost its table statistics in the crash on 25 November; `ANALYZE` was run (plans unchanged).

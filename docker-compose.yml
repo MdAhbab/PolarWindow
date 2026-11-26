@@ -142,6 +142,11 @@ services:
       PW_CODE_VERSION: ${PW_CODE_VERSION:-}
     depends_on: *ready
     restart: unless-stopped
+    # One CPU at most, and the lower claim when they compete. On the 2-vCPU VM a launch
+    # job took both CPUs for over 15 minutes (26 November): the api answered in 10 to 30 s
+    # and the Activity list showed "Cannot reach the service". Capped, it answers in 1 s.
+    cpus: 1.0
+    cpu_shares: 256
 
   feeds:
     <<: *app
