@@ -97,16 +97,25 @@ def data_time(s: SnapshotRecord, health: HealthRecord | None = None) -> datetime
     """When the snapshot's data is from: its issue time; with none (a list such as
     DONKI's is as new as the request for it), the last fetch that found it current,
     since an unchanged body adds no snapshot."""
-    if s.issued_at is not None:
-        return s.issued_at
+    return _data_time(s.id, s.issued_at, s.fetched_at, health)
+
+
+def _data_time(
+    snapshot_id: int,
+    issued_at: datetime | None,
+    fetched_at: datetime,
+    health: HealthRecord | None,
+) -> datetime:
+    if issued_at is not None:
+        return issued_at
     if (
         health is not None
-        and health.last_snapshot_id == s.id
+        and health.last_snapshot_id == snapshot_id
         and health.last_ok_at is not None
-        and health.last_ok_at > s.fetched_at
+        and health.last_ok_at > fetched_at
     ):
         return health.last_ok_at
-    return s.fetched_at
+    return fetched_at
 
 
 def _age(
@@ -202,13 +211,17 @@ async def list_feeds(session: AsyncSession, now: datetime | None = None) -> dict
     now = now or datetime.now(UTC)
     repo = FeedRepository(session)
     limits = await repo.limits()
+    healths = await repo.health()
+    # Two times per feed, in one query. Reading each feed's newest row decoded its parsed
+    # values too: 3 s for 57 feeds on the VM, and /healthz runs this every 10 s.
+    times = await repo.snapshot_times([h.last_snapshot_id for h in healths if h.last_snapshot_id])
     rows = []
-    for h in await repo.health():
-        snap = await repo.get_snapshot(h.last_snapshot_id) if h.last_snapshot_id else None
+    for h in healths:
+        t = times.get(h.last_snapshot_id) if h.last_snapshot_id else None
         rows.append(
             _row(
                 h,
-                data_time(snap, h) if snap else None,
+                None if t is None else _data_time(h.last_snapshot_id or 0, t[0], t[1], h),
                 limits[h.provider].breaker if h.provider in limits else "closed",
                 now,
             )

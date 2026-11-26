@@ -208,14 +208,7 @@ async def step_marks(session: AsyncSession, m: MissionRecord) -> list[dict[str, 
     ``none``: the step does not apply (a cancelled delivery).
     """
     states = {s["section"]: s["state"] for s in (await sections_for(session, m))["data"]}
-    presets = sorted(
-        (
-            r
-            for r in await ScenarioRepository(session).for_mission(m.id)
-            if r.preset and r.status == "done"
-        ),
-        key=lambda r: r.created_at,
-    )
+    presets = await ScenarioRepository(session).done_preset_phases(m.id)
     out = []
     for section in ("ready", "launch", "trip", "landing", "contact", "return"):
         state = states.get(section, "no_data")
@@ -227,9 +220,9 @@ async def step_marks(session: AsyncSession, m: MissionRecord) -> list[dict[str, 
         else:
             example = next(
                 (
-                    r.id
-                    for r in presets
-                    if any(p.get("id") == section and p.get("state") == "done" for p in r.phases)
+                    sid
+                    for sid, _, phases in presets
+                    if any(p.get("id") == section and p.get("state") == "done" for p in phases)
                 ),
                 None,
             )

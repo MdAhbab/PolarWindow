@@ -14,6 +14,7 @@ from typing import Any
 from sqlalchemy import and_, select, text, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import defer
 
 from app.db.models import FeedHealth, FeedLimit, FeedSnapshot
 
@@ -69,6 +70,12 @@ class LimitRecord:
     capacity: float
     refill_per_s: float
     tokens_at: datetime
+
+
+#: A SnapshotRecord carries no raw body, so the rows it is read from leave it unread. The
+#: body can be megabytes (the solar wind's is 1.7 MB), and /healthz, which Docker asks
+#: every 10 s, read the newest row of all 57 feeds: on the 2-vCPU VM it took 3 to 9 s.
+_NO_RAW = [defer(FeedSnapshot.raw)]
 
 
 def _snap(r: FeedSnapshot) -> SnapshotRecord:
@@ -173,6 +180,7 @@ class FeedRepository:
         row = (
             await self._s.execute(
                 select(FeedSnapshot)
+                .options(*_NO_RAW)
                 .where(
                     FeedSnapshot.provider == provider,
                     FeedSnapshot.product == product,
@@ -210,8 +218,21 @@ class FeedRepository:
         ).first()
         return None if row is None else (row[0], row[1], row[2], row[3])
 
+    async def snapshot_times(
+        self, snapshot_ids: list[int]
+    ) -> dict[int, tuple[datetime | None, datetime]]:
+        """``{id: (issued_at, fetched_at)}`` for these snapshots, without their bodies."""
+        if not snapshot_ids:
+            return {}
+        rows = await self._s.execute(
+            select(FeedSnapshot.id, FeedSnapshot.issued_at, FeedSnapshot.fetched_at).where(
+                FeedSnapshot.id.in_(snapshot_ids)
+            )
+        )
+        return {int(i): (issued, fetched) for i, issued, fetched in rows.all()}
+
     async def get_snapshot(self, snapshot_id: int) -> SnapshotRecord | None:
-        row = await self._s.get(FeedSnapshot, snapshot_id)
+        row = await self._s.get(FeedSnapshot, snapshot_id, options=_NO_RAW)
         return None if row is None else _snap(row)
 
     async def gc_raw(self, older_than_days: int) -> int:

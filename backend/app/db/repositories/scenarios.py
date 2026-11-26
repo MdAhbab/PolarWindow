@@ -107,6 +107,25 @@ class ScenarioRepository:
         )
         return [_rec(r) for r in (await self._s.execute(stmt)).scalars()]
 
+    async def done_preset_phases(
+        self, mission_id: str
+    ) -> list[tuple[str, datetime, list[dict[str, Any]]]]:
+        """``(id, created_at, phases)`` of the mission's finished presets, oldest first.
+
+        The step marks need only these. Reading whole rows decoded every preset's results,
+        megabytes of JSON across the list: on the VM that was 3 of the 4.7 s /missions took.
+        """
+        stmt = (
+            select(Scenario.id, Scenario.created_at, Scenario.phases)
+            .where(
+                Scenario.mission_id == mission_id,
+                Scenario.preset.is_(True),
+                Scenario.status == "done",
+            )
+            .order_by(Scenario.created_at, Scenario.id)
+        )
+        return [(str(i), c, list(p or [])) for i, c, p in (await self._s.execute(stmt)).all()]
+
     async def create(
         self,
         *,
